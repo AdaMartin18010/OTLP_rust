@@ -34,5 +34,3 @@
 - OTLP 数据模型与资源语义（OpenTelemetry 官方资料）
 - 合规框架（GDPR、HIPAA、ISO 27k、行业规范）
 - SRE 实践（SLO、错误预算、金丝雀/蓝绿）
-
-

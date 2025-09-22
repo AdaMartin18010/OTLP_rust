@@ -28,7 +28,8 @@
 
 ## 概述
 
-OTLP (OpenTelemetry Protocol) 是OpenTelemetry项目定义的标准遥测数据传输协议。它提供了统一的、供应商中立的协议，用于传输traces、metrics和logs数据。
+OTLP (OpenTelemetry Protocol) 是OpenTelemetry项目定义的标准遥测数据传输协议。
+它提供了统一的、供应商中立的协议，用于传输traces、metrics和logs数据。
 
 ## 核心特性
 
