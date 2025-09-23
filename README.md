@@ -1,36 +1,85 @@
-# 🚀 OTLP Rust - OpenTelemetry Protocol 完整实现
+# 🚀 OTLP Rust - 基于Rust 1.90的微服务可观测性平台
 
 [![Rust](https://img.shields.io/badge/rust-1.90+-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/otlp.svg)](https://crates.io/crates/otlp)
 [![Documentation](https://docs.rs/otlp/badge.svg)](https://docs.rs/otlp)
+[![Microservices](https://img.shields.io/badge/microservices-ready-green.svg)](https://microservices.io/)
+[![Service Mesh](https://img.shields.io/badge/service--mesh-istio%20%7C%20linkerd-blue.svg)](https://servicemesh.es/)
 
-一个基于 **Rust 1.90** 语言特性的 **OpenTelemetry Protocol (OTLP)** 完整实现，支持同步和异步结合的遥测数据收集、处理和传输。
+一个基于 **Rust 1.90** 最新语言特性的 **OpenTelemetry Protocol (OTLP)** 完整实现，专为现代微服务架构设计，支持云原生部署、服务网格集成和全面的可观测性解决方案。
 
 ## ✨ 核心特性
 
-- 🎯 **异步优先设计** - 利用 Rust 1.90 的 async/await 特性实现高性能异步处理
-- 🔄 **同步兼容** - 提供同步 API 接口，支持传统同步代码集成
-- 🌐 **多传输协议** - 支持 gRPC 和 HTTP/JSON 两种 OTLP 传输方式
-- 🛡️ **类型安全** - 利用 Rust 类型系统确保编译时安全性
-- ⚡ **零拷贝优化** - 使用 Rust 1.90 的内存管理特性优化性能
-- 🔒 **并发安全** - 基于 Rust 的所有权系统实现无锁并发
-- 📊 **完整错误处理** - 提供详细的错误类型和重试机制
-- 📈 **性能监控** - 内置指标收集和性能分析功能
-- 🗜️ **数据压缩** - 支持 Gzip、Brotli、Zstd 多种压缩算法
-- 🔧 **灵活配置** - 支持批处理、重试、采样等高级配置
+### 🚀 Rust 1.90 语言特性
 
-## 🏗️ 架构设计
+- 🎯 **异步优先设计** - 利用 Rust 1.90 的 async/await 特性和改进的Trait Solver
+- 🛡️ **类型安全** - 利用 Rust 1.90 的类型系统确保编译时安全性
+- ⚡ **零拷贝优化** - 使用 Rust 1.90 的Pointer Provenance API优化性能
+- 🔒 **并发安全** - 基于 Rust 1.90 的所有权系统实现无锁并发
+- 🔧 **MSRV感知** - 支持 Cargo 1.90 的MSRV感知解析器
+
+### 🌐 微服务架构支持
+
+- 🏗️ **服务发现** - 集成 Consul、etcd 等主流服务发现组件
+- 🔄 **负载均衡** - 支持轮询、加权轮询、一致性哈希等负载均衡策略
+- 🌍 **服务网格** - 原生支持 Istio、Linkerd2、Envoy 等服务网格
+- ☁️ **云原生** - 完整的 Kubernetes、Docker 集成支持
+
+### 📊 可观测性能力
+
+- 🔍 **分布式追踪** - 基于 OTLP 的完整分布式追踪解决方案
+- 📈 **指标监控** - 支持 Prometheus、Grafana 等主流监控系统
+- 📝 **日志聚合** - 集成 ELK Stack、Fluentd 等日志系统
+- 🚨 **智能告警** - 基于机器学习的异常检测和告警
+
+### 🔧 高级功能
+
+- 🗜️ **数据压缩** - 支持 Gzip、Brotli、Zstd 多种压缩算法
+- 🔄 **智能重试** - 指数退避、熔断器、故障转移等高级重试策略
+- 🔒 **安全认证** - 支持 OAuth2、JWT、Vault 等安全认证方案
+- ⚡ **性能优化** - 批量处理、连接池、缓存等性能优化机制
+
+## 🏗️ 微服务架构设计
 
 ```text
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   数据收集层     │    │   数据处理层     │    │   数据传输层     │
-│  (Collection)   │───▶│  (Processing)   │───▶│  (Transport)    │
-│                 │    │                 │    │                 │
-│ • Traces        │    │ • 过滤/聚合      │    │ • gRPC          │
-│ • Metrics       │    │ • 批处理        │    │ • HTTP/JSON     │
-│ • Logs          │    │ • 压缩          │    │ • 重试机制      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    微服务应用层 (Application Layer)                │
+├─────────────────┬─────────────────┬─────────────────┬─────────────┤
+│   用户服务       │   订单服务       │   支付服务       │   通知服务   │
+│  (User)        │  (Order)       │  (Payment)     │ (Notification)│
+└─────────────────┴─────────────────┴─────────────────┴─────────────┘
+                                │
+                    ┌─────────────────┐
+                    │   服务网格层     │
+                    │ (Service Mesh)  │
+                    │                 │
+                    │ • Istio         │
+                    │ • Linkerd2      │
+                    │ • Envoy Proxy   │
+                    └─────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                    可观测性层 (Observability Layer)              │
+├─────────────────┬─────────────────┬─────────────────┬─────────────┤
+│   数据收集层     │   数据处理层     │   数据传输层     │   存储分析层 │
+│  (Collection)   │  (Processing)   │  (Transport)    │ (Storage)   │
+│                 │                 │                 │             │
+│ • Traces        │ • 过滤/聚合      │ • gRPC/HTTP     │ • Jaeger    │
+│ • Metrics       │ • 批处理        │ • 压缩传输      │ • Prometheus│
+│ • Logs          │ • 采样控制      │ • 重试机制      │ • ELK Stack │
+└─────────────────┴─────────────────┴─────────────────┴─────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                    基础设施层 (Infrastructure Layer)              │
+├─────────────────┬─────────────────┬─────────────────┬─────────────┤
+│  容器编排        │   服务发现       │   配置管理       │   安全认证   │
+│ (Orchestration) │ (Discovery)     │ (Configuration) │ (Security)  │
+│                 │                 │                 │             │
+│ • Kubernetes    │ • Consul        │ • etcd          │ • Vault     │
+│ • Docker        │ • Eureka        │ • ConfigMap     │ • OAuth2    │
+│ • Helm          │ • DNS           │ • Secret        │ • JWT       │
+└─────────────────┴─────────────────┴─────────────────┴─────────────┘
 ```
 
 ## 🚀 快速开始
@@ -249,16 +298,31 @@ cargo test --test integration
 
 ## 📖 文档
 
-### 完整文档
+### 📚 完整文档体系
+
+#### 🏗️ 微服务架构设计1
+
+- [Rust 1.90 微服务架构设计指南](docs/07_Rust_1.90_微服务架构设计/README.md)
+- [服务发现与注册中心](docs/07_Rust_1.90_微服务架构设计/01_核心组件设计/服务发现与注册中心.md)
+- [OTLP分布式追踪](docs/07_Rust_1.90_微服务架构设计/05_监控与可观测性/OTLP分布式追踪.md)
+- [Rust 1.90语言特性应用](docs/07_Rust_1.90_微服务架构设计/00_架构总览/Rust_1.90语言特性应用.md)
+
+#### 📊 可观测性解决方案
+
+- [分布式追踪实现](docs/02_形式论证与证明体系/分布式追踪视角OTLP完整分析报告.md)
+- [指标监控与告警](docs/05_实践应用/部署运维/监控告警.md)
+ - [日志聚合与分析](docs/08_部署运维指南/README.md)
+
+#### 🔧 技术实现指南
 
 - [API 文档](https://docs.rs/otlp)
-- [使用指南](docs/README.md)
-- [架构设计](docs/architecture/README.md)
-- [性能优化](docs/performance_optimization/README.md)
+- [基础使用指南](docs/05_实践应用/使用示例/基础使用.md)
+- [高级配置](docs/05_实践应用/使用示例/高级配置.md)
+- [企业级集成](docs/05_实践应用/企业集成/企业级集成迁移指南.md)
 
-### 2025年最新分析文档
+#### 🌐 2025年最新技术文档
 
-- [OTLP国际标准分析](otlp/docs/standards/OTLP_INTERNATIONAL_STANDARDS_2025.md)
+- [OTLP国际标准深度对标](docs/01_标准规范与对标/OTLP_2025年9月最新规范全面对标分析.md)
 - [同步异步控制流分析](otlp/docs/sync_async/OTLP_SYNC_ASYNC_CONTROL_FLOW_2025.md)
 - [算法和设计模式](otlp/docs/algorithms/OTLP_ALGORITHMS_DESIGN_PATTERNS_2025.md)
 - [采样控制和动态调整](otlp/docs/sampling/OTLP_SAMPLING_CONTROL_2025.md)

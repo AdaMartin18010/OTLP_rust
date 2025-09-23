@@ -17,7 +17,7 @@
 //! ```text
 //! ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 //! │   数据收集层     │    │   数据处理层     │    │   数据传输层     │
-//! │  (Collection)   │───▶│  (Processing)   │───▶│  (Transport)    │
+//! │  (Collection)   │──▶│  (Processing)   │──▶│  (Transport)    │
 //! │                 │    │                 │    │                 │
 //! │ • Traces        │    │ • 过滤/聚合      │    │ • gRPC          │
 //! │ • Metrics       │    │ • 批处理        │    │ • HTTP/JSON     │
@@ -67,6 +67,11 @@ pub mod processor;
 pub mod protobuf;
 pub mod transport;
 pub mod utils;
+pub mod microservices;
+pub mod benchmarks;
+pub mod ai_ml;
+pub mod edge_computing;
+pub mod blockchain;
 
 // 重新导出主要类型
 pub use client::{OtlpClient, OtlpClientBuilder, TraceBuilder, MetricBuilder, LogBuilder};
@@ -77,6 +82,21 @@ pub use exporter::{OtlpExporter, ExportResult, ExporterMetrics};
 pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use transport::{Transport, GrpcTransport, HttpTransport, TransportFactory};
 pub use utils::{CompressionUtils, TimeUtils, StringUtils, HashUtils, BatchUtils, RetryUtils, PerformanceUtils};
+
+// 重新导出微服务相关类型
+pub use microservices::{
+    LoadBalancer, RoundRobinLoadBalancer, WeightedRoundRobinLoadBalancer,
+    CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState,
+    Retryer, RetryConfig,
+    ServiceDiscoveryClient, ServiceEndpoint, HealthStatus,
+    MicroserviceClient, MockConsulClient,
+    // 高级微服务功能
+    ServiceMeshConfig, ServiceMeshType, SidecarConfig, ResourceLimits,
+    RoutingRule, MatchCondition, Destination, RetryPolicy, CircuitBreakerPolicy,
+    IntelligentRouter, TrafficManager, HealthChecker, ServiceInstance, InstanceMetrics,
+    RouterMetrics, RouteRequest, RouteResponse, RoutingError,
+    AdaptiveLoadBalancer, FaultInjector, FaultConfig, FaultType, FaultResult,
+};
 
 // 版本信息
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

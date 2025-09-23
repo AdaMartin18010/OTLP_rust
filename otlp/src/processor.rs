@@ -114,10 +114,11 @@ impl DataFilter for AttributeFilter {
 
         // 检查排除的属性
         for (key, excluded_value) in &self.excluded_attributes {
-            if let Some(actual_value) = data.resource_attributes.get(key)
-                && actual_value == excluded_value {
+            if let Some(actual_value) = data.resource_attributes.get(key) {
+                if actual_value == excluded_value {
                     return false;
                 }
+            }
         }
 
         true

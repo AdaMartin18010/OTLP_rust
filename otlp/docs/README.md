@@ -26,15 +26,15 @@
 - **目录**: `sync_async/`
 - **内容**: 同步异步结合的OTLP控制执行数据流分析
 - **文件**:
-  - `data_flow_control.md` - 数据流控制机制详解
-  - `SYNC_ASYNC_DESIGN_PATTERNS.md` - 同步异步设计模式
+  - [data_flow_control.md](./sync_async/data_flow_control.md)
+  - [SYNC_ASYNC_DESIGN_PATTERNS.md](./sync_async/SYNC_ASYNC_DESIGN_PATTERNS.md)
 
 ### 🏗️ 算法设计
 
 - **目录**: `algorithms/`
 - **内容**: OTLP实现中的核心算法和设计模式分析
 - **文件**:
-  - `README.md` - 算法设计概述
+  - [README.md](./algorithms/README.md)
   - 设计模式、性能算法、数据处理算法等详细文档
 
 ### 🏛️ 架构设计
@@ -42,65 +42,75 @@
 - **目录**: `architecture/`
 - **内容**: OTLP架构和设计组合方式探讨
 - **文件**:
-  - `ARCHITECTURE_DESIGN_COMBINATIONS.md` - 架构设计组合详解
-  - 分层架构、微服务架构、插件架构等设计文档
+  - [ARCHITECTURE_DESIGN_COMBINATIONS.md](./architecture/ARCHITECTURE_DESIGN_COMBINATIONS.md)
+  - [OTLP_ARCHITECTURE_DESIGN_COMBINATIONS.md](./architecture/OTLP_ARCHITECTURE_DESIGN_COMBINATIONS.md)
+  - [OTLP_DESIGN_PATTERNS_ARCHITECTURE.md](./architecture/OTLP_DESIGN_PATTERNS_ARCHITECTURE.md)
+  - [OTLP_DISTRIBUTED_COMPONENTS_BLUEPRINT_2025.md](./architecture/OTLP_DISTRIBUTED_COMPONENTS_BLUEPRINT_2025.md)
+  - [README.md](./architecture/README.md)
 
 ### 📊 分类分析
 
 - **目录**: `classification/`
 - **内容**: OTLP的详细分类与组合方式分析
 - **文件**:
-  - `DETAILED_CLASSIFICATION_ANALYSIS.md` - 详细分类分析
-  - 数据类型、传输协议、配置分类等详细文档
+  - [DETAILED_CLASSIFICATION_ANALYSIS.md](./classification/DETAILED_CLASSIFICATION_ANALYSIS.md)
+  - [OTLP_DESIGN_CLASSIFICATION_MATRIX.md](./classification/OTLP_DESIGN_CLASSIFICATION_MATRIX.md)
+  - [OTLP_TYPE_PROTOCOL_CONFIG_CLASSIFICATIONS.md](./classification/OTLP_TYPE_PROTOCOL_CONFIG_CLASSIFICATIONS.md)
 
 ### 💡 使用示例
 
 - **目录**: `examples/`
 - **内容**: OTLP详细使用解释和示例
 - **文件**:
-  - 基础使用、高级功能、企业应用等示例代码
+  - [simple_demo.rs](../examples/simple_demo.rs)
+  - [microservices_demo.rs](../examples/microservices_demo.rs)
+  - [advanced_patterns.rs](../examples/advanced_patterns.rs)
+  - [comprehensive_usage.rs](../examples/comprehensive_usage.rs)
+  - [comprehensive_demo.rs](../examples/comprehensive_demo.rs)
+  - [advanced_microservices_demo.rs](../examples/advanced_microservices_demo.rs)
+  - [performance_benchmarks.rs](../examples/performance_benchmarks.rs)
 
 ### ⚡ 性能优化
 
 - **目录**: `performance_optimization/`
 - **内容**: 性能优化策略和算法
 - **文件**:
-  - 内存优化、网络优化、CPU优化等策略文档（参见 `performance_optimization/README.md`）
+  - [README.md](./performance_optimization/README.md)
 
 ### 🏢 企业应用
 
 - **目录**: `enterprise_applications/`
 - **内容**: 企业级应用场景和最佳实践
 - **文件**:
-  - 微服务监控、云原生适配、大规模部署等文档（参见 `enterprise_applications/README.md`）
+  - [README.md](./enterprise_applications/README.md)
 
 ### ☁️ 云原生
 
 - **目录**: `cloud_native/`
 - **内容**: 云原生环境下的OTLP应用
 - **文件**:
-  - Kubernetes集成、容器化部署、服务网格等文档（参见 `cloud_native/README.md`）
+  - [README.md](./cloud_native/README.md)
 
 ### 🔒 安全
 
 - **目录**: `security/`
 - **内容**: OTLP安全机制和最佳实践
 - **文件**:
-  - 认证授权、数据加密、安全传输等文档（参见 `security/README.md`）
+  - [README.md](./security/README.md)
 
 ### 🧪 测试
 
 - **目录**: `testing/`
 - **内容**: 测试策略和测试用例
 - **文件**:
-  - 单元测试、集成测试、性能测试等文档（参见 `testing/README.md`）
+  - [README.md](./testing/README.md)
 
 ### 📈 监控
 
 - **目录**: `monitoring/`
 - **内容**: 监控和可观测性
 - **文件**:
-  - 指标监控、日志分析、告警机制等文档（参见 `monitoring/README.md`）
+  - [README.md](./monitoring/README.md)
 
 ---
 
