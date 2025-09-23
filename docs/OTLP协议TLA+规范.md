@@ -643,6 +643,7 @@ PropertiesToCheck ==
 ---
 
 相关阅读：
+
 - [OTLP 完整形式化证明 2025](./OTLP_完整形式化证明_2025.md)
 - [OpenTelemetry 2025 形式化验证体系](./形式化验证.md)
 
