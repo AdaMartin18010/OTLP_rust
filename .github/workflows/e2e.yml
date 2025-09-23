@@ -1,0 +1,54 @@
+name: e2e
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.90.0
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Start OpenTelemetry Collector
+        run: |
+          docker run -d --name otelcol -p 4317:4317 -p 4318:4318 otel/opentelemetry-collector:latest
+          # wait for collector
+          for i in {1..30}; do
+            sleep 1
+            if curl -sSf http://localhost:4318/ || true; then break; fi
+          done
+
+      - name: Build
+        run: cargo build --workspace --all-features
+
+      - name: Run unit tests
+        run: cargo test --workspace --all-features --lib --bins
+
+      - name: Run E2E integration tests (HTTP 4318)
+        env:
+          OTLP_E2E: "1"
+        run: cargo test --test integration_tests --package otlp -- --nocapture | cat
+
+      - name: Run E2E integration tests (gRPC 4317)
+        env:
+          OTLP_E2E: "1"
+          OTLP_PROTOCOL: "grpc"
+        run: cargo test --test integration_tests --package otlp -- --nocapture | cat
+
+      - name: Stop Collector
+        if: always()
+        run: docker rm -f otelcol || true
+

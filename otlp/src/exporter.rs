@@ -6,23 +6,12 @@
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{mpsc, RwLock};
-use tokio::time::{
-    sleep, 
-    //timeout,
-};
-//use futures::stream::{StreamExt, FuturesUnordered};
-//use futures::FutureExt;
+use tokio::time::sleep;
 use crate::config::OtlpConfig;
 use crate::data::TelemetryData;
-use crate::error::{
-    Result, ExportError, 
-    //OtlpError,
-};
-use crate::transport::{
-    //Transport, 
-    //TransportFactory, 
-    TransportPool,
-};
+use crate::error::{Result, ExportError};
+use crate::transport::TransportPool;
+use crate::resilience::{ResilienceManager, ResilienceConfig};
 use crate::utils::{
     RetryUtils, 
     PerformanceUtils,
@@ -122,24 +111,43 @@ pub struct ExporterMetrics {
 pub struct OtlpExporter {
     config: OtlpConfig,
     transport_pool: Arc<RwLock<Option<TransportPool>>>,
-    export_queue: mpsc::UnboundedSender<Vec<TelemetryData>>,
+    export_queue: mpsc::Sender<Vec<TelemetryData>>,
+    export_receiver: Arc<RwLock<Option<mpsc::Receiver<Vec<TelemetryData>>>>>,
+    export_queue_capacity: usize,
     metrics: Arc<RwLock<ExporterMetrics>>,
     is_initialized: Arc<RwLock<bool>>,
     is_shutdown: Arc<RwLock<bool>>,
+    resilience_manager: Arc<ResilienceManager>,
 }
 
 impl OtlpExporter {
     /// 创建新的导出器
     pub fn new(config: OtlpConfig) -> Self {
-        let (export_tx, _export_rx) = mpsc::unbounded_channel();
+        // 使用有界通道以支持背压
+        let capacity = config.batch_config.max_queue_size;
+        let (export_tx, export_rx) = mpsc::channel(capacity);
+
+        // 创建弹性管理器
+        let resilience_config = ResilienceConfig {
+            timeout: crate::resilience::TimeoutConfig {
+                connect_timeout: config.connect_timeout,
+                operation_timeout: config.request_timeout,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let resilience_manager = Arc::new(ResilienceManager::new(resilience_config));
 
         Self {
             config,
             transport_pool: Arc::new(RwLock::new(None)),
             export_queue: export_tx,
+            export_receiver: Arc::new(RwLock::new(Some(export_rx))),
+            export_queue_capacity: capacity,
             metrics: Arc::new(RwLock::new(ExporterMetrics::default())),
             is_initialized: Arc::new(RwLock::new(false)),
             is_shutdown: Arc::new(RwLock::new(false)),
+            resilience_manager,
         }
     }
 
@@ -205,6 +213,39 @@ impl OtlpExporter {
         result
     }
 
+    /// 入队异步导出（背压策略：队列满则返回资源不足错误）
+    pub async fn export_async_enqueue(&self, data: Vec<TelemetryData>) -> Result<()> {
+        if data.is_empty() {
+            return Ok(());
+        }
+
+        // 检查关闭
+        {
+            let is_shutdown = self.is_shutdown.read().await;
+            if *is_shutdown {
+                return Err(ExportError::Shutdown.into());
+            }
+        }
+
+        // 尝试入队（非阻塞优先）
+        match self.export_queue.try_send(data) {
+            Ok(()) => {
+                let mut metrics = self.metrics.write().await;
+                // 无法直接读取通道长度，使用“未知”策略，依赖消费侧更新
+                metrics.current_queue_size = metrics.current_queue_size.saturating_add(1);
+                Ok(())
+            }
+            Err(mpsc::error::TrySendError::Full(_payload)) => {
+                Err(crate::error::OtlpError::resource_exhausted(
+                    "export_queue",
+                    self.export_queue_capacity,
+                    self.export_queue_capacity + 1,
+                ))
+            }
+            Err(mpsc::error::TrySendError::Closed(_)) => Err(ExportError::Shutdown.into()),
+        }
+    }
+
     /// 导出单个数据
     pub async fn export_single(&self, data: TelemetryData) -> Result<ExportResult> {
         self.export(vec![data]).await
@@ -233,42 +274,33 @@ impl OtlpExporter {
 
     /// 启动导出任务
     async fn start_export_task(&self) {
-        let _config = self.config.clone();
         let transport_pool = self.transport_pool.clone();
         let metrics = self.metrics.clone();
         let is_shutdown = self.is_shutdown.clone();
 
-        tokio::spawn(async move {
-            let mut export_queue = mpsc::unbounded_channel::<Vec<TelemetryData>>().1;
-            
-            loop {
-                // 检查是否应该关闭
-                {
-                    let shutdown = is_shutdown.read().await;
-                    if *shutdown {
-                        break;
-                    }
-                }
+        // 取出接收端，移动到任务中
+        let mut receiver_opt = self.export_receiver.write().await.take();
+        if receiver_opt.is_none() {
+            return;
+        }
+        let mut rx = receiver_opt.take().unwrap();
 
-                // 处理导出队列
-                if let Some(data) = export_queue.recv().await {
-                    if let Some(pool) = transport_pool.write().await.as_mut() {
-                        let result = Self::export_batch(pool, data.clone()).await;
-                        
-                        // 更新指标
-                        let mut metrics_guard = metrics.write().await;
-                        metrics_guard.total_exports += 1;
-                        if let Ok(export_result) = &result {
-                            if export_result.is_success() {
-                                metrics_guard.successful_exports += 1;
-                            } else {
-                                metrics_guard.failed_exports += 1;
-                            }
-                        } else {
-                            metrics_guard.failed_exports += 1;
+        tokio::spawn(async move {
+            loop {
+                // 如果已关闭则退出
+                if *is_shutdown.read().await { break; }
+
+                match rx.recv().await {
+                    Some(batch) => {
+                        if let Some(pool) = transport_pool.write().await.as_mut() {
+                            let _ = OtlpExporter::export_batch(pool, batch.clone()).await;
+                            let mut m = metrics.write().await;
+                            m.total_exports += 1;
+                            m.total_data_exported += batch.len() as u64;
+                            m.current_queue_size = m.current_queue_size.saturating_sub(1);
                         }
-                        metrics_guard.total_data_exported += data.len() as u64;
                     }
+                    None => break,
                 }
             }
         });

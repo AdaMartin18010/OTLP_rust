@@ -184,6 +184,18 @@ pub struct OtlpConfig {
     pub sampling_ratio: f64,
     /// 是否启用调试模式
     pub debug: bool,
+    /// 多租户租户ID键（来自 resource_attributes）
+    pub tenant_id_key: Option<String>,
+    /// 每租户每秒QPS上限（简单滑动窗口）
+    pub per_tenant_qps_limit: Option<u64>,
+    /// 每租户令牌桶容量（启用则优先于QPS限制）
+    pub per_tenant_bucket_capacity: Option<u64>,
+    /// 每租户令牌桶每秒补充速率
+    pub per_tenant_refill_per_sec: Option<u64>,
+    /// 错误优先采样下限（当 Span Status=Error 时的最小采样率）
+    pub error_sampling_floor: Option<f64>,
+    /// 是否启用审计日志（采样/限流丢弃将记录）
+    pub audit_enabled: bool,
 }
 
 impl Default for OtlpConfig {
@@ -206,6 +218,12 @@ impl Default for OtlpConfig {
             enable_logs: true,
             sampling_ratio: 1.0,
             debug: false,
+            tenant_id_key: None,
+            per_tenant_qps_limit: None,
+            per_tenant_bucket_capacity: None,
+            per_tenant_refill_per_sec: None,
+            error_sampling_floor: None,
+            audit_enabled: true,
         }
     }
 }
@@ -268,6 +286,37 @@ impl OtlpConfig {
     /// 启用调试模式
     pub fn with_debug(mut self, debug: bool) -> Self {
         self.debug = debug;
+        self
+    }
+
+    /// 设置租户ID键（来自 resource_attributes）
+    pub fn with_tenant_id_key(mut self, key: impl Into<String>) -> Self {
+        self.tenant_id_key = Some(key.into());
+        self
+    }
+
+    /// 设置每租户QPS上限（每秒）
+    pub fn with_per_tenant_qps_limit(mut self, limit: u64) -> Self {
+        self.per_tenant_qps_limit = Some(limit);
+        self
+    }
+
+    /// 设置每租户令牌桶（容量与每秒补充）
+    pub fn with_per_tenant_token_bucket(mut self, capacity: u64, refill_per_sec: u64) -> Self {
+        self.per_tenant_bucket_capacity = Some(capacity);
+        self.per_tenant_refill_per_sec = Some(refill_per_sec);
+        self
+    }
+
+    /// 设置错误优先采样下限（0.0-1.0）
+    pub fn with_error_sampling_floor(mut self, floor: f64) -> Self {
+        self.error_sampling_floor = Some(floor.max(0.0).min(1.0));
+        self
+    }
+
+    /// 启用/关闭审计日志
+    pub fn with_audit_enabled(mut self, enabled: bool) -> Self {
+        self.audit_enabled = enabled;
         self
     }
 
@@ -381,6 +430,21 @@ impl OtlpConfig {
             TransportProtocol::Http => format!("{}/v1/traces", self.endpoint),
             TransportProtocol::HttpProtobuf => format!("{}/v1/traces", self.endpoint),
         }
+    }
+
+    /// 获取HTTP Traces端点
+    pub fn http_traces_endpoint(&self) -> String {
+        format!("{}/v1/traces", self.endpoint)
+    }
+
+    /// 获取HTTP Metrics端点
+    pub fn http_metrics_endpoint(&self) -> String {
+        format!("{}/v1/metrics", self.endpoint)
+    }
+
+    /// 获取HTTP Logs端点
+    pub fn http_logs_endpoint(&self) -> String {
+        format!("{}/v1/logs", self.endpoint)
     }
 
     /// 是否启用压缩

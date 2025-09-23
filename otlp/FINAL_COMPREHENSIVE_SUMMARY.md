@@ -56,14 +56,14 @@
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                     OTLP分层架构                            │
+│                     OTLP分层架构                             │
 ├─────────────────────────────────────────────────────────────┤
-│  客户端层    │  OtlpClient (统一API接口)                   │
-│  处理层      │  OtlpProcessor (数据预处理)                 │
-│  导出层      │  OtlpExporter (数据导出)                    │
-│  传输层      │  Transport (gRPC/HTTP)                      │
-│  数据层      │  TelemetryData (数据模型)                   │
-│  配置层      │  OtlpConfig (配置管理)                      │
+│  客户端层    │  OtlpClient (统一API接口)                     │
+│  处理层      │  OtlpProcessor (数据预处理)                   │
+│  导出层      │  OtlpExporter (数据导出)                      │
+│  传输层      │  Transport (gRPC/HTTP)                       │
+│  数据层      │  TelemetryData (数据模型)                     │
+│  配置层      │  OtlpConfig (配置管理)                        │
 └─────────────────────────────────────────────────────────────┘
 ```
 

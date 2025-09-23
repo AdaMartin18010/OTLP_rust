@@ -21,6 +21,7 @@ use crate::error::{Result,
      ProcessingError, 
      //OtlpError,
 };
+use crate::resilience::{ResilienceManager, ResilienceConfig};
 use crate::utils::{
     //BatchUtils, 
     TimeUtils, 
@@ -224,14 +225,18 @@ impl DataAggregator for MetricAggregator {
 }
 
 /// OTLP处理器
+#[allow(dead_code)]
 pub struct OtlpProcessor {
     config: ProcessingConfig,
     input_queue: mpsc::UnboundedSender<TelemetryData>,
+    input_receiver: Arc<RwLock<Option<mpsc::UnboundedReceiver<TelemetryData>>>>,
+    output_sender: mpsc::UnboundedSender<Vec<TelemetryData>>,
     output_queue: mpsc::UnboundedReceiver<Vec<TelemetryData>>,
     filters: Vec<Box<dyn DataFilter>>,
     aggregators: Vec<Box<dyn DataAggregator>>,
     is_running: Arc<RwLock<bool>>,
     metrics: Arc<RwLock<ProcessorMetrics>>,
+    resilience_manager: Arc<ResilienceManager>,
 }
 
 /// 处理器指标
@@ -256,17 +261,24 @@ pub struct ProcessorMetrics {
 impl OtlpProcessor {
     /// 创建新的处理器
     pub fn new(config: ProcessingConfig) -> Self {
-        let (input_tx, _input_rx) = mpsc::unbounded_channel();
-        let (_output_tx, output_rx) = mpsc::unbounded_channel();
+        let (input_tx, input_rx) = mpsc::unbounded_channel();
+        let (output_tx, output_rx) = mpsc::unbounded_channel();
+
+        // 创建弹性管理器
+        let resilience_config = ResilienceConfig::default();
+        let resilience_manager = Arc::new(ResilienceManager::new(resilience_config));
 
         Self {
             config,
             input_queue: input_tx,
+            input_receiver: Arc::new(RwLock::new(Some(input_rx))),
+            output_sender: output_tx,
             output_queue: output_rx,
             filters: Vec::new(),
             aggregators: Vec::new(),
             is_running: Arc::new(RwLock::new(false)),
             metrics: Arc::new(RwLock::new(ProcessorMetrics::default())),
+            resilience_manager,
         }
     }
 
@@ -292,16 +304,21 @@ impl OtlpProcessor {
         drop(is_running);
 
         // 启动处理任务
-        let _config = self.config.clone();
-        // 注意：这里简化处理，实际实现中需要更复杂的克隆逻辑
-        // let filters = self.filters.clone();
-        // let aggregators = self.aggregators.clone();
-        let _metrics = self.metrics.clone();
-        let _is_running = self.is_running.clone();
+        let config = self.config.clone();
+        // 简化：暂不从 self.filters 克隆，使用空过滤器集合
+        let filters: Vec<Box<dyn DataFilter>> = Vec::new();
+        let aggregators: Vec<Box<dyn DataAggregator>> = Vec::new();
+        let metrics = self.metrics.clone();
+        let is_running = self.is_running.clone();
+        let mut input_rx = self.input_receiver.write().await.take();
+        if input_rx.is_none() {
+            return Ok(());
+        }
+        let mut input_rx = input_rx.take().unwrap();
+        let output_tx = self.output_sender.clone();
 
         tokio::spawn(async move {
-            // 简化处理循环，实际实现中需要传入filters和aggregators
-            // Self::processing_loop(config, filters, aggregators, metrics, is_running).await;
+            Self::processing_loop_internal(config, filters, aggregators, metrics, is_running, &mut input_rx, output_tx).await;
         });
 
         Ok(())
@@ -334,13 +351,14 @@ impl OtlpProcessor {
     }
 
     /// 处理循环
-    #[allow(dead_code)]
-    async fn processing_loop(
+    async fn processing_loop_internal(
         config: ProcessingConfig,
         filters: Vec<Box<dyn DataFilter>>,
         aggregators: Vec<Box<dyn DataAggregator>>,
         metrics: Arc<RwLock<ProcessorMetrics>>,
         is_running: Arc<RwLock<bool>>,
+        input_rx: &mut mpsc::UnboundedReceiver<TelemetryData>,
+        output_tx: mpsc::UnboundedSender<Vec<TelemetryData>>,
     ) {
         let mut batch = Vec::with_capacity(config.batch_size);
         let mut batch_timer = interval(config.batch_timeout);
@@ -356,25 +374,51 @@ impl OtlpProcessor {
             }
 
             tokio::select! {
-                // 处理定时批处理
+                // 定时触发批次发送
                 _ = batch_timer.tick() => {
                     if !batch.is_empty() {
                         let (processed_batch, processing_time) = PerformanceUtils::measure_time(async {
                             Self::process_batch(batch.clone(), &filters, &aggregators).await
                         }).await;
 
-                        if let Ok(_processed_batch) = processed_batch {
-                            // 更新指标
+                        if let Ok(processed) = processed_batch {
+                            let _ = output_tx.send(processed);
                             let mut metrics_guard = metrics.write().await;
                             metrics_guard.total_processed += batch.len() as u64;
                             metrics_guard.batch_count += 1;
                             metrics_guard.processing_latency = processing_time;
-                            metrics_guard.average_batch_size = 
-                                (metrics_guard.average_batch_size * (metrics_guard.batch_count - 1) as f64 + batch.len() as f64) 
+                            metrics_guard.average_batch_size =
+                                (metrics_guard.average_batch_size * (metrics_guard.batch_count - 1) as f64 + batch.len() as f64)
                                 / metrics_guard.batch_count as f64;
                         }
 
                         batch.clear();
+                    }
+                }
+                // 输入数据累积
+                maybe_item = input_rx.recv() => {
+                    if let Some(item) = maybe_item {
+                        batch.push(item);
+                        if batch.len() >= config.batch_size {
+                            let (processed_batch, processing_time) = PerformanceUtils::measure_time(async {
+                                Self::process_batch(batch.clone(), &filters, &aggregators).await
+                            }).await;
+
+                            if let Ok(processed) = processed_batch {
+                                let _ = output_tx.send(processed);
+                                let mut metrics_guard = metrics.write().await;
+                                metrics_guard.total_processed += batch.len() as u64;
+                                metrics_guard.batch_count += 1;
+                                metrics_guard.processing_latency = processing_time;
+                                metrics_guard.average_batch_size =
+                                    (metrics_guard.average_batch_size * (metrics_guard.batch_count - 1) as f64 + batch.len() as f64)
+                                    / metrics_guard.batch_count as f64;
+                            }
+                            batch.clear();
+                        }
+                    } else {
+                        // 通道关闭
+                        break;
                     }
                 }
             }
@@ -390,8 +434,8 @@ impl OtlpProcessor {
         // 应用过滤器
         if !filters.is_empty() {
             batch.retain(|data| {
-                    filters.iter().all(|filter| filter.filter(data))
-                });
+                filters.iter().all(|filter| filter.filter(data))
+            });
         }
 
         // 应用聚合器
@@ -401,6 +445,14 @@ impl OtlpProcessor {
 
         Ok(batch)
     }
+}
+
+/// 始终通过的过滤器占位
+#[allow(dead_code)]
+struct AlwaysPassFilter;
+impl DataFilter for AlwaysPassFilter {
+    fn filter(&self, _data: &TelemetryData) -> bool { true }
+    fn name(&self) -> &str { "always_pass" }
 }
 
 /// 批处理管理器

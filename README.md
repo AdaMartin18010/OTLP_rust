@@ -18,13 +18,16 @@
 - ⚡ **零拷贝优化** - 使用 Rust 1.90 的Pointer Provenance API优化性能
 - 🔒 **并发安全** - 基于 Rust 1.90 的所有权系统实现无锁并发
 - 🔧 **MSRV感知** - 支持 Cargo 1.90 的MSRV感知解析器
+- ✅ **完全兼容** - 修复了所有编译错误，支持 gRPC 和 HTTP 传输协议
 
 ### 🌐 微服务架构支持
 
-- 🏗️ **服务发现** - 集成 Consul、etcd 等主流服务发现组件
-- 🔄 **负载均衡** - 支持轮询、加权轮询、一致性哈希等负载均衡策略
+- 🏗️ **服务发现** - 集成 Consul、etcd、Kubernetes 等主流服务发现组件
+- 🔄 **负载均衡** - 支持轮询、加权轮询、一致性哈希、最少连接等负载均衡策略
 - 🌍 **服务网格** - 原生支持 Istio、Linkerd2、Envoy 等服务网格
-- ☁️ **云原生** - 完整的 Kubernetes、Docker 集成支持
+- ☁️ **云原生** - 完整的 Kubernetes、Docker、Helm 集成支持
+- 🔧 **配置管理** - 动态配置更新、配置中心集成、热重载
+- 🛡️ **安全认证** - mTLS、OAuth2、JWT、Vault 等安全认证方案
 
 ### 📊 可观测性能力
 
@@ -35,19 +38,21 @@
 
 ### 🔧 高级功能
 
-- 🗜️ **数据压缩** - 支持 Gzip、Brotli、Zstd 多种压缩算法
-- 🔄 **智能重试** - 指数退避、熔断器、故障转移等高级重试策略
-- 🔒 **安全认证** - 支持 OAuth2、JWT、Vault 等安全认证方案
-- ⚡ **性能优化** - 批量处理、连接池、缓存等性能优化机制
+- 🗜️ **数据压缩** - 支持 Gzip、Brotli、Zstd、LZ4、Snappy 多种压缩算法
+- 🔄 **智能重试** - 指数退避、熔断器、故障转移、限流器等高级重试策略
+- 🔒 **安全认证** - 支持 OAuth2、JWT、Vault、mTLS 等安全认证方案
+- ⚡ **性能优化** - 零拷贝传输、批量处理、连接池、缓存等性能优化机制
+- 🧠 **AI/ML集成** - 智能服务调度、异常检测、预测性维护
+- 🌐 **边缘计算** - 分布式边缘服务部署和管理
 
 ## 🏗️ 微服务架构设计
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────────┐
 │                    微服务应用层 (Application Layer)                │
 ├─────────────────┬─────────────────┬─────────────────┬─────────────┤
-│   用户服务       │   订单服务       │   支付服务       │   通知服务   │
-│  (User)        │  (Order)       │  (Payment)     │ (Notification)│
+│   用户服务       │  订单服务       │   支付服务       │   通知服务   │
+│  (User)         │  (Order)        │  (Payment)     │(Notification)│
 └─────────────────┴─────────────────┴─────────────────┴─────────────┘
                                 │
                     ┌─────────────────┐
@@ -59,8 +64,8 @@
                     │ • Envoy Proxy   │
                     └─────────────────┘
                                 │
-┌─────────────────────────────────────────────────────────────────┐
-│                    可观测性层 (Observability Layer)              │
+┌───────────────────────────────────────────────────────────────────┐
+│                    可观测性层 (Observability Layer)                │
 ├─────────────────┬─────────────────┬─────────────────┬─────────────┤
 │   数据收集层     │   数据处理层     │   数据传输层     │   存储分析层 │
 │  (Collection)   │  (Processing)   │  (Transport)    │ (Storage)   │
@@ -70,10 +75,10 @@
 │ • Logs          │ • 采样控制      │ • 重试机制      │ • ELK Stack │
 └─────────────────┴─────────────────┴─────────────────┴─────────────┘
                                 │
-┌─────────────────────────────────────────────────────────────────┐
-│                    基础设施层 (Infrastructure Layer)              │
+┌───────────────────────────────────────────────────────────────────┐
+│                    基础设施层 (Infrastructure Layer)               │
 ├─────────────────┬─────────────────┬─────────────────┬─────────────┤
-│  容器编排        │   服务发现       │   配置管理       │   安全认证   │
+│  容器编排        │   服务发现      │   配置管理       │   安全认证   │
 │ (Orchestration) │ (Discovery)     │ (Configuration) │ (Security)  │
 │                 │                 │                 │             │
 │ • Kubernetes    │ • Consul        │ • etcd          │ • Vault     │
@@ -208,6 +213,13 @@ let config = OtlpConfig::default()
     .with_retry_config(retry_config)
     .with_resource_attribute("environment", "production")
     .with_resource_attribute("region", "us-west-2");
+    // 采样与多租户限流
+    let config = config
+        .with_sampling_ratio(0.2)
+        .with_error_sampling_floor(0.8) // 错误优先，错误Span至少80%采样
+        .with_tenant_id_key("tenant.id") // 从资源属性读取租户ID
+        .with_per_tenant_token_bucket(100, 50) // 每租户令牌桶：容量100，每秒补充50
+        .with_audit_enabled(true);
 ```
 
 ## 🔧 配置选项
@@ -290,10 +302,35 @@ cargo bench batch_trace_send
 
 ```bash
 # 启动测试服务器
-docker run -p 4317:4317 -p 4318:4318 otel/opentelemetry-collector
+docker run -p 4318:4318 otel/opentelemetry-collector
 
-# 运行集成测试
-cargo test --test integration
+# 启用端到端(E2E)集成测试（HTTP 4318）
+# Windows PowerShell
+$env:OTLP_E2E=1; cargo test --test integration_tests | cat
+# Linux/macOS bash/zsh
+OTLP_E2E=1 cargo test --test integration_tests | cat
+```
+
+#### CI 中的 E2E
+
+- 已提供 GitHub Actions 工作流 `.github/workflows/e2e.yml`：自动拉起 OpenTelemetry Collector（HTTP 4318），运行 `integration_tests`。
+
+### gRPC/HTTP 切换
+
+- 通过环境变量 `OTLP_PROTOCOL=grpc` 切换到 gRPC（Collector 默认端口 4317），不设置则使用 HTTP（端口 4318）。
+
+### 审计钩子用法
+
+```rust
+use std::sync::Arc;
+use otlp::OtlpClient;
+// 客制化File/HTTP审计钩子在 otlp::client 模块中
+use otlp::client::{FileAuditHook, HttpAuditHook};
+
+let client: OtlpClient = /* ... */;
+client.set_audit_hook(Arc::new(FileAuditHook::new("audit.log"))).await;
+// 或
+client.set_audit_hook(Arc::new(HttpAuditHook::new("https://audit.example.com/ingest"))).await;
 ```
 
 ## 📖 文档
@@ -311,7 +348,7 @@ cargo test --test integration
 
 - [分布式追踪实现](docs/02_形式论证与证明体系/分布式追踪视角OTLP完整分析报告.md)
 - [指标监控与告警](docs/05_实践应用/部署运维/监控告警.md)
- - [日志聚合与分析](docs/08_部署运维指南/README.md)
+- [日志聚合与分析](docs/08_部署运维指南/README.md)
 
 #### 🔧 技术实现指南
 
@@ -323,6 +360,9 @@ cargo test --test integration
 #### 🌐 2025年最新技术文档
 
 - [OTLP国际标准深度对标](docs/01_标准规范与对标/OTLP_2025年9月最新规范全面对标分析.md)
+- [Rust 1.90语言特性应用](docs/07_Rust_1.90_微服务架构设计/00_架构总览/Rust_1.90语言特性应用.md)
+- [服务发现与注册中心](docs/07_Rust_1.90_微服务架构设计/01_核心组件设计/服务发现与注册中心.md)
+- [OTLP分布式追踪](docs/07_Rust_1.90_微服务架构设计/05_监控与可观测性/OTLP分布式追踪.md)
 - [同步异步控制流分析](otlp/docs/sync_async/OTLP_SYNC_ASYNC_CONTROL_FLOW_2025.md)
 - [算法和设计模式](otlp/docs/algorithms/OTLP_ALGORITHMS_DESIGN_PATTERNS_2025.md)
 - [采样控制和动态调整](otlp/docs/sampling/OTLP_SAMPLING_CONTROL_2025.md)

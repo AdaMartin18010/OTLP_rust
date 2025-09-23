@@ -14,6 +14,7 @@ use otlp::{
 };
 use std::time::Duration;
 use tokio::time::timeout;
+use std::env;
 
 /// 测试客户端创建和初始化
 #[tokio::test]
@@ -36,9 +37,19 @@ async fn test_client_creation_and_initialization() {
 /// 测试追踪数据发送
 #[tokio::test]
 async fn test_trace_sending() {
+    if env::var("OTLP_E2E").unwrap_or_default() != "1" {
+        eprintln!("skip e2e (set OTLP_E2E=1 to enable)");
+        return;
+    }
+    let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
+    let (endpoint, protocol) = if use_grpc {
+        ("http://localhost:4317", TransportProtocol::Grpc)
+    } else {
+        ("http://localhost:4318", TransportProtocol::Http)
+    };
     let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Http);
+        .with_endpoint(endpoint)
+        .with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -60,9 +71,13 @@ async fn test_trace_sending() {
 /// 测试指标数据发送
 #[tokio::test]
 async fn test_metric_sending() {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Http);
+    if env::var("OTLP_E2E").unwrap_or_default() != "1" {
+        eprintln!("skip e2e (set OTLP_E2E=1 to enable)");
+        return;
+    }
+    let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
+    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
+    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -83,9 +98,13 @@ async fn test_metric_sending() {
 /// 测试日志数据发送
 #[tokio::test]
 async fn test_log_sending() {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Http);
+    if env::var("OTLP_E2E").unwrap_or_default() != "1" {
+        eprintln!("skip e2e (set OTLP_E2E=1 to enable)");
+        return;
+    }
+    let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
+    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
+    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -107,9 +126,13 @@ async fn test_log_sending() {
 /// 测试批量数据发送
 #[tokio::test]
 async fn test_batch_sending() {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Http);
+    if env::var("OTLP_E2E").unwrap_or_default() != "1" {
+        eprintln!("skip e2e (set OTLP_E2E=1 to enable)");
+        return;
+    }
+    let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
+    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
+    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -132,9 +155,13 @@ async fn test_batch_sending() {
 /// 测试并发数据发送
 #[tokio::test]
 async fn test_concurrent_sending() {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Http);
+    if env::var("OTLP_E2E").unwrap_or_default() != "1" {
+        eprintln!("skip e2e (set OTLP_E2E=1 to enable)");
+        return;
+    }
+    let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
+    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
+    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -176,8 +203,12 @@ async fn test_concurrent_sending() {
 /// 测试客户端指标
 #[tokio::test]
 async fn test_client_metrics() {
+    if env::var("OTLP_E2E").unwrap_or_default() != "1" {
+        eprintln!("skip e2e (set OTLP_E2E=1 to enable)");
+        return;
+    }
     let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
+        .with_endpoint("http://localhost:4318")
         .with_protocol(TransportProtocol::Http);
 
     let client = OtlpClient::new(config).await.unwrap();
@@ -202,6 +233,10 @@ async fn test_client_metrics() {
 /// 测试客户端关闭
 #[tokio::test]
 async fn test_client_shutdown() {
+    if env::var("OTLP_E2E").unwrap_or_default() != "1" {
+        eprintln!("skip e2e (set OTLP_E2E=1 to enable)");
+        return;
+    }
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Http);
@@ -242,9 +277,9 @@ async fn test_config_validation() {
 /// 测试超时处理
 #[tokio::test]
 async fn test_timeout_handling() {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Http)
+    let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
+    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
+    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol)
         .with_request_timeout(Duration::from_millis(100)); // 很短的超时
 
     let client = OtlpClient::new(config).await.unwrap();
@@ -289,9 +324,9 @@ async fn test_error_handling() {
 /// 测试数据验证
 #[tokio::test]
 async fn test_data_validation() {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Http);
+    let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
+    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
+    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;

@@ -2,7 +2,7 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.90+-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
-[![Crates.io](https://img.shields.io/crates/v/c21_otlp.svg)](https://crates.io/crates/c21_otlp)
+[![Crates.io](https://img.shields.io/crates/v/otlp.svg)](https://crates.io/crates/otlp)
 
 一个基于Rust 1.90语言特性的OpenTelemetry协议(OTLP)完整实现，支持同步和异步结合的遥测数据收集、处理和传输。
 
@@ -29,7 +29,7 @@
 
 ```toml
 [dependencies]
-c21_otlp = "0.1.0"
+otlp = "0.1.0"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
@@ -38,9 +38,9 @@ tokio = { version = "1.0", features = ["full"] }
 ### 基本使用
 
 ```rust
-use c21_otlp::{OtlpClient, OtlpConfig, TelemetryData};
-use c21_otlp::data::{LogSeverity, StatusCode};
-use c21_otlp::transport::TransportProtocol;
+use otlp::{OtlpClient, OtlpConfig, TelemetryData};
+use otlp::data::{LogSeverity, StatusCode};
+use otlp::transport::TransportProtocol;
 use std::time::Duration;
 
 #[tokio::main]
@@ -359,7 +359,7 @@ cargo test --test integration
 
 如果您遇到问题或有任何建议，请：
 
-1. 查看 [Issues](https://github.com/your-repo/c21_otlp/issues)
+1. 查看 [Issues](https://github.com/your-repo/otlp/issues)
 2. 创建新的 Issue
 3. 联系维护者
 

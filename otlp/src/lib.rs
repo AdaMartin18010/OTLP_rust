@@ -72,6 +72,7 @@ pub mod benchmarks;
 pub mod ai_ml;
 pub mod edge_computing;
 pub mod blockchain;
+pub mod resilience;
 
 // 重新导出主要类型
 pub use client::{OtlpClient, OtlpClientBuilder, TraceBuilder, MetricBuilder, LogBuilder};
@@ -82,6 +83,7 @@ pub use exporter::{OtlpExporter, ExportResult, ExporterMetrics};
 pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use transport::{Transport, GrpcTransport, HttpTransport, TransportFactory};
 pub use utils::{CompressionUtils, TimeUtils, StringUtils, HashUtils, BatchUtils, RetryUtils, PerformanceUtils};
+pub use resilience::{ResilienceManager, ResilienceConfig, ResilienceError};
 
 // 重新导出微服务相关类型
 pub use microservices::{

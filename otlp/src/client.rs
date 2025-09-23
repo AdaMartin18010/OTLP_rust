@@ -2,25 +2,18 @@
 //! 
 //! 提供OTLP客户端的高级接口，整合处理器、导出器和传输层，
 //! 利用Rust 1.90的异步特性实现完整的OTLP功能。
-#[allow(unused_imports)]
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use tokio::time::{
-    interval, 
-    //sleep,
-};
-//use futures::stream::{StreamExt, FuturesUnordered};
-//use futures::FutureExt;
+use tokio::time::interval;
 use crate::config::OtlpConfig;
-use crate::data::{
-    TelemetryData, 
-    //TelemetryDataType,
-};
+use crate::data::TelemetryData;
 use crate::error::{Result, OtlpError};
 use crate::exporter::{OtlpExporter, ExportResult, ExporterMetrics};
 use crate::processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 use crate::config::TransportProtocol;
+use crate::resilience::{ResilienceManager, ResilienceConfig};
+use std::collections::HashMap;
 
 /// OTLP客户端
 pub struct OtlpClient {
@@ -30,6 +23,12 @@ pub struct OtlpClient {
     is_initialized: Arc<RwLock<bool>>,
     is_shutdown: Arc<RwLock<bool>>,
     metrics: Arc<RwLock<ClientMetrics>>,
+    // 简单的每租户QPS计数器（1s窗口）
+    tenant_counters: Arc<RwLock<TenantCounters>>,
+    // 审计钩子
+    audit_hook: Arc<RwLock<Option<Arc<dyn AuditHook>>>>,
+    // 弹性管理器
+    resilience_manager: Arc<ResilienceManager>,
 }
 
 /// 客户端指标
@@ -51,6 +50,83 @@ pub struct ClientMetrics {
     pub processor_metrics: ProcessorMetrics,
 }
 
+struct TenantCounters {
+    last_window_start: std::time::Instant,
+    per_tenant_counts: HashMap<String, u64>,
+    per_tenant_tokens: HashMap<String, (u64, std::time::Instant)>,
+}
+
+impl Default for TenantCounters {
+    fn default() -> Self {
+        Self {
+            last_window_start: std::time::Instant::now(),
+            per_tenant_counts: HashMap::new(),
+            per_tenant_tokens: HashMap::new(),
+        }
+    }
+}
+
+/// 审计钩子接口
+pub trait AuditHook: Send + Sync {
+    fn record(&self, event: &str, metadata: &HashMap<String, String>);
+}
+
+/// 默认控制台审计钩子
+pub struct StdoutAuditHook;
+
+impl AuditHook for StdoutAuditHook {
+    fn record(&self, event: &str, metadata: &HashMap<String, String>) {
+        println!("[OTLP AUDIT] event={} meta={}", event, serde_json::to_string(metadata).unwrap_or_default());
+    }
+}
+
+/// 本地文件审计钩子（追加 JSON 行）
+pub struct FileAuditHook {
+    path: String,
+}
+
+impl FileAuditHook {
+    pub fn new(path: impl Into<String>) -> Self { Self { path: path.into() } }
+}
+
+impl AuditHook for FileAuditHook {
+    fn record(&self, event: &str, metadata: &HashMap<String, String>) {
+        let line = serde_json::json!({ "event": event, "meta": metadata });
+        let path = self.path.clone();
+        let text = format!("{}\n", line.to_string());
+        // 异步落盘，不阻塞主流程
+        tokio::spawn(async move {
+            use tokio::io::AsyncWriteExt;
+            if let Ok(mut f) = tokio::fs::OpenOptions::new().create(true).append(true).open(path).await {
+                let _ = f.write_all(text.as_bytes()).await;
+            }
+        });
+    }
+}
+
+/// HTTP 审计钩子（POST JSON 到指定URL）
+pub struct HttpAuditHook {
+    url: String,
+    client: reqwest::Client,
+}
+
+impl HttpAuditHook {
+    pub fn new(url: impl Into<String>) -> Self {
+        Self { url: url.into(), client: reqwest::Client::new() }
+    }
+}
+
+impl AuditHook for HttpAuditHook {
+    fn record(&self, event: &str, metadata: &HashMap<String, String>) {
+        let url = self.url.clone();
+        let payload = serde_json::json!({ "event": event, "meta": metadata });
+        let client = self.client.clone();
+        tokio::spawn(async move {
+            let _ = client.post(url).json(&payload).send().await;
+        });
+    }
+}
+
 impl OtlpClient {
     /// 创建新的OTLP客户端
     pub async fn new(config: OtlpConfig) -> Result<Self> {
@@ -59,6 +135,17 @@ impl OtlpClient {
 
         let exporter = Arc::new(OtlpExporter::new(config.clone()));
 
+        // 创建弹性管理器
+        let resilience_config = ResilienceConfig {
+            timeout: crate::resilience::TimeoutConfig {
+                connect_timeout: config.connect_timeout,
+                operation_timeout: config.request_timeout,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let resilience_manager = Arc::new(ResilienceManager::new(resilience_config));
+
         Ok(Self {
             config,
             exporter,
@@ -66,6 +153,9 @@ impl OtlpClient {
             is_initialized: Arc::new(RwLock::new(false)),
             is_shutdown: Arc::new(RwLock::new(false)),
             metrics: Arc::new(RwLock::new(ClientMetrics::default())),
+            tenant_counters: Arc::new(RwLock::new(TenantCounters::default())),
+            audit_hook: Arc::new(RwLock::new(None)),
+            resilience_manager,
         })
     }
 
@@ -115,6 +205,19 @@ impl OtlpClient {
         self.check_initialized().await?;
         self.check_shutdown().await?;
 
+        // 采样（丢弃不采样的数据）
+        if !self.should_sample_for(&data) {
+            self.emit_audit("sampled_out", Some(&data)).await;
+            return Ok(ExportResult::success(0, std::time::Duration::ZERO));
+        }
+
+        // 限流：多租户QPS
+        if !self.check_tenant_qps_allow(&data).await {
+            // 审计日志
+            tracing::warn!(target: "otlp", "tenant QPS exceeded, dropping one item");
+            return Ok(ExportResult::success(0, Duration::ZERO));
+        }
+
         // 更新指标
         self.update_send_metrics(1).await;
 
@@ -141,23 +244,126 @@ impl OtlpClient {
         self.check_initialized().await?;
         self.check_shutdown().await?;
 
+        // 按采样率筛选
+        let filtered: Vec<_> = if (self.config.sampling_ratio - 1.0).abs() < f64::EPSILON {
+            data
+        } else {
+            data.into_iter()
+                .filter(|d| {
+                    let ratio = self.effective_sampling_ratio_for(d);
+                    rand::random::<f64>() < ratio
+                })
+                .collect()
+        };
+
+        if filtered.is_empty() {
+            return Ok(ExportResult::success(0, Duration::ZERO));
+        }
+
+        // 限流：多租户QPS（按首个数据的租户计数）
+        if let Some(first) = filtered.first() {
+            if !self.check_tenant_qps_allow(first).await {
+                self.emit_audit("qps_drop_batch", Some(first)).await;
+                return Ok(ExportResult::success(0, Duration::ZERO));
+            }
+        }
+
         // 更新指标
-        self.update_send_metrics(data.len()).await;
+        self.update_send_metrics(filtered.len()).await;
 
         // 处理数据
         if let Some(processor) = self.processor.read().await.as_ref() {
-            for item in &data {
+            for item in &filtered {
                 processor.process(item.clone()).await?;
             }
         }
 
         // 导出数据
-        let result = self.exporter.export(data).await?;
+        let result = self.exporter.export(filtered).await?;
 
         // 更新指标
         self.update_export_metrics(&result).await;
 
         Ok(result)
+    }
+
+    fn should_sample_for(&self, data: &TelemetryData) -> bool {
+        let ratio = self.effective_sampling_ratio_for(data);
+        if (ratio - 1.0).abs() < f64::EPSILON { return true; }
+        if ratio <= 0.0 { return false; }
+        rand::random::<f64>() < ratio
+    }
+
+    fn effective_sampling_ratio_for(&self, data: &TelemetryData) -> f64 {
+        let base = self.config.sampling_ratio.max(0.0).min(1.0);
+        if let crate::data::TelemetryContent::Trace(ref t) = data.content {
+            if t.status.code == crate::data::StatusCode::Error {
+                if let Some(floor) = self.config.error_sampling_floor {
+                    return base.max(floor);
+                }
+            }
+        }
+        base
+    }
+
+    async fn check_tenant_qps_allow(&self, data: &TelemetryData) -> bool {
+        let Some(key) = self.config.tenant_id_key.as_ref() else { return true; };
+        let tenant_id = data.resource_attributes.get(key).cloned().unwrap_or_else(|| "_unknown".to_string());
+        // 令牌桶优先
+        if let (Some(cap), Some(refill)) = (self.config.per_tenant_bucket_capacity, self.config.per_tenant_refill_per_sec) {
+            let mut counters = self.tenant_counters.write().await;
+            let entry = counters.per_tenant_tokens.entry(tenant_id).or_insert((cap, std::time::Instant::now()));
+            // refill
+            let elapsed = entry.1.elapsed().as_secs_f64();
+            let add = (elapsed * refill as f64) as u64;
+            if add > 0 {
+                entry.0 = (entry.0 + add).min(cap);
+                entry.1 = std::time::Instant::now();
+            }
+            if entry.0 == 0 { return false; }
+            entry.0 -= 1;
+            return true;
+        }
+
+        if let Some(limit) = self.config.per_tenant_qps_limit {
+            let mut counters = self.tenant_counters.write().await;
+            // 窗口滚动
+            if counters.last_window_start.elapsed() >= Duration::from_secs(1) {
+                counters.last_window_start = std::time::Instant::now();
+                counters.per_tenant_counts.clear();
+            }
+            let count = counters.per_tenant_counts.entry(tenant_id).or_insert(0);
+            if *count >= limit { return false; }
+            *count += 1;
+            return true;
+        }
+
+        true
+    }
+
+    async fn emit_audit(&self, event: &str, data: Option<&TelemetryData>) {
+        if !self.config.audit_enabled { return; }
+        let mut meta = HashMap::new();
+        if let Some(d) = data {
+            if let Some(key) = &self.config.tenant_id_key {
+                if let Some(tid) = d.resource_attributes.get(key) { meta.insert("tenant_id".to_string(), tid.clone()); }
+            }
+            meta.insert("data_type".to_string(), match d.content {
+                crate::data::TelemetryContent::Trace(_) => "trace".to_string(),
+                crate::data::TelemetryContent::Metric(_) => "metric".to_string(),
+                crate::data::TelemetryContent::Log(_) => "log".to_string(),
+            });
+        }
+        tracing::info!(target: "otlp_audit", event = %event);
+        if let Some(hook) = self.audit_hook.read().await.as_ref() {
+            hook.record(event, &meta);
+        }
+    }
+
+    /// 设置审计钩子
+    pub async fn set_audit_hook(&self, hook: Arc<dyn AuditHook>) {
+        let mut guard = self.audit_hook.write().await;
+        *guard = Some(hook);
     }
 
     /// 发送追踪数据
@@ -288,6 +494,9 @@ impl Clone for OtlpClient {
             is_initialized: self.is_initialized.clone(),
             is_shutdown: self.is_shutdown.clone(),
             metrics: self.metrics.clone(),
+            tenant_counters: self.tenant_counters.clone(),
+            audit_hook: self.audit_hook.clone(),
+            resilience_manager: self.resilience_manager.clone(),
         }
     }
 }

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: otlp
+description: OTLP Rust client demo deployment
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
