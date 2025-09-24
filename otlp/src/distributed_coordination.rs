@@ -2,6 +2,89 @@
 //!
 //! 实现跨节点的分布式错误处理协调，支持错误传播、共识机制、
 //! 分布式恢复和一致性保证。
+//!
+//! ## 核心功能
+//!
+//! - **集群管理**: 自动发现和管理集群节点
+//! - **共识协议**: 实现分布式决策和一致性保证
+//! - **错误传播**: 基于DAG的错误传播图管理
+//! - **恢复协调**: 跨节点的分布式恢复策略执行
+//! - **Gossip协议**: 高效的信息传播和同步
+//! - **负载均衡**: 智能的请求分发和资源管理
+//!
+//! ## 架构设计
+//!
+//! ```text
+//! ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+//! │   集群管理层     │    │   共识协议层     │    │   错误传播层     │
+//! │ (Cluster Mgmt) │──▶│ (Consensus)    │──▶│ (Propagation)  │
+//! │                 │    │                 │    │                 │
+//! │ • 节点发现       │    │ • Raft算法       │    │ • 传播图构建     │
+//! │ • 健康检查       │    │ • PBFT算法       │    │ • 优先级管理     │
+//! │ • 故障检测       │    │ • 简单共识       │    │ • 传播控制       │
+//! │ • 服务注册       │    │ • 投票机制       │    │ • 路径优化       │
+//! └─────────────────┘    └─────────────────┘    └─────────────────┘
+//!           │                       │                       │
+//!           ▼                       ▼                       ▼
+//! ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+//! │   恢复协调层     │    │   Gossip协议层   │    │   一致性管理层   │
+//! │ (Recovery)     │    │ (Gossip)       │    │ (Consistency)  │
+//! │                 │    │                 │    │                 │
+//! │ • 恢复策略       │    │ • 消息广播       │    │ • 强一致性       │
+//! │ • 执行协调       │    │ • 状态同步       │    │ • 最终一致性     │
+//! │ • 结果验证       │    │ • 冲突解决       │    │ • 弱一致性       │
+//! │ • 回滚机制       │    │ • 版本控制       │    │ • 版本管理       │
+//! └─────────────────┘    └─────────────────┘    └─────────────────┘
+//! ```
+//!
+//! ## 使用示例
+//!
+//! ```rust
+//! use otlp::distributed_coordination::{
+//!     DistributedErrorCoordinator, DistributedConfig, DistributedError
+//! };
+//! use otlp::error::ErrorSeverity;
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     // 创建分布式配置
+//!     let config = DistributedConfig::default();
+//!     
+//!     // 初始化协调器
+//!     let coordinator = DistributedErrorCoordinator::new(config)?;
+//!     
+//!     // 启动协调器
+//!     coordinator.start().await?;
+//!     
+//!     // 加入集群
+//!     coordinator.join_cluster("http://cluster.example.com:8080").await?;
+//!     
+//!     // 处理分布式错误
+//!     let error = DistributedError {
+//!         id: "error-001".to_string(),
+//!         error_type: "network_timeout".to_string(),
+//!         severity: ErrorSeverity::High,
+//!         message: "Network timeout occurred".to_string(),
+//!         source: "service-a".to_string(),
+//!         context: std::collections::HashMap::new(),
+//!         timestamp: std::time::SystemTime::now(),
+//!         affected_services: vec!["service-a".to_string(), "service-b".to_string()],
+//!         propagation_path: vec!["service-a".to_string()],
+//!     };
+//!     
+//!     let result = coordinator.handle_distributed_error(error).await?;
+//!     println!("协调结果: {:?}", result);
+//!     
+//!     // 获取集群状态
+//!     let status = coordinator.get_cluster_status().await?;
+//!     println!("集群状态: {:?}", status);
+//!     
+//!     // 离开集群
+//!     coordinator.leave_cluster().await?;
+//!     
+//!     Ok(())
+//! }
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};

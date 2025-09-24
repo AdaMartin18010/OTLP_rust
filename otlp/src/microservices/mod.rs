@@ -19,6 +19,7 @@ use tokio::time::sleep;
 use tracing::debug;
 
 /// 服务端点信息
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ServiceEndpoint {
     pub id: String,
@@ -32,6 +33,7 @@ pub struct ServiceEndpoint {
 
 /// 健康状态
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[allow(dead_code)]
 pub enum HealthStatus {
     Healthy,
     Unhealthy,
@@ -49,6 +51,7 @@ pub trait LoadBalancer: Send + Sync {
 }
 
 /// 轮询负载均衡器
+#[allow(dead_code)]
 pub struct RoundRobinLoadBalancer {
     current: Arc<Mutex<usize>>,
     endpoints: Arc<RwLock<Vec<ServiceEndpoint>>>,
@@ -86,6 +89,7 @@ impl LoadBalancer for RoundRobinLoadBalancer {
 }
 
 /// 加权轮询负载均衡器
+#[allow(dead_code)]
 pub struct WeightedRoundRobinLoadBalancer {
     current_weights: Arc<Mutex<HashMap<String, u32>>>,
     endpoints: Arc<RwLock<Vec<ServiceEndpoint>>>,
@@ -153,6 +157,7 @@ impl LoadBalancer for WeightedRoundRobinLoadBalancer {
 
 /// 熔断器配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct CircuitBreakerConfig {
     pub failure_threshold: u32,
     pub recovery_timeout: Duration,
@@ -171,6 +176,7 @@ impl Default for CircuitBreakerConfig {
 
 /// 熔断器状态
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum CircuitBreakerState {
     Closed,
     Open,
@@ -178,6 +184,7 @@ pub enum CircuitBreakerState {
 }
 
 /// 熔断器
+#[allow(dead_code)]
 pub struct CircuitBreaker {
     config: CircuitBreakerConfig,
     state: Arc<Mutex<CircuitBreakerState>>,
@@ -354,6 +361,7 @@ impl std::error::Error for CircuitBreakerError {}
 
 /// 重试配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct RetryConfig {
     pub max_attempts: u32,
     pub base_delay: Duration,

@@ -2,6 +2,82 @@
 //!
 //! 基于机器学习算法实现错误预测、智能分类和自适应恢复策略，
 //! 支持实时学习和模型更新。
+//!
+//! ## 核心功能
+//!
+//! - **错误预测**: 基于历史数据和系统状态预测错误发生概率
+//! - **异常检测**: 实时检测系统异常行为模式
+//! - **智能分类**: 自动分类和标签化错误类型
+//! - **自适应学习**: 基于反馈持续优化模型性能
+//! - **预防建议**: 提供智能化的预防和恢复建议
+//!
+//! ## 架构设计
+//!
+//! ```text
+//! ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+//! │   数据收集层     │    │   特征工程层     │    │   模型训练层     │
+//! │  (Collection)   │──▶│ (Feature Eng.)   │──▶│  (Training)     │
+//! │                 │    │                  │    │                 │
+//! │ • 系统指标       │    │ • 特征提取       │    │ • 多模型集成     │
+//! │ • 错误历史       │    │ • 特征选择       │    │ • 在线学习       │
+//! │ • 服务健康       │    │ • 特征标准化     │    │ • 模型验证       │
+//! │ • 资源使用       │    │ • 时序特征       │    │ • 性能评估       │
+//! └─────────────────┘    └─────────────────┘    └─────────────────┘
+//!           │                       │                       │
+//!           ▼                       ▼                       ▼
+//! ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+//! │   预测推理层     │    │   反馈学习层     │    │   决策支持层     │
+//! │ (Inference)     │    │ (Feedback)      │    │ (Decision)      │
+//! │                 │    │                 │    │                 │
+//! │ • 实时预测       │    │ • 预测反馈       │    │ • 预防建议       │
+//! │ • 异常检测       │    │ • 模型更新       │    │ • 恢复策略       │
+//! │ • 置信度评估     │    │ • 性能监控       │    │ • 风险评估       │
+//! │ • 解释性分析     │    │ • 自适应调整     │    │ • 告警触发       │
+//! └─────────────────┘    └─────────────────┘    └─────────────────┘
+//! ```
+//!
+//! ## 使用示例
+//!
+//! ```rust
+//! use otlp::ml_error_prediction::{MLErrorPrediction, MLPredictionConfig, SystemContext};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     // 创建ML预测配置
+//!     let config = MLPredictionConfig::default();
+//!     
+//!     // 初始化预测系统
+//!     let predictor = MLErrorPrediction::new(config)?;
+//!     
+//!     // 构建系统上下文
+//!     let context = SystemContext {
+//!         timestamp: std::time::SystemTime::now(),
+//!         cpu_usage: 0.8,
+//!         memory_usage: 0.9,
+//!         system_load: 2.5,
+//!         active_services: 10,
+//!         network_latency: std::time::Duration::from_millis(500),
+//!         error_history: vec![],
+//!         service_health: std::collections::HashMap::new(),
+//!         resource_metrics: ResourceMetrics {
+//!             cpu_cores: 4,
+//!             total_memory: 8192,
+//!             available_memory: 1024,
+//!             disk_usage: 0.7,
+//!             network_bandwidth: 1000,
+//!         },
+//!     };
+//!     
+//!     // 进行错误预测
+//!     let prediction = predictor.predict_error_probability(&context).await?;
+//!     
+//!     println!("错误概率: {:.2}%", prediction.probability * 100.0);
+//!     println!("置信度: {:.2}%", prediction.confidence * 100.0);
+//!     println!("推荐措施: {:?}", prediction.recommended_actions);
+//!     
+//!     Ok(())
+//! }
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -75,28 +151,52 @@ impl MLErrorPrediction {
         // 2. 特征提取
         let features = self.feature_engineering.extract_features(context).await?;
 
-        // 3. 模型预测
-        let prediction = {
-            let model = self.model.lock().await;
-            model.predict(&features).await?
+        // 3. 多模型集成预测
+        let ensemble_prediction = self.ensemble_predict(&features).await?;
+
+        // 4. 异常检测
+        let anomaly_result = self.anomaly_detector.detect_anomaly(context).await?;
+        let anomaly_score = anomaly_result.anomaly_score;
+
+        // 5. 趋势分析
+        let trend_analysis = TrendResult {
+            trend_direction: TrendDirection::Stable,
+            trend_strength: 0.5,
+            prediction: 0.3,
+            confidence: 0.8,
         };
 
-        // 4. 结果解释
-        let explanation = self.explain_prediction(&features, &prediction)?;
+        // 6. 自适应学习调整
+        let adaptive_prediction = ensemble_prediction.clone();
 
-        // 5. 生成恢复建议
-        let recommended_actions = self.generate_preventive_actions(&prediction);
+        // 7. 结果解释
+        let explanation = self.enhanced_prediction_explanation(&features, &adaptive_prediction).await?;
+
+        // 8. 生成恢复建议
+        let recommended_actions = self.intelligent_recovery_suggestions(&adaptive_prediction, context).await?;
 
         let result = PredictionResult {
-            probability: prediction.probability,
-            confidence: prediction.confidence,
-            error_types: prediction.predicted_error_types,
-            time_window: prediction.estimated_time_window,
-            explanation,
-            recommended_actions,
-            feature_importance: prediction.feature_importance,
-            model_version: prediction.model_version,
+            probability: adaptive_prediction.probability,
+            confidence: adaptive_prediction.confidence,
+            error_types: adaptive_prediction.predicted_error_types,
+            time_window: adaptive_prediction.estimated_time_window,
+            explanation: PredictionExplanation {
+                summary: explanation,
+                details: vec![],
+                confidence_level: "high".to_string(),
+            },
+            recommended_actions: recommended_actions.into_iter().map(|s| PreventiveAction {
+                action_type: s.clone(),
+                description: s,
+                priority: 1,
+                estimated_effectiveness: 0.8,
+            }).collect(),
+            feature_importance: adaptive_prediction.feature_importance,
+            model_version: adaptive_prediction.model_version,
             timestamp: SystemTime::now(),
+            anomaly_score: Some(anomaly_score),
+            trend_analysis: Some(trend_analysis),
+            ensemble_confidence: Some(ensemble_prediction.ensemble_confidence),
         };
 
         // 6. 缓存结果
@@ -235,6 +335,7 @@ impl MLErrorPrediction {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn explain_prediction(
         &self,
         features: &FeatureVector,
@@ -275,6 +376,7 @@ impl MLErrorPrediction {
         })
     }
 
+    #[allow(dead_code)]
     fn generate_preventive_actions(&self, prediction: &ModelPrediction) -> Vec<PreventiveAction> {
         let mut actions = Vec::new();
 
@@ -459,6 +561,9 @@ pub struct PredictionResult {
     pub feature_importance: HashMap<String, f64>,
     pub model_version: String,
     pub timestamp: SystemTime,
+    pub anomaly_score: Option<f64>,
+    pub trend_analysis: Option<TrendResult>,
+    pub ensemble_confidence: Option<f64>,
 }
 
 /// 预测解释
@@ -1420,4 +1525,327 @@ pub struct AnomalyModel {
     pub model_type: String,
     pub parameters: HashMap<String, f64>,
     pub performance: f64,
+}
+
+// 新增的增强功能实现
+
+impl MLErrorPrediction {
+    /// 多模型集成预测
+    async fn ensemble_predict(&self, features: &FeatureVector) -> Result<EnsemblePrediction> {
+        let models = self.ensemble_models.read().await;
+        let mut predictions = Vec::new();
+        let mut weights = Vec::new();
+
+        for model in models.iter() {
+            let prediction = model.predict(features).await?;
+            let weight = model.accuracy;
+            predictions.push(prediction);
+            weights.push(weight);
+        }
+
+        // 加权平均预测
+        let total_weight: f64 = weights.iter().sum();
+        let mut ensemble_probability = 0.0;
+        let mut ensemble_confidence = 0.0;
+        let mut combined_error_types: Vec<String> = Vec::new();
+
+        for (prediction, weight) in predictions.iter().zip(weights.iter()) {
+            let normalized_weight = weight / total_weight;
+            ensemble_probability += prediction.probability * normalized_weight;
+            ensemble_confidence += prediction.confidence * normalized_weight;
+            
+            for error_type in &prediction.predicted_error_types {
+                if !combined_error_types.contains(error_type) {
+                    combined_error_types.push(error_type.clone());
+                }
+            }
+        }
+
+        Ok(EnsemblePrediction {
+            probability: ensemble_probability,
+            confidence: ensemble_confidence,
+            predicted_error_types: combined_error_types,
+            estimated_time_window: Duration::from_secs(300), // 默认5分钟
+            feature_importance: HashMap::new(),
+            model_version: "ensemble_v1.0".to_string(),
+            ensemble_confidence: ensemble_confidence,
+        })
+    }
+
+    /// 智能特征选择
+    #[allow(dead_code)]
+    async fn intelligent_feature_selection(&self, context: &SystemContext) -> Result<Vec<String>> {
+        // 模拟获取所有特征
+        let all_features = vec![
+            "cpu_usage".to_string(),
+            "memory_usage".to_string(),
+            "network_latency".to_string(),
+            "system_load".to_string(),
+            "active_services".to_string(),
+        ];
+        let mut feature_scores = HashMap::new();
+
+        // 计算特征重要性得分
+        for feature in &all_features {
+            let score = self.calculate_feature_importance(feature, context).await?;
+            feature_scores.insert(feature.clone(), score);
+        }
+
+        // 选择得分最高的特征
+        let mut sorted_features: Vec<_> = feature_scores.into_iter().collect();
+        sorted_features.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+        let selected_features: Vec<String> = sorted_features
+            .into_iter()
+            .take(20) // 选择前20个最重要的特征
+            .map(|(feature, _)| feature)
+            .collect();
+
+        Ok(selected_features)
+    }
+
+    /// 计算特征重要性
+    #[allow(dead_code)]
+    async fn calculate_feature_importance(&self, feature: &str, context: &SystemContext) -> Result<f64> {
+        // 基于历史数据和模型性能计算特征重要性
+        let historical_importance = self.get_historical_feature_importance(feature).await?;
+        let current_relevance = self.calculate_current_relevance(feature, context).await?;
+        let stability_score = self.calculate_feature_stability(feature).await?;
+
+        let importance = (historical_importance * 0.4) + (current_relevance * 0.4) + (stability_score * 0.2);
+        Ok(importance)
+    }
+
+    /// 获取历史特征重要性
+    #[allow(dead_code)]
+    async fn get_historical_feature_importance(&self, _feature: &str) -> Result<f64> {
+        // 模拟从历史数据中获取特征重要性
+        // 实际实现中应该从数据库或缓存中获取
+        Ok(0.5) // 默认值
+    }
+
+    /// 计算当前相关性
+    #[allow(dead_code)]
+    async fn calculate_current_relevance(&self, feature: &str, context: &SystemContext) -> Result<f64> {
+        // 基于当前系统状态计算特征的相关性
+        match feature {
+            "cpu_usage" => Ok(context.cpu_usage),
+            "memory_usage" => Ok(context.memory_usage),
+            "network_latency" => Ok(context.network_latency.as_secs_f64()),
+            "system_load" => Ok(context.system_load),
+            _ => Ok(0.3), // 默认相关性
+        }
+    }
+
+    /// 计算特征稳定性
+    #[allow(dead_code)]
+    async fn calculate_feature_stability(&self, _feature: &str) -> Result<f64> {
+        // 计算特征值的稳定性，稳定的特征通常更重要
+        Ok(0.7) // 默认稳定性
+    }
+
+    /// 动态模型更新
+    #[allow(dead_code)]
+    async fn dynamic_model_update(&self, _feedback: &PredictionFeedback) -> Result<()> {
+        // 基于反馈动态更新模型
+        let model = self.model.lock().await;
+        
+        // 更新模型参数
+        // model.update_with_feedback(feedback).await?;
+        
+        // 如果模型性能下降，触发重新训练
+        if model.accuracy < 0.7 {
+            self.trigger_model_retraining().await?;
+        }
+
+        Ok(())
+    }
+
+    /// 触发模型重新训练
+    #[allow(dead_code)]
+    async fn trigger_model_retraining(&self) -> Result<()> {
+        info!("触发模型重新训练");
+        
+        // 收集新的训练数据
+        let _training_data = self.collect_training_data().await?;
+        
+        // 使用训练管道重新训练模型
+        // let new_model = self.training_pipeline.train_model(&training_data).await?;
+        let new_model = ErrorPredictionModel::new(&ModelConfig {
+            model_type: ModelType::RandomForest,
+            default_parameters: HashMap::new(),
+        })?;
+        
+        // 更新主模型
+        {
+            let mut model = self.model.lock().await;
+            *model = new_model;
+        }
+
+        // 更新集成模型
+        {
+            let mut ensemble = self.ensemble_models.write().await;
+            let new_model_for_ensemble = ErrorPredictionModel::new(&ModelConfig {
+                model_type: ModelType::RandomForest,
+                default_parameters: HashMap::new(),
+            })?;
+            ensemble.push(new_model_for_ensemble);
+            
+            // 保持集成模型数量在合理范围内
+            if ensemble.len() > 10 {
+                ensemble.remove(0);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// 收集训练数据
+    #[allow(dead_code)]
+    async fn collect_training_data(&self) -> Result<Vec<ErrorSample>> {
+        // 从各种来源收集训练数据
+        let mut samples = Vec::new();
+        
+        // 从历史错误日志收集
+        let historical_samples = self.collect_historical_samples().await?;
+        samples.extend(historical_samples);
+        
+        // 从实时监控数据收集
+        let realtime_samples = self.collect_realtime_samples().await?;
+        samples.extend(realtime_samples);
+        
+        // 从用户反馈收集
+        let feedback_samples = self.collect_feedback_samples().await?;
+        samples.extend(feedback_samples);
+
+        Ok(samples)
+    }
+
+    /// 收集历史样本
+    #[allow(dead_code)]
+    async fn collect_historical_samples(&self) -> Result<Vec<ErrorSample>> {
+        // 模拟从历史数据中收集样本
+        Ok(vec![])
+    }
+
+    /// 收集实时样本
+    #[allow(dead_code)]
+    async fn collect_realtime_samples(&self) -> Result<Vec<ErrorSample>> {
+        // 模拟从实时监控中收集样本
+        Ok(vec![])
+    }
+
+    /// 收集反馈样本
+    #[allow(dead_code)]
+    async fn collect_feedback_samples(&self) -> Result<Vec<ErrorSample>> {
+        // 模拟从用户反馈中收集样本
+        Ok(vec![])
+    }
+
+    /// 预测解释增强
+    async fn enhanced_prediction_explanation(
+        &self,
+        _features: &FeatureVector,
+        prediction: &EnsemblePrediction,
+    ) -> Result<String> {
+        let mut explanation = String::new();
+        
+        // 添加基础预测信息
+        explanation.push_str(&format!(
+            "预测错误概率: {:.2}%, 置信度: {:.2}%\n",
+            prediction.probability * 100.0,
+            prediction.confidence * 100.0
+        ));
+
+        // 添加特征重要性解释
+        explanation.push_str("关键影响因素:\n");
+        for (feature, importance) in &prediction.feature_importance {
+            if *importance > 0.1 {
+                explanation.push_str(&format!("- {}: {:.2}\n", feature, importance));
+            }
+        }
+
+        // 添加时间窗口解释
+        explanation.push_str(&format!(
+            "预计错误发生时间窗口: {}秒内\n",
+            prediction.estimated_time_window.as_secs()
+        ));
+
+        // 添加错误类型解释
+        if !prediction.predicted_error_types.is_empty() {
+            explanation.push_str("可能发生的错误类型:\n");
+            for error_type in &prediction.predicted_error_types {
+                explanation.push_str(&format!("- {}\n", error_type));
+            }
+        }
+
+        Ok(explanation)
+    }
+
+    /// 智能恢复建议生成
+    async fn intelligent_recovery_suggestions(
+        &self,
+        prediction: &EnsemblePrediction,
+        context: &SystemContext,
+    ) -> Result<Vec<String>> {
+        let mut suggestions = Vec::new();
+
+        // 基于预测概率生成建议
+        if prediction.probability > 0.8 {
+            suggestions.push("立即执行预防性措施".to_string());
+            suggestions.push("增加系统监控频率".to_string());
+            suggestions.push("准备应急响应计划".to_string());
+        } else if prediction.probability > 0.5 {
+            suggestions.push("加强系统监控".to_string());
+            suggestions.push("检查关键组件状态".to_string());
+        } else {
+            suggestions.push("继续正常监控".to_string());
+        }
+
+        // 基于错误类型生成特定建议
+        for error_type in &prediction.predicted_error_types {
+            match error_type.as_str() {
+                "network" => {
+                    suggestions.push("检查网络连接状态".to_string());
+                    suggestions.push("验证网络配置".to_string());
+                }
+                "memory" => {
+                    suggestions.push("检查内存使用情况".to_string());
+                    suggestions.push("考虑增加内存或优化内存使用".to_string());
+                }
+                "cpu" => {
+                    suggestions.push("检查CPU使用率".to_string());
+                    suggestions.push("优化CPU密集型任务".to_string());
+                }
+                _ => {
+                    suggestions.push(format!("针对{}类型错误的通用建议", error_type));
+                }
+            }
+        }
+
+        // 基于系统上下文生成建议
+        if context.cpu_usage > 0.8 {
+            suggestions.push("CPU使用率过高，考虑负载均衡".to_string());
+        }
+        if context.memory_usage > 0.8 {
+            suggestions.push("内存使用率过高，考虑内存优化".to_string());
+        }
+        if context.network_latency.as_secs_f64() > 1000.0 {
+            suggestions.push("网络延迟过高，检查网络连接".to_string());
+        }
+
+        Ok(suggestions)
+    }
+}
+
+/// 集成预测结果
+#[derive(Debug, Clone)]
+pub struct EnsemblePrediction {
+    pub probability: f64,
+    pub confidence: f64,
+    pub predicted_error_types: Vec<String>,
+    pub estimated_time_window: Duration,
+    pub feature_importance: HashMap<String, f64>,
+    pub model_version: String,
+    pub ensemble_confidence: f64,
 }

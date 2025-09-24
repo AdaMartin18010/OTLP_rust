@@ -2,6 +2,137 @@
 //!
 //! 本模块提供了边缘计算支持，包括边缘节点管理、边缘服务部署、
 //! 边缘数据同步、边缘智能决策等功能。
+//!
+//! ## 核心功能
+//!
+//! - **边缘节点管理**: 自动发现、注册和管理边缘节点
+//! - **任务调度**: 智能的任务分发和负载均衡
+//! - **资源监控**: 实时监控边缘节点资源使用情况
+//! - **数据同步**: 云端与边缘之间的数据同步和冲突解决
+//! - **自适应扩展**: 根据负载自动扩展边缘计算能力
+//! - **故障恢复**: 边缘节点的故障检测和自动恢复
+//!
+//! ## 架构设计
+//!
+//! ```text
+//! ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+//! │   边缘节点层     │    │   任务调度层     │    │   资源管理层     │
+//! │ (Edge Nodes)    │──▶│ (Task Scheduler) │──▶│ (Resource Mgmt) │
+//! │                 │    │                 │    │                 │
+//! │ • 节点注册       │    │ • 任务分发       │    │ • 资源监控       │
+//! │ • 健康检查       │    │ • 负载均衡       │    │ • 容量规划       │
+//! │ • 能力发现       │    │ • 优先级管理     │    │ • 性能优化       │
+//! │ • 状态同步       │    │ • 故障转移       │    │ • 告警管理       │
+//! └─────────────────┘    └─────────────────┘    └─────────────────┘
+//!           │                       │                       │
+//!           ▼                       ▼                       ▼
+//! ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+//! │   数据同步层     │    │   服务管理层     │    │   监控告警层     │
+//! │ (Data Sync)     │    │ (Service Mgmt)  │    │ (Monitoring)    │
+//! │                 │    │                 │    │                 │
+//! │ • 增量同步       │    │ • 服务部署       │    │ • 实时监控      │
+//! │ • 冲突解决       │    │ • 版本管理       │    │ • 性能分析      │
+//! │ • 压缩传输       │    │ • 配置管理       │    │ • 告警系统      │
+//! │ • 加密保护       │    │ • 生命周期管理   │    │ • 趋势预测      │
+//! └─────────────────┘    └─────────────────┘    └─────────────────┘
+//! ```
+//!
+//! ## 使用示例
+//!
+//! ```rust
+//! use otlp::edge_computing::{
+//!     EdgeNodeManager, EdgeConfig, EdgeNode, EdgeTask, TaskType, TaskPriority
+//! };
+//! use std::time::Duration;
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     // 创建边缘计算配置
+//!     let config = EdgeConfig {
+//!         node_id: "edge-manager-1".to_string(),
+//!         region: "us-west-1".to_string(),
+//!         zone: "us-west-1a".to_string(),
+//!         capabilities: EdgeCapabilities {
+//!             compute_power: 4.0,
+//!             memory_capacity: 8 * 1024 * 1024 * 1024,
+//!             storage_capacity: 100 * 1024 * 1024 * 1024,
+//!             network_bandwidth: 1000 * 1024 * 1024,
+//!             ai_acceleration: true,
+//!             gpu_available: false,
+//!             special_hardware: vec!["TPU".to_string()],
+//!         },
+//!         connectivity: ConnectivityConfig {
+//!             cloud_endpoint: "https://cloud.example.com".to_string(),
+//!             edge_cluster_endpoint: "https://edge.example.com".to_string(),
+//!             peer_endpoints: vec![],
+//!             heartbeat_interval: Duration::from_secs(30),
+//!             connection_timeout: Duration::from_secs(10),
+//!             retry_attempts: 3,
+//!             encryption_enabled: true,
+//!         },
+//!         resource_limits: EdgeResourceLimits {
+//!             max_cpu_usage: 0.9,
+//!             max_memory_usage: 7 * 1024 * 1024 * 1024,
+//!             max_storage_usage: 90 * 1024 * 1024 * 1024,
+//!             max_network_usage: 900 * 1024 * 1024,
+//!             max_concurrent_tasks: 10,
+//!         },
+//!         sync_config: SyncConfig {
+//!             sync_interval: Duration::from_secs(60),
+//!             batch_size: 100,
+//!             compression_enabled: true,
+//!             encryption_enabled: true,
+//!             conflict_resolution: ConflictResolutionStrategy::LastWriteWins,
+//!         },
+//!     };
+//!
+//!     // 初始化边缘节点管理器
+//!     let manager = EdgeNodeManager::new(config);
+//!     
+//!     // 启动管理器
+//!     manager.start().await?;
+//!     
+//!     // 注册边缘节点
+//!     let edge_node = EdgeNode {
+//!         id: "edge-node-1".to_string(),
+//!         name: "Edge Node 1".to_string(),
+//!         region: "us-west-1".to_string(),
+//!         zone: "us-west-1a".to_string(),
+//!         status: NodeStatus::Online,
+//!         capabilities: EdgeCapabilities { /* ... */ },
+//!         current_resources: ResourceUsage { /* ... */ },
+//!         last_heartbeat: std::time::Instant::now(),
+//!         services: vec![],
+//!         metadata: std::collections::HashMap::new(),
+//!     };
+//!     
+//!     manager.register_node(edge_node).await?;
+//!     
+//!     // 创建边缘任务
+//!     let task = EdgeTask {
+//!         id: "task-001".to_string(),
+//!         name: "Data Processing Task".to_string(),
+//!         task_type: TaskType::DataProcessing,
+//!         status: TaskStatus::Pending,
+//!         assigned_node: String::new(),
+//!         priority: TaskPriority::Normal,
+//!         resource_requirements: ResourceRequirements { /* ... */ },
+//!         deadline: None,
+//!         progress: 0.0,
+//!         result: None,
+//!         error: None,
+//!     };
+//!     
+//!     let task_id = manager.create_task(task).await?;
+//!     println!("创建任务: {}", task_id);
+//!     
+//!     // 获取系统指标
+//!     let metrics = manager.get_metrics().await;
+//!     println!("系统指标: {:?}", metrics);
+//!     
+//!     Ok(())
+//! }
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -10,6 +141,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, error, info, warn};
 /// 边缘计算配置
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EdgeConfig {
     pub node_id: String,
@@ -23,6 +155,7 @@ pub struct EdgeConfig {
 
 /// 边缘节点能力
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct EdgeCapabilities {
     pub compute_power: f64,            // CPU核心数
     pub memory_capacity: u64,          // 内存容量(字节)
@@ -35,6 +168,7 @@ pub struct EdgeCapabilities {
 
 /// 连接配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ConnectivityConfig {
     pub cloud_endpoint: String,
     pub edge_cluster_endpoint: String,
@@ -47,6 +181,7 @@ pub struct ConnectivityConfig {
 
 /// 边缘资源限制
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct EdgeResourceLimits {
     pub max_cpu_usage: f64,
     pub max_memory_usage: u64,
@@ -57,6 +192,7 @@ pub struct EdgeResourceLimits {
 
 /// 同步配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct SyncConfig {
     pub sync_interval: Duration,
     pub batch_size: usize,
@@ -67,6 +203,7 @@ pub struct SyncConfig {
 
 /// 冲突解决策略
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum ConflictResolutionStrategy {
     LastWriteWins,
     CloudPriority,
@@ -75,6 +212,7 @@ pub enum ConflictResolutionStrategy {
 }
 
 /// 边缘节点管理器
+#[allow(dead_code)]
 pub struct EdgeNodeManager {
     config: EdgeConfig,
     nodes: Arc<RwLock<HashMap<String, EdgeNode>>>,
@@ -86,6 +224,7 @@ pub struct EdgeNodeManager {
 
 /// 边缘节点
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct EdgeNode {
     pub id: String,
     pub name: String,
@@ -101,6 +240,7 @@ pub struct EdgeNode {
 
 /// 节点状态
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[allow(dead_code)]
 pub enum NodeStatus {
     Online,
     Offline,
@@ -111,6 +251,7 @@ pub enum NodeStatus {
 
 /// 资源使用情况
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ResourceUsage {
     pub cpu_usage: f64,
     pub memory_usage: u64,
@@ -122,6 +263,7 @@ pub struct ResourceUsage {
 
 /// 边缘服务
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct EdgeService {
     pub id: String,
     pub name: String,
@@ -135,6 +277,7 @@ pub struct EdgeService {
 
 /// 服务状态
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum ServiceStatus {
     Running,
     Stopped,
@@ -146,6 +289,7 @@ pub enum ServiceStatus {
 
 /// 资源需求
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ResourceRequirements {
     pub cpu_request: f64,
     pub memory_request: u64,
@@ -157,6 +301,7 @@ pub struct ResourceRequirements {
 
 /// 部署配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct DeploymentConfig {
     pub image: String,
     pub replicas: u32,
@@ -168,6 +313,7 @@ pub struct DeploymentConfig {
 
 /// 卷挂载
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct VolumeMount {
     pub name: String,
     pub mount_path: String,
@@ -176,6 +322,7 @@ pub struct VolumeMount {
 
 /// 端口映射
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct PortMapping {
     pub container_port: u16,
     pub host_port: u16,
@@ -184,6 +331,7 @@ pub struct PortMapping {
 
 /// 健康检查配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct HealthCheckConfig {
     pub initial_delay: Duration,
     pub period: Duration,
@@ -194,6 +342,7 @@ pub struct HealthCheckConfig {
 
 /// 边缘任务
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct EdgeTask {
     pub id: String,
     pub name: String,
@@ -210,6 +359,7 @@ pub struct EdgeTask {
 
 /// 任务类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum TaskType {
     DataProcessing,
     Inference,
@@ -221,6 +371,7 @@ pub enum TaskType {
 
 /// 任务状态
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[allow(dead_code)]
 pub enum TaskStatus {
     Pending,
     Running,
@@ -232,6 +383,7 @@ pub enum TaskStatus {
 
 /// 任务优先级
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum TaskPriority {
     Low,
     Normal,
@@ -241,6 +393,7 @@ pub enum TaskPriority {
 
 /// 任务结果
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct TaskResult {
     pub output_data: Vec<u8>,
     pub metrics: TaskMetrics,
@@ -250,6 +403,7 @@ pub struct TaskResult {
 
 /// 任务指标
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct TaskMetrics {
     pub cpu_time: Duration,
     pub memory_peak: u64,
@@ -258,6 +412,7 @@ pub struct TaskMetrics {
 }
 
 /// 边缘同步管理器
+#[allow(dead_code)]
 pub struct EdgeSyncManager {
     config: SyncConfig,
     sync_queue: Arc<Mutex<Vec<SyncOperation>>>,
@@ -267,6 +422,7 @@ pub struct EdgeSyncManager {
 
 /// 同步操作
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct SyncOperation {
     pub id: String,
     pub operation_type: SyncOperationType,
@@ -279,6 +435,7 @@ pub struct SyncOperation {
 
 /// 同步操作类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum SyncOperationType {
     Upload,
     Download,
@@ -288,6 +445,7 @@ pub enum SyncOperationType {
 
 /// 同步数据
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct SyncData {
     pub key: String,
     pub value: Vec<u8>,
@@ -298,6 +456,7 @@ pub struct SyncData {
 
 /// 同步优先级
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum SyncPriority {
     Low,
     Normal,
@@ -306,6 +465,7 @@ pub enum SyncPriority {
 }
 
 /// 冲突解决器
+#[allow(dead_code)]
 pub struct ConflictResolver {
     strategy: ConflictResolutionStrategy,
     resolution_history: Arc<RwLock<Vec<ConflictResolution>>>,
@@ -313,6 +473,7 @@ pub struct ConflictResolver {
 
 /// 冲突解决记录
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ConflictResolution {
     pub conflict_id: String,
     pub data_key: String,
@@ -323,6 +484,7 @@ pub struct ConflictResolution {
 
 /// 缓存数据
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct CachedData {
     pub data: Vec<u8>,
     pub metadata: HashMap<String, String>,
@@ -332,6 +494,7 @@ pub struct CachedData {
 }
 
 /// 边缘资源监控器
+#[allow(dead_code)]
 pub struct EdgeResourceMonitor {
     monitoring_interval: Duration,
     resource_thresholds: ResourceThresholds,
@@ -341,6 +504,7 @@ pub struct EdgeResourceMonitor {
 
 /// 资源阈值
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ResourceThresholds {
     pub cpu_warning: f64,
     pub cpu_critical: f64,
@@ -354,6 +518,7 @@ pub struct ResourceThresholds {
 
 /// 告警通道
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct AlertChannel {
     pub name: String,
     pub channel_type: AlertChannelType,
@@ -363,6 +528,7 @@ pub struct AlertChannel {
 
 /// 告警通道类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum AlertChannelType {
     Webhook,
     Email,
@@ -373,6 +539,7 @@ pub enum AlertChannelType {
 
 /// 资源快照
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ResourceSnapshot {
     pub timestamp: Instant,
     pub node_id: String,
@@ -385,6 +552,7 @@ pub struct ResourceSnapshot {
 
 /// 边缘指标
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct EdgeMetrics {
     pub total_nodes: u32,
     pub online_nodes: u32,

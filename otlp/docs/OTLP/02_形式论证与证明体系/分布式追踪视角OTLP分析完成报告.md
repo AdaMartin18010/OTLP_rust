@@ -406,8 +406,3 @@
 - **文档地址**: <https://docs.opentelemetry.io/otlp-analysis>
 
 ---
-
-**项目完成时间**: 2025年1月27日  
-**项目版本**: 1.0.0  
-**维护者**: OpenTelemetry 2025 理论团队  
-**下次审查**: 2025年4月27日
