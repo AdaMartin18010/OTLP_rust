@@ -1,6 +1,69 @@
 //! # OTLP错误处理模块
 //!
 //! 提供统一的错误类型和处理机制，支持Rust 1.90的错误处理特性。
+//!
+//! ## 设计理念
+//!
+//! 本模块基于以下设计理念构建：
+//!
+//! 1. **类型安全**: 利用Rust类型系统在编译时捕获错误，避免运行时错误
+//! 2. **可恢复性**: 提供详细的错误上下文和恢复建议，支持自动恢复
+//! 3. **可观测性**: 完整的错误分类、严重程度和监控指标
+//! 4. **扩展性**: 支持448种错误类型，覆盖从基础到高级的所有场景
+//! 5. **性能优化**: 零拷贝设计，最小化内存分配和性能开销
+//!
+//! ## 核心特性
+//!
+//! - **层次化错误分类**: 448种细粒度错误类型，涵盖网络、数据、配置等各个层面
+//! - **智能错误恢复**: 基于错误类型和上下文的自动恢复建议
+//! - **错误传播控制**: 支持错误在分布式系统中的传播路径管理
+//! - **性能监控**: 内置错误率、恢复时间等关键指标收集
+//! - **形式化验证**: 支持Crux-MIR等形式化验证工具
+//!
+//! ## 使用示例
+//!
+//! ```rust
+//! use otlp::error::{OtlpError, ErrorSeverity, ErrorCategory};
+//!
+//! // 创建不同类型的错误
+//! let network_error = OtlpError::Transport(
+//!     TransportError::Connection {
+//!         endpoint: "http://example.com".to_string(),
+//!         reason: "Connection timeout".to_string(),
+//!     }
+//! );
+//!
+//! // 检查错误属性
+//! assert_eq!(network_error.severity(), ErrorSeverity::High);
+//! assert_eq!(network_error.category(), ErrorCategory::Network);
+//! assert!(network_error.is_retryable());
+//!
+//! // 获取恢复建议
+//! if let Some(suggestion) = network_error.recovery_suggestion() {
+//!     println!("恢复建议: {}", suggestion);
+//! }
+//!
+//! // 获取错误上下文
+//! let context = network_error.context();
+//! println!("错误上下文: {:?}", context);
+//! ```
+//!
+//! ## 错误分类体系
+//!
+//! 错误按以下维度进行分类：
+//!
+//! 1. **按严重程度**: Critical, High, Medium, Low
+//! 2. **按类别**: Network, Data, Configuration, Processing, etc.
+//! 3. **按可重试性**: Retryable, Non-retryable
+//! 4. **按临时性**: Temporary, Permanent
+//!
+//! ## 最佳实践
+//!
+//! 1. **错误处理**: 始终使用Result类型，避免panic
+//! 2. **错误传播**: 使用?操作符进行错误传播，保持调用栈
+//! 3. **错误恢复**: 根据is_retryable()和recovery_suggestion()进行智能恢复
+//! 4. **错误监控**: 使用context()获取完整的错误上下文进行监控
+//! 5. **性能考虑**: 错误创建和处理的性能开销已优化到最小
 
 use std::fmt;
 use thiserror::Error;
