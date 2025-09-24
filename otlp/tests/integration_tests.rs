@@ -1,20 +1,19 @@
 //! # OTLP 集成测试
-//! 
+//!
 //! 本模块包含 OTLP 客户端的集成测试，验证各个组件之间的协作。
 
 use otlp::{
-    OtlpClient, 
-    OtlpConfig, TelemetryData, 
     config::TransportProtocol,
     data::{
-        LogSeverity, 
-        //MetricType, 
+        LogSeverity,
+        //MetricType,
         StatusCode,
     },
+    OtlpClient, OtlpConfig, TelemetryData,
 };
+use std::env;
 use std::time::Duration;
 use tokio::time::timeout;
-use std::env;
 
 /// 测试客户端创建和初始化
 #[tokio::test]
@@ -76,8 +75,14 @@ async fn test_metric_sending() {
         return;
     }
     let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
-    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
-    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
+    let (endpoint, protocol) = if use_grpc {
+        ("http://localhost:4317", TransportProtocol::Grpc)
+    } else {
+        ("http://localhost:4318", TransportProtocol::Http)
+    };
+    let config = OtlpConfig::default()
+        .with_endpoint(endpoint)
+        .with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -103,14 +108,23 @@ async fn test_log_sending() {
         return;
     }
     let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
-    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
-    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
+    let (endpoint, protocol) = if use_grpc {
+        ("http://localhost:4317", TransportProtocol::Grpc)
+    } else {
+        ("http://localhost:4318", TransportProtocol::Http)
+    };
+    let config = OtlpConfig::default()
+        .with_endpoint(endpoint)
+        .with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
 
     // 测试日志构建器
-    let log_builder = client.send_log("Test log message", LogSeverity::Info).await.unwrap();
+    let log_builder = client
+        .send_log("Test log message", LogSeverity::Info)
+        .await
+        .unwrap();
     let result = log_builder
         .with_attribute("logger", "test")
         .with_attribute("module", "integration_test")
@@ -131,8 +145,14 @@ async fn test_batch_sending() {
         return;
     }
     let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
-    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
-    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
+    let (endpoint, protocol) = if use_grpc {
+        ("http://localhost:4317", TransportProtocol::Grpc)
+    } else {
+        ("http://localhost:4318", TransportProtocol::Http)
+    };
+    let config = OtlpConfig::default()
+        .with_endpoint(endpoint)
+        .with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -160,8 +180,14 @@ async fn test_concurrent_sending() {
         return;
     }
     let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
-    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
-    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
+    let (endpoint, protocol) = if use_grpc {
+        ("http://localhost:4317", TransportProtocol::Grpc)
+    } else {
+        ("http://localhost:4318", TransportProtocol::Http)
+    };
+    let config = OtlpConfig::default()
+        .with_endpoint(endpoint)
+        .with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -173,7 +199,9 @@ async fn test_concurrent_sending() {
         let handle = tokio::spawn(async move {
             let mut results = Vec::new();
             for j in 0..10 {
-                let result = client_clone.send_trace(format!("concurrent-{}-{}", i, j)).await
+                let result = client_clone
+                    .send_trace(format!("concurrent-{}-{}", i, j))
+                    .await
                     .unwrap()
                     .with_attribute("worker.id", i.to_string())
                     .with_attribute("task.id", j.to_string())
@@ -216,7 +244,9 @@ async fn test_client_metrics() {
 
     // 发送一些数据
     for i in 0..5 {
-        let _result = client.send_trace(format!("metrics-test-{}", i)).await
+        let _result = client
+            .send_trace(format!("metrics-test-{}", i))
+            .await
             .unwrap()
             .finish()
             .await;
@@ -225,7 +255,7 @@ async fn test_client_metrics() {
     // 获取指标
     let metrics = client.get_metrics().await;
     println!("客户端指标: {:?}", metrics);
-    
+
     assert!(metrics.total_data_sent > 0);
     assert!(metrics.uptime > Duration::ZERO);
 }
@@ -245,7 +275,9 @@ async fn test_client_shutdown() {
     let _init_result = client.initialize().await;
 
     // 发送一些数据
-    let _result = client.send_trace("shutdown-test").await
+    let _result = client
+        .send_trace("shutdown-test")
+        .await
         .unwrap()
         .finish()
         .await;
@@ -263,14 +295,14 @@ async fn test_config_validation() {
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Http)
         .with_service("test-service", "1.0.0");
-    
+
     assert!(valid_config.validate().is_ok());
 
     // 测试无效配置
     let invalid_config = OtlpConfig::default()
-        .with_endpoint("")  // 空端点
+        .with_endpoint("") // 空端点
         .with_protocol(TransportProtocol::Http);
-    
+
     assert!(invalid_config.validate().is_err());
 }
 
@@ -278,8 +310,14 @@ async fn test_config_validation() {
 #[tokio::test]
 async fn test_timeout_handling() {
     let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
-    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
-    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol)
+    let (endpoint, protocol) = if use_grpc {
+        ("http://localhost:4317", TransportProtocol::Grpc)
+    } else {
+        ("http://localhost:4318", TransportProtocol::Http)
+    };
+    let config = OtlpConfig::default()
+        .with_endpoint(endpoint)
+        .with_protocol(protocol)
         .with_request_timeout(Duration::from_millis(100)); // 很短的超时
 
     let client = OtlpClient::new(config).await.unwrap();
@@ -288,8 +326,9 @@ async fn test_timeout_handling() {
     // 测试超时
     let result = timeout(
         Duration::from_secs(1),
-        client.send_trace("timeout-test").await.unwrap().finish()
-    ).await;
+        client.send_trace("timeout-test").await.unwrap().finish(),
+    )
+    .await;
 
     match result {
         Ok(Ok(_)) => println!("请求成功完成"),
@@ -310,7 +349,9 @@ async fn test_error_handling() {
     let _init_result = client.initialize().await;
 
     // 尝试发送数据，应该会失败
-    let result = client.send_trace("error-test").await
+    let result = client
+        .send_trace("error-test")
+        .await
         .unwrap()
         .finish()
         .await;
@@ -325,8 +366,14 @@ async fn test_error_handling() {
 #[tokio::test]
 async fn test_data_validation() {
     let use_grpc = env::var("OTLP_PROTOCOL").unwrap_or_default() == "grpc";
-    let (endpoint, protocol) = if use_grpc { ("http://localhost:4317", TransportProtocol::Grpc) } else { ("http://localhost:4318", TransportProtocol::Http) };
-    let config = OtlpConfig::default().with_endpoint(endpoint).with_protocol(protocol);
+    let (endpoint, protocol) = if use_grpc {
+        ("http://localhost:4317", TransportProtocol::Grpc)
+    } else {
+        ("http://localhost:4318", TransportProtocol::Http)
+    };
+    let config = OtlpConfig::default()
+        .with_endpoint(endpoint)
+        .with_protocol(protocol);
 
     let client = OtlpClient::new(config).await.unwrap();
     let _init_result = client.initialize().await;
@@ -358,11 +405,13 @@ async fn test_performance_benchmark() {
 
     // 发送100条数据
     for i in 0..100 {
-        let result = client.send_trace(format!("perf-test-{}", i)).await
+        let result = client
+            .send_trace(format!("perf-test-{}", i))
+            .await
             .unwrap()
             .finish()
             .await;
-        
+
         if result.is_ok() {
             success_count += 1;
         }

@@ -1,5 +1,5 @@
 //! # 高级微服务架构演示程序
-//! 
+//!
 //! 本示例展示了如何使用OTLP Rust库的高级微服务功能，
 //! 包括智能路由、自适应负载均衡、故障注入等企业级特性。
 
@@ -7,16 +7,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
-use tracing::{info, warn, debug};
+use tracing::{debug, info, warn};
 
 use otlp::{
-    RoundRobinLoadBalancer, ServiceEndpoint, HealthStatus,
-    IntelligentRouter, ServiceMeshConfig, ServiceMeshType, RoutingRule, MatchCondition,
-    Destination, AdaptiveLoadBalancer, FaultInjector, FaultConfig, FaultType,
-    SidecarConfig, ResourceLimits, RetryPolicy, CircuitBreakerPolicy,
-    RouteRequest, FaultResult,
-    TrafficManager,
-    OtlpConfig, TransportProtocol,
+    AdaptiveLoadBalancer, CircuitBreakerPolicy, Destination, FaultConfig, FaultInjector,
+    FaultResult, FaultType, HealthStatus, IntelligentRouter, MatchCondition, OtlpConfig,
+    ResourceLimits, RetryPolicy, RoundRobinLoadBalancer, RouteRequest, RoutingRule,
+    ServiceEndpoint, ServiceMeshConfig, ServiceMeshType, SidecarConfig, TrafficManager,
+    TransportProtocol,
 };
 
 /// 初始化OTLP追踪
@@ -35,7 +33,7 @@ async fn init_otlp() -> Result<(), Box<dyn std::error::Error>> {
 /// 演示智能路由功能
 async fn demo_intelligent_routing() -> Result<(), Box<dyn std::error::Error>> {
     info!("🧭 演示智能路由功能");
-    
+
     // 创建服务网格配置
     let mesh_config = ServiceMeshConfig {
         mesh_type: ServiceMeshType::Istio,
@@ -54,7 +52,10 @@ async fn demo_intelligent_routing() -> Result<(), Box<dyn std::error::Error>> {
             },
             env_vars: {
                 let mut vars = HashMap::new();
-                vars.insert("PILOT_ENABLE_WORKLOAD_ENTRY_AUTOREGISTRATION".to_string(), "true".to_string());
+                vars.insert(
+                    "PILOT_ENABLE_WORKLOAD_ENTRY_AUTOREGISTRATION".to_string(),
+                    "true".to_string(),
+                );
                 vars
             },
         },
@@ -71,8 +72,12 @@ async fn demo_intelligent_routing() -> Result<(), Box<dyn std::error::Error>> {
     let api_rule = RoutingRule {
         name: "api-routing".to_string(),
         match_conditions: vec![
-            MatchCondition::Path { pattern: "/api/*".to_string() },
-            MatchCondition::Method { methods: vec!["GET".to_string(), "POST".to_string()] },
+            MatchCondition::Path {
+                pattern: "/api/*".to_string(),
+            },
+            MatchCondition::Method {
+                methods: vec!["GET".to_string(), "POST".to_string()],
+            },
         ],
         destination: Destination {
             service: "user-service".to_string(),
@@ -99,8 +104,13 @@ async fn demo_intelligent_routing() -> Result<(), Box<dyn std::error::Error>> {
     let admin_rule = RoutingRule {
         name: "admin-routing".to_string(),
         match_conditions: vec![
-            MatchCondition::Path { pattern: "/admin/*".to_string() },
-            MatchCondition::Header { name: "X-Admin-Token".to_string(), value: "admin-secret".to_string() },
+            MatchCondition::Path {
+                pattern: "/admin/*".to_string(),
+            },
+            MatchCondition::Header {
+                name: "X-Admin-Token".to_string(),
+                value: "admin-secret".to_string(),
+            },
         ],
         destination: Destination {
             service: "admin-service".to_string(),
@@ -131,7 +141,7 @@ async fn demo_intelligent_routing() -> Result<(), Box<dyn std::error::Error>> {
 
     // 模拟路由请求
     let test_requests = vec![
-RouteRequest {
+        RouteRequest {
             method: "GET".to_string(),
             path: "/api/users".to_string(),
             headers: HashMap::new(),
@@ -140,7 +150,7 @@ RouteRequest {
             source_namespace: "default".to_string(),
             body: None,
         },
-RouteRequest {
+        RouteRequest {
             method: "GET".to_string(),
             path: "/admin/dashboard".to_string(),
             headers: {
@@ -156,12 +166,19 @@ RouteRequest {
     ];
 
     for (i, request) in test_requests.iter().enumerate() {
-        info!("📝 处理请求 #{}: {} {}", i + 1, request.method, request.path);
-        
+        info!(
+            "📝 处理请求 #{}: {} {}",
+            i + 1,
+            request.method,
+            request.path
+        );
+
         match router.route_request(request).await {
             Ok(response) => {
-                info!("✅ 路由成功: {} -> {}:{}", 
-                      request.path, response.destination.address, response.destination.port);
+                info!(
+                    "✅ 路由成功: {} -> {}:{}",
+                    request.path, response.destination.address, response.destination.port
+                );
                 info!("   路由规则: {}", response.rule.name);
                 info!("   路由时间: {:?}", response.routing_time);
             }
@@ -177,10 +194,10 @@ RouteRequest {
 /// 演示自适应负载均衡
 async fn demo_adaptive_load_balancing() -> Result<(), Box<dyn std::error::Error>> {
     info!("⚖️ 演示自适应负载均衡");
-    
+
     // 创建自适应负载均衡器
     let adaptive_lb = AdaptiveLoadBalancer::new();
-    
+
     // 创建测试端点
     let endpoints = vec![
         ServiceEndpoint {
@@ -232,11 +249,16 @@ async fn demo_adaptive_load_balancing() -> Result<(), Box<dyn std::error::Error>
     // 模拟请求处理
     for i in 0..20 {
         let _start_time = std::time::Instant::now();
-        
+
         // 选择端点
         if let Some(selected) = adaptive_lb.select_endpoint(&endpoints).await {
-            info!("请求 #{}: 选择端点 {} ({})", i + 1, selected.id, selected.address);
-            
+            info!(
+                "请求 #{}: 选择端点 {} ({})",
+                i + 1,
+                selected.id,
+                selected.address
+            );
+
             // 模拟请求处理时间
             let response_time = if i % 10 == 0 {
                 // 模拟慢响应
@@ -247,16 +269,18 @@ async fn demo_adaptive_load_balancing() -> Result<(), Box<dyn std::error::Error>
             } else {
                 Duration::from_millis(50 + (i % 50))
             };
-            
+
             sleep(response_time).await;
-            
+
             // 记录性能结果
             let success = i % 15 != 0; // 模拟偶尔的失败
-            adaptive_lb.record_request_result("round_robin", success, response_time).await;
-            
+            adaptive_lb
+                .record_request_result("round_robin", success, response_time)
+                .await;
+
             info!("   响应时间: {:?}, 成功: {}", response_time, success);
         }
-        
+
         // 每5个请求评估一次算法性能
         if i % 5 == 0 {
             adaptive_lb.evaluate_and_switch_algorithm().await;
@@ -271,24 +295,26 @@ async fn demo_adaptive_load_balancing() -> Result<(), Box<dyn std::error::Error>
 /// 演示故障注入功能
 async fn demo_fault_injection() -> Result<(), Box<dyn std::error::Error>> {
     info!("💥 演示故障注入功能");
-    
+
     // 创建故障注入器
     let fault_injector = FaultInjector::new();
-    
+
     // 添加不同类型的故障配置
     let fault_configs = vec![
         FaultConfig {
             name: "delay-fault".to_string(),
-            fault_type: FaultType::Delay { delay: Duration::from_millis(100) },
+            fault_type: FaultType::Delay {
+                delay: Duration::from_millis(100),
+            },
             probability: 0.3, // 30%概率
             duration: Duration::from_secs(60),
             enabled: true,
         },
         FaultConfig {
             name: "error-fault".to_string(),
-            fault_type: FaultType::Error { 
-                status_code: 500, 
-                message: "Internal Server Error".to_string() 
+            fault_type: FaultType::Error {
+                status_code: 500,
+                message: "Internal Server Error".to_string(),
             },
             probability: 0.1, // 10%概率
             duration: Duration::from_secs(30),
@@ -304,7 +330,7 @@ async fn demo_fault_injection() -> Result<(), Box<dyn std::error::Error>> {
         FaultConfig {
             name: "throttle-fault".to_string(),
             fault_type: FaultType::Throttle { rate: 10 }, // 10 req/s
-            probability: 0.2, // 20%概率
+            probability: 0.2,                             // 20%概率
             duration: Duration::from_secs(45),
             enabled: true,
         },
@@ -323,31 +349,32 @@ async fn demo_fault_injection() -> Result<(), Box<dyn std::error::Error>> {
 
     for (i, (service, request_id)) in services.iter().cycle().zip(request_ids).enumerate() {
         info!("📞 处理请求 #{}: {} -> {}", i + 1, request_id, service);
-        
+
         // 注入故障
         match fault_injector.inject_fault(service, &request_id).await? {
-            Some(fault_result) => {
-                match fault_result {
-FaultResult::Delay(duration) => {
-                        warn!("⏰ 注入延迟故障: {:?}", duration);
-                        sleep(duration).await;
-                    }
-FaultResult::Error { status_code, message } => {
-                        warn!("❌ 注入错误故障: {} {}", status_code, message);
-                    }
-FaultResult::Abort(status_code) => {
-                        warn!("🛑 注入中止故障: {}", status_code);
-                    }
-FaultResult::Throttle(rate) => {
-                        warn!("🚦 注入限流故障: {} req/s", rate);
-                    }
+            Some(fault_result) => match fault_result {
+                FaultResult::Delay(duration) => {
+                    warn!("⏰ 注入延迟故障: {:?}", duration);
+                    sleep(duration).await;
                 }
-            }
+                FaultResult::Error {
+                    status_code,
+                    message,
+                } => {
+                    warn!("❌ 注入错误故障: {} {}", status_code, message);
+                }
+                FaultResult::Abort(status_code) => {
+                    warn!("🛑 注入中止故障: {}", status_code);
+                }
+                FaultResult::Throttle(rate) => {
+                    warn!("🚦 注入限流故障: {} req/s", rate);
+                }
+            },
             None => {
                 debug!("✅ 无故障注入，正常处理");
             }
         }
-        
+
         // 模拟正常处理时间
         sleep(Duration::from_millis(50)).await;
     }
@@ -360,7 +387,7 @@ FaultResult::Throttle(rate) => {
 /// 演示服务网格集成
 async fn demo_service_mesh_integration() -> Result<(), Box<dyn std::error::Error>> {
     info!("🕸️ 演示服务网格集成");
-    
+
     // 创建不同服务网格的配置
     let mesh_configs = vec![
         ("Istio", ServiceMeshType::Istio),
@@ -371,13 +398,17 @@ async fn demo_service_mesh_integration() -> Result<(), Box<dyn std::error::Error
 
     for (name, mesh_type) in mesh_configs {
         info!("🔧 配置 {} 服务网格", name);
-        
+
         let config = ServiceMeshConfig {
             mesh_type: mesh_type.clone(),
             control_plane_endpoint: match mesh_type {
                 ServiceMeshType::Istio => "istiod.istio-system.svc.cluster.local:15012".to_string(),
-                ServiceMeshType::Linkerd2 => "linkerd-dst.linkerd.svc.cluster.local:8086".to_string(),
-                ServiceMeshType::ConsulConnect => "consul-server.consul.svc.cluster.local:8500".to_string(),
+                ServiceMeshType::Linkerd2 => {
+                    "linkerd-dst.linkerd.svc.cluster.local:8086".to_string()
+                }
+                ServiceMeshType::ConsulConnect => {
+                    "consul-server.consul.svc.cluster.local:8500".to_string()
+                }
                 ServiceMeshType::Envoy => "envoy-admin.localhost:9901".to_string(),
             },
             data_plane_endpoint: "localhost:15000".to_string(),
@@ -387,7 +418,9 @@ async fn demo_service_mesh_integration() -> Result<(), Box<dyn std::error::Error
                 enabled: true,
                 image: match mesh_type {
                     ServiceMeshType::Istio => "istio/proxyv2:1.19.0".to_string(),
-                    ServiceMeshType::Linkerd2 => "cr.l5d.io/linkerd/proxy:stable-2.14.0".to_string(),
+                    ServiceMeshType::Linkerd2 => {
+                        "cr.l5d.io/linkerd/proxy:stable-2.14.0".to_string()
+                    }
                     ServiceMeshType::ConsulConnect => "consul:1.16.0".to_string(),
                     ServiceMeshType::Envoy => "envoyproxy/envoy:v1.29.0".to_string(),
                 },
@@ -401,13 +434,22 @@ async fn demo_service_mesh_integration() -> Result<(), Box<dyn std::error::Error
                     let mut vars = HashMap::new();
                     match mesh_type {
                         ServiceMeshType::Istio => {
-                            vars.insert("PILOT_ENABLE_WORKLOAD_ENTRY_AUTOREGISTRATION".to_string(), "true".to_string());
+                            vars.insert(
+                                "PILOT_ENABLE_WORKLOAD_ENTRY_AUTOREGISTRATION".to_string(),
+                                "true".to_string(),
+                            );
                         }
                         ServiceMeshType::Linkerd2 => {
-                            vars.insert("LINKERD2_PROXY_LOG".to_string(), "warn,linkerd=info".to_string());
+                            vars.insert(
+                                "LINKERD2_PROXY_LOG".to_string(),
+                                "warn,linkerd=info".to_string(),
+                            );
                         }
                         ServiceMeshType::ConsulConnect => {
-                            vars.insert("CONSUL_HTTP_ADDR".to_string(), "consul-server.consul.svc.cluster.local:8500".to_string());
+                            vars.insert(
+                                "CONSUL_HTTP_ADDR".to_string(),
+                                "consul-server.consul.svc.cluster.local:8500".to_string(),
+                            );
                         }
                         ServiceMeshType::Envoy => {
                             vars.insert("ENVOY_LOG_LEVEL".to_string(), "info".to_string());
@@ -422,16 +464,17 @@ async fn demo_service_mesh_integration() -> Result<(), Box<dyn std::error::Error
         info!("  数据平面端点: {}", config.data_plane_endpoint);
         info!("  服务账户: {}", config.service_account);
         info!("  Sidecar镜像: {}", config.sidecar_config.image);
-        info!("  资源配置: CPU {} / 内存 {}", 
-              config.sidecar_config.resources.cpu_limit, 
-              config.sidecar_config.resources.memory_limit);
-        
+        info!(
+            "  资源配置: CPU {} / 内存 {}",
+            config.sidecar_config.resources.cpu_limit, config.sidecar_config.resources.memory_limit
+        );
+
         // 模拟服务网格功能
         info!("  🔐 启用mTLS加密通信");
         info!("  📊 启用流量指标收集");
         info!("  🛡️ 启用安全策略");
         info!("  🔄 启用服务发现");
-        
+
         sleep(Duration::from_millis(100)).await;
     }
 
@@ -443,7 +486,7 @@ async fn demo_service_mesh_integration() -> Result<(), Box<dyn std::error::Error
 /// 演示完整的微服务架构
 async fn demo_complete_enterprise_architecture() -> Result<(), Box<dyn std::error::Error>> {
     info!("🏢 演示完整的企业级微服务架构");
-    
+
     // 创建服务网格配置
     let _mesh_config = ServiceMeshConfig {
         mesh_type: ServiceMeshType::Istio,
@@ -478,8 +521,12 @@ async fn demo_complete_enterprise_architecture() -> Result<(), Box<dyn std::erro
         RoutingRule {
             name: "api-v1-routing".to_string(),
             match_conditions: vec![
-                MatchCondition::Path { pattern: "/api/v1/*".to_string() },
-                MatchCondition::Method { methods: vec!["GET".to_string(), "POST".to_string(), "PUT".to_string()] },
+                MatchCondition::Path {
+                    pattern: "/api/v1/*".to_string(),
+                },
+                MatchCondition::Method {
+                    methods: vec!["GET".to_string(), "POST".to_string(), "PUT".to_string()],
+                },
             ],
             destination: Destination {
                 service: "api-gateway".to_string(),
@@ -506,8 +553,13 @@ async fn demo_complete_enterprise_architecture() -> Result<(), Box<dyn std::erro
         RoutingRule {
             name: "admin-routing".to_string(),
             match_conditions: vec![
-                MatchCondition::Path { pattern: "/admin/*".to_string() },
-                MatchCondition::Header { name: "X-Admin-Token".to_string(), value: "admin-secret".to_string() },
+                MatchCondition::Path {
+                    pattern: "/admin/*".to_string(),
+                },
+                MatchCondition::Header {
+                    name: "X-Admin-Token".to_string(),
+                    value: "admin-secret".to_string(),
+                },
             ],
             destination: Destination {
                 service: "admin-service".to_string(),
@@ -534,8 +586,12 @@ async fn demo_complete_enterprise_architecture() -> Result<(), Box<dyn std::erro
         RoutingRule {
             name: "metrics-routing".to_string(),
             match_conditions: vec![
-                MatchCondition::Path { pattern: "/metrics".to_string() },
-                MatchCondition::Method { methods: vec!["GET".to_string()] },
+                MatchCondition::Path {
+                    pattern: "/metrics".to_string(),
+                },
+                MatchCondition::Method {
+                    methods: vec!["GET".to_string()],
+                },
             ],
             destination: Destination {
                 service: "metrics-service".to_string(),
@@ -568,7 +624,9 @@ async fn demo_complete_enterprise_architecture() -> Result<(), Box<dyn std::erro
     // 添加故障注入配置
     let chaos_config = FaultConfig {
         name: "chaos-engineering".to_string(),
-        fault_type: FaultType::Delay { delay: Duration::from_millis(50) },
+        fault_type: FaultType::Delay {
+            delay: Duration::from_millis(50),
+        },
         probability: 0.05, // 5%概率进行混沌工程测试
         duration: Duration::from_secs(300),
         enabled: true,
@@ -589,8 +647,14 @@ async fn demo_complete_enterprise_architecture() -> Result<(), Box<dyn std::erro
     info!("🚀 开始企业级请求处理模拟");
 
     for (i, (method, path, service)) in enterprise_requests.iter().enumerate() {
-        info!("📋 处理企业请求 #{}: {} {} -> {}", i + 1, method, path, service);
-        
+        info!(
+            "📋 处理企业请求 #{}: {} {} -> {}",
+            i + 1,
+            method,
+            path,
+            service
+        );
+
         // 创建路由请求
         let route_request = RouteRequest {
             method: method.to_string(),
@@ -600,7 +664,10 @@ async fn demo_complete_enterprise_architecture() -> Result<(), Box<dyn std::erro
                 if path.starts_with("/admin/") {
                     headers.insert("X-Admin-Token".to_string(), "admin-secret".to_string());
                 }
-                headers.insert("User-Agent".to_string(), "Enterprise-Client/1.0".to_string());
+                headers.insert(
+                    "User-Agent".to_string(),
+                    "Enterprise-Client/1.0".to_string(),
+                );
                 headers.insert("X-Request-ID".to_string(), format!("req-{:06}", i + 1));
                 headers
             },
@@ -613,24 +680,29 @@ async fn demo_complete_enterprise_architecture() -> Result<(), Box<dyn std::erro
         // 执行路由
         match router.route_request(&route_request).await {
             Ok(response) => {
-                info!("✅ 路由成功: {} -> {}:{}", 
-                      path, response.destination.address, response.destination.port);
-                info!("   规则: {}, 权重: {}, 超时: {:?}", 
-                      response.rule.name, response.rule.weight, response.rule.timeout);
-                
+                info!(
+                    "✅ 路由成功: {} -> {}:{}",
+                    path, response.destination.address, response.destination.port
+                );
+                info!(
+                    "   规则: {}, 权重: {}, 超时: {:?}",
+                    response.rule.name, response.rule.weight, response.rule.timeout
+                );
+
                 // 注入故障（混沌工程）
-                match fault_injector.inject_fault(service, &format!("req-{:06}", i + 1)).await? {
-                    Some(fault_result) => {
-                        match fault_result {
-FaultResult::Delay(duration) => {
-                                warn!("⏰ 混沌工程延迟: {:?}", duration);
-                                sleep(duration).await;
-                            }
-                            _ => {
-                                warn!("💥 混沌工程故障注入");
-                            }
+                match fault_injector
+                    .inject_fault(service, &format!("req-{:06}", i + 1))
+                    .await?
+                {
+                    Some(fault_result) => match fault_result {
+                        FaultResult::Delay(duration) => {
+                            warn!("⏰ 混沌工程延迟: {:?}", duration);
+                            sleep(duration).await;
                         }
-                    }
+                        _ => {
+                            warn!("💥 混沌工程故障注入");
+                        }
+                    },
                     None => {
                         debug!("✅ 正常处理，无故障注入");
                     }
@@ -640,7 +712,7 @@ FaultResult::Delay(duration) => {
                 warn!("❌ 路由失败: {}", e);
             }
         }
-        
+
         sleep(Duration::from_millis(100)).await;
     }
 
@@ -660,29 +732,29 @@ FaultResult::Delay(duration) => {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志
     tracing_subscriber::fmt::init();
-    
+
     // 初始化OTLP追踪
     init_otlp().await?;
-    
+
     info!("🚀 OTLP Rust 1.90 高级微服务架构演示程序");
     info!("=============================================");
-    
+
     // 演示各个高级功能
     demo_intelligent_routing().await?;
     println!();
-    
+
     demo_adaptive_load_balancing().await?;
     println!();
-    
+
     demo_fault_injection().await?;
     println!();
-    
+
     demo_service_mesh_integration().await?;
     println!();
-    
+
     demo_complete_enterprise_architecture().await?;
-    
+
     info!("🎉 高级微服务架构演示完成！");
-    
+
     Ok(())
 }

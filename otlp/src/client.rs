@@ -1,19 +1,19 @@
 //! # OTLP客户端模块
-//! 
+//!
 //! 提供OTLP客户端的高级接口，整合处理器、导出器和传输层，
 //! 利用Rust 1.90的异步特性实现完整的OTLP功能。
+use crate::config::OtlpConfig;
+use crate::config::TransportProtocol;
+use crate::data::TelemetryData;
+use crate::error::{OtlpError, Result};
+use crate::exporter::{ExportResult, ExporterMetrics, OtlpExporter};
+use crate::processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
+use crate::resilience::{ResilienceConfig, ResilienceManager};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::interval;
-use crate::config::OtlpConfig;
-use crate::data::TelemetryData;
-use crate::error::{Result, OtlpError};
-use crate::exporter::{OtlpExporter, ExportResult, ExporterMetrics};
-use crate::processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
-use crate::config::TransportProtocol;
-use crate::resilience::{ResilienceManager, ResilienceConfig};
-use std::collections::HashMap;
 
 /// OTLP客户端
 pub struct OtlpClient {
@@ -76,7 +76,11 @@ pub struct StdoutAuditHook;
 
 impl AuditHook for StdoutAuditHook {
     fn record(&self, event: &str, metadata: &HashMap<String, String>) {
-        println!("[OTLP AUDIT] event={} meta={}", event, serde_json::to_string(metadata).unwrap_or_default());
+        println!(
+            "[OTLP AUDIT] event={} meta={}",
+            event,
+            serde_json::to_string(metadata).unwrap_or_default()
+        );
     }
 }
 
@@ -86,7 +90,9 @@ pub struct FileAuditHook {
 }
 
 impl FileAuditHook {
-    pub fn new(path: impl Into<String>) -> Self { Self { path: path.into() } }
+    pub fn new(path: impl Into<String>) -> Self {
+        Self { path: path.into() }
+    }
 }
 
 impl AuditHook for FileAuditHook {
@@ -97,7 +103,12 @@ impl AuditHook for FileAuditHook {
         // 异步落盘，不阻塞主流程
         tokio::spawn(async move {
             use tokio::io::AsyncWriteExt;
-            if let Ok(mut f) = tokio::fs::OpenOptions::new().create(true).append(true).open(path).await {
+            if let Ok(mut f) = tokio::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)
+                .await
+            {
                 let _ = f.write_all(text.as_bytes()).await;
             }
         });
@@ -112,7 +123,10 @@ pub struct HttpAuditHook {
 
 impl HttpAuditHook {
     pub fn new(url: impl Into<String>) -> Self {
-        Self { url: url.into(), client: reqwest::Client::new() }
+        Self {
+            url: url.into(),
+            client: reqwest::Client::new(),
+        }
     }
 }
 
@@ -289,8 +303,12 @@ impl OtlpClient {
 
     fn should_sample_for(&self, data: &TelemetryData) -> bool {
         let ratio = self.effective_sampling_ratio_for(data);
-        if (ratio - 1.0).abs() < f64::EPSILON { return true; }
-        if ratio <= 0.0 { return false; }
+        if (ratio - 1.0).abs() < f64::EPSILON {
+            return true;
+        }
+        if ratio <= 0.0 {
+            return false;
+        }
         rand::random::<f64>() < ratio
     }
 
@@ -307,12 +325,24 @@ impl OtlpClient {
     }
 
     async fn check_tenant_qps_allow(&self, data: &TelemetryData) -> bool {
-        let Some(key) = self.config.tenant_id_key.as_ref() else { return true; };
-        let tenant_id = data.resource_attributes.get(key).cloned().unwrap_or_else(|| "_unknown".to_string());
+        let Some(key) = self.config.tenant_id_key.as_ref() else {
+            return true;
+        };
+        let tenant_id = data
+            .resource_attributes
+            .get(key)
+            .cloned()
+            .unwrap_or_else(|| "_unknown".to_string());
         // 令牌桶优先
-        if let (Some(cap), Some(refill)) = (self.config.per_tenant_bucket_capacity, self.config.per_tenant_refill_per_sec) {
+        if let (Some(cap), Some(refill)) = (
+            self.config.per_tenant_bucket_capacity,
+            self.config.per_tenant_refill_per_sec,
+        ) {
             let mut counters = self.tenant_counters.write().await;
-            let entry = counters.per_tenant_tokens.entry(tenant_id).or_insert((cap, std::time::Instant::now()));
+            let entry = counters
+                .per_tenant_tokens
+                .entry(tenant_id)
+                .or_insert((cap, std::time::Instant::now()));
             // refill
             let elapsed = entry.1.elapsed().as_secs_f64();
             let add = (elapsed * refill as f64) as u64;
@@ -320,7 +350,9 @@ impl OtlpClient {
                 entry.0 = (entry.0 + add).min(cap);
                 entry.1 = std::time::Instant::now();
             }
-            if entry.0 == 0 { return false; }
+            if entry.0 == 0 {
+                return false;
+            }
             entry.0 -= 1;
             return true;
         }
@@ -333,7 +365,9 @@ impl OtlpClient {
                 counters.per_tenant_counts.clear();
             }
             let count = counters.per_tenant_counts.entry(tenant_id).or_insert(0);
-            if *count >= limit { return false; }
+            if *count >= limit {
+                return false;
+            }
             *count += 1;
             return true;
         }
@@ -342,17 +376,24 @@ impl OtlpClient {
     }
 
     async fn emit_audit(&self, event: &str, data: Option<&TelemetryData>) {
-        if !self.config.audit_enabled { return; }
+        if !self.config.audit_enabled {
+            return;
+        }
         let mut meta = HashMap::new();
         if let Some(d) = data {
             if let Some(key) = &self.config.tenant_id_key {
-                if let Some(tid) = d.resource_attributes.get(key) { meta.insert("tenant_id".to_string(), tid.clone()); }
+                if let Some(tid) = d.resource_attributes.get(key) {
+                    meta.insert("tenant_id".to_string(), tid.clone());
+                }
             }
-            meta.insert("data_type".to_string(), match d.content {
-                crate::data::TelemetryContent::Trace(_) => "trace".to_string(),
-                crate::data::TelemetryContent::Metric(_) => "metric".to_string(),
-                crate::data::TelemetryContent::Log(_) => "log".to_string(),
-            });
+            meta.insert(
+                "data_type".to_string(),
+                match d.content {
+                    crate::data::TelemetryContent::Trace(_) => "trace".to_string(),
+                    crate::data::TelemetryContent::Metric(_) => "metric".to_string(),
+                    crate::data::TelemetryContent::Log(_) => "log".to_string(),
+                },
+            );
         }
         tracing::info!(target: "otlp_audit", event = %event);
         if let Some(hook) = self.audit_hook.read().await.as_ref() {
@@ -379,7 +420,11 @@ impl OtlpClient {
     }
 
     /// 发送日志数据
-    pub async fn send_log(&self, message: impl Into<String>, severity: crate::data::LogSeverity) -> Result<LogBuilder> {
+    pub async fn send_log(
+        &self,
+        message: impl Into<String>,
+        severity: crate::data::LogSeverity,
+    ) -> Result<LogBuilder> {
         let data = TelemetryData::log(message, severity);
         Ok(LogBuilder::new(self.clone(), data))
     }
@@ -387,7 +432,7 @@ impl OtlpClient {
     /// 获取客户端指标
     pub async fn get_metrics(&self) -> ClientMetrics {
         let mut metrics = self.metrics.read().await.clone();
-        
+
         // 更新运行时间
         if let Some(start_time) = metrics.start_time {
             metrics.uptime = start_time.elapsed();
@@ -538,7 +583,11 @@ impl TraceBuilder {
     }
 
     /// 添加事件
-    pub fn with_event(mut self, name: impl Into<String>, attributes: std::collections::HashMap<String, crate::data::AttributeValue>) -> Self {
+    pub fn with_event(
+        mut self,
+        name: impl Into<String>,
+        attributes: std::collections::HashMap<String, crate::data::AttributeValue>,
+    ) -> Self {
         self.data = self.data.with_event(name, attributes);
         self
     }
@@ -560,7 +609,11 @@ pub struct MetricBuilder {
 impl MetricBuilder {
     /// 创建新的指标构建器
     pub fn new(client: OtlpClient, data: TelemetryData, value: f64) -> Self {
-        Self { client, data, value }
+        Self {
+            client,
+            data,
+            value,
+        }
     }
 
     /// 添加标签
@@ -627,10 +680,9 @@ impl LogBuilder {
     /// 添加数值属性
     pub fn with_numeric_attribute(mut self, key: impl Into<String>, value: f64) -> Self {
         if let crate::data::TelemetryContent::Log(ref mut log_data) = self.data.content {
-            log_data.attributes.insert(
-                key.into(),
-                crate::data::AttributeValue::Double(value),
-            );
+            log_data
+                .attributes
+                .insert(key.into(), crate::data::AttributeValue::Double(value));
         }
         self
     }
@@ -638,16 +690,19 @@ impl LogBuilder {
     /// 添加布尔属性
     pub fn with_bool_attribute(mut self, key: impl Into<String>, value: bool) -> Self {
         if let crate::data::TelemetryContent::Log(ref mut log_data) = self.data.content {
-            log_data.attributes.insert(
-                key.into(),
-                crate::data::AttributeValue::Bool(value),
-            );
+            log_data
+                .attributes
+                .insert(key.into(), crate::data::AttributeValue::Bool(value));
         }
         self
     }
 
     /// 设置追踪上下文
-    pub fn with_trace_context(mut self, trace_id: impl Into<String>, span_id: impl Into<String>) -> Self {
+    pub fn with_trace_context(
+        mut self,
+        trace_id: impl Into<String>,
+        span_id: impl Into<String>,
+    ) -> Self {
         if let crate::data::TelemetryContent::Log(ref mut log_data) = self.data.content {
             log_data.trace_id = Some(trace_id.into());
             log_data.span_id = Some(span_id.into());
@@ -720,7 +775,7 @@ impl Default for OtlpClientBuilder {
 mod tests {
     use super::*;
     use crate::data::{
-        //TelemetryData, 
+        //TelemetryData,
         LogSeverity,
     };
 
@@ -740,7 +795,7 @@ mod tests {
             .timeout(Duration::from_secs(5))
             .build()
             .await;
-        
+
         assert!(client.is_ok());
     }
 
@@ -748,7 +803,7 @@ mod tests {
     async fn test_trace_builder() {
         let config = OtlpConfig::default();
         let client = OtlpClient::new(config).await.unwrap();
-        
+
         let trace_builder = client.send_trace("test-operation").await.unwrap();
         let _result = trace_builder
             .with_attribute("service.name", "test-service")
@@ -756,7 +811,7 @@ mod tests {
             .with_status(crate::data::StatusCode::Ok, Some("success".to_string()))
             .finish()
             .await;
-        
+
         // 注意：这个测试可能会失败，因为需要实际的网络连接
         // 在实际测试中，应该使用mock或测试服务器
     }
@@ -765,7 +820,7 @@ mod tests {
     async fn test_metric_builder() {
         let config = OtlpConfig::default();
         let client = OtlpClient::new(config).await.unwrap();
-        
+
         let metric_builder = client.send_metric("test-metric", 42.0).await.unwrap();
         let _result = metric_builder
             .with_label("environment", "test")
@@ -773,7 +828,7 @@ mod tests {
             .with_unit("count")
             .send()
             .await;
-        
+
         // 注意：这个测试可能会失败，因为需要实际的网络连接
     }
 
@@ -781,15 +836,18 @@ mod tests {
     async fn test_log_builder() {
         let config = OtlpConfig::default();
         let client = OtlpClient::new(config).await.unwrap();
-        
-        let log_builder = client.send_log("Test log message", LogSeverity::Info).await.unwrap();
+
+        let log_builder = client
+            .send_log("Test log message", LogSeverity::Info)
+            .await
+            .unwrap();
         let _result = log_builder
             .with_attribute("logger", "test")
             .with_numeric_attribute("line", 42.0)
             .with_trace_context("trace-id", "span-id")
             .send()
             .await;
-        
+
         // 注意：这个测试可能会失败，因为需要实际的网络连接
     }
 }

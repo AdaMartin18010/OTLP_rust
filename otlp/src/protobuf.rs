@@ -1,10 +1,10 @@
 //! # OTLP Protobuf 集成模块
-//! 
+//!
 //! 提供与OpenTelemetry protobuf定义的集成，支持完整的OTLP协议实现。
 
-use prost::Message;
-use crate::data::{TelemetryData, TelemetryContent, TraceData, MetricData, LogData};
+use crate::data::{LogData, MetricData, TelemetryContent, TelemetryData, TraceData};
 use crate::error::{Result, SerializationError};
+use prost::Message;
 
 /// OTLP资源定义
 #[derive(Clone, PartialEq, Message)]
@@ -532,7 +532,7 @@ impl ProtobufSerializer {
     /// 序列化追踪数据
     pub fn serialize_traces(&self, data: Vec<TelemetryData>) -> Result<Vec<u8>> {
         let mut resource_spans = Vec::new();
-        
+
         for telemetry_data in data {
             if let TelemetryContent::Trace(trace_data) = telemetry_data.content {
                 let span = self.convert_trace_to_span(trace_data)?;
@@ -549,19 +549,20 @@ impl ProtobufSerializer {
                 resource_spans.push(resource_span);
             }
         }
-        
+
         let request = ExportTraceServiceRequest { resource_spans };
         let mut buf = Vec::new();
-        request.encode(&mut buf)
+        request
+            .encode(&mut buf)
             .map_err(|e| SerializationError::Protobuf(e))?;
-        
+
         Ok(buf)
     }
-    
+
     /// 序列化指标数据
     pub fn serialize_metrics(&self, data: Vec<TelemetryData>) -> Result<Vec<u8>> {
         let mut resource_metrics = Vec::new();
-        
+
         for telemetry_data in data {
             if let TelemetryContent::Metric(metric_data) = telemetry_data.content {
                 let metric = self.convert_metric_to_protobuf(metric_data)?;
@@ -578,19 +579,20 @@ impl ProtobufSerializer {
                 resource_metrics.push(resource_metric);
             }
         }
-        
+
         let request = ExportMetricsServiceRequest { resource_metrics };
         let mut buf = Vec::new();
-        request.encode(&mut buf)
+        request
+            .encode(&mut buf)
             .map_err(|e| SerializationError::Protobuf(e))?;
-        
+
         Ok(buf)
     }
-    
+
     /// 序列化日志数据
     pub fn serialize_logs(&self, data: Vec<TelemetryData>) -> Result<Vec<u8>> {
         let mut resource_logs = Vec::new();
-        
+
         for telemetry_data in data {
             if let TelemetryContent::Log(log_data) = telemetry_data.content {
                 let log_record = self.convert_log_to_protobuf(log_data)?;
@@ -607,40 +609,41 @@ impl ProtobufSerializer {
                 resource_logs.push(resource_log);
             }
         }
-        
+
         let request = ExportLogsServiceRequest { resource_logs };
         let mut buf = Vec::new();
-        request.encode(&mut buf)
+        request
+            .encode(&mut buf)
             .map_err(|e| SerializationError::Protobuf(e))?;
-        
+
         Ok(buf)
     }
-    
+
     /// 转换追踪数据为protobuf格式
     fn convert_trace_to_span(&self, trace_data: TraceData) -> Result<Span> {
-        let trace_id = hex::decode(&trace_data.trace_id)
-            .map_err(|e| SerializationError::Format {
+        let trace_id =
+            hex::decode(&trace_data.trace_id).map_err(|e| SerializationError::Format {
                 message: format!("Invalid trace_id: {}", e),
             })?;
-        
-        let span_id = hex::decode(&trace_data.span_id)
-            .map_err(|e| SerializationError::Format {
-                message: format!("Invalid span_id: {}", e),
-            })?;
-        
-        let parent_span_id = trace_data.parent_span_id
+
+        let span_id = hex::decode(&trace_data.span_id).map_err(|e| SerializationError::Format {
+            message: format!("Invalid span_id: {}", e),
+        })?;
+
+        let parent_span_id = trace_data
+            .parent_span_id
             .map(|id| hex::decode(id))
             .transpose()
             .map_err(|e| SerializationError::Format {
                 message: format!("Invalid parent_span_id: {}", e),
             })?
             .unwrap_or_default();
-        
+
         let mut attributes = std::collections::HashMap::new();
         for (key, value) in trace_data.attributes {
             attributes.insert(key, self.convert_attribute_value(value));
         }
-        
+
         let status = Some(Status {
             code: match trace_data.status.code {
                 crate::data::StatusCode::Unset => StatusCode::Unset as i32,
@@ -649,7 +652,7 @@ impl ProtobufSerializer {
             },
             message: trace_data.status.message.unwrap_or_default(),
         });
-        
+
         Ok(Span {
             trace_id,
             span_id,
@@ -668,11 +671,11 @@ impl ProtobufSerializer {
             status,
         })
     }
-    
+
     /// 转换指标数据为protobuf格式
     fn convert_metric_to_protobuf(&self, metric_data: MetricData) -> Result<Metric> {
         let mut data_points = Vec::new();
-        
+
         for data_point in metric_data.data_points {
             let attributes = std::collections::HashMap::new();
             let value = match data_point.value {
@@ -681,7 +684,7 @@ impl ProtobufSerializer {
                 }
                 _ => None,
             };
-            
+
             let number_data_point = NumberDataPoint {
                 attributes,
                 start_time_unix_nano: 0,
@@ -690,24 +693,20 @@ impl ProtobufSerializer {
                 exemplars: Vec::new(),
                 flags: 0,
             };
-            
+
             data_points.push(number_data_point);
         }
-        
+
         let data = match metric_data.metric_type {
-            crate::data::MetricType::Counter => {
-                Some(metric::Data::Sum(Sum {
-                    data_points,
-                    aggregation_temporality: AggregationTemporality::Cumulative as i32,
-                    is_monotonic: true,
-                }))
-            }
-            crate::data::MetricType::Gauge => {
-                Some(metric::Data::Gauge(Gauge { data_points }))
-            }
+            crate::data::MetricType::Counter => Some(metric::Data::Sum(Sum {
+                data_points,
+                aggregation_temporality: AggregationTemporality::Cumulative as i32,
+                is_monotonic: true,
+            })),
+            crate::data::MetricType::Gauge => Some(metric::Data::Gauge(Gauge { data_points })),
             _ => None,
         };
-        
+
         Ok(Metric {
             name: metric_data.name,
             description: metric_data.description,
@@ -715,34 +714,36 @@ impl ProtobufSerializer {
             data,
         })
     }
-    
+
     /// 转换日志数据为protobuf格式
     fn convert_log_to_protobuf(&self, log_data: LogData) -> Result<LogRecord> {
         let mut attributes = std::collections::HashMap::new();
         for (key, value) in log_data.attributes {
             attributes.insert(key, self.convert_attribute_value(value));
         }
-        
-        let trace_id = log_data.trace_id
+
+        let trace_id = log_data
+            .trace_id
             .map(|id| hex::decode(id))
             .transpose()
             .map_err(|e| SerializationError::Format {
                 message: format!("Invalid trace_id: {}", e),
             })?
             .unwrap_or_default();
-        
-        let span_id = log_data.span_id
+
+        let span_id = log_data
+            .span_id
             .map(|id| hex::decode(id))
             .transpose()
             .map_err(|e| SerializationError::Format {
                 message: format!("Invalid span_id: {}", e),
             })?
             .unwrap_or_default();
-        
+
         let body = Some(AttributeValue {
             value: Some(attribute_value::Value::StringValue(log_data.message)),
         });
-        
+
         Ok(LogRecord {
             time_unix_nano: log_data.timestamp,
             observed_time_unix_nano: None,
@@ -756,7 +757,7 @@ impl ProtobufSerializer {
             span_id,
         })
     }
-    
+
     /// 转换属性值
     fn convert_attribute_value(&self, value: crate::data::AttributeValue) -> AttributeValue {
         match value {

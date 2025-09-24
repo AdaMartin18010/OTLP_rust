@@ -1,15 +1,15 @@
 //! # 区块链集成模块
-//! 
+//!
 //! 本模块提供了区块链集成功能，实现去中心化可观测性、
 //! 智能合约集成、分布式账本、代币经济等功能。
 
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{RwLock, Mutex};
-use serde::{Deserialize, Serialize};
-use tracing::{info, error, debug};
-use sha2::{Sha256, Digest};
+use tokio::sync::{Mutex, RwLock};
+use tracing::{debug, error, info};
 
 /// 区块链配置
 #[allow(dead_code)]
@@ -476,7 +476,7 @@ pub struct TokenFunctions {
 impl BlockchainManager {
     pub fn new(config: BlockchainConfig) -> Self {
         let node = Arc::new(BlockchainNode::new(config.node_config.clone()));
-        
+
         Self {
             config,
             node,
@@ -493,13 +493,13 @@ impl BlockchainManager {
 
         // 启动网络管理器
         self.node.network_manager.start().await?;
-        
+
         // 启动共识管理器
         self.node.consensus_manager.start().await?;
-        
+
         // 启动区块同步
         self.start_block_sync().await?;
-        
+
         // 部署可观测性智能合约
         self.deploy_observability_contracts().await?;
 
@@ -513,10 +513,10 @@ impl BlockchainManager {
 
         // 部署指标合约
         let metrics_contract = self.deploy_metrics_contract().await?;
-        
+
         // 部署代币合约
         let token_contract = self.deploy_token_contract().await?;
-        
+
         // 创建可观测性合约实例
         let _observability_contract = ObservabilityContract {
             contract: SmartContract {
@@ -610,20 +610,16 @@ impl BlockchainManager {
                 },
                 get_metrics_by_service: ContractFunction {
                     name: "getMetricsByService".to_string(),
-                    inputs: vec![
-                        ContractParameter {
-                            name: "service".to_string(),
-                            param_type: "string".to_string(),
-                            indexed: false,
-                        },
-                    ],
-                    outputs: vec![
-                        ContractParameter {
-                            name: "metrics".to_string(),
-                            param_type: "tuple[]".to_string(),
-                            indexed: false,
-                        },
-                    ],
+                    inputs: vec![ContractParameter {
+                        name: "service".to_string(),
+                        param_type: "string".to_string(),
+                        indexed: false,
+                    }],
+                    outputs: vec![ContractParameter {
+                        name: "metrics".to_string(),
+                        param_type: "tuple[]".to_string(),
+                        indexed: false,
+                    }],
                     state_mutability: StateMutability::View,
                     payable: false,
                 },
@@ -641,13 +637,11 @@ impl BlockchainManager {
                             indexed: false,
                         },
                     ],
-                    outputs: vec![
-                        ContractParameter {
-                            name: "metrics".to_string(),
-                            param_type: "tuple[]".to_string(),
-                            indexed: false,
-                        },
-                    ],
+                    outputs: vec![ContractParameter {
+                        name: "metrics".to_string(),
+                        param_type: "tuple[]".to_string(),
+                        indexed: false,
+                    }],
                     state_mutability: StateMutability::View,
                     payable: false,
                 },
@@ -678,13 +672,11 @@ impl BlockchainManager {
                             indexed: false,
                         },
                     ],
-                    outputs: vec![
-                        ContractParameter {
-                            name: "success".to_string(),
-                            param_type: "bool".to_string(),
-                            indexed: false,
-                        },
-                    ],
+                    outputs: vec![ContractParameter {
+                        name: "success".to_string(),
+                        param_type: "bool".to_string(),
+                        indexed: false,
+                    }],
                     state_mutability: StateMutability::NonPayable,
                     payable: false,
                 },
@@ -702,13 +694,11 @@ impl BlockchainManager {
                             indexed: false,
                         },
                     ],
-                    outputs: vec![
-                        ContractParameter {
-                            name: "success".to_string(),
-                            param_type: "bool".to_string(),
-                            indexed: false,
-                        },
-                    ],
+                    outputs: vec![ContractParameter {
+                        name: "success".to_string(),
+                        param_type: "bool".to_string(),
+                        indexed: false,
+                    }],
                     state_mutability: StateMutability::NonPayable,
                     payable: false,
                 },
@@ -732,33 +722,27 @@ impl BlockchainManager {
                 },
                 burn: ContractFunction {
                     name: "burn".to_string(),
-                    inputs: vec![
-                        ContractParameter {
-                            name: "amount".to_string(),
-                            param_type: "uint256".to_string(),
-                            indexed: false,
-                        },
-                    ],
+                    inputs: vec![ContractParameter {
+                        name: "amount".to_string(),
+                        param_type: "uint256".to_string(),
+                        indexed: false,
+                    }],
                     outputs: vec![],
                     state_mutability: StateMutability::NonPayable,
                     payable: false,
                 },
                 balance_of: ContractFunction {
                     name: "balanceOf".to_string(),
-                    inputs: vec![
-                        ContractParameter {
-                            name: "account".to_string(),
-                            param_type: "address".to_string(),
-                            indexed: false,
-                        },
-                    ],
-                    outputs: vec![
-                        ContractParameter {
-                            name: "balance".to_string(),
-                            param_type: "uint256".to_string(),
-                            indexed: false,
-                        },
-                    ],
+                    inputs: vec![ContractParameter {
+                        name: "account".to_string(),
+                        param_type: "address".to_string(),
+                        indexed: false,
+                    }],
+                    outputs: vec![ContractParameter {
+                        name: "balance".to_string(),
+                        param_type: "uint256".to_string(),
+                        indexed: false,
+                    }],
                     state_mutability: StateMutability::View,
                     payable: false,
                 },
@@ -769,44 +753,64 @@ impl BlockchainManager {
     }
 
     /// 记录指标到区块链
-    pub async fn record_metric(&self, service: &str, metric_name: &str, value: u64) -> Result<String, BlockchainError> {
-        info!("📊 记录指标到区块链: {} - {} = {}", service, metric_name, value);
+    pub async fn record_metric(
+        &self,
+        service: &str,
+        metric_name: &str,
+        value: u64,
+    ) -> Result<String, BlockchainError> {
+        info!(
+            "📊 记录指标到区块链: {} - {} = {}",
+            service, metric_name, value
+        );
 
         // 创建交易数据
-        let data = self.encode_record_metric_data(service, metric_name, value).await?;
-        
+        let data = self
+            .encode_record_metric_data(service, metric_name, value)
+            .await?;
+
         // 创建交易
         let transaction = self.create_transaction("metrics_contract", 0, data).await?;
-        
+
         // 发送交易
         let tx_hash = self.send_transaction(transaction).await?;
-        
+
         info!("✅ 指标记录完成，交易哈希: {}", tx_hash);
         Ok(tx_hash)
     }
 
     /// 编码记录指标数据
-    async fn encode_record_metric_data(&self, service: &str, metric_name: &str, value: u64) -> Result<Vec<u8>, BlockchainError> {
+    async fn encode_record_metric_data(
+        &self,
+        service: &str,
+        metric_name: &str,
+        value: u64,
+    ) -> Result<Vec<u8>, BlockchainError> {
         // 模拟ABI编码
         let mut data = Vec::new();
-        
+
         // 函数选择器 (前4字节)
         data.extend_from_slice(&[0x12, 0x34, 0x56, 0x78]);
-        
+
         // 参数编码
         data.extend_from_slice(service.as_bytes());
         data.extend_from_slice(metric_name.as_bytes());
         data.extend_from_slice(&value.to_be_bytes());
-        
+
         Ok(data)
     }
 
     /// 创建交易
-    async fn create_transaction(&self, to: &str, value: u64, data: Vec<u8>) -> Result<Transaction, BlockchainError> {
+    async fn create_transaction(
+        &self,
+        to: &str,
+        value: u64,
+        data: Vec<u8>,
+    ) -> Result<Transaction, BlockchainError> {
         let nonce = self.node.wallet.nonce + 1;
         let gas_limit = 21000;
         let gas_price = 20_000_000_000; // 20 Gwei
-        
+
         let transaction = Transaction {
             hash: String::new(), // 将在签名后计算
             from: self.node.wallet.address.clone(),
@@ -824,17 +828,21 @@ impl BlockchainManager {
             timestamp: Instant::now(),
             status: TransactionStatus::Pending,
         };
-        
+
         // 签名交易
         let signed_transaction = self.sign_transaction(transaction).await?;
-        
+
         Ok(signed_transaction)
     }
 
     /// 签名交易
-    async fn sign_transaction(&self, mut transaction: Transaction) -> Result<Transaction, BlockchainError> {
+    async fn sign_transaction(
+        &self,
+        mut transaction: Transaction,
+    ) -> Result<Transaction, BlockchainError> {
         // 模拟交易签名
-        let message = format!("{}{}{}{}{}{}", 
+        let message = format!(
+            "{}{}{}{}{}{}",
             transaction.from,
             transaction.to,
             transaction.value,
@@ -842,10 +850,10 @@ impl BlockchainManager {
             transaction.gas_price,
             transaction.nonce
         );
-        
+
         let hash = Sha256::digest(message.as_bytes());
         let hash_string = format!("{:x}", hash);
-        
+
         // 模拟签名
         // 注意：这里为了模拟，将 r 和 s 均设置为相同的哈希字符串，避免越界切片
         transaction.signature = TransactionSignature {
@@ -853,37 +861,40 @@ impl BlockchainManager {
             s: format!("0x{}", &hash_string),
             v: 27,
         };
-        
+
         // 计算交易哈希
         transaction.hash = format!("0x{}", hash_string);
-        
+
         Ok(transaction)
     }
 
     /// 发送交易
     async fn send_transaction(&self, transaction: Transaction) -> Result<String, BlockchainError> {
         let tx_hash = transaction.hash.clone();
-        
+
         // 添加到内存池
         {
             let mut mempool = self.node.mempool.lock().await;
             mempool.push(transaction.clone());
         }
-        
+
         // 添加到交易存储
         {
             let mut transactions = self.transactions.write().await;
             transactions.insert(tx_hash.clone(), transaction.clone());
         }
-        
+
         // 广播交易
         self.broadcast_transaction(&transaction).await?;
-        
+
         Ok(tx_hash)
     }
 
     /// 广播交易
-    async fn broadcast_transaction(&self, transaction: &Transaction) -> Result<(), BlockchainError> {
+    async fn broadcast_transaction(
+        &self,
+        transaction: &Transaction,
+    ) -> Result<(), BlockchainError> {
         let message = NetworkMessage {
             message_type: MessageType::Transaction,
             payload: serde_json::to_vec(&transaction.hash)?,
@@ -892,9 +903,9 @@ impl BlockchainManager {
             timestamp: Instant::now(),
             signature: String::new(),
         };
-        
+
         self.node.network_manager.broadcast_message(message).await?;
-        
+
         Ok(())
     }
 
@@ -903,20 +914,20 @@ impl BlockchainManager {
         info!("🔄 启动区块同步");
 
         let node = Arc::clone(&self.node);
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 // 同步新区块
                 if let Err(e) = node.sync_blocks().await {
                     error!("区块同步失败: {}", e);
                 }
             }
         });
-        
+
         Ok(())
     }
 
@@ -928,7 +939,7 @@ impl BlockchainManager {
     /// 获取区块链状态
     pub async fn get_blockchain_state(&self) -> BlockchainState {
         let blockchain = self.node.blockchain.read().await;
-        
+
         BlockchainState {
             block_height: blockchain.current_block_number,
             total_transactions: self.metrics.transaction_count,
@@ -967,19 +978,29 @@ impl BlockchainNode {
                 total_difficulty: 0,
                 genesis_block: Block {
                     number: 0,
-                    hash: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
-                    parent_hash: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+                    hash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                        .to_string(),
+                    parent_hash:
+                        "0x0000000000000000000000000000000000000000000000000000000000000000"
+                            .to_string(),
                     timestamp: Instant::now(),
                     nonce: 0,
                     difficulty: 0,
                     gas_limit: 8000000,
                     gas_used: 0,
                     transactions: vec![],
-                    state_root: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
-                    receipts_root: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
-                    transactions_root: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+                    state_root:
+                        "0x0000000000000000000000000000000000000000000000000000000000000000"
+                            .to_string(),
+                    receipts_root:
+                        "0x0000000000000000000000000000000000000000000000000000000000000000"
+                            .to_string(),
+                    transactions_root:
+                        "0x0000000000000000000000000000000000000000000000000000000000000000"
+                            .to_string(),
                     validator: "genesis".to_string(),
-                    signature: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+                    signature: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                        .to_string(),
                 },
             })),
             network_manager: Arc::new(NetworkManager::new(NetworkConfig {
@@ -1003,10 +1024,10 @@ impl BlockchainNode {
     pub async fn sync_blocks(&self) -> Result<(), BlockchainError> {
         // 模拟区块同步
         debug!("同步区块中...");
-        
+
         // 从网络获取最新区块
         let latest_block = self.get_latest_block_from_network().await?;
-        
+
         // 验证区块
         if self.validate_block(&latest_block).await? {
             // 添加到区块链
@@ -1015,10 +1036,10 @@ impl BlockchainNode {
                 blockchain.blocks.push(latest_block.clone());
                 blockchain.current_block_number = latest_block.number;
             }
-            
+
             debug!("新区块同步完成: {}", latest_block.number);
         }
-        
+
         Ok(())
     }
 
@@ -1029,12 +1050,20 @@ impl BlockchainNode {
             let blockchain = self.blockchain.read().await;
             blockchain.current_block_number + 1
         };
-        
-        Ok(Block {
+
+        let timestamp = Instant::now();
+        let parent_hash = if block_number == 1 {
+            // 第一个区块的父哈希是创世区块的哈希
+            "0x0000000000000000000000000000000000000000000000000000000000000000".to_string()
+        } else {
+            format!("0x{:064x}", block_number - 1)
+        };
+
+        let mut block = Block {
             number: block_number,
-            hash: format!("0x{:064x}", block_number),
-            parent_hash: format!("0x{:064x}", block_number - 1),
-            timestamp: Instant::now(),
+            hash: String::new(), // 临时空哈希，稍后计算
+            parent_hash,
+            timestamp,
             nonce: 0,
             difficulty: 1000,
             gas_limit: 8000000,
@@ -1045,20 +1074,25 @@ impl BlockchainNode {
             transactions_root: format!("0x{:064x}", block_number + 3000),
             validator: "validator_1".to_string(),
             signature: format!("0x{:064x}", block_number + 4000),
-        })
+        };
+
+        // 计算正确的区块哈希
+        block.hash = self.calculate_block_hash(&block).await?;
+
+        Ok(block)
     }
 
     /// 验证区块
     async fn validate_block(&self, block: &Block) -> Result<bool, BlockchainError> {
         // 模拟区块验证
         debug!("验证区块: {}", block.number);
-        
+
         // 验证区块哈希
         let expected_hash = self.calculate_block_hash(block).await?;
         if block.hash != expected_hash {
             return Ok(false);
         }
-        
+
         // 验证父区块哈希
         {
             let blockchain = self.blockchain.read().await;
@@ -1070,19 +1104,20 @@ impl BlockchainNode {
                 }
             }
         }
-        
+
         // 验证时间戳
         let now = Instant::now();
         if block.timestamp > now {
             return Ok(false);
         }
-        
+
         Ok(true)
     }
 
     /// 计算区块哈希
     async fn calculate_block_hash(&self, block: &Block) -> Result<String, BlockchainError> {
-        let block_data = format!("{}{}{}{}{}{}{}{}{}{}{}{}{}",
+        let block_data = format!(
+            "{}{}{}{}{}{}{}{}{}{}{}{}{}",
             block.number,
             block.parent_hash,
             block.timestamp.elapsed().as_secs(),
@@ -1097,13 +1132,18 @@ impl BlockchainNode {
             block.signature,
             block.transactions.join("")
         );
-        
+
         let hash = Sha256::digest(block_data.as_bytes());
         Ok(format!("0x{:064x}", hash))
     }
 
     /// 创建交易（供测试使用）
-    pub async fn create_transaction(&self, to: &str, value: u64, data: Vec<u8>) -> Result<Transaction, BlockchainError> {
+    pub async fn create_transaction(
+        &self,
+        to: &str,
+        value: u64,
+        data: Vec<u8>,
+    ) -> Result<Transaction, BlockchainError> {
         let nonce = self.wallet.nonce + 1;
         let gas_limit = 21000;
         let gas_price = 20_000_000_000; // 20 Gwei
@@ -1117,13 +1157,18 @@ impl BlockchainNode {
             gas_price,
             nonce,
             data,
-            signature: TransactionSignature { r: String::new(), s: String::new(), v: 0 },
+            signature: TransactionSignature {
+                r: String::new(),
+                s: String::new(),
+                v: 0,
+            },
             timestamp: Instant::now(),
             status: TransactionStatus::Pending,
         };
 
         // 签名交易（与管理器保持一致的简化实现）
-        let message = format!("{}{}{}{}{}{}",
+        let message = format!(
+            "{}{}{}{}{}{}",
             transaction.from,
             transaction.to,
             transaction.value,
@@ -1133,7 +1178,11 @@ impl BlockchainNode {
         );
         let hash = Sha256::digest(message.as_bytes());
         let hash_string = format!("{:x}", hash);
-        transaction.signature = TransactionSignature { r: format!("0x{}", &hash_string), s: format!("0x{}", &hash_string), v: 27 };
+        transaction.signature = TransactionSignature {
+            r: format!("0x{}", &hash_string),
+            s: format!("0x{}", &hash_string),
+            v: 27,
+        };
         transaction.hash = format!("0x{}", hash_string);
 
         Ok(transaction)
@@ -1152,32 +1201,32 @@ impl NetworkManager {
     /// 启动网络管理器
     pub async fn start(&self) -> Result<(), BlockchainError> {
         info!("🌐 启动网络管理器");
-        
+
         // 启动消息处理循环
         self.start_message_processing().await;
-        
+
         // 启动对等节点发现
         self.start_peer_discovery().await;
-        
+
         Ok(())
     }
 
     /// 启动消息处理
     async fn start_message_processing(&self) {
         let message_queue = Arc::clone(&self.message_queue);
-        
+
         tokio::spawn(async move {
             loop {
                 let messages: Vec<NetworkMessage> = {
                     let mut queue = message_queue.lock().await;
                     queue.drain(..).collect()
                 };
-                
+
                 for message in messages {
                     // 处理消息
                     debug!("处理网络消息: {:?}", message.message_type);
                 }
-                
+
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
         });
@@ -1187,7 +1236,7 @@ impl NetworkManager {
     async fn start_peer_discovery(&self) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(30));
-            
+
             loop {
                 interval.tick().await;
                 // 发现新的对等节点
@@ -1199,14 +1248,14 @@ impl NetworkManager {
     /// 广播消息
     pub async fn broadcast_message(&self, _message: NetworkMessage) -> Result<(), BlockchainError> {
         let peers = self.peers.read().await;
-        
+
         for (_, peer) in peers.iter() {
             if peer.connection_status == ConnectionStatus::Connected {
                 // 发送消息到对等节点
                 debug!("发送消息到对等节点: {}", peer.id);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -1224,10 +1273,10 @@ impl ConsensusManager {
     /// 启动共识管理器
     pub async fn start(&self) -> Result<(), BlockchainError> {
         info!("⚖️ 启动共识管理器");
-        
+
         // 启动共识循环
         self.start_consensus_loop().await;
-        
+
         Ok(())
     }
 
@@ -1236,10 +1285,10 @@ impl ConsensusManager {
         let block_time = self.config.block_time;
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(block_time);
-            
+
             loop {
                 interval.tick().await;
-                
+
                 // 执行共识算法
                 debug!("执行共识算法...");
             }
@@ -1323,11 +1372,14 @@ mod tests {
         };
 
         let manager = BlockchainManager::new(config);
-        
+
         // 测试记录指标
-        let tx_hash = manager.record_metric("user-service", "response_time", 150).await.unwrap();
+        let tx_hash = manager
+            .record_metric("user-service", "response_time", 150)
+            .await
+            .unwrap();
         assert!(!tx_hash.is_empty());
-        
+
         // 测试获取区块链状态
         let state = manager.get_blockchain_state().await;
         assert_eq!(state.block_height, 0);
@@ -1345,21 +1397,38 @@ mod tests {
         };
 
         let node = BlockchainNode::new(config);
-        
+
+        // 验证节点创建成功
+        assert_eq!(node.wallet.address, "node-1");
+        assert_eq!(node.wallet.balance, 1000000000000000000);
+
         // 测试同步区块
-        match node.sync_blocks().await {
-            Ok(_) => {
-                // 验证区块链状态
-                let blockchain = node.blockchain.read().await;
-                assert!(blockchain.blocks.len() >= 1); // 至少包含创世区块
-            }
-            Err(e) => {
-                println!("区块链同步失败: {:?}", e);
-                // 在测试环境中，区块链同步可能失败（没有真实网络）
-                // 我们只验证节点创建成功
-                let blockchain = node.blockchain.read().await;
-                assert!(blockchain.blocks.len() == 0); // 空区块链是预期的
-            }
+        let sync_result = node.sync_blocks().await;
+
+        // 验证区块链状态
+        let blockchain = node.blockchain.read().await;
+
+        // 在测试环境中，同步可能成功或失败
+        // 注意：BlockchainNode::new() 会创建创世区块，但不会添加到blocks向量中
+        // 同步成功时，会添加新区块到blocks向量
+        if sync_result.is_ok() {
+            // 同步成功，应该包含新同步的区块
+            assert!(blockchain.blocks.len() >= 1);
+        } else {
+            // 同步失败，区块链应该为空（只有创世区块的引用）
+            assert!(blockchain.blocks.len() == 0);
+        }
+
+        // 验证创世区块存在
+        assert_eq!(blockchain.genesis_block.number, 0);
+
+        // 验证当前区块号
+        if sync_result.is_ok() {
+            // 同步成功，当前区块号应该是1
+            assert_eq!(blockchain.current_block_number, 1);
+        } else {
+            // 同步失败，当前区块号应该是0
+            assert_eq!(blockchain.current_block_number, 0);
         }
     }
 
@@ -1400,7 +1469,7 @@ mod tests {
         };
 
         let manager = BlockchainManager::new(config);
-        
+
         // 测试部署智能合约
         manager.deploy_observability_contracts().await.unwrap();
     }
@@ -1417,11 +1486,18 @@ mod tests {
         };
 
         let node = BlockchainNode::new(config);
-        
+
         // 测试创建交易
         let data = vec![1, 2, 3, 4, 5];
-        let transaction = node.create_transaction("0x1234567890123456789012345678901234567890", 1000000000000000000, data).await.unwrap();
-        
+        let transaction = node
+            .create_transaction(
+                "0x1234567890123456789012345678901234567890",
+                1000000000000000000,
+                data,
+            )
+            .await
+            .unwrap();
+
         assert_eq!(transaction.from, "node-1");
         assert_eq!(transaction.value, 1000000000000000000);
         assert!(!transaction.hash.is_empty());
@@ -1437,10 +1513,10 @@ mod tests {
         };
 
         let network_manager = NetworkManager::new(config);
-        
+
         // 测试启动网络管理器
         network_manager.start().await.unwrap();
-        
+
         // 等待一段时间让服务启动
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
@@ -1456,10 +1532,10 @@ mod tests {
         };
 
         let consensus_manager = ConsensusManager::new(config);
-        
+
         // 测试启动共识管理器
         consensus_manager.start().await.unwrap();
-        
+
         // 等待一段时间让服务启动
         tokio::time::sleep(Duration::from_millis(100)).await;
     }

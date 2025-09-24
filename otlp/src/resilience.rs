@@ -1,16 +1,16 @@
 //! # 系统弹性和容错机制
-//! 
+//!
 //! 提供完整的错误处理、容错、重试、熔断和优雅降级机制，
 //! 确保系统在各种异常情况下的可靠性和稳定性。
 
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-use tokio::sync::{Mutex, RwLock};
-use tokio::time::{sleep, timeout};
 use futures::future::BoxFuture;
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn, error};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use thiserror::Error;
+use tokio::sync::{Mutex, RwLock};
+use tokio::time::{sleep, timeout};
+use tracing::{error, info, warn};
 
 /// 弹性配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -148,7 +148,9 @@ impl Default for GracefulDegradationConfig {
             ],
             trigger_conditions: vec![
                 TriggerCondition::HighErrorRate { threshold: 0.5 },
-                TriggerCondition::HighLatency { threshold: Duration::from_secs(10) },
+                TriggerCondition::HighLatency {
+                    threshold: Duration::from_secs(10),
+                },
                 TriggerCondition::ResourceExhaustion,
             ],
         }
@@ -242,7 +244,7 @@ impl ResilienceManager {
         R: Send,
     {
         let start_time = Instant::now();
-        
+
         // 1. 健康检查
         if !self.is_healthy().await {
             return Err(ResilienceError::SystemUnhealthy);
@@ -252,9 +254,7 @@ impl ResilienceManager {
         let circuit_breaker = self.get_or_create_circuit_breaker(operation_name).await;
 
         // 3. 通过熔断器执行操作
-        let result = circuit_breaker.call(|| {
-            operation()
-        }).await;
+        let result = circuit_breaker.call(|| operation()).await;
 
         let duration = start_time.elapsed();
         self.update_metrics(operation_name, &result, duration).await;
@@ -270,7 +270,7 @@ impl ResilienceManager {
                 CircuitBreakerError::CircuitBreakerOpen => ResilienceError::CircuitBreakerOpen,
                 CircuitBreakerError::ExecutionError(err) => ResilienceError::OperationFailed(err),
                 CircuitBreakerError::HalfOpenMaxCallsReached => ResilienceError::RateLimited,
-            })
+            }),
         }
     }
 
@@ -290,12 +290,9 @@ impl ResilienceManager {
 
         loop {
             attempt += 1;
-            
+
             // 应用超时
-            let result = timeout(
-                self.config.timeout.operation_timeout,
-                operation()
-            ).await;
+            let result = timeout(self.config.timeout.operation_timeout, operation()).await;
 
             match result {
                 Ok(Ok(response)) => {
@@ -306,20 +303,25 @@ impl ResilienceManager {
                 }
                 Ok(Err(e)) => {
                     if attempt >= self.config.retry.max_attempts {
-                        error!("操作 {} 在 {} 次尝试后仍然失败: {:?}", operation_name, attempt, e);
+                        error!(
+                            "操作 {} 在 {} 次尝试后仍然失败: {:?}",
+                            operation_name, attempt, e
+                        );
                         return Err(e);
                     }
-                    
+
                     if self.should_retry(&e) {
-                        warn!("操作 {} 第 {} 次尝试失败，将在 {:?} 后重试: {:?}", 
-                              operation_name, attempt, delay, e);
-                        
+                        warn!(
+                            "操作 {} 第 {} 次尝试失败，将在 {:?} 后重试: {:?}",
+                            operation_name, attempt, delay, e
+                        );
+
                         self.add_jitter_if_enabled(&mut delay);
                         sleep(delay).await;
-                        
+
                         delay = std::cmp::min(
                             delay.mul_f64(self.config.retry.backoff_multiplier),
-                            self.config.retry.max_delay
+                            self.config.retry.max_delay,
                         );
                     } else {
                         error!("操作 {} 遇到不可重试的错误: {:?}", operation_name, e);
@@ -331,16 +333,18 @@ impl ResilienceManager {
                         error!("操作 {} 在 {} 次尝试后超时", operation_name, attempt);
                         return Err(anyhow::anyhow!("操作超时"));
                     }
-                    
-                    warn!("操作 {} 第 {} 次尝试超时，将在 {:?} 后重试", 
-                          operation_name, attempt, delay);
-                    
+
+                    warn!(
+                        "操作 {} 第 {} 次尝试超时，将在 {:?} 后重试",
+                        operation_name, attempt, delay
+                    );
+
                     self.add_jitter_if_enabled(&mut delay);
                     sleep(delay).await;
-                    
+
                     delay = std::cmp::min(
                         delay.mul_f64(self.config.retry.backoff_multiplier),
-                        self.config.retry.max_delay
+                        self.config.retry.max_delay,
                     );
                 }
             }
@@ -350,7 +354,10 @@ impl ResilienceManager {
     /// 判断是否应该重试
     fn should_retry(&self, error: &anyhow::Error) -> bool {
         let error_string = error.to_string().to_lowercase();
-        self.config.retry.retryable_errors.iter()
+        self.config
+            .retry
+            .retryable_errors
+            .iter()
             .any(|retryable| error_string.contains(retryable))
     }
 
@@ -365,7 +372,7 @@ impl ResilienceManager {
     /// 获取或创建熔断器
     async fn get_or_create_circuit_breaker(&self, operation_name: &str) -> CircuitBreaker {
         let mut circuit_breakers = self.circuit_breakers.write().await;
-        
+
         if let Some(cb) = circuit_breakers.get(operation_name) {
             cb.clone()
         } else {
@@ -382,24 +389,38 @@ impl ResilienceManager {
     }
 
     /// 更新指标
-    async fn update_metrics<R>(&self, operation_name: &str, result: &Result<R, CircuitBreakerError>, duration: Duration) {
+    async fn update_metrics<R>(
+        &self,
+        operation_name: &str,
+        result: &Result<R, CircuitBreakerError>,
+        duration: Duration,
+    ) {
         let mut metrics = self.metrics.write().await;
         metrics.total_operations += 1;
         metrics.total_duration += duration;
-        
+
         match result {
             Ok(_) => metrics.successful_operations += 1,
             Err(_) => metrics.failed_operations += 1,
         }
-        
+
         // 更新操作特定的指标
-        let operation_metrics = metrics.operation_metrics.entry(operation_name.to_string()).or_insert_with(OperationMetrics::default);
+        let operation_metrics = metrics
+            .operation_metrics
+            .entry(operation_name.to_string())
+            .or_insert_with(OperationMetrics::default);
         operation_metrics.total_operations = operation_metrics.total_operations.saturating_add(1);
         operation_metrics.total_duration += duration;
-        
+
         match result {
-            Ok(_) => operation_metrics.successful_operations = operation_metrics.successful_operations.saturating_add(1),
-            Err(_) => operation_metrics.failed_operations = operation_metrics.failed_operations.saturating_add(1),
+            Ok(_) => {
+                operation_metrics.successful_operations =
+                    operation_metrics.successful_operations.saturating_add(1)
+            }
+            Err(_) => {
+                operation_metrics.failed_operations =
+                    operation_metrics.failed_operations.saturating_add(1)
+            }
         }
     }
 
@@ -411,15 +432,16 @@ impl ResilienceManager {
 
         let metrics = self.metrics.read().await;
         let operation_metrics = metrics.operation_metrics.get(operation_name);
-        
+
         if let Some(op_metrics) = operation_metrics {
-            let error_rate = op_metrics.failed_operations as f64 / op_metrics.total_operations as f64;
+            let error_rate =
+                op_metrics.failed_operations as f64 / op_metrics.total_operations as f64;
             let avg_duration = if op_metrics.total_operations > 0 {
                 op_metrics.total_duration / op_metrics.total_operations as u32
             } else {
                 Duration::ZERO
             };
-            
+
             // 检查触发条件
             for condition in &self.config.graceful_degradation.trigger_conditions {
                 match condition {
@@ -446,7 +468,7 @@ impl ResilienceManager {
     /// 触发降级
     async fn trigger_degradation(&self, operation_name: &str) {
         info!("为操作 {} 触发优雅降级", operation_name);
-        
+
         for strategy in &self.config.graceful_degradation.strategies {
             match strategy {
                 DegradationStrategy::UseCache => {
@@ -522,7 +544,7 @@ impl CircuitBreaker {
         F: FnOnce() -> BoxFuture<'static, Result<R, anyhow::Error>>,
     {
         let state = self.state.lock().await;
-        
+
         match *state {
             CircuitBreakerState::Closed => {
                 drop(state);
@@ -594,7 +616,7 @@ impl CircuitBreaker {
     async fn on_success(&self) {
         let mut failure_count = self.failure_count.lock().await;
         let mut success_count = self.success_count.lock().await;
-        
+
         *failure_count = 0;
         *success_count += 1;
     }
@@ -622,7 +644,7 @@ impl CircuitBreaker {
     async fn transition_to_open(&self) {
         let mut state = self.state.lock().await;
         *state = CircuitBreakerState::Open;
-        
+
         let mut last_failure_time = self.last_failure_time.lock().await;
         *last_failure_time = Some(Instant::now());
     }
@@ -641,7 +663,7 @@ impl CircuitBreaker {
 
         let mut failure_count = self.failure_count.lock().await;
         let mut half_open_calls = self.half_open_calls.lock().await;
-        
+
         *failure_count = 0;
         *half_open_calls = 0;
     }
@@ -714,11 +736,11 @@ mod tests {
         let config = ResilienceConfig::default();
         let manager = ResilienceManager::new(config);
 
-        let result = manager.execute_with_resilience("test_operation", || {
-            Box::pin(async move {
-                Ok::<(), anyhow::Error>(())
+        let result = manager
+            .execute_with_resilience("test_operation", || {
+                Box::pin(async move { Ok::<(), anyhow::Error>(()) })
             })
-        }).await;
+            .await;
 
         assert!(result.is_ok());
     }
@@ -728,11 +750,9 @@ mod tests {
         let config = CircuitBreakerConfig::default();
         let circuit_breaker = CircuitBreaker::new(config);
 
-        let result = circuit_breaker.call(|| {
-            Box::pin(async move {
-                Ok::<(), anyhow::Error>(())
-            })
-        }).await;
+        let result = circuit_breaker
+            .call(|| Box::pin(async move { Ok::<(), anyhow::Error>(()) }))
+            .await;
 
         assert!(result.is_ok());
     }
@@ -743,11 +763,11 @@ mod tests {
         let manager = ResilienceManager::new(config);
 
         // 测试基本的弹性执行
-        let result = manager.execute_with_resilience("test_operation", || {
-            Box::pin(async move {
-                Ok::<(), anyhow::Error>(())
+        let result = manager
+            .execute_with_resilience("test_operation", || {
+                Box::pin(async move { Ok::<(), anyhow::Error>(()) })
             })
-        }).await;
+            .await;
 
         assert!(result.is_ok());
     }

@@ -1,22 +1,22 @@
 //! # 微服务架构设计模式实现
-//! 
+//!
 //! 本模块提供了基于Rust 1.90的微服务架构设计模式实现，
 //! 包括服务发现、负载均衡、熔断器、重试机制等核心模式。
 
 pub mod advanced;
 
+use anyhow::{anyhow, Result};
+use async_trait::async_trait;
+use futures::future::BoxFuture;
+use opentelemetry::global;
+use opentelemetry::metrics::{Counter, Histogram};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{RwLock, Mutex};
+use tokio::sync::{Mutex, RwLock};
 use tokio::time::sleep;
-use serde::{Deserialize, Serialize};
-use opentelemetry::metrics::{Counter, Histogram};
-use opentelemetry::global;
-use tracing::{debug};
-use async_trait::async_trait;
-use anyhow::{Result, anyhow};
-use futures::future::BoxFuture;
+use tracing::debug;
 
 /// 服务端点信息
 #[derive(Debug, Clone)]
@@ -41,7 +41,10 @@ pub enum HealthStatus {
 /// 负载均衡器trait
 #[async_trait]
 pub trait LoadBalancer: Send + Sync {
-    async fn select_endpoint<'a>(&self, endpoints: &'a [ServiceEndpoint]) -> Option<&'a ServiceEndpoint>;
+    async fn select_endpoint<'a>(
+        &self,
+        endpoints: &'a [ServiceEndpoint],
+    ) -> Option<&'a ServiceEndpoint>;
     async fn update_endpoints(&mut self, endpoints: Vec<ServiceEndpoint>);
 }
 
@@ -62,7 +65,10 @@ impl RoundRobinLoadBalancer {
 
 #[async_trait]
 impl LoadBalancer for RoundRobinLoadBalancer {
-    async fn select_endpoint<'a>(&self, endpoints: &'a [ServiceEndpoint]) -> Option<&'a ServiceEndpoint> {
+    async fn select_endpoint<'a>(
+        &self,
+        endpoints: &'a [ServiceEndpoint],
+    ) -> Option<&'a ServiceEndpoint> {
         if endpoints.is_empty() {
             return None;
         }
@@ -96,39 +102,46 @@ impl WeightedRoundRobinLoadBalancer {
 
 #[async_trait]
 impl LoadBalancer for WeightedRoundRobinLoadBalancer {
-    async fn select_endpoint<'a>(&self, endpoints: &'a [ServiceEndpoint]) -> Option<&'a ServiceEndpoint> {
+    async fn select_endpoint<'a>(
+        &self,
+        endpoints: &'a [ServiceEndpoint],
+    ) -> Option<&'a ServiceEndpoint> {
         if endpoints.is_empty() {
             return None;
         }
 
         let mut current_weights = self.current_weights.lock().await;
-        
+
         // 找到权重最高的端点
         let mut max_weight = 0;
         let mut selected_endpoint = None;
-        
+
         for endpoint in endpoints {
-            let current_weight = current_weights.get(&endpoint.id).unwrap_or(&endpoint.weight);
+            let current_weight = current_weights
+                .get(&endpoint.id)
+                .unwrap_or(&endpoint.weight);
             if *current_weight > max_weight {
                 max_weight = *current_weight;
                 selected_endpoint = Some(endpoint);
             }
         }
-        
+
         if let Some(endpoint) = selected_endpoint {
             // 减少选中端点的当前权重
             let total_weight: u32 = endpoints.iter().map(|e| e.weight).sum();
-            let current_weight = *current_weights.get(&endpoint.id).unwrap_or(&endpoint.weight);
+            let current_weight = *current_weights
+                .get(&endpoint.id)
+                .unwrap_or(&endpoint.weight);
             let new_weight = current_weight.saturating_sub(total_weight);
             current_weights.insert(endpoint.id.clone(), new_weight);
-            
+
             // 为所有端点增加权重
             for endpoint in endpoints {
                 let current_weight = *current_weights.get(&endpoint.id).unwrap_or(&0);
                 current_weights.insert(endpoint.id.clone(), current_weight + endpoint.weight);
             }
         }
-        
+
         selected_endpoint
     }
 
@@ -189,7 +202,7 @@ impl CircuitBreaker {
         F: FnOnce() -> BoxFuture<'static, Result<R, anyhow::Error>>,
     {
         let state = self.state.lock().await;
-        
+
         match *state {
             CircuitBreakerState::Closed => {
                 drop(state);
@@ -383,7 +396,7 @@ impl Retryer {
                 Ok(result) => return Ok(result),
                 Err(e) => {
                     last_error = Some(e);
-                    
+
                     if attempt == self.config.max_attempts {
                         break;
                     }
@@ -396,17 +409,17 @@ impl Retryer {
                         let jitter = current_delay.as_millis() as f64 * jitter_factor;
                         let jitter_amount = rand::rng().random_range(-jitter..=jitter);
                         current_delay = Duration::from_millis(
-                            (current_delay.as_millis() as f64 + jitter_amount).max(0.0) as u64
+                            (current_delay.as_millis() as f64 + jitter_amount).max(0.0) as u64,
                         );
                     }
 
                     current_delay = current_delay.min(self.config.max_delay);
-                    
+
                     debug!("Retry attempt {} after {:?}", attempt + 1, current_delay);
                     sleep(current_delay).await;
-                    
+
                     delay = Duration::from_millis(
-                        (delay.as_millis() as f64 * self.config.backoff_multiplier) as u64
+                        (delay.as_millis() as f64 * self.config.backoff_multiplier) as u64,
                     );
                     delay = delay.min(self.config.max_delay);
                 }
@@ -420,10 +433,14 @@ impl Retryer {
 /// 服务发现客户端trait
 #[async_trait]
 pub trait ServiceDiscoveryClient: Send + Sync {
-    async fn discover_services(&self, service_name: &str) -> Result<Vec<ServiceEndpoint>, anyhow::Error>;
+    async fn discover_services(
+        &self,
+        service_name: &str,
+    ) -> Result<Vec<ServiceEndpoint>, anyhow::Error>;
     async fn register_service(&self, endpoint: ServiceEndpoint) -> Result<(), anyhow::Error>;
     async fn deregister_service(&self, service_id: &str) -> Result<(), anyhow::Error>;
-    async fn health_check(&self, endpoint: &ServiceEndpoint) -> Result<HealthStatus, anyhow::Error>;
+    async fn health_check(&self, endpoint: &ServiceEndpoint)
+        -> Result<HealthStatus, anyhow::Error>;
 }
 
 /// 微服务客户端
@@ -456,22 +473,28 @@ impl MicroserviceClient {
     ) -> Self {
         let meter = global::meter("microservice_client");
         let metrics = ClientMetrics {
-            total_requests: meter.u64_counter("total_requests")
+            total_requests: meter
+                .u64_counter("total_requests")
                 .with_description("Total number of requests made")
                 .build(),
-            successful_requests: meter.u64_counter("successful_requests")
+            successful_requests: meter
+                .u64_counter("successful_requests")
                 .with_description("Number of successful requests")
                 .build(),
-            failed_requests: meter.u64_counter("failed_requests")
+            failed_requests: meter
+                .u64_counter("failed_requests")
                 .with_description("Number of failed requests")
                 .build(),
-            circuit_breaker_opens: meter.u64_counter("circuit_breaker_opens")
+            circuit_breaker_opens: meter
+                .u64_counter("circuit_breaker_opens")
                 .with_description("Number of circuit breaker opens")
                 .build(),
-            retry_attempts: meter.u64_counter("retry_attempts")
+            retry_attempts: meter
+                .u64_counter("retry_attempts")
                 .with_description("Number of retry attempts")
                 .build(),
-            request_latency: meter.f64_histogram("request_latency")
+            request_latency: meter
+                .f64_histogram("request_latency")
                 .with_description("Request latency in milliseconds")
                 .build(),
         };
@@ -487,27 +510,42 @@ impl MicroserviceClient {
 
     pub async fn call_service<F, R>(&self, service_name: &str, f: F) -> Result<R, anyhow::Error>
     where
-        F: Fn(&ServiceEndpoint) -> BoxFuture<'static, Result<R, anyhow::Error>> + Send + Sync + 'static,
+        F: Fn(&ServiceEndpoint) -> BoxFuture<'static, Result<R, anyhow::Error>>
+            + Send
+            + Sync
+            + 'static,
         R: Send,
     {
         self.metrics.total_requests.add(1, &[]);
         let start_time = Instant::now();
 
         // 发现服务端点
-        let endpoints = self.service_discovery.discover_services(service_name).await?;
+        let endpoints = self
+            .service_discovery
+            .discover_services(service_name)
+            .await?;
         if endpoints.is_empty() {
-            return Err(anyhow!("No available endpoints for service: {}", service_name));
+            return Err(anyhow!(
+                "No available endpoints for service: {}",
+                service_name
+            ));
         }
 
         // 选择端点
-        let endpoint = self.load_balancer.select_endpoint(&endpoints).await
+        let endpoint = self
+            .load_balancer
+            .select_endpoint(&endpoints)
+            .await
             .ok_or_else(|| anyhow!("Failed to select endpoint"))?;
 
         // 通过熔断器执行调用
-        let result = self.circuit_breaker.call(|| {
-            let endpoint = endpoint.clone();
-            Box::pin(async move { f(&endpoint).await })
-        }).await;
+        let result = self
+            .circuit_breaker
+            .call(|| {
+                let endpoint = endpoint.clone();
+                Box::pin(async move { f(&endpoint).await })
+            })
+            .await;
 
         let final_result = match result {
             Ok(response) => {
@@ -529,7 +567,9 @@ impl MicroserviceClient {
         };
 
         let duration = start_time.elapsed();
-        self.metrics.request_latency.record(duration.as_millis() as f64, &[]);
+        self.metrics
+            .request_latency
+            .record(duration.as_millis() as f64, &[]);
 
         final_result
     }
@@ -556,17 +596,25 @@ impl MockConsulClient {
 
 #[async_trait]
 impl ServiceDiscoveryClient for MockConsulClient {
-    async fn discover_services(&self, service_name: &str) -> Result<Vec<ServiceEndpoint>, anyhow::Error> {
+    async fn discover_services(
+        &self,
+        service_name: &str,
+    ) -> Result<Vec<ServiceEndpoint>, anyhow::Error> {
         let services = self.services.read().await;
         Ok(services.get(service_name).cloned().unwrap_or_default())
     }
 
     async fn register_service(&self, endpoint: ServiceEndpoint) -> Result<(), anyhow::Error> {
         let mut services = self.services.write().await;
-        let service_name = endpoint.metadata.get("service_name")
+        let service_name = endpoint
+            .metadata
+            .get("service_name")
             .ok_or_else(|| anyhow!("Missing service_name in metadata"))?;
-        
-        services.entry(service_name.clone()).or_insert_with(Vec::new).push(endpoint);
+
+        services
+            .entry(service_name.clone())
+            .or_insert_with(Vec::new)
+            .push(endpoint);
         Ok(())
     }
 
@@ -578,7 +626,10 @@ impl ServiceDiscoveryClient for MockConsulClient {
         Ok(())
     }
 
-    async fn health_check(&self, endpoint: &ServiceEndpoint) -> Result<HealthStatus, anyhow::Error> {
+    async fn health_check(
+        &self,
+        endpoint: &ServiceEndpoint,
+    ) -> Result<HealthStatus, anyhow::Error> {
         // 模拟健康检查
         Ok(endpoint.health_status.clone())
     }
@@ -586,9 +637,9 @@ impl ServiceDiscoveryClient for MockConsulClient {
 
 // 重新导出advanced模块的类型
 pub use advanced::{
-    ServiceMeshConfig, ServiceMeshType, SidecarConfig, ResourceLimits,
-    RoutingRule, MatchCondition, Destination, RetryPolicy, CircuitBreakerPolicy,
-    IntelligentRouter, TrafficManager, HealthChecker, ServiceInstance, InstanceMetrics,
-    RouterMetrics, RouteRequest, RouteResponse, RoutingError,
-    AdaptiveLoadBalancer, FaultInjector, FaultConfig, FaultType, FaultResult,
+    AdaptiveLoadBalancer, CircuitBreakerPolicy, Destination, FaultConfig, FaultInjector,
+    FaultResult, FaultType, HealthChecker, InstanceMetrics, IntelligentRouter, MatchCondition,
+    ResourceLimits, RetryPolicy, RouteRequest, RouteResponse, RouterMetrics, RoutingError,
+    RoutingRule, ServiceInstance, ServiceMeshConfig, ServiceMeshType, SidecarConfig,
+    TrafficManager,
 };

@@ -1,14 +1,14 @@
 //! # OTLP 性能基准测试
-//! 
+//!
 //! 本模块包含 OTLP 客户端的性能基准测试，用于评估不同场景下的性能表现。
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use std::hint::black_box;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use otlp::{
-    OtlpClient, OtlpConfig, TelemetryData,
     config::TransportProtocol,
     data::{LogSeverity, MetricType, StatusCode},
+    OtlpClient, OtlpConfig, TelemetryData,
 };
+use std::hint::black_box;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 
@@ -54,13 +54,10 @@ fn create_test_metric_data(count: usize) -> Vec<TelemetryData> {
 fn create_test_log_data(count: usize) -> Vec<TelemetryData> {
     (0..count)
         .map(|i| {
-            TelemetryData::log(
-                format!("Benchmark log message {}", i),
-                LogSeverity::Info
-            )
-            .with_attribute("logger", "benchmark")
-            .with_attribute("module", "benchmark_test")
-            .with_numeric_attribute("line", i as f64)
+            TelemetryData::log(format!("Benchmark log message {}", i), LogSeverity::Info)
+                .with_attribute("logger", "benchmark")
+                .with_attribute("module", "benchmark_test")
+                .with_numeric_attribute("line", i as f64)
         })
         .collect()
 }
@@ -73,7 +70,9 @@ fn benchmark_single_trace_send(c: &mut Criterion) {
     c.bench_function("single_trace_send", |b| {
         b.iter(|| {
             rt.block_on(async {
-                let result = client.send_trace("benchmark-operation").await
+                let result = client
+                    .send_trace("benchmark-operation")
+                    .await
                     .unwrap()
                     .with_attribute("service.name", "benchmark-service")
                     .with_numeric_attribute("duration", 100.0)
@@ -91,10 +90,10 @@ fn benchmark_batch_trace_send(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
 
     let mut group = c.benchmark_group("batch_trace_send");
-    
+
     for size in [10, 50, 100, 500, 1000].iter() {
         let data = create_test_trace_data(*size);
-        
+
         group.bench_with_input(BenchmarkId::new("size", size), size, |b, _| {
             b.iter(|| {
                 rt.block_on(async {
@@ -104,7 +103,7 @@ fn benchmark_batch_trace_send(c: &mut Criterion) {
             })
         });
     }
-    
+
     group.finish();
 }
 
@@ -114,45 +113,51 @@ fn benchmark_concurrent_trace_send(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
 
     let mut group = c.benchmark_group("concurrent_trace_send");
-    
+
     for concurrency in [1, 5, 10, 20, 50].iter() {
-        group.bench_with_input(BenchmarkId::new("concurrency", concurrency), concurrency, |b, &concurrency| {
-            b.iter(|| {
-                rt.block_on(async {
-                    let mut handles = Vec::new();
-                    
-                    for i in 0..concurrency {
-                        let client_clone = client.clone();
-                        let handle = tokio::spawn(async move {
-                            let result = client_clone.send_trace(format!("concurrent-{}", i)).await
-                                .unwrap()
-                                .with_attribute("worker.id", i.to_string())
-                                .finish()
-                                .await;
-                            result
-                        });
-                        handles.push(handle);
-                    }
-                    
-                    let mut results = Vec::new();
-                    for handle in handles {
-                        let result = handle.await.unwrap();
-                        results.push(result);
-                    }
-                    
-                    black_box(results)
+        group.bench_with_input(
+            BenchmarkId::new("concurrency", concurrency),
+            concurrency,
+            |b, &concurrency| {
+                b.iter(|| {
+                    rt.block_on(async {
+                        let mut handles = Vec::new();
+
+                        for i in 0..concurrency {
+                            let client_clone = client.clone();
+                            let handle = tokio::spawn(async move {
+                                let result = client_clone
+                                    .send_trace(format!("concurrent-{}", i))
+                                    .await
+                                    .unwrap()
+                                    .with_attribute("worker.id", i.to_string())
+                                    .finish()
+                                    .await;
+                                result
+                            });
+                            handles.push(handle);
+                        }
+
+                        let mut results = Vec::new();
+                        for handle in handles {
+                            let result = handle.await.unwrap();
+                            results.push(result);
+                        }
+
+                        black_box(results)
+                    })
                 })
-            })
-        });
+            },
+        );
     }
-    
+
     group.finish();
 }
 
 /// 基准测试：数据创建性能
 fn benchmark_data_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("data_creation");
-    
+
     // 追踪数据创建
     group.bench_function("trace_creation", |b| {
         b.iter(|| {
@@ -164,7 +169,7 @@ fn benchmark_data_creation(c: &mut Criterion) {
             black_box(data)
         })
     });
-    
+
     // 指标数据创建
     group.bench_function("metric_creation", |b| {
         b.iter(|| {
@@ -174,7 +179,7 @@ fn benchmark_data_creation(c: &mut Criterion) {
             black_box(data)
         })
     });
-    
+
     // 日志数据创建
     group.bench_function("log_creation", |b| {
         b.iter(|| {
@@ -184,18 +189,18 @@ fn benchmark_data_creation(c: &mut Criterion) {
             black_box(data)
         })
     });
-    
+
     group.finish();
 }
 
 /// 基准测试：数据序列化性能
 fn benchmark_data_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("data_serialization");
-    
+
     let trace_data = create_test_trace_data(100);
     let metric_data = create_test_metric_data(100);
     let log_data = create_test_log_data(100);
-    
+
     // JSON序列化
     group.bench_function("json_serialization_trace", |b| {
         b.iter(|| {
@@ -203,21 +208,21 @@ fn benchmark_data_serialization(c: &mut Criterion) {
             black_box(json)
         })
     });
-    
+
     group.bench_function("json_serialization_metric", |b| {
         b.iter(|| {
             let json = serde_json::to_vec(&metric_data).unwrap();
             black_box(json)
         })
     });
-    
+
     group.bench_function("json_serialization_log", |b| {
         b.iter(|| {
             let json = serde_json::to_vec(&log_data).unwrap();
             black_box(json)
         })
     });
-    
+
     group.finish();
 }
 
@@ -231,7 +236,7 @@ fn benchmark_config_validation(c: &mut Criterion) {
                 .with_service("benchmark-service", "1.0.0")
                 .with_request_timeout(Duration::from_secs(30))
                 .with_sampling_ratio(0.1);
-            
+
             let result = config.validate();
             black_box(result)
         })
@@ -241,7 +246,7 @@ fn benchmark_config_validation(c: &mut Criterion) {
 /// 基准测试：客户端创建性能
 fn benchmark_client_creation(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
-    
+
     c.bench_function("client_creation", |b| {
         b.iter(|| {
             rt.block_on(async {
@@ -249,7 +254,7 @@ fn benchmark_client_creation(c: &mut Criterion) {
                     .with_endpoint("http://localhost:4317")
                     .with_protocol(TransportProtocol::Http)
                     .with_service("benchmark-service", "1.0.0");
-                
+
                 let client = OtlpClient::new(config).await.unwrap();
                 black_box(client)
             })
@@ -260,7 +265,7 @@ fn benchmark_client_creation(c: &mut Criterion) {
 /// 基准测试：内存使用
 fn benchmark_memory_usage(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_usage");
-    
+
     for size in [100, 1000, 10000].iter() {
         group.bench_with_input(BenchmarkId::new("data_size", size), size, |b, &size| {
             b.iter(|| {
@@ -270,22 +275,22 @@ fn benchmark_memory_usage(c: &mut Criterion) {
             })
         });
     }
-    
+
     group.finish();
 }
 
 /// 基准测试：错误处理性能
 fn benchmark_error_handling(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
-    
+
     c.bench_function("error_handling", |b| {
         b.iter(|| {
             rt.block_on(async {
                 // 使用无效配置测试错误处理性能
                 let config = OtlpConfig::default()
-                    .with_endpoint("")  // 无效端点
+                    .with_endpoint("") // 无效端点
                     .with_protocol(TransportProtocol::Http);
-                
+
                 let result = config.validate();
                 black_box(result)
             })
@@ -297,17 +302,19 @@ fn benchmark_error_handling(c: &mut Criterion) {
 fn benchmark_metrics_collection(c: &mut Criterion) {
     let client = create_test_client();
     let rt = Runtime::new().unwrap();
-    
+
     // 先发送一些数据
     rt.block_on(async {
         for i in 0..100 {
-            let _ = client.send_trace(format!("metrics-test-{}", i)).await
+            let _ = client
+                .send_trace(format!("metrics-test-{}", i))
+                .await
                 .unwrap()
                 .finish()
                 .await;
         }
     });
-    
+
     c.bench_function("metrics_collection", |b| {
         b.iter(|| {
             rt.block_on(async {
@@ -322,9 +329,9 @@ fn benchmark_metrics_collection(c: &mut Criterion) {
 fn benchmark_protocol_comparison(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let data = create_test_trace_data(100);
-    
+
     let mut group = c.benchmark_group("protocol_comparison");
-    
+
     // HTTP协议
     group.bench_function("http_protocol", |b| {
         b.iter(|| {
@@ -332,7 +339,7 @@ fn benchmark_protocol_comparison(c: &mut Criterion) {
                 let config = OtlpConfig::default()
                     .with_endpoint("http://localhost:4317")
                     .with_protocol(TransportProtocol::Http);
-                
+
                 let client = OtlpClient::new(config).await.unwrap();
                 let _ = client.initialize().await;
                 let result = client.send_batch(data.clone()).await;
@@ -340,7 +347,7 @@ fn benchmark_protocol_comparison(c: &mut Criterion) {
             })
         })
     });
-    
+
     // gRPC协议
     group.bench_function("grpc_protocol", |b| {
         b.iter(|| {
@@ -348,7 +355,7 @@ fn benchmark_protocol_comparison(c: &mut Criterion) {
                 let config = OtlpConfig::default()
                     .with_endpoint("http://localhost:4317")
                     .with_protocol(TransportProtocol::Grpc);
-                
+
                 let client = OtlpClient::new(config).await.unwrap();
                 let _ = client.initialize().await;
                 let result = client.send_batch(data.clone()).await;
@@ -356,7 +363,7 @@ fn benchmark_protocol_comparison(c: &mut Criterion) {
             })
         })
     });
-    
+
     group.finish();
 }
 

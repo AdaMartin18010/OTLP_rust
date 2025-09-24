@@ -1,5 +1,5 @@
 //! # OTLP数据模型模块
-//! 
+//!
 //! 定义OTLP协议的数据结构，支持Rust 1.90的类型系统特性。
 
 use serde::{Deserialize, Serialize};
@@ -318,7 +318,7 @@ impl TelemetryData {
     pub fn trace(name: impl Into<String>) -> Self {
         let trace_id = format!("{:032x}", rand::random::<u128>());
         let span_id = format!("{:016x}", rand::random::<u64>());
-        
+
         let trace_data = TraceData {
             trace_id: trace_id.clone(),
             span_id: span_id.clone(),
@@ -336,7 +336,10 @@ impl TelemetryData {
             links: Vec::new(),
         };
 
-        Self::new(TelemetryDataType::Trace, TelemetryContent::Trace(trace_data))
+        Self::new(
+            TelemetryDataType::Trace,
+            TelemetryContent::Trace(trace_data),
+        )
     }
 
     /// 创建指标数据
@@ -349,7 +352,10 @@ impl TelemetryData {
             data_points: Vec::new(),
         };
 
-        Self::new(TelemetryDataType::Metric, TelemetryContent::Metric(metric_data))
+        Self::new(
+            TelemetryDataType::Metric,
+            TelemetryContent::Metric(metric_data),
+        )
     }
 
     /// 创建日志数据
@@ -372,13 +378,21 @@ impl TelemetryData {
     }
 
     /// 添加资源属性
-    pub fn with_resource_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+    pub fn with_resource_attribute(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Self {
         self.resource_attributes.insert(key.into(), value.into());
         self
     }
 
     /// 添加作用域属性
-    pub fn with_scope_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+    pub fn with_scope_attribute(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Self {
         self.scope_attributes.insert(key.into(), value.into());
         self
     }
@@ -386,10 +400,9 @@ impl TelemetryData {
     /// 添加属性（针对追踪数据）
     pub fn with_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         if let TelemetryContent::Trace(ref mut trace_data) = self.content {
-            trace_data.attributes.insert(
-                key.into(),
-                AttributeValue::String(value.into()),
-            );
+            trace_data
+                .attributes
+                .insert(key.into(), AttributeValue::String(value.into()));
         }
         self
     }
@@ -397,10 +410,9 @@ impl TelemetryData {
     /// 添加数值属性
     pub fn with_numeric_attribute(mut self, key: impl Into<String>, value: f64) -> Self {
         if let TelemetryContent::Trace(ref mut trace_data) = self.content {
-            trace_data.attributes.insert(
-                key.into(),
-                AttributeValue::Double(value),
-            );
+            trace_data
+                .attributes
+                .insert(key.into(), AttributeValue::Double(value));
         }
         self
     }
@@ -408,10 +420,9 @@ impl TelemetryData {
     /// 添加布尔属性
     pub fn with_bool_attribute(mut self, key: impl Into<String>, value: bool) -> Self {
         if let TelemetryContent::Trace(ref mut trace_data) = self.content {
-            trace_data.attributes.insert(
-                key.into(),
-                AttributeValue::Bool(value),
-            );
+            trace_data
+                .attributes
+                .insert(key.into(), AttributeValue::Bool(value));
         }
         self
     }
@@ -425,7 +436,11 @@ impl TelemetryData {
     }
 
     /// 添加事件
-    pub fn with_event(mut self, name: impl Into<String>, attributes: HashMap<String, AttributeValue>) -> Self {
+    pub fn with_event(
+        mut self,
+        name: impl Into<String>,
+        attributes: HashMap<String, AttributeValue>,
+    ) -> Self {
         if let TelemetryContent::Trace(ref mut trace_data) = self.content {
             let event = SpanEvent {
                 timestamp: SystemTime::now()
@@ -455,12 +470,12 @@ impl TelemetryData {
     pub fn size(&self) -> usize {
         // 简化的大小计算，实际实现中可能需要更精确的计算
         let mut size = 0;
-        
+
         // 基础字段
         size += 8; // timestamp
         size += self.resource_attributes.len() * 32; // 估算
         size += self.scope_attributes.len() * 32; // 估算
-        
+
         // 内容大小
         match &self.content {
             TelemetryContent::Trace(trace) => {
@@ -484,7 +499,7 @@ impl TelemetryData {
                 size += log.resource_attributes.len() * 32;
             }
         }
-        
+
         size
     }
 
@@ -497,9 +512,7 @@ impl TelemetryData {
             TelemetryContent::Metric(metric) => {
                 !metric.name.is_empty() && !metric.data_points.is_empty()
             }
-            TelemetryContent::Log(log) => {
-                !log.message.is_empty()
-            }
+            TelemetryContent::Log(log) => !log.message.is_empty(),
         }
     }
 }
@@ -543,10 +556,10 @@ mod tests {
         let trace_data = TelemetryData::trace("test-operation");
         assert_eq!(trace_data.data_type, TelemetryDataType::Trace);
         assert!(trace_data.is_valid());
-        
+
         let metric_data = TelemetryData::metric("test-metric", MetricType::Counter);
         assert_eq!(metric_data.data_type, TelemetryDataType::Metric);
-        
+
         let log_data = TelemetryData::log("test message", LogSeverity::Info);
         assert_eq!(log_data.data_type, TelemetryDataType::Log);
     }
@@ -558,7 +571,7 @@ mod tests {
             .with_numeric_attribute("duration", 100.0)
             .with_bool_attribute("success", true)
             .with_status(StatusCode::Ok, Some("success".to_string()));
-        
+
         if let TelemetryContent::Trace(trace) = &trace_data.content {
             assert_eq!(trace.name, "test-operation");
             assert!(trace.attributes.contains_key("service.name"));
@@ -573,15 +586,15 @@ mod tests {
         let string_attr = AttributeValue::String("test".to_string());
         assert_eq!(string_attr.to_string(), "test");
         assert_eq!(string_attr.type_name(), "string");
-        
+
         let bool_attr = AttributeValue::Bool(true);
         assert_eq!(bool_attr.to_string(), "true");
         assert_eq!(bool_attr.type_name(), "bool");
-        
+
         let int_attr = AttributeValue::Int(42);
         assert_eq!(int_attr.to_string(), "42");
         assert_eq!(int_attr.type_name(), "int");
-        
+
         let double_attr = AttributeValue::Double(3.14);
         assert_eq!(double_attr.to_string(), "3.14");
         assert_eq!(double_attr.type_name(), "double");
@@ -589,9 +602,8 @@ mod tests {
 
     #[test]
     fn test_data_size_calculation() {
-        let trace_data = TelemetryData::trace("test-operation")
-            .with_attribute("key", "value");
-        
+        let trace_data = TelemetryData::trace("test-operation").with_attribute("key", "value");
+
         let size = trace_data.size();
         assert!(size > 0);
     }

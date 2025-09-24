@@ -1,9 +1,9 @@
 //! # OTLP工具模块
-//! 
+//!
 //! 提供OTLP相关的工具函数和实用程序，支持Rust 1.90的特性。
 
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
 use crate::error::Result;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// 压缩工具
 pub struct CompressionUtils;
@@ -27,14 +27,28 @@ impl CompressionUtils {
             use flate2::write::GzEncoder;
             use flate2::Compression;
             use std::io::Write;
-            
+
             let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-            encoder.write_all(&data)
-                .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Gzip compression failed: {}", e)))?;
-            encoder.finish()
-                .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Gzip compression finish failed: {}", e)))
-        }).await
-        .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Gzip compression task failed: {}", e)))?
+            encoder.write_all(&data).map_err(|e| {
+                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                    "Gzip compression failed: {}",
+                    e
+                ))
+            })?;
+            encoder.finish().map_err(|e| {
+                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                    "Gzip compression finish failed: {}",
+                    e
+                ))
+            })
+        })
+        .await
+        .map_err(|e| {
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                "Gzip compression task failed: {}",
+                e
+            ))
+        })?
     }
 
     /// Gzip解压缩
@@ -43,14 +57,24 @@ impl CompressionUtils {
         tokio::task::spawn_blocking(move || {
             use flate2::read::GzDecoder;
             use std::io::Read;
-            
+
             let mut decoder = GzDecoder::new(data.as_slice());
             let mut result = Vec::new();
-            decoder.read_to_end(&mut result)
-                .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Gzip decompression failed: {}", e)))?;
+            decoder.read_to_end(&mut result).map_err(|e| {
+                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                    "Gzip decompression failed: {}",
+                    e
+                ))
+            })?;
             Ok(result)
-        }).await
-        .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Gzip decompression task failed: {}", e)))?
+        })
+        .await
+        .map_err(|e| {
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                "Gzip decompression task failed: {}",
+                e
+            ))
+        })?
     }
 
     /// Brotli压缩
@@ -59,17 +83,27 @@ impl CompressionUtils {
         tokio::task::spawn_blocking(move || {
             use brotli::enc::BrotliEncoderParams;
             //use std::io::Write;
-            
+
             let mut params = BrotliEncoderParams::default();
             params.quality = 6;
-            
+
             let mut result = Vec::new();
             let mut data_mut = std::io::Cursor::new(data);
-            brotli::BrotliCompress(&mut data_mut, &mut result, &params)
-                .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Brotli compression failed: {}", e)))?;
+            brotli::BrotliCompress(&mut data_mut, &mut result, &params).map_err(|e| {
+                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                    "Brotli compression failed: {}",
+                    e
+                ))
+            })?;
             Ok(result)
-        }).await
-        .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Brotli compression task failed: {}", e)))?
+        })
+        .await
+        .map_err(|e| {
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                "Brotli compression task failed: {}",
+                e
+            ))
+        })?
     }
 
     /// Brotli解压缩
@@ -77,14 +111,24 @@ impl CompressionUtils {
         let data = data.to_vec();
         tokio::task::spawn_blocking(move || {
             //use std::io::Read;
-            
+
             let mut result = Vec::new();
             let mut data_mut = std::io::Cursor::new(data);
-            brotli::BrotliDecompress(&mut data_mut, &mut result)
-                .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Brotli decompression failed: {}", e)))?;
+            brotli::BrotliDecompress(&mut data_mut, &mut result).map_err(|e| {
+                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                    "Brotli decompression failed: {}",
+                    e
+                ))
+            })?;
             Ok(result)
-        }).await
-        .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Brotli decompression task failed: {}", e)))?
+        })
+        .await
+        .map_err(|e| {
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                "Brotli decompression task failed: {}",
+                e
+            ))
+        })?
     }
 
     /// Zstd压缩
@@ -92,11 +136,21 @@ impl CompressionUtils {
         let data = data.to_vec();
         tokio::task::spawn_blocking(move || {
             use zstd::encode_all;
-            
-            encode_all(data.as_slice(), 3)
-                .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Zstd compression failed: {}", e)))
-        }).await
-        .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Zstd compression task failed: {}", e)))?
+
+            encode_all(data.as_slice(), 3).map_err(|e| {
+                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                    "Zstd compression failed: {}",
+                    e
+                ))
+            })
+        })
+        .await
+        .map_err(|e| {
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                "Zstd compression task failed: {}",
+                e
+            ))
+        })?
     }
 
     /// Zstd解压缩
@@ -104,11 +158,21 @@ impl CompressionUtils {
         let data = data.to_vec();
         tokio::task::spawn_blocking(move || {
             use zstd::decode_all;
-            
-            decode_all(data.as_slice())
-                .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Zstd decompression failed: {}", e)))
-        }).await
-        .map_err(|e| crate::error::OtlpError::Internal(anyhow::anyhow!("Zstd decompression task failed: {}", e)))?
+
+            decode_all(data.as_slice()).map_err(|e| {
+                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                    "Zstd decompression failed: {}",
+                    e
+                ))
+            })
+        })
+        .await
+        .map_err(|e| {
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                "Zstd decompression task failed: {}",
+                e
+            ))
+        })?
     }
 }
 
@@ -166,7 +230,7 @@ impl TimeUtils {
     /// 格式化持续时间
     pub fn format_duration(duration: Duration) -> String {
         let total_nanos = duration.as_nanos();
-        
+
         if total_nanos < 1_000 {
             format!("{}ns", total_nanos)
         } else if total_nanos < 1_000_000 {
@@ -194,9 +258,7 @@ impl StringUtils {
 
     /// 移除字符串中的控制字符
     pub fn remove_control_chars(s: &str) -> String {
-        s.chars()
-            .filter(|c| !c.is_control())
-            .collect()
+        s.chars().filter(|c| !c.is_control()).collect()
     }
 
     /// 验证字符串是否为有效的标识符
@@ -207,7 +269,7 @@ impl StringUtils {
 
         let mut chars = s.chars();
         let first = chars.next().unwrap();
-        
+
         // 第一个字符必须是字母或下划线
         if !first.is_alphabetic() && first != '_' {
             return false;
@@ -222,23 +284,25 @@ impl StringUtils {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
         use std::time::{
-            SystemTime, 
+            SystemTime,
             //UNIX_EPOCH,
         };
-        
+
         let mut hasher = DefaultHasher::new();
         SystemTime::now().hash(&mut hasher);
         let hash = hasher.finish();
-        
-        let chars: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".chars().collect();
+
+        let chars: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+            .chars()
+            .collect();
         let mut result = String::with_capacity(length);
-        
+
         for i in 0..length {
             let shift_amount = (i * 8) % 64; // 防止溢出
             let idx = ((hash >> shift_amount) & 0xFF) as usize % chars.len();
             result.push(chars[idx]);
         }
-        
+
         result
     }
 }
@@ -251,7 +315,7 @@ impl HashUtils {
     pub fn simple_hash(s: &str) -> u64 {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         s.hash(&mut hasher);
         hasher.finish()
@@ -261,7 +325,7 @@ impl HashUtils {
     pub fn simple_hash_bytes(data: &[u8]) -> u64 {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         data.hash(&mut hasher);
         hasher.finish()
@@ -272,14 +336,14 @@ impl HashUtils {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
         use std::time::{
-            SystemTime, 
+            SystemTime,
             //UNIX_EPOCH,
         };
-        
+
         let mut hasher = DefaultHasher::new();
         SystemTime::now().hash(&mut hasher);
         let hash = hasher.finish();
-        
+
         format!("{:032x}", hash)
     }
 
@@ -288,14 +352,14 @@ impl HashUtils {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
         use std::time::{
-            SystemTime, 
+            SystemTime,
             //UNIX_EPOCH,
         };
-        
+
         let mut hasher = DefaultHasher::new();
         SystemTime::now().hash(&mut hasher);
         let hash = hasher.finish();
-        
+
         format!("{:016x}", hash)[0..8].to_string()
     }
 }
@@ -315,7 +379,7 @@ impl BatchUtils {
 
         for item in data {
             current_batch.push(item);
-            
+
             if current_batch.len() >= batch_size {
                 batches.push(current_batch);
                 current_batch = Vec::with_capacity(batch_size);
@@ -334,7 +398,7 @@ impl BatchUtils {
         if max_batches == 0 {
             return total_items;
         }
-        
+
         total_items.div_ceil(max_batches)
     }
 
@@ -357,39 +421,43 @@ impl RetryUtils {
         randomize: bool,
     ) -> Duration {
         let mut delay = initial_delay.as_nanos() as f64;
-        
+
         // 指数退避
         for _ in 0..attempt {
             delay *= multiplier;
         }
-        
+
         // 限制最大延迟
         let max_delay_nanos = max_delay.as_nanos() as f64;
         if delay > max_delay_nanos {
             delay = max_delay_nanos;
         }
-        
+
         // 随机化延迟
         if randomize {
             use std::collections::hash_map::DefaultHasher;
             use std::hash::{Hash, Hasher};
             use std::time::{
-                SystemTime, 
+                SystemTime,
                 //UNIX_EPOCH,
             };
-            
+
             let mut hasher = DefaultHasher::new();
             SystemTime::now().hash(&mut hasher);
             let random_factor = (hasher.finish() % 1000) as f64 / 1000.0;
-            
+
             delay *= 0.5 + random_factor * 0.5; // 0.5 到 1.0 之间的随机因子
         }
-        
+
         Duration::from_nanos(delay as u64)
     }
 
     /// 判断是否应该重试
-    pub fn should_retry(attempt: usize, max_retries: usize, error: &crate::error::OtlpError) -> bool {
+    pub fn should_retry(
+        attempt: usize,
+        max_retries: usize,
+        error: &crate::error::OtlpError,
+    ) -> bool {
         attempt < max_retries && error.is_retryable()
     }
 }
@@ -425,7 +493,7 @@ impl PerformanceUtils {
         if duration.is_zero() {
             return 0.0;
         }
-        
+
         items as f64 / duration.as_secs_f64()
     }
 
@@ -434,7 +502,7 @@ impl PerformanceUtils {
         if count == 0 {
             return Duration::ZERO;
         }
-        
+
         Duration::from_nanos(total_duration.as_nanos() as u64 / count as u64)
     }
 }
@@ -448,13 +516,13 @@ mod tests {
     fn test_time_utils() {
         let nanos = TimeUtils::current_timestamp_nanos();
         assert!(nanos > 0);
-        
+
         let millis = TimeUtils::nanos_to_millis(1_000_000);
         assert_eq!(millis, 1);
-        
+
         let nanos = TimeUtils::millis_to_nanos(1);
         assert_eq!(nanos, 1_000_000);
-        
+
         let duration = TimeUtils::duration_nanos(1000, 2000);
         assert_eq!(duration, 1000);
     }
@@ -463,14 +531,14 @@ mod tests {
     fn test_string_utils() {
         let truncated = StringUtils::truncate("hello world", 5);
         assert_eq!(truncated, "he...");
-        
+
         let cleaned = StringUtils::remove_control_chars("hello\tworld\n");
         assert_eq!(cleaned, "helloworld");
-        
+
         assert!(StringUtils::is_valid_identifier("valid_identifier"));
         assert!(!StringUtils::is_valid_identifier("123invalid"));
         assert!(!StringUtils::is_valid_identifier(""));
-        
+
         let random = StringUtils::random_string(10);
         assert_eq!(random.len(), 10);
     }
@@ -480,13 +548,13 @@ mod tests {
         let hash1 = HashUtils::simple_hash("test");
         let hash2 = HashUtils::simple_hash("test");
         assert_eq!(hash1, hash2);
-        
+
         let hash3 = HashUtils::simple_hash("different");
         assert_ne!(hash1, hash3);
-        
+
         let trace_id = HashUtils::generate_trace_id();
         assert_eq!(trace_id.len(), 32);
-        
+
         let span_id = HashUtils::generate_span_id();
         assert_eq!(span_id.len(), 8);
     }
@@ -498,10 +566,10 @@ mod tests {
         assert_eq!(batches.len(), 4);
         assert_eq!(batches[0], vec![1, 2, 3]);
         assert_eq!(batches[3], vec![10]);
-        
+
         let batch_size = BatchUtils::calculate_batch_size(10, 3);
         assert_eq!(batch_size, 4);
-        
+
         let validated = BatchUtils::validate_batch_size(100, 50);
         assert_eq!(validated, 50);
     }
@@ -516,7 +584,7 @@ mod tests {
             false,
         );
         assert!(delay >= Duration::from_millis(400));
-        
+
         let should_retry = RetryUtils::should_retry(
             1,
             3,
@@ -533,14 +601,12 @@ mod tests {
         });
         assert_eq!(result, 42);
         assert!(duration >= Duration::from_millis(1));
-        
+
         let throughput = PerformanceUtils::calculate_throughput(100, Duration::from_secs(1));
         assert_eq!(throughput, 100.0);
-        
-        let avg_latency = PerformanceUtils::calculate_average_latency(
-            Duration::from_millis(100),
-            10,
-        );
+
+        let avg_latency =
+            PerformanceUtils::calculate_average_latency(Duration::from_millis(100), 10);
         assert_eq!(avg_latency, Duration::from_millis(10));
     }
 }

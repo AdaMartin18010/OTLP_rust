@@ -1,11 +1,11 @@
 //! # OTLP配置模块
-//! 
+//!
 //! 提供OTLP客户端的配置管理，支持Rust 1.90的配置特性。
 
+use crate::error::{ConfigurationError, Result};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use std::collections::HashMap;
-use crate::error::{Result, ConfigurationError};
+use std::time::Duration;
 
 /// OTLP传输协议类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -135,8 +135,7 @@ impl Default for TlsConfig {
 }
 
 /// 认证配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AuthConfig {
     /// API密钥
     pub api_key: Option<String>,
@@ -145,7 +144,6 @@ pub struct AuthConfig {
     /// 自定义头部
     pub custom_headers: HashMap<String, String>,
 }
-
 
 /// OTLP客户端配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -272,7 +270,11 @@ impl OtlpConfig {
     }
 
     /// 添加资源属性
-    pub fn with_resource_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+    pub fn with_resource_attribute(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Self {
         self.resource_attributes.insert(key.into(), value.into());
         self
     }
@@ -334,7 +336,9 @@ impl OtlpConfig {
 
     /// 添加自定义头部
     pub fn with_custom_header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.auth_config.custom_headers.insert(key.into(), value.into());
+        self.auth_config
+            .custom_headers
+            .insert(key.into(), value.into());
         self
     }
 
@@ -362,33 +366,38 @@ impl OtlpConfig {
         if self.endpoint.is_empty() {
             return Err(ConfigurationError::InvalidEndpoint {
                 url: "empty endpoint".to_string(),
-            }.into());
+            }
+            .into());
         }
 
         // 验证超时配置
         if self.connect_timeout.is_zero() {
             return Err(ConfigurationError::InvalidTimeout {
                 timeout: self.connect_timeout,
-            }.into());
+            }
+            .into());
         }
 
         if self.request_timeout.is_zero() {
             return Err(ConfigurationError::InvalidTimeout {
                 timeout: self.request_timeout,
-            }.into());
+            }
+            .into());
         }
 
         // 验证批处理配置
         if self.batch_config.max_export_batch_size == 0 {
             return Err(ConfigurationError::InvalidBatchConfig {
                 message: "max_export_batch_size must be greater than 0".to_string(),
-            }.into());
+            }
+            .into());
         }
 
         if self.batch_config.max_queue_size == 0 {
             return Err(ConfigurationError::InvalidBatchConfig {
                 message: "max_queue_size must be greater than 0".to_string(),
-            }.into());
+            }
+            .into());
         }
 
         // 验证采样率
@@ -398,7 +407,8 @@ impl OtlpConfig {
                 value: self.sampling_ratio,
                 min: 0.0,
                 max: 1.0,
-            }.into());
+            }
+            .into());
         }
 
         // 验证重试配置
@@ -408,7 +418,8 @@ impl OtlpConfig {
                 value: self.retry_config.retry_delay_multiplier,
                 min: 1.0,
                 max: f64::MAX,
-            }.into());
+            }
+            .into());
         }
 
         Ok(())
@@ -530,7 +541,7 @@ mod tests {
             .with_endpoint("http://localhost:4317")
             .with_connect_timeout(Duration::from_secs(5))
             .with_request_timeout(Duration::from_secs(10));
-        
+
         assert!(config.validate().is_ok());
     }
 
@@ -539,7 +550,7 @@ mod tests {
         let config = OtlpConfig::new()
             .with_endpoint("")
             .with_connect_timeout(Duration::from_secs(0));
-        
+
         assert!(config.validate().is_err());
     }
 
@@ -551,7 +562,7 @@ mod tests {
             .service("test-service", "1.0.0")
             .build()
             .unwrap();
-        
+
         assert_eq!(config.endpoint, "http://localhost:4317");
         assert_eq!(config.protocol, TransportProtocol::Http);
         assert_eq!(config.service_name, "test-service");
@@ -562,8 +573,11 @@ mod tests {
     fn test_endpoint_generation() {
         let grpc_config = OtlpConfig::new().with_protocol(TransportProtocol::Grpc);
         assert_eq!(grpc_config.grpc_endpoint(), "http://localhost:4317");
-        
+
         let http_config = OtlpConfig::new().with_protocol(TransportProtocol::Http);
-        assert_eq!(http_config.http_endpoint(), "http://localhost:4317/v1/traces");
+        assert_eq!(
+            http_config.http_endpoint(),
+            "http://localhost:4317/v1/traces"
+        );
     }
 }

@@ -1,15 +1,15 @@
 //! # OTLP传输层模块
-//! 
+//!
 //! 实现OTLP协议的传输层，支持gRPC和HTTP两种传输方式，
 //! 利用Rust 1.90的异步特性实现高性能数据传输。
 
+use crate::config::{Compression, OtlpConfig, TransportProtocol};
+use crate::data::TelemetryData;
+use crate::error::{OtlpError, Result, TransportError};
+use crate::resilience::{ResilienceConfig, ResilienceManager};
+use crate::utils::CompressionUtils;
 use async_trait::async_trait;
 use tokio::time::timeout;
-use crate::config::{OtlpConfig, TransportProtocol, Compression};
-use crate::data::TelemetryData;
-use crate::error::{Result, TransportError, OtlpError};
-use crate::utils::CompressionUtils;
-use crate::resilience::{ResilienceManager, ResilienceConfig};
 
 // 简化的导入，避免复杂的 OpenTelemetry 依赖
 // 注意：这里使用简化实现，实际项目中应使用完整的 opentelemetry-otlp
@@ -19,16 +19,16 @@ use crate::resilience::{ResilienceManager, ResilienceConfig};
 pub trait Transport: Send + Sync {
     /// 发送遥测数据
     async fn send(&self, data: Vec<TelemetryData>) -> Result<()>;
-    
+
     /// 发送单个遥测数据
     async fn send_single(&self, data: TelemetryData) -> Result<()>;
-    
+
     /// 检查连接状态
     async fn is_connected(&self) -> bool;
-    
+
     /// 关闭连接
     async fn close(&self) -> Result<()>;
-    
+
     /// 获取传输协议
     fn protocol(&self) -> TransportProtocol;
 }
@@ -55,9 +55,9 @@ impl GrpcTransport {
             },
             ..Default::default()
         };
-        
+
         let resilience_manager = ResilienceManager::new(resilience_config);
-        
+
         // 简化的实现，暂时跳过复杂的连接管理
         Ok(Self {
             config,
@@ -70,9 +70,9 @@ impl GrpcTransport {
     async fn send_via_grpc(&self, data: Vec<TelemetryData>) -> Result<()> {
         // 使用弹性管理器执行发送操作
         let data_clone = data.clone();
-        let result = self.resilience_manager.execute_with_resilience(
-            "grpc_send",
-            move || {
+        let result = self
+            .resilience_manager
+            .execute_with_resilience("grpc_send", move || {
                 let data_clone = data_clone.clone();
                 Box::pin(async move {
                     // 这里需要重新实现，因为不能直接访问 self
@@ -80,20 +80,22 @@ impl GrpcTransport {
                     tracing::debug!("发送 {} 条遥测数据", data_clone.len());
                     Ok::<(), anyhow::Error>(())
                 })
-            }
-        ).await;
+            })
+            .await;
 
         result.map_err(|e| match e {
             crate::resilience::ResilienceError::OperationFailed(err) => {
                 TransportError::Connection {
                     endpoint: self.config.endpoint.clone(),
                     reason: format!("gRPC send failed: {}", err),
-                }.into()
+                }
+                .into()
             }
             _ => TransportError::Connection {
-                    endpoint: self.config.endpoint.clone(),
+                endpoint: self.config.endpoint.clone(),
                 reason: format!("Resilience error: {}", e),
-            }.into()
+            }
+            .into(),
         })
     }
 
@@ -102,11 +104,11 @@ impl GrpcTransport {
         // 暂时使用 HTTP 作为后备方案，避免复杂的 gRPC 实现
         // 在实际项目中，这里应该使用 opentelemetry-otlp 的 gRPC 导出器
         tracing::warn!("gRPC 传输暂时使用简化实现，建议使用 opentelemetry-otlp");
-        
+
         // 将数据序列化为 JSON 并通过 HTTP 发送作为临时解决方案
         let _serialized_data = serde_json::to_vec(&data)
             .map_err(|e| anyhow::anyhow!("Serialization failed: {}", e))?;
-            
+
         // 这里应该实现真正的 gRPC 发送逻辑
         // 暂时返回成功，避免编译错误
         tracing::debug!("发送 {} 条遥测数据到 {}", data.len(), self.config.endpoint);
@@ -136,8 +138,8 @@ impl Transport for GrpcTransport {
         self.send_via_grpc(data).await
     }
 
-    async fn send_single(&self, data: TelemetryData) -> Result<()> { 
-        self.send(vec![data]).await 
+    async fn send_single(&self, data: TelemetryData) -> Result<()> {
+        self.send(vec![data]).await
     }
 
     async fn is_connected(&self) -> bool {
@@ -150,8 +152,8 @@ impl Transport for GrpcTransport {
         Ok(())
     }
 
-    fn protocol(&self) -> TransportProtocol { 
-        TransportProtocol::Grpc 
+    fn protocol(&self) -> TransportProtocol {
+        TransportProtocol::Grpc
     }
 }
 
@@ -188,20 +190,40 @@ impl HttpTransport {
     fn choose_endpoint_for_batch(&self, batch: &Vec<crate::data::TelemetryData>) -> String {
         // 简化策略：按首条数据类型路由，要求上层尽量同类批次
         let url = match batch.first() {
-            Some(crate::data::TelemetryData { content: crate::data::TelemetryContent::Trace(_), .. }) => self.config.http_traces_endpoint(),
-            Some(crate::data::TelemetryData { content: crate::data::TelemetryContent::Metric(_), .. }) => self.config.http_metrics_endpoint(),
-            Some(crate::data::TelemetryData { content: crate::data::TelemetryContent::Log(_), .. }) => self.config.http_logs_endpoint(),
+            Some(crate::data::TelemetryData {
+                content: crate::data::TelemetryContent::Trace(_),
+                ..
+            }) => self.config.http_traces_endpoint(),
+            Some(crate::data::TelemetryData {
+                content: crate::data::TelemetryContent::Metric(_),
+                ..
+            }) => self.config.http_metrics_endpoint(),
+            Some(crate::data::TelemetryData {
+                content: crate::data::TelemetryContent::Log(_),
+                ..
+            }) => self.config.http_logs_endpoint(),
             None => self.config.http_traces_endpoint(),
         };
         url
     }
 
     /// 构建HTTP请求
-    fn build_request(&self, url: String, data: Vec<u8>, is_protobuf: bool) -> Result<reqwest::RequestBuilder> {
-        let mut request = self.client.post(url)
+    fn build_request(
+        &self,
+        url: String,
+        data: Vec<u8>,
+        is_protobuf: bool,
+    ) -> Result<reqwest::RequestBuilder> {
+        let mut request = self
+            .client
+            .post(url)
             .header(
                 "content-type",
-                if is_protobuf { "application/x-protobuf" } else { "application/json" }
+                if is_protobuf {
+                    "application/x-protobuf"
+                } else {
+                    "application/json"
+                },
             )
             .body(data);
 
@@ -246,8 +268,8 @@ impl Transport for HttpTransport {
         }
 
         // 序列化数据
-        let serialized_data = serde_json::to_vec(&data)
-            .map_err(|e| TransportError::Connection {
+        let serialized_data =
+            serde_json::to_vec(&data).map_err(|e| TransportError::Connection {
                 endpoint: self.config.endpoint.clone(),
                 reason: format!("Serialization failed: {}", e),
             })?;
@@ -263,10 +285,7 @@ impl Transport for HttpTransport {
         let request = self.build_request(url, compressed_data, is_protobuf)?;
 
         // 发送请求
-        let result = timeout(
-            self.config.request_timeout,
-            request.send()
-        ).await;
+        let result = timeout(self.config.request_timeout, request.send()).await;
 
         match result {
             Ok(Ok(response)) => {
@@ -276,11 +295,15 @@ impl Transport for HttpTransport {
                     Err(TransportError::Connection {
                         endpoint: self.config.endpoint.clone(),
                         reason: format!("HTTP error: {}", response.status()),
-                    }.into())
+                    }
+                    .into())
                 }
             }
             Ok(Err(e)) => Err(TransportError::Http(e).into()),
-            Err(_) => Err(OtlpError::timeout("HTTP request", self.config.request_timeout)),
+            Err(_) => Err(OtlpError::timeout(
+                "HTTP request",
+                self.config.request_timeout,
+            )),
         }
     }
 
@@ -334,7 +357,7 @@ impl TransportPool {
     /// 创建传输池
     pub async fn new(config: OtlpConfig, pool_size: usize) -> Result<Self> {
         let mut transports = Vec::with_capacity(pool_size);
-        
+
         for _ in 0..pool_size {
             let transport = TransportFactory::create(config.clone()).await?;
             transports.push(transport);
@@ -379,7 +402,7 @@ mod tests {
         let config = OtlpConfig::new()
             .with_protocol(TransportProtocol::Http)
             .with_endpoint("http://localhost:4318");
-        
+
         let transport = HttpTransport::new(config);
         assert!(transport.is_ok());
     }
@@ -389,7 +412,7 @@ mod tests {
         let config = OtlpConfig::new()
             .with_protocol(TransportProtocol::Http)
             .with_endpoint("http://localhost:4318");
-        
+
         let transport = TransportFactory::create(config).await;
         assert!(transport.is_ok());
     }
@@ -399,16 +422,15 @@ mod tests {
         let config = OtlpConfig::new()
             .with_protocol(TransportProtocol::Http)
             .with_endpoint("http://localhost:4318");
-        
+
         let pool = TransportPool::new(config, 3).await;
         assert!(pool.is_ok());
     }
 
     #[test]
     fn test_compression_config() {
-        let config = OtlpConfig::new()
-            .with_compression(Compression::Gzip);
-        
+        let config = OtlpConfig::new().with_compression(Compression::Gzip);
+
         assert!(config.is_compression_enabled());
         assert_eq!(config.compression_name(), "gzip");
     }

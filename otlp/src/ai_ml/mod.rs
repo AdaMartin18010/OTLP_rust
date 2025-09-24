@@ -1,14 +1,14 @@
 //! # AI/ML 集成模块
-//! 
+//!
 //! 本模块提供了AI/ML功能集成，包括智能监控、异常检测、
 //! 预测分析、自动优化等企业级AI功能。
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{RwLock, Mutex};
-use serde::{Deserialize, Serialize};
-use tracing::{info, warn, error, debug};
+use tokio::sync::{Mutex, RwLock};
+use tracing::{debug, error, info, warn};
 
 /// AI/ML 配置
 #[allow(dead_code)]
@@ -281,9 +281,9 @@ impl IntelligentMonitor {
             optimization_interval: Duration::from_secs(1800),
             resource_constraints: ResourceConstraints {
                 max_cpu: 8.0,
-                max_memory: 16 * 1024 * 1024 * 1024, // 16GB
+                max_memory: 16 * 1024 * 1024 * 1024,       // 16GB
                 max_network_bandwidth: 1000 * 1024 * 1024, // 1Gbps
-                max_storage: 100 * 1024 * 1024 * 1024, // 100GB
+                max_storage: 100 * 1024 * 1024 * 1024,     // 100GB
             },
             performance_goals: PerformanceGoals {
                 target_latency: Duration::from_millis(100),
@@ -334,23 +334,26 @@ impl IntelligentMonitor {
 
     /// 启动异常检测
     #[allow(dead_code)]
-    async fn start_anomaly_detection(&self, detector: Arc<AnomalyDetector>) -> Result<(), AIMLError> {
+    async fn start_anomaly_detection(
+        &self,
+        detector: Arc<AnomalyDetector>,
+    ) -> Result<(), AIMLError> {
         info!("🔍 启动异常检测服务");
-        
+
         // 加载模型
         detector.load_model().await?;
-        
+
         // 启动检测循环
         let mut interval = tokio::time::interval(Duration::from_secs(30));
         loop {
             interval.tick().await;
-            
+
             // 获取最新指标数据
             let metrics = self.collect_metrics().await?;
-            
+
             // 执行异常检测
             let anomalies = detector.detect_anomalies(&metrics).await?;
-            
+
             // 处理异常告警
             for anomaly in anomalies {
                 self.handle_anomaly_alert(anomaly).await?;
@@ -359,20 +362,23 @@ impl IntelligentMonitor {
     }
 
     /// 启动预测分析
-    async fn start_predictive_analysis(&self, predictor: Arc<PredictiveAnalyzer>) -> Result<(), AIMLError> {
+    async fn start_predictive_analysis(
+        &self,
+        predictor: Arc<PredictiveAnalyzer>,
+    ) -> Result<(), AIMLError> {
         info!("🔮 启动预测分析服务");
-        
+
         // 加载模型
         predictor.load_model().await?;
-        
+
         // 启动预测循环
         let mut interval = tokio::time::interval(Duration::from_secs(300));
         loop {
             interval.tick().await;
-            
+
             // 执行预测分析
             let predictions = predictor.generate_predictions().await?;
-            
+
             // 处理预测结果
             for prediction in predictions {
                 self.handle_prediction(prediction).await?;
@@ -381,23 +387,27 @@ impl IntelligentMonitor {
     }
 
     /// 启动性能优化
-    async fn start_performance_optimization(&self, optimizer: Arc<PerformanceOptimizer>) -> Result<(), AIMLError> {
+    async fn start_performance_optimization(
+        &self,
+        optimizer: Arc<PerformanceOptimizer>,
+    ) -> Result<(), AIMLError> {
         info!("⚡ 启动性能优化服务");
-        
+
         // 加载模型
         optimizer.load_model().await?;
-        
+
         // 启动优化循环
         let mut interval = tokio::time::interval(Duration::from_secs(1800));
         loop {
             interval.tick().await;
-            
+
             // 执行性能分析
             let recommendations = optimizer.analyze_performance().await?;
-            
+
             // 处理优化建议
             for recommendation in recommendations {
-                self.handle_optimization_recommendation(recommendation).await?;
+                self.handle_optimization_recommendation(recommendation)
+                    .await?;
             }
         }
     }
@@ -406,10 +416,10 @@ impl IntelligentMonitor {
     async fn collect_metrics(&self) -> Result<Vec<MetricData>, AIMLError> {
         // 模拟指标数据收集
         let mut metrics = Vec::new();
-        
+
         let services = vec!["user-service", "order-service", "payment-service"];
         let metric_names = vec!["cpu_usage", "memory_usage", "response_time", "error_rate"];
-        
+
         for service in &services {
             for metric_name in &metric_names {
                 let value = self.generate_metric_value(service, metric_name);
@@ -423,7 +433,7 @@ impl IntelligentMonitor {
                 });
             }
         }
-        
+
         Ok(metrics)
     }
 
@@ -431,7 +441,7 @@ impl IntelligentMonitor {
     fn generate_metric_value(&self, _service: &str, metric_name: &str) -> f64 {
         use rand::Rng;
         let mut rng = rand::rng();
-        
+
         match metric_name {
             "cpu_usage" => rng.random_range(0.0..1.0),
             "memory_usage" => rng.random_range(0.0..1.0),
@@ -444,38 +454,49 @@ impl IntelligentMonitor {
     /// 处理异常告警
     async fn handle_anomaly_alert(&self, alert: AnomalyAlert) -> Result<(), AIMLError> {
         info!("🚨 异常告警: {} - {}", alert.metric_name, alert.description);
-        
+
         // 发送告警通知
         self.send_alert_notification(&alert).await?;
-        
+
         // 记录告警
         self.anomaly_detector.record_alert(alert).await;
-        
+
         Ok(())
     }
 
     /// 处理预测结果
     async fn handle_prediction(&self, prediction: Prediction) -> Result<(), AIMLError> {
-        info!("📊 预测结果: {} - 置信度: {:.2}", prediction.metric_name, prediction.confidence);
-        
+        info!(
+            "📊 预测结果: {} - 置信度: {:.2}",
+            prediction.metric_name, prediction.confidence
+        );
+
         // 存储预测结果
         self.predictor.store_prediction(prediction).await;
-        
+
         Ok(())
     }
 
     /// 处理优化建议
-    async fn handle_optimization_recommendation(&self, recommendation: OptimizationRecommendation) -> Result<(), AIMLError> {
-        info!("💡 优化建议: {} - 预期改进: {:.2}%", recommendation.description, recommendation.expected_improvement);
-        
+    async fn handle_optimization_recommendation(
+        &self,
+        recommendation: OptimizationRecommendation,
+    ) -> Result<(), AIMLError> {
+        info!(
+            "💡 优化建议: {} - 预期改进: {:.2}%",
+            recommendation.description, recommendation.expected_improvement
+        );
+
         // 存储建议
-        self.optimizer.store_recommendation(recommendation.clone()).await;
-        
+        self.optimizer
+            .store_recommendation(recommendation.clone())
+            .await;
+
         // 如果启用自动应用，则执行优化
         if self.optimizer.config.auto_apply {
             self.optimizer.apply_recommendation(&recommendation).await?;
         }
-        
+
         Ok(())
     }
 
@@ -506,7 +527,7 @@ impl AnomalyDetector {
     /// 加载异常检测模型
     pub async fn load_model(&self) -> Result<(), AIMLError> {
         info!("📥 加载异常检测模型");
-        
+
         // 模拟模型加载
         let model = AnomalyModel {
             model_type: ModelType::TensorFlow,
@@ -514,33 +535,36 @@ impl AnomalyDetector {
             accuracy: 0.95,
             last_trained: Instant::now(),
         };
-        
+
         let mut model_guard = self.model.lock().await;
         *model_guard = Some(model);
-        
+
         info!("✅ 异常检测模型加载完成");
         Ok(())
     }
 
     /// 检测异常
-    pub async fn detect_anomalies(&self, metrics: &[MetricData]) -> Result<Vec<AnomalyAlert>, AIMLError> {
+    pub async fn detect_anomalies(
+        &self,
+        metrics: &[MetricData],
+    ) -> Result<Vec<AnomalyAlert>, AIMLError> {
         let mut anomalies = Vec::new();
-        
+
         for metric in metrics {
             // 添加到历史数据
             {
                 let mut historical = self.historical_data.write().await;
                 historical.push(metric.clone());
-                
+
                 // 保持窗口大小
                 if historical.len() > self.config.window_size {
                     historical.remove(0);
                 }
             }
-            
+
             // 执行异常检测
             let anomaly_score = self.calculate_anomaly_score(metric).await?;
-            
+
             if anomaly_score > self.config.threshold {
                 let alert = AnomalyAlert {
                     id: format!("anomaly_{}", uuid::Uuid::new_v4()),
@@ -552,11 +576,11 @@ impl AnomalyDetector {
                     recommendations: self.generate_recommendations(metric),
                     service: metric.service.clone(),
                 };
-                
+
                 anomalies.push(alert);
             }
         }
-        
+
         Ok(anomalies)
     }
 
@@ -565,35 +589,34 @@ impl AnomalyDetector {
         // 模拟异常检测算法
         // 实际实现中会使用机器学习模型
         let historical = self.historical_data.read().await;
-        
+
         if historical.len() < 10 {
             return Ok(0.0);
         }
-        
+
         // 简单的统计异常检测
         let values: Vec<f64> = historical
             .iter()
             .filter(|m| m.metric_name == metric.metric_name)
             .map(|m| m.value)
             .collect();
-        
+
         if values.is_empty() {
             return Ok(0.0);
         }
-        
+
         let mean: f64 = values.iter().sum::<f64>() / values.len() as f64;
-        let variance: f64 = values.iter()
-            .map(|v| (v - mean).powi(2))
-            .sum::<f64>() / values.len() as f64;
+        let variance: f64 =
+            values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
         let std_dev = variance.sqrt();
-        
+
         if std_dev == 0.0 {
             return Ok(0.0);
         }
-        
+
         let z_score = (metric.value - mean).abs() / std_dev;
         let anomaly_score = 1.0 / (1.0 + (-z_score).exp());
-        
+
         Ok(anomaly_score)
     }
 
@@ -610,7 +633,7 @@ impl AnomalyDetector {
     /// 生成建议
     fn generate_recommendations(&self, metric: &MetricData) -> Vec<String> {
         let mut recommendations = Vec::new();
-        
+
         match metric.metric_name.as_str() {
             "cpu_usage" if metric.value > 0.8 => {
                 recommendations.push("考虑增加CPU资源或优化代码".to_string());
@@ -630,7 +653,7 @@ impl AnomalyDetector {
             }
             _ => {}
         }
-        
+
         recommendations
     }
 
@@ -638,7 +661,7 @@ impl AnomalyDetector {
     pub async fn record_alert(&self, alert: AnomalyAlert) {
         let mut alerts = self.alerts.write().await;
         alerts.push(alert);
-        
+
         // 保持告警历史大小
         if alerts.len() > 1000 {
             alerts.remove(0);
@@ -658,7 +681,7 @@ impl PredictiveAnalyzer {
     /// 加载预测模型
     pub async fn load_model(&self) -> Result<(), AIMLError> {
         info!("📥 加载预测分析模型");
-        
+
         // 模拟模型加载
         let model = PredictiveModel {
             model_type: ModelType::PyTorch,
@@ -667,10 +690,10 @@ impl PredictiveAnalyzer {
             last_trained: Instant::now(),
             features: vec!["cpu_usage".to_string(), "memory_usage".to_string()],
         };
-        
+
         let mut model_guard = self.model.lock().await;
         *model_guard = Some(model);
-        
+
         info!("✅ 预测分析模型加载完成");
         Ok(())
     }
@@ -678,15 +701,15 @@ impl PredictiveAnalyzer {
     /// 生成预测
     pub async fn generate_predictions(&self) -> Result<Vec<Prediction>, AIMLError> {
         let mut predictions = Vec::new();
-        
+
         // 模拟预测生成
         let metrics = vec!["cpu_usage", "memory_usage", "response_time"];
-        
+
         for metric_name in metrics {
             let prediction = self.predict_metric(metric_name).await?;
             predictions.push(prediction);
         }
-        
+
         Ok(predictions)
     }
 
@@ -694,14 +717,14 @@ impl PredictiveAnalyzer {
     async fn predict_metric(&self, metric_name: &str) -> Result<Prediction, AIMLError> {
         let mut predicted_values = Vec::new();
         let mut current_time = Instant::now();
-        
+
         // 生成未来1小时的预测值
         for i in 0..12 {
             current_time = current_time + Duration::from_secs(300); // 5分钟间隔
-            
+
             let value = self.calculate_predicted_value(metric_name, i).await?;
             let confidence = 0.8 + (i as f64 * 0.01); // 置信度随时间递减
-            
+
             predicted_values.push(PredictedValue {
                 timestamp: current_time,
                 value,
@@ -710,7 +733,7 @@ impl PredictiveAnalyzer {
                 confidence,
             });
         }
-        
+
         Ok(Prediction {
             metric_name: metric_name.to_string(),
             predicted_values,
@@ -721,22 +744,26 @@ impl PredictiveAnalyzer {
     }
 
     /// 计算预测值
-    async fn calculate_predicted_value(&self, metric_name: &str, step: usize) -> Result<f64, AIMLError> {
+    async fn calculate_predicted_value(
+        &self,
+        metric_name: &str,
+        step: usize,
+    ) -> Result<f64, AIMLError> {
         // 模拟预测算法
         // 实际实现中会使用时间序列预测模型
         use rand::Rng;
         let mut rng = rand::rng();
-        
+
         let base_value = match metric_name {
             "cpu_usage" => 0.5,
             "memory_usage" => 0.6,
             "response_time" => 100.0,
             _ => 0.0,
         };
-        
+
         let trend = (step as f64) * 0.01; // 模拟趋势
         let noise = rng.random_range(-0.1..0.1); // 模拟噪声
-        
+
         Ok(base_value + trend + noise)
     }
 
@@ -759,7 +786,7 @@ impl PerformanceOptimizer {
     /// 加载优化模型
     pub async fn load_model(&self) -> Result<(), AIMLError> {
         info!("📥 加载性能优化模型");
-        
+
         // 模拟模型加载
         let model = OptimizationModel {
             model_type: ModelType::Custom("optimization".to_string()),
@@ -767,10 +794,10 @@ impl PerformanceOptimizer {
             optimization_score: 0.92,
             last_trained: Instant::now(),
         };
-        
+
         let mut model_guard = self.optimizer.lock().await;
         *model_guard = Some(model);
-        
+
         info!("✅ 性能优化模型加载完成");
         Ok(())
     }
@@ -778,26 +805,29 @@ impl PerformanceOptimizer {
     /// 分析性能
     pub async fn analyze_performance(&self) -> Result<Vec<OptimizationRecommendation>, AIMLError> {
         let mut recommendations = Vec::new();
-        
+
         // 模拟性能分析
         let services = vec!["user-service", "order-service", "payment-service"];
-        
+
         for service in &services {
             let service_recommendations = self.analyze_service_performance(service).await?;
             recommendations.extend(service_recommendations);
         }
-        
+
         Ok(recommendations)
     }
 
     /// 分析单个服务性能
-    async fn analyze_service_performance(&self, service: &str) -> Result<Vec<OptimizationRecommendation>, AIMLError> {
+    async fn analyze_service_performance(
+        &self,
+        service: &str,
+    ) -> Result<Vec<OptimizationRecommendation>, AIMLError> {
         let mut recommendations = Vec::new();
-        
+
         // 模拟性能分析结果
         use rand::Rng;
         let mut rng = rand::rng();
-        
+
         if rng.random::<f64>() > 0.7 {
             recommendations.push(OptimizationRecommendation {
                 id: format!("opt_{}", uuid::Uuid::new_v4()),
@@ -814,7 +844,7 @@ impl PerformanceOptimizer {
                 },
             });
         }
-        
+
         if rng.random::<f64>() > 0.8 {
             recommendations.push(OptimizationRecommendation {
                 id: format!("opt_{}", uuid::Uuid::new_v4()),
@@ -832,7 +862,7 @@ impl PerformanceOptimizer {
                 },
             });
         }
-        
+
         Ok(recommendations)
     }
 
@@ -840,7 +870,7 @@ impl PerformanceOptimizer {
     pub async fn store_recommendation(&self, recommendation: OptimizationRecommendation) {
         let mut recommendations = self.recommendations.write().await;
         recommendations.push(recommendation);
-        
+
         // 保持建议历史大小
         if recommendations.len() > 500 {
             recommendations.remove(0);
@@ -848,16 +878,20 @@ impl PerformanceOptimizer {
     }
 
     /// 应用建议
-    pub async fn apply_recommendation(&self, recommendation: &OptimizationRecommendation) -> Result<(), AIMLError> {
+    pub async fn apply_recommendation(
+        &self,
+        recommendation: &OptimizationRecommendation,
+    ) -> Result<(), AIMLError> {
         info!("🔧 应用优化建议: {}", recommendation.description);
-        
+
         // 实现具体的优化应用逻辑
         match recommendation.recommendation_type {
             RecommendationType::Scaling => {
                 self.apply_scaling_optimization(recommendation).await?;
             }
             RecommendationType::Configuration => {
-                self.apply_configuration_optimization(recommendation).await?;
+                self.apply_configuration_optimization(recommendation)
+                    .await?;
             }
             RecommendationType::Caching => {
                 self.apply_caching_optimization(recommendation).await?;
@@ -866,26 +900,35 @@ impl PerformanceOptimizer {
                 warn!("未实现的优化类型: {:?}", recommendation.recommendation_type);
             }
         }
-        
+
         Ok(())
     }
 
     /// 应用扩缩容优化
-    async fn apply_scaling_optimization(&self, recommendation: &OptimizationRecommendation) -> Result<(), AIMLError> {
+    async fn apply_scaling_optimization(
+        &self,
+        recommendation: &OptimizationRecommendation,
+    ) -> Result<(), AIMLError> {
         info!("📈 应用扩缩容优化: {}", recommendation.service);
         // 实现Kubernetes扩缩容逻辑
         Ok(())
     }
 
     /// 应用配置优化
-    async fn apply_configuration_optimization(&self, recommendation: &OptimizationRecommendation) -> Result<(), AIMLError> {
+    async fn apply_configuration_optimization(
+        &self,
+        recommendation: &OptimizationRecommendation,
+    ) -> Result<(), AIMLError> {
         info!("⚙️ 应用配置优化: {}", recommendation.service);
         // 实现配置更新逻辑
         Ok(())
     }
 
     /// 应用缓存优化
-    async fn apply_caching_optimization(&self, recommendation: &OptimizationRecommendation) -> Result<(), AIMLError> {
+    async fn apply_caching_optimization(
+        &self,
+        recommendation: &OptimizationRecommendation,
+    ) -> Result<(), AIMLError> {
         info!("💾 应用缓存优化: {}", recommendation.service);
         // 实现缓存配置逻辑
         Ok(())
@@ -933,13 +976,17 @@ mod tests {
         };
 
         let monitor = IntelligentMonitor::new(config);
-        
+
         // 测试指标收集
         let metrics = monitor.collect_metrics().await.unwrap();
         assert!(!metrics.is_empty());
-        
+
         // 测试异常检测
-        let anomalies = monitor.anomaly_detector.detect_anomalies(&metrics).await.unwrap();
+        let anomalies = monitor
+            .anomaly_detector
+            .detect_anomalies(&metrics)
+            .await
+            .unwrap();
         // 由于是随机数据，可能没有异常；上限为输入的指标数
         assert!(anomalies.len() <= metrics.len());
     }
@@ -954,22 +1001,20 @@ mod tests {
         };
 
         let detector = AnomalyDetector::new(config);
-        
+
         // 测试模型加载
         detector.load_model().await.unwrap();
-        
+
         // 测试异常检测
-        let metrics = vec![
-            MetricData {
-                timestamp: Instant::now(),
-                metric_name: "cpu_usage".to_string(),
-                value: 0.9, // 高CPU使用率
-                labels: HashMap::new(),
-                service: "test-service".to_string(),
-                namespace: "default".to_string(),
-            }
-        ];
-        
+        let metrics = vec![MetricData {
+            timestamp: Instant::now(),
+            metric_name: "cpu_usage".to_string(),
+            value: 0.9, // 高CPU使用率
+            labels: HashMap::new(),
+            service: "test-service".to_string(),
+            namespace: "default".to_string(),
+        }];
+
         let anomalies = detector.detect_anomalies(&metrics).await.unwrap();
         assert!(anomalies.len() <= metrics.len());
     }
@@ -984,10 +1029,10 @@ mod tests {
         };
 
         let analyzer = PredictiveAnalyzer::new(config);
-        
+
         // 测试模型加载
         analyzer.load_model().await.unwrap();
-        
+
         // 测试预测生成
         let predictions = analyzer.generate_predictions().await.unwrap();
         assert!(!predictions.is_empty());
@@ -1013,10 +1058,10 @@ mod tests {
         };
 
         let optimizer = PerformanceOptimizer::new(config);
-        
+
         // 测试模型加载
         optimizer.load_model().await.unwrap();
-        
+
         // 测试性能分析
         let recommendations = optimizer.analyze_performance().await.unwrap();
         // 每个服务最多产生2条建议，共3个服务

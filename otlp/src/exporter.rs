@@ -1,21 +1,18 @@
 //! # OTLP导出器模块
-//! 
+//!
 //! 实现OTLP数据的导出功能，支持多种传输方式和重试机制，
 //! 利用Rust 1.90的异步特性实现高性能数据导出。
 
+use crate::config::OtlpConfig;
+use crate::data::TelemetryData;
+use crate::error::{ExportError, Result};
+use crate::resilience::{ResilienceConfig, ResilienceManager};
+use crate::transport::TransportPool;
+use crate::utils::{PerformanceUtils, RetryUtils};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{mpsc, RwLock};
 use tokio::time::sleep;
-use crate::config::OtlpConfig;
-use crate::data::TelemetryData;
-use crate::error::{Result, ExportError};
-use crate::transport::TransportPool;
-use crate::resilience::{ResilienceManager, ResilienceConfig};
-use crate::utils::{
-    RetryUtils, 
-    PerformanceUtils,
-};
 
 /// 导出结果
 #[derive(Debug, Clone)]
@@ -52,7 +49,12 @@ impl ExportResult {
     }
 
     /// 创建部分成功结果
-    pub fn partial(success_count: usize, failure_count: usize, duration: Duration, errors: Vec<String>) -> Self {
+    pub fn partial(
+        success_count: usize,
+        failure_count: usize,
+        duration: Duration,
+        errors: Vec<String>,
+    ) -> Self {
         Self {
             success_count,
             failure_count,
@@ -161,7 +163,7 @@ impl OtlpExporter {
         // 创建传输池
         let pool_size = self.config.batch_config.max_export_batch_size.min(10);
         let transport_pool = TransportPool::new(self.config.clone(), pool_size).await?;
-        
+
         let mut pool_guard = self.transport_pool.write().await;
         *pool_guard = Some(transport_pool);
         drop(pool_guard);
@@ -196,9 +198,8 @@ impl OtlpExporter {
             }
         }
 
-        let (result, duration) = PerformanceUtils::measure_time(async {
-            self.export_with_retry(data).await
-        }).await;
+        let (result, duration) =
+            PerformanceUtils::measure_time(async { self.export_with_retry(data).await }).await;
 
         // 更新指标
         match &result {
@@ -288,7 +289,9 @@ impl OtlpExporter {
         tokio::spawn(async move {
             loop {
                 // 如果已关闭则退出
-                if *is_shutdown.read().await { break; }
+                if *is_shutdown.read().await {
+                    break;
+                }
 
                 match rx.recv().await {
                     Some(batch) => {
@@ -323,8 +326,12 @@ impl OtlpExporter {
                 }
                 Err(e) => {
                     last_error = Some(e);
-                    
-                    if !RetryUtils::should_retry(attempt, self.config.retry_config.max_retries, last_error.as_ref().unwrap()) {
+
+                    if !RetryUtils::should_retry(
+                        attempt,
+                        self.config.retry_config.max_retries,
+                        last_error.as_ref().unwrap(),
+                    ) {
                         break;
                     }
 
@@ -345,23 +352,27 @@ impl OtlpExporter {
 
         // 所有重试都失败了
         let _error = last_error.unwrap();
-        Err(ExportError::RetryExhausted { attempts: total_retries }.into())
+        Err(ExportError::RetryExhausted {
+            attempts: total_retries,
+        }
+        .into())
     }
 
     /// 直接导出批次
     async fn export_batch_direct(&self, data: Vec<TelemetryData>) -> Result<ExportResult> {
         let mut pool_guard = self.transport_pool.write().await;
-        let pool = pool_guard.as_mut()
-            .ok_or(ExportError::NotInitialized)?;
+        let pool = pool_guard.as_mut().ok_or(ExportError::NotInitialized)?;
 
         Self::export_batch(pool, data).await
     }
 
     /// 导出批次数据
-    async fn export_batch(pool: &mut TransportPool, data: Vec<TelemetryData>) -> Result<ExportResult> {
-        let (result, duration) = PerformanceUtils::measure_time(async {
-            pool.send(data.clone()).await
-        }).await;
+    async fn export_batch(
+        pool: &mut TransportPool,
+        data: Vec<TelemetryData>,
+    ) -> Result<ExportResult> {
+        let (result, duration) =
+            PerformanceUtils::measure_time(async { pool.send(data.clone()).await }).await;
 
         match result {
             Ok(()) => Ok(ExportResult::success(data.len(), duration)),
@@ -375,22 +386,23 @@ impl OtlpExporter {
     /// 更新指标
     async fn update_metrics(&self, result: &ExportResult, duration: Duration) {
         let mut metrics = self.metrics.write().await;
-        
+
         metrics.total_exports += 1;
         if result.is_success() {
             metrics.successful_exports += 1;
         } else {
             metrics.failed_exports += 1;
         }
-        
+
         metrics.total_data_exported += result.total_count() as u64;
-        
+
         // 更新平均延迟
         let total_exports = metrics.total_exports as f64;
         let current_avg = metrics.average_export_latency.as_nanos() as f64;
-        let new_avg = (current_avg * (total_exports - 1.0) + duration.as_nanos() as f64) / total_exports;
+        let new_avg =
+            (current_avg * (total_exports - 1.0) + duration.as_nanos() as f64) / total_exports;
         metrics.average_export_latency = Duration::from_nanos(new_avg as u64);
-        
+
         // 更新最大延迟
         if duration > metrics.max_export_latency {
             metrics.max_export_latency = duration;
@@ -429,12 +441,12 @@ impl BatchExporter {
         if batch.len() >= self.batch_size {
             let batch_data = std::mem::replace(&mut *batch, Vec::with_capacity(self.batch_size));
             drop(batch);
-            
+
             // 重置定时器
             let mut timer = self.batch_timer.write().await;
             *timer = None;
             drop(timer);
-            
+
             // 导出批次
             self.exporter.export(batch_data).await?;
         } else {
@@ -507,7 +519,7 @@ impl AsyncExporter {
                     let result = exporter_clone.export(batch_data).await.unwrap_or_else(|e| {
                         ExportResult::failure(0, Duration::ZERO, vec![e.to_string()])
                     });
-                    
+
                     if result_tx.send(result).is_err() {
                         break;
                     }
@@ -532,7 +544,8 @@ impl AsyncExporter {
 
     /// 异步导出数据
     pub fn export_async(&self, data: TelemetryData) -> Result<()> {
-        self.export_queue.send(data)
+        self.export_queue
+            .send(data)
             .map_err(|_| ExportError::ExportFailed {
                 reason: "Failed to send data to export queue".to_string(),
             })?;
@@ -564,7 +577,8 @@ mod tests {
         assert_eq!(result.total_count(), 5);
         assert_eq!(result.success_rate(), 0.0);
 
-        let result = ExportResult::partial(7, 3, Duration::from_millis(75), vec!["error".to_string()]);
+        let result =
+            ExportResult::partial(7, 3, Duration::from_millis(75), vec!["error".to_string()]);
         assert!(!result.is_success());
         assert!(!result.is_failure());
         assert_eq!(result.total_count(), 10);
@@ -575,7 +589,7 @@ mod tests {
     async fn test_exporter_creation() {
         let config = OtlpConfig::default();
         let exporter = OtlpExporter::new(config);
-        
+
         // 测试初始化
         let _result = exporter.initialize().await;
         // 注意：这个测试可能会失败，因为需要实际的网络连接
@@ -587,7 +601,7 @@ mod tests {
         let config = OtlpConfig::default();
         let exporter = Arc::new(OtlpExporter::new(config));
         let batch_exporter = BatchExporter::new(exporter, 5, Duration::from_millis(100));
-        
+
         let data = TelemetryData::trace("test-operation");
         let _result = batch_exporter.add_data(data).await;
         // 注意：这个测试可能会失败，因为需要实际的网络连接
@@ -598,7 +612,7 @@ mod tests {
         let config = OtlpConfig::default();
         let exporter = Arc::new(OtlpExporter::new(config));
         let async_exporter = AsyncExporter::new(exporter);
-        
+
         let data = TelemetryData::trace("test-operation");
         let _result = async_exporter.export_async(data);
         // 注意：这个测试可能会失败，因为需要实际的网络连接

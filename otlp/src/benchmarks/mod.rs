@@ -1,16 +1,14 @@
 //! # 性能基准测试模块
-//! 
+//!
 //! 本模块提供了OTLP Rust库的全面性能基准测试，
 //! 包括微服务性能、负载均衡性能、追踪性能等。
 
 //use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{RwLock, Mutex};
-use serde::{Deserialize, Serialize};
-use tracing::{
-    info, error
-};
+use tokio::sync::{Mutex, RwLock};
+use tracing::{error, info};
 
 /// 基准测试配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,7 +84,6 @@ pub struct CpuStats {
     pub context_switches: u64,
 }
 
-
 /// 基准测试运行器
 pub struct BenchmarkRunner {
     config: BenchmarkConfig,
@@ -107,12 +104,13 @@ impl BenchmarkRunner {
     pub async fn run<F, Fut, R>(&self, benchmark_fn: F) -> Result<BenchmarkResult, BenchmarkError>
     where
         F: Fn(u32) -> Fut + Send + Sync + 'static + Clone,
-        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>> + Send,
+        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>>
+            + Send,
         R: Send,
     {
         let start_time = Instant::now();
         info!("🚀 开始基准测试: {}", self.config.name);
-        
+
         // 设置运行状态
         {
             let mut running = self.running.write().await;
@@ -175,14 +173,17 @@ impl BenchmarkRunner {
     async fn warmup<F, Fut, R>(&self, benchmark_fn: &F) -> Result<(), BenchmarkError>
     where
         F: Fn(u32) -> Fut + Send + Sync + 'static,
-        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>> + Send,
+        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>>
+            + Send,
         R: Send,
     {
         let warmup_start = Instant::now();
         let mut iteration = 0;
 
         while warmup_start.elapsed() < self.config.warmup_duration {
-            benchmark_fn(iteration).await.map_err(|e| BenchmarkError::RuntimeError(e.to_string()))?;
+            benchmark_fn(iteration)
+                .await
+                .map_err(|e| BenchmarkError::RuntimeError(e.to_string()))?;
             iteration += 1;
         }
 
@@ -191,10 +192,14 @@ impl BenchmarkRunner {
     }
 
     /// 主要测试阶段
-    async fn run_main_test<F, Fut, R>(&self, benchmark_fn: F) -> Result<MainTestResult, BenchmarkError>
+    async fn run_main_test<F, Fut, R>(
+        &self,
+        benchmark_fn: F,
+    ) -> Result<MainTestResult, BenchmarkError>
     where
         F: Fn(u32) -> Fut + Send + Sync + 'static + Clone,
-        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>> + Send,
+        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>>
+            + Send,
         R: Send,
     {
         let latencies = Arc::new(Mutex::new(Vec::new()));
@@ -213,7 +218,8 @@ impl BenchmarkRunner {
                 iterations_completed.clone(),
                 iterations_failed.clone(),
                 test_start,
-            ).await;
+            )
+            .await;
         } else {
             // 基于迭代次数的测试
             self.run_iteration_based_test(
@@ -222,7 +228,8 @@ impl BenchmarkRunner {
                 errors.clone(),
                 iterations_completed.clone(),
                 iterations_failed.clone(),
-            ).await;
+            )
+            .await;
         }
 
         let test_duration = test_start.elapsed();
@@ -263,10 +270,13 @@ impl BenchmarkRunner {
         test_start: Instant,
     ) where
         F: Fn(u32) -> Fut + Send + Sync + 'static + Clone,
-        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>> + Send,
+        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>>
+            + Send,
         R: Send,
     {
-        let semaphore = Arc::new(tokio::sync::Semaphore::new(self.config.concurrency as usize));
+        let semaphore = Arc::new(tokio::sync::Semaphore::new(
+            self.config.concurrency as usize,
+        ));
         let mut iteration = 0;
 
         while test_start.elapsed() < self.config.duration {
@@ -281,7 +291,7 @@ impl BenchmarkRunner {
             tokio::spawn(async move {
                 let _permit = permit;
                 let start = Instant::now();
-                
+
                 match benchmark_fn_clone(iteration_clone).await {
                     Ok(_) => {
                         let latency = start.elapsed();
@@ -290,7 +300,10 @@ impl BenchmarkRunner {
                     }
                     Err(e) => {
                         *iterations_failed.lock().await += 1;
-                        errors.lock().await.push(BenchmarkError::RuntimeError(e.to_string()));
+                        errors
+                            .lock()
+                            .await
+                            .push(BenchmarkError::RuntimeError(e.to_string()));
                     }
                 }
             });
@@ -312,10 +325,13 @@ impl BenchmarkRunner {
         iterations_failed: Arc<Mutex<u32>>,
     ) where
         F: Fn(u32) -> Fut + Send + Sync + 'static + Clone,
-        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>> + Send,
+        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>>
+            + Send,
         R: Send,
     {
-        let semaphore = Arc::new(tokio::sync::Semaphore::new(self.config.concurrency as usize));
+        let semaphore = Arc::new(tokio::sync::Semaphore::new(
+            self.config.concurrency as usize,
+        ));
 
         for iteration in 0..self.config.iterations {
             let permit = semaphore.clone().acquire_owned().await.unwrap();
@@ -328,7 +344,7 @@ impl BenchmarkRunner {
             tokio::spawn(async move {
                 let _permit = permit;
                 let start = Instant::now();
-                
+
                 match benchmark_fn_clone(iteration).await {
                     Ok(_) => {
                         let latency = start.elapsed();
@@ -337,7 +353,10 @@ impl BenchmarkRunner {
                     }
                     Err(e) => {
                         *iterations_failed.lock().await += 1;
-                        errors.lock().await.push(BenchmarkError::RuntimeError(e.to_string()));
+                        errors
+                            .lock()
+                            .await
+                            .push(BenchmarkError::RuntimeError(e.to_string()));
                     }
                 }
             });
@@ -368,7 +387,7 @@ impl BenchmarkRunner {
 
         let min = sorted_latencies[0];
         let max = sorted_latencies[sorted_latencies.len() - 1];
-        
+
         let mean_nanos: u128 = latencies.iter().map(|d| d.as_nanos()).sum();
         let mean = Duration::from_nanos((mean_nanos / latencies.len() as u128) as u64);
 
@@ -385,7 +404,8 @@ impl BenchmarkRunner {
         let p999 = sorted_latencies[p999_idx.min(sorted_latencies.len() - 1)];
 
         // 计算标准差
-        let variance: u128 = latencies.iter()
+        let variance: u128 = latencies
+            .iter()
             .map(|d| {
                 let diff = d.as_nanos() as i128 - mean.as_nanos() as i128;
                 (diff * diff) as u128
@@ -443,9 +463,12 @@ impl BenchmarkRunner {
         info!("    P95: {:?}", result.latency_stats.p95);
         info!("    P99: {:?}", result.latency_stats.p99);
         info!("    P999: {:?}", result.latency_stats.p999);
-        info!("  错误率: {:.2}%", 
-              (result.iterations_failed as f64 / 
-               (result.iterations_completed + result.iterations_failed) as f64) * 100.0);
+        info!(
+            "  错误率: {:.2}%",
+            (result.iterations_failed as f64
+                / (result.iterations_completed + result.iterations_failed) as f64)
+                * 100.0
+        );
     }
 
     /// 获取所有结果
@@ -458,26 +481,29 @@ impl BenchmarkRunner {
     pub async fn export_results(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let results = self.get_results().await;
         // 由于 Instant 不能序列化，我们创建一个简化的结果用于序列化
-        let simplified_results: Vec<_> = results.iter().map(|r| {
-            serde_json::json!({
-                "config_name": r.config.name,
-                "total_duration": r.total_duration.as_secs_f64(),
-                "iterations_completed": r.iterations_completed,
-                "iterations_failed": r.iterations_failed,
-                "throughput": r.throughput,
-                "latency_stats": {
-                    "min": r.latency_stats.min.as_secs_f64(),
-                    "max": r.latency_stats.max.as_secs_f64(),
-                    "mean": r.latency_stats.mean.as_secs_f64(),
-                    "p50": r.latency_stats.p50.as_secs_f64(),
-                    "p95": r.latency_stats.p95.as_secs_f64(),
-                    "p99": r.latency_stats.p99.as_secs_f64(),
-                },
-                "memory_stats": r.memory_stats,
-                "cpu_stats": r.cpu_stats,
-                "error_count": r.errors.len()
+        let simplified_results: Vec<_> = results
+            .iter()
+            .map(|r| {
+                serde_json::json!({
+                    "config_name": r.config.name,
+                    "total_duration": r.total_duration.as_secs_f64(),
+                    "iterations_completed": r.iterations_completed,
+                    "iterations_failed": r.iterations_failed,
+                    "throughput": r.throughput,
+                    "latency_stats": {
+                        "min": r.latency_stats.min.as_secs_f64(),
+                        "max": r.latency_stats.max.as_secs_f64(),
+                        "mean": r.latency_stats.mean.as_secs_f64(),
+                        "p50": r.latency_stats.p50.as_secs_f64(),
+                        "p95": r.latency_stats.p95.as_secs_f64(),
+                        "p99": r.latency_stats.p99.as_secs_f64(),
+                    },
+                    "memory_stats": r.memory_stats,
+                    "cpu_stats": r.cpu_stats,
+                    "error_count": r.errors.len()
+                })
             })
-        }).collect();
+            .collect();
         let json = serde_json::to_string_pretty(&simplified_results)?;
         tokio::fs::write(file_path, json).await?;
         info!("📁 基准测试结果已导出到: {}", file_path);
@@ -543,25 +569,27 @@ impl MicroserviceBenchmark {
 
     /// 运行微服务基准测试
     pub async fn run(&self) -> Result<BenchmarkResult, BenchmarkError> {
-        self.runner.run(|iteration| async move {
-            // 模拟微服务调用
-            let _start = Instant::now();
-            
-            // 模拟网络延迟
-            let delay = Duration::from_millis((1 + (iteration % 10)).into());
-            tokio::time::sleep(delay).await;
-            
-            // 模拟处理时间
-            let processing_time = Duration::from_micros((100 + (iteration % 500)).into());
-            tokio::time::sleep(processing_time).await;
-            
-            // 模拟偶尔的错误
-            if iteration % 1000 == 0 {
-                return Err("模拟错误".into());
-            }
-            
-            Ok(())
-        }).await
+        self.runner
+            .run(|iteration| async move {
+                // 模拟微服务调用
+                let _start = Instant::now();
+
+                // 模拟网络延迟
+                let delay = Duration::from_millis((1 + (iteration % 10)).into());
+                tokio::time::sleep(delay).await;
+
+                // 模拟处理时间
+                let processing_time = Duration::from_micros((100 + (iteration % 500)).into());
+                tokio::time::sleep(processing_time).await;
+
+                // 模拟偶尔的错误
+                if iteration % 1000 == 0 {
+                    return Err("模拟错误".into());
+                }
+
+                Ok(())
+            })
+            .await
     }
 }
 
@@ -598,16 +626,18 @@ impl LoadBalancerBenchmark {
 
     /// 运行负载均衡器基准测试
     pub async fn run(&self) -> Result<BenchmarkResult, BenchmarkError> {
-        self.runner.run(|iteration| async move {
-            // 模拟负载均衡器选择
-            let _start = Instant::now();
-            
-            // 模拟端点选择算法
-            let selection_time = Duration::from_nanos((100 + (iteration % 1000)).into());
-            tokio::time::sleep(selection_time).await;
-            
-            Ok(())
-        }).await
+        self.runner
+            .run(|iteration| async move {
+                // 模拟负载均衡器选择
+                let _start = Instant::now();
+
+                // 模拟端点选择算法
+                let selection_time = Duration::from_nanos((100 + (iteration % 1000)).into());
+                tokio::time::sleep(selection_time).await;
+
+                Ok(())
+            })
+            .await
     }
 }
 
@@ -644,24 +674,26 @@ impl TracingBenchmark {
 
     /// 运行追踪基准测试
     pub async fn run(&self) -> Result<BenchmarkResult, BenchmarkError> {
-        self.runner.run(|iteration| async move {
-            // 模拟span创建和记录
-            let _start = Instant::now();
-            
-            // 模拟span创建
-            let span_creation_time = Duration::from_nanos((50 + (iteration % 500)).into());
-            tokio::time::sleep(span_creation_time).await;
-            
-            // 模拟属性设置
-            let attribute_time = Duration::from_nanos((10 + (iteration % 100)).into());
-            tokio::time::sleep(attribute_time).await;
-            
-            // 模拟span结束
-            let span_end_time = Duration::from_nanos((20 + (iteration % 200)).into());
-            tokio::time::sleep(span_end_time).await;
-            
-            Ok(())
-        }).await
+        self.runner
+            .run(|iteration| async move {
+                // 模拟span创建和记录
+                let _start = Instant::now();
+
+                // 模拟span创建
+                let span_creation_time = Duration::from_nanos((50 + (iteration % 500)).into());
+                tokio::time::sleep(span_creation_time).await;
+
+                // 模拟属性设置
+                let attribute_time = Duration::from_nanos((10 + (iteration % 100)).into());
+                tokio::time::sleep(attribute_time).await;
+
+                // 模拟span结束
+                let span_end_time = Duration::from_nanos((20 + (iteration % 200)).into());
+                tokio::time::sleep(span_end_time).await;
+
+                Ok(())
+            })
+            .await
     }
 }
 
@@ -691,15 +723,17 @@ mod tests {
         };
 
         let runner = BenchmarkRunner::new(config);
-        
-        let result = runner.run(|iteration| async move {
-            tokio::time::sleep(Duration::from_millis(1)).await;
-            if iteration % 10 == 0 {
-                Err("测试错误".into())
-            } else {
-                Ok(())
-            }
-        }).await;
+
+        let result = runner
+            .run(|iteration| async move {
+                tokio::time::sleep(Duration::from_millis(1)).await;
+                if iteration % 10 == 0 {
+                    Err("测试错误".into())
+                } else {
+                    Ok(())
+                }
+            })
+            .await;
 
         // 基准测试可能因为各种原因失败，我们检查结果
         match result {
@@ -718,7 +752,7 @@ mod tests {
     async fn test_microservice_benchmark() {
         let benchmark = MicroserviceBenchmark::new();
         let result = benchmark.run().await;
-        
+
         // 微服务基准测试可能因为资源限制失败
         match result {
             Ok(_) => {
