@@ -1,8 +1,5 @@
-# 多阶段构建Dockerfile for OTLP Rust
-# 使用Rust 1.90官方镜像
-
-# 构建阶段
-FROM rust:1.90-slim as builder
+# 多阶段构建 - 构建阶段
+FROM rust:1.90 as builder
 
 # 设置工作目录
 WORKDIR /app
@@ -19,10 +16,9 @@ COPY Cargo.toml Cargo.lock ./
 
 # 复制源代码
 COPY otlp/ ./otlp/
-COPY examples/ ./examples/
 
-# 构建发布版本
-RUN cargo build --release --package otlp
+# 构建应用
+RUN cargo build --release --bin otlp
 
 # 运行阶段
 FROM debian:bookworm-slim
@@ -40,13 +36,15 @@ RUN groupadd -r otlp && useradd -r -g otlp otlp
 WORKDIR /app
 
 # 从构建阶段复制二进制文件
-COPY --from=builder /app/target/release/otlp /app/otlp
+COPY --from=builder /app/target/release/otlp /usr/local/bin/otlp
+
+# 创建配置目录
+RUN mkdir -p /app/config && chown -R otlp:otlp /app
 
 # 复制配置文件
-COPY otlp/deploy/helm/otlp/config.yaml /app/config.yaml
+COPY --chown=otlp:otlp otlp/config/ /app/config/
 
-# 设置权限
-RUN chown -R otlp:otlp /app
+# 切换到非root用户
 USER otlp
 
 # 暴露端口
@@ -56,5 +54,9 @@ EXPOSE 8080 4317 4318
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
+# 设置环境变量
+ENV RUST_LOG=info
+ENV OTLP_ENDPOINT=http://localhost:4317
+
 # 启动命令
-CMD ["./otlp", "--config", "config.yaml"]
+CMD ["otlp"]

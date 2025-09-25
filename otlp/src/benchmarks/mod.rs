@@ -541,6 +541,12 @@ pub struct MicroserviceBenchmark {
     runner: BenchmarkRunner,
 }
 
+impl Default for MicroserviceBenchmark {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MicroserviceBenchmark {
     pub fn new() -> Self {
         let config = BenchmarkConfig {

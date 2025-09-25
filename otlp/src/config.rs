@@ -281,7 +281,7 @@ impl OtlpConfig {
 
     /// 设置采样率
     pub fn with_sampling_ratio(mut self, ratio: f64) -> Self {
-        self.sampling_ratio = ratio.max(0.0).min(1.0);
+        self.sampling_ratio = ratio.clamp(0.0, 1.0);
         self
     }
 
@@ -312,7 +312,7 @@ impl OtlpConfig {
 
     /// 设置错误优先采样下限（0.0-1.0）
     pub fn with_error_sampling_floor(mut self, floor: f64) -> Self {
-        self.error_sampling_floor = Some(floor.max(0.0).min(1.0));
+        self.error_sampling_floor = Some(floor.clamp(0.0, 1.0));
         self
     }
 

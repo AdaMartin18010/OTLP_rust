@@ -150,7 +150,7 @@ impl SamplingFilter {
     pub fn new(name: impl Into<String>, sampling_ratio: f64) -> Self {
         Self {
             name: name.into(),
-            sampling_ratio: sampling_ratio.max(0.0).min(1.0),
+            sampling_ratio: sampling_ratio.clamp(0.0, 1.0),
         }
     }
 }

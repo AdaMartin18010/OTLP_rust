@@ -99,7 +99,7 @@ impl AuditHook for FileAuditHook {
     fn record(&self, event: &str, metadata: &HashMap<String, String>) {
         let line = serde_json::json!({ "event": event, "meta": metadata });
         let path = self.path.clone();
-        let text = format!("{}\n", line.to_string());
+        let text = format!("{}\n", line);
         // 异步落盘，不阻塞主流程
         tokio::spawn(async move {
             use tokio::io::AsyncWriteExt;
@@ -313,7 +313,7 @@ impl OtlpClient {
     }
 
     fn effective_sampling_ratio_for(&self, data: &TelemetryData) -> f64 {
-        let base = self.config.sampling_ratio.max(0.0).min(1.0);
+        let base = self.config.sampling_ratio.clamp(0.0, 1.0);
         if let crate::data::TelemetryContent::Trace(ref t) = data.content {
             if t.status.code == crate::data::StatusCode::Error {
                 if let Some(floor) = self.config.error_sampling_floor {

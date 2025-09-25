@@ -13,6 +13,12 @@ pub struct TransformConfig {
     pub statements: Vec<Statement>,
 }
 
+impl Default for TransformConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransformConfig {
     /// 创建新的转换配置
     pub fn new() -> Self {
@@ -134,9 +140,9 @@ impl OtlpTransform {
                 match op {
                     super::parser::BinaryOp::Eq => Ok(left_val == right_val),
                     super::parser::BinaryOp::Ne => Ok(left_val != right_val),
-                    super::parser::BinaryOp::Lt => Ok(left_val < right_val),
+                    super::parser::BinaryOp::Lt => Ok(!left_val & right_val),
                     super::parser::BinaryOp::Le => Ok(left_val <= right_val),
-                    super::parser::BinaryOp::Gt => Ok(left_val > right_val),
+                    super::parser::BinaryOp::Gt => Ok(left_val & !right_val),
                     super::parser::BinaryOp::Ge => Ok(left_val >= right_val),
                     super::parser::BinaryOp::And => Ok(left_val && right_val),
                     super::parser::BinaryOp::Or => Ok(left_val || right_val),

@@ -517,19 +517,25 @@ impl TelemetryData {
     }
 }
 
+impl std::fmt::Display for AttributeValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AttributeValue::String(s) => write!(f, "{}", s),
+            AttributeValue::Bool(b) => write!(f, "{}", b),
+            AttributeValue::Int(i) => write!(f, "{}", i),
+            AttributeValue::Double(d) => write!(f, "{}", d),
+            AttributeValue::StringArray(arr) => write!(f, "{:?}", arr),
+            AttributeValue::BoolArray(arr) => write!(f, "{:?}", arr),
+            AttributeValue::IntArray(arr) => write!(f, "{:?}", arr),
+            AttributeValue::DoubleArray(arr) => write!(f, "{:?}", arr),
+        }
+    }
+}
+
 impl AttributeValue {
     /// 转换为字符串
     pub fn to_string(&self) -> String {
-        match self {
-            AttributeValue::String(s) => s.clone(),
-            AttributeValue::Bool(b) => b.to_string(),
-            AttributeValue::Int(i) => i.to_string(),
-            AttributeValue::Double(d) => d.to_string(),
-            AttributeValue::StringArray(arr) => format!("{:?}", arr),
-            AttributeValue::BoolArray(arr) => format!("{:?}", arr),
-            AttributeValue::IntArray(arr) => format!("{:?}", arr),
-            AttributeValue::DoubleArray(arr) => format!("{:?}", arr),
-        }
+        format!("{}", self)
     }
 
     /// 获取类型名称
@@ -595,7 +601,7 @@ mod tests {
         assert_eq!(int_attr.to_string(), "42");
         assert_eq!(int_attr.type_name(), "int");
 
-        let double_attr = AttributeValue::Double(3.14);
+        let double_attr = AttributeValue::Double(std::f64::consts::PI);
         assert_eq!(double_attr.to_string(), "3.14");
         assert_eq!(double_attr.type_name(), "double");
     }
