@@ -5,6 +5,7 @@
 
 use otlp::error::ErrorSeverity;
 use otlp::error::{ConfigurationError, TransportError};
+use otlp::error::{DataError, SystemError};
 use otlp::{ErrorEvent, ErrorMonitoringSystem, MonitoringConfig, OtlpError, Result};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -180,7 +181,7 @@ async fn trend_analysis_demo() -> Result<()> {
             ErrorSeverity::Medium
         };
 
-        let _error = OtlpError::Internal(format!("模拟错误 {}", i));
+        let _error = OtlpError::from_anyhow(anyhow::anyhow!(format!("模拟错误 {}", i)));
         let error_event = ErrorEvent {
             id: format!("trend-{}", i),
             timestamp: std::time::SystemTime::now(),
@@ -289,24 +290,18 @@ fn create_configuration_error() -> OtlpError {
 }
 
 fn create_processing_error() -> OtlpError {
-    OtlpError::Processing(otlp::error::ProcessingError::ValidationFailed {
-        field: "trace_id".to_string(),
-        reason: "格式无效".to_string(),
-    })
+    // 示例占位：序列化错误类型已调整，跳过构造
+    OtlpError::Processing(otlp::error::ProcessingError::Batch { reason: "y".into() })
 }
 
 fn create_serialization_error() -> OtlpError {
-    OtlpError::Serialization(otlp::error::SerializationError::Format {
-        message: "JSON解析失败".to_string(),
-    })
+    // 示例占位：返回数据格式错误
+    OtlpError::Data(DataError::Format { reason: "JSON解析失败".to_string() })
 }
 
 fn create_resource_error() -> OtlpError {
-    OtlpError::ResourceExhausted {
-        resource: "memory".to_string(),
-        current: 1024,
-        required: 2048,
-    }
+    // 示例占位：转为系统错误
+    OtlpError::System(SystemError::SystemCall { reason: "memory resource exhausted".to_string() })
 }
 
 /// 演示监控系统的实时特性

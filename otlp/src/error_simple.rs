@@ -2,13 +2,12 @@
 //!
 //! 提供统一的错误类型和处理机制，支持Rust 1.90的错误处理特性。
 
+use std::fmt;
 use std::time::SystemTime;
 
 /// OTLP错误类型
 #[derive(Debug, thiserror::Error)]
 pub enum OtlpError {
-    #[error("校验错误: {0}")]
-    ValidationError(String),
     #[error("配置错误: {0}")]
     Configuration(#[from] ConfigurationError),
 
@@ -200,7 +199,7 @@ pub enum SystemError {
 }
 
 /// 错误严重程度
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ErrorSeverity {
     Low,
     Medium,
@@ -209,7 +208,7 @@ pub enum ErrorSeverity {
 }
 
 /// 错误分类
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorCategory {
     Network,
     Data,
@@ -221,12 +220,6 @@ pub enum ErrorCategory {
     Resource,
     Compatibility,
     System,
-}
-
-impl From<anyhow::Error> for OtlpError {
-    fn from(err: anyhow::Error) -> Self {
-        OtlpError::System(SystemError::SystemCall { reason: err.to_string() })
-    }
 }
 
 /// 错误上下文
@@ -272,7 +265,6 @@ impl OtlpError {
     /// 获取错误严重程度
     pub fn severity(&self) -> ErrorSeverity {
         match self {
-            OtlpError::ValidationError(_) => ErrorSeverity::Medium,
             OtlpError::Configuration(_) => ErrorSeverity::Medium,
             OtlpError::Transport(_) => ErrorSeverity::High,
             OtlpError::Data(_) => ErrorSeverity::Medium,
@@ -289,7 +281,6 @@ impl OtlpError {
     /// 获取错误分类
     pub fn category(&self) -> ErrorCategory {
         match self {
-            OtlpError::ValidationError(_) => ErrorCategory::Data,
             OtlpError::Configuration(_) => ErrorCategory::Configuration,
             OtlpError::Transport(_) => ErrorCategory::Network,
             OtlpError::Data(_) => ErrorCategory::Data,
@@ -306,7 +297,6 @@ impl OtlpError {
     /// 检查是否可重试
     pub fn is_retryable(&self) -> bool {
         match self {
-            OtlpError::ValidationError(_) => false,
             OtlpError::Transport(TransportError::Connection { .. }) => true,
             OtlpError::Transport(TransportError::Timeout { .. }) => true,
             OtlpError::Transport(TransportError::Server { status, .. }) => {
@@ -324,7 +314,6 @@ impl OtlpError {
     /// 获取恢复建议
     pub fn recovery_suggestion(&self) -> Option<String> {
         match self {
-            OtlpError::ValidationError(_) => Some("修正输入数据格式或内容后重试".to_string()),
             OtlpError::Transport(TransportError::Connection { .. }) => {
                 Some("检查网络连接和端点配置".to_string())
             }
@@ -359,12 +348,6 @@ impl OtlpError {
 
 /// 结果类型别名
 pub type Result<T> = std::result::Result<T, OtlpError>;
-
-impl OtlpError {
-    pub fn from_anyhow(err: anyhow::Error) -> Self {
-        OtlpError::from(err)
-    }
-}
 
 #[cfg(test)]
 mod tests {

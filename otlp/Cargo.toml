@@ -1,94 +1,80 @@
 [package]
 name = "otlp"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 rust-version = "1.90"
 authors = ["Rust OTLP Team"]
-description = "OpenTelemetry Protocol (OTLP) implementation with Rust 1.90+ features for microservices architecture"
+description = "OpenTelemetry Protocol (OTLP) implementation with Rust 1.90+ features"
 license = "MIT OR Apache-2.0"
-keywords = ["opentelemetry", "otlp", "observability", "telemetry", "async", "grpc", "microservices", "service-mesh"]
-categories = ["development-tools::debugging", "network-programming", "asynchronous", "web-programming::http-server"]
+keywords = ["opentelemetry", "otlp", "observability", "telemetry", "async", "grpc"]
+categories = ["development-tools::debugging", "network-programming", "asynchronous"]
 
 [dependencies]
 # OpenTelemetry核心依赖
-opentelemetry = "0.30.0"
-opentelemetry_sdk = { version = "0.30.0", features = ["rt-tokio"] }
-opentelemetry-semantic-conventions = "0.30.0"
-
-# OTLP导出器和传输
-opentelemetry-otlp = { version = "0.30.0", features = ["http-json"] }
-opentelemetry-http = "0.30.0"
-
-# OpenTelemetry Protobuf（用于 gRPC 生成的客户端/消息）
-opentelemetry-proto = { version = "0.30.0", features = ["gen-tonic"], optional = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry-proto = { workspace = true, optional = true }
 
 # 异步运行时和网络
-tokio = { version = "1.47.1", features = ["full"] }
-tokio-util = "0.7.16"
-futures = "0.3.31"
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+futures = { workspace = true }
 
 # gRPC和HTTP客户端
-tonic = { version = "0.14.2", features = ["transport", "tls-ring", "tls-webpki-roots", "channel"], optional = true }
-prost = { version = "0.14.1", optional = true }
-hyper = { version = "1.7.0", features = ["full", "http2"], optional = true }
-hyper-tls = { version = "0.6.0", optional = true }
-reqwest = { version = "0.12.23", features = ["json", "rustls-tls", "stream"], optional = true }
+tonic = { workspace = true, optional = true }
+prost = { workspace = true, optional = true }
+hyper = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
 
 # 序列化和反序列化
-serde = { version = "1.0.226", features = ["derive"] }
-serde_json = "1.0.145"
-prost-types = "0.14.1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+prost-types = { workspace = true }
 
 # 并发和同步
-parking_lot = "0.12.4"
-crossbeam = "0.8.4"
-dashmap = "6.1.0"
+parking_lot = { workspace = true }
+crossbeam = { workspace = true }
 
 # 压缩算法
-flate2 = "1.1.2"
-brotli = "3.5.0"
-zstd = "0.13.3"
+flate2 = "1.0"
+brotli = "3.5"
+zstd = "0.13"
 
 # 异步trait
-async-trait = { version = "0.1.89", optional = true }
+async-trait = { workspace = true, optional = true }
 
 # 系统信息
-num_cpus = "1.17.0"
+num_cpus = { workspace = true }
 
 # 随机数生成
-rand = "0.9.2"
-
-# 加密和哈希
-sha2 = "0.10.9"
+rand = { workspace = true }
 
 # 错误处理和日志
-anyhow = "1.0.100"
-thiserror = "2.0.16"
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
-
-# 性能监控和指标
-metrics = { version = "0.24.2", optional = true }
-metrics-exporter-prometheus = { version = "0.17.2", optional = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 # 配置管理
-config = "0.15.16"
-clap = { version = "4.5.48", features = ["derive"] }
+config = { workspace = true }
 
-# 2025年新增依赖
-chrono = { version = "0.4.42", features = ["serde"] }
-uuid = { version = "1.18.1", features = ["v4", "serde"] }
-url = "2.5.7"
-bytes = "1.10.1"
+# 时间处理
+chrono = { workspace = true }
+
+# 其他常用库
+uuid = { workspace = true }
+url = { workspace = true }
+bytes = { workspace = true }
 hex = "0.4.3"
 
-# 测试依赖
 [dev-dependencies]
-tokio-test = "0.4.4"
-criterion = { version = "0.7.0", features = ["html_reports"] }
-tempfile = "3.22.0"
-proptest = "1.8.0"
-mockall = "0.13.1"
+tokio-test = { workspace = true }
+criterion = { workspace = true }
+tempfile = { workspace = true }
+proptest = { workspace = true }
+mockall = { workspace = true }
+warp = "0.3.7"
 
 [[bench]]
 name = "performance_benchmarks"
@@ -104,4 +90,4 @@ grpc = ["tonic", "prost", "opentelemetry-proto", "opentelemetry-proto/gen-tonic"
 http = ["reqwest", "hyper"]
 
 # 监控和可观测性特性
-monitoring = ["metrics", "metrics-exporter-prometheus"]
+monitoring = []

@@ -4,6 +4,7 @@
 
 use crate::data::{TelemetryData, TraceData, MetricData, LogData};
 use crate::error::{OtlpError, Result};
+use crate::error::DataError;
 
 /// 数据验证器
 pub struct DataValidator {
@@ -38,7 +39,7 @@ impl DataValidator {
     fn validate_trace_data(&self, trace: &TraceData) -> Result<()> {
         // 验证必需的字段
         if trace.trace_id.is_empty() {
-            return Err(OtlpError::ValidationError("trace_id 不能为空".to_string()));
+            return Err(OtlpError::Data(DataError::Validation { reason: "trace_id 不能为空".to_string() }));
         }
         
         if trace.span_id.is_empty() {

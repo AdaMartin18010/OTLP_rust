@@ -246,10 +246,9 @@ async fn error_handling_example() -> Result<()> {
                 if let ResilienceError::OperationFailed(err) = &e {
                     if let Some(otlp_err) = err.downcast_ref::<OtlpError>() {
                         let context = otlp_err.context();
-                        println!("      错误类型: {}", context.error_type);
-                        println!("      严重程度: {}", context.severity);
+                        println!("      错误类别: {:?}", context.category);
+                        println!("      严重程度: {:?}", context.severity);
                         println!("      可重试: {}", context.is_retryable);
-                        println!("      临时错误: {}", context.is_temporary);
                         if let Some(suggestion) = context.recovery_suggestion {
                             println!("      恢复建议: {}", suggestion);
                         }

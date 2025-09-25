@@ -330,7 +330,7 @@ impl ErrorEvent {
         Self {
             id: Uuid::new_v4().to_string(),
             timestamp: SystemTime::now(),
-            error_type: error_context.error_type.to_string(),
+            error_type: format!("{:?}", error_context.category),
             severity: error_context.severity,
             message: error.to_string(),
             source: source.to_string(),
@@ -338,12 +338,13 @@ impl ErrorEvent {
             stack_trace: None,       // 简化实现
             recovery_suggestion: error_context.recovery_suggestion,
             is_retryable: error_context.is_retryable,
-            is_temporary: error_context.is_temporary,
+            is_temporary: error_context.is_retryable,
         }
     }
 }
 
 /// 实时仪表板
+#[allow(dead_code)]
 pub struct RealTimeDashboard {
     config: DashboardConfig,
     current_metrics: Arc<RwLock<DashboardMetrics>>,
@@ -415,8 +416,8 @@ impl RealTimeDashboard {
 }
 
 /// 告警管理器
+#[allow(dead_code)]
 pub struct AlertManager {
-    #[allow(dead_code)]
     config: AlertConfig,
     rules: Arc<RwLock<Vec<AlertRule>>>,
     active_alerts: Arc<RwLock<HashMap<String, Alert>>>,
@@ -559,6 +560,7 @@ impl AlertManager {
 }
 
 /// 指标收集器
+#[allow(dead_code)]
 pub struct MetricsCollector {
     config: MetricsConfig,
     metrics: Arc<RwLock<CollectorMetrics>>,
@@ -653,6 +655,7 @@ impl MetricsCollector {
 }
 
 /// 错误聚合器
+#[allow(dead_code)]
 pub struct ErrorAggregator {
     config: AggregationConfig,
     aggregated_data: Arc<RwLock<HashMap<String, AggregatedErrorData>>>,
@@ -693,8 +696,8 @@ impl ErrorAggregator {
 }
 
 /// 通知服务
+#[allow(dead_code)]
 pub struct NotificationService {
-    #[allow(dead_code)]
     config: NotificationConfig,
     channels: Arc<RwLock<HashMap<String, NotificationChannel>>>,
 }
@@ -728,6 +731,7 @@ impl NotificationService {
 }
 
 /// 错误趋势分析器
+#[allow(dead_code)]
 pub struct ErrorTrendAnalyzer {
     config: TrendAnalysisConfig,
     time_series_data: Arc<RwLock<VecDeque<TimeSeriesPoint>>>,
@@ -793,6 +797,7 @@ impl ErrorTrendAnalyzer {
 }
 
 /// 错误热点检测器
+#[allow(dead_code)]
 pub struct ErrorHotspotDetector {
     config: HotspotDetectionConfig,
     error_patterns: Arc<RwLock<HashMap<String, ErrorPattern>>>,
@@ -892,6 +897,7 @@ pub struct MonitoringConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct DashboardConfig {
     pub max_recent_errors: usize,
     pub update_interval: Duration,
@@ -899,6 +905,7 @@ pub struct DashboardConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct AlertConfig {
     pub default_cooldown: Duration,
     pub max_alerts_per_rule: usize,
@@ -906,6 +913,7 @@ pub struct AlertConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct MetricsConfig {
     pub max_recent_errors: usize,
     pub collection_interval: Duration,
@@ -913,24 +921,28 @@ pub struct MetricsConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct AggregationConfig {
     pub max_samples_per_error_type: usize,
     pub aggregation_window: Duration,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct NotificationConfig {
     pub retry_attempts: u32,
     pub retry_delay: Duration,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct TrendAnalysisConfig {
     pub max_data_points: usize,
     pub analysis_window: Duration,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct HotspotDetectionConfig {
     pub detection_window: Duration,
     pub alert_threshold: usize,
@@ -938,6 +950,7 @@ pub struct HotspotDetectionConfig {
 
 // 数据结构体
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct MonitoringMetrics {
     pub total_errors: u64,
     pub error_rate_per_minute: f64,
@@ -951,6 +964,7 @@ pub struct MonitoringMetrics {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct DashboardMetrics {
     pub total_errors: u64,
     pub error_types: HashMap<String, u64>,
@@ -1478,7 +1492,6 @@ impl CorrelationEngine {
 
 /// 流处理配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(dead_code)]
 pub struct StreamProcessingConfig {
     pub buffer_size: usize,
     pub processing_interval: Duration,
@@ -1497,7 +1510,6 @@ impl Default for StreamProcessingConfig {
 
 /// 预测性监控配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(dead_code)]
 pub struct PredictiveConfig {
     pub prediction_horizon: Duration,
     pub model_update_interval: Duration,
@@ -1518,7 +1530,6 @@ impl Default for PredictiveConfig {
 
 /// 异常检测配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(dead_code)]
 pub struct AnomalyDetectionConfig {
     pub sensitivity: f64,
     pub baseline_window: Duration,
@@ -1537,7 +1548,6 @@ impl Default for AnomalyDetectionConfig {
 
 /// 关联分析配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(dead_code)]
 pub struct CorrelationConfig {
     pub max_correlation_distance: Duration,
     pub min_correlation_strength: f64,
@@ -1556,7 +1566,6 @@ impl Default for CorrelationConfig {
 
 /// 预测模型
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct PredictionModel {
     pub model_type: String,
     pub parameters: HashMap<String, f64>,
@@ -1595,6 +1604,7 @@ pub struct MonitoringDataPoint {
 
 /// 异常
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct Anomaly {
     pub metric_name: String,
     pub value: f64,

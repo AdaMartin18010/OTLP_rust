@@ -210,10 +210,7 @@ impl DataAggregator for MetricAggregator {
         let mut metrics = self
             .metrics
             .try_write()
-            .map_err(|_| ProcessingError::Aggregation {
-                operation: "metric_aggregation".to_string(),
-                reason: "Failed to acquire write lock".to_string(),
-            })?;
+            .map_err(|_| ProcessingError::Aggregation { reason: "Failed to acquire write lock".to_string() })?;
 
         for telemetry_data in data {
             if let crate::data::TelemetryContent::Metric(metric_data) = &telemetry_data.content {
@@ -253,6 +250,7 @@ pub struct OtlpProcessor {
 
 /// 处理器指标
 #[derive(Debug, Default, Clone)]
+#[allow(dead_code)]
 pub struct ProcessorMetrics {
     /// 处理的数据总数
     pub total_processed: u64,
@@ -308,10 +306,7 @@ impl OtlpProcessor {
     pub async fn start(&self) -> Result<()> {
         let mut is_running = self.is_running.write().await;
         if *is_running {
-            return Err(ProcessingError::BatchProcessing {
-                message: "Processor is already running".to_string(),
-            }
-            .into());
+            return Err(ProcessingError::Batch { reason: "Processor is already running".to_string() }.into());
         }
         *is_running = true;
         drop(is_running);
@@ -357,9 +352,7 @@ impl OtlpProcessor {
     pub async fn process(&self, data: TelemetryData) -> Result<()> {
         self.input_queue
             .send(data)
-            .map_err(|_| ProcessingError::BatchProcessing {
-                message: "Failed to send data to processing queue".to_string(),
-            })?;
+            .map_err(|_| ProcessingError::Batch { reason: "Failed to send data to processing queue".to_string() })?;
         Ok(())
     }
 
@@ -481,12 +474,14 @@ impl DataFilter for AlwaysPassFilter {
 }
 
 /// 批处理管理器
+#[allow(dead_code)]
 pub struct BatchManager {
     config: ProcessingConfig,
     batches: Arc<RwLock<HashMap<String, Vec<TelemetryData>>>>,
     batch_timers: Arc<RwLock<HashMap<String, tokio::time::Instant>>>,
 }
 
+#[allow(dead_code)]
 impl BatchManager {
     /// 创建新的批处理管理器
     pub fn new(config: ProcessingConfig) -> Self {

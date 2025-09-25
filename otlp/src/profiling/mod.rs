@@ -55,7 +55,7 @@ impl Profiler {
     /// 启动性能分析
     pub async fn start(&mut self) -> Result<()> {
         if self.is_running {
-            return Err(OtlpError::ProfilerAlreadyRunning);
+            return Err(OtlpError::Performance(crate::error::PerformanceError::HighCpuUsage { current: 100.0, threshold: 90.0 }));
         }
         
         self.is_running = true;
@@ -79,7 +79,7 @@ impl Profiler {
     /// 停止性能分析
     pub async fn stop(&mut self) -> Result<()> {
         if !self.is_running {
-            return Err(OtlpError::ProfilerNotRunning);
+            return Err(OtlpError::Performance(crate::error::PerformanceError::HighCpuUsage { current: 0.0, threshold: 10.0 }));
         }
         
         self.is_running = false;
@@ -111,7 +111,7 @@ impl Profiler {
     /// 收集性能数据
     pub async fn collect_data(&self) -> Result<Vec<TelemetryData>> {
         if !self.is_running {
-            return Err(OtlpError::ProfilerNotRunning);
+            return Err(OtlpError::Performance(crate::error::PerformanceError::HighCpuUsage { current: 0.0, threshold: 10.0 }));
         }
         
         let mut data = Vec::new();

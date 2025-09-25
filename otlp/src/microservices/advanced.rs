@@ -106,6 +106,7 @@ pub struct CircuitBreakerPolicy {
 }
 
 /// 智能路由器
+#[allow(dead_code)]
 pub struct IntelligentRouter {
     rules: Arc<RwLock<Vec<RoutingRule>>>,
     traffic_manager: Arc<TrafficManager>,
@@ -155,6 +156,7 @@ impl HealthChecker {
 
 /// 服务实例
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ServiceInstance {
     pub id: String,
     pub address: String,
@@ -168,6 +170,7 @@ pub struct ServiceInstance {
 
 /// 实例指标
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct InstanceMetrics {
     pub request_count: u64,
     pub error_count: u64,
@@ -178,6 +181,7 @@ pub struct InstanceMetrics {
 }
 
 /// 路由器指标
+#[allow(dead_code)]
 pub struct RouterMetrics {
     pub total_requests: Counter<u64>,
     pub routing_decisions: Counter<u64>,
@@ -463,6 +467,7 @@ pub struct PerformanceTracker {
 
 /// 算法性能
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct AlgorithmPerformance {
     pub name: String,
     pub success_rate: f64,
@@ -666,6 +671,7 @@ impl super::LoadBalancer for AdaptiveLoadBalancer {
 }
 
 /// 最少连接负载均衡器
+#[allow(dead_code)]
 pub struct LeastConnectionsLoadBalancer {
     connections: Arc<Mutex<HashMap<String, u32>>>,
     endpoints: Arc<RwLock<Vec<super::ServiceEndpoint>>>,
@@ -712,6 +718,7 @@ impl super::LoadBalancer for LeastConnectionsLoadBalancer {
 }
 
 /// 故障注入器
+#[allow(dead_code)]
 pub struct FaultInjector {
     fault_configs: Arc<RwLock<HashMap<String, FaultConfig>>>,
     metrics: FaultInjectorMetrics,
@@ -719,6 +726,7 @@ pub struct FaultInjector {
 
 /// 故障配置
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct FaultConfig {
     pub name: String,
     pub fault_type: FaultType,
@@ -729,6 +737,7 @@ pub struct FaultConfig {
 
 /// 故障类型
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum FaultType {
     Delay { delay: Duration },
     Error { status_code: u16, message: String },
@@ -737,6 +746,7 @@ pub enum FaultType {
 }
 
 /// 故障注入器指标
+#[allow(dead_code)]
 pub struct FaultInjectorMetrics {
     pub faults_injected: Counter<u64>,
     pub fault_errors: Counter<u64>,

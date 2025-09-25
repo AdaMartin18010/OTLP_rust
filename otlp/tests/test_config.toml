@@ -1,0 +1,68 @@
+# OTLP 测试配置文件
+
+[test]
+# 测试超时时间（秒）
+timeout = 30
+
+# 测试重试次数
+retry_count = 3
+
+# 测试数据大小
+batch_size = 100
+large_batch_size = 10000
+
+# 性能测试配置
+[performance]
+# 并发测试线程数
+concurrent_threads = 10
+
+# 性能测试持续时间（秒）
+duration = 60
+
+# 内存测试数据大小
+memory_test_size = 100000
+
+# Mock服务器配置
+[mock_server]
+# 服务器端口范围
+port_range = "4317-4320"
+
+# 服务器启动超时（秒）
+startup_timeout = 5
+
+# 服务器响应延迟（毫秒）
+response_delay = 100
+
+# 测试数据配置
+[test_data]
+# 默认消息大小
+default_message_size = 1024
+
+# 大消息大小
+large_message_size = 10240
+
+# 特殊字符测试
+special_characters = true
+
+# 多语言测试
+multilingual = true
+
+# 日志级别测试
+log_levels = ["debug", "info", "warn", "error", "fatal"]
+
+# 网络测试配置
+[network]
+# 连接超时（秒）
+connect_timeout = 5
+
+# 读取超时（秒）
+read_timeout = 10
+
+# 写入超时（秒）
+write_timeout = 10
+
+# 重试间隔（秒）
+retry_interval = 1
+
+# 最大重试次数
+max_retries = 3

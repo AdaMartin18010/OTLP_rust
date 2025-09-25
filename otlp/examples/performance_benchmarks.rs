@@ -28,9 +28,7 @@ async fn init_benchmark_environment() -> Result<(), Box<dyn std::error::Error>> 
 
     info!("🚀 OTLP Rust 性能基准测试环境初始化");
 
-    // 设置Rust性能优化
-    std::env::set_var("RUST_LOG", "info");
-    std::env::set_var("RUST_BACKTRACE", "1");
+    // 环境变量设置已省略；如需日志请在外部设置或使用tracing_subscriber初始化
 
     info!("✅ 基准测试环境初始化完成");
     Ok(())

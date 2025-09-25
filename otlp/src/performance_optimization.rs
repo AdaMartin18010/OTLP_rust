@@ -83,9 +83,7 @@ impl PerformanceOptimizer {
 
 /// 零拷贝管理器
 pub struct ZeroCopyManager {
-    #[allow(dead_code)]
     config: ZeroCopyConfig,
-    #[allow(dead_code)]
     buffer_pool: Arc<RwLock<HashMap<String, Arc<BufferPool>>>>,
 }
 
@@ -130,9 +128,7 @@ impl ZeroCopyManager {
 
 /// 内存池管理器
 pub struct MemoryPool {
-    #[allow(dead_code)]
     config: MemoryPoolConfig,
-    #[allow(dead_code)]
     pools: Arc<RwLock<HashMap<usize, Arc<Pool>>>>,
 }
 
@@ -170,9 +166,7 @@ impl MemoryPool {
 
 /// 并发优化器
 pub struct ConcurrencyOptimizer {
-    #[allow(dead_code)]
     config: ConcurrencyConfig,
-    #[allow(dead_code)]
     thread_pool: Arc<RwLock<HashMap<String, Arc<ThreadPool>>>>,
 }
 
@@ -210,9 +204,7 @@ impl ConcurrencyOptimizer {
 
 /// 缓存优化器
 pub struct CacheOptimizer {
-    #[allow(dead_code)]
     config: CacheConfig,
-    #[allow(dead_code)]
     caches: Arc<RwLock<HashMap<String, Arc<Cache>>>>,
 }
 
@@ -251,9 +243,7 @@ impl CacheOptimizer {
 
 /// 基准测试运行器
 pub struct BenchmarkRunner {
-    #[allow(dead_code)]
     config: BenchmarkConfig,
-    #[allow(dead_code)]
     benchmarks: Arc<RwLock<Vec<Arc<Benchmark>>>>,
 }
 

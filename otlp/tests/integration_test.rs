@@ -24,13 +24,8 @@ async fn test_error_handling_integration() {
         endpoint: "http://invalid:4317".to_string(),
         reason: "Connection refused".to_string(),
     };
-    let export_error = ExportError::ExportFailed {
-        reason: "Network timeout".to_string(),
-    };
-    let processing_error = ProcessingError::ValidationFailed {
-        field: "trace_id".to_string(),
-        reason: "Invalid format".to_string(),
-    };
+    let export_error = ExportError::Failed { reason: "fail".to_string() };
+    let processing_error = ProcessingError::Batch { reason: "empty".to_string() };
 
     let errors = vec![
         ("transport", OtlpError::from(transport_error)),
@@ -41,7 +36,7 @@ async fn test_error_handling_integration() {
     for (error_type, otlp_error) in errors {
         // 验证错误上下文
         let context = otlp_error.context();
-        assert_eq!(context.error_type, error_type);
+        assert_eq!(format!("{:?}", context.category), error_type);
         assert!(context.timestamp.elapsed().unwrap() < Duration::from_secs(1));
 
         // 验证错误严重程度
@@ -213,7 +208,7 @@ async fn test_client_resilience_integration() {
             println!("Expected error: {}", e);
             // 验证错误上下文
             let context = e.context();
-            assert!(context.error_type.len() > 0);
+            assert!(format!("{:?}", context.category).len() > 0);
             assert!(context.severity as u8 >= 2);
         }
     }
@@ -265,7 +260,7 @@ async fn test_error_propagation() {
             println!("Expected error: {}", e);
             // 验证错误可以正确传播
             let context = e.context();
-            assert!(context.error_type.len() > 0);
+            assert!(format!("{:?}", context.category).len() > 0);
         }
     }
 }
@@ -352,17 +347,17 @@ async fn test_comprehensive_integration() {
 
             // 验证错误处理
             let context = e.context();
-            println!("Error type: {}", context.error_type);
-            println!("Severity: {}", context.severity);
+            println!("Error category: {:?}", context.category);
+            println!("Severity: {:?}", context.severity);
             println!("Retryable: {}", context.is_retryable);
-            println!("Temporary: {}", context.is_temporary);
+            println!("Temporary: {}", context.is_retryable);
 
             if let Some(suggestion) = context.recovery_suggestion {
                 println!("Recovery suggestion: {}", suggestion);
             }
 
             // 验证错误处理完整性
-            assert!(context.error_type.len() > 0);
+            assert!(format!("{:?}", context.category).len() > 0);
             assert!(context.severity as u8 >= 1);
         }
     }

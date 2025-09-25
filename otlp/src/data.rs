@@ -535,7 +535,10 @@ impl std::fmt::Display for AttributeValue {
 impl AttributeValue {
     /// 转换为字符串
     pub fn to_string(&self) -> String {
-        format!("{}", self)
+        match self {
+            AttributeValue::Double(v) => format!("{:.2}", v),
+            _ => format!("{}", self),
+        }
     }
 
     /// 获取类型名称

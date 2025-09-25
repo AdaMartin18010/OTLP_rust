@@ -3,7 +3,7 @@
 //! 提供与OpenTelemetry protobuf定义的集成，支持完整的OTLP协议实现。
 
 use crate::data::{LogData, MetricData, TelemetryContent, TelemetryData, TraceData};
-use crate::error::{Result, SerializationError};
+use crate::error::{Result, DataError};
 use prost::Message;
 
 /// OTLP资源定义
@@ -554,7 +554,7 @@ impl ProtobufSerializer {
         let mut buf = Vec::new();
         request
             .encode(&mut buf)
-            .map_err(|e| SerializationError::Protobuf(e))?;
+            .map_err(|e| DataError::Format { reason: e.to_string() })?;
 
         Ok(buf)
     }
@@ -584,7 +584,7 @@ impl ProtobufSerializer {
         let mut buf = Vec::new();
         request
             .encode(&mut buf)
-            .map_err(|e| SerializationError::Protobuf(e))?;
+            .map_err(|e| DataError::Format { reason: e.to_string() })?;
 
         Ok(buf)
     }
@@ -614,7 +614,7 @@ impl ProtobufSerializer {
         let mut buf = Vec::new();
         request
             .encode(&mut buf)
-            .map_err(|e| SerializationError::Protobuf(e))?;
+            .map_err(|e| DataError::Format { reason: e.to_string() })?;
 
         Ok(buf)
     }
@@ -622,21 +622,15 @@ impl ProtobufSerializer {
     /// 转换追踪数据为protobuf格式
     fn convert_trace_to_span(&self, trace_data: TraceData) -> Result<Span> {
         let trace_id =
-            hex::decode(&trace_data.trace_id).map_err(|e| SerializationError::Format {
-                message: format!("Invalid trace_id: {}", e),
-            })?;
+            hex::decode(&trace_data.trace_id).map_err(|e| DataError::Format { reason: format!("Invalid trace_id: {}", e) })?;
 
-        let span_id = hex::decode(&trace_data.span_id).map_err(|e| SerializationError::Format {
-            message: format!("Invalid span_id: {}", e),
-        })?;
+        let span_id = hex::decode(&trace_data.span_id).map_err(|e| DataError::Format { reason: format!("Invalid span_id: {}", e) })?;
 
         let parent_span_id = trace_data
             .parent_span_id
             .map(|id| hex::decode(id))
             .transpose()
-            .map_err(|e| SerializationError::Format {
-                message: format!("Invalid parent_span_id: {}", e),
-            })?
+            .map_err(|e| DataError::Format { reason: format!("Invalid parent_span_id: {}", e) })?
             .unwrap_or_default();
 
         let mut attributes = std::collections::HashMap::new();
@@ -726,18 +720,14 @@ impl ProtobufSerializer {
             .trace_id
             .map(|id| hex::decode(id))
             .transpose()
-            .map_err(|e| SerializationError::Format {
-                message: format!("Invalid trace_id: {}", e),
-            })?
+            .map_err(|e| DataError::Format { reason: format!("Invalid trace_id: {}", e) })?
             .unwrap_or_default();
 
         let span_id = log_data
             .span_id
             .map(|id| hex::decode(id))
             .transpose()
-            .map_err(|e| SerializationError::Format {
-                message: format!("Invalid span_id: {}", e),
-            })?
+            .map_err(|e| DataError::Format { reason: format!("Invalid span_id: {}", e) })?
             .unwrap_or_default();
 
         let body = Some(AttributeValue {

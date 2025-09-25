@@ -548,9 +548,7 @@ async fn init_comprehensive_environment() -> Result<()> {
 
     info!("🚀 OTLP Rust 综合功能演示环境初始化");
 
-    // 设置环境变量
-    std::env::set_var("RUST_LOG", "info");
-    std::env::set_var("RUST_BACKTRACE", "1");
+    // 省略环境变量设置；请在外部设置或使用tracing初始化
 
     info!("✅ 综合演示环境初始化完成");
     Ok(())

@@ -509,6 +509,7 @@ impl ResilienceManager {
     }
 
     /// 获取或创建熔断器
+    #[allow(dead_code)]
     async fn get_or_create_circuit_breaker(&self, operation_name: &str) -> CircuitBreaker {
         let mut circuit_breakers = self.circuit_breakers.write().await;
 
@@ -522,12 +523,14 @@ impl ResilienceManager {
     }
 
     /// 检查健康状态
+    #[allow(dead_code)]
     async fn is_healthy(&self) -> bool {
         let health_status = self.health_status.read().await;
         matches!(*health_status, HealthStatus::Healthy)
     }
 
     /// 更新指标
+    #[allow(dead_code)]
     async fn update_metrics<R>(
         &self,
         operation_name: &str,
@@ -564,6 +567,7 @@ impl ResilienceManager {
     }
 
     /// 检查降级条件
+    #[allow(dead_code)]
     async fn check_degradation_conditions(&self, operation_name: &str) {
         if !self.config.graceful_degradation.enabled {
             return;
@@ -605,6 +609,7 @@ impl ResilienceManager {
     }
 
     /// 触发降级
+    #[allow(dead_code)]
     async fn trigger_degradation(&self, operation_name: &str) {
         info!("为操作 {} 触发优雅降级", operation_name);
 
@@ -635,12 +640,14 @@ impl ResilienceManager {
     }
 
     /// 获取健康状态
+    #[allow(dead_code)]
     pub async fn get_health_status(&self) -> HealthStatus {
         let health_status = self.health_status.read().await;
         health_status.clone()
     }
 
     /// 获取指标
+    #[allow(dead_code)]
     pub async fn get_metrics(&self) -> ResilienceMetrics {
         let metrics = self.metrics.read().await;
         metrics.clone()
@@ -649,6 +656,7 @@ impl ResilienceManager {
 
 /// 熔断器状态
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum CircuitBreakerState {
     Closed,
     Open,
@@ -657,6 +665,7 @@ pub enum CircuitBreakerState {
 
 /// 熔断器
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct CircuitBreaker {
     config: CircuitBreakerConfig,
     state: Arc<Mutex<CircuitBreakerState>>,
@@ -667,6 +676,7 @@ pub struct CircuitBreaker {
 }
 
 impl CircuitBreaker {
+    #[allow(dead_code)]
     pub fn new(config: CircuitBreakerConfig) -> Self {
         Self {
             config,

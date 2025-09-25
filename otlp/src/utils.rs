@@ -588,7 +588,7 @@ mod tests {
         let should_retry = RetryUtils::should_retry(
             1,
             3,
-            &crate::error::OtlpError::timeout("test", Duration::from_secs(1)),
+            &crate::error::OtlpError::Transport(crate::error::TransportError::Timeout { operation: "test".to_string(), timeout: Duration::from_secs(1) }),
         );
         assert!(should_retry);
     }

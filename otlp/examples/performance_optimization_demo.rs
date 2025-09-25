@@ -60,7 +60,7 @@ impl PerformanceOptimizer {
     
     pub async fn optimize_error_handling(&self, error: &OtlpError) -> Result<OptimizedError> {
         Ok(OptimizedError {
-            inner: std::sync::Arc::new(error.clone()),
+            inner: std::sync::Arc::new(OtlpError::from_anyhow(anyhow::anyhow!(format!("{}", error)))),
             metadata: ErrorMetadata {
                 size: std::mem::size_of_val(error),
                 created_at: std::time::Instant::now(),
@@ -457,27 +457,27 @@ async fn benchmark_demo() -> Result<()> {
 // 辅助函数
 
 fn create_transport_error() -> OtlpError {
-    OtlpError::Internal("Transport connection failed".to_string())
+    OtlpError::from_anyhow(anyhow::anyhow!("Transport connection failed"))
 }
 
 fn create_serialization_error() -> OtlpError {
-    OtlpError::Internal("JSON serialization error".to_string())
+    OtlpError::from_anyhow(anyhow::anyhow!("JSON serialization error"))
 }
 
 fn create_configuration_error() -> OtlpError {
-    OtlpError::Internal("Invalid endpoint configuration".to_string())
+    OtlpError::from_anyhow(anyhow::anyhow!("Invalid endpoint configuration"))
 }
 
 fn create_processing_error() -> OtlpError {
-    OtlpError::Internal("Data validation failed".to_string())
+    OtlpError::from_anyhow(anyhow::anyhow!("Data validation failed"))
 }
 
 fn create_export_error() -> OtlpError {
-    OtlpError::Internal("Export operation failed".to_string())
+    OtlpError::from_anyhow(anyhow::anyhow!("Export operation failed"))
 }
 
 fn create_test_error(index: usize) -> OtlpError {
-    OtlpError::Internal(format!("Test error {}", index))
+    OtlpError::from_anyhow(anyhow::anyhow!(format!("Test error {}", index)))
 }
 
 async fn verify_optimization_effectiveness(optimized: &OptimizedError) -> Result<()> {
