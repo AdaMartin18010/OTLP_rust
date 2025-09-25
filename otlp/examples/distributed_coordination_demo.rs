@@ -3,8 +3,121 @@
 //! 展示如何使用 OTLP Rust 的分布式错误处理协调系统进行跨节点错误处理、
 //! 共识机制和分布式恢复。
 
-use otlp::error::ErrorSeverity;
-use otlp::{DistributedConfig, DistributedError, DistributedErrorCoordinator, Result};
+use otlp::error::{ErrorSeverity, Result};
+
+// 模拟的分布式协调结构体
+#[derive(Debug, Clone)]
+pub struct DistributedConfig {
+    pub node_id: String,
+    pub cluster_endpoint: String,
+    pub heartbeat_interval: std::time::Duration,
+    pub consensus_timeout: std::time::Duration,
+}
+
+impl Default for DistributedConfig {
+    fn default() -> Self {
+        Self {
+            node_id: "node-1".to_string(),
+            cluster_endpoint: "cluster.example.com:8080".to_string(),
+            heartbeat_interval: std::time::Duration::from_secs(30),
+            consensus_timeout: std::time::Duration::from_secs(10),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DistributedError {
+    pub id: String,
+    pub error_type: String,
+    pub severity: ErrorSeverity,
+    pub message: String,
+    pub source: String,
+    pub context: std::collections::HashMap<String, String>,
+    pub timestamp: std::time::SystemTime,
+    pub affected_services: Vec<String>,
+    pub propagation_path: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DistributedErrorCoordinator {
+    pub config: DistributedConfig,
+}
+
+impl DistributedErrorCoordinator {
+    pub fn new(config: DistributedConfig) -> Result<Self> {
+        Ok(Self { config })
+    }
+    
+    pub async fn start(&self) -> Result<()> {
+        Ok(())
+    }
+    
+    pub async fn get_cluster_status(&self) -> Result<ClusterStatus> {
+        Ok(ClusterStatus {
+            total_nodes: 3,
+            active_nodes: 3,
+            cluster_health: ClusterHealth::Healthy,
+            consensus_status: ConsensusStatus::Stable,
+        })
+    }
+    
+    pub async fn handle_distributed_error(&self, _error: DistributedError) -> Result<DistributedErrorResult> {
+        Ok(DistributedErrorResult {
+            local_result: LocalResult { handled: true },
+            consensus_reached: true,
+            participating_nodes: vec!["node-1".to_string(), "node-2".to_string()],
+            recovery_result: Some(RecoveryResult {
+                recovery_actions: vec!["restart_service".to_string()],
+                success: true,
+                execution_time: std::time::Duration::from_secs(5),
+                consensus_time: std::time::Duration::from_millis(100),
+            }),
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ClusterStatus {
+    pub total_nodes: usize,
+    pub active_nodes: usize,
+    pub cluster_health: ClusterHealth,
+    pub consensus_status: ConsensusStatus,
+}
+
+#[derive(Debug, Clone)]
+pub enum ClusterHealth {
+    Healthy,
+    Warning,
+    Critical,
+}
+
+#[derive(Debug, Clone)]
+pub enum ConsensusStatus {
+    Stable,
+    Unstable,
+    Recovering,
+}
+
+#[derive(Debug, Clone)]
+pub struct DistributedErrorResult {
+    pub local_result: LocalResult,
+    pub consensus_reached: bool,
+    pub participating_nodes: Vec<String>,
+    pub recovery_result: Option<RecoveryResult>,
+}
+
+#[derive(Debug, Clone)]
+pub struct LocalResult {
+    pub handled: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct RecoveryResult {
+    pub recovery_actions: Vec<String>,
+    pub success: bool,
+    pub execution_time: std::time::Duration,
+    pub consensus_time: std::time::Duration,
+}
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -256,14 +369,14 @@ async fn distributed_recovery_demo() -> Result<()> {
         println!("      ✅ 恢复完成:");
         println!(
             "        - 成功率: {:.1}%",
-            recovery_result.success_rate * 100.0
+            if recovery_result.success { 100.0 } else { 0.0 }
         );
-        println!("        - 恢复时间: {:?}", recovery_result.recovery_time);
+        println!("        - 执行时间: {:?}", recovery_result.execution_time);
         println!(
             "        - 参与节点: {:?}",
-            recovery_result.participating_nodes
+            recovery_result.recovery_actions
         );
-        println!("        - 服务状态: {:?}", recovery_result.service_status);
+        println!("        - 共识时间: {:?}", recovery_result.consensus_time);
 
         println!();
     }
@@ -371,22 +484,32 @@ fn create_resource_exhaustion_error() -> DistributedError {
 
 // 辅助函数：创建共识场景
 
+// 模拟的恢复建议结构体
+#[derive(Debug, Clone)]
+pub struct RecoverySuggestion {
+    pub node_id: String,
+    pub suggestion_type: String,
+    pub description: String,
+    pub confidence: f64,
+    pub estimated_time: std::time::Duration,
+}
+
 #[derive(Debug, Clone)]
 struct ConsensusScenario {
-    recovery_suggestions: Vec<otlp::distributed_coordination::RecoverySuggestion>,
+    recovery_suggestions: Vec<RecoverySuggestion>,
 }
 
 fn create_simple_consensus_scenario() -> ConsensusScenario {
     ConsensusScenario {
         recovery_suggestions: vec![
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node1".to_string(),
                 suggestion_type: "restart_service".to_string(),
                 description: "重启故障服务".to_string(),
                 confidence: 0.9,
                 estimated_time: Duration::from_secs(30),
             },
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node2".to_string(),
                 suggestion_type: "restart_service".to_string(),
                 description: "重启故障服务".to_string(),
@@ -400,21 +523,21 @@ fn create_simple_consensus_scenario() -> ConsensusScenario {
 fn create_complex_consensus_scenario() -> ConsensusScenario {
     ConsensusScenario {
         recovery_suggestions: vec![
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node1".to_string(),
                 suggestion_type: "scale_up".to_string(),
                 description: "扩展服务实例".to_string(),
                 confidence: 0.8,
                 estimated_time: Duration::from_secs(60),
             },
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node2".to_string(),
                 suggestion_type: "load_balance".to_string(),
                 description: "重新分配负载".to_string(),
                 confidence: 0.75,
                 estimated_time: Duration::from_secs(45),
             },
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node3".to_string(),
                 suggestion_type: "circuit_breaker".to_string(),
                 description: "启用熔断器".to_string(),
@@ -428,14 +551,14 @@ fn create_complex_consensus_scenario() -> ConsensusScenario {
 fn create_conflict_resolution_scenario() -> ConsensusScenario {
     ConsensusScenario {
         recovery_suggestions: vec![
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node1".to_string(),
                 suggestion_type: "immediate_restart".to_string(),
                 description: "立即重启服务".to_string(),
                 confidence: 0.6,
                 estimated_time: Duration::from_secs(15),
             },
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node2".to_string(),
                 suggestion_type: "graceful_shutdown".to_string(),
                 description: "优雅关闭服务".to_string(),
@@ -449,14 +572,14 @@ fn create_conflict_resolution_scenario() -> ConsensusScenario {
 fn create_fault_tolerance_scenario() -> ConsensusScenario {
     ConsensusScenario {
         recovery_suggestions: vec![
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node1".to_string(),
                 suggestion_type: "failover".to_string(),
                 description: "故障转移到备用节点".to_string(),
                 confidence: 0.95,
                 estimated_time: Duration::from_secs(10),
             },
-            otlp::distributed_coordination::RecoverySuggestion {
+            RecoverySuggestion {
                 node_id: "node3".to_string(),
                 suggestion_type: "failover".to_string(),
                 description: "故障转移到备用节点".to_string(),
@@ -467,16 +590,25 @@ fn create_fault_tolerance_scenario() -> ConsensusScenario {
     }
 }
 
+// 模拟的共识结果结构体
+#[derive(Debug, Clone)]
+pub struct ConsensusResult {
+    pub suggestions: Vec<RecoverySuggestion>,
+    pub consensus_time: Duration,
+    pub participating_nodes: Vec<String>,
+    pub agreement_rate: f64,
+}
+
 fn simulate_consensus_result(
-    suggestions: &[otlp::distributed_coordination::RecoverySuggestion],
-) -> otlp::distributed_coordination::ConsensusResult {
+    suggestions: &[RecoverySuggestion],
+) -> ConsensusResult {
     // 选择置信度最高的建议
     let best_suggestion = suggestions
         .iter()
         .max_by(|a, b| a.confidence.partial_cmp(&b.confidence).unwrap())
         .unwrap();
 
-    otlp::distributed_coordination::ConsensusResult {
+    ConsensusResult {
         suggestions: vec![best_suggestion.clone()],
         consensus_time: Duration::from_millis(150),
         participating_nodes: vec![
@@ -495,18 +627,11 @@ struct RecoveryScenario {
     error_type: String,
     affected_services: Vec<String>,
     recovery_strategy: String,
-    recovery_suggestions: Vec<otlp::distributed_coordination::RecoverySuggestion>,
+    recovery_suggestions: Vec<RecoverySuggestion>,
     actions: Vec<String>,
     expected_result: RecoveryResult,
 }
 
-#[derive(Debug, Clone)]
-struct RecoveryResult {
-    success_rate: f64,
-    recovery_time: Duration,
-    participating_nodes: Vec<String>,
-    service_status: ServiceStatus,
-}
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -522,7 +647,7 @@ fn create_service_restart_scenario() -> RecoveryScenario {
         error_type: "service_crash".to_string(),
         affected_services: vec!["user-service".to_string()],
         recovery_strategy: "service_restart".to_string(),
-        recovery_suggestions: vec![otlp::distributed_coordination::RecoverySuggestion {
+        recovery_suggestions: vec![RecoverySuggestion {
             node_id: "node1".to_string(),
             suggestion_type: "restart_service".to_string(),
             description: "重启用户服务".to_string(),
@@ -536,10 +661,10 @@ fn create_service_restart_scenario() -> RecoveryScenario {
             "验证服务健康状态".to_string(),
         ],
         expected_result: RecoveryResult {
-            success_rate: 0.95,
-            recovery_time: Duration::from_secs(30),
-            participating_nodes: vec!["node1".to_string()],
-            service_status: ServiceStatus::Healthy,
+            recovery_actions: vec!["restart_service".to_string(), "verify_health".to_string()],
+            success: true,
+            execution_time: Duration::from_secs(30),
+            consensus_time: Duration::from_millis(500),
         },
     }
 }
@@ -549,7 +674,7 @@ fn create_load_balancing_scenario() -> RecoveryScenario {
         error_type: "overload".to_string(),
         affected_services: vec!["payment-service".to_string()],
         recovery_strategy: "load_balancing".to_string(),
-        recovery_suggestions: vec![otlp::distributed_coordination::RecoverySuggestion {
+        recovery_suggestions: vec![RecoverySuggestion {
             node_id: "node1".to_string(),
             suggestion_type: "rebalance_load".to_string(),
             description: "重新分配负载".to_string(),
@@ -563,14 +688,10 @@ fn create_load_balancing_scenario() -> RecoveryScenario {
             "监控负载平衡效果".to_string(),
         ],
         expected_result: RecoveryResult {
-            success_rate: 0.85,
-            recovery_time: Duration::from_secs(45),
-            participating_nodes: vec![
-                "node1".to_string(),
-                "node2".to_string(),
-                "node3".to_string(),
-            ],
-            service_status: ServiceStatus::Healthy,
+            recovery_actions: vec!["rebalance_load".to_string(), "update_routing".to_string()],
+            success: true,
+            execution_time: Duration::from_secs(45),
+            consensus_time: Duration::from_millis(800),
         },
     }
 }
@@ -580,7 +701,7 @@ fn create_resource_scaling_scenario() -> RecoveryScenario {
         error_type: "resource_exhaustion".to_string(),
         affected_services: vec!["database-service".to_string()],
         recovery_strategy: "resource_scaling".to_string(),
-        recovery_suggestions: vec![otlp::distributed_coordination::RecoverySuggestion {
+        recovery_suggestions: vec![RecoverySuggestion {
             node_id: "node1".to_string(),
             suggestion_type: "scale_resources".to_string(),
             description: "扩展数据库资源".to_string(),
@@ -595,10 +716,10 @@ fn create_resource_scaling_scenario() -> RecoveryScenario {
             "验证资源扩展效果".to_string(),
         ],
         expected_result: RecoveryResult {
-            success_rate: 0.9,
-            recovery_time: Duration::from_secs(120),
-            participating_nodes: vec!["node1".to_string(), "node2".to_string()],
-            service_status: ServiceStatus::Healthy,
+            recovery_actions: vec!["scale_resources".to_string(), "optimize_performance".to_string()],
+            success: true,
+            execution_time: Duration::from_secs(120),
+            consensus_time: Duration::from_millis(1000),
         },
     }
 }
@@ -608,7 +729,7 @@ fn create_failover_scenario() -> RecoveryScenario {
         error_type: "node_failure".to_string(),
         affected_services: vec!["notification-service".to_string()],
         recovery_strategy: "failover".to_string(),
-        recovery_suggestions: vec![otlp::distributed_coordination::RecoverySuggestion {
+        recovery_suggestions: vec![RecoverySuggestion {
             node_id: "node2".to_string(),
             suggestion_type: "failover".to_string(),
             description: "故障转移到备用节点".to_string(),
@@ -622,10 +743,10 @@ fn create_failover_scenario() -> RecoveryScenario {
             "同步服务状态".to_string(),
         ],
         expected_result: RecoveryResult {
-            success_rate: 0.98,
-            recovery_time: Duration::from_secs(15),
-            participating_nodes: vec!["node2".to_string(), "node3".to_string()],
-            service_status: ServiceStatus::Healthy,
+            recovery_actions: vec!["failover_to_backup".to_string(), "verify_continuity".to_string()],
+            success: true,
+            execution_time: Duration::from_secs(15),
+            consensus_time: Duration::from_millis(400),
         },
     }
 }
@@ -635,7 +756,7 @@ fn create_data_sync_scenario() -> RecoveryScenario {
         error_type: "data_inconsistency".to_string(),
         affected_services: vec!["cache-service".to_string()],
         recovery_strategy: "data_sync".to_string(),
-        recovery_suggestions: vec![otlp::distributed_coordination::RecoverySuggestion {
+        recovery_suggestions: vec![RecoverySuggestion {
             node_id: "node1".to_string(),
             suggestion_type: "sync_data".to_string(),
             description: "同步缓存数据".to_string(),
@@ -650,10 +771,10 @@ fn create_data_sync_scenario() -> RecoveryScenario {
             "恢复写入操作".to_string(),
         ],
         expected_result: RecoveryResult {
-            success_rate: 0.9,
-            recovery_time: Duration::from_secs(60),
-            participating_nodes: vec!["node1".to_string(), "node2".to_string()],
-            service_status: ServiceStatus::Healthy,
+            recovery_actions: vec!["sync_data".to_string(), "validate_consistency".to_string()],
+            success: true,
+            execution_time: Duration::from_secs(60),
+            consensus_time: Duration::from_millis(800),
         },
     }
 }

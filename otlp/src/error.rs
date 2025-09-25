@@ -204,6 +204,18 @@ pub enum OtlpError {
     /// 健康检查错误
     #[error("健康检查错误: {service} - {reason}")]
     HealthCheck { service: String, reason: String },
+    
+    /// 数据验证错误
+    #[error("数据验证错误: {0}")]
+    ValidationError(String),
+    
+    /// 性能分析器已在运行
+    #[error("性能分析器已在运行")]
+    ProfilerAlreadyRunning,
+    
+    /// 性能分析器未运行
+    #[error("性能分析器未运行")]
+    ProfilerNotRunning,
 
     /// 指标收集错误
     #[error("指标收集错误: {metric_type} - {reason}")]
@@ -906,6 +918,9 @@ impl OtlpError {
             Self::LoadBalancing { .. } => ErrorSeverity::High,
             Self::ServiceDiscovery { .. } => ErrorSeverity::High,
             Self::HealthCheck { .. } => ErrorSeverity::Medium,
+            Self::ValidationError(_) => ErrorSeverity::Low,
+            Self::ProfilerAlreadyRunning => ErrorSeverity::Low,
+            Self::ProfilerNotRunning => ErrorSeverity::Low,
             Self::MetricsCollection { .. } => ErrorSeverity::Low,
             Self::Alerting { .. } => ErrorSeverity::Medium,
             Self::ConfigurationManagement { .. } => ErrorSeverity::High,
@@ -1270,6 +1285,9 @@ impl OtlpError {
             Self::LoadBalancing { .. } => ErrorCategory::LoadBalancing,
             Self::ServiceDiscovery { .. } => ErrorCategory::ServiceDiscovery,
             Self::HealthCheck { .. } => ErrorCategory::Health,
+            Self::ValidationError(_) => ErrorCategory::Data,
+            Self::ProfilerAlreadyRunning => ErrorCategory::Processing,
+            Self::ProfilerNotRunning => ErrorCategory::Processing,
             Self::MetricsCollection { .. } => ErrorCategory::Metrics,
             Self::Alerting { .. } => ErrorCategory::Alerting,
             Self::ConfigurationManagement { .. } => ErrorCategory::Configuration,
@@ -1396,6 +1414,9 @@ impl OtlpError {
             Self::LoadBalancing { .. } => "load_balancing",
             Self::ServiceDiscovery { .. } => "service_discovery",
             Self::HealthCheck { .. } => "health_check",
+            Self::ValidationError(_) => "validation_error",
+            Self::ProfilerAlreadyRunning => "profiler_already_running",
+            Self::ProfilerNotRunning => "profiler_not_running",
             Self::MetricsCollection { .. } => "metrics_collection",
             Self::Alerting { .. } => "alerting",
             Self::ConfigurationManagement { .. } => "configuration_management",

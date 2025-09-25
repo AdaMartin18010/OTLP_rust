@@ -134,6 +134,12 @@ impl Transport for GrpcTransport {
             return Ok(());
         }
 
+        // 验证数据
+        let validator = crate::validation::DataValidator::new(true);
+        for telemetry_data in &data {
+            validator.validate_telemetry_data(telemetry_data)?;
+        }
+
         // 使用简化的 gRPC 发送实现
         self.send_via_grpc(data).await
     }
@@ -265,6 +271,12 @@ impl Transport for HttpTransport {
     async fn send(&self, data: Vec<TelemetryData>) -> Result<()> {
         if data.is_empty() {
             return Ok(());
+        }
+
+        // 验证数据
+        let validator = crate::validation::DataValidator::new(true);
+        for telemetry_data in &data {
+            validator.validate_telemetry_data(telemetry_data)?;
         }
 
         // 序列化数据

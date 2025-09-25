@@ -85,13 +85,13 @@ hex = "0.4.3"
 # 测试依赖
 [dev-dependencies]
 tokio-test = "0.4.4"
-criterion = "0.7.0"
+criterion = { version = "0.7.0", features = ["html_reports"] }
 tempfile = "3.22.0"
 proptest = "1.8.0"
 mockall = "0.13.1"
 
 [[bench]]
-name = "otlp_benchmarks"
+name = "performance_benchmarks"
 harness = false
 
 [features]

@@ -199,46 +199,33 @@
 //! }
 //! ```
 
-pub mod ai_ml;
 pub mod benchmarks;
-pub mod blockchain;
 pub mod client;
 pub mod config;
 pub mod data;
-pub mod distributed_coordination;
-pub mod edge_computing;
 pub mod error;
 pub mod exporter;
 pub mod microservices;
-pub mod ml_error_prediction;
 pub mod monitoring;
-pub mod performance_optimization;
+pub mod ottl;
+pub mod opamp;
+pub mod profiling;
 pub mod processor;
 pub mod protobuf;
 pub mod resilience;
 pub mod transport;
 pub mod utils;
+pub mod validation;
 
 // 重新导出主要类型
 pub use client::{LogBuilder, MetricBuilder, OtlpClient, OtlpClientBuilder, TraceBuilder};
 pub use config::{Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol};
 pub use data::{AttributeValue, LogData, MetricData, StatusCode, TelemetryData, TraceData};
-pub use distributed_coordination::{
-    ClusterStatus, CoordinationResult, DistributedConfig, DistributedError,
-    DistributedErrorCoordinator,
-};
 pub use error::{ErrorCategory, ErrorContext, ErrorSeverity, OtlpError, Result};
 pub use exporter::{ExportResult, ExporterMetrics, OtlpExporter};
-pub use ml_error_prediction::{
-    ErrorSample, MLErrorPrediction, MLPredictionConfig, PredictionFeedback, PredictionResult,
-    SystemContext,
-};
 pub use monitoring::{
     AlertCondition, AlertRule, ErrorEvent, ErrorMonitoringSystem, MonitoringConfig,
     MonitoringMetrics,
-};
-pub use performance_optimization::{
-    BenchmarkResults, OptimizedError, PerformanceConfig, PerformanceMetrics, PerformanceOptimizer,
 };
 pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};

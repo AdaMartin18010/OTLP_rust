@@ -54,7 +54,7 @@ complete_properties(e) = {
 
 **证明**:
 
-```
+```text
 1. 定义错误类型集合 E = {Transport, Serialization, Configuration, Processing, Export, Timeout, Concurrency, ResourceExhausted, VersionMismatch, Internal}
 
 2. 对于每个 e ∈ E，验证属性完整性：
@@ -75,7 +75,7 @@ complete_properties(e) = {
 
 **形式化定义**:
 
-```
+```text
 ∀e ∈ E, ∃ propagation_chain(e) = [e₀, e₁, ..., eₙ] where:
 1. e₀ = source_error(e)
 2. eₙ = final_error(e)
@@ -86,7 +86,7 @@ complete_properties(e) = {
 
 **证明**:
 
-```
+```text
 1. 定义传播链长度限制: max_propagation_depth = 3
    - Level 0: Source Error (如 std::io::Error)
    - Level 1: Domain Error (如 TransportError)
@@ -117,7 +117,7 @@ complete_properties(e) = {
 
 **形式化定义**:
 
-```
+```text
 ∀e ∈ E, context_consistency(e) = {
     timestamp(e) ≤ current_time(),
     error_type(e) ∈ valid_error_types,
@@ -129,7 +129,7 @@ complete_properties(e) = {
 
 **证明**:
 
-```
+```text
 1. 时间戳一致性:
    - timestamp(e) = SystemTime::now() 在错误创建时设置 ✅
    - timestamp(e) ≤ current_time() 始终成立 ✅
@@ -163,7 +163,7 @@ complete_properties(e) = {
 
 **形式化定义**:
 
-```
+```text
 State Machine M = (S, Σ, δ, s₀, F) where:
 - S = {Closed, Open, HalfOpen}
 - Σ = {Success, Failure, Timeout}
@@ -177,7 +177,7 @@ Liveness Property: ∀s ∈ S, ∃ path from s to Closed
 
 **证明**:
 
-```
+```text
 1. 状态空间定义:
    - Closed: 正常状态，允许请求通过 ✅
    - Open: 熔断状态，拒绝所有请求 ✅
@@ -210,7 +210,7 @@ Liveness Property: ∀s ∈ S, ∃ path from s to Closed
 
 **形式化定义**:
 
-```
+```text
 Retry Strategy R = (max_attempts, delay_sequence, convergence_condition) where:
 - max_attempts ∈ ℕ⁺
 - delay_sequence = {d₁, d₂, ..., dₙ} where dᵢ = min(base_delay × multiplierⁱ, max_delay)
@@ -221,7 +221,7 @@ Convergence Property: ∀R, ∃k ≤ max_attempts, final_result(R, k) ≠ Retry
 
 **证明**:
 
-```
+```text
 1. 延迟序列有界性:
    - base_delay > 0, max_delay > 0 ✅
    - multiplier > 1 ✅
@@ -258,7 +258,7 @@ Convergence Property: ∀R, ∃k ≤ max_attempts, final_result(R, k) ≠ Retry
 
 **形式化定义**:
 
-```
+```text
 Timeout Control T = (timeout_duration, operation, timeout_handler) where:
 - timeout_duration ∈ ℝ⁺
 - operation: () → Result<T>
@@ -269,7 +269,7 @@ Correctness Property: ∀T, ∃t ≤ timeout_duration, operation_result(t) ∈ {
 
 **证明**:
 
-```
+```text
 1. 超时时间有效性:
    - timeout_duration > 0 ✅
    - 超时时间为正实数 ✅
@@ -304,7 +304,7 @@ Correctness Property: ∀T, ∃t ≤ timeout_duration, operation_result(t) ∈ {
 
 **形式化定义**:
 
-```
+```text
 Performance Model P = (operations, time_complexity) where:
 - operations = {error_classify, context_generate, recovery_suggest, circuit_break, retry_decision}
 - time_complexity: operation → O(1)
@@ -314,7 +314,7 @@ Performance Property: ∀op ∈ operations, ∃c ∈ ℝ⁺, execution_time(op) 
 
 **证明**:
 
-```
+```text
 1. 错误分类时间复杂度:
    - 错误分类基于枚举匹配 ✅
    - 匹配操作为 O(1) ✅
@@ -353,7 +353,7 @@ Performance Property: ∀op ∈ operations, ∃c ∈ ℝ⁺, execution_time(op) 
 
 **形式化定义**:
 
-```
+```text
 Memory Model M = (data_structures, space_complexity) where:
 - data_structures = {ErrorContext, ResilienceManager, CircuitBreaker, RetryConfig}
 - space_complexity: structure → O(1)
@@ -363,7 +363,7 @@ Memory Property: ∀ds ∈ data_structures, ∃m ∈ ℝ⁺, memory_usage(ds) �
 
 **证明**:
 
-```
+```text
 1. ErrorContext 空间复杂度:
    - 字段数量固定: 6个字段 ✅
    - 每个字段大小固定 ✅
@@ -404,7 +404,7 @@ Memory Property: ∀ds ∈ data_structures, ∃m ∈ ℝ⁺, memory_usage(ds) �
 
 **形式化定义**:
 
-```
+```text
 Stability Model S = (system_state, error_rate, recovery_rate) where:
 - system_state: T → {Stable, Degraded, Unstable}
 - error_rate: T → [0, 1]
@@ -415,7 +415,7 @@ Stability Property: ∀t ∈ T, ∃stability_window, ∀t' ∈ [t, t+stability_w
 
 **证明**:
 
-```
+```text
 1. 错误率控制:
    - 熔断器在错误率过高时开启 ✅
    - 错误率阈值可配置 ✅
@@ -465,7 +465,7 @@ Stability Property: ∀t ∈ T, ∃stability_window, ∀t' ∈ [t, t+stability_w
 
 ### 🏆 形式化验证结论
 
-```
+```text
 形式化验证总结:
   验证完整性: ✅ 100% 通过
   证明严格性: ✅ 数学严格证明
