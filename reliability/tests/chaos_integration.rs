@@ -3,20 +3,23 @@
 //! - 验证 FaultToleranceExecutor 在延迟下的重试与超时行为
 
 use reliability::fault_tolerance::{FaultToleranceConfig, FaultToleranceExecutor, RetryConfig, TimeoutConfig};
+use std::time::Duration;
 
 #[test]
 #[ignore]
 fn chaos_network_latency_with_retry_and_timeout() {
     // 仅作为骨架，真实混沌执行由 CI 或本地脚本触发
     let mut retry = RetryConfig::default();
-    retry.max_retries = 3;
+    retry.max_attempts = 3;
 
     let mut timeout = TimeoutConfig::default();
-    timeout.operation_timeout_ms = 500; // 假定存在该字段，后续按实际实现同步
+    timeout.duration = Duration::from_millis(500);
 
-    let cfg = FaultToleranceConfig::default()
-        .retry(retry)
-        .timeout(timeout);
+    let cfg = FaultToleranceConfig {
+        retry,
+        timeout,
+        ..Default::default()
+    };
 
     let _executor = FaultToleranceExecutor::new(cfg);
 

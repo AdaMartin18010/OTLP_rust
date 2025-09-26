@@ -146,6 +146,9 @@ impl FaultToleranceExecutor {
         let _permit = self.bulkhead.acquire().await.map_err(|e| otlp_convert::to_otlp_error(&e))?;
 
         // 3. 执行带超时的操作
+        #[cfg(feature = "monitoring")]
+        let __ft_exec_start = std::time::Instant::now();
+
         let result = self.timeout.execute(|| {
             self.retry_policy.execute(|| {
                 operation()
@@ -156,10 +159,28 @@ impl FaultToleranceExecutor {
         match result {
             Ok(value) => {
                 self.circuit_breaker.record_success();
+                #[cfg(feature = "monitoring")]
+                {
+                    // 仅使用 tracing 作为占位，后续可替换为 metrics 宏
+                    tracing::debug!(
+                        target: "reliability::fault_tolerance",
+                        elapsed_ms = __ft_exec_start.elapsed().as_millis() as u64,
+                        "ft_execute_success"
+                    );
+                }
                 Ok(value)
             }
             Err(error) => {
                 self.circuit_breaker.record_failure();
+                #[cfg(feature = "monitoring")]
+                {
+                    tracing::debug!(
+                        target: "reliability::fault_tolerance",
+                        elapsed_ms = __ft_exec_start.elapsed().as_millis() as u64,
+                        error_category = %error.category(),
+                        "ft_execute_error"
+                    );
+                }
                 
                 // 尝试降级
                 if self.config.fallback.enabled {

@@ -1,0 +1,9 @@
+latency:
+  p95_ms: 200
+  p99_ms: 500
+availability:
+  target: 99.9
+error_rate:
+  max_percent: 1.0
+
+

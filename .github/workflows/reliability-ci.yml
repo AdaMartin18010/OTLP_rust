@@ -50,10 +50,23 @@ jobs:
           chmod +x reliability/scripts/bench_guard.sh || true
           reliability/scripts/bench_guard.sh || true
 
+      - name: SLO Check (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          chmod +x reliability/scripts/slo_check.sh || true
+          reliability/scripts/slo_check.sh || true
+
       - name: Bench Guard (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File reliability/scripts/bench_guard.ps1
+
+      - name: SLO Check (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File reliability/scripts/slo_check.ps1
 
 

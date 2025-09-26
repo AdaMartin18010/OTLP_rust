@@ -52,6 +52,8 @@ pub struct RetryConfig {
     pub retry_conditions: Vec<String>,
     /// 不重试的条件
     pub no_retry_conditions: Vec<String>,
+    /// 总重试时间窗口（超过该时长则停止重试）。None 表示不限制
+    pub total_timeout: Option<Duration>,
 }
 
 impl Default for RetryConfig {
@@ -66,6 +68,7 @@ impl Default for RetryConfig {
             enabled: true,
             retry_conditions: Vec::new(),
             no_retry_conditions: vec!["permission".to_string(), "validation".to_string()],
+            total_timeout: Some(Duration::from_secs(10)),
         }
     }
 }
@@ -135,6 +138,7 @@ impl RetryPolicy {
 
         let mut last_error = None;
         let mut attempt = 0;
+        let start_time = std::time::Instant::now();
 
         while attempt < self.config.max_attempts {
             attempt += 1;
@@ -155,6 +159,14 @@ impl RetryPolicy {
                         break;
                     }
 
+                    // 检查是否超过总重试窗口
+                    if let Some(total) = self.config.total_timeout {
+                        if start_time.elapsed() >= total {
+                            debug!("超过总重试时间窗口 {:?}", total);
+                            break;
+                        }
+                    }
+
                     // 计算延迟时间
                     let delay = self.calculate_delay(attempt);
                     if delay > Duration::ZERO {
@@ -163,6 +175,11 @@ impl RetryPolicy {
                     }
 
                     self.retry_count.fetch_add(1, Ordering::Relaxed);
+
+                    #[cfg(feature = "monitoring")]
+                    {
+                        debug!("retry_attempt_metric += 1");
+                    }
                 }
             }
         }
