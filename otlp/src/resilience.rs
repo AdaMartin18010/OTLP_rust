@@ -142,7 +142,7 @@
 //! - 定期进行故障演练
 //! - 持续优化和改进
 
-use futures::future::BoxFuture;
+use std::future::Future;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -373,13 +373,14 @@ impl ResilienceManager {
     }
 
     /// 执行带弹性的操作
-    pub async fn execute_with_resilience<F, R>(
+    pub async fn execute_with_resilience<F, Fut, R>(
         &self,
         operation_name: &str,
         operation: F,
     ) -> Result<R, ResilienceError>
     where
-        F: Fn() -> BoxFuture<'static, Result<R, anyhow::Error>> + Send + Sync + 'static + Clone,
+        F: Fn() -> Fut + Send + Sync + 'static + Clone,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
         R: Send,
     {
         let start_time = Instant::now();
@@ -415,13 +416,14 @@ impl ResilienceManager {
 
     /// 带重试的操作执行
     #[allow(dead_code)]
-    async fn execute_with_retry<F, R>(
+    async fn execute_with_retry<F, Fut, R>(
         &self,
         operation_name: &str,
-        operation: Box<F>,
+        operation: F,
     ) -> Result<R, anyhow::Error>
     where
-        F: Fn() -> BoxFuture<'static, Result<R, anyhow::Error>> + Send + Sync + 'static,
+        F: Fn() -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
         R: Send,
     {
         let mut attempt = 0;
@@ -688,9 +690,11 @@ impl CircuitBreaker {
         }
     }
 
-    pub async fn call<F, R>(&self, f: F) -> Result<R, CircuitBreakerError>
+    pub async fn call<F, Fut, R>(&self, f: F) -> Result<R, CircuitBreakerError>
     where
-        F: FnOnce() -> BoxFuture<'static, Result<R, anyhow::Error>>,
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
     {
         let state = self.state.lock().await;
 
@@ -710,9 +714,11 @@ impl CircuitBreaker {
         }
     }
 
-    async fn execute_call<F, R>(&self, f: F) -> Result<R, CircuitBreakerError>
+    async fn execute_call<F, Fut, R>(&self, f: F) -> Result<R, CircuitBreakerError>
     where
-        F: FnOnce() -> BoxFuture<'static, Result<R, anyhow::Error>>,
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
     {
         match f().await {
             Ok(result) => {
@@ -726,9 +732,11 @@ impl CircuitBreaker {
         }
     }
 
-    async fn execute_half_open_call<F, R>(&self, f: F) -> Result<R, CircuitBreakerError>
+    async fn execute_half_open_call<F, Fut, R>(&self, f: F) -> Result<R, CircuitBreakerError>
     where
-        F: FnOnce() -> BoxFuture<'static, Result<R, anyhow::Error>>,
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
     {
         let mut half_open_calls = self.half_open_calls.lock().await;
         if *half_open_calls >= self.config.half_open_max_calls {

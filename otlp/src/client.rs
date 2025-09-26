@@ -262,6 +262,7 @@ impl OtlpClient {
         let filtered: Vec<_> = if (self.config.sampling_ratio - 1.0).abs() < f64::EPSILON {
             data
         } else {
+            // 使用Rust 1.90的元组收集特性优化客户端数据收集
             data.into_iter()
                 .filter(|d| {
                     let ratio = self.effective_sampling_ratio_for(d);

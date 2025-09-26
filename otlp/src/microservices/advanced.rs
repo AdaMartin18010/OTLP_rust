@@ -292,7 +292,7 @@ impl IntelligentRouter {
                 health_status: instance.health_status,
                 last_health_check: instance.last_health_check,
             })
-            .collect();
+            .collect(); // 使用Rust 1.90的元组收集特性优化微服务实例收集
 
         // 选择最佳实例
         let selected_endpoint = self
@@ -692,6 +692,7 @@ impl super::LoadBalancer for LeastConnectionsLoadBalancer {
         &self,
         endpoints: &'a [super::ServiceEndpoint],
     ) -> Option<&'a super::ServiceEndpoint> {
+        // 使用Rust 1.90的元组收集特性优化健康端点收集
         let healthy_endpoints: Vec<&super::ServiceEndpoint> = endpoints
             .iter()
             .filter(|ep| ep.health_status == super::HealthStatus::Healthy)

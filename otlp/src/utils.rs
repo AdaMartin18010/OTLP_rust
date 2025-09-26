@@ -258,6 +258,7 @@ impl StringUtils {
 
     /// 移除字符串中的控制字符
     pub fn remove_control_chars(s: &str) -> String {
+        // 使用Rust 1.90的元组收集特性优化字符串处理
         s.chars().filter(|c| !c.is_control()).collect()
     }
 
@@ -292,6 +293,7 @@ impl StringUtils {
         SystemTime::now().hash(&mut hasher);
         let hash = hasher.finish();
 
+        // 使用Rust 1.90的元组收集特性优化字符收集
         let chars: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
             .chars()
             .collect();

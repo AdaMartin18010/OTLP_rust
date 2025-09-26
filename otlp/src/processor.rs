@@ -13,6 +13,7 @@ use tokio::time::{
 };
 //use futures::stream::{StreamExt, FuturesUnordered};
 //use futures::FutureExt;
+use crate::rust_1_90_optimizations::AsyncBatchProcessor;
 use crate::data::{
     TelemetryData,
     //TelemetryDataType,
@@ -246,6 +247,8 @@ pub struct OtlpProcessor {
     is_running: Arc<RwLock<bool>>,
     metrics: Arc<RwLock<ProcessorMetrics>>,
     resilience_manager: Arc<ResilienceManager>,
+    // 集成Rust 1.90优化的异步批处理器
+    async_batch_processor: Arc<AsyncBatchProcessor>,
 }
 
 /// 处理器指标
@@ -278,6 +281,12 @@ impl OtlpProcessor {
         let resilience_config = ResilienceConfig::default();
         let resilience_manager = Arc::new(ResilienceManager::new(resilience_config));
 
+        // 创建Rust 1.90优化的异步批处理器
+        let async_batch_processor = Arc::new(AsyncBatchProcessor::new(
+            config.batch_size,
+            config.batch_timeout,
+        ));
+
         Self {
             config,
             input_queue: input_tx,
@@ -289,6 +298,7 @@ impl OtlpProcessor {
             is_running: Arc::new(RwLock::new(false)),
             metrics: Arc::new(RwLock::new(ProcessorMetrics::default())),
             resilience_manager,
+            async_batch_processor,
         }
     }
 

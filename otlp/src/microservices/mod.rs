@@ -7,7 +7,7 @@ pub mod advanced;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use futures::future::BoxFuture;
+use std::future::Future;
 use opentelemetry::global;
 use opentelemetry::metrics::{Counter, Histogram};
 use serde::{Deserialize, Serialize};
@@ -197,9 +197,11 @@ impl CircuitBreaker {
         }
     }
 
-    pub async fn call<F, R>(&self, f: F) -> Result<R, CircuitBreakerError>
+    pub async fn call<F, Fut, R>(&self, f: F) -> Result<R, CircuitBreakerError>
     where
-        F: FnOnce() -> BoxFuture<'static, Result<R, anyhow::Error>>,
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
     {
         let state = self.state.lock().await;
 
@@ -219,9 +221,11 @@ impl CircuitBreaker {
         }
     }
 
-    async fn execute_call<F, R>(&self, f: F) -> Result<R, CircuitBreakerError>
+    async fn execute_call<F, Fut, R>(&self, f: F) -> Result<R, CircuitBreakerError>
     where
-        F: FnOnce() -> BoxFuture<'static, Result<R, anyhow::Error>>,
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
     {
         match f().await {
             Ok(result) => {
@@ -235,9 +239,11 @@ impl CircuitBreaker {
         }
     }
 
-    async fn execute_half_open_call<F, R>(&self, f: F) -> Result<R, CircuitBreakerError>
+    async fn execute_half_open_call<F, Fut, R>(&self, f: F) -> Result<R, CircuitBreakerError>
     where
-        F: FnOnce() -> BoxFuture<'static, Result<R, anyhow::Error>>,
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
     {
         let mut half_open_calls = self.half_open_calls.lock().await;
         if *half_open_calls >= self.config.half_open_max_calls {
@@ -384,9 +390,11 @@ impl Retryer {
         Self { config }
     }
 
-    pub async fn execute<F, R>(&self, mut f: F) -> Result<R, anyhow::Error>
+    pub async fn execute<F, Fut, R>(&self, mut f: F) -> Result<R, anyhow::Error>
     where
-        F: FnMut() -> BoxFuture<'static, Result<R, anyhow::Error>>,
+        F: FnMut() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
     {
         let mut last_error = None;
         let mut delay = self.config.base_delay;
@@ -510,12 +518,10 @@ impl MicroserviceClient {
     }
 
     #[allow(unused_variables)]
-    pub async fn call_service<F, R>(&self, service_name: &str, f: F) -> Result<R, anyhow::Error>
+    pub async fn call_service<F, Fut, R>(&self, service_name: &str, f: F) -> Result<R, anyhow::Error>
     where
-        F: Fn(&ServiceEndpoint) -> BoxFuture<'static, Result<R, anyhow::Error>>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(&ServiceEndpoint) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
         R: Send,
     {
         self.metrics.total_requests.add(1, &[]);

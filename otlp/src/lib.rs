@@ -192,6 +192,7 @@ pub mod profiling;
 pub mod processor;
 pub mod protobuf;
 pub mod resilience;
+pub mod rust_1_90_optimizations;
 pub mod transport;
 pub mod utils;
 pub mod validation;
@@ -208,6 +209,10 @@ pub use monitoring::{
 };
 pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};
+pub use rust_1_90_optimizations::{
+    AsyncBatchProcessor, AsyncClosureOptimizer, OptimizedMemoryPool, 
+    PooledObject, TupleCollectionOptimizer, ZeroCopyOptimizer,
+};
 pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{
     BatchUtils, CompressionUtils, HashUtils, PerformanceUtils, RetryUtils, StringUtils, TimeUtils,

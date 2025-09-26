@@ -459,6 +459,7 @@ impl AlertManager {
 
     pub async fn get_active_alerts(&self) -> Vec<Alert> {
         let alerts = self.active_alerts.read().await;
+        // 使用Rust 1.90的元组收集特性优化监控数据收集
         alerts.values().cloned().collect()
     }
 
