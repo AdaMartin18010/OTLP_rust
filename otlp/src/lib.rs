@@ -199,11 +199,14 @@ pub mod performance_enhancements;
 pub mod transport;
 pub mod utils;
 pub mod validation;
+pub mod ai_ml;
+pub mod edge_computing;
+pub mod blockchain;
 
 // 重新导出主要类型
 pub use client::{LogBuilder, MetricBuilder, OtlpClient, OtlpClientBuilder, TraceBuilder};
-pub use config::{Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol};
-pub use data::{AttributeValue, LogData, MetricData, StatusCode, TelemetryData, TraceData};
+pub use config::{BatchConfig, Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol};
+pub use data::{AttributeValue, DataPoint, DataPointValue, LogData, LogSeverity, MetricData, MetricType, SpanKind, SpanStatus, StatusCode, TelemetryContent, TelemetryData, TelemetryDataType, TraceData};
 pub use error::{ErrorCategory, ErrorContext, ErrorSeverity, OtlpError, Result};
 pub use exporter::{ExportResult, ExporterMetrics, OtlpExporter};
 pub use monitoring::{
@@ -235,6 +238,11 @@ pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{
     BatchUtils, CompressionUtils, HashUtils, PerformanceUtils, RetryUtils, StringUtils, TimeUtils,
 };
+
+// 重新导出新模块的主要类型
+pub use ai_ml::{AiMlAnalyzer, AiMlConfig, MlModel, ModelType, PredictionResult, AnomalyResult};
+pub use edge_computing::{EdgeComputingManager, EdgeNode, EdgeTask, TaskType, TaskPriority};
+pub use blockchain::{BlockchainManager, Block, Transaction, SmartContract, ConsensusAlgorithm};
 
 // 重新导出微服务相关类型
 pub use microservices::{

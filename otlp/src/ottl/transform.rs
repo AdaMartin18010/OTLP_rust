@@ -252,12 +252,351 @@ impl OtlpTransform {
     }
     
     /// 调用函数
-    async fn call_function(&self, name: &str, _args: &[Expression], _data: &TelemetryData) -> Result<bool> {
+    async fn call_function(&self, name: &str, args: &[Expression], data: &TelemetryData) -> Result<bool> {
         match name {
-            "has" => Ok(true),
-            "exists" => Ok(true),
+            "has" => {
+                if let Some(path_expr) = args.first() {
+                    if let Expression::Path(path) = path_expr {
+                        self.has_attribute(data, path).await
+                    } else {
+                        Ok(false)
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
+            "exists" => {
+                if let Some(path_expr) = args.first() {
+                    if let Expression::Path(path) = path_expr {
+                        self.exists_attribute(data, path).await
+                    } else {
+                        Ok(false)
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
+            "match" => {
+                if args.len() >= 2 {
+                    let value = self.evaluate_value_expression(&args[0], data).await?;
+                    let pattern = self.evaluate_value_expression(&args[1], data).await?;
+                    Ok(self.match_pattern(&value, &pattern))
+                } else {
+                    Ok(false)
+                }
+            }
+            "contains" => {
+                if args.len() >= 2 {
+                    let haystack = self.evaluate_value_expression(&args[0], data).await?;
+                    let needle = self.evaluate_value_expression(&args[1], data).await?;
+                    Ok(haystack.contains(&needle))
+                } else {
+                    Ok(false)
+                }
+            }
+            "starts_with" => {
+                if args.len() >= 2 {
+                    let text = self.evaluate_value_expression(&args[0], data).await?;
+                    let prefix = self.evaluate_value_expression(&args[1], data).await?;
+                    Ok(text.starts_with(&prefix))
+                } else {
+                    Ok(false)
+                }
+            }
+            "ends_with" => {
+                if args.len() >= 2 {
+                    let text = self.evaluate_value_expression(&args[0], data).await?;
+                    let suffix = self.evaluate_value_expression(&args[1], data).await?;
+                    Ok(text.ends_with(&suffix))
+                } else {
+                    Ok(false)
+                }
+            }
+            "is_int" => {
+                if let Some(value_expr) = args.first() {
+                    let value = self.evaluate_value_expression(value_expr, data).await?;
+                    Ok(value.parse::<i64>().is_ok())
+                } else {
+                    Ok(false)
+                }
+            }
+            "is_double" => {
+                if let Some(value_expr) = args.first() {
+                    let value = self.evaluate_value_expression(value_expr, data).await?;
+                    Ok(value.parse::<f64>().is_ok())
+                } else {
+                    Ok(false)
+                }
+            }
+            "is_bool" => {
+                if let Some(value_expr) = args.first() {
+                    let value = self.evaluate_value_expression(value_expr, data).await?;
+                    Ok(value.parse::<bool>().is_ok())
+                } else {
+                    Ok(false)
+                }
+            }
+            "is_string" => {
+                if let Some(value_expr) = args.first() {
+                    let value = self.evaluate_value_expression(value_expr, data).await?;
+                    Ok(!value.is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            "len" => {
+                if let Some(value_expr) = args.first() {
+                    let value = self.evaluate_value_expression(value_expr, data).await?;
+                    Ok(value.len() > 0)
+                } else {
+                    Ok(false)
+                }
+            }
+            "truncate" => {
+                if args.len() >= 2 {
+                    let text = self.evaluate_value_expression(&args[0], data).await?;
+                    let length = self.evaluate_value_expression(&args[1], data).await?;
+                    if let Ok(len) = length.parse::<usize>() {
+                        Ok(text.len() > len)
+                    } else {
+                        Ok(false)
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
+            "replace_all" => {
+                if args.len() >= 3 {
+                    let text = self.evaluate_value_expression(&args[0], data).await?;
+                    let old = self.evaluate_value_expression(&args[1], data).await?;
+                    let new = self.evaluate_value_expression(&args[2], data).await?;
+                    Ok(text.contains(&old) && !new.is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            "split" => {
+                if args.len() >= 2 {
+                    let text = self.evaluate_value_expression(&args[0], data).await?;
+                    let delimiter = self.evaluate_value_expression(&args[1], data).await?;
+                    Ok(text.contains(&delimiter))
+                } else {
+                    Ok(false)
+                }
+            }
+            "join" => {
+                if args.len() >= 2 {
+                    let delimiter = self.evaluate_value_expression(&args[0], data).await?;
+                    Ok(!delimiter.is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            "substring" => {
+                if args.len() >= 2 {
+                    let text = self.evaluate_value_expression(&args[0], data).await?;
+                    let start = self.evaluate_value_expression(&args[1], data).await?;
+                    if let Ok(start_idx) = start.parse::<usize>() {
+                        Ok(text.len() > start_idx)
+                    } else {
+                        Ok(false)
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
+            "to_lower" => {
+                if let Some(value_expr) = args.first() {
+                    let value = self.evaluate_value_expression(value_expr, data).await?;
+                    Ok(!value.is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            "to_upper" => {
+                if let Some(value_expr) = args.first() {
+                    let value = self.evaluate_value_expression(value_expr, data).await?;
+                    Ok(!value.is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            "trim" => {
+                if let Some(value_expr) = args.first() {
+                    let value = self.evaluate_value_expression(value_expr, data).await?;
+                    Ok(!value.is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            "now" => Ok(true), // 当前时间总是存在
+            "timestamp" => Ok(true), // 时间戳总是存在
+            "time" => Ok(true), // 时间总是存在
+            "duration" => {
+                if args.len() >= 2 {
+                    let start = self.evaluate_value_expression(&args[0], data).await?;
+                    let end = self.evaluate_value_expression(&args[1], data).await?;
+                    Ok(!start.is_empty() && !end.is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            "format" => {
+                if let Some(format_expr) = args.first() {
+                    let format_str = self.evaluate_value_expression(format_expr, data).await?;
+                    Ok(!format_str.is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            "concat" => {
+                Ok(args.len() >= 2) // 至少需要两个参数
+            }
+            "coalesce" => {
+                Ok(args.len() >= 2) // 至少需要两个参数
+            }
+            "merge" => {
+                Ok(args.len() >= 2) // 至少需要两个参数
+            }
+            "delete" => {
+                if let Some(path_expr) = args.first() {
+                    if let Expression::Path(_) = path_expr {
+                        Ok(true)
+                    } else {
+                        Ok(false)
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
+            "copy" => {
+                if args.len() >= 2 {
+                    if let Expression::Path(_) = &args[0] {
+                        if let Expression::Path(_) = &args[1] {
+                            Ok(true)
+                        } else {
+                            Ok(false)
+                        }
+                    } else {
+                        Ok(false)
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
+            "move" => {
+                if args.len() >= 2 {
+                    if let Expression::Path(_) = &args[0] {
+                        if let Expression::Path(_) = &args[1] {
+                            Ok(true)
+                        } else {
+                            Ok(false)
+                        }
+                    } else {
+                        Ok(false)
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
             _ => Err(OtlpError::ValidationError(format!("未知函数: {}", name))),
         }
+    }
+
+    /// 检查属性是否存在
+    async fn has_attribute(&self, data: &TelemetryData, path: &Path) -> Result<bool> {
+        match path {
+            Path::ResourceAttribute { key } => {
+                Ok(data.resource_attributes.contains_key(key))
+            }
+            Path::ScopeAttribute { key } => {
+                Ok(data.scope_attributes.contains_key(key))
+            }
+            _ => Ok(false),
+        }
+    }
+
+    /// 检查属性是否存在且不为空
+    async fn exists_attribute(&self, data: &TelemetryData, path: &Path) -> Result<bool> {
+        match path {
+            Path::ResourceAttribute { key } => {
+                if let Some(value) = data.resource_attributes.get(key) {
+                    Ok(!value.to_string().is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            Path::ScopeAttribute { key } => {
+                if let Some(value) = data.scope_attributes.get(key) {
+                    Ok(!value.to_string().is_empty())
+                } else {
+                    Ok(false)
+                }
+            }
+            _ => Ok(false),
+        }
+    }
+
+    /// 模式匹配
+    fn match_pattern(&self, value: &str, pattern: &str) -> bool {
+        // 简单的通配符匹配实现
+        if pattern.contains('*') {
+            self.wildcard_match(value, pattern)
+        } else if pattern.contains('?') {
+            self.single_char_match(value, pattern)
+        } else {
+            value == pattern
+        }
+    }
+
+    /// 通配符匹配
+    fn wildcard_match(&self, value: &str, pattern: &str) -> bool {
+        let pattern_chars: Vec<char> = pattern.chars().collect();
+        let value_chars: Vec<char> = value.chars().collect();
+        
+        let mut pattern_idx = 0;
+        let mut value_idx = 0;
+        let mut star_idx = None;
+        let mut match_idx = 0;
+        
+        while value_idx < value_chars.len() {
+            if pattern_idx < pattern_chars.len() && 
+               (pattern_chars[pattern_idx] == '?' || pattern_chars[pattern_idx] == value_chars[value_idx]) {
+                pattern_idx += 1;
+                value_idx += 1;
+            } else if pattern_idx < pattern_chars.len() && pattern_chars[pattern_idx] == '*' {
+                star_idx = Some(pattern_idx);
+                match_idx = value_idx;
+                pattern_idx += 1;
+            } else if let Some(star) = star_idx {
+                pattern_idx = star + 1;
+                match_idx += 1;
+                value_idx = match_idx;
+            } else {
+                return false;
+            }
+        }
+        
+        while pattern_idx < pattern_chars.len() && pattern_chars[pattern_idx] == '*' {
+            pattern_idx += 1;
+        }
+        
+        pattern_idx == pattern_chars.len()
+    }
+
+    /// 单字符匹配
+    fn single_char_match(&self, value: &str, pattern: &str) -> bool {
+        if value.len() != pattern.len() {
+            return false;
+        }
+        
+        for (v_char, p_char) in value.chars().zip(pattern.chars()) {
+            if p_char != '?' && p_char != v_char {
+                return false;
+            }
+        }
+        
+        true
     }
 }
 

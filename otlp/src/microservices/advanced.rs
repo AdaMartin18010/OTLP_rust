@@ -723,6 +723,8 @@ impl super::LoadBalancer for LeastConnectionsLoadBalancer {
 pub struct FaultInjector {
     fault_configs: Arc<RwLock<HashMap<String, FaultConfig>>>,
     metrics: FaultInjectorMetrics,
+    chaos_engine: Arc<ChaosEngine>,
+    service_mesh: Option<ServiceMeshClient>,
 }
 
 /// 故障配置
@@ -771,9 +773,16 @@ impl FaultInjector {
                 .build(),
         };
 
+        let chaos_engine = Arc::new(ChaosEngine {
+            active_experiments: Arc::new(RwLock::new(HashMap::new())),
+            experiment_history: Arc::new(RwLock::new(Vec::new())),
+        });
+
         Self {
             fault_configs: Arc::new(RwLock::new(HashMap::new())),
             metrics,
+            chaos_engine,
+            service_mesh: None,
         }
     }
 
@@ -1000,4 +1009,83 @@ mod tests {
         assert!(result.is_ok());
         assert!(result.unwrap().is_some());
     }
+}
+
+/// 混沌引擎
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct ChaosEngine {
+    active_experiments: Arc<RwLock<HashMap<String, ChaosExperiment>>>,
+    experiment_history: Arc<RwLock<Vec<ExperimentResult>>>,
+}
+
+/// 混沌实验
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ChaosExperiment {
+    pub id: String,
+    pub name: String,
+    pub target_service: String,
+    pub experiment_type: ExperimentType,
+    pub duration: Duration,
+    pub start_time: Instant,
+    pub status: ExperimentStatus,
+}
+
+/// 实验类型
+#[derive(Debug, Clone)]
+pub enum ExperimentType {
+    NetworkPartition,
+    ServiceFailure,
+    ResourceExhaustion,
+    LatencyInjection,
+    ErrorInjection,
+    DataCorruption,
+}
+
+/// 实验状态
+#[derive(Debug, Clone)]
+pub enum ExperimentStatus {
+    Pending,
+    Running,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+/// 实验结果
+#[derive(Debug, Clone)]
+pub struct ExperimentResult {
+    pub experiment_id: String,
+    pub start_time: Instant,
+    pub end_time: Instant,
+    pub status: ExperimentStatus,
+    pub impact_metrics: HashMap<String, f64>,
+    pub recovery_time: Duration,
+}
+
+/// 服务网格客户端
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct ServiceMeshClient {
+    config: ServiceMeshConfig,
+    istio_client: Option<IstioClient>,
+    linkerd_client: Option<LinkerdClient>,
+}
+
+/// Istio客户端
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct IstioClient {
+    pilot_endpoint: String,
+    citadel_endpoint: String,
+    galley_endpoint: String,
+}
+
+/// Linkerd客户端
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct LinkerdClient {
+    control_plane_endpoint: String,
+    data_plane_endpoint: String,
 }

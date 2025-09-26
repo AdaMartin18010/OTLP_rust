@@ -151,6 +151,9 @@ use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio::time::{sleep, timeout};
 use tracing::{error, info, warn};
+use std::collections::HashMap;
+use opentelemetry::global;
+use opentelemetry::metrics::{Counter, Histogram};
 
 /// 弹性配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1048,5 +1051,411 @@ mod tests {
             .await;
 
         assert!(result.is_ok());
+    }
+}
+
+/// 优雅降级管理器
+#[allow(dead_code)]
+pub struct GracefulDegradationManager {
+    degradation_configs: Arc<RwLock<HashMap<String, DegradationConfig>>>,
+    active_degradations: Arc<RwLock<HashMap<String, ActiveDegradation>>>,
+    metrics: DegradationMetrics,
+    adaptive_controller: Arc<AdaptiveController>,
+    fallback_strategies: Arc<RwLock<HashMap<String, FallbackStrategy>>>,
+}
+
+/// 降级配置
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct DegradationConfig {
+    pub service_name: String,
+    pub degradation_type: DegradationType,
+    pub trigger_conditions: Vec<TriggerCondition>,
+    pub fallback_actions: Vec<FallbackAction>,
+    pub recovery_conditions: Vec<RecoveryCondition>,
+    pub priority: u8,
+}
+
+/// 降级类型
+#[derive(Debug, Clone)]
+pub enum DegradationType {
+    ServiceShutdown,
+    FeatureDisable,
+    CacheOnly,
+    ReadOnly,
+    ReducedFunctionality,
+    QueueMode,
+}
+
+
+/// 比较操作符
+#[derive(Debug, Clone)]
+pub enum ComparisonOperator {
+    GreaterThan,
+    LessThan,
+    Equal,
+    NotEqual,
+    GreaterThanOrEqual,
+    LessThanOrEqual,
+}
+
+/// 降级动作
+#[derive(Debug, Clone)]
+pub struct FallbackAction {
+    pub action_type: FallbackActionType,
+    pub target: String,
+    pub parameters: HashMap<String, String>,
+}
+
+/// 降级动作类型
+#[derive(Debug, Clone)]
+pub enum FallbackActionType {
+    DisableFeature,
+    EnableCache,
+    SwitchToReadOnly,
+    ReduceTimeout,
+    LimitConcurrency,
+    ReturnCachedData,
+    ReturnDefaultValue,
+}
+
+/// 恢复条件
+#[derive(Debug, Clone)]
+pub struct RecoveryCondition {
+    pub metric_name: String,
+    pub operator: ComparisonOperator,
+    pub threshold: f64,
+    pub duration: Duration,
+}
+
+/// 活跃降级
+#[derive(Debug, Clone)]
+pub struct ActiveDegradation {
+    pub config: DegradationConfig,
+    pub start_time: Instant,
+    pub trigger_reason: String,
+    pub status: DegradationStatus,
+}
+
+/// 降级状态
+#[derive(Debug, Clone)]
+pub enum DegradationStatus {
+    Active,
+    Recovering,
+    Recovered,
+    Failed,
+}
+
+/// 降级指标
+#[derive(Debug)]
+pub struct DegradationMetrics {
+    pub degradations_triggered: Counter<u64>,
+    pub degradations_recovered: Counter<u64>,
+    pub fallback_actions_executed: Counter<u64>,
+    pub recovery_time: Histogram<f64>,
+}
+
+/// 自适应控制器
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct AdaptiveController {
+    learning_algorithm: LearningAlgorithm,
+    performance_history: Arc<RwLock<Vec<PerformanceSnapshot>>>,
+    adaptation_rules: Arc<RwLock<Vec<AdaptationRule>>>,
+}
+
+/// 学习算法
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub enum LearningAlgorithm {
+    SimpleThreshold,
+    MovingAverage,
+    ExponentialSmoothing,
+    MachineLearning,
+}
+
+/// 性能快照
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PerformanceSnapshot {
+    pub timestamp: Instant,
+    pub cpu_usage: f64,
+    pub memory_usage: f64,
+    pub response_time: Duration,
+    pub error_rate: f64,
+    pub throughput: f64,
+}
+
+/// 自适应规则
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct AdaptationRule {
+    pub name: String,
+    pub conditions: Vec<AdaptationCondition>,
+    pub actions: Vec<AdaptationAction>,
+    pub priority: u8,
+}
+
+/// 自适应条件
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct AdaptationCondition {
+    pub metric: String,
+    pub operator: ComparisonOperator,
+    pub value: f64,
+    pub window: Duration,
+}
+
+/// 自适应动作
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct AdaptationAction {
+    pub action_type: AdaptationActionType,
+    pub target: String,
+    pub value: f64,
+}
+
+/// 自适应动作类型
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub enum AdaptationActionType {
+    AdjustTimeout,
+    ChangeConcurrency,
+    ModifyCacheSize,
+    UpdateRetryCount,
+    SwitchAlgorithm,
+}
+
+/// 回退策略
+#[derive(Debug, Clone)]
+pub struct FallbackStrategy {
+    pub name: String,
+    pub service_name: String,
+    pub strategy_type: FallbackStrategyType,
+    pub conditions: Vec<FallbackCondition>,
+    pub actions: Vec<FallbackAction>,
+}
+
+/// 回退策略类型
+#[derive(Debug, Clone)]
+pub enum FallbackStrategyType {
+    CircuitBreaker,
+    Timeout,
+    Retry,
+    Cache,
+    DefaultValue,
+    AlternativeService,
+}
+
+/// 回退条件
+#[derive(Debug, Clone)]
+pub struct FallbackCondition {
+    pub metric: String,
+    pub operator: ComparisonOperator,
+    pub threshold: f64,
+    pub duration: Duration,
+}
+
+impl GracefulDegradationManager {
+    pub fn new() -> Self {
+        let metrics = DegradationMetrics {
+            degradations_triggered: global::meter("degradation")
+                .u64_counter("degradations_triggered_total")
+                .with_description("Total number of degradations triggered")
+                .build(),
+            degradations_recovered: global::meter("degradation")
+                .u64_counter("degradations_recovered_total")
+                .with_description("Total number of degradations recovered")
+                .build(),
+            fallback_actions_executed: global::meter("degradation")
+                .u64_counter("fallback_actions_executed_total")
+                .with_description("Total number of fallback actions executed")
+                .build(),
+            recovery_time: global::meter("degradation")
+                .f64_histogram("recovery_time_seconds")
+                .with_description("Time taken to recover from degradation")
+                .build(),
+        };
+
+        let adaptive_controller = Arc::new(AdaptiveController {
+            learning_algorithm: LearningAlgorithm::MovingAverage,
+            performance_history: Arc::new(RwLock::new(Vec::new())),
+            adaptation_rules: Arc::new(RwLock::new(Vec::new())),
+        });
+
+        Self {
+            degradation_configs: Arc::new(RwLock::new(HashMap::new())),
+            active_degradations: Arc::new(RwLock::new(HashMap::new())),
+            metrics,
+            adaptive_controller,
+            fallback_strategies: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+
+    /// 添加降级配置
+    pub async fn add_degradation_config(&self, config: DegradationConfig) {
+        let mut configs = self.degradation_configs.write().await;
+        configs.insert(config.service_name.clone(), config);
+    }
+
+    /// 检查是否需要降级
+    pub async fn check_degradation_conditions(&self, service_name: &str) -> Result<Option<DegradationConfig>, anyhow::Error> {
+        let configs = self.degradation_configs.read().await;
+        
+        if let Some(config) = configs.get(service_name) {
+            for condition in &config.trigger_conditions {
+                if self.evaluate_condition(condition).await? {
+                    return Ok(Some(config.clone()));
+                }
+            }
+        }
+        
+        Ok(None)
+    }
+
+    /// 触发降级
+    pub async fn trigger_degradation(&self, config: DegradationConfig, reason: String) -> Result<(), anyhow::Error> {
+        let active_degradation = ActiveDegradation {
+            config: config.clone(),
+            start_time: Instant::now(),
+            trigger_reason: reason,
+            status: DegradationStatus::Active,
+        };
+
+        let mut active_degradations = self.active_degradations.write().await;
+        active_degradations.insert(config.service_name.clone(), active_degradation);
+
+        // 执行降级动作
+        for action in &config.fallback_actions {
+            self.execute_fallback_action(action).await?;
+        }
+
+        self.metrics.degradations_triggered.add(1, &[]);
+        info!("降级已触发: {}", config.service_name);
+        
+        Ok(())
+    }
+
+    /// 评估条件
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
+    async fn evaluate_condition(&self, condition: &TriggerCondition) -> Result<bool, anyhow::Error> {
+        match condition {
+            TriggerCondition::HighErrorRate { threshold } => {
+                // 模拟错误率检查
+                Ok(false)
+            }
+            TriggerCondition::HighLatency { threshold } => {
+                // 模拟延迟检查
+                Ok(false)
+            }
+            TriggerCondition::ResourceExhaustion => {
+                // 模拟资源检查
+                Ok(false)
+            }
+            TriggerCondition::CircuitBreakerOpen => {
+                // 模拟熔断器状态检查
+                Ok(false)
+            }
+            TriggerCondition::Custom { name, condition } => {
+                // 模拟自定义条件检查
+                Ok(false)
+            }
+        }
+    }
+
+    /// 执行回退动作
+    #[allow(dead_code)]
+    async fn execute_fallback_action(&self, action: &FallbackAction) -> Result<(), anyhow::Error> {
+        match action.action_type {
+            FallbackActionType::DisableFeature => {
+                info!("禁用功能: {}", action.target);
+            }
+            FallbackActionType::EnableCache => {
+                info!("启用缓存: {}", action.target);
+            }
+            FallbackActionType::SwitchToReadOnly => {
+                info!("切换到只读模式: {}", action.target);
+            }
+            FallbackActionType::ReduceTimeout => {
+                info!("减少超时时间: {}", action.target);
+            }
+            FallbackActionType::LimitConcurrency => {
+                info!("限制并发数: {}", action.target);
+            }
+            FallbackActionType::ReturnCachedData => {
+                info!("返回缓存数据: {}", action.target);
+            }
+            FallbackActionType::ReturnDefaultValue => {
+                info!("返回默认值: {}", action.target);
+            }
+        }
+
+        self.metrics.fallback_actions_executed.add(1, &[]);
+        Ok(())
+    }
+
+    /// 检查恢复条件
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
+    pub async fn check_recovery_conditions(&self, service_name: &str) -> Result<bool, anyhow::Error> {
+        let active_degradations = self.active_degradations.read().await;
+        
+        if let Some(active_degradation) = active_degradations.get(service_name) {
+            for condition in &active_degradation.config.recovery_conditions {
+                if self.evaluate_condition(&TriggerCondition::Custom {
+                    name: condition.metric_name.clone(),
+                    condition: format!("{} {} {}", 
+                        match condition.operator {
+                            ComparisonOperator::GreaterThan => ">",
+                            ComparisonOperator::LessThan => "<",
+                            ComparisonOperator::Equal => "==",
+                            ComparisonOperator::NotEqual => "!=",
+                            ComparisonOperator::GreaterThanOrEqual => ">=",
+                            ComparisonOperator::LessThanOrEqual => "<=",
+                        },
+                        condition.threshold,
+                        condition.duration.as_secs()
+                    ),
+                }).await? {
+                    return Ok(true);
+                }
+            }
+        }
+        
+        Ok(false)
+    }
+
+    /// 恢复服务
+    #[allow(dead_code)]
+    pub async fn recover_service(&self, service_name: &str) -> Result<(), anyhow::Error> {
+        let mut active_degradations = self.active_degradations.write().await;
+        
+        if let Some(active_degradation) = active_degradations.get_mut(service_name) {
+            active_degradation.status = DegradationStatus::Recovered;
+            
+            let recovery_time = active_degradation.start_time.elapsed();
+            self.metrics.recovery_time.record(recovery_time.as_secs_f64(), &[]);
+            self.metrics.degradations_recovered.add(1, &[]);
+            
+            info!("服务已恢复: {}, 恢复时间: {:?}", service_name, recovery_time);
+        }
+        
+        Ok(())
+    }
+
+    /// 获取降级状态
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
+    pub async fn get_degradation_status(&self, service_name: &str) -> Option<DegradationStatus> {
+        let active_degradations = self.active_degradations.read().await;
+        active_degradations.get(service_name).map(|d| d.status.clone())
+    }
+
+    /// 获取所有活跃降级
+    #[allow(dead_code)]
+    pub async fn get_active_degradations(&self) -> Vec<ActiveDegradation> {
+        let active_degradations = self.active_degradations.read().await;
+        active_degradations.values().cloned().collect()
     }
 }

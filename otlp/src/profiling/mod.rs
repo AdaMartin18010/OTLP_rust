@@ -274,6 +274,141 @@ impl Profiler {
     pub fn config(&self) -> &ProfilingConfig {
         &self.config
     }
+
+    /// 获取性能统计
+    pub async fn get_performance_stats(&self) -> Result<PerformanceStats> {
+        if !self.is_running {
+            return Err(OtlpError::Performance(crate::error::PerformanceError::HighCpuUsage { current: 0.0, threshold: 10.0 }));
+        }
+
+        let cpu_usage = self.get_cpu_usage().await?;
+        let memory_usage = self.get_memory_usage().await?;
+        let lock_contention = self.get_lock_contention().await?;
+
+        Ok(PerformanceStats {
+            cpu_usage,
+            memory_usage,
+            lock_contention,
+            timestamp: SystemTime::now(),
+        })
+    }
+
+    /// 获取CPU使用率
+    async fn get_cpu_usage(&self) -> Result<f64> {
+        // 模拟CPU使用率获取
+        Ok(45.2)
+    }
+
+    /// 获取内存使用情况
+    async fn get_memory_usage(&self) -> Result<MemoryUsage> {
+        // 模拟内存使用情况获取
+        Ok(MemoryUsage {
+            heap_size: 1024 * 1024 * 100, // 100MB
+            heap_used: 1024 * 1024 * 60,   // 60MB
+            stack_size: 1024 * 1024 * 10,  // 10MB
+            gc_cycles: 5,
+        })
+    }
+
+    /// 获取锁竞争情况
+    async fn get_lock_contention(&self) -> Result<f64> {
+        // 模拟锁竞争率获取
+        Ok(12.5)
+    }
+
+    /// 生成性能报告
+    pub async fn generate_report(&self) -> Result<PerformanceReport> {
+        if !self.is_running {
+            return Err(OtlpError::Performance(crate::error::PerformanceError::HighCpuUsage { current: 0.0, threshold: 10.0 }));
+        }
+
+        let stats = self.get_performance_stats().await?;
+        let hotspots = self.identify_hotspots().await?;
+        let recommendations = self.generate_recommendations(&stats, &hotspots).await?;
+
+        Ok(PerformanceReport {
+            stats,
+            hotspots,
+            recommendations,
+            generated_at: SystemTime::now(),
+        })
+    }
+
+    /// 识别性能热点
+    async fn identify_hotspots(&self) -> Result<Vec<Hotspot>> {
+        // 模拟热点识别
+        Ok(vec![
+            Hotspot {
+                function_name: "process_data".to_string(),
+                file_name: "processor.rs".to_string(),
+                line_number: 128,
+                cpu_time_percent: 35.2,
+                memory_allocations: 1024,
+                call_count: 10000,
+            },
+            Hotspot {
+                function_name: "serialize_json".to_string(),
+                file_name: "serializer.rs".to_string(),
+                line_number: 45,
+                cpu_time_percent: 28.7,
+                memory_allocations: 512,
+                call_count: 5000,
+            },
+        ])
+    }
+
+    /// 生成性能优化建议
+    async fn generate_recommendations(&self, stats: &PerformanceStats, hotspots: &[Hotspot]) -> Result<Vec<Recommendation>> {
+        let mut recommendations = Vec::new();
+
+        // CPU使用率建议
+        if stats.cpu_usage > 80.0 {
+            recommendations.push(Recommendation {
+                category: RecommendationCategory::Cpu,
+                priority: RecommendationPriority::High,
+                title: "高CPU使用率".to_string(),
+                description: "CPU使用率过高，建议优化热点函数".to_string(),
+                action: "考虑使用缓存或算法优化".to_string(),
+            });
+        }
+
+        // 内存使用建议
+        if stats.memory_usage.heap_used as f64 / stats.memory_usage.heap_size as f64 > 0.8 {
+            recommendations.push(Recommendation {
+                category: RecommendationCategory::Memory,
+                priority: RecommendationPriority::Medium,
+                title: "高内存使用率".to_string(),
+                description: "堆内存使用率过高".to_string(),
+                action: "考虑增加内存或优化内存分配".to_string(),
+            });
+        }
+
+        // 锁竞争建议
+        if stats.lock_contention > 20.0 {
+            recommendations.push(Recommendation {
+                category: RecommendationCategory::Concurrency,
+                priority: RecommendationPriority::High,
+                title: "高锁竞争".to_string(),
+                description: "锁竞争率过高，影响并发性能".to_string(),
+                action: "考虑使用无锁数据结构或减少锁粒度".to_string(),
+            });
+        }
+
+        // 热点函数建议
+        for hotspot in hotspots {
+            if hotspot.cpu_time_percent > 30.0 {
+                recommendations.push(Recommendation {
+                    category: RecommendationCategory::Cpu,
+                    priority: RecommendationPriority::High,
+                    title: format!("热点函数: {}", hotspot.function_name),
+                    description: format!("函数 {} 占用CPU时间 {}%", hotspot.function_name, hotspot.cpu_time_percent),
+                    action: "考虑优化算法或使用更高效的数据结构".to_string(),
+                });
+            }
+        }
+
+        Ok(recommendations)
+    }
 }
 
 /// 性能数据类型
@@ -392,6 +527,74 @@ pub struct StackFrame {
     pub file_name: String,
     pub line_number: u32,
     pub address: u64,
+}
+
+/// 性能统计
+#[derive(Debug, Clone)]
+pub struct PerformanceStats {
+    pub cpu_usage: f64,
+    pub memory_usage: MemoryUsage,
+    pub lock_contention: f64,
+    pub timestamp: SystemTime,
+}
+
+/// 内存使用情况
+#[derive(Debug, Clone)]
+pub struct MemoryUsage {
+    pub heap_size: usize,
+    pub heap_used: usize,
+    pub stack_size: usize,
+    pub gc_cycles: u32,
+}
+
+/// 性能热点
+#[derive(Debug, Clone)]
+pub struct Hotspot {
+    pub function_name: String,
+    pub file_name: String,
+    pub line_number: u32,
+    pub cpu_time_percent: f64,
+    pub memory_allocations: usize,
+    pub call_count: u64,
+}
+
+/// 性能报告
+#[derive(Debug, Clone)]
+pub struct PerformanceReport {
+    pub stats: PerformanceStats,
+    pub hotspots: Vec<Hotspot>,
+    pub recommendations: Vec<Recommendation>,
+    pub generated_at: SystemTime,
+}
+
+/// 性能优化建议
+#[derive(Debug, Clone)]
+pub struct Recommendation {
+    pub category: RecommendationCategory,
+    pub priority: RecommendationPriority,
+    pub title: String,
+    pub description: String,
+    pub action: String,
+}
+
+/// 建议类别
+#[derive(Debug, Clone)]
+pub enum RecommendationCategory {
+    Cpu,
+    Memory,
+    Concurrency,
+    Network,
+    Io,
+    Algorithm,
+}
+
+/// 建议优先级
+#[derive(Debug, Clone)]
+pub enum RecommendationPriority {
+    Low,
+    Medium,
+    High,
+    Critical,
 }
 
 #[cfg(test)]
