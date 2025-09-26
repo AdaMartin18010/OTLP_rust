@@ -406,6 +406,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+### 示例与运行
+
+- 入门示例：`examples/simple_usage.rs`
+  - 运行：`cargo run -p otlp --example simple_usage`
+- 基础演示：`examples/simple_demo.rs`
+  - 运行：`cargo run -p otlp --example simple_demo`
+- 综合用法：`examples/comprehensive_usage.rs`, `examples/comprehensive_demo.rs`
+  - 运行：`cargo run -p otlp --example comprehensive_usage`
+- 高级模式：`examples/advanced_patterns.rs`, `examples/advanced_microservices_demo.rs`
+  - 运行：`cargo run -p otlp --example advanced_patterns`
+- 可靠性与弹性：`examples/resilience_usage.rs`, `examples/microservices_demo.rs`
+  - 运行：`cargo run -p otlp --example resilience_usage`
+- 监控与告警：`examples/monitoring_demo.rs`
+  - 运行：`cargo run -p otlp --example monitoring_demo`
+- 性能基准与优化：`examples/performance_benchmarks.rs`, `examples/performance_optimization_demo.rs`
+  - 运行：`cargo run -p otlp --example performance_optimization_demo`
+- 分布式协调：`examples/distributed_coordination_demo.rs`
+  - 运行：`cargo run -p otlp --example distributed_coordination_demo`
+
 ### 错误处理示例
 
 ```rust

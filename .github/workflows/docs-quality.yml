@@ -1,0 +1,58 @@
+name: Docs Quality Gates
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  docs-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Show rustc/cargo versions
+        run: |
+          rustc --version
+          cargo --version
+
+      - name: Markdown Lint
+        uses: DavidAnson/markdownlint-cli2-action@v15
+        with:
+          globs: |
+            **/*.md
+          config: |
+            { "config": { "MD013": false } }
+
+      - name: Link Check (lychee)
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: >-
+            --verbose --no-progress --require-https --accept 200,204,206
+            --exclude 'https://docs.otlp-rust.dev' --exclude 'https://discord.gg/your-discord'
+            --exclude 'https://github.com/your-org/otlp-rust'
+            --retry-wait-time 2 --max-retries 2
+            **/*.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cargo check (examples)
+        run: |
+          cargo check -p otlp --examples
+
+      - name: Cargo check (benches)
+        run: |
+          cargo check -p otlp --benches
+
+      - name: Clippy (warnings as errors)
+        run: |
+          cargo clippy -p otlp --all-features -- -D warnings
+
+

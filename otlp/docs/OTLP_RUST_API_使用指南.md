@@ -828,8 +828,18 @@ impl ErrorCounter {
 
 本指南提供了OTLP Rust库的完整使用说明，包括基础用法、高级特性、性能优化和故障排除。通过遵循这些最佳实践，您可以构建高性能、可靠的分布式系统。
 
+### 示例与运行
+
+- 入门：`examples/simple_usage.rs` → `cargo run -p otlp --example simple_usage`
+- 基础：`examples/simple_demo.rs` → `cargo run -p otlp --example simple_demo`
+- 综合：`examples/comprehensive_usage.rs` → `cargo run -p otlp --example comprehensive_usage`
+- 高级：`examples/advanced_patterns.rs` → `cargo run -p otlp --example advanced_patterns`
+- 监控：`examples/monitoring_demo.rs` → `cargo run -p otlp --example monitoring_demo`
+- 弹性：`examples/resilience_usage.rs` → `cargo run -p otlp --example resilience_usage`
+- 分布式：`examples/distributed_coordination_demo.rs` → `cargo run -p otlp --example distributed_coordination_demo`
+- 性能：`examples/performance_optimization_demo.rs` → `cargo run -p otlp --example performance_optimization_demo`
+
 更多详细信息请参考：
 
-- [API文档](https://docs.rs/otlp)
-- [示例代码](https://github.com/example/otlp-rust/examples)
-- [社区支持](https://github.com/example/otlp-rust/discussions)
+- API 文档：`https://docs.rs/otlp`
+- 仓库示例：`otlp/examples/`

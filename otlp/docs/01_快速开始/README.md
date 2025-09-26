@@ -18,14 +18,14 @@
 
 ```toml
 [dependencies]
-c21_otlp = "0.1.0"
+otlp = "0.1.0"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
 ### 2. 基础使用
 
 ```rust
-use c21_otlp::{OtlpClient, OtlpConfig};
+use otlp::{OtlpClient, OtlpConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -62,6 +62,13 @@ cargo run --example simple_demo
 - [核心概念](../02_核心概念/README.md) - 了解OTLP协议基础
 - [开发指南](../05_开发指南/README.md) - 深入学习开发技巧
 - [示例教程](../08_示例和教程/README.md) - 查看更多示例
+
+## 🔄 学习路径建议（闭环）
+
+1. 完成本页 5 分钟上手
+2. 阅读并理解 [核心概念](../02_核心概念/README.md)
+3. 返回本页运行更多 [示例教程](../08_示例和教程/README.md)
+4. 结合 [用户指南](../USER_GUIDE.md) 进行进阶配置与实践
 
 ---
 

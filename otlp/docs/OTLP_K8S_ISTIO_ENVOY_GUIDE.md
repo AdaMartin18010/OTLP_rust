@@ -131,3 +131,16 @@ spec:
 
 - 提供 Helm Chart 与 Istio VirtualService/PeerAuthentication 模板
 - 扩展 gRPC metrics/logs 与生产级 TLS/mTLS 示例
+
+## 部署/运维矩阵（清单与文档）
+
+| 场景 | 方式 | 关键功能 | 文档/清单 |
+|------|------|----------|-----------|
+| 基础部署 | K8s Deployment | 应用 + Collector | `otlp/k8s/otlp-deployment.yaml` |
+| 水平伸缩 | K8s HPA | 基于指标自动扩缩容 | `otlp/k8s/otlp-hpa.yaml` |
+| 北向入口 | Ingress | 域名/证书/路由 | `otlp/k8s/otlp-ingress.yaml` |
+| 服务网格 | Istio VirtualService | 七层路由/流量治理 | `otlp/deploy/helm/otlp/templates/virtualservice.yaml` |
+| 安全加固 | Istio PeerAuthentication | mTLS/认证策略 | `otlp/deploy/helm/otlp/templates/peerauthentication.yaml` |
+| 应用发布 | Helm Chart | 版本化部署/参数化 | `otlp/deploy/helm/otlp/Chart.yaml`, `values.yaml`, `templates/deployment.yaml` |
+
+> 提示：建议优先通过 Helm 部署，便于环境参数化与升级回滚；在网格环境中统一启用 mTLS 并校验路由策略与熔断/重试。

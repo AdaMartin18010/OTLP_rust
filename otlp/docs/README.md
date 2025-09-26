@@ -6,45 +6,30 @@
 
 ### 🚀 快速开始
 
-- [安装指南](getting-started/installation.md)
-- [快速入门](getting-started/quick-start.md)
-- [配置指南](getting-started/configuration.md)
-- [示例代码](getting-started/examples.md)
+- [快速开始目录](01_快速开始/README.md)
 
 ### 🏗️ 架构设计
 
-- [系统架构](architecture/overview.md)
-- [核心组件](architecture/components.md)
-- [数据流](architecture/data-flow.md)
-- [性能优化](architecture/performance.md)
+- [架构设计目录](04_架构设计/README.md)
 
 ### 🔧 开发指南
 
-- [开发环境设置](development/setup.md)
-- [代码规范](development/coding-standards.md)
-- [测试指南](development/testing.md)
-- [贡献指南](development/contributing.md)
+- [开发指南目录](05_开发指南/README.md)
 
 ### 📖 API 参考
 
-- [客户端 API](api/client.md)
-- [服务器 API](api/server.md)
-- [配置 API](api/configuration.md)
-- [错误处理](api/errors.md)
+- [API 参考与使用](OTLP_RUST_API_文档.md)
+- [API 使用指南](OTLP_RUST_API_使用指南.md)
 
 ### 🚀 部署运维
 
-- [Docker 部署](deployment/docker.md)
-- [Kubernetes 部署](deployment/kubernetes.md)
-- [监控告警](deployment/monitoring.md)
-- [故障排查](deployment/troubleshooting.md)
+- [部署与运维目录](07_部署运维/README.md)
+- [K8s/Istio/Envoy 指南](OTLP_K8S_ISTIO_ENVOY_GUIDE.md)
 
 ### 🔍 高级特性
 
-- [性能优化](advanced/performance.md)
-- [安全配置](advanced/security.md)
-- [扩展开发](advanced/extensions.md)
-- [最佳实践](advanced/best-practices.md)
+- [高级特性目录](06_高级特性/README.md)
+- [最佳实践和设计模式](OTLP_最佳实践和设计模式指南_2025.md)
 
 ## 🌟 核心特性
 

@@ -1009,3 +1009,71 @@ UPDATE system_info SET version = '0.2.0' WHERE component = 'database';
 8. **回滚策略**: 自动回滚、手动回滚、数据库回滚
 
 通过遵循这些迁移指南和升级说明，可以确保OTLP Rust项目在版本升级过程中的平滑过渡，最小化对生产环境的影响，并提供可靠的回滚机制。
+
+---
+
+## Rust 1.90 对齐与迁移检查清单
+
+### 1) 编译环境与工具链
+
+- Rust 版本：确保 `rustc`/`cargo` 均为 ≥ 1.90（Edition 2024）
+- 工程 MSRV：`otlp/Cargo.toml` 中 `edition = "2024"`、`rust-version = "1.90"` 已设置
+- 构建验证：`cargo +stable build -p otlp --all-features`
+
+### 2) 依赖与特性开关
+
+- 默认特性：`default = ["async", "grpc", "http"]`
+- 完整特性：`full = ["async", "grpc", "http", "monitoring"]`
+- 传输栈：`grpc → tonic/prost/protobuf`，`http → reqwest/hyper`，需与目标部署协议一致（4317/4318）
+
+升级命令建议：
+
+```bash
+cargo update -p otlp
+cargo tree -p otlp | tee target/otlp-deps.txt
+```
+
+### 3) 破坏性变更对齐（示例）
+
+- 同步 → 异步 API：`send_trace(...)` 需 `.await`（详见“API变更/异步API变更”）
+- 错误类型细化：匹配分支需覆盖 `Transport/Processing/Configuration/Validation` 等枚举（参见错误类型变更段落）
+- 配置结构重组：`[otlp.transport]`、`[otlp.resilience]` 拆分（配置迁移小节已有示例）
+
+### 4) 验证与示例运行
+
+- 运行示例：
+  - `cargo run -p otlp --example simple_usage`
+  - `cargo run -p otlp --example advanced_patterns`
+- 基准验证：`cargo bench -p otlp`
+
+### 5) 源码映射（Spec ↔ Code）
+
+- 客户端与构建器：`otlp/src/client.rs`
+- 配置体系：`otlp/src/config.rs`
+- 数据模型：`otlp/src/data.rs`
+- 传输实现：`otlp/src/transport.rs`, `otlp/src/protobuf.rs`
+- 导出与批处理：`otlp/src/exporter.rs`
+- 处理器流水线：`otlp/src/processor.rs`
+
+更多矩阵请参考：`docs/OTLP_2025_COMPREHENSIVE_DOCUMENTATION_INDEX.md` 中“规范-实现对齐矩阵”。
+
+### 6) 回归检查清单（升级前/后均需）
+
+- API：关键路径编译通过，异步调用 `.await` 已补全
+- 配置：旧配置可迁移，新配置能回写并热加载（如实现）
+- 传输：4317 gRPC 与 4318 HTTP 均校验连通、`content-type`/路径正确
+- 性能：P95 延迟、吞吐与 CPU/内存在目标范围内（参考 `docs/README.md` 指标）
+- 监控：自监控指标与健康探针可用；告警阈值有效
+
+### 7) 常用脚本与命令汇总
+
+```bash
+# 版本对比
+cargo tree -p otlp --edges normal,build,dev
+
+# 兼容性测试
+cargo test -p otlp --all-features
+
+# 端到端示例验证
+cargo run -p otlp --example comprehensive_usage
+```

@@ -8,6 +8,7 @@
 4. [监控和诊断工具](#监控和诊断工具)
 5. [性能调优策略](#性能调优策略)
 6. [最佳实践](#最佳实践)
+7. [源码映射与可运行命令](#源码映射与可运行命令)
 
 ## 故障排查基础
 
@@ -793,3 +794,30 @@ async fn security_best_practices() -> Result<(), Box<dyn std::error::Error>> {
 6. **最佳实践**：监控、故障处理、性能优化、安全实践
 
 这些指南将帮助您快速诊断和解决OTLP Rust项目中的各种问题，确保系统的高性能和稳定性。通过遵循这些最佳实践，您可以建立一个健壮、高效的可观测性系统。
+
+## 源码映射与可运行命令
+
+### 源码映射（排障与性能相关）
+
+- 客户端与构建器：`otlp/src/client.rs`
+- 配置体系：`otlp/src/config.rs`
+- 数据模型：`otlp/src/data.rs`
+- 传输实现：`otlp/src/transport.rs`, `otlp/src/protobuf.rs`
+- 导出与批处理：`otlp/src/exporter.rs`
+- 处理器流水线：`otlp/src/processor.rs`
+- 性能工具/Profiling：`otlp/src/performance_*`、`otlp/src/profiling/*`
+- 监控与自监控：`otlp/src/monitoring/*`
+- 校验与验证：`otlp/src/validation/*`
+
+更多矩阵请参考：`docs/OTLP_2025_COMPREHENSIVE_DOCUMENTATION_INDEX.md` 中“规范-实现对齐矩阵”。
+
+### 示例与基准（可直接运行）
+
+- 入门：`cargo run -p otlp --example simple_usage`
+- 综合：`cargo run -p otlp --example comprehensive_usage`
+- 高级模式：`cargo run -p otlp --example advanced_patterns`
+- 监控：`cargo run -p otlp --example monitoring_demo`
+- 弹性：`cargo run -p otlp --example resilience_usage`
+- 分布式：`cargo run -p otlp --example distributed_coordination_demo`
+- 性能优化演示：`cargo run -p otlp --example performance_optimization_demo`
+- 基准：`cargo bench -p otlp`

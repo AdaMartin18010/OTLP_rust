@@ -11,6 +11,12 @@
 7. [配置API](#配置api)
 8. [工具API](#工具api)
 
+## 示例与运行
+
+- 简单示例：`examples/simple_usage.rs` → `cargo run -p otlp --example simple_usage`
+- 综合示例：`examples/comprehensive_demo.rs` → `cargo run -p otlp --example comprehensive_demo`
+- 高级模式：`examples/advanced_microservices_demo.rs` → `cargo run -p otlp --example advanced_microservices_demo`
+
 ## 核心API
 
 ### OtlpClient

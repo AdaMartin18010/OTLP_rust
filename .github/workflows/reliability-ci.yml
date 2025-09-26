@@ -1,0 +1,59 @@
+name: reliability-ci
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'reliability/**'
+      - '.github/workflows/reliability-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'reliability/**'
+      - '.github/workflows/reliability-ci.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build-test-bench:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            reliability
+
+      - name: Build (reliability)
+        run: cargo build -p reliability --all-features
+
+      - name: Test (reliability)
+        run: cargo test -p reliability --all-features -- --nocapture
+
+      - name: Bench (reliability) - run criterion
+        run: |
+          cargo bench -p reliability -- --quiet || true
+
+      - name: Bench Guard (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          chmod +x reliability/scripts/bench_guard.sh || true
+          reliability/scripts/bench_guard.sh || true
+
+      - name: Bench Guard (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File reliability/scripts/bench_guard.ps1
+
+

@@ -302,7 +302,7 @@ cargo install tokio-cli
 ### 2. 基础使用
 
 ```rust
-use c21_otlp::{OtlpClient, OtlpConfig};
+use otlp::{OtlpClient, OtlpConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

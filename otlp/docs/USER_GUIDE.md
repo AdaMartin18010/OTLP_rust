@@ -389,6 +389,15 @@ async fn send_with_retry(data: Vec<TelemetryData>, max_retries: u32) -> Result<(
 - `MetricData`: 指标数据
 - `LogData`: 日志数据
 
+### 源码参考（跳转）
+
+- 客户端与构建器：`otlp/src/client.rs`
+- 配置体系：`otlp/src/config.rs`
+- 数据模型：`otlp/src/data.rs`
+- 传输实现：`otlp/src/transport.rs`, `otlp/src/protobuf.rs`
+- 导出与批处理：`otlp/src/exporter.rs`
+- 处理器流水线：`otlp/src/processor.rs`
+
 ### 配置类型
 
 - `OtlpConfig`: OTLP 配置
