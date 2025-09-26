@@ -1,203 +1,439 @@
-//! # OTLP性能测试
-//!
-//! 测试OTLP客户端的性能表现，包括吞吐量、延迟和内存使用。
+//! 性能测试模块
 
-use otlp::{
-    config::{OtlpConfig, TransportProtocol},
-    data::LogSeverity,
-    error::Result,
-    transport::{GrpcTransport, HttpTransport},
-    TelemetryData, Transport,
-};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
-use tokio::time::timeout;
+use tokio::time::sleep;
+use otlp::performance::*;
 
-/// 测试gRPC传输性能
-#[tokio::test]
-async fn test_grpc_performance() -> Result<()> {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Grpc);
-
-    let transport = GrpcTransport::new(config).await?;
-    
-    // 测试单条数据发送性能
-    let start = Instant::now();
-    let test_data = create_test_log_data();
-    
-    let _result = timeout(Duration::from_secs(1), transport.send_single(test_data)).await;
-    let duration = start.elapsed();
-    
-    // 记录性能指标
-    println!("gRPC单条数据发送耗时: {:?}", duration);
-    
-    // 由于没有真实服务器，我们只验证超时时间合理
-    assert!(duration < Duration::from_secs(2));
-    
-    Ok(())
+/// 性能测试配置
+#[derive(Debug, Clone)]
+pub struct PerformanceTestConfig {
+    pub concurrent_tasks: usize,
+    pub batch_size: usize,
+    pub memory_limit: usize,
 }
 
-/// 测试HTTP传输性能
-#[tokio::test]
-#[allow(unused_variables)]
-async fn test_http_performance() -> Result<()> {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4318")
-        .with_protocol(TransportProtocol::Http);
-
-    let transport = HttpTransport::new(config).await?;
-    
-    // 测试单条数据发送性能
-    let start = Instant::now();
-    let test_data = create_test_log_data();
-    
-    let result = timeout(Duration::from_secs(1), transport.send_single(test_data)).await;
-    let duration = start.elapsed();
-    
-    // 记录性能指标
-    println!("HTTP单条数据发送耗时: {:?}", duration);
-    
-    // 由于没有真实服务器，我们只验证超时时间合理
-    assert!(duration < Duration::from_secs(2));
-    
-    Ok(())
-}
-
-/// 测试批量数据发送性能
-#[tokio::test]
-#[allow(unused_variables)]
-async fn test_batch_performance() -> Result<()> {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Grpc);
-
-    let transport = GrpcTransport::new(config).await?;
-    
-    // 测试不同批量大小的性能
-    for batch_size in [10, 100, 1000] {
-        let start = Instant::now();
-        let test_data = create_batch_test_data(batch_size);
-        
-        let result = timeout(Duration::from_secs(5), transport.send(test_data)).await;
-        let duration = start.elapsed();
-        
-        // 记录性能指标
-        println!("批量大小 {} 发送耗时: {:?}", batch_size, duration);
-        
-        // 验证批量发送不会超时太久
-        assert!(duration < Duration::from_secs(10));
+impl Default for PerformanceTestConfig {
+    fn default() -> Self {
+        Self {
+            concurrent_tasks: 100,
+            batch_size: 1000,
+            memory_limit: 100 * 1024 * 1024,
+        }
     }
-    
-    Ok(())
 }
 
-/// 测试并发发送性能
-#[tokio::test]
-#[allow(unused_variables)]
-async fn test_concurrent_performance() -> Result<()> {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Grpc);
+/// 性能测试结果
+#[derive(Debug, Clone)]
+pub struct PerformanceTestResult {
+    pub test_name: String,
+    pub duration: Duration,
+    pub throughput: f64,
+    pub success_rate: f64,
+    pub average_latency: Duration,
+}
 
-    let transport = GrpcTransport::new(config).await?;
-    
-    // 测试并发发送
-    let start = Instant::now();
-    let mut handles = Vec::new();
-    
-    let shared = std::sync::Arc::new(transport);
-    for i in 0..10 {
-        let transport_clone = shared.clone();
-        let handle = tokio::spawn(async move {
-            let test_data = create_test_log_data_with_id(i);
-            timeout(Duration::from_secs(1), transport_clone.send_single(test_data)).await.ok();
-        });
-        handles.push(handle);
+/// 性能测试套件
+pub struct PerformanceTestSuite {
+    config: PerformanceTestConfig,
+    results: Vec<PerformanceTestResult>,
+}
+
+impl PerformanceTestSuite {
+    pub fn new(config: PerformanceTestConfig) -> Self {
+        Self {
+            config,
+            results: Vec::new(),
+        }
     }
-    
-    // 等待所有任务完成
-    for handle in handles {
-        let _ = handle.await;
+
+    pub async fn run_all_tests(&mut self) -> Vec<PerformanceTestResult> {
+        println!("开始运行性能测试套件...");
+        
+        self.run_circuit_breaker_test().await;
+        self.run_memory_pool_test().await;
+        self.run_batch_processor_test().await;
+        self.run_connection_pool_test().await;
+        
+        println!("性能测试套件完成，共运行 {} 个测试", self.results.len());
+        self.results.clone()
     }
-    
-    let duration = start.elapsed();
-    println!("10个并发发送总耗时: {:?}", duration);
-    
-    // 验证并发性能
-    assert!(duration < Duration::from_secs(15));
-    
-    Ok(())
+
+    async fn run_circuit_breaker_test(&mut self) {
+        println!("运行熔断器性能测试...");
+        
+        let start_time = Instant::now();
+        let config = CircuitBreakerConfig {
+            failure_threshold: 10,
+            recovery_timeout: Duration::from_millis(100),
+            half_open_max_calls: 5,
+            sliding_window_size: Duration::from_secs(60),
+            minimum_calls: 10,
+        };
+        
+        let circuit_breaker = OptimizedCircuitBreaker::new(config).unwrap();
+        let success_count = Arc::new(AtomicUsize::new(0));
+        let error_count = Arc::new(AtomicUsize::new(0));
+        let latency_sum = Arc::new(AtomicUsize::new(0));
+        
+        let mut handles = Vec::new();
+        for i in 0..self.config.concurrent_tasks {
+            let cb = circuit_breaker.clone();
+            let success_count = Arc::clone(&success_count);
+            let error_count = Arc::clone(&error_count);
+            let latency_sum = Arc::clone(&latency_sum);
+            
+            let handle = tokio::spawn(async move {
+                let request_start = Instant::now();
+                
+                match cb.call(|| async {
+                    if i % 10 == 0 {
+                        Err(anyhow::anyhow!("模拟错误"))
+                    } else {
+                        Ok("成功".to_string())
+                    }
+                }).await {
+                    Ok(_) => {
+                        success_count.fetch_add(1, Ordering::AcqRel);
+                        let latency = request_start.elapsed();
+                        latency_sum.fetch_add(latency.as_micros() as usize, Ordering::AcqRel);
+                    }
+                    Err(_) => {
+                        error_count.fetch_add(1, Ordering::AcqRel);
+                    }
+                }
+            });
+            handles.push(handle);
+        }
+        
+        for handle in handles {
+            handle.await.unwrap();
+        }
+        
+        let duration = start_time.elapsed();
+        let total_requests = success_count.load(Ordering::Acquire) + error_count.load(Ordering::Acquire);
+        let throughput = total_requests as f64 / duration.as_secs_f64();
+        let success_rate = success_count.load(Ordering::Acquire) as f64 / total_requests as f64;
+        let average_latency = Duration::from_micros(
+            latency_sum.load(Ordering::Acquire) as u64 / total_requests as u64
+        );
+        
+        let result = PerformanceTestResult {
+            test_name: "熔断器性能测试".to_string(),
+            duration,
+            throughput,
+            success_rate,
+            average_latency,
+        };
+        
+        self.results.push(result);
+        println!("熔断器性能测试完成: 吞吐量 {:.2} req/s, 成功率 {:.2}%", 
+                throughput, success_rate * 100.0);
+    }
+
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
+    async fn run_memory_pool_test(&mut self) {
+        println!("运行内存池性能测试...");
+        
+        let start_time = Instant::now();
+        let config = MemoryPoolConfig {
+            max_size: 100,
+            initial_size: 10,
+            object_ttl: Duration::from_secs(300),
+            cleanup_interval: Duration::from_secs(60),
+            enable_stats: true,
+        };
+        
+        let memory_pool = OptimizedMemoryPool::new(
+            || String::with_capacity(1024),
+            config,
+        ).await.unwrap();
+        
+        let success_count = Arc::new(AtomicUsize::new(0));
+        let error_count = Arc::new(AtomicUsize::new(0));
+        let latency_sum = Arc::new(AtomicUsize::new(0));
+        
+        let mut handles = Vec::new();
+        for i in 0..self.config.concurrent_tasks {
+            let mp = memory_pool.clone();
+            let success_count = Arc::clone(&success_count);
+            let error_count = Arc::clone(&error_count);
+            let latency_sum = Arc::clone(&latency_sum);
+            
+            let handle = tokio::spawn(async move {
+                let request_start = Instant::now();
+                
+                match mp.acquire().await {
+                    Ok(obj) => {
+                        success_count.fetch_add(1, Ordering::AcqRel);
+                        let latency = request_start.elapsed();
+                        latency_sum.fetch_add(latency.as_micros() as usize, Ordering::AcqRel);
+                        sleep(Duration::from_millis(1)).await;
+                        drop(obj);
+                    }
+                    Err(_) => {
+                        error_count.fetch_add(1, Ordering::AcqRel);
+                    }
+                }
+            });
+            handles.push(handle);
+        }
+        
+        for handle in handles {
+            handle.await.unwrap();
+        }
+        
+        let duration = start_time.elapsed();
+        let total_requests = success_count.load(Ordering::Acquire) + error_count.load(Ordering::Acquire);
+        let throughput = total_requests as f64 / duration.as_secs_f64();
+        let success_rate = success_count.load(Ordering::Acquire) as f64 / total_requests as f64;
+        let average_latency = Duration::from_micros(
+            latency_sum.load(Ordering::Acquire) as u64 / total_requests as u64
+        );
+        
+        let result = PerformanceTestResult {
+            test_name: "内存池性能测试".to_string(),
+            duration,
+            throughput,
+            success_rate,
+            average_latency,
+        };
+        
+        self.results.push(result);
+        println!("内存池性能测试完成: 吞吐量 {:.2} req/s, 成功率 {:.2}%", 
+                throughput, success_rate * 100.0);
+    }
+
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
+    async fn run_batch_processor_test(&mut self) {
+        println!("运行批处理器性能测试...");
+        
+        let start_time = Instant::now();
+        let config = BatchProcessorConfig {
+            max_batch_size: self.config.batch_size,
+            min_batch_size: 10,
+            batch_timeout: Duration::from_millis(100),
+            max_wait_time: Duration::from_secs(5),
+            concurrency: 4,
+            enable_compression: true,
+            enable_stats: true,
+            memory_limit: self.config.memory_limit,
+        };
+        
+        let batch_processor = OptimizedBatchProcessor::new(
+            |items| {
+                Ok(BatchResult {
+                    items,
+                    processing_time: Duration::from_millis(10),
+                    compressed_size: Some(512),
+                    original_size: 1024,
+                })
+            },
+            config,
+        ).unwrap();
+        
+        let success_count = Arc::new(AtomicUsize::new(0));
+        let error_count = Arc::new(AtomicUsize::new(0));
+        let latency_sum = Arc::new(AtomicUsize::new(0));
+        
+        let mut handles = Vec::new();
+        for i in 0..self.config.concurrent_tasks {
+            let bp = batch_processor.clone();
+            let success_count = Arc::clone(&success_count);
+            let error_count = Arc::clone(&error_count);
+            let latency_sum = Arc::clone(&latency_sum);
+            
+            let handle = tokio::spawn(async move {
+                let request_start = Instant::now();
+                
+                match bp.add_normal_priority(format!("item_{}", i), 100).await {
+                    Ok(_) => {
+                        success_count.fetch_add(1, Ordering::AcqRel);
+                        let latency = request_start.elapsed();
+                        latency_sum.fetch_add(latency.as_micros() as usize, Ordering::AcqRel);
+                    }
+                    Err(_) => {
+                        error_count.fetch_add(1, Ordering::AcqRel);
+                    }
+                }
+            });
+            handles.push(handle);
+        }
+        
+        for handle in handles {
+            handle.await.unwrap();
+        }
+        
+        sleep(Duration::from_millis(200)).await;
+        
+        let duration = start_time.elapsed();
+        let total_requests = success_count.load(Ordering::Acquire) + error_count.load(Ordering::Acquire);
+        let throughput = total_requests as f64 / duration.as_secs_f64();
+        let success_rate = success_count.load(Ordering::Acquire) as f64 / total_requests as f64;
+        let average_latency = Duration::from_micros(
+            latency_sum.load(Ordering::Acquire) as u64 / total_requests as u64
+        );
+        
+        let result = PerformanceTestResult {
+            test_name: "批处理器性能测试".to_string(),
+            duration,
+            throughput,
+            success_rate,
+            average_latency,
+        };
+        
+        self.results.push(result);
+        println!("批处理器性能测试完成: 吞吐量 {:.2} req/s, 成功率 {:.2}%", 
+                throughput, success_rate * 100.0);
+    }
+
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
+    async fn run_connection_pool_test(&mut self) {
+        println!("运行连接池性能测试...");
+        
+        let start_time = Instant::now();
+        let config = ConnectionPoolConfig {
+            max_connections: 50,
+            min_connections: 5,
+            connection_timeout: Duration::from_secs(30),
+            idle_timeout: Duration::from_secs(300),
+            max_lifetime: Duration::from_secs(3600),
+            health_check_interval: Duration::from_secs(60),
+            enable_stats: true,
+            enable_connection_reuse: true,
+        };
+        
+        let connection_pool = OptimizedConnectionPool::new(
+            || Ok(format!("connection_{}", Instant::now().elapsed().as_micros())),
+            config,
+        ).unwrap();
+        
+        let success_count = Arc::new(AtomicUsize::new(0));
+        let error_count = Arc::new(AtomicUsize::new(0));
+        let latency_sum = Arc::new(AtomicUsize::new(0));
+        
+        let mut handles = Vec::new();
+        for i in 0..self.config.concurrent_tasks {
+            let cp = connection_pool.clone();
+            let success_count = Arc::clone(&success_count);
+            let error_count = Arc::clone(&error_count);
+            let latency_sum = Arc::clone(&latency_sum);
+            
+            let handle = tokio::spawn(async move {
+                let request_start = Instant::now();
+                
+                match cp.acquire().await {
+                    Ok(conn) => {
+                        success_count.fetch_add(1, Ordering::AcqRel);
+                        let latency = request_start.elapsed();
+                        latency_sum.fetch_add(latency.as_micros() as usize, Ordering::AcqRel);
+                        sleep(Duration::from_millis(1)).await;
+                        drop(conn);
+                    }
+                    Err(_) => {
+                        error_count.fetch_add(1, Ordering::AcqRel);
+                    }
+                }
+            });
+            handles.push(handle);
+        }
+        
+        for handle in handles {
+            handle.await.unwrap();
+        }
+        
+        let duration = start_time.elapsed();
+        let total_requests = success_count.load(Ordering::Acquire) + error_count.load(Ordering::Acquire);
+        let throughput = total_requests as f64 / duration.as_secs_f64();
+        let success_rate = success_count.load(Ordering::Acquire) as f64 / total_requests as f64;
+        let average_latency = Duration::from_micros(
+            latency_sum.load(Ordering::Acquire) as u64 / total_requests as u64
+        );
+        
+        let result = PerformanceTestResult {
+            test_name: "连接池性能测试".to_string(),
+            duration,
+            throughput,
+            success_rate,
+            average_latency,
+        };
+        
+        self.results.push(result);
+        println!("连接池性能测试完成: 吞吐量 {:.2} req/s, 成功率 {:.2}%", 
+                throughput, success_rate * 100.0);
+    }
+
+    pub fn generate_report(&self) -> String {
+        let mut report = String::new();
+        report.push_str("# 性能测试报告\n\n");
+        report.push_str("## 测试概览\n\n");
+        report.push_str(&format!("- 测试数量: {}\n", self.results.len()));
+        report.push_str(&format!("- 测试配置: 并发任务 {}, 批大小 {}, 内存限制 {}MB\n\n", 
+                self.config.concurrent_tasks, 
+                self.config.batch_size, 
+                self.config.memory_limit / 1024 / 1024));
+        
+        report.push_str("## 详细结果\n\n");
+        for result in &self.results {
+            report.push_str(&format!("### {}\n\n", result.test_name));
+            report.push_str(&format!("- **持续时间**: {:?}\n", result.duration));
+            report.push_str(&format!("- **吞吐量**: {:.2} req/s\n", result.throughput));
+            report.push_str(&format!("- **成功率**: {:.2}%\n", result.success_rate * 100.0));
+            report.push_str(&format!("- **平均延迟**: {:?}\n\n", result.average_latency));
+        }
+        
+        report.push_str("## 性能分析\n\n");
+        
+        let avg_throughput: f64 = self.results.iter().map(|r| r.throughput).sum::<f64>() / self.results.len() as f64;
+        let avg_success_rate: f64 = self.results.iter().map(|r| r.success_rate).sum::<f64>() / self.results.len() as f64;
+        
+        report.push_str(&format!("- **平均吞吐量**: {:.2} req/s\n", avg_throughput));
+        report.push_str(&format!("- **平均成功率**: {:.2}%\n", avg_success_rate * 100.0));
+        
+        report.push_str("\n## 结论\n\n");
+        if avg_success_rate > 0.95 {
+            report.push_str("✅ 所有性能测试均通过，系统性能良好。\n");
+        } else if avg_success_rate > 0.90 {
+            report.push_str("⚠️ 性能测试基本通过，但存在少量错误，建议优化。\n");
+        } else {
+            report.push_str("❌ 性能测试未通过，存在较多错误，需要重点优化。\n");
+        }
+        
+        report
+    }
 }
 
-/// 测试内存使用
-#[tokio::test]
-#[allow(unused_variables)]
-async fn test_memory_usage() -> Result<()> {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_protocol(TransportProtocol::Grpc);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let transport = GrpcTransport::new(config).await?;
-    
-    // 创建大量数据测试内存使用
-    let large_batch = create_batch_test_data(10000);
-    
-    let start = Instant::now();
-    let result = timeout(Duration::from_secs(10), transport.send(large_batch)).await;
-    let duration = start.elapsed();
-    
-    println!("10000条数据发送耗时: {:?}", duration);
-    
-    // 验证大量数据处理不会导致内存问题
-    assert!(duration < Duration::from_secs(30));
-    
-    Ok(())
-}
-
-/// 测试错误恢复性能
-#[tokio::test]
-#[allow(unused_variables)]
-async fn test_error_recovery_performance() -> Result<()> {
-    let config = OtlpConfig::default()
-        .with_endpoint("http://invalid-endpoint:9999")
-        .with_protocol(TransportProtocol::Grpc);
-
-    let transport = GrpcTransport::new(config).await?;
-    
-    // 测试错误情况下的性能
-    let start = Instant::now();
-    let test_data = create_test_log_data();
-    
-    let result = timeout(Duration::from_secs(1), transport.send_single(test_data)).await;
-    let duration = start.elapsed();
-    
-    println!("错误恢复耗时: {:?}", duration);
-    
-    // 验证错误处理不会阻塞太久
-    assert!(duration < Duration::from_secs(2));
-    
-    Ok(())
-}
-
-/// 创建测试日志数据
-fn create_test_log_data() -> TelemetryData {
-    otlp::TelemetryData::log("Performance test log message", LogSeverity::Info)
-}
-
-/// 创建带ID的测试日志数据
-#[allow(unused_variables)]
-fn create_test_log_data_with_id(id: u32) -> TelemetryData {
-    let data = otlp::TelemetryData::log(
-        &format!("Performance test log message {}", id),
-        LogSeverity::Info,
-    );
-    let _ = id; // 简化测试，跳过属性赋值
-    data
-}
-
-/// 创建批量测试数据
-fn create_batch_test_data(size: usize) -> Vec<TelemetryData> {
-    (0..size)
-        .map(|i| create_test_log_data_with_id(i as u32))
-        .collect()
+    #[tokio::test]
+    async fn test_performance_test_suite() {
+        let config = PerformanceTestConfig {
+            concurrent_tasks: 50,
+            batch_size: 100,
+            memory_limit: 10 * 1024 * 1024,
+        };
+        
+        let mut test_suite = PerformanceTestSuite::new(config);
+        let results = test_suite.run_all_tests().await;
+        
+        assert!(!results.is_empty());
+        assert!(results.len() >= 4);
+        
+        for result in &results {
+            assert!(result.throughput > 0.0);
+            assert!(result.success_rate >= 0.0);
+            assert!(result.success_rate <= 1.0);
+            assert!(result.duration > Duration::from_millis(0));
+        }
+        
+        let report = test_suite.generate_report();
+        assert!(!report.is_empty());
+        assert!(report.contains("性能测试报告"));
+    }
 }

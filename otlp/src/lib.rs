@@ -138,10 +138,10 @@
 //!           │                       │                       │
 //!           ▼                       ▼                       ▼
 //! ┌─────────────────────────────────────────────────────────────────┐
-//! │                        监控告警层                               │
-//! │                      (Monitoring)                              │
+//! │                        监控告警层                                │
+//! │                      (Monitoring)                               │
 //! │                                                                 │
-//! │ • 实时监控  • 告警系统  • 性能分析  • 趋势预测  • 可视化        │
+//! │ • 实时监控  • 告警系统  • 性能分析  • 趋势预测  • 可视化            │
 //! └─────────────────────────────────────────────────────────────────┘
 //! ```
 //!
@@ -188,11 +188,14 @@ pub mod microservices;
 pub mod monitoring;
 pub mod ottl;
 pub mod opamp;
+pub mod performance;
 pub mod profiling;
 pub mod processor;
 pub mod protobuf;
 pub mod resilience;
 pub mod rust_1_90_optimizations;
+pub mod simple_client;
+pub mod performance_enhancements;
 pub mod transport;
 pub mod utils;
 pub mod validation;
@@ -205,13 +208,28 @@ pub use error::{ErrorCategory, ErrorContext, ErrorSeverity, OtlpError, Result};
 pub use exporter::{ExportResult, ExporterMetrics, OtlpExporter};
 pub use monitoring::{
     AlertCondition, AlertRule, ErrorEvent, ErrorMonitoringSystem, MonitoringConfig,
-    MonitoringMetrics,
+    ErrorMonitoringMetrics,
 };
 pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};
 pub use rust_1_90_optimizations::{
-    AsyncBatchProcessor, AsyncClosureOptimizer, OptimizedMemoryPool, 
-    PooledObject, TupleCollectionOptimizer, ZeroCopyOptimizer,
+    AsyncBatchProcessor, AsyncClosureOptimizer, TupleCollectionOptimizer, ZeroCopyOptimizer,
+};
+pub use simple_client::{
+    SimpleOtlpClient, SimpleClientBuilder, LogLevel, SimpleOperation, 
+    HealthStatus,
+};
+pub use performance::{
+    OptimizedCircuitBreaker, CircuitBreakerConfig, CircuitBreakerState, CircuitBreakerError,
+    OptimizedMemoryPool, MemoryPoolConfig, MemoryPoolError, MemoryPoolStats, PooledObject,
+    OptimizedBatchProcessor, BatchProcessorConfig, BatchProcessorError, BatchProcessorStats, BatchItem, BatchResult,
+    OptimizedConnectionPool, ConnectionPoolConfig, ConnectionPoolError, ConnectionPoolStats, PooledConnection,
+    PerformanceConfig, PerformanceManager,
+};
+pub use performance_enhancements::{
+    AsyncGenerator, HighPerformanceBatchProcessor, HighPerformanceExecutor,
+    HighPerformanceMemoryPool, BatchProcessorMetricsSnapshot,
+    ExecutorMetricsSnapshot, MemoryPoolMetricsSnapshot,
 };
 pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{
@@ -222,16 +240,14 @@ pub use utils::{
 pub use microservices::{
     AdaptiveLoadBalancer,
     CircuitBreaker,
-    CircuitBreakerConfig,
     CircuitBreakerPolicy,
-    CircuitBreakerState,
     Destination,
     FaultConfig,
     FaultInjector,
     FaultResult,
     FaultType,
     HealthChecker,
-    HealthStatus,
+    HealthStatus as MicroserviceHealthStatus,
     InstanceMetrics,
     IntelligentRouter,
     LoadBalancer,

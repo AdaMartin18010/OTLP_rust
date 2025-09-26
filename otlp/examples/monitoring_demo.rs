@@ -6,7 +6,8 @@
 use otlp::error::ErrorSeverity;
 use otlp::error::{ConfigurationError, TransportError};
 use otlp::error::{DataError, SystemError};
-use otlp::{ErrorEvent, ErrorMonitoringSystem, MonitoringConfig, OtlpError, Result};
+use otlp::{OtlpError, Result};
+use otlp::monitoring::error_monitoring_types::{ErrorEvent, ErrorMonitoringSystem, ErrorMonitoringConfig};
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -43,7 +44,7 @@ async fn basic_monitoring_demo() -> Result<()> {
     println!("---------------------------");
 
     // 创建监控配置
-    let config = MonitoringConfig::default();
+    let config = ErrorMonitoringConfig::default();
 
     // 创建监控系统
     let monitoring_system = ErrorMonitoringSystem::new(config)?;
@@ -68,16 +69,16 @@ async fn alert_rules_demo() -> Result<()> {
     println!("\n🚨 示例 2: 告警规则配置");
     println!("------------------------");
 
-    let config = MonitoringConfig::default();
+    let config = ErrorMonitoringConfig::default();
     let monitoring_system = ErrorMonitoringSystem::new(config)?;
     monitoring_system.start().await?;
 
     // 创建自定义告警规则
     let custom_rules = vec![
-        otlp::monitoring::AlertRule {
+        otlp::monitoring::error_monitoring_types::AlertRule {
             id: "custom_high_error_rate".to_string(),
             name: "自定义高错误率告警".to_string(),
-            condition: otlp::monitoring::AlertCondition::ErrorRateThreshold {
+            condition: otlp::monitoring::error_monitoring_types::AlertCondition::ErrorRateThreshold {
                 threshold: 0.05,                  // 5%错误率
                 window: Duration::from_secs(180), // 3分钟窗口
             },
@@ -87,10 +88,10 @@ async fn alert_rules_demo() -> Result<()> {
             auto_recovery: true,
             enabled: true,
         },
-        otlp::monitoring::AlertRule {
+        otlp::monitoring::error_monitoring_types::AlertRule {
             id: "transport_errors".to_string(),
             name: "传输错误告警".to_string(),
-            condition: otlp::monitoring::AlertCondition::ErrorTypeSpike {
+            condition: otlp::monitoring::error_monitoring_types::AlertCondition::ErrorTypeSpike {
                 error_type: "transport".to_string(),
                 multiplier: 3.0, // 3倍增长
             },
@@ -121,7 +122,7 @@ async fn error_event_handling_demo() -> Result<()> {
     println!("\n🔍 示例 3: 错误事件处理");
     println!("------------------------");
 
-    let config = MonitoringConfig::default();
+    let config = ErrorMonitoringConfig::default();
     let monitoring_system = ErrorMonitoringSystem::new(config)?;
     monitoring_system.start().await?;
 
@@ -162,7 +163,7 @@ async fn trend_analysis_demo() -> Result<()> {
     println!("\n📈 示例 4: 趋势分析");
     println!("-------------------");
 
-    let config = MonitoringConfig::default();
+    let config = ErrorMonitoringConfig::default();
     let monitoring_system = ErrorMonitoringSystem::new(config)?;
     monitoring_system.start().await?;
 
@@ -217,7 +218,7 @@ async fn hotspot_detection_demo() -> Result<()> {
     println!("\n🔥 示例 5: 热点检测");
     println!("------------------");
 
-    let config = MonitoringConfig::default();
+    let config = ErrorMonitoringConfig::default();
     let monitoring_system = ErrorMonitoringSystem::new(config)?;
     monitoring_system.start().await?;
 
@@ -310,7 +311,7 @@ async fn demonstrate_real_time_features() -> Result<()> {
     println!("\n⏱️  实时特性演示");
     println!("----------------");
 
-    let config = MonitoringConfig::default();
+    let config = ErrorMonitoringConfig::default();
     let monitoring_system = ErrorMonitoringSystem::new(config)?;
     monitoring_system.start().await?;
 
@@ -344,15 +345,15 @@ async fn demonstrate_alert_handling() -> Result<()> {
     println!("\n🚨 告警处理演示");
     println!("----------------");
 
-    let config = MonitoringConfig::default();
+    let config = ErrorMonitoringConfig::default();
     let monitoring_system = ErrorMonitoringSystem::new(config)?;
     monitoring_system.start().await?;
 
     // 配置高敏感度告警规则
-    let sensitive_rules = vec![otlp::monitoring::AlertRule {
+    let sensitive_rules = vec![otlp::monitoring::error_monitoring_types::AlertRule {
         id: "sensitive_rule".to_string(),
         name: "高敏感度告警".to_string(),
-        condition: otlp::monitoring::AlertCondition::ErrorTypeSpike {
+        condition: otlp::monitoring::error_monitoring_types::AlertCondition::ErrorTypeSpike {
             error_type: "transport".to_string(),
             multiplier: 1.0, // 任何传输错误都触发
         },

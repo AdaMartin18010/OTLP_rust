@@ -11,7 +11,7 @@ use tracing::{debug, info, warn};
 
 use otlp::{
     AdaptiveLoadBalancer, CircuitBreakerPolicy, Destination, FaultConfig, FaultInjector,
-    FaultResult, FaultType, HealthStatus, IntelligentRouter, MatchCondition, OtlpConfig,
+    FaultResult, FaultType, MicroserviceHealthStatus, IntelligentRouter, MatchCondition, OtlpConfig,
     ResourceLimits, RetryPolicy, RoundRobinLoadBalancer, RouteRequest, RoutingRule,
     ServiceEndpoint, ServiceMeshConfig, ServiceMeshType, SidecarConfig, TrafficManager,
     TransportProtocol,
@@ -211,7 +211,7 @@ async fn demo_adaptive_load_balancing() -> Result<(), Box<dyn std::error::Error>
                 meta.insert("version".to_string(), "v1.2.0".to_string());
                 meta
             },
-            health_status: HealthStatus::Healthy,
+            health_status: MicroserviceHealthStatus::Healthy,
             last_health_check: std::time::Instant::now(),
         },
         ServiceEndpoint {
@@ -225,7 +225,7 @@ async fn demo_adaptive_load_balancing() -> Result<(), Box<dyn std::error::Error>
                 meta.insert("version".to_string(), "v1.2.1".to_string());
                 meta
             },
-            health_status: HealthStatus::Healthy,
+            health_status: MicroserviceHealthStatus::Healthy,
             last_health_check: std::time::Instant::now(),
         },
         ServiceEndpoint {
@@ -239,7 +239,7 @@ async fn demo_adaptive_load_balancing() -> Result<(), Box<dyn std::error::Error>
                 meta.insert("version".to_string(), "v1.2.1".to_string());
                 meta
             },
-            health_status: HealthStatus::Healthy,
+            health_status: MicroserviceHealthStatus::Healthy,
             last_health_check: std::time::Instant::now(),
         },
     ];

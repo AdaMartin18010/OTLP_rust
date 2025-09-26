@@ -1,298 +1,127 @@
-# OTLP项目文档中心
+# OTLP Rust 项目文档
 
-## 📋 项目概述
+欢迎来到 OTLP Rust 项目！这是一个基于 Rust 1.90 语言特性的 OpenTelemetry Protocol (OTLP) 完整实现。
 
-本项目是基于Rust 1.90的OpenTelemetry Protocol (OTLP)完整实现，结合最新的国际标准和软件堆栈信息，深入分析了同步异步结合的OTLP控制执行数据流、算法设计模式、架构组合方式，并提供了详细的使用解释和示例。
+## 📚 文档导航
 
-## 📁 文档结构
+### 🚀 快速开始
 
-### 🌐 Web研究分析
+- [安装指南](getting-started/installation.md)
+- [快速入门](getting-started/quick-start.md)
+- [配置指南](getting-started/configuration.md)
+- [示例代码](getting-started/examples.md)
 
-- **目录**: `web_research/`
-- **内容**: 基于最新Web信息的OTLP技术分析报告
-- **文件**: 详见目录内各 `.md` 文档（年度综合、趋势、对比等）
+### 🏗️ 架构设计
 
-### 🚀 Rust语言特性
+- [系统架构](architecture/overview.md)
+- [核心组件](architecture/components.md)
+- [数据流](architecture/data-flow.md)
+- [性能优化](architecture/performance.md)
 
-- **目录**: `rust_features/`
-- **内容**: Rust 1.90版本语言特性与OTLP结合的技术分析
-- **文件**:
-  - `rust_190_features_analysis.md` - Rust 1.90特性详细分析
-  - `OTLP_RUST_190_COMPREHENSIVE_ANALYSIS.md` - Rust 1.90与OTLP综合分析
-  - `RUST_190_OTLP_ENHANCEMENT_PLAN.md` - Rust 1.90 OTLP增强计划
+### 🔧 开发指南
 
-### 🔄 同步异步设计
+- [开发环境设置](development/setup.md)
+- [代码规范](development/coding-standards.md)
+- [测试指南](development/testing.md)
+- [贡献指南](development/contributing.md)
 
-- **目录**: `sync_async/`
-- **内容**: 同步异步结合的OTLP控制执行数据流分析
-- **文件**:
-  - [data_flow_control.md](./sync_async/data_flow_control.md)
-  - [SYNC_ASYNC_DESIGN_PATTERNS.md](./sync_async/SYNC_ASYNC_DESIGN_PATTERNS.md)
+### 📖 API 参考
 
-### 🏗️ 算法设计
+- [客户端 API](api/client.md)
+- [服务器 API](api/server.md)
+- [配置 API](api/configuration.md)
+- [错误处理](api/errors.md)
 
-- **目录**: `algorithms/`
-- **内容**: OTLP实现中的核心算法和设计模式分析
-- **文件**:
-  - [README.md](./algorithms/README.md)
-  - 设计模式、性能算法、数据处理算法等详细文档
+### 🚀 部署运维
 
-### 🏛️ 架构设计
+- [Docker 部署](deployment/docker.md)
+- [Kubernetes 部署](deployment/kubernetes.md)
+- [监控告警](deployment/monitoring.md)
+- [故障排查](deployment/troubleshooting.md)
 
-- **目录**: `architecture/`
-- **内容**: OTLP架构和设计组合方式探讨
-- **文件**:
-  - [ARCHITECTURE_DESIGN_COMBINATIONS.md](./architecture/ARCHITECTURE_DESIGN_COMBINATIONS.md)
-  - [OTLP_ARCHITECTURE_DESIGN_COMBINATIONS.md](./architecture/OTLP_ARCHITECTURE_DESIGN_COMBINATIONS.md)
-  - [OTLP_DESIGN_PATTERNS_ARCHITECTURE.md](./architecture/OTLP_DESIGN_PATTERNS_ARCHITECTURE.md)
-  - [OTLP_DISTRIBUTED_COMPONENTS_BLUEPRINT_2025.md](./architecture/OTLP_DISTRIBUTED_COMPONENTS_BLUEPRINT_2025.md)
-  - [README.md](./architecture/README.md)
+### 🔍 高级特性
 
-### 📊 分类分析
+- [性能优化](advanced/performance.md)
+- [安全配置](advanced/security.md)
+- [扩展开发](advanced/extensions.md)
+- [最佳实践](advanced/best-practices.md)
 
-- **目录**: `classification/`
-- **内容**: OTLP的详细分类与组合方式分析
-- **文件**:
-  - [DETAILED_CLASSIFICATION_ANALYSIS.md](./classification/DETAILED_CLASSIFICATION_ANALYSIS.md)
-  - [OTLP_DESIGN_CLASSIFICATION_MATRIX.md](./classification/OTLP_DESIGN_CLASSIFICATION_MATRIX.md)
-  - [OTLP_TYPE_PROTOCOL_CONFIG_CLASSIFICATIONS.md](./classification/OTLP_TYPE_PROTOCOL_CONFIG_CLASSIFICATIONS.md)
+## 🌟 核心特性
 
-### 💡 使用示例
+### 高性能设计
 
-- **目录**: `examples/`
-- **内容**: OTLP详细使用解释和示例
-- **文件**:
-  - [simple_demo.rs](../examples/simple_demo.rs)
-  - [microservices_demo.rs](../examples/microservices_demo.rs)
-  - [advanced_patterns.rs](../examples/advanced_patterns.rs)
-  - [comprehensive_usage.rs](../examples/comprehensive_usage.rs)
-  - [comprehensive_demo.rs](../examples/comprehensive_demo.rs)
-  - [advanced_microservices_demo.rs](../examples/advanced_microservices_demo.rs)
-  - [performance_benchmarks.rs](../examples/performance_benchmarks.rs)
+- **零拷贝优化**: 使用 Rust 1.90 的内存管理特性
+- **无锁并发**: 基于原子操作的高性能数据结构
+- **异步优先**: 基于 tokio 的异步 I/O 处理
+- **智能批处理**: 高效的批量数据处理机制
 
-### ⚡ 性能优化
+### 可靠性保证
 
-- **目录**: `performance_optimization/`
-- **内容**: 性能优化策略和算法
-- **文件**:
-  - [README.md](./performance_optimization/README.md)
+- **熔断器模式**: 防止级联故障
+- **重试机制**: 智能重试和故障恢复
+- **健康检查**: 实时健康状态监控
+- **优雅降级**: 保持核心功能可用
 
-### 🏢 企业应用
+### 可观测性
 
-- **目录**: `enterprise_applications/`
-- **内容**: 企业级应用场景和最佳实践
-- **文件**:
-  - [README.md](./enterprise_applications/README.md)
+- **实时监控**: 系统状态实时监控
+- **指标收集**: 丰富的性能指标
+- **分布式追踪**: 完整的请求链路追踪
+- **日志聚合**: 结构化日志处理
 
-### ☁️ 云原生
+### 云原生支持
 
-- **目录**: `cloud_native/`
-- **内容**: 云原生环境下的OTLP应用
-- **文件**:
-  - [README.md](./cloud_native/README.md)
+- **Kubernetes 原生**: 完整的 K8s 部署支持
+- **自动扩缩容**: 基于指标的自动扩缩容
+- **服务网格**: Istio 集成支持
+- **多环境部署**: 开发、测试、生产环境支持
 
-### 🔒 安全
+## 🛠️ 技术栈
 
-- **目录**: `security/`
-- **内容**: OTLP安全机制和最佳实践
-- **文件**:
-  - [README.md](./security/README.md)
+- **语言**: Rust 1.90 (Edition 2024)
+- **异步运行时**: Tokio
+- **序列化**: Serde + Protobuf
+- **网络**: gRPC + HTTP/2
+- **数据库**: 内存存储 + 可选持久化
+- **监控**: Prometheus + Grafana
+- **容器化**: Docker + Kubernetes
+- **CI/CD**: GitHub Actions
 
-### 🧪 测试
+## 📊 性能指标
 
-- **目录**: `testing/`
-- **内容**: 测试策略和测试用例
-- **文件**:
-  - [README.md](./testing/README.md)
-
-### 📈 监控
-
-- **目录**: `monitoring/`
-- **内容**: 监控和可观测性
-- **文件**:
-  - [README.md](./monitoring/README.md)
-
----
-
-## 🔗 与OTLP规范对齐（Spec ↔ 实现）
-
-本节将 OTLP 协议/规范要点与本仓库实现进行逐项对齐，便于快速定位代码与文档。
-
-- 协议数据模型（Traces / Metrics / Logs）
-  - **文档**: `docs/classification/OTLP_DETAILED_CLASSIFICATION_ANALYSIS.md`
-  - **代码**: `otlp/src/data.rs`（`TraceData`、`MetricData`、`LogData`、属性与状态定义）
-
-- 传输协议与序列化（gRPC、HTTP/JSON、HTTP/Protobuf、Protobuf模型）
-  - **文档**: `docs/standards/OTLP_INTERNATIONAL_STANDARDS_2025.md`, `docs/algorithms/OTLP_ALGORITHMS_DESIGN_PATTERNS_2025.md`
-  - **代码**: `otlp/src/transport.rs`（`GrpcTransport`、`HttpTransport`）、`otlp/src/protobuf.rs`
-
-- 导出与批处理（Batch、超时、重试、压缩）
-  - **文档**: `docs/sync_async/OTLP_SYNC_ASYNC_CONTROL_FLOW_2025.md`, `docs/advanced/OTLP_RECURSIVE_MIXED_SCHEDULING_2025.md`, `docs/performance_optimization/*`
-  - **代码**: `otlp/src/exporter.rs`（`OtlpExporter`、`ExportResult`）、`otlp/src/utils.rs`（`BatchUtils`、`RetryUtils`、`CompressionUtils`）
-
-- 处理流水线与处理器（Processor、过滤/聚合、背压）
-  - **文档**: `docs/flow_organization/OTLP_EXECUTION_FLOW_ORGANIZATION_2025.md`, `docs/algorithms/README.md`
-  - **代码**: `otlp/src/processor.rs`（`OtlpProcessor`、`ProcessingConfig`）
-
-- 客户端门面与使用方式（Client API、一致性约束）
-  - **文档**: `docs/examples/OTLP_COMPREHENSIVE_USAGE_EXAMPLES_2025.md`
-  - **代码**: `otlp/src/client.rs`（`OtlpClient`、`TraceBuilder`/`MetricBuilder`/`LogBuilder`）
-
-- 配置与环境（端点、协议、认证、批处理/重试参数、采样）
-  - **文档**: `docs/standards/OTLP_STACK_MATURITY_MATRIX_2025.md`、`docs/sampling/OTLP_SAMPLING_CONTROL_2025.md`
-  - **代码**: `otlp/src/config.rs`（`OtlpConfig`、`TransportProtocol`、`Compression`）
-
-- 错误分类与恢复（错误类型、可重试/不可重试、退避与抖动）
-  - **文档**: `docs/monitoring/*`, `docs/performance_optimization/*`
-  - **代码**: `otlp/src/error.rs`（`OtlpError`、`Result`）、`otlp/src/utils.rs`（`RetryUtils`）
-
-- 可观测性与监控（自监控指标、健康检查）
-  - **文档**: `docs/monitoring/*`
-  - **代码**: `otlp/src/exporter.rs`（`ExporterMetrics`）、`otlp/src/processor.rs`（`ProcessorMetrics`）
-
-提示：更完整的文档导航与阅读路径，请参考 `docs/OTLP_2025_COMPREHENSIVE_DOCUMENTATION_INDEX.md`。
-
-## 🎯 核心特性
-
-### 1. 技术创新
-
-- **同步异步结合**: 创新的配置同步+执行异步模式
-- **自适应算法**: 智能的批处理和重试算法
-- **零拷贝优化**: 高效的内存管理技术
-- **插件架构**: 可扩展的插件系统设计
-
-### 2. 工程质量
-
-- **类型安全**: 编译时类型检查，零运行时错误
-- **内存安全**: 基于Rust所有权系统的内存安全保证
-- **并发安全**: 无锁并发设计，高性能异步处理
-- **错误处理**: 完善的错误处理和恢复机制
-
-### 3. 文档质量
-
-- **完整性**: 从基础概念到企业应用的完整覆盖
-- **实用性**: 丰富的代码示例和最佳实践
-- **可读性**: 清晰的结构和详细的说明
-- **时效性**: 基于最新技术标准和语言特性
-
-## 🚀 快速开始
-
-### 1. 基础使用
-
-```rust
-use c21_otlp::{OtlpClient, OtlpConfig};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 创建配置
-    let config = OtlpConfig::default()
-        .with_endpoint("http://localhost:4317")
-        .with_service("my-service", "1.0.0");
-    
-    // 创建客户端
-    let client = OtlpClient::new(config).await?;
-    client.initialize().await?;
-    
-    // 发送数据
-    let result = client.send_trace("operation").await?
-        .with_attribute("key", "value")
-        .finish()
-        .await?;
-    
-    println!("发送成功: {} 条", result.success_count);
-    Ok(())
-}
-```
-
-### 2. 高级功能
-
-```rust
-// 批量处理
-let mut batch = Vec::new();
-for i in 0..1000 {
-    let data = TelemetryData::trace(format!("operation-{}", i));
-    batch.push(data);
-}
-let result = client.send_batch(batch).await?;
-
-// 并发处理
-let result = tokio::try_join!(
-    client.send_trace("operation1"),
-    client.send_metric("metric1", 42.0),
-    client.send_log("log1", LogSeverity::Info)
-)?;
-```
-
-## 📊 项目统计
-
-### 代码统计
-
-- **源代码文件**: 10+ 个核心模块
-- **文档文件**: 20+ 个技术文档
-- **示例代码**: 15+ 个使用示例
-- **测试用例**: 50+ 个测试案例
-- **代码行数**: 5000+ 行高质量代码
-
-### 文档统计
-
-- **技术文档**: 8 个主要技术文档
-- **分析报告**: 6 个深度分析报告
-- **使用指南**: 完整的API使用指南
-- **最佳实践**: 企业级应用最佳实践
-- **文档字数**: 100,000+ 字详细文档
-
-### 功能特性
-
-- **传输协议**: 支持gRPC、HTTP、HTTP/Protobuf
-- **数据类型**: 支持Traces、Metrics、Logs
-- **压缩算法**: 支持Gzip、Brotli、Zstd
-- **设计模式**: 实现10+ 种设计模式
-- **性能优化**: 20+ 种性能优化技术
+| 指标 | 数值 |
+|------|------|
+| 吞吐量 | 100,000+ req/s |
+| 延迟 (P95) | < 10ms |
+| 内存使用 | < 100MB |
+| CPU 使用 | < 50% |
+| 可用性 | 99.9%+ |
 
 ## 🔗 相关链接
 
-- [OpenTelemetry官方文档](https://opentelemetry.io/docs/)
-- [Rust官方文档](https://doc.rust-lang.org/)
-- [CNCF项目](https://www.cncf.io/projects/)
-- [OTLP协议规范](https://github.com/open-telemetry/opentelemetry-proto)
+- [GitHub 仓库](https://github.com/your-org/otlp-rust)
+- [问题追踪](https://github.com/your-org/otlp-rust/issues)
+- [讨论区](https://github.com/your-org/otlp-rust/discussions)
+- [OpenTelemetry 官网](https://opentelemetry.io/)
+- [Rust 官网](https://www.rust-lang.org/)
 
-## 📈 未来发展方向
+## 📄 许可证
 
-### 1. 技术完善
+本项目采用 Apache 2.0 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
 
-- **插件生态**: 建立完整的插件生态系统
-- **性能优化**: 持续优化内存、网络、CPU性能
-- **功能扩展**: 支持更多传输协议和数据格式
-- **标准贡献**: 向OTLP标准贡献改进建议
+## 🤝 贡献
 
-### 2. 应用推广
+我们欢迎所有形式的贡献！请参阅 [贡献指南](development/contributing.md) 了解如何参与项目开发。
 
-- **企业应用**: 支持更多企业级应用场景
-- **云原生**: 深度集成Kubernetes等云原生技术
-- **边缘计算**: 支持边缘计算和IoT场景
-- **实时处理**: 支持实时数据处理和分析
+## 📞 支持
 
-### 3. 社区建设
+如果您遇到问题或有任何疑问，请：
 
-- **文档完善**: 持续完善技术文档
-- **示例丰富**: 提供更多实际应用示例
-- **社区互动**: 建立活跃的开发者社区
-- **培训支持**: 提供技术培训和咨询服务
-
-## 🙏 致谢
-
-感谢所有参与本项目的开发者和贡献者，感谢Rust社区和OpenTelemetry社区的支持，感谢所有为开源技术发展做出贡献的人们。
+1. 查看 [故障排查指南](deployment/troubleshooting.md)
+2. 在 [GitHub Issues](https://github.com/your-org/otlp-rust/issues) 中搜索相关问题
+3. 创建新的 Issue 描述您的问题
+4. 加入我们的 [讨论区](https://github.com/your-org/otlp-rust/discussions) 进行交流
 
 ---
 
-**项目完成时间**: 2025年1月  
-**项目维护者**: Rust OTLP Team  
-**项目版本**: 0.1.0  
-**Rust版本要求**: 1.90+  
-**项目状态**: ✅ 已完成核心功能，持续改进中
-
-*"代码是写给人看的，只是恰好能在机器上运行。"* - 本项目始终遵循这一理念，致力于创建高质量、可维护、易理解的代码和文档。
-
-## 🔗 附：文档对齐指南
-
-- 参见 `OTLP_ALIGNMENT_GUIDE.md`（统一术语、结构模板与对齐检查要点）
+**注意**: 本文档正在持续更新中。如果您发现任何问题或建议，请随时提出 Issue 或 Pull Request。

@@ -1,0 +1,341 @@
+# Default values for otlp-server
+# This is a YAML-formatted file.
+
+replicaCount: 3
+
+image:
+  repository: otlp/otlp-server
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  capabilities:
+    drop:
+    - ALL
+
+service:
+  type: ClusterIP
+  grpcPort: 4317
+  httpPort: 4318
+  metricsPort: 8080
+  healthPort: 8081
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: otlp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 4
+        periodSeconds: 60
+      selectPolicy: Max
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - otlp-server
+        topologyKey: kubernetes.io/hostname
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      - namespaceSelector:
+          matchLabels:
+            name: istio-system
+      - podSelector:
+          matchLabels:
+            app: otlp-client
+      ports:
+      - protocol: TCP
+        port: 4317
+      - protocol: TCP
+        port: 4318
+      - protocol: TCP
+        port: 8080
+      - protocol: TCP
+        port: 8081
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      - namespaceSelector:
+          matchLabels:
+            name: istio-system
+      ports:
+      - protocol: TCP
+        port: 14268
+      - protocol: TCP
+        port: 9090
+      - protocol: TCP
+        port: 9093
+    - to: []
+      ports:
+      - protocol: TCP
+        port: 53
+      - protocol: UDP
+        port: 53
+
+config:
+  server:
+    grpc:
+      endpoint: "0.0.0.0:4317"
+      max_connections: 1000
+      keep_alive_time: 30s
+      keep_alive_timeout: 5s
+      keep_alive_permit_without_stream: true
+    http:
+      endpoint: "0.0.0.0:4318"
+      max_connections: 1000
+      read_timeout: 30s
+      write_timeout: 30s
+      idle_timeout: 120s
+    metrics:
+      endpoint: "0.0.0.0:8080"
+      path: "/metrics"
+    health:
+      endpoint: "0.0.0.0:8081"
+      path: "/health"
+  
+  performance:
+    circuit_breaker:
+      failure_threshold: 10
+      recovery_timeout: 5s
+      half_open_max_calls: 5
+      sliding_window_size: 60s
+      minimum_calls: 10
+    memory_pool:
+      max_size: 100
+      initial_size: 10
+      object_ttl: 300s
+      cleanup_interval: 60s
+    batch_processor:
+      max_batch_size: 1000
+      min_batch_size: 10
+      batch_timeout: 100ms
+      max_wait_time: 5s
+      concurrency: 4
+      enable_compression: true
+      memory_limit: 100MB
+    connection_pool:
+      max_connections: 100
+      min_connections: 5
+      connection_timeout: 30s
+      idle_timeout: 300s
+      max_lifetime: 3600s
+      health_check_interval: 60s
+  
+  resilience:
+    retry:
+      max_attempts: 3
+      initial_delay: 100ms
+      max_delay: 5s
+      multiplier: 2.0
+      jitter: true
+    timeout:
+      request_timeout: 30s
+      connection_timeout: 10s
+      read_timeout: 30s
+      write_timeout: 30s
+    graceful_degradation:
+      enabled: true
+      fallback_enabled: true
+      cache_enabled: true
+      cache_ttl: 300s
+  
+  monitoring:
+    metrics:
+      enabled: true
+      interval: 10s
+      retention: 24h
+    logging:
+      level: "info"
+      format: "json"
+      output: "stdout"
+    tracing:
+      enabled: true
+      sampling_rate: 0.1
+      jaeger_endpoint: "http://jaeger-collector:14268/api/traces"
+  
+  storage:
+    type: "memory"
+    max_size: "1GB"
+    cleanup_interval: "1h"
+    compression: true
+
+env:
+  RUST_LOG: "info"
+  RUST_BACKTRACE: "1"
+  OTLP_CONFIG_PATH: "/app/config.yaml"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8081
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8081
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /startup
+    port: 8081
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 10
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+  honorLabels: true
+  relabelings:
+  - sourceLabels: [__meta_kubernetes_pod_name]
+    targetLabel: pod
+  - sourceLabels: [__meta_kubernetes_pod_node_name]
+    targetLabel: node
+  - sourceLabels: [__meta_kubernetes_namespace]
+    targetLabel: namespace
+  - sourceLabels: [__meta_kubernetes_service_name]
+    targetLabel: service
+  metricRelabelings:
+  - sourceLabels: [__name__]
+    regex: 'otlp_.*'
+    action: keep
+
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: true
+      size: 50Gi
+    retention: "30d"
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 500m
+      limits:
+        memory: 4Gi
+        cpu: 1000m
+
+grafana:
+  enabled: true
+  adminPassword: "admin"
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 200m
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'otlp-dashboards'
+        orgId: 1
+        folder: 'OTLP'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/otlp
+  dashboards:
+    otlp:
+      otlp-overview:
+        gnetId: 1
+        revision: 1
+        datasource: Prometheus
