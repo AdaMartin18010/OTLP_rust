@@ -1,0 +1,47 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Spans Exported (rate)",
+      "targets": [
+        {"expr": "rate(otelcol_exporter_sent_spans[1m])", "legendFormat": "{{ exporter }}"}
+      ],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "Exporter Send Failed (rate)",
+      "targets": [
+        {"expr": "rate(otelcol_exporter_send_failed_spans[1m])", "legendFormat": "failed"}
+      ],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+    },
+    {
+      "type": "timeseries",
+      "title": "Collector CPU (cores approx)",
+      "targets": [
+        {"expr": "rate(process_cpu_seconds_total[1m])", "legendFormat": "cpu"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+    },
+    {
+      "type": "timeseries",
+      "title": "Collector RSS (bytes)",
+      "targets": [
+        {"expr": "process_resident_memory_bytes", "legendFormat": "rss"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+    }
+  ],
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["otlp", "otel", "collector"],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "OTel Collector Overview",
+  "version": 2
+}

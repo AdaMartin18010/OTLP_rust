@@ -1,0 +1,44 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  transform/example:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - set(attributes["example.flag"], true)
+
+exporters:
+  logging:
+    loglevel: info
+  otlp_jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  otlphttp_jaeger:
+    endpoint: http://jaeger:4318
+  otlp_tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlphttp_tempo:
+    endpoint: http://tempo:4318
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [transform/example]
+      exporters: [logging, otlp_jaeger, otlphttp_jaeger, otlp_tempo, otlphttp_tempo]
+    metrics:
+      receivers: [otlp]
+      exporters: [logging, prometheus]
+    logs:
+      receivers: [otlp]
+      exporters: [logging]

@@ -1,0 +1,85 @@
+version: "3.9"
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+      - "55679:55679"  # zpages/prometheus 等占位（若需要）
+      - "8889:8889"  # Prometheus exporter
+    restart: unless-stopped
+    environment:
+      - GODEBUG=madvdontneed=1
+    depends_on:
+      - jaeger
+      - tempo
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC ingest
+      - "4318:4318"    # OTLP HTTP ingest
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+    ports:
+      - "3200:3200"    # Tempo HTTP (querier)
+      - "4319:4317"    # OTLP gRPC ingest (mapped)
+      - "4320:4318"    # OTLP HTTP ingest (mapped)
+    restart: unless-stopped
+
+  pyroscope:
+    image: grafana/pyroscope:1.6.0
+    ports:
+      - "4040:4040"   # Pyroscope UI
+    restart: unless-stopped
+
+  tracegen:
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:latest
+    depends_on:
+      - otel-collector
+    command: [
+      "--otlp-endpoint=otel-collector:4317",
+      "--otlp-insecure=true",
+      "--traces=1000000",
+      "--rate=10"
+    ]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--web.enable-lifecycle"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    depends_on:
+      - otel-collector
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - tempo
+      - pyroscope
