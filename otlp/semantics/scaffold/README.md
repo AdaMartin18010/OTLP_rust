@@ -1,7 +1,7 @@
 # 實驗腳手架
 
-- docker-compose：本地一鍵復現 Collector/Generator/Jaeger/Tempo/Prometheus/Grafana
-- k8s：部署 Collector/Jaeger/Tempo/tracegen/Prometheus/Grafana
+- docker-compose：本地一鍵復現 Collector/Generator/Jaeger/Tempo/Prometheus/Grafana/Pyroscope
+- k8s：部署 Collector/Jaeger/Tempo/tracegen/Prometheus/Grafana/Prometheus-Adapter/HPA/Pyroscope
 - scripts：一鍵啟停/數據合成與回放
 
 ## 本地（docker-compose）
@@ -13,6 +13,7 @@ cd otlp/semantics/scaffold
 # Tempo Query:   http://localhost:3200  (原生 API，可接 Grafana Tempo datasource)
 # Prometheus:    http://localhost:9090
 # Grafana:       http://localhost:3000  (admin/admin)
+# Pyroscope:     http://localhost:4040
 ```
 
 ## 測量與快照
@@ -34,10 +35,15 @@ kubectl apply -f k8s/base/otel-collector.yaml
 kubectl apply -f k8s/base/tracegen.yaml
 kubectl apply -f k8s/base/prometheus.yaml
 kubectl apply -f k8s/base/grafana.yaml
+kubectl apply -f k8s/base/pyroscope.yaml
+kubectl apply -f k8s/base/prometheus-adapter.yaml   # External Metrics
+kubectl apply -f k8s/base/hpa-external.yaml         # HPA 示例
 # 訪問
 kubectl port-forward deploy/jaeger 16686:16686
 kubectl port-forward deploy/grafana 3000:3000
+kubectl port-forward deploy/pyroscope 4040:4040
 # 打開
 # Jaeger:  http://localhost:16686
 # Grafana: http://localhost:3000  (admin/admin)
+# Pyroscope:  http://localhost:4040
 ```

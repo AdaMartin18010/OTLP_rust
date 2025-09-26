@@ -61,6 +61,13 @@ spec:
           ports:
             - containerPort: 4317
             - containerPort: 4318
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
           volumeMounts:
             - name: config
               mountPath: /etc/otelcol/config.yaml
