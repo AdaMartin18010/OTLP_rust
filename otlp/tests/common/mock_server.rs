@@ -92,11 +92,15 @@ impl MockOtlpServer {
                     }))
                 }));
 
+        // 使用一个固定的端口来避免复杂的动态端口分配
+        let port = 30000 + (std::process::id() % 1000) as u16; // 基于进程ID选择端口
+        let address = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+        
         // 启动服务器
-        let (address, server_future) = warp::serve(routes)
-            .bind_ephemeral(([127, 0, 0, 1], 0));
+        let server = warp::serve(routes);
         
         // 在后台运行服务器
+        let server_future = server.run(address);
         tokio::spawn(server_future);
         
         // 等待服务器启动

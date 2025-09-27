@@ -196,6 +196,9 @@ pub mod resilience;
 pub mod rust_1_90_optimizations;
 pub mod simple_client;
 pub mod performance_enhancements;
+pub mod performance_optimization_advanced;
+pub mod optimized_processor;
+pub mod performance_monitoring;
 pub mod transport;
 pub mod utils;
 pub mod validation;
@@ -233,6 +236,20 @@ pub use performance_enhancements::{
     AsyncGenerator, HighPerformanceBatchProcessor, HighPerformanceExecutor,
     HighPerformanceMemoryPool, BatchProcessorMetricsSnapshot,
     ExecutorMetricsSnapshot, MemoryPoolMetricsSnapshot,
+};
+pub use performance_optimization_advanced::{
+    AdvancedSimdOptimizer, AdvancedMemoryPoolOptimizer, CacheOptimizationManager,
+    ComprehensivePerformanceOptimizer,
+    SimdOperation, SimdIntOperation, CachePerformanceMetrics, BenchmarkResults,
+};
+pub use optimized_processor::{
+    OptimizedOtlpProcessor, OptimizedProcessorConfig, OtlpDataItem, ProcessedItem,
+    PerformanceMetrics, PerformanceMonitor, PerformanceReport,
+};
+pub use performance_monitoring::{
+    RealtimePerformanceMonitor, PerformanceMonitoringConfig, PerformanceThresholds,
+    PerformanceDataPoint, PerformanceAlert, AlertType, AlertSeverity,
+    PerformanceSummary,
 };
 pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{

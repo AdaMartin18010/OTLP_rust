@@ -38,7 +38,7 @@ crossbeam = { workspace = true }
 
 # 压缩算法
 flate2 = "1.0"
-brotli = "3.5"
+brotli = "8.0.2"
 zstd = "0.13"
 
 # 异步trait
@@ -77,10 +77,18 @@ criterion = { workspace = true }
 tempfile = { workspace = true }
 proptest = { workspace = true }
 mockall = { workspace = true }
-warp = "0.3.7"
+warp = { version = "0.4.2", features = ["server"] }
 
 [[bench]]
 name = "performance_benchmarks"
+harness = false
+
+[[bench]]
+name = "advanced_performance_benchmarks"
+harness = false
+
+[[bench]]
+name = "extended_simd_benchmarks"
 harness = false
 
 [features]
