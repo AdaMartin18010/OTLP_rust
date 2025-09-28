@@ -32,14 +32,12 @@ git-fetch-with-cli = true
 [registries.crates-io]
 protocol = "sparse"
 
-# 源配置
-[source.crates-io]
-protocol = "sparse"
+# 源配置 - 使用默认的 sparse 协议
+# [source.crates-io] 配置已移除，使用默认设置
 
 # 环境变量
 [env]
 # Rust 1.90 优化环境变量
-RUSTFLAGS = "-C target-cpu=native -C opt-level=3"
 RUST_LOG = "info"
 CARGO_INCREMENTAL = "1"
 CARGO_NET_RETRY = "2"
@@ -65,16 +63,16 @@ rustflags = [
     "-C", "link-arg=-static",
 ]
 
-# 别名配置
+# 别名配置 - 精简版，保留最常用的别名
 [alias]
 # 开发别名
 dev = "run --bin"
-test = "test --lib"
-check = "check --all-targets"
-build = "build --release"
+test-lib = "test --lib"
+check-all = "check --all-targets"
+build-release = "build --release"
 
 # 性能测试别名
-bench = "bench --all"
+bench-all = "bench --all"
 profile = "build --release --profile=bench"
 
 # 清理别名
@@ -105,7 +103,7 @@ test-integration = "test --test"
 test-unit = "test --lib --bins"
 
 # 发布别名
-publish-all = "publish --all --dry-run"
+publish-check = "publish --all --dry-run"
 release = "build --release && cargo test --release"
 
 # 工作区别名
@@ -121,95 +119,7 @@ deps-outdated = "outdated --workspace"
 
 # 性能分析别名
 perf = "build --release --profile=bench && cargo bench"
-profile-mem = "build --release && valgrind --tool=massif target/release/otlp"
-profile-cpu = "build --release && perf record target/release/otlp"
 
 # 跨平台编译别名
 cross-build = "build --target"
 cross-test = "test --target"
-
-# 工具链管理别名
-toolchain = "toolchain"
-rustup = "rustup"
-
-# 版本管理别名
-version = "version"
-version-bump = "version --patch"
-version-minor = "version --minor"
-version-major = "version --major"
-
-# 发布管理别名
-publish-check = "publish --dry-run"
-publish-verify = "publish --verify"
-publish-package = "publish --package"
-
-# 工作区管理别名
-ws-new = "new --lib"
-ws-init = "init --lib"
-ws-generate = "generate-lockfile"
-
-# 配置管理别名
-config = "config"
-config-get = "config get"
-config-set = "config set"
-
-# 缓存管理别名
-cache = "cache"
-cache-clean = "cache clean"
-cache-autoclean = "cache autoclean"
-
-# 元数据别名
-metadata = "metadata --format-version=1"
-manifest = "read-manifest"
-
-# 包管理别名
-package = "package"
-package-list = "package --list"
-package-verify = "package --verify"
-
-# 搜索别名
-search = "search"
-search-exact = "search --exact"
-
-# 安装别名
-install = "install"
-install-list = "install --list"
-install-update = "install --force"
-
-# 卸载别名
-uninstall = "uninstall"
-
-# 位置别名
-locate-project = "locate-project"
-locate-project-root = "locate-project --workspace"
-
-# 验证别名
-verify-project = "verify-project"
-
-# 帮助别名
-help = "help"
-help-build = "help build"
-help-test = "help test"
-help-run = "help run"
-help-bench = "help bench"
-help-doc = "help doc"
-help-clean = "help clean"
-help-update = "help update"
-help-search = "help search"
-help-publish = "help publish"
-help-install = "help install"
-help-uninstall = "help uninstall"
-help-new = "help new"
-help-init = "help init"
-help-generate-lockfile = "help generate-lockfile"
-help-fetch = "help fetch"
-help-verify-project = "help verify-project"
-help-locate-project = "help locate-project"
-help-owner = "help owner"
-help-login = "help login"
-help-logout = "help logout"
-help-metadata = "help metadata"
-help-package = "help package"
-help-tree = "help tree"
-help-version = "help version"
-help-yank = "help yank"
