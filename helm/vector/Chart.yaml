@@ -1,0 +1,27 @@
+apiVersion: v2
+name: vector
+description: Vector data pipeline for PostgreSQL All-in-One
+type: application
+version: 1.0.0
+appVersion: "0.34.0"
+keywords:
+  - vector
+  - data-pipeline
+  - logging
+  - metrics
+  - postgresql
+home: https://vector.dev
+sources:
+  - https://github.com/vectordotdev/vector
+maintainers:
+  - name: PostgreSQL All-in-One Team
+    email: support@postgresql-allinone.com
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled

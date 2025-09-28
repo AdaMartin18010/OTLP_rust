@@ -1,0 +1,273 @@
+# Vector Helm Chart Values
+# PostgreSQL All-in-One Vector Integration
+
+replicaCount: 3
+
+image:
+  repository: timberio/vector
+  tag: "0.34.0-alpine"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  ports:
+    api: 8686
+    metrics: 9598
+    http: 9000
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "1000m"
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: "fast-ssd"
+  accessMode: ReadWriteOnce
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  scrapeTimeout: 10s
+
+# Vector Configuration
+config:
+  data_dir: "/var/lib/vector"
+  
+  log:
+    level: "info"
+    file: "/var/log/vector/vector.log"
+  
+  api:
+    enabled: true
+    address: "0.0.0.0:8686"
+    playground: true
+  
+  # Data Sources
+  sources:
+    app_logs:
+      type: "file"
+      include: ["/var/log/app/*.log"]
+      read_from: "beginning"
+      multiline:
+        start_pattern: '^\d{4}-\d{2}-\d{2}'
+        mode: "halt_before"
+        condition_pattern: '^\d{4}-\d{2}-\d{2}'
+        timeout_ms: 1000
+    
+    system_metrics:
+      type: "host_metrics"
+      collectors: ["cpu", "disk", "filesystem", "load", "memory", "network", "process"]
+    
+    business_events:
+      type: "http"
+      address: "0.0.0.0:9000"
+      decoding:
+        codec: "json"
+  
+  # Data Transforms
+  transforms:
+    log_parser:
+      type: "remap"
+      inputs: ["app_logs"]
+      source: |
+        . = parse_json!(.message)
+        .timestamp = parse_timestamp!(.timestamp, "%Y-%m-%d %H:%M:%S")
+        .level = .level || "INFO"
+        .service = .service || "unknown"
+        .host = get_hostname!()
+    
+    metrics_processor:
+      type: "remap"
+      inputs: ["system_metrics"]
+      source: |
+        .timestamp = now()
+        .host = get_hostname!()
+        .metric_type = "system"
+    
+    event_enricher:
+      type: "remap"
+      inputs: ["business_events"]
+      source: |
+        .timestamp = now()
+        .event_id = uuid_v4()
+        .processed_at = now()
+        .host = get_hostname!()
+    
+    log_router:
+      type: "route"
+      inputs: ["log_parser"]
+      route:
+        error: '.level == "ERROR"'
+        warning: '.level == "WARN"'
+        info: '.level == "INFO"'
+    
+    metrics_router:
+      type: "route"
+      inputs: ["metrics_processor"]
+      route:
+        cpu: '.name == "cpu"'
+        memory: '.name == "memory"'
+        disk: '.name == "disk"'
+        network: '.name == "network"'
+  
+  # Data Sinks
+  sinks:
+    postgresql_logs:
+      type: "postgresql"
+      inputs: ["log_router.error", "log_router.warning", "log_router.info"]
+      host: "postgresql-all-in-one"
+      port: 5432
+      database: "allinone"
+      table: "application_logs"
+      username: "postgres"
+      password: "postgres123"
+      batch:
+        max_bytes: 1048576
+        timeout_secs: 5
+        max_events: 1000
+    
+    postgresql_metrics:
+      type: "postgresql"
+      inputs: ["metrics_router.cpu", "metrics_router.memory", "metrics_router.disk", "metrics_router.network"]
+      host: "postgresql-all-in-one"
+      port: 5432
+      database: "allinone"
+      table: "system_metrics"
+      username: "postgres"
+      password: "postgres123"
+      batch:
+        max_bytes: 1048576
+        timeout_secs: 5
+        max_events: 1000
+    
+    redis_cache:
+      type: "redis"
+      inputs: ["event_enricher"]
+      key: "events:{{ .event_id }}"
+      data_type: "list"
+      redis_url: "redis://redis:6379"
+      batch:
+        max_bytes: 1048576
+        timeout_secs: 1
+        max_events: 100
+    
+    prometheus_metrics:
+      type: "prometheus"
+      inputs: ["metrics_processor"]
+      address: "0.0.0.0:9598"
+      default_namespace: "vector"
+      buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+
+# External Dependencies
+postgresql:
+  enabled: false
+  auth:
+    postgresPassword: "postgres123"
+    database: "allinone"
+  primary:
+    persistence:
+      size: 100Gi
+
+redis:
+  enabled: false
+  auth:
+    enabled: false
+  master:
+    persistence:
+      size: 10Gi
+
+# Security Context
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Liveness and Readiness Probes
+livenessProbe:
+  httpGet:
+    path: /health
+    port: api
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: api
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Environment Variables
+env:
+  - name: VECTOR_CONFIG
+    value: "/etc/vector/vector.toml"
+  - name: VECTOR_LOG
+    value: "info"
+  - name: VECTOR_LOG_FORMAT
+    value: "json"
+
+# Volume Mounts
+volumeMounts:
+  - name: app-logs
+    mountPath: /var/log/app
+  - name: system-logs
+    mountPath: /var/log/system
+
+# Host Path Volumes
+hostPathVolumes:
+  - name: app-logs
+    path: /var/log/app
+    type: DirectoryOrCreate
+  - name: system-logs
+    path: /var/log/system
+    type: DirectoryOrCreate
+
+# Network Policy
+networkPolicy:
+  enabled: false
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: postgresql-all-in-one
+      ports:
+        - protocol: TCP
+          port: 9000
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: postgresql-all-in-one
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
