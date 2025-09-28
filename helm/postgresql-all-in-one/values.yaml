@@ -1,0 +1,238 @@
+# PostgreSQL All-in-One Helm 图表默认值
+
+# 全局配置
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# PostgreSQL 配置
+postgresql:
+  enabled: true
+  image:
+    repository: timescale/timescaledb
+    tag: latest-pg15
+    pullPolicy: IfNotPresent
+  
+  auth:
+    postgresPassword: "postgres"
+    replicationPassword: "replication"
+    database: "myapp"
+    username: "postgres"
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: ""
+      accessModes:
+        - ReadWriteOnce
+    
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+      limits:
+        memory: "8Gi"
+        cpu: "4"
+    
+    service:
+      type: ClusterIP
+      port: 5432
+    
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
+# Redis 配置
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+  
+  auth:
+    enabled: false
+    password: ""
+  
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ""
+      accessModes:
+        - ReadWriteOnce
+    
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "0.5"
+      limits:
+        memory: "2Gi"
+        cpu: "1"
+    
+    service:
+      type: ClusterIP
+      port: 6379
+    
+    configuration: |
+      maxmemory 1gb
+      maxmemory-policy allkeys-lru
+
+# Prometheus 配置
+prometheus:
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  server:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: ""
+      accessModes:
+        - ReadWriteOnce
+    
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "0.5"
+      limits:
+        memory: "2Gi"
+        cpu: "1"
+    
+    service:
+      type: ClusterIP
+      port: 9090
+    
+    retention: "200h"
+    
+    config:
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+      
+      scrape_configs:
+        - job_name: 'postgresql'
+          static_configs:
+            - targets: ['postgresql-service:5432']
+          metrics_path: /metrics
+          scrape_interval: 5s
+        
+        - job_name: 'redis'
+          static_configs:
+            - targets: ['redis-service:6379']
+          metrics_path: /metrics
+          scrape_interval: 5s
+        
+        - job_name: 'prometheus'
+          static_configs:
+            - targets: ['localhost:9090']
+
+# Grafana 配置
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  admin:
+    user: admin
+    password: admin
+  
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "0.25"
+    limits:
+      memory: "1Gi"
+      cpu: "0.5"
+  
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  dashboard:
+    enabled: true
+    configMapName: grafana-dashboard
+
+# Ingress 配置
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: postgresql-all-in-one.local
+      paths:
+        - path: /grafana
+          pathType: Prefix
+        - path: /prometheus
+          pathType: Prefix
+  tls: []
+
+# 服务账户配置
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod 安全上下文
+podSecurityContext:
+  fsGroup: 2000
+
+# 安全上下文
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# 节点选择器
+nodeSelector: {}
+
+# 容忍度
+tolerations: []
+
+# 亲和性
+affinity: {}
+
+# 网络策略
+networkPolicy:
+  enabled: false
+  ingress: []
+  egress: []
+
+# 资源配额
+resourceQuota:
+  enabled: false
+  limits:
+    cpu: "10"
+    memory: "20Gi"
+    persistentvolumeclaims: "10"
+  requests:
+    cpu: "5"
+    memory: "10Gi"
+    persistentvolumeclaims: "5"

@@ -12,10 +12,13 @@
 
 **定义 2.1** (线性时序逻辑 LTL)
 线性时序逻辑的语法定义为：
-```
+
+```text
 φ ::= p | ¬φ | φ₁ ∧ φ₂ | φ₁ ∨ φ₂ | φ₁ → φ₂ | Xφ | Fφ | Gφ | φ₁ U φ₂
 ```
+
 其中：
+
 - p 是原子命题
 - Xφ: 下一时刻 φ 为真
 - Fφ: 最终 φ 为真  
@@ -24,7 +27,8 @@
 
 **定义 2.2** (OTLP时序语义)
 对于OTLP协议状态序列 σ = s₀s₁s₂...，时序公式的语义定义为：
-```
+
+```text
 σ ⊨ p ⟺ s₀ ⊨ p
 σ ⊨ ¬φ ⟺ σ ⊭ φ
 σ ⊨ φ₁ ∧ φ₂ ⟺ σ ⊨ φ₁ 且 σ ⊨ φ₂
@@ -38,10 +42,13 @@
 
 **定义 2.3** (OTLP协议状态)
 OTLP协议状态定义为五元组：
-```
+
+```text
 S = (M, D, A, T, C)
 ```
+
 其中：
+
 - M: Services → Seq(Messages) (消息队列)
 - D: Services → Seq(Messages) (已交付消息)
 - A: Services → Seq(Messages) (已确认消息)
@@ -50,21 +57,26 @@ S = (M, D, A, T, C)
 
 **定义 2.4** (OTLP协议转换关系)
 协议转换关系定义为：
-```
+
+```text
 → ⊆ S × Actions × S
 ```
+
 其中 Actions = {Send, Deliver, Acknowledge, Timeout, Connect, Disconnect}
 
 #### 2.1.3 协议正确性的形式化规范
 
 **定理 2.1** (消息传递正确性)
 OTLP协议保证消息传递的正确性，即：
-```
+
+```text
 G(Send(s, m) → F(Deliver(s, m)))
 ```
+
 表示：如果服务 s 发送消息 m，则最终消息 m 会被交付。
 
 **证明**：
+
 1. 设 σ 为协议执行序列，假设在时刻 i 执行 Send(s, m)
 2. 根据OTLP协议规范，消息 m 被添加到消息队列 M[s]
 3. 由于协议保证消息最终会被处理，存在时刻 j > i 使得 Deliver(s, m) 被执行
@@ -72,12 +84,15 @@ G(Send(s, m) → F(Deliver(s, m)))
 
 **定理 2.2** (消息确认正确性)
 OTLP协议保证消息确认的正确性，即：
-```
+
+```text
 G(Deliver(s, m) → F(Acknowledge(s, m)))
 ```
+
 表示：如果消息 m 被交付给服务 s，则最终会被确认。
 
 **证明**：
+
 1. 设 σ 为协议执行序列，假设在时刻 i 执行 Deliver(s, m)
 2. 根据OTLP协议规范，消息 m 被添加到已交付队列 D[s]
 3. 协议要求接收方必须发送确认，存在时刻 j > i 使得 Acknowledge(s, m) 被执行
@@ -85,12 +100,15 @@ G(Deliver(s, m) → F(Acknowledge(s, m)))
 
 **定理 2.3** (消息顺序保持性)
 OTLP协议保证消息顺序，即：
-```
+
+```text
 G(Send(s, m₁) ∧ Send(s, m₂) ∧ (m₁ < m₂) → F(Deliver(s, m₁) ∧ Deliver(s, m₂) ∧ (m₁ < m₂)))
 ```
+
 表示：如果消息 m₁ 在 m₂ 之前发送，则它们也会按相同顺序被交付。
 
 **证明**：
+
 1. 设 σ 为协议执行序列，假设在时刻 i₁ 执行 Send(s, m₁)，在时刻 i₂ 执行 Send(s, m₂)，且 i₁ < i₂
 2. 根据OTLP协议规范，消息按FIFO顺序处理
 3. 因此 m₁ 会在 m₂ 之前被交付
