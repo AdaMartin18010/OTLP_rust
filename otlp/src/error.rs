@@ -200,7 +200,9 @@ pub enum SystemError {
 }
 
 /// 错误严重程度
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Hash,
+)]
 pub enum ErrorSeverity {
     Low,
     Medium,
@@ -225,7 +227,9 @@ pub enum ErrorCategory {
 
 impl From<anyhow::Error> for OtlpError {
     fn from(err: anyhow::Error) -> Self {
-        OtlpError::System(SystemError::SystemCall { reason: err.to_string() })
+        OtlpError::System(SystemError::SystemCall {
+            reason: err.to_string(),
+        })
     }
 }
 
@@ -334,9 +338,7 @@ impl OtlpError {
             OtlpError::Configuration(ConfigurationError::InvalidEndpoint { .. }) => {
                 Some("检查端点URL格式是否正确".to_string())
             }
-            OtlpError::Data(DataError::Validation { .. }) => {
-                Some("检查数据格式和内容".to_string())
-            }
+            OtlpError::Data(DataError::Validation { .. }) => Some("检查数据格式和内容".to_string()),
             OtlpError::Resource(ResourceError::InsufficientSpace { .. }) => {
                 Some("清理磁盘空间或增加存储容量".to_string())
             }
@@ -346,8 +348,8 @@ impl OtlpError {
 
     /// 获取错误上下文
     pub fn context(&self) -> ErrorContext {
-        let mut context = ErrorContext::new(self.category(), self.severity())
-            .with_retryable(self.is_retryable());
+        let mut context =
+            ErrorContext::new(self.category(), self.severity()).with_retryable(self.is_retryable());
 
         if let Some(suggestion) = self.recovery_suggestion() {
             context = context.with_suggestion(suggestion);

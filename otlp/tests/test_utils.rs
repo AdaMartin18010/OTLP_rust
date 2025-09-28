@@ -138,7 +138,10 @@ pub fn create_test_config() -> OtlpConfig {
     OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Grpc)
-        .with_batch_config(BatchConfig { max_export_batch_size: 100, ..BatchConfig::default() })
+        .with_batch_config(BatchConfig {
+            max_export_batch_size: 100,
+            ..BatchConfig::default()
+        })
         .with_request_timeout(Duration::from_secs(5))
 }
 
@@ -163,7 +166,7 @@ mod tests {
     fn test_create_batch_test_data() {
         let batch = create_batch_test_data(10);
         assert_eq!(batch.len(), 10);
-        
+
         for data in &batch {
             assert!(validate_telemetry_data(data));
         }
@@ -173,7 +176,7 @@ mod tests {
     fn test_create_mixed_severity_test_data() {
         let data = create_mixed_severity_test_data();
         assert_eq!(data.len(), 5);
-        
+
         for data in &data {
             assert!(validate_telemetry_data(data));
         }
@@ -183,7 +186,7 @@ mod tests {
     fn test_validate_telemetry_data() {
         let valid_data = create_test_log_data();
         assert!(validate_telemetry_data(&valid_data));
-        
+
         let invalid_data = otlp::TelemetryData::log("", LogSeverity::Info);
         assert!(!validate_telemetry_data(&invalid_data));
     }

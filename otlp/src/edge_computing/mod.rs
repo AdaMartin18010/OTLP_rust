@@ -7,12 +7,12 @@
 //! - 边缘优化算法
 //! - 离线处理能力
 
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tokio::sync::{Mutex, RwLock};
-use serde::{Deserialize, Serialize};
-use anyhow::Result;
 use tracing::{info, warn};
 
 /// 边缘计算管理器
@@ -341,11 +341,11 @@ impl EdgeComputingManager {
     pub async fn register_node(&self, node: EdgeNode) -> Result<()> {
         let mut nodes = self.nodes.write().await;
         nodes.insert(node.id.clone(), node.clone());
-        
+
         // 初始化节点权重
         let mut weights = self.coordinator.node_selector.node_weights.write().await;
         weights.insert(node.id.clone(), 1.0);
-        
+
         info!("边缘节点已注册: {}", node.id);
         Ok(())
     }
@@ -354,7 +354,7 @@ impl EdgeComputingManager {
     pub async fn submit_task(&self, task: EdgeTask) -> Result<String> {
         // 选择最适合的节点
         let selected_node = self.select_best_node(&task).await?;
-        
+
         // 创建调度任务
         let scheduled_task = ScheduledTask {
             task: task.clone(),
@@ -366,7 +366,7 @@ impl EdgeComputingManager {
         // 添加到调度队列
         let mut scheduler_queue = self.task_scheduler.scheduler_queue.lock().await;
         scheduler_queue.push(scheduled_task);
-        
+
         info!("任务已提交: {} -> 节点: {}", task.id, selected_node);
         Ok(task.id)
     }
@@ -375,9 +375,9 @@ impl EdgeComputingManager {
     async fn select_best_node(&self, task: &EdgeTask) -> Result<String> {
         let nodes = self.nodes.read().await;
         let weights = self.coordinator.node_selector.node_weights.read().await;
-        
+
         let mut candidates = Vec::new();
-        
+
         for (node_id, node) in nodes.iter() {
             if self.can_handle_task(node, task) {
                 let weight = weights.get(node_id).copied().unwrap_or(1.0);
@@ -385,11 +385,11 @@ impl EdgeComputingManager {
                 candidates.push((node_id.clone(), score));
             }
         }
-        
+
         if candidates.is_empty() {
             return Err(anyhow::anyhow!("没有可用的节点处理此任务"));
         }
-        
+
         // 根据策略选择节点
         let selected = match self.config.load_balancing_strategy {
             LoadBalancingStrategy::RoundRobin => {
@@ -398,21 +398,25 @@ impl EdgeComputingManager {
             }
             LoadBalancingStrategy::ResourceBased => {
                 // 选择资源最充足的节点
-                candidates.iter()
+                candidates
+                    .iter()
                     .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
                     .unwrap()
-                    .0.clone()
+                    .0
+                    .clone()
             }
             LoadBalancingStrategy::LatencyBased => {
                 // 选择延迟最低的节点
-                candidates.iter()
+                candidates
+                    .iter()
                     .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
                     .unwrap()
-                    .0.clone()
+                    .0
+                    .clone()
             }
             _ => candidates[0].0.clone(),
         };
-        
+
         Ok(selected)
     }
 
@@ -422,48 +426,49 @@ impl EdgeComputingManager {
         if !matches!(node.status, NodeStatus::Online) {
             return false;
         }
-        
+
         // 检查资源需求
         if node.resources.available_cpu < task.requirements.min_cpu_cores as f64 {
             return false;
         }
-        
+
         if node.resources.available_memory < task.requirements.min_memory_gb {
             return false;
         }
-        
+
         if node.resources.available_storage < task.requirements.min_storage_gb {
             return false;
         }
-        
+
         // 检查专业化需求
         for required_spec in &task.requirements.required_specializations {
             if !node.capabilities.specializations.contains(required_spec) {
                 return false;
             }
         }
-        
+
         true
     }
 
     /// 计算节点评分
     fn calculate_node_score(&self, node: &EdgeNode, _task: &EdgeTask, weight: f64) -> f64 {
         let mut score = weight;
-        
+
         // 资源可用性评分
         let cpu_score = node.resources.available_cpu / node.capabilities.cpu_cores as f64;
         let memory_score = node.resources.available_memory / node.capabilities.memory_gb;
         let storage_score = node.resources.available_storage / node.capabilities.storage_gb;
-        
+
         score += (cpu_score + memory_score + storage_score) / 3.0;
-        
+
         // 性能评分
-        let performance_score = 1.0 / (node.performance_metrics.response_time.as_millis() as f64 + 1.0);
+        let performance_score =
+            1.0 / (node.performance_metrics.response_time.as_millis() as f64 + 1.0);
         score += performance_score;
-        
+
         // 错误率评分（错误率越低越好）
         score += 1.0 - node.performance_metrics.error_rate;
-        
+
         score
     }
 
@@ -471,12 +476,12 @@ impl EdgeComputingManager {
     pub async fn handle_task_result(&self, result: TaskResult) -> Result<()> {
         let mut completed_tasks = self.coordinator.completed_tasks.lock().await;
         completed_tasks.push(result.clone());
-        
+
         // 更新节点性能指标
         if let Some(node) = self.nodes.write().await.get_mut(&result.node_id) {
             self.update_node_metrics(node, &result);
         }
-        
+
         info!("任务结果已处理: {}", result.task_id);
         Ok(())
     }
@@ -486,16 +491,19 @@ impl EdgeComputingManager {
         // 更新响应时间（移动平均）
         let alpha = 0.1; // 平滑因子
         let current_avg = node.performance_metrics.response_time.as_millis() as f64;
-        let new_avg = alpha * result.execution_time.as_millis() as f64 + (1.0 - alpha) * current_avg;
+        let new_avg =
+            alpha * result.execution_time.as_millis() as f64 + (1.0 - alpha) * current_avg;
         node.performance_metrics.response_time = Duration::from_millis(new_avg as u64);
-        
+
         // 更新错误率
         if !result.success {
-            node.performance_metrics.error_rate = (node.performance_metrics.error_rate + 0.1).min(1.0);
+            node.performance_metrics.error_rate =
+                (node.performance_metrics.error_rate + 0.1).min(1.0);
         } else {
-            node.performance_metrics.error_rate = (node.performance_metrics.error_rate * 0.99).max(0.0);
+            node.performance_metrics.error_rate =
+                (node.performance_metrics.error_rate * 0.99).max(0.0);
         }
-        
+
         node.performance_metrics.last_updated = SystemTime::now();
     }
 
@@ -503,7 +511,7 @@ impl EdgeComputingManager {
     pub async fn sync_data(&self, operation: SyncOperation) -> Result<()> {
         let mut sync_queue = self.data_sync.sync_queue.lock().await;
         sync_queue.push(operation.clone());
-        
+
         // 根据同步策略处理
         match self.data_sync.sync_strategy {
             SyncStrategy::Immediate => {
@@ -522,30 +530,35 @@ impl EdgeComputingManager {
                 self.execute_strong_sync(operation).await?;
             }
         }
-        
+
         Ok(())
     }
 
     /// 立即执行同步
     async fn execute_sync_immediately(&self, operation: SyncOperation) -> Result<()> {
         let nodes = self.nodes.read().await;
-        
+
         for target_node_id in &operation.target_nodes {
             if let Some(node) = nodes.get(target_node_id) {
                 if matches!(node.status, NodeStatus::Online) {
                     // 执行同步操作
-                    self.perform_sync_operation(&operation, target_node_id).await?;
+                    self.perform_sync_operation(&operation, target_node_id)
+                        .await?;
                 } else {
                     warn!("目标节点离线，跳过同步: {}", target_node_id);
                 }
             }
         }
-        
+
         Ok(())
     }
 
     /// 执行同步操作
-    async fn perform_sync_operation(&self, operation: &SyncOperation, target_node_id: &str) -> Result<()> {
+    async fn perform_sync_operation(
+        &self,
+        operation: &SyncOperation,
+        target_node_id: &str,
+    ) -> Result<()> {
         // 模拟同步操作
         match operation.operation_type {
             SyncOperationType::Create => {
@@ -561,7 +574,7 @@ impl EdgeComputingManager {
                 info!("在节点 {} 复制数据: {}", target_node_id, operation.id);
             }
         }
-        
+
         Ok(())
     }
 
@@ -572,7 +585,7 @@ impl EdgeComputingManager {
             tokio::time::sleep(Duration::from_secs(5)).await;
             info!("执行延迟同步: {}", operation.id);
         });
-        
+
         Ok(())
     }
 
@@ -580,22 +593,24 @@ impl EdgeComputingManager {
     async fn execute_strong_sync(&self, operation: SyncOperation) -> Result<()> {
         let nodes = self.nodes.read().await;
         let mut sync_results = Vec::new();
-        
+
         // 向所有目标节点发送同步请求
         for target_node_id in &operation.target_nodes {
             if let Some(node) = nodes.get(target_node_id) {
                 if matches!(node.status, NodeStatus::Online) {
-                    let result = self.perform_sync_operation(&operation, target_node_id).await;
+                    let result = self
+                        .perform_sync_operation(&operation, target_node_id)
+                        .await;
                     sync_results.push(result);
                 }
             }
         }
-        
+
         // 检查所有同步是否成功
         for result in sync_results {
             result?;
         }
-        
+
         info!("强一致性同步完成: {}", operation.id);
         Ok(())
     }
@@ -608,7 +623,7 @@ impl EdgeComputingManager {
         let mut total_cpu = 0.0;
         let mut total_memory = 0.0;
         let mut total_storage = 0.0;
-        
+
         for node in nodes.values() {
             total_nodes += 1;
             if matches!(node.status, NodeStatus::Online) {
@@ -618,7 +633,7 @@ impl EdgeComputingManager {
             total_memory += node.capabilities.memory_gb;
             total_storage += node.capabilities.storage_gb;
         }
-        
+
         EdgeSystemStatus {
             total_nodes,
             online_nodes,
@@ -640,16 +655,16 @@ impl EdgeComputingManager {
         if !self.config.auto_scaling_enabled {
             return Ok(());
         }
-        
+
         let status = self.get_system_status().await;
-        
+
         // 简化的自动扩缩容逻辑
         if status.system_health == SystemHealth::Critical {
             warn!("系统健康状态严重，建议增加边缘节点");
         } else if status.system_health == SystemHealth::Healthy {
             info!("系统健康状态良好");
         }
-        
+
         Ok(())
     }
 }

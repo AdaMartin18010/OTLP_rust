@@ -25,7 +25,7 @@
 pub mod parser;
 pub mod transform;
 
-pub use parser::{ParseError, Statement, Expression};
+pub use parser::{Expression, ParseError, Statement};
 pub use transform::{OtlpTransform, TransformConfig, TransformResult};
 
 /// OTTL 转换错误类型
@@ -33,16 +33,16 @@ pub use transform::{OtlpTransform, TransformConfig, TransformResult};
 pub enum OttlError {
     #[error("解析错误: {0}")]
     Parse(#[from] ParseError),
-    
+
     #[error("求值错误: {0}")]
     Evaluation(String),
-    
+
     #[error("函数错误: {0}")]
     Function(String),
-    
+
     #[error("类型错误: 期望 {expected}, 实际 {actual}")]
     TypeMismatch { expected: String, actual: String },
-    
+
     #[error("上下文错误: {0}")]
     Context(String),
 }

@@ -474,7 +474,11 @@ impl OtlpClient {
     async fn check_initialized(&self) -> Result<()> {
         let is_initialized = self.is_initialized.read().await;
         if !*is_initialized {
-            return Err(OtlpError::Concurrency(crate::error::ConcurrencyError::Deadlock { reason: "Client not initialized".to_string() }));
+            return Err(OtlpError::Concurrency(
+                crate::error::ConcurrencyError::Deadlock {
+                    reason: "Client not initialized".to_string(),
+                },
+            ));
         }
         Ok(())
     }
@@ -483,7 +487,11 @@ impl OtlpClient {
     async fn check_shutdown(&self) -> Result<()> {
         let is_shutdown = self.is_shutdown.read().await;
         if *is_shutdown {
-            return Err(OtlpError::Concurrency(crate::error::ConcurrencyError::Deadlock { reason: "Client is shutdown".to_string() }));
+            return Err(OtlpError::Concurrency(
+                crate::error::ConcurrencyError::Deadlock {
+                    reason: "Client is shutdown".to_string(),
+                },
+            ));
         }
         Ok(())
     }

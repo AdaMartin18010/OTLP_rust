@@ -4,9 +4,9 @@
 
 use futures::future::join_all;
 use otlp::{
+    OtlpClient, OtlpConfig, TelemetryData,
     config::{BatchConfig, Compression, RetryConfig, TransportProtocol},
     data::{LogSeverity, MetricType, StatusCode},
-    OtlpClient, OtlpConfig, TelemetryData,
 };
 use std::time::Duration;
 use tokio::time::{interval, sleep};

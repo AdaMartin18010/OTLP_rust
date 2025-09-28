@@ -1,5 +1,5 @@
 //! 错误监控系统类型定义
-//! 
+//!
 //! 包含错误监控系统所需的所有结构体、枚举和实现
 
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use thiserror::Error;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock, mpsc};
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 

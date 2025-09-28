@@ -2,7 +2,7 @@
 //!
 //! 展示如何使用简化的OTLP客户端API，降低使用复杂度。
 
-use otlp::simple_client::{SimpleOtlpClient, SimpleClientBuilder, LogLevel, SimpleOperation};
+use otlp::simple_client::{LogLevel, SimpleClientBuilder, SimpleOperation, SimpleOtlpClient};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -18,9 +18,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 方式1: 使用最简单的API
     println!("📝 方式1: 最简单的API");
     let client = SimpleOtlpClient::new("http://localhost:4317").await?;
-    
+
     // 发送追踪数据
-    client.trace("simple-operation", 150, true, None::<String>).await?;
+    client
+        .trace("simple-operation", 150, true, None::<String>)
+        .await?;
     println!("✅ 追踪数据发送成功");
 
     // 发送指标数据
@@ -28,7 +30,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✅ 指标数据发送成功");
 
     // 发送日志数据
-    client.log("Simple log message", LogLevel::Info, Some("example")).await?;
+    client
+        .log("Simple log message", LogLevel::Info, Some("example"))
+        .await?;
     println!("✅ 日志数据发送成功");
     println!();
 
@@ -43,13 +47,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     // 发送带错误信息的追踪
-    client.trace("error-operation", 200, false, Some("Connection timeout")).await?;
+    client
+        .trace("error-operation", 200, false, Some("Connection timeout"))
+        .await?;
     println!("✅ 错误追踪数据发送成功");
 
     // 发送不同级别的日志
-    client.log("Debug message", LogLevel::Debug, Some("debug")).await?;
-    client.log("Warning message", LogLevel::Warn, Some("warning")).await?;
-    client.log("Error message", LogLevel::Error, Some("error")).await?;
+    client
+        .log("Debug message", LogLevel::Debug, Some("debug"))
+        .await?;
+    client
+        .log("Warning message", LogLevel::Warn, Some("warning"))
+        .await?;
+    client
+        .log("Error message", LogLevel::Error, Some("error"))
+        .await?;
     println!("✅ 多级别日志发送成功");
     println!();
 
@@ -101,7 +113,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 健康检查
     println!("📝 健康检查");
     let health = client.health_check().await;
-    println!("   健康状态: {}", if health.is_healthy { "✅ 健康" } else { "❌ 不健康" });
+    println!(
+        "   健康状态: {}",
+        if health.is_healthy {
+            "✅ 健康"
+        } else {
+            "❌ 不健康"
+        }
+    );
     println!("   运行时间: {:?}", health.uptime);
     println!("   总请求数: {}", health.total_requests);
     println!("   成功率: {:.2}%", health.success_rate * 100.0);

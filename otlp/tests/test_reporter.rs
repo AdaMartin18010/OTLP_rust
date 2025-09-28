@@ -25,10 +25,10 @@ pub enum TestStatus {
 /// 性能指标
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct PerformanceMetrics {
-    pub throughput: f64,        // 每秒处理的数据量
-    pub latency: Duration,      // 平均延迟
-    pub memory_usage: usize,    // 内存使用量（字节）
-    pub cpu_usage: f64,         // CPU使用率（百分比）
+    pub throughput: f64,     // 每秒处理的数据量
+    pub latency: Duration,   // 平均延迟
+    pub memory_usage: usize, // 内存使用量（字节）
+    pub cpu_usage: f64,      // CPU使用率（百分比）
 }
 
 /// 测试报告
@@ -80,48 +80,70 @@ impl TestReporter {
             start_time: SystemTime::now(),
         }
     }
-    
+
     /// 添加测试结果
     pub fn add_result(&mut self, result: TestResult) {
         self.results.push(result);
     }
-    
+
     /// 生成测试报告
     pub fn generate_report(&self, test_suite: &str) -> TestReport {
         let end_time = SystemTime::now();
         let total_duration = end_time.duration_since(self.start_time).unwrap_or_default();
-        
+
         let total_tests = self.results.len();
-        let passed_tests = self.results.iter().filter(|r| r.status == TestStatus::Passed).count();
-        let failed_tests = self.results.iter().filter(|r| r.status == TestStatus::Failed).count();
-        let skipped_tests = self.results.iter().filter(|r| r.status == TestStatus::Skipped).count();
-        let timeout_tests = self.results.iter().filter(|r| r.status == TestStatus::Timeout).count();
-        
+        let passed_tests = self
+            .results
+            .iter()
+            .filter(|r| r.status == TestStatus::Passed)
+            .count();
+        let failed_tests = self
+            .results
+            .iter()
+            .filter(|r| r.status == TestStatus::Failed)
+            .count();
+        let skipped_tests = self
+            .results
+            .iter()
+            .filter(|r| r.status == TestStatus::Skipped)
+            .count();
+        let timeout_tests = self
+            .results
+            .iter()
+            .filter(|r| r.status == TestStatus::Timeout)
+            .count();
+
         let success_rate = if total_tests > 0 {
             (passed_tests as f64 / total_tests as f64) * 100.0
         } else {
             0.0
         };
-        
+
         let average_duration = if total_tests > 0 {
-            let total_duration_ms: u64 = self.results.iter().map(|r| r.duration.as_millis() as u64).sum();
+            let total_duration_ms: u64 = self
+                .results
+                .iter()
+                .map(|r| r.duration.as_millis() as u64)
+                .sum();
             Duration::from_millis(total_duration_ms / total_tests as u64)
         } else {
             Duration::default()
         };
-        
-        let slowest_test = self.results
+
+        let slowest_test = self
+            .results
             .iter()
             .max_by_key(|r| r.duration)
             .map(|r| r.name.clone());
-        
-        let fastest_test = self.results
+
+        let fastest_test = self
+            .results
             .iter()
             .min_by_key(|r| r.duration)
             .map(|r| r.name.clone());
-        
+
         let performance_summary = self.generate_performance_summary();
-        
+
         let summary = TestSummary {
             success_rate,
             average_duration,
@@ -129,7 +151,7 @@ impl TestReporter {
             fastest_test,
             performance_summary,
         };
-        
+
         TestReport {
             test_suite: test_suite.to_string(),
             start_time: self.start_time,
@@ -144,27 +166,41 @@ impl TestReporter {
             summary,
         }
     }
-    
+
     /// 生成性能摘要
     fn generate_performance_summary(&self) -> Option<PerformanceSummary> {
-        let performance_results: Vec<&PerformanceMetrics> = self.results
+        let performance_results: Vec<&PerformanceMetrics> = self
+            .results
             .iter()
             .filter_map(|r| r.performance_metrics.as_ref())
             .collect();
-        
+
         if performance_results.is_empty() {
             return None;
         }
-        
-        let average_throughput = performance_results.iter().map(|m| m.throughput).sum::<f64>() / performance_results.len() as f64;
-        
-        let average_latency_ms = performance_results.iter().map(|m| m.latency.as_millis() as u64).sum::<u64>() / performance_results.len() as u64;
+
+        let average_throughput = performance_results
+            .iter()
+            .map(|m| m.throughput)
+            .sum::<f64>()
+            / performance_results.len() as f64;
+
+        let average_latency_ms = performance_results
+            .iter()
+            .map(|m| m.latency.as_millis() as u64)
+            .sum::<u64>()
+            / performance_results.len() as u64;
         let average_latency = Duration::from_millis(average_latency_ms);
-        
-        let peak_memory_usage = performance_results.iter().map(|m| m.memory_usage).max().unwrap_or(0);
-        
-        let average_cpu_usage = performance_results.iter().map(|m| m.cpu_usage).sum::<f64>() / performance_results.len() as f64;
-        
+
+        let peak_memory_usage = performance_results
+            .iter()
+            .map(|m| m.memory_usage)
+            .max()
+            .unwrap_or(0);
+
+        let average_cpu_usage = performance_results.iter().map(|m| m.cpu_usage).sum::<f64>()
+            / performance_results.len() as f64;
+
         Some(PerformanceSummary {
             average_throughput,
             average_latency,
@@ -172,12 +208,13 @@ impl TestReporter {
             average_cpu_usage,
         })
     }
-    
+
     /// 生成HTML报告
     pub fn generate_html_report(&self, test_suite: &str) -> String {
         let report = self.generate_report(test_suite);
-        
-        format!(r#"
+
+        format!(
+            r#"
 <!DOCTYPE html>
 <html>
 <head>
@@ -235,26 +272,26 @@ impl TestReporter {
 </body>
 </html>
         "#,
-        test_suite,
-        test_suite,
-        format_time(report.start_time),
-        format_time(report.end_time),
-        report.total_duration,
-        report.total_tests,
-        report.passed_tests,
-        (report.passed_tests as f64 / report.total_tests as f64) * 100.0,
-        report.failed_tests,
-        (report.failed_tests as f64 / report.total_tests as f64) * 100.0,
-        report.skipped_tests,
-        (report.skipped_tests as f64 / report.total_tests as f64) * 100.0,
-        report.timeout_tests,
-        (report.timeout_tests as f64 / report.total_tests as f64) * 100.0,
-        report.summary.average_duration,
-        generate_performance_html(&report.summary.performance_summary),
-        generate_results_html(&report.results)
+            test_suite,
+            test_suite,
+            format_time(report.start_time),
+            format_time(report.end_time),
+            report.total_duration,
+            report.total_tests,
+            report.passed_tests,
+            (report.passed_tests as f64 / report.total_tests as f64) * 100.0,
+            report.failed_tests,
+            (report.failed_tests as f64 / report.total_tests as f64) * 100.0,
+            report.skipped_tests,
+            (report.skipped_tests as f64 / report.total_tests as f64) * 100.0,
+            report.timeout_tests,
+            (report.timeout_tests as f64 / report.total_tests as f64) * 100.0,
+            report.summary.average_duration,
+            generate_performance_html(&report.summary.performance_summary),
+            generate_results_html(&report.results)
         )
     }
-    
+
     /// 生成JSON报告
     pub fn generate_json_report(&self, test_suite: &str) -> String {
         let report = self.generate_report(test_suite);
@@ -270,58 +307,70 @@ impl Default for TestReporter {
 
 /// 格式化时间
 fn format_time(time: SystemTime) -> String {
-    use std::time::{UNIX_EPOCH};
-    
+    use std::time::UNIX_EPOCH;
+
     let duration = time.duration_since(UNIX_EPOCH).unwrap_or_default();
     let secs = duration.as_secs();
     let nanos = duration.subsec_nanos();
-    
+
     format!("{}.{:09}", secs, nanos)
 }
 
 /// 生成性能HTML
 fn generate_performance_html(performance: &Option<PerformanceSummary>) -> String {
     match performance {
-        Some(perf) => format!(r#"
+        Some(perf) => format!(
+            r#"
             <ul>
                 <li>平均吞吐量: {:.2} 条/秒</li>
                 <li>平均延迟: {:?}</li>
                 <li>峰值内存使用: {} 字节</li>
                 <li>平均CPU使用率: {:.1}%</li>
             </ul>
-        "#, perf.average_throughput, perf.average_latency, perf.peak_memory_usage, perf.average_cpu_usage),
+        "#,
+            perf.average_throughput,
+            perf.average_latency,
+            perf.peak_memory_usage,
+            perf.average_cpu_usage
+        ),
         None => "<p>无性能数据</p>".to_string(),
     }
 }
 
 /// 生成结果HTML
 fn generate_results_html(results: &[TestResult]) -> String {
-    results.iter().map(|result| {
-        let status_class = match result.status {
-            TestStatus::Passed => "status-passed",
-            TestStatus::Failed => "status-failed",
-            TestStatus::Skipped => "status-skipped",
-            TestStatus::Timeout => "status-timeout",
-        };
-        
-        let status_text = match result.status {
-            TestStatus::Passed => "通过",
-            TestStatus::Failed => "失败",
-            TestStatus::Skipped => "跳过",
-            TestStatus::Timeout => "超时",
-        };
-        
-        let error_msg = result.error_message.as_deref().unwrap_or("");
-        
-        format!(r#"
+    results
+        .iter()
+        .map(|result| {
+            let status_class = match result.status {
+                TestStatus::Passed => "status-passed",
+                TestStatus::Failed => "status-failed",
+                TestStatus::Skipped => "status-skipped",
+                TestStatus::Timeout => "status-timeout",
+            };
+
+            let status_text = match result.status {
+                TestStatus::Passed => "通过",
+                TestStatus::Failed => "失败",
+                TestStatus::Skipped => "跳过",
+                TestStatus::Timeout => "超时",
+            };
+
+            let error_msg = result.error_message.as_deref().unwrap_or("");
+
+            format!(
+                r#"
             <tr>
                 <td>{}</td>
                 <td class="{}">{}</td>
                 <td>{:?}</td>
                 <td>{}</td>
             </tr>
-        "#, result.name, status_class, status_text, result.duration, error_msg)
-    }).collect()
+        "#,
+                result.name, status_class, status_text, result.duration, error_msg
+            )
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -331,7 +380,7 @@ mod tests {
     #[test]
     fn test_test_reporter() {
         let mut reporter = TestReporter::new();
-        
+
         let result = TestResult {
             name: "test_example".to_string(),
             status: TestStatus::Passed,
@@ -344,9 +393,9 @@ mod tests {
                 cpu_usage: 50.0,
             }),
         };
-        
+
         reporter.add_result(result);
-        
+
         let report = reporter.generate_report("test_suite");
         assert_eq!(report.total_tests, 1);
         assert_eq!(report.passed_tests, 1);

@@ -142,8 +142,11 @@
 //! - 定期进行故障演练
 //! - 持续优化和改进
 
-use std::future::Future;
+use opentelemetry::global;
+use opentelemetry::metrics::{Counter, Histogram};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::future::Future;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
@@ -151,9 +154,6 @@ use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio::time::{sleep, timeout};
 use tracing::{error, info, warn};
-use std::collections::HashMap;
-use opentelemetry::global;
-use opentelemetry::metrics::{Counter, Histogram};
 
 /// 弹性配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -693,7 +693,7 @@ pub struct CircuitBreakerMetrics {
 /// 熔断器
 #[derive(Clone)]
 /// 优化的熔断器实现，利用Rust 1.90的新特性
-/// 
+///
 /// 改进点：
 /// 1. 使用RwLock替代Mutex提高并发性能
 /// 2. 减少锁的粒度，避免锁竞争
@@ -714,7 +714,7 @@ pub struct CircuitBreaker {
 
 impl CircuitBreaker {
     /// 创建新的优化熔断器实例
-    /// 
+    ///
     /// 使用Rust 1.90的新特性优化性能：
     /// - 原子操作替代互斥锁
     /// - 读写锁提高并发性能
@@ -736,7 +736,7 @@ impl CircuitBreaker {
     }
 
     /// 优化的熔断器调用方法
-    /// 
+    ///
     /// 使用Rust 1.90的异步闭包特性和优化的锁机制
     pub async fn call<F, Fut, R>(&self, f: F) -> Result<R, CircuitBreakerError>
     where
@@ -745,7 +745,7 @@ impl CircuitBreaker {
         R: Send,
     {
         let start_time = Instant::now();
-        
+
         // 使用读锁提高并发性能
         let current_state = {
             let state = self.state.read().await;
@@ -756,15 +756,9 @@ impl CircuitBreaker {
         self.update_metrics_start().await;
 
         let result = match current_state {
-            CircuitBreakerState::Closed => {
-                self.execute_call(f).await
-            }
-            CircuitBreakerState::Open => {
-                self.check_recovery_time().await.map(|_| unreachable!())
-            }
-            CircuitBreakerState::HalfOpen => {
-                self.execute_half_open_call(f).await
-            }
+            CircuitBreakerState::Closed => self.execute_call(f).await,
+            CircuitBreakerState::Open => self.check_recovery_time().await.map(|_| unreachable!()),
+            CircuitBreakerState::HalfOpen => self.execute_half_open_call(f).await,
         };
 
         // 更新性能指标
@@ -783,7 +777,7 @@ impl CircuitBreaker {
     /// 更新指标结束
     async fn update_metrics_end(&self, duration: Duration, success: bool) {
         let mut metrics = self.metrics.write().await;
-        
+
         if success {
             metrics.successful_calls += 1;
         } else {
@@ -793,7 +787,8 @@ impl CircuitBreaker {
         // 更新平均响应时间
         let total_calls = metrics.total_calls as f64;
         let current_avg = metrics.average_response_time.as_nanos() as f64;
-        let new_avg = (current_avg * (total_calls - 1.0) + duration.as_nanos() as f64) / total_calls;
+        let new_avg =
+            (current_avg * (total_calls - 1.0) + duration.as_nanos() as f64) / total_calls;
         metrics.average_response_time = Duration::from_nanos(new_avg as u64);
 
         // 更新最大响应时间
@@ -863,7 +858,7 @@ impl CircuitBreaker {
             let last_failure_time = self.last_failure_time.read().await;
             *last_failure_time
         };
-        
+
         if let Some(last_failure) = last_failure_time {
             if last_failure.elapsed() >= self.config.recovery_timeout {
                 self.transition_to_half_open().await;
@@ -910,7 +905,7 @@ impl CircuitBreaker {
     async fn transition_to_open(&self) {
         let mut state = self.state.write().await;
         *state = CircuitBreakerState::Open;
-        
+
         // 更新指标
         let mut metrics = self.metrics.write().await;
         metrics.circuit_breaks += 1;
@@ -929,7 +924,7 @@ impl CircuitBreaker {
 
         // 使用原子操作重置半开调用计数
         self.half_open_calls.store(0, Ordering::Relaxed);
-        
+
         // 更新指标
         let mut metrics = self.metrics.write().await;
         metrics.last_state_change = Some(Instant::now());
@@ -942,7 +937,7 @@ impl CircuitBreaker {
         // 使用原子操作重置计数
         self.failure_count.store(0, Ordering::Relaxed);
         self.half_open_calls.store(0, Ordering::Relaxed);
-        
+
         // 更新指标
         let mut metrics = self.metrics.write().await;
         metrics.last_state_change = Some(Instant::now());
@@ -1086,7 +1081,6 @@ pub enum DegradationType {
     ReducedFunctionality,
     QueueMode,
 }
-
 
 /// 比较操作符
 #[derive(Debug, Clone)]
@@ -1299,9 +1293,12 @@ impl GracefulDegradationManager {
     }
 
     /// 检查是否需要降级
-    pub async fn check_degradation_conditions(&self, service_name: &str) -> Result<Option<DegradationConfig>, anyhow::Error> {
+    pub async fn check_degradation_conditions(
+        &self,
+        service_name: &str,
+    ) -> Result<Option<DegradationConfig>, anyhow::Error> {
         let configs = self.degradation_configs.read().await;
-        
+
         if let Some(config) = configs.get(service_name) {
             for condition in &config.trigger_conditions {
                 if self.evaluate_condition(condition).await? {
@@ -1309,12 +1306,16 @@ impl GracefulDegradationManager {
                 }
             }
         }
-        
+
         Ok(None)
     }
 
     /// 触发降级
-    pub async fn trigger_degradation(&self, config: DegradationConfig, reason: String) -> Result<(), anyhow::Error> {
+    pub async fn trigger_degradation(
+        &self,
+        config: DegradationConfig,
+        reason: String,
+    ) -> Result<(), anyhow::Error> {
         let active_degradation = ActiveDegradation {
             config: config.clone(),
             start_time: Instant::now(),
@@ -1332,14 +1333,17 @@ impl GracefulDegradationManager {
 
         self.metrics.degradations_triggered.add(1, &[]);
         info!("降级已触发: {}", config.service_name);
-        
+
         Ok(())
     }
 
     /// 评估条件
     #[allow(dead_code)]
     #[allow(unused_variables)]
-    async fn evaluate_condition(&self, condition: &TriggerCondition) -> Result<bool, anyhow::Error> {
+    async fn evaluate_condition(
+        &self,
+        condition: &TriggerCondition,
+    ) -> Result<bool, anyhow::Error> {
         match condition {
             TriggerCondition::HighErrorRate { threshold } => {
                 // 模拟错误率检查
@@ -1398,31 +1402,38 @@ impl GracefulDegradationManager {
     /// 检查恢复条件
     #[allow(dead_code)]
     #[allow(unused_variables)]
-    pub async fn check_recovery_conditions(&self, service_name: &str) -> Result<bool, anyhow::Error> {
+    pub async fn check_recovery_conditions(
+        &self,
+        service_name: &str,
+    ) -> Result<bool, anyhow::Error> {
         let active_degradations = self.active_degradations.read().await;
-        
+
         if let Some(active_degradation) = active_degradations.get(service_name) {
             for condition in &active_degradation.config.recovery_conditions {
-                if self.evaluate_condition(&TriggerCondition::Custom {
-                    name: condition.metric_name.clone(),
-                    condition: format!("{} {} {}", 
-                        match condition.operator {
-                            ComparisonOperator::GreaterThan => ">",
-                            ComparisonOperator::LessThan => "<",
-                            ComparisonOperator::Equal => "==",
-                            ComparisonOperator::NotEqual => "!=",
-                            ComparisonOperator::GreaterThanOrEqual => ">=",
-                            ComparisonOperator::LessThanOrEqual => "<=",
-                        },
-                        condition.threshold,
-                        condition.duration.as_secs()
-                    ),
-                }).await? {
+                if self
+                    .evaluate_condition(&TriggerCondition::Custom {
+                        name: condition.metric_name.clone(),
+                        condition: format!(
+                            "{} {} {}",
+                            match condition.operator {
+                                ComparisonOperator::GreaterThan => ">",
+                                ComparisonOperator::LessThan => "<",
+                                ComparisonOperator::Equal => "==",
+                                ComparisonOperator::NotEqual => "!=",
+                                ComparisonOperator::GreaterThanOrEqual => ">=",
+                                ComparisonOperator::LessThanOrEqual => "<=",
+                            },
+                            condition.threshold,
+                            condition.duration.as_secs()
+                        ),
+                    })
+                    .await?
+                {
                     return Ok(true);
                 }
             }
         }
-        
+
         Ok(false)
     }
 
@@ -1430,17 +1441,22 @@ impl GracefulDegradationManager {
     #[allow(dead_code)]
     pub async fn recover_service(&self, service_name: &str) -> Result<(), anyhow::Error> {
         let mut active_degradations = self.active_degradations.write().await;
-        
+
         if let Some(active_degradation) = active_degradations.get_mut(service_name) {
             active_degradation.status = DegradationStatus::Recovered;
-            
+
             let recovery_time = active_degradation.start_time.elapsed();
-            self.metrics.recovery_time.record(recovery_time.as_secs_f64(), &[]);
+            self.metrics
+                .recovery_time
+                .record(recovery_time.as_secs_f64(), &[]);
             self.metrics.degradations_recovered.add(1, &[]);
-            
-            info!("服务已恢复: {}, 恢复时间: {:?}", service_name, recovery_time);
+
+            info!(
+                "服务已恢复: {}, 恢复时间: {:?}",
+                service_name, recovery_time
+            );
         }
-        
+
         Ok(())
     }
 
@@ -1449,7 +1465,9 @@ impl GracefulDegradationManager {
     #[allow(unused_variables)]
     pub async fn get_degradation_status(&self, service_name: &str) -> Option<DegradationStatus> {
         let active_degradations = self.active_degradations.read().await;
-        active_degradations.get(service_name).map(|d| d.status.clone())
+        active_degradations
+            .get(service_name)
+            .map(|d| d.status.clone())
     }
 
     /// 获取所有活跃降级

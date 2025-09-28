@@ -24,8 +24,12 @@ async fn test_error_handling_integration() {
         endpoint: "http://invalid:4317".to_string(),
         reason: "Connection refused".to_string(),
     };
-    let export_error = ExportError::Failed { reason: "fail".to_string() };
-    let processing_error = ProcessingError::Batch { reason: "empty".to_string() };
+    let export_error = ExportError::Failed {
+        reason: "fail".to_string(),
+    };
+    let processing_error = ProcessingError::Batch {
+        reason: "empty".to_string(),
+    };
 
     let errors = vec![
         ("transport", OtlpError::from(transport_error)),

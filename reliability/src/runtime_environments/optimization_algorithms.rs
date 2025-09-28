@@ -5,27 +5,36 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 //use std::time::Duration;
-use std::collections::HashMap;
+use super::{EnvironmentCapabilities, RuntimeEnvironment};
 use crate::error_handling::UnifiedError;
-use super::{RuntimeEnvironment, EnvironmentCapabilities};
+use std::collections::HashMap;
 
 /// 优化算法接口
 #[async_trait]
 pub trait OptimizationAlgorithm: Send + Sync {
     /// 获取算法名称
     fn name(&self) -> &str;
-    
+
     /// 获取算法描述
     fn description(&self) -> &str;
-    
+
     /// 执行优化
-    async fn optimize(&mut self, context: &OptimizationContext) -> Result<OptimizationResult, UnifiedError>;
-    
+    async fn optimize(
+        &mut self,
+        context: &OptimizationContext,
+    ) -> Result<OptimizationResult, UnifiedError>;
+
     /// 获取优化建议
-    async fn get_optimization_suggestions(&self, context: &OptimizationContext) -> Result<Vec<OptimizationSuggestion>, UnifiedError>;
-    
+    async fn get_optimization_suggestions(
+        &self,
+        context: &OptimizationContext,
+    ) -> Result<Vec<OptimizationSuggestion>, UnifiedError>;
+
     /// 验证优化效果
-    async fn validate_optimization(&self, result: &OptimizationResult) -> Result<bool, UnifiedError>;
+    async fn validate_optimization(
+        &self,
+        result: &OptimizationResult,
+    ) -> Result<bool, UnifiedError>;
 }
 
 /// 优化上下文
@@ -258,7 +267,10 @@ impl OptimizationAlgorithm for EmbeddedOptimizationAlgorithm {
         &self.description
     }
 
-    async fn optimize(&mut self, context: &OptimizationContext) -> Result<OptimizationResult, UnifiedError> {
+    async fn optimize(
+        &mut self,
+        context: &OptimizationContext,
+    ) -> Result<OptimizationResult, UnifiedError> {
         let mut suggestions = Vec::new();
         let mut expected_improvements = HashMap::new();
 
@@ -302,7 +314,10 @@ impl OptimizationAlgorithm for EmbeddedOptimizationAlgorithm {
         })
     }
 
-    async fn get_optimization_suggestions(&self, context: &OptimizationContext) -> Result<Vec<OptimizationSuggestion>, UnifiedError> {
+    async fn get_optimization_suggestions(
+        &self,
+        context: &OptimizationContext,
+    ) -> Result<Vec<OptimizationSuggestion>, UnifiedError> {
         let mut suggestions = Vec::new();
 
         // 基于环境能力提供建议
@@ -331,9 +346,15 @@ impl OptimizationAlgorithm for EmbeddedOptimizationAlgorithm {
         Ok(suggestions)
     }
 
-    async fn validate_optimization(&self, result: &OptimizationResult) -> Result<bool, UnifiedError> {
+    async fn validate_optimization(
+        &self,
+        result: &OptimizationResult,
+    ) -> Result<bool, UnifiedError> {
         // 验证优化结果的合理性
-        Ok(result.expected_improvements.values().all(|&v| v.abs() <= 100.0))
+        Ok(result
+            .expected_improvements
+            .values()
+            .all(|&v| v.abs() <= 100.0))
     }
 }
 
@@ -362,7 +383,10 @@ impl OptimizationAlgorithm for ContainerOptimizationAlgorithm {
         &self.description
     }
 
-    async fn optimize(&mut self, context: &OptimizationContext) -> Result<OptimizationResult, UnifiedError> {
+    async fn optimize(
+        &mut self,
+        context: &OptimizationContext,
+    ) -> Result<OptimizationResult, UnifiedError> {
         let mut suggestions = Vec::new();
         let mut expected_improvements = HashMap::new();
 
@@ -380,7 +404,9 @@ impl OptimizationAlgorithm for ContainerOptimizationAlgorithm {
         }
 
         // 网络优化
-        if context.current_resource_usage.network_rx_rate > 100.0 || context.current_resource_usage.network_tx_rate > 100.0 {
+        if context.current_resource_usage.network_rx_rate > 100.0
+            || context.current_resource_usage.network_tx_rate > 100.0
+        {
             suggestions.push(OptimizationSuggestion {
                 suggestion_type: SuggestionType::NetworkOptimization,
                 description: "优化网络配置，使用连接池".to_string(),
@@ -406,7 +432,10 @@ impl OptimizationAlgorithm for ContainerOptimizationAlgorithm {
         })
     }
 
-    async fn get_optimization_suggestions(&self, context: &OptimizationContext) -> Result<Vec<OptimizationSuggestion>, UnifiedError> {
+    async fn get_optimization_suggestions(
+        &self,
+        context: &OptimizationContext,
+    ) -> Result<Vec<OptimizationSuggestion>, UnifiedError> {
         let mut suggestions = Vec::new();
 
         // 容器特定建议
@@ -433,9 +462,15 @@ impl OptimizationAlgorithm for ContainerOptimizationAlgorithm {
         Ok(suggestions)
     }
 
-    async fn validate_optimization(&self, result: &OptimizationResult) -> Result<bool, UnifiedError> {
+    async fn validate_optimization(
+        &self,
+        result: &OptimizationResult,
+    ) -> Result<bool, UnifiedError> {
         // 验证容器优化结果
-        Ok(result.expected_improvements.values().all(|&v| v.abs() <= 50.0))
+        Ok(result
+            .expected_improvements
+            .values()
+            .all(|&v| v.abs() <= 50.0))
     }
 }
 
@@ -464,7 +499,10 @@ impl OptimizationAlgorithm for WebAssemblyOptimizationAlgorithm {
         &self.description
     }
 
-    async fn optimize(&mut self, context: &OptimizationContext) -> Result<OptimizationResult, UnifiedError> {
+    async fn optimize(
+        &mut self,
+        context: &OptimizationContext,
+    ) -> Result<OptimizationResult, UnifiedError> {
         let mut suggestions = Vec::new();
         let mut expected_improvements = HashMap::new();
 
@@ -507,7 +545,10 @@ impl OptimizationAlgorithm for WebAssemblyOptimizationAlgorithm {
     }
 
     #[allow(unused_variables)]
-    async fn get_optimization_suggestions(&self, context: &OptimizationContext) -> Result<Vec<OptimizationSuggestion>, UnifiedError> {
+    async fn get_optimization_suggestions(
+        &self,
+        context: &OptimizationContext,
+    ) -> Result<Vec<OptimizationSuggestion>, UnifiedError> {
         let mut suggestions = Vec::new();
 
         // WASM特定建议
@@ -523,9 +564,15 @@ impl OptimizationAlgorithm for WebAssemblyOptimizationAlgorithm {
         Ok(suggestions)
     }
 
-    async fn validate_optimization(&self, result: &OptimizationResult) -> Result<bool, UnifiedError> {
+    async fn validate_optimization(
+        &self,
+        result: &OptimizationResult,
+    ) -> Result<bool, UnifiedError> {
         // 验证WASM优化结果
-        Ok(result.expected_improvements.values().all(|&v| v.abs() <= 100.0))
+        Ok(result
+            .expected_improvements
+            .values()
+            .all(|&v| v.abs() <= 100.0))
     }
 }
 
@@ -536,24 +583,20 @@ impl OptimizationAlgorithmFactory {
     /// 根据环境类型创建优化算法
     pub fn create_algorithm(environment: RuntimeEnvironment) -> Box<dyn OptimizationAlgorithm> {
         match environment {
-            RuntimeEnvironment::EmbeddedBareMetal => {
-                Box::new(EmbeddedOptimizationAlgorithm::new())
-            },
-            RuntimeEnvironment::Container => {
-                Box::new(ContainerOptimizationAlgorithm::new())
-            },
-            RuntimeEnvironment::WebAssembly => {
-                Box::new(WebAssemblyOptimizationAlgorithm::new())
-            },
+            RuntimeEnvironment::EmbeddedBareMetal => Box::new(EmbeddedOptimizationAlgorithm::new()),
+            RuntimeEnvironment::Container => Box::new(ContainerOptimizationAlgorithm::new()),
+            RuntimeEnvironment::WebAssembly => Box::new(WebAssemblyOptimizationAlgorithm::new()),
             _ => {
                 // 默认使用容器优化算法
                 Box::new(ContainerOptimizationAlgorithm::new())
-            },
+            }
         }
     }
 
     /// 根据环境能力创建自定义优化算法
-    pub fn create_custom_algorithm(capabilities: &EnvironmentCapabilities) -> Box<dyn OptimizationAlgorithm> {
+    pub fn create_custom_algorithm(
+        capabilities: &EnvironmentCapabilities,
+    ) -> Box<dyn OptimizationAlgorithm> {
         if !capabilities.supports_multiprocessing && !capabilities.supports_network {
             // 嵌入式环境
             Box::new(EmbeddedOptimizationAlgorithm::new())
@@ -575,7 +618,7 @@ mod tests {
     async fn test_embedded_optimization_algorithm() {
         let mut algorithm = EmbeddedOptimizationAlgorithm::new();
         assert_eq!(algorithm.name(), "EmbeddedOptimization");
-        
+
         let context = create_test_context(RuntimeEnvironment::EmbeddedBareMetal);
         let result = algorithm.optimize(&context).await.unwrap();
         assert_eq!(result.algorithm_name, "EmbeddedOptimization");
@@ -585,7 +628,7 @@ mod tests {
     async fn test_container_optimization_algorithm() {
         let mut algorithm = ContainerOptimizationAlgorithm::new();
         assert_eq!(algorithm.name(), "ContainerOptimization");
-        
+
         let context = create_test_context(RuntimeEnvironment::Container);
         let result = algorithm.optimize(&context).await.unwrap();
         assert_eq!(result.algorithm_name, "ContainerOptimization");
@@ -595,7 +638,7 @@ mod tests {
     async fn test_wasm_optimization_algorithm() {
         let mut algorithm = WebAssemblyOptimizationAlgorithm::new();
         assert_eq!(algorithm.name(), "WebAssemblyOptimization");
-        
+
         let context = create_test_context(RuntimeEnvironment::WebAssembly);
         let result = algorithm.optimize(&context).await.unwrap();
         assert_eq!(result.algorithm_name, "WebAssemblyOptimization");
@@ -603,7 +646,8 @@ mod tests {
 
     #[test]
     fn test_optimization_algorithm_factory() {
-        let algorithm = OptimizationAlgorithmFactory::create_algorithm(RuntimeEnvironment::EmbeddedBareMetal);
+        let algorithm =
+            OptimizationAlgorithmFactory::create_algorithm(RuntimeEnvironment::EmbeddedBareMetal);
         assert_eq!(algorithm.name(), "EmbeddedOptimization");
     }
 

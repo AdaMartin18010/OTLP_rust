@@ -35,11 +35,13 @@ prost-types = { workspace = true }
 # 并发和同步
 parking_lot = { workspace = true }
 crossbeam = { workspace = true }
+dashmap = "6.1"
 
 # 压缩算法
 flate2 = "1.0"
 brotli = "8.0.2"
 zstd = "0.13"
+lz4_flex = "0.11"
 
 # 异步trait
 async-trait = { workspace = true, optional = true }
@@ -83,9 +85,6 @@ warp = { version = "0.4.2", features = ["server"] }
 name = "performance_benchmarks"
 harness = false
 
-[[bench]]
-name = "advanced_performance_benchmarks"
-harness = false
 
 [[bench]]
 name = "extended_simd_benchmarks"

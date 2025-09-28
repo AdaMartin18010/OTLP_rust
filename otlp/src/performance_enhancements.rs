@@ -6,16 +6,16 @@
 //! - 优化的内存管理
 //! - 并发性能优化
 
+use anyhow::Result;
+use std::collections::VecDeque;
 use std::future::Future;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::collections::VecDeque;
 use tokio::sync::{RwLock, Semaphore};
 use tokio::time::{Duration, Instant};
-use anyhow::Result;
 
 /// 高性能异步生成器
-/// 
+///
 /// 利用Rust 1.90的生成器特性实现高效的数据流处理
 pub struct AsyncGenerator<T> {
     items: VecDeque<T>,
@@ -54,7 +54,7 @@ impl<T> AsyncGenerator<T> {
 }
 
 /// 高性能批处理器
-/// 
+///
 /// 使用Rust 1.90的优化特性实现高效的批处理
 #[allow(dead_code)]
 #[allow(unused_variables)]
@@ -94,7 +94,7 @@ impl<T: Send + Sync + Clone + 'static> HighPerformanceBatchProcessor<T> {
     pub async fn add_item(&self, item: T) -> Result<()> {
         let mut current_batch = self.current_batch.write().await;
         current_batch.push(item);
-        
+
         // 更新指标
         self.metrics.total_items.fetch_add(1, Ordering::Relaxed);
         self.metrics.queue_size.fetch_add(1, Ordering::Relaxed);
@@ -103,7 +103,7 @@ impl<T: Send + Sync + Clone + 'static> HighPerformanceBatchProcessor<T> {
         if current_batch.len() >= self.batch_size {
             let batch = std::mem::replace(&mut *current_batch, Vec::with_capacity(self.batch_size));
             drop(current_batch);
-            
+
             self.create_batch(batch).await;
         }
 
@@ -113,16 +113,24 @@ impl<T: Send + Sync + Clone + 'static> HighPerformanceBatchProcessor<T> {
     /// 创建新批次
     async fn create_batch(&self, batch: Vec<T>) {
         let start_time = Instant::now();
-        
+
         // 更新指标
         self.metrics.total_batches.fetch_add(1, Ordering::Relaxed);
-        self.metrics.queue_size.fetch_sub(batch.len(), Ordering::Relaxed);
-        
+        self.metrics
+            .queue_size
+            .fetch_sub(batch.len(), Ordering::Relaxed);
+
         // 计算平均批次大小
         let total_batches = self.metrics.total_batches.load(Ordering::Relaxed);
         let total_items = self.metrics.total_items.load(Ordering::Relaxed);
-        let avg_size = if total_batches > 0 { total_items / total_batches } else { 0 };
-        self.metrics.average_batch_size.store(avg_size as usize, Ordering::Relaxed);
+        let avg_size = if total_batches > 0 {
+            total_items / total_batches
+        } else {
+            0
+        };
+        self.metrics
+            .average_batch_size
+            .store(avg_size as usize, Ordering::Relaxed);
 
         // 添加到批次队列
         {
@@ -132,7 +140,9 @@ impl<T: Send + Sync + Clone + 'static> HighPerformanceBatchProcessor<T> {
 
         // 更新处理时间
         let processing_time = start_time.elapsed().as_nanos() as u64;
-        self.metrics.processing_time.fetch_add(processing_time, Ordering::Relaxed);
+        self.metrics
+            .processing_time
+            .fetch_add(processing_time, Ordering::Relaxed);
     }
 
     /// 获取下一个批次
@@ -150,7 +160,7 @@ impl<T: Send + Sync + Clone + 'static> HighPerformanceBatchProcessor<T> {
 
         let batch = std::mem::replace(&mut *current_batch, Vec::with_capacity(self.batch_size));
         drop(current_batch);
-        
+
         self.create_batch(batch.clone()).await;
         Ok(Some(batch))
     }
@@ -161,7 +171,9 @@ impl<T: Send + Sync + Clone + 'static> HighPerformanceBatchProcessor<T> {
             total_batches: self.metrics.total_batches.load(Ordering::Relaxed),
             total_items: self.metrics.total_items.load(Ordering::Relaxed),
             average_batch_size: self.metrics.average_batch_size.load(Ordering::Relaxed),
-            processing_time: Duration::from_nanos(self.metrics.processing_time.load(Ordering::Relaxed)),
+            processing_time: Duration::from_nanos(
+                self.metrics.processing_time.load(Ordering::Relaxed),
+            ),
             queue_size: self.metrics.queue_size.load(Ordering::Relaxed),
         }
     }
@@ -178,7 +190,7 @@ pub struct BatchProcessorMetricsSnapshot {
 }
 
 /// 高性能并发执行器
-/// 
+///
 /// 使用Rust 1.90的优化特性实现高效的并发执行
 pub struct HighPerformanceExecutor {
     semaphore: Arc<Semaphore>,
@@ -213,16 +225,18 @@ impl HighPerformanceExecutor {
     {
         let _permit = self.semaphore.acquire().await.unwrap();
         let start_time = Instant::now();
-        
+
         // 更新指标
         self.metrics.total_tasks.fetch_add(1, Ordering::Relaxed);
         self.metrics.active_tasks.fetch_add(1, Ordering::Relaxed);
 
         let result = task().await;
-        
+
         // 更新指标
         let execution_time = start_time.elapsed().as_nanos() as u64;
-        self.metrics.total_execution_time.fetch_add(execution_time, Ordering::Relaxed);
+        self.metrics
+            .total_execution_time
+            .fetch_add(execution_time, Ordering::Relaxed);
         self.metrics.active_tasks.fetch_sub(1, Ordering::Relaxed);
 
         match &result {
@@ -244,10 +258,13 @@ impl HighPerformanceExecutor {
         Fut: Future<Output = Result<R>> + Send + 'static,
         R: Send + 'static,
     {
-        let futures: Vec<_> = tasks.into_iter().map(|task| {
-            let executor = self.clone();
-            async move { executor.execute(task).await }
-        }).collect();
+        let futures: Vec<_> = tasks
+            .into_iter()
+            .map(|task| {
+                let executor = self.clone();
+                async move { executor.execute(task).await }
+            })
+            .collect();
 
         futures::future::join_all(futures).await
     }
@@ -260,12 +277,16 @@ impl HighPerformanceExecutor {
             failed_tasks: self.metrics.failed_tasks.load(Ordering::Relaxed),
             active_tasks: self.metrics.active_tasks.load(Ordering::Relaxed),
             total_execution_time: Duration::from_nanos(
-                self.metrics.total_execution_time.load(Ordering::Relaxed)
+                self.metrics.total_execution_time.load(Ordering::Relaxed),
             ),
             success_rate: {
                 let total = self.metrics.total_tasks.load(Ordering::Relaxed);
                 let completed = self.metrics.completed_tasks.load(Ordering::Relaxed);
-                if total > 0 { completed as f64 / total as f64 } else { 0.0 }
+                if total > 0 {
+                    completed as f64 / total as f64
+                } else {
+                    0.0
+                }
             },
         }
     }
@@ -292,7 +313,7 @@ pub struct ExecutorMetricsSnapshot {
 }
 
 /// 高性能内存池
-/// 
+///
 /// 使用Rust 1.90的优化特性实现高效的内存管理
 pub struct HighPerformanceMemoryPool<T> {
     pool: Arc<RwLock<Vec<T>>>,
@@ -331,7 +352,9 @@ impl<T: Send + Sync + 'static> HighPerformanceMemoryPool<T> {
             let mut pool = self.pool.write().await;
             if let Some(obj) = pool.pop() {
                 self.metrics.pool_hits.fetch_add(1, Ordering::Relaxed);
-                self.metrics.current_pool_size.fetch_sub(1, Ordering::Relaxed);
+                self.metrics
+                    .current_pool_size
+                    .fetch_sub(1, Ordering::Relaxed);
                 obj
             } else {
                 self.metrics.pool_misses.fetch_add(1, Ordering::Relaxed);
@@ -339,9 +362,16 @@ impl<T: Send + Sync + 'static> HighPerformanceMemoryPool<T> {
             }
         };
 
-        self.metrics.total_allocations.fetch_add(1, Ordering::Relaxed);
-        
-        PooledObject::new(obj, Arc::clone(&self.pool), Arc::clone(&self.metrics), self.max_size)
+        self.metrics
+            .total_allocations
+            .fetch_add(1, Ordering::Relaxed);
+
+        PooledObject::new(
+            obj,
+            Arc::clone(&self.pool),
+            Arc::clone(&self.metrics),
+            self.max_size,
+        )
     }
 
     /// 获取内存池指标
@@ -356,7 +386,11 @@ impl<T: Send + Sync + 'static> HighPerformanceMemoryPool<T> {
                 let hits = self.metrics.pool_hits.load(Ordering::Relaxed);
                 let misses = self.metrics.pool_misses.load(Ordering::Relaxed);
                 let total = hits + misses;
-                if total > 0 { hits as f64 / total as f64 } else { 0.0 }
+                if total > 0 {
+                    hits as f64 / total as f64
+                } else {
+                    0.0
+                }
             },
         }
     }
@@ -371,7 +405,12 @@ pub struct PooledObject<T: Send + Sync + 'static> {
 }
 
 impl<T: Send + Sync + 'static> PooledObject<T> {
-    fn new(object: T, pool: Arc<RwLock<Vec<T>>>, metrics: Arc<MemoryPoolMetrics>, max_size: usize) -> Self {
+    fn new(
+        object: T,
+        pool: Arc<RwLock<Vec<T>>>,
+        metrics: Arc<MemoryPoolMetrics>,
+        max_size: usize,
+    ) -> Self {
         Self {
             object: Some(object),
             pool,
@@ -397,7 +436,7 @@ impl<T: Send + Sync + 'static> Drop for PooledObject<T> {
             let pool = Arc::clone(&self.pool);
             let metrics = Arc::clone(&self.metrics);
             let max_size = self.max_size;
-            
+
             tokio::spawn(async move {
                 let mut pool = pool.write().await;
                 if pool.len() < max_size {
@@ -428,11 +467,11 @@ mod tests {
     #[tokio::test]
     async fn test_async_generator() {
         let mut generator = AsyncGenerator::new(10);
-        
+
         generator.push("item1").await;
         generator.push("item2").await;
         generator.complete();
-        
+
         assert_eq!(generator.next().await, Some("item1"));
         assert_eq!(generator.next().await, Some("item2"));
         assert_eq!(generator.next().await, None);
@@ -441,15 +480,15 @@ mod tests {
     #[tokio::test]
     async fn test_batch_processor() {
         let processor = HighPerformanceBatchProcessor::new(3, Duration::from_millis(100), 10);
-        
+
         for i in 0..5 {
             processor.add_item(i).await.unwrap();
         }
-        
+
         let batch = processor.get_next_batch().await;
         assert!(batch.is_some());
         assert_eq!(batch.unwrap().len(), 3);
-        
+
         let remaining = processor.flush().await.unwrap();
         assert!(remaining.is_some());
         assert_eq!(remaining.unwrap().len(), 2);
@@ -458,14 +497,14 @@ mod tests {
     #[tokio::test]
     async fn test_high_performance_executor() {
         let executor = HighPerformanceExecutor::new(5);
-        
-        let result = executor.execute(|| async {
-            Ok::<i32, anyhow::Error>(42)
-        }).await;
-        
+
+        let result = executor
+            .execute(|| async { Ok::<i32, anyhow::Error>(42) })
+            .await;
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 42);
-        
+
         let metrics = executor.get_metrics();
         assert_eq!(metrics.total_tasks, 1);
         assert_eq!(metrics.completed_tasks, 1);
@@ -475,18 +514,18 @@ mod tests {
     #[tokio::test]
     async fn test_memory_pool() {
         let pool = HighPerformanceMemoryPool::new(|| String::with_capacity(1024), 10);
-        
+
         let obj1 = pool.acquire().await;
         assert_eq!(obj1.get().capacity(), 1024);
-        
+
         drop(obj1);
-        
+
         // 等待异步回收
         tokio::time::sleep(Duration::from_millis(10)).await;
-        
+
         let obj2 = pool.acquire().await;
         assert_eq!(obj2.get().capacity(), 1024);
-        
+
         let metrics = pool.get_metrics();
         assert!(metrics.total_allocations >= 1);
     }

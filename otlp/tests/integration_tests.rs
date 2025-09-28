@@ -3,11 +3,11 @@
 //! 测试OTLP客户端、传输层和导出器的集成功能。
 
 use otlp::{
+    AttributeValue, OtlpClient, TelemetryData,
     config::{OtlpConfig, TransportProtocol},
     data::LogSeverity,
     error::Result,
-    transport::{GrpcTransport, HttpTransport, TransportFactory, Transport},
-    AttributeValue, TelemetryData, OtlpClient,
+    transport::{GrpcTransport, HttpTransport, Transport, TransportFactory},
 };
 use std::time::Duration;
 use tokio::time::timeout;
@@ -25,10 +25,10 @@ async fn test_grpc_transport() -> Result<()> {
     // 测试发送数据
     let test_data = create_test_log_data();
     let result = timeout(Duration::from_secs(5), transport.send_single(test_data)).await;
-    
+
     // 由于没有真实的服务器，我们期望超时或连接错误
     assert!(result.is_ok() || result.is_err());
-    
+
     Ok(())
 }
 
@@ -45,10 +45,10 @@ async fn test_http_transport() -> Result<()> {
     // 测试发送数据
     let test_data = create_test_log_data();
     let result = timeout(Duration::from_secs(5), transport.send_single(test_data)).await;
-    
+
     // 由于没有真实的服务器，我们期望超时或连接错误
     assert!(result.is_ok() || result.is_err());
-    
+
     Ok(())
 }
 
@@ -61,7 +61,7 @@ async fn test_transport_factory() -> Result<()> {
 
     let transport = TransportFactory::create(config).await?;
     assert!(transport.is_connected().await);
-    
+
     Ok(())
 }
 
@@ -75,7 +75,7 @@ async fn test_otlp_client_creation() -> Result<()> {
 
     let client = OtlpClient::new(config).await?;
     // 跳过连接性断言，当前客户端未暴露该接口
-    
+
     Ok(())
 }
 
@@ -88,18 +88,18 @@ async fn test_batch_data_sending() -> Result<()> {
         .with_protocol(TransportProtocol::Grpc);
 
     let transport = GrpcTransport::new(config).await?;
-    
+
     // 创建测试数据
     let mut test_data = Vec::new();
     for i in 0..10 {
         test_data.push(create_test_log_data_with_id(i));
     }
-    
+
     let result = timeout(Duration::from_secs(5), transport.send(test_data)).await;
-    
+
     // 由于没有真实的服务器，我们期望超时或连接错误
     assert!(result.is_ok() || result.is_err());
-    
+
     Ok(())
 }
 
@@ -113,7 +113,7 @@ async fn test_config_validation() {
 
     let result = GrpcTransport::new(invalid_config).await;
     assert!(result.is_err());
-    
+
     // 测试有效配置
     let valid_config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
@@ -132,10 +132,10 @@ async fn test_error_handling() {
 
     let transport = GrpcTransport::new(config).await;
     assert!(transport.is_ok());
-    
+
     let transport = transport.unwrap();
     let test_data = create_test_log_data();
-    
+
     // 测试连接错误
     let result = timeout(Duration::from_secs(1), transport.send_single(test_data)).await;
     assert!(result.is_err()); // 应该超时或连接失败
@@ -150,7 +150,10 @@ fn create_test_log_data() -> TelemetryData {
 fn create_test_log_data_with_id(id: u32) -> TelemetryData {
     let data = otlp::TelemetryData::log(&format!("Test log message {}", id), LogSeverity::Info);
     let mut attributes = std::collections::HashMap::new();
-    attributes.insert("test_id".to_string(), AttributeValue::String(id.to_string()));
+    attributes.insert(
+        "test_id".to_string(),
+        AttributeValue::String(id.to_string()),
+    );
     let _ = attributes; // 简化测试，跳过属性设置
     data
 }

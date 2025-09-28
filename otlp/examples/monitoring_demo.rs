@@ -6,8 +6,10 @@
 use otlp::error::ErrorSeverity;
 use otlp::error::{ConfigurationError, TransportError};
 use otlp::error::{DataError, SystemError};
+use otlp::monitoring::error_monitoring_types::{
+    ErrorEvent, ErrorMonitoringConfig, ErrorMonitoringSystem,
+};
 use otlp::{OtlpError, Result};
-use otlp::monitoring::error_monitoring_types::{ErrorEvent, ErrorMonitoringSystem, ErrorMonitoringConfig};
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -78,10 +80,11 @@ async fn alert_rules_demo() -> Result<()> {
         otlp::monitoring::error_monitoring_types::AlertRule {
             id: "custom_high_error_rate".to_string(),
             name: "自定义高错误率告警".to_string(),
-            condition: otlp::monitoring::error_monitoring_types::AlertCondition::ErrorRateThreshold {
-                threshold: 0.05,                  // 5%错误率
-                window: Duration::from_secs(180), // 3分钟窗口
-            },
+            condition:
+                otlp::monitoring::error_monitoring_types::AlertCondition::ErrorRateThreshold {
+                    threshold: 0.05,                  // 5%错误率
+                    window: Duration::from_secs(180), // 3分钟窗口
+                },
             severity: ErrorSeverity::High,
             cooldown_period: Duration::from_secs(300),
             notification_channels: vec!["email".to_string(), "slack".to_string()],
@@ -297,12 +300,16 @@ fn create_processing_error() -> OtlpError {
 
 fn create_serialization_error() -> OtlpError {
     // 示例占位：返回数据格式错误
-    OtlpError::Data(DataError::Format { reason: "JSON解析失败".to_string() })
+    OtlpError::Data(DataError::Format {
+        reason: "JSON解析失败".to_string(),
+    })
 }
 
 fn create_resource_error() -> OtlpError {
     // 示例占位：转为系统错误
-    OtlpError::System(SystemError::SystemCall { reason: "memory resource exhausted".to_string() })
+    OtlpError::System(SystemError::SystemCall {
+        reason: "memory resource exhausted".to_string(),
+    })
 }
 
 /// 演示监控系统的实时特性

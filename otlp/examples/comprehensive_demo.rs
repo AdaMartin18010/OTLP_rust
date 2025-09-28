@@ -17,13 +17,13 @@ use tracing::{debug, info, warn};
 use otlp::{
     // 基础功能
     error::Result,
-    
+
     // 微服务功能
     microservices::{
-        AdaptiveLoadBalancer, Destination, FaultConfig, FaultInjector, FaultType,
-        IntelligentRouter, MatchCondition, RoutingRule, ServiceMeshConfig, ServiceMeshType,
-        RetryPolicy, CircuitBreakerPolicy, TrafficManager, RouteRequest, FaultResult,
-        SidecarConfig, ResourceLimits,
+        AdaptiveLoadBalancer, CircuitBreakerPolicy, Destination, FaultConfig, FaultInjector,
+        FaultResult, FaultType, IntelligentRouter, MatchCondition, ResourceLimits, RetryPolicy,
+        RouteRequest, RoutingRule, ServiceMeshConfig, ServiceMeshType, SidecarConfig,
+        TrafficManager,
     },
 };
 
@@ -73,11 +73,11 @@ impl AnomalyDetector {
     pub fn new(config: AnomalyConfig) -> Self {
         Self { config }
     }
-    
+
     pub async fn load_model(&self) -> Result<()> {
         Ok(())
     }
-    
+
     pub async fn detect_anomalies(&self, _data: &[()]) -> Result<Vec<String>> {
         Ok(vec![])
     }
@@ -111,11 +111,11 @@ impl PredictiveAnalyzer {
     pub fn new(config: PredictiveConfig) -> Self {
         Self { config }
     }
-    
+
     pub async fn load_model(&self) -> Result<()> {
         Ok(())
     }
-    
+
     pub async fn generate_predictions(&self) -> Result<Vec<String>> {
         Ok(vec!["prediction1".to_string(), "prediction2".to_string()])
     }
@@ -154,13 +154,16 @@ impl PerformanceOptimizer {
     pub fn new(config: OptimizationConfig) -> Self {
         Self { config }
     }
-    
+
     pub async fn load_model(&self) -> Result<()> {
         Ok(())
     }
-    
+
     pub async fn analyze_performance(&self) -> Result<Vec<String>> {
-        Ok(vec!["optimization1".to_string(), "optimization2".to_string()])
+        Ok(vec![
+            "optimization1".to_string(),
+            "optimization2".to_string(),
+        ])
     }
 }
 
@@ -317,22 +320,22 @@ impl EdgeNodeManager {
             tasks: Vec::new(),
         }
     }
-    
+
     pub async fn register_node(&mut self, node: EdgeNode) -> Result<()> {
         self.nodes.push(node);
         Ok(())
     }
-    
+
     pub async fn create_task(&mut self, task: EdgeTask) -> Result<String> {
         let task_id = task.id.clone();
         self.tasks.push(task);
         Ok(task_id)
     }
-    
+
     pub async fn get_tasks(&self) -> Vec<EdgeTask> {
         self.tasks.clone()
     }
-    
+
     pub async fn get_nodes(&self) -> Vec<EdgeNode> {
         self.nodes.clone()
     }
@@ -416,19 +419,19 @@ impl BlockchainManager {
     pub fn new(config: BlockchainConfig) -> Self {
         Self { config }
     }
-    
+
     pub async fn start(&self) -> Result<()> {
         Ok(())
     }
-    
+
     pub async fn deploy_observability_contracts(&self) -> Result<()> {
         Ok(())
     }
-    
+
     pub async fn record_metric(&self, service: &str, metric: &str, value: i32) -> Result<String> {
         Ok(format!("tx_hash_{}_{}_{}", service, metric, value))
     }
-    
+
     pub async fn get_blockchain_state(&self) -> BlockchainState {
         BlockchainState {
             block_height: 12345,
@@ -459,9 +462,11 @@ pub struct LoadBalancerBenchmark {
 
 impl LoadBalancerBenchmark {
     pub fn new() -> Self {
-        Self { name: "LoadBalancerBenchmark".to_string() }
+        Self {
+            name: "LoadBalancerBenchmark".to_string(),
+        }
     }
-    
+
     pub async fn run(&self) -> Result<BenchmarkResult> {
         Ok(BenchmarkResult {
             iterations_completed: 1000,
@@ -483,9 +488,11 @@ pub struct MicroserviceBenchmark {
 
 impl MicroserviceBenchmark {
     pub fn new() -> Self {
-        Self { name: "MicroserviceBenchmark".to_string() }
+        Self {
+            name: "MicroserviceBenchmark".to_string(),
+        }
     }
-    
+
     pub async fn run(&self) -> Result<BenchmarkResult> {
         Ok(BenchmarkResult {
             iterations_completed: 1000,
@@ -507,9 +514,11 @@ pub struct TracingBenchmark {
 
 impl TracingBenchmark {
     pub fn new() -> Self {
-        Self { name: "TracingBenchmark".to_string() }
+        Self {
+            name: "TracingBenchmark".to_string(),
+        }
     }
-    
+
     pub async fn run(&self) -> Result<BenchmarkResult> {
         Ok(BenchmarkResult {
             iterations_completed: 1000,
@@ -633,17 +642,26 @@ async fn demo_ai_ml_intelligent_monitoring() -> Result<()> {
         info!("  收集第 {} 批监控数据", i + 1);
 
         // 模拟异常检测
-        let anomalies = anomaly_detector.detect_anomalies(&[]).await.unwrap_or_default();
+        let anomalies = anomaly_detector
+            .detect_anomalies(&[])
+            .await
+            .unwrap_or_default();
         if !anomalies.is_empty() {
             warn!("  🚨 检测到 {} 个异常", anomalies.len());
         }
 
         // 模拟预测分析
-        let predictions = predictive_analyzer.generate_predictions().await.unwrap_or_default();
+        let predictions = predictive_analyzer
+            .generate_predictions()
+            .await
+            .unwrap_or_default();
         info!("  📈 生成 {} 个预测结果", predictions.len());
 
         // 模拟性能优化
-        let recommendations = performance_optimizer.analyze_performance().await.unwrap_or_default();
+        let recommendations = performance_optimizer
+            .analyze_performance()
+            .await
+            .unwrap_or_default();
         if !recommendations.is_empty() {
             info!("  💡 生成 {} 个优化建议", recommendations.len());
         }
@@ -909,7 +927,10 @@ async fn demo_blockchain_integration() -> Result<()> {
     blockchain_manager.start().await.unwrap_or_default();
 
     info!("📜 部署可观测性智能合约");
-    blockchain_manager.deploy_observability_contracts().await.unwrap_or_default();
+    blockchain_manager
+        .deploy_observability_contracts()
+        .await
+        .unwrap_or_default();
 
     info!("📊 记录指标到区块链");
     let metrics = vec![
@@ -923,7 +944,8 @@ async fn demo_blockchain_integration() -> Result<()> {
     for (service, metric, value) in &metrics {
         let tx_hash = blockchain_manager
             .record_metric(service, metric, *value)
-            .await.unwrap_or_default();
+            .await
+            .unwrap_or_default();
         info!(
             "  ✅ 记录指标: {} - {} = {} (交易: {})",
             service, metric, value, tx_hash
@@ -1137,7 +1159,8 @@ async fn demo_advanced_microservices() -> Result<()> {
                 // 注入故障
                 match fault_injector
                     .inject_fault(service, &format!("req-{:06}", i + 1))
-                    .await.unwrap_or(None)
+                    .await
+                    .unwrap_or(None)
                 {
                     Some(fault_result) => match fault_result {
                         FaultResult::Delay(duration) => {
@@ -1177,16 +1200,19 @@ async fn demo_performance_benchmarks() -> Result<()> {
 
     info!("🏗️ 运行微服务性能基准测试");
     let microservice_benchmark = MicroserviceBenchmark::new();
-    let microservice_result = microservice_benchmark.run().await.unwrap_or(BenchmarkResult {
-        iterations_completed: 0,
-        iterations_failed: 0,
-        throughput: 0.0,
-        latency_stats: LatencyStats {
-            mean: Duration::from_millis(0),
-            p95: Duration::from_millis(0),
-            p99: Duration::from_millis(0),
-        },
-    });
+    let microservice_result = microservice_benchmark
+        .run()
+        .await
+        .unwrap_or(BenchmarkResult {
+            iterations_completed: 0,
+            iterations_failed: 0,
+            throughput: 0.0,
+            latency_stats: LatencyStats {
+                mean: Duration::from_millis(0),
+                p95: Duration::from_millis(0),
+                p99: Duration::from_millis(0),
+            },
+        });
 
     info!("  📈 微服务性能结果:");
     info!(
@@ -1291,7 +1317,10 @@ async fn demo_performance_benchmarks() -> Result<()> {
     });
 
     info!("📊 性能对比报告:");
-    info!("{}", serde_json::to_string_pretty(&performance_report).unwrap_or_default());
+    info!(
+        "{}",
+        serde_json::to_string_pretty(&performance_report).unwrap_or_default()
+    );
 
     info!("✅ 性能基准测试演示完成");
     Ok(())
@@ -1386,7 +1415,9 @@ async fn main() -> Result<()> {
 
     // 演示各个高级功能模块
     info!("\n🤖 AI/ML智能监控功能演示");
-    demo_ai_ml_intelligent_monitoring().await.unwrap_or_default();
+    demo_ai_ml_intelligent_monitoring()
+        .await
+        .unwrap_or_default();
 
     info!("\n🌐 边缘计算功能演示");
     demo_edge_computing().await.unwrap_or_default();

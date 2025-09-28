@@ -11,8 +11,8 @@ use tracing::{debug, info, warn};
 
 use otlp::{
     AdaptiveLoadBalancer, CircuitBreakerPolicy, Destination, FaultConfig, FaultInjector,
-    FaultResult, FaultType, MicroserviceHealthStatus, IntelligentRouter, MatchCondition, OtlpConfig,
-    ResourceLimits, RetryPolicy, RoundRobinLoadBalancer, RouteRequest, RoutingRule,
+    FaultResult, FaultType, IntelligentRouter, MatchCondition, MicroserviceHealthStatus,
+    OtlpConfig, ResourceLimits, RetryPolicy, RoundRobinLoadBalancer, RouteRequest, RoutingRule,
     ServiceEndpoint, ServiceMeshConfig, ServiceMeshType, SidecarConfig, TrafficManager,
     TransportProtocol,
 };

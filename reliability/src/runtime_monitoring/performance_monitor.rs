@@ -2,14 +2,14 @@
 //!
 //! 提供系统性能监控功能，包括响应时间、吞吐量、错误率等性能指标。
 
-use std::sync::Arc;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
-use serde::{Serialize, Deserialize};
 use tracing::{debug, error, info};
 
-use crate::error_handling::UnifiedError;
 use super::MonitoringState;
+use crate::error_handling::UnifiedError;
 
 /// 性能监控配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -144,7 +144,8 @@ pub struct PerformanceMonitor {
     config: PerformanceMonitorConfig,
     is_running: std::sync::atomic::AtomicBool,
     last_result: std::sync::Mutex<Option<PerformanceMonitorResult>>,
-    monitor_handlers: std::sync::Mutex<HashMap<String, Box<dyn PerformanceMonitorHandler + Send + Sync>>>,
+    monitor_handlers:
+        std::sync::Mutex<HashMap<String, Box<dyn PerformanceMonitorHandler + Send + Sync>>>,
     metrics: std::sync::Mutex<HashMap<String, Vec<f64>>>,
 }
 
@@ -171,8 +172,9 @@ impl PerformanceMonitor {
             return Ok(());
         }
 
-        self.is_running.store(true, std::sync::atomic::Ordering::Relaxed);
-        
+        self.is_running
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+
         // 注册默认监控处理器
         self.register_default_handlers();
 
@@ -188,7 +190,8 @@ impl PerformanceMonitor {
 
     /// 停止性能监控
     pub async fn stop(&self) -> otlp::error::Result<()> {
-        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.is_running
+            .store(false, std::sync::atomic::Ordering::Relaxed);
         info!("性能监控器停止完成");
         Ok(())
     }
@@ -208,13 +211,13 @@ impl PerformanceMonitor {
 
             total_monitors += 1;
             let item_result = self.monitor_item(monitor_item).await;
-            
+
             match item_result.state {
                 MonitoringState::Healthy => healthy_monitors += 1,
                 MonitoringState::Warning => warning_monitors += 1,
                 MonitoringState::Error | MonitoringState::Critical => error_monitors += 1,
             }
-            
+
             items.push(item_result);
         }
 
@@ -251,7 +254,7 @@ impl PerformanceMonitor {
                 max_value: 0.0,
                 min_value: 0.0,
                 details: HashMap::new(),
-            })
+            }),
         };
 
         match result {
@@ -269,7 +272,7 @@ impl PerformanceMonitor {
                 max_value: 0.0,
                 min_value: 0.0,
                 details: HashMap::new(),
-            }
+            },
         }
     }
 
@@ -277,9 +280,9 @@ impl PerformanceMonitor {
     fn update_metrics(&self, name: &str, value: f64) {
         let mut metrics = self.metrics.lock().unwrap();
         let entry = metrics.entry(name.to_string()).or_insert_with(Vec::new);
-        
+
         entry.push(value);
-        
+
         // 保持最近1000个值
         if entry.len() > 1000 {
             entry.remove(0);
@@ -290,17 +293,17 @@ impl PerformanceMonitor {
     #[allow(dead_code)]
     fn calculate_metrics_stats(&self, name: &str) -> (f64, f64, f64, f64) {
         let metrics = self.metrics.lock().unwrap();
-        
+
         if let Some(values) = metrics.get(name) {
             if values.is_empty() {
                 return (0.0, 0.0, 0.0, 0.0);
             }
-            
+
             let current = *values.last().unwrap();
             let average = values.iter().sum::<f64>() / values.len() as f64;
             let max = values.iter().fold(0.0f64, |a, &b| a.max(b));
             let min = values.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-            
+
             (current, average, max, min)
         } else {
             (0.0, 0.0, 0.0, 0.0)
@@ -314,7 +317,7 @@ impl PerformanceMonitor {
         }
 
         let states = items.iter().map(|item| &item.state).collect::<Vec<_>>();
-        
+
         // 返回最严重的状态
         if states.contains(&&MonitoringState::Critical) {
             MonitoringState::Critical
@@ -330,14 +333,27 @@ impl PerformanceMonitor {
     /// 注册默认监控处理器
     fn register_default_handlers(&self) {
         let mut handlers = self.monitor_handlers.lock().unwrap();
-        
-        handlers.insert("response_time".to_string(), Box::new(ResponseTimePerformanceMonitorHandler));
-        handlers.insert("throughput".to_string(), Box::new(ThroughputPerformanceMonitorHandler));
-        handlers.insert("error_rate".to_string(), Box::new(ErrorRatePerformanceMonitorHandler));
+
+        handlers.insert(
+            "response_time".to_string(),
+            Box::new(ResponseTimePerformanceMonitorHandler),
+        );
+        handlers.insert(
+            "throughput".to_string(),
+            Box::new(ThroughputPerformanceMonitorHandler),
+        );
+        handlers.insert(
+            "error_rate".to_string(),
+            Box::new(ErrorRatePerformanceMonitorHandler),
+        );
     }
 
     /// 注册自定义监控处理器
-    pub fn register_handler(&self, name: String, handler: Box<dyn PerformanceMonitorHandler + Send + Sync>) {
+    pub fn register_handler(
+        &self,
+        name: String,
+        handler: Box<dyn PerformanceMonitorHandler + Send + Sync>,
+    ) {
         let mut handlers = self.monitor_handlers.lock().unwrap();
         handlers.insert(name, handler);
     }
@@ -345,10 +361,10 @@ impl PerformanceMonitor {
     /// 运行监控循环
     async fn run_monitor_loop(&self) {
         let mut interval = tokio::time::interval(self.config.monitor_interval);
-        
+
         while self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
             interval.tick().await;
-            
+
             if let Err(error) = self.get_status().await {
                 error!("性能监控失败: {}", error);
             }
@@ -375,7 +391,9 @@ impl Clone for PerformanceMonitor {
     fn clone(&self) -> Self {
         Self {
             config: self.config.clone(),
-            is_running: std::sync::atomic::AtomicBool::new(self.is_running.load(std::sync::atomic::Ordering::Relaxed)),
+            is_running: std::sync::atomic::AtomicBool::new(
+                self.is_running.load(std::sync::atomic::Ordering::Relaxed),
+            ),
             last_result: std::sync::Mutex::new(self.last_result.lock().unwrap().clone()),
             monitor_handlers: std::sync::Mutex::new(HashMap::new()),
             metrics: std::sync::Mutex::new(HashMap::new()),
@@ -386,50 +404,70 @@ impl Clone for PerformanceMonitor {
 /// 性能监控处理器trait
 pub trait PerformanceMonitorHandler: Send + Sync {
     /// 执行性能监控
-    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<PerformanceMonitorItemResult, UnifiedError>> + Send>>;
+    fn monitor(
+        &self,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<PerformanceMonitorItemResult, UnifiedError>>
+                + Send,
+        >,
+    >;
 }
 
 /// 响应时间性能监控处理器
 pub struct ResponseTimePerformanceMonitorHandler;
 
 impl PerformanceMonitorHandler for ResponseTimePerformanceMonitorHandler {
-    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<PerformanceMonitorItemResult, UnifiedError>> + Send>> {
+    fn monitor(
+        &self,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<PerformanceMonitorItemResult, UnifiedError>>
+                + Send,
+        >,
+    > {
         Box::pin(async move {
-        let mut details = HashMap::new();
-        let mut state = MonitoringState::Healthy;
-        let current_value;
+            let mut details = HashMap::new();
+            let mut state = MonitoringState::Healthy;
+            let current_value;
 
-        // 模拟响应时间监控
-        let start_time = std::time::Instant::now();
-        
-        // 这里应该实际测量响应时间
-        // 简化实现，使用随机值
-        use rand::Rng;
-        let mut rng = rand::rng();
-        current_value = rng.random_range(10.0..2000.0); // 10ms到2s
-        
-        let measurement_time = start_time.elapsed();
-        details.insert("measurement_time_ms".to_string(), measurement_time.as_millis().to_string());
-        details.insert("current_response_time_ms".to_string(), format!("{:.2}", current_value));
+            // 模拟响应时间监控
+            let start_time = std::time::Instant::now();
 
-        // 根据阈值判断状态
-        if current_value > 1000.0 {
-            state = MonitoringState::Warning;
-        }
-        if current_value > 2000.0 {
-            state = MonitoringState::Error;
-        }
+            // 这里应该实际测量响应时间
+            // 简化实现，使用随机值
+            use rand::Rng;
+            let mut rng = rand::rng();
+            current_value = rng.random_range(10.0..2000.0); // 10ms到2s
 
-        Ok(PerformanceMonitorItemResult {
-            name: "response_time".to_string(),
-            monitor_type: PerformanceMonitorType::ResponseTime,
-            state,
-            current_value,
-            average_value: current_value, // 简化实现
-            max_value: current_value,
-            min_value: current_value,
-            details,
-        })
+            let measurement_time = start_time.elapsed();
+            details.insert(
+                "measurement_time_ms".to_string(),
+                measurement_time.as_millis().to_string(),
+            );
+            details.insert(
+                "current_response_time_ms".to_string(),
+                format!("{:.2}", current_value),
+            );
+
+            // 根据阈值判断状态
+            if current_value > 1000.0 {
+                state = MonitoringState::Warning;
+            }
+            if current_value > 2000.0 {
+                state = MonitoringState::Error;
+            }
+
+            Ok(PerformanceMonitorItemResult {
+                name: "response_time".to_string(),
+                monitor_type: PerformanceMonitorType::ResponseTime,
+                state,
+                current_value,
+                average_value: current_value, // 简化实现
+                max_value: current_value,
+                min_value: current_value,
+                details,
+            })
         })
     }
 }
@@ -438,37 +476,47 @@ impl PerformanceMonitorHandler for ResponseTimePerformanceMonitorHandler {
 pub struct ThroughputPerformanceMonitorHandler;
 
 impl PerformanceMonitorHandler for ThroughputPerformanceMonitorHandler {
-    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<PerformanceMonitorItemResult, UnifiedError>> + Send>> {
+    fn monitor(
+        &self,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<PerformanceMonitorItemResult, UnifiedError>>
+                + Send,
+        >,
+    > {
         Box::pin(async move {
-        let mut details = HashMap::new();
-        let mut state = MonitoringState::Healthy;
-        let current_value;
+            let mut details = HashMap::new();
+            let mut state = MonitoringState::Healthy;
+            let current_value;
 
-        // 模拟吞吐量监控
-        use rand::Rng;
-        let mut rng = rand::rng();
-        current_value = rng.random_range(100.0..2000.0); // 100到2000请求/秒
-        
-        details.insert("current_throughput_rps".to_string(), format!("{:.2}", current_value));
+            // 模拟吞吐量监控
+            use rand::Rng;
+            let mut rng = rand::rng();
+            current_value = rng.random_range(100.0..2000.0); // 100到2000请求/秒
 
-        // 根据阈值判断状态
-        if current_value < 500.0 {
-            state = MonitoringState::Warning;
-        }
-        if current_value < 100.0 {
-            state = MonitoringState::Error;
-        }
+            details.insert(
+                "current_throughput_rps".to_string(),
+                format!("{:.2}", current_value),
+            );
 
-        Ok(PerformanceMonitorItemResult {
-            name: "throughput".to_string(),
-            monitor_type: PerformanceMonitorType::Throughput,
-            state,
-            current_value,
-            average_value: current_value, // 简化实现
-            max_value: current_value,
-            min_value: current_value,
-            details,
-        })
+            // 根据阈值判断状态
+            if current_value < 500.0 {
+                state = MonitoringState::Warning;
+            }
+            if current_value < 100.0 {
+                state = MonitoringState::Error;
+            }
+
+            Ok(PerformanceMonitorItemResult {
+                name: "throughput".to_string(),
+                monitor_type: PerformanceMonitorType::Throughput,
+                state,
+                current_value,
+                average_value: current_value, // 简化实现
+                max_value: current_value,
+                min_value: current_value,
+                details,
+            })
         })
     }
 }
@@ -477,37 +525,47 @@ impl PerformanceMonitorHandler for ThroughputPerformanceMonitorHandler {
 pub struct ErrorRatePerformanceMonitorHandler;
 
 impl PerformanceMonitorHandler for ErrorRatePerformanceMonitorHandler {
-    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<PerformanceMonitorItemResult, UnifiedError>> + Send>> {
+    fn monitor(
+        &self,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<PerformanceMonitorItemResult, UnifiedError>>
+                + Send,
+        >,
+    > {
         Box::pin(async move {
-        let mut details = HashMap::new();
-        let mut state = MonitoringState::Healthy;
-        let current_value;
+            let mut details = HashMap::new();
+            let mut state = MonitoringState::Healthy;
+            let current_value;
 
-        // 模拟错误率监控
-        use rand::Rng;
-        let mut rng = rand::rng();
-        current_value = rng.random_range(0.0..10.0); // 0%到10%
-        
-        details.insert("current_error_rate_percent".to_string(), format!("{:.2}", current_value));
+            // 模拟错误率监控
+            use rand::Rng;
+            let mut rng = rand::rng();
+            current_value = rng.random_range(0.0..10.0); // 0%到10%
 
-        // 根据阈值判断状态
-        if current_value > 5.0 {
-            state = MonitoringState::Warning;
-        }
-        if current_value > 10.0 {
-            state = MonitoringState::Error;
-        }
+            details.insert(
+                "current_error_rate_percent".to_string(),
+                format!("{:.2}", current_value),
+            );
 
-        Ok(PerformanceMonitorItemResult {
-            name: "error_rate".to_string(),
-            monitor_type: PerformanceMonitorType::ErrorRate,
-            state,
-            current_value,
-            average_value: current_value, // 简化实现
-            max_value: current_value,
-            min_value: current_value,
-            details,
-        })
+            // 根据阈值判断状态
+            if current_value > 5.0 {
+                state = MonitoringState::Warning;
+            }
+            if current_value > 10.0 {
+                state = MonitoringState::Error;
+            }
+
+            Ok(PerformanceMonitorItemResult {
+                name: "error_rate".to_string(),
+                monitor_type: PerformanceMonitorType::ErrorRate,
+                state,
+                current_value,
+                average_value: current_value, // 简化实现
+                max_value: current_value,
+                min_value: current_value,
+                details,
+            })
         })
     }
 }
@@ -567,7 +625,7 @@ mod tests {
             monitor_type: PerformanceMonitorType::ResponseTime,
             enabled: true,
         };
-        
+
         assert_eq!(item.name, "test");
         assert!(item.enabled);
     }
@@ -584,7 +642,7 @@ mod tests {
     fn test_performance_monitor_creation() {
         let config = PerformanceMonitorConfig::default();
         let monitor = PerformanceMonitor::new(config);
-        
+
         assert!(monitor.get_last_result().is_none());
     }
 
@@ -592,10 +650,10 @@ mod tests {
     async fn test_performance_monitor_get_status() {
         let config = PerformanceMonitorConfig::default();
         let monitor = PerformanceMonitor::new(config);
-        
+
         let result = monitor.get_status().await;
         assert!(result.is_ok());
-        
+
         let result = result.unwrap();
         assert!(result.total_monitors > 0);
         //assert!(result.healthy_monitors >= 0);
@@ -614,7 +672,7 @@ mod tests {
             warning_monitors: 0,
             error_monitors: 0,
         };
-        
+
         assert_eq!(result.state, MonitoringState::Healthy);
         assert_eq!(result.total_monitors, 0);
     }
@@ -631,7 +689,7 @@ mod tests {
             min_value: 0.0,
             details: HashMap::new(),
         };
-        
+
         assert_eq!(result.name, "test");
         assert_eq!(result.state, MonitoringState::Healthy);
         assert_eq!(result.current_value, 0.0);
@@ -641,7 +699,7 @@ mod tests {
     fn test_global_performance_monitor() {
         let global_monitor = GlobalPerformanceMonitor::new();
         let monitor = global_monitor.get_monitor();
-        
+
         assert!(monitor.get_last_result().is_none());
     }
 }

@@ -3,14 +3,14 @@
 //! 提供更简洁、易用的OTLP客户端接口，降低学习成本和使用复杂度。
 //! 利用Rust 1.90的新特性实现高性能和类型安全。
 
+use crate::OtlpClient;
 use crate::config::OtlpConfig;
 use crate::data::{LogSeverity, StatusCode, TelemetryData};
 use crate::error::Result;
-use crate::OtlpClient;
 use std::time::Duration;
 
 /// 简化的OTLP客户端
-/// 
+///
 /// 提供更直观的API接口，隐藏复杂的配置和实现细节
 pub struct SimpleOtlpClient {
     client: OtlpClient,
@@ -18,16 +18,16 @@ pub struct SimpleOtlpClient {
 
 impl SimpleOtlpClient {
     /// 创建新的简化客户端
-    /// 
+    ///
     /// 使用默认配置，只需要指定端点
     pub async fn new(endpoint: impl Into<String>) -> Result<Self> {
         let config = OtlpConfig::default()
             .with_endpoint(endpoint)
             .with_debug(false);
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self { client })
     }
 
@@ -41,15 +41,15 @@ impl SimpleOtlpClient {
             .with_endpoint(endpoint)
             .with_service(service_name, service_version)
             .with_debug(false);
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self { client })
     }
 
     /// 发送简单的追踪数据
-    /// 
+    ///
     /// # 参数
     /// - `operation`: 操作名称
     /// - `duration_ms`: 持续时间（毫秒）
@@ -68,7 +68,8 @@ impl SimpleOtlpClient {
             StatusCode::Error
         };
 
-        let _result = self.client
+        let _result = self
+            .client
             .send_trace(operation)
             .await?
             .with_numeric_attribute("duration_ms", duration_ms as f64)
@@ -81,7 +82,7 @@ impl SimpleOtlpClient {
     }
 
     /// 发送简单的指标数据
-    /// 
+    ///
     /// # 参数
     /// - `metric_name`: 指标名称
     /// - `value`: 指标值
@@ -92,9 +93,7 @@ impl SimpleOtlpClient {
         value: f64,
         unit: Option<impl Into<String>>,
     ) -> Result<()> {
-        let mut builder = self.client
-            .send_metric(metric_name, value)
-            .await?;
+        let mut builder = self.client.send_metric(metric_name, value).await?;
 
         if let Some(unit) = unit {
             builder = builder.with_unit(unit);
@@ -105,7 +104,7 @@ impl SimpleOtlpClient {
     }
 
     /// 发送简单的日志数据
-    /// 
+    ///
     /// # 参数
     /// - `message`: 日志消息
     /// - `level`: 日志级别
@@ -124,9 +123,7 @@ impl SimpleOtlpClient {
             LogLevel::Fatal => LogSeverity::Fatal,
         };
 
-        let mut builder = self.client
-            .send_log(message, severity)
-            .await?;
+        let mut builder = self.client.send_log(message, severity).await?;
 
         if let Some(source) = source {
             builder = builder.with_attribute("source", source);
@@ -137,36 +134,53 @@ impl SimpleOtlpClient {
     }
 
     /// 批量发送数据
-    /// 
+    ///
     /// 使用Rust 1.90的元组收集特性优化批量处理
     pub async fn batch_send(&self, operations: Vec<SimpleOperation>) -> Result<BatchResult> {
         let mut telemetry_data = Vec::new();
 
         for operation in operations {
             match operation {
-                SimpleOperation::Trace { name, duration_ms, success, error } => {
+                SimpleOperation::Trace {
+                    name,
+                    duration_ms,
+                    success,
+                    error,
+                } => {
                     let data = TelemetryData::trace(name)
                         .with_numeric_attribute("duration_ms", duration_ms as f64)
                         .with_bool_attribute("success", success);
-                    
+
                     if let Some(error) = error {
                         let data = data.with_status(
-                            if success { StatusCode::Ok } else { StatusCode::Error },
-                            Some(error)
+                            if success {
+                                StatusCode::Ok
+                            } else {
+                                StatusCode::Error
+                            },
+                            Some(error),
                         );
                         telemetry_data.push(data);
                     } else {
                         telemetry_data.push(data);
                     }
                 }
-                SimpleOperation::Metric { name, value: _value, unit } => {
+                SimpleOperation::Metric {
+                    name,
+                    value: _value,
+                    unit,
+                } => {
                     let mut data = TelemetryData::metric(name, crate::data::MetricType::Gauge);
                     if let Some(unit) = unit {
                         data = data.with_attribute("unit", unit);
                     }
                     telemetry_data.push(data);
                 }
-                SimpleOperation::Log { message, level, source } => {
+                SimpleOperation::Log {
+                    message,
+                    level,
+                    source,
+                } => {
                     let severity = match level {
                         LogLevel::Debug => LogSeverity::Debug,
                         LogLevel::Info => LogSeverity::Info,
@@ -174,7 +188,7 @@ impl SimpleOtlpClient {
                         LogLevel::Error => LogSeverity::Error,
                         LogLevel::Fatal => LogSeverity::Fatal,
                     };
-                    
+
                     let mut data = TelemetryData::log(message, severity);
                     if let Some(source) = source {
                         data = data.with_attribute("source", source);
@@ -185,7 +199,7 @@ impl SimpleOtlpClient {
         }
 
         let result = self.client.send_batch(telemetry_data).await?;
-        
+
         Ok(BatchResult {
             total_sent: result.total_count(),
             success_count: result.success_count,
@@ -197,14 +211,14 @@ impl SimpleOtlpClient {
     /// 获取客户端健康状态
     pub async fn health_check(&self) -> HealthStatus {
         let metrics = self.client.get_metrics().await;
-        
+
         HealthStatus {
             is_healthy: metrics.exporter_metrics.failed_exports == 0,
             uptime: metrics.uptime,
             total_requests: metrics.total_data_sent,
             success_rate: if metrics.total_data_sent > 0 {
-                (metrics.total_data_sent - metrics.exporter_metrics.failed_exports) as f64 
-                / metrics.total_data_sent as f64
+                (metrics.total_data_sent - metrics.exporter_metrics.failed_exports) as f64
+                    / metrics.total_data_sent as f64
             } else {
                 1.0
             },
@@ -314,12 +328,13 @@ impl SimpleClientBuilder {
 
     /// 构建客户端
     pub async fn build(self) -> Result<SimpleOtlpClient> {
-        let endpoint = self.endpoint
-            .ok_or_else(|| crate::error::OtlpError::Configuration(
+        let endpoint = self.endpoint.ok_or_else(|| {
+            crate::error::OtlpError::Configuration(
                 crate::error::ConfigurationError::InvalidEndpoint {
                     url: "endpoint is required".to_string(),
-                }
-            ))?;
+                },
+            )
+        })?;
 
         let mut config = OtlpConfig::default()
             .with_endpoint(endpoint)
@@ -371,10 +386,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_simple_operations() {
-        let client = SimpleOtlpClient::new("http://localhost:4317").await.unwrap();
+        let client = SimpleOtlpClient::new("http://localhost:4317")
+            .await
+            .unwrap();
 
         // 测试追踪
-        let result = client.trace("test-operation", 100, true, None::<String>).await;
+        let result = client
+            .trace("test-operation", 100, true, None::<String>)
+            .await;
         assert!(result.is_ok());
 
         // 测试指标
@@ -382,13 +401,17 @@ mod tests {
         assert!(result.is_ok());
 
         // 测试日志
-        let result = client.log("test message", LogLevel::Info, Some("test")).await;
+        let result = client
+            .log("test message", LogLevel::Info, Some("test"))
+            .await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn test_batch_operations() {
-        let client = SimpleOtlpClient::new("http://localhost:4317").await.unwrap();
+        let client = SimpleOtlpClient::new("http://localhost:4317")
+            .await
+            .unwrap();
 
         let operations = vec![
             SimpleOperation::Trace {

@@ -1,0 +1,313 @@
+# Default values for otlp-server
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Image configuration
+image:
+  repository: otlp-rust
+  tag: "latest"
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 4317
+  httpPort: 4318
+  metricsPort: 9090
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: otlp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Resource configuration
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - otlp-rust
+        topologyKey: kubernetes.io/hostname
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Network policy
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      ports:
+      - protocol: TCP
+        port: 4317
+      - protocol: TCP
+        port: 4318
+      - protocol: TCP
+        port: 9090
+  egress:
+    - to: []
+      ports:
+      - protocol: TCP
+        port: 53
+      - protocol: UDP
+        port: 53
+
+# Configuration
+config:
+  # Server configuration
+  server:
+    host: "0.0.0.0"
+    grpcPort: 4317
+    httpPort: 4318
+    metricsPort: 9090
+    maxConcurrentRequests: 1000
+    requestTimeout: "30s"
+  
+  # Transport configuration
+  transport:
+    protocol: "grpc"
+    compression: "gzip"
+    maxMessageSize: 4194304
+    maxFrameSize: 1048576
+  
+  # Batch configuration
+  batch:
+    maxExportBatchSize: 512
+    exportTimeout: "30s"
+    maxQueueSize: 2048
+    scheduledDelay: "5s"
+  
+  # Security configuration
+  security:
+    enableTls: true
+    enableAuth: true
+    jwtSecret: "production-jwt-secret-key"
+    jwtExpiry: "24h"
+    encryptionAlgorithm: "aes256gcm"
+  
+  # Monitoring configuration
+  monitoring:
+    enableMetrics: true
+    enableTracing: true
+    tracingSampleRate: 0.1
+    enableProfiling: true
+  
+  # Logging configuration
+  logging:
+    level: "info"
+    format: "json"
+    enableStructuredLogging: true
+    maxFileSize: "100MB"
+    maxFiles: 10
+    enableRotation: true
+  
+  # Enterprise features
+  enterprise:
+    enableMultiTenant: true
+    enableDataGovernance: true
+    enableCompliance: true
+    enableHighAvailability: true
+    dataRetentionDays: 30
+    complianceFrameworks: ["GDPR", "SOX", "HIPAA"]
+  
+  # Performance configuration
+  performance:
+    enableMemoryPool: true
+    memoryPoolSize: 1000
+    memoryPoolMaxSize: 10000
+    enableSimd: true
+    simdBatchSize: 100
+    maxConcurrentTasks: 100
+    taskQueueSize: 1000
+  
+  # Advanced features
+  advancedFeatures:
+    enableAdaptiveSampling: true
+    baseSamplingRate: 0.1
+    minSamplingRate: 0.01
+    maxSamplingRate: 1.0
+    enableAnomalyDetection: true
+    anomalyThreshold: 0.7
+    trainingInterval: "5m"
+    minTrainingSamples: 100
+
+# Secrets configuration
+secrets:
+  create: true
+  data:
+    jwtSecret: "production-jwt-secret-key"
+    encryptionKey: "production-encryption-key"
+    databasePassword: "production-db-password"
+
+# Persistent volume configuration
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 100Gi
+  annotations: {}
+
+# Health checks
+healthCheck:
+  enabled: true
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 9090
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 9090
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+  prometheusRule:
+    enabled: true
+    rules:
+      - alert: OTLPServerDown
+        expr: up{job="otlp-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OTLP Server is down"
+          description: "OTLP Server has been down for more than 1 minute"
+      
+      - alert: OTLPHighErrorRate
+        expr: rate(otlp_requests_total{status="error"}[5m]) / rate(otlp_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OTLP Server high error rate"
+          description: "OTLP Server error rate is above 5% for more than 2 minutes"
+      
+      - alert: OTLPHighLatency
+        expr: histogram_quantile(0.95, rate(otlp_request_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OTLP Server high latency"
+          description: "OTLP Server 95th percentile latency is above 1 second"
+
+# Environment variables
+env:
+  - name: RUST_LOG
+    value: "info"
+  - name: RUST_BACKTRACE
+    value: "1"
+  - name: OTLP_ENDPOINT
+    value: "0.0.0.0:4317"
+  - name: OTLP_HTTP_ENDPOINT
+    value: "0.0.0.0:4318"
+  - name: METRICS_PORT
+    value: "9090"
+
+# Extra environment variables
+extraEnv: []
+
+# Extra volumes
+extraVolumes: []
+
+# Extra volume mounts
+extraVolumeMounts: []
+
+# Labels
+labels: {}
+
+# Annotations
+annotations: {}
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9090"
+  prometheus.io/path: "/metrics"

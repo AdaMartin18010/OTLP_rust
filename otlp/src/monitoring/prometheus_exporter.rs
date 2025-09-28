@@ -1,17 +1,17 @@
 //! Prometheus 指标导出器
-//! 
+//!
 //! 将收集的指标数据导出为 Prometheus 格式
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use thiserror::Error;
 use tokio::sync::Mutex;
 use tokio::time::{interval, sleep};
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::monitoring::metrics_collector::{
-    MetricsCollector, MetricDataPoint, MetricValue, MetricType
+    MetricDataPoint, MetricType, MetricValue, MetricsCollector,
 };
 
 /// Prometheus 导出器错误
@@ -102,7 +102,7 @@ pub struct PrometheusSample {
 }
 
 /// Prometheus 导出器
-/// 
+///
 /// 高性能的 Prometheus 指标导出器
 pub struct PrometheusExporter {
     config: PrometheusExporterConfig,
@@ -123,13 +123,13 @@ impl PrometheusExporter {
     ) -> Result<Self, PrometheusExporterError> {
         if config.export_interval.as_secs() == 0 {
             return Err(PrometheusExporterError::ConfigurationError(
-                "export_interval must be greater than 0".to_string()
+                "export_interval must be greater than 0".to_string(),
             ));
         }
 
         if config.max_metrics == 0 {
             return Err(PrometheusExporterError::ConfigurationError(
-                "max_metrics must be greater than 0".to_string()
+                "max_metrics must be greater than 0".to_string(),
             ));
         }
 
@@ -170,40 +170,48 @@ impl PrometheusExporter {
 
         tokio::spawn(async move {
             let mut interval = interval(config.export_interval);
-            
+
             while is_running.load(std::sync::atomic::Ordering::Acquire) > 0 {
                 interval.tick().await;
-                
+
                 // 执行导出
                 let start_time = Instant::now();
                 total_exports.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-                
+
                 match Self::export_metrics_internal(&metrics_collector, &config).await {
                     Ok(exported_count) => {
                         successful_exports.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-                        total_metrics_exported.fetch_add(exported_count, std::sync::atomic::Ordering::AcqRel);
-                        
+                        total_metrics_exported
+                            .fetch_add(exported_count, std::sync::atomic::Ordering::AcqRel);
+
                         // 更新统计信息
                         let mut stats_guard = stats.lock().await;
-                        stats_guard.total_exports = total_exports.load(std::sync::atomic::Ordering::Acquire);
-                        stats_guard.successful_exports = successful_exports.load(std::sync::atomic::Ordering::Acquire);
-                        stats_guard.total_metrics_exported = total_metrics_exported.load(std::sync::atomic::Ordering::Acquire);
+                        stats_guard.total_exports =
+                            total_exports.load(std::sync::atomic::Ordering::Acquire);
+                        stats_guard.successful_exports =
+                            successful_exports.load(std::sync::atomic::Ordering::Acquire);
+                        stats_guard.total_metrics_exported =
+                            total_metrics_exported.load(std::sync::atomic::Ordering::Acquire);
                         stats_guard.last_export = Some(Instant::now());
                         stats_guard.last_successful_export = Some(Instant::now());
                         stats_guard.average_export_time = start_time.elapsed();
-                        stats_guard.export_success_rate = stats_guard.successful_exports as f64 / stats_guard.total_exports as f64;
+                        stats_guard.export_success_rate = stats_guard.successful_exports as f64
+                            / stats_guard.total_exports as f64;
                     }
                     Err(e) => {
                         failed_exports.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-                        
+
                         // 更新统计信息
                         let mut stats_guard = stats.lock().await;
-                        stats_guard.total_exports = total_exports.load(std::sync::atomic::Ordering::Acquire);
-                        stats_guard.failed_exports = failed_exports.load(std::sync::atomic::Ordering::Acquire);
+                        stats_guard.total_exports =
+                            total_exports.load(std::sync::atomic::Ordering::Acquire);
+                        stats_guard.failed_exports =
+                            failed_exports.load(std::sync::atomic::Ordering::Acquire);
                         stats_guard.last_export = Some(Instant::now());
                         stats_guard.last_failed_export = Some(Instant::now());
-                        stats_guard.export_success_rate = stats_guard.successful_exports as f64 / stats_guard.total_exports as f64;
-                        
+                        stats_guard.export_success_rate = stats_guard.successful_exports as f64
+                            / stats_guard.total_exports as f64;
+
                         eprintln!("Export failed: {}", e);
                     }
                 }
@@ -222,7 +230,9 @@ impl PrometheusExporter {
 
         for metric_def in all_metrics {
             // 获取指标数据点
-            let data_points = metrics_collector.get_metric_data(&metric_def.name).await
+            let data_points = metrics_collector
+                .get_metric_data(&metric_def.name)
+                .await
                 .map_err(|e| PrometheusExporterError::ExportFailed(e.to_string()))?;
 
             if data_points.is_empty() {
@@ -230,11 +240,12 @@ impl PrometheusExporter {
             }
 
             // 转换为 Prometheus 格式
-            let prometheus_metric = Self::convert_to_prometheus_format(&metric_def, &data_points, config)?;
-            
+            let prometheus_metric =
+                Self::convert_to_prometheus_format(&metric_def, &data_points, config)?;
+
             // 导出指标
             Self::export_single_metric(&prometheus_metric, config).await?;
-            
+
             total_exported += data_points.len() as u64;
         }
 
@@ -275,7 +286,7 @@ impl PrometheusExporter {
         config: &PrometheusExporterConfig,
     ) -> Result<PrometheusSample, PrometheusExporterError> {
         let mut labels = HashMap::new();
-        
+
         if config.enable_labels {
             for label in &data_point.labels {
                 labels.insert(label.name.clone(), label.value.clone());
@@ -313,22 +324,22 @@ impl PrometheusExporter {
     ) -> Result<(), PrometheusExporterError> {
         // 这里应该实现实际的导出逻辑
         // 例如：发送到 Prometheus Pushgateway 或写入文件
-        
+
         // 模拟导出过程
         let mut output = String::new();
-        
+
         // 添加帮助信息
         if !metric.help.is_empty() {
             output.push_str(&format!("# HELP {} {}\n", metric.name, metric.help));
         }
-        
+
         // 添加类型信息
         output.push_str(&format!("# TYPE {} {}\n", metric.name, metric.metric_type));
-        
+
         // 添加样本数据
         for sample in &metric.samples {
             output.push_str(&format!("{}", sample.name));
-            
+
             if !sample.labels.is_empty() {
                 output.push_str("{");
                 let mut label_pairs = Vec::new();
@@ -338,20 +349,20 @@ impl PrometheusExporter {
                 output.push_str(&label_pairs.join(","));
                 output.push_str("}");
             }
-            
+
             output.push_str(&format!(" {}", sample.value));
-            
+
             if let Some(timestamp) = sample.timestamp {
                 output.push_str(&format!(" {}", timestamp));
             }
-            
+
             output.push_str("\n");
         }
-        
+
         // 这里应该将 output 发送到实际的导出目标
         // 例如：HTTP POST 到 Prometheus Pushgateway
         println!("Exporting metric:\n{}", output);
-        
+
         Ok(())
     }
 
@@ -359,37 +370,54 @@ impl PrometheusExporter {
     pub async fn export_metrics(&self) -> Result<u64, PrometheusExporterError> {
         let start_time = Instant::now();
         let result = Self::export_metrics_internal(&self.metrics_collector, &self.config).await;
-        
+
         match result {
             Ok(exported_count) => {
-                self.total_exports.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-                self.successful_exports.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-                self.total_metrics_exported.fetch_add(exported_count, std::sync::atomic::Ordering::AcqRel);
-                
+                self.total_exports
+                    .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+                self.successful_exports
+                    .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+                self.total_metrics_exported
+                    .fetch_add(exported_count, std::sync::atomic::Ordering::AcqRel);
+
                 // 更新统计信息
                 let mut stats_guard = self.stats.lock().await;
-                stats_guard.total_exports = self.total_exports.load(std::sync::atomic::Ordering::Acquire);
-                stats_guard.successful_exports = self.successful_exports.load(std::sync::atomic::Ordering::Acquire);
-                stats_guard.total_metrics_exported = self.total_metrics_exported.load(std::sync::atomic::Ordering::Acquire);
+                stats_guard.total_exports = self
+                    .total_exports
+                    .load(std::sync::atomic::Ordering::Acquire);
+                stats_guard.successful_exports = self
+                    .successful_exports
+                    .load(std::sync::atomic::Ordering::Acquire);
+                stats_guard.total_metrics_exported = self
+                    .total_metrics_exported
+                    .load(std::sync::atomic::Ordering::Acquire);
                 stats_guard.last_export = Some(Instant::now());
                 stats_guard.last_successful_export = Some(Instant::now());
                 stats_guard.average_export_time = start_time.elapsed();
-                stats_guard.export_success_rate = stats_guard.successful_exports as f64 / stats_guard.total_exports as f64;
-                
+                stats_guard.export_success_rate =
+                    stats_guard.successful_exports as f64 / stats_guard.total_exports as f64;
+
                 Ok(exported_count)
             }
             Err(e) => {
-                self.total_exports.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-                self.failed_exports.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-                
+                self.total_exports
+                    .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+                self.failed_exports
+                    .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+
                 // 更新统计信息
                 let mut stats_guard = self.stats.lock().await;
-                stats_guard.total_exports = self.total_exports.load(std::sync::atomic::Ordering::Acquire);
-                stats_guard.failed_exports = self.failed_exports.load(std::sync::atomic::Ordering::Acquire);
+                stats_guard.total_exports = self
+                    .total_exports
+                    .load(std::sync::atomic::Ordering::Acquire);
+                stats_guard.failed_exports = self
+                    .failed_exports
+                    .load(std::sync::atomic::Ordering::Acquire);
                 stats_guard.last_export = Some(Instant::now());
                 stats_guard.last_failed_export = Some(Instant::now());
-                stats_guard.export_success_rate = stats_guard.successful_exports as f64 / stats_guard.total_exports as f64;
-                
+                stats_guard.export_success_rate =
+                    stats_guard.successful_exports as f64 / stats_guard.total_exports as f64;
+
                 Err(e)
             }
         }
@@ -398,15 +426,24 @@ impl PrometheusExporter {
     /// 获取统计信息
     pub async fn get_stats(&self) -> PrometheusExporterStats {
         let mut stats = self.stats.lock().await;
-        stats.total_exports = self.total_exports.load(std::sync::atomic::Ordering::Acquire);
-        stats.successful_exports = self.successful_exports.load(std::sync::atomic::Ordering::Acquire);
-        stats.failed_exports = self.failed_exports.load(std::sync::atomic::Ordering::Acquire);
-        stats.total_metrics_exported = self.total_metrics_exported.load(std::sync::atomic::Ordering::Acquire);
-        
+        stats.total_exports = self
+            .total_exports
+            .load(std::sync::atomic::Ordering::Acquire);
+        stats.successful_exports = self
+            .successful_exports
+            .load(std::sync::atomic::Ordering::Acquire);
+        stats.failed_exports = self
+            .failed_exports
+            .load(std::sync::atomic::Ordering::Acquire);
+        stats.total_metrics_exported = self
+            .total_metrics_exported
+            .load(std::sync::atomic::Ordering::Acquire);
+
         if stats.total_exports > 0 {
-            stats.export_success_rate = stats.successful_exports as f64 / stats.total_exports as f64;
+            stats.export_success_rate =
+                stats.successful_exports as f64 / stats.total_exports as f64;
         }
-        
+
         stats.clone()
     }
 
@@ -416,16 +453,19 @@ impl PrometheusExporter {
     }
 
     /// 更新配置
-    pub fn update_config(&mut self, config: PrometheusExporterConfig) -> Result<(), PrometheusExporterError> {
+    pub fn update_config(
+        &mut self,
+        config: PrometheusExporterConfig,
+    ) -> Result<(), PrometheusExporterError> {
         if config.export_interval.as_secs() == 0 {
             return Err(PrometheusExporterError::ConfigurationError(
-                "export_interval must be greater than 0".to_string()
+                "export_interval must be greater than 0".to_string(),
             ));
         }
 
         if config.max_metrics == 0 {
             return Err(PrometheusExporterError::ConfigurationError(
-                "max_metrics must be greater than 0".to_string()
+                "max_metrics must be greater than 0".to_string(),
             ));
         }
 
@@ -435,7 +475,8 @@ impl PrometheusExporter {
 
     /// 关闭导出器
     pub fn shutdown(&self) {
-        self.is_running.store(0, std::sync::atomic::Ordering::Release);
+        self.is_running
+            .store(0, std::sync::atomic::Ordering::Release);
     }
 
     /// 等待导出器关闭
@@ -464,13 +505,16 @@ impl Clone for PrometheusExporter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::monitoring::metrics_collector::{MetricsCollector, MetricsCollectorConfig, MetricDefinition, MetricType, MetricValue, MetricLabel};
+    use crate::monitoring::metrics_collector::{
+        MetricDefinition, MetricLabel, MetricType, MetricValue, MetricsCollector,
+        MetricsCollectorConfig,
+    };
 
     #[tokio::test]
     async fn test_prometheus_exporter_basic() {
         let collector_config = MetricsCollectorConfig::default();
         let collector = Arc::new(MetricsCollector::new(collector_config).unwrap());
-        
+
         let exporter_config = PrometheusExporterConfig::default();
         let exporter = PrometheusExporter::new(exporter_config, collector.clone()).unwrap();
 
@@ -491,7 +535,10 @@ mod tests {
             value: "test".to_string(),
         }];
 
-        collector.record_metric("test_counter".to_string(), value, labels).await.unwrap();
+        collector
+            .record_metric("test_counter".to_string(), value, labels)
+            .await
+            .unwrap();
 
         // 手动导出
         let exported_count = exporter.export_metrics().await.unwrap();
@@ -510,7 +557,7 @@ mod tests {
     async fn test_prometheus_exporter_multiple_metrics() {
         let collector_config = MetricsCollectorConfig::default();
         let collector = Arc::new(MetricsCollector::new(collector_config).unwrap());
-        
+
         let exporter_config = PrometheusExporterConfig::default();
         let exporter = PrometheusExporter::new(exporter_config, collector.clone()).unwrap();
 
@@ -533,8 +580,18 @@ mod tests {
         collector.register_metric(gauge_def).await.unwrap();
 
         // 记录指标值
-        collector.record_metric("test_counter".to_string(), MetricValue::Counter(1.0), vec![]).await.unwrap();
-        collector.record_metric("test_gauge".to_string(), MetricValue::Gauge(2.5), vec![]).await.unwrap();
+        collector
+            .record_metric(
+                "test_counter".to_string(),
+                MetricValue::Counter(1.0),
+                vec![],
+            )
+            .await
+            .unwrap();
+        collector
+            .record_metric("test_gauge".to_string(), MetricValue::Gauge(2.5), vec![])
+            .await
+            .unwrap();
 
         // 导出指标
         let exported_count = exporter.export_metrics().await.unwrap();
@@ -553,11 +610,11 @@ mod tests {
     async fn test_prometheus_exporter_config_update() {
         let collector_config = MetricsCollectorConfig::default();
         let collector = Arc::new(MetricsCollector::new(collector_config).unwrap());
-        
+
         let mut exporter_config = PrometheusExporterConfig::default();
         exporter_config.export_interval = Duration::from_secs(30);
         exporter_config.enable_labels = false;
-        
+
         let mut exporter = PrometheusExporter::new(exporter_config, collector.clone()).unwrap();
 
         // 更新配置

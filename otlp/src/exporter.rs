@@ -11,7 +11,7 @@ use crate::transport::TransportPool;
 use crate::utils::{PerformanceUtils, RetryUtils};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock, mpsc};
 use tokio::time::sleep;
 
 /// 导出结果
@@ -185,7 +185,10 @@ impl OtlpExporter {
         {
             let is_shutdown = self.is_shutdown.read().await;
             if *is_shutdown {
-                return Err(ExportError::Failed { reason: "exporter shutdown".to_string() }.into());
+                return Err(ExportError::Failed {
+                    reason: "exporter shutdown".to_string(),
+                }
+                .into());
             }
         }
 
@@ -193,7 +196,10 @@ impl OtlpExporter {
         {
             let is_initialized = self.is_initialized.read().await;
             if !*is_initialized {
-                return Err(ExportError::Failed { reason: "exporter not initialized".to_string() }.into());
+                return Err(ExportError::Failed {
+                    reason: "exporter not initialized".to_string(),
+                }
+                .into());
             }
         }
 
@@ -223,7 +229,10 @@ impl OtlpExporter {
         {
             let is_shutdown = self.is_shutdown.read().await;
             if *is_shutdown {
-                return Err(ExportError::Failed { reason: "exporter shutdown".to_string() }.into());
+                return Err(ExportError::Failed {
+                    reason: "exporter shutdown".to_string(),
+                }
+                .into());
             }
         }
 
@@ -235,10 +244,16 @@ impl OtlpExporter {
                 metrics.current_queue_size = metrics.current_queue_size.saturating_add(1);
                 Ok(())
             }
-            Err(mpsc::error::TrySendError::Full(_payload)) => {
-                Err(crate::error::OtlpError::Export(crate::error::ExportError::QueueFull { current: self.export_queue_capacity, max: self.export_queue_capacity }))
+            Err(mpsc::error::TrySendError::Full(_payload)) => Err(crate::error::OtlpError::Export(
+                crate::error::ExportError::QueueFull {
+                    current: self.export_queue_capacity,
+                    max: self.export_queue_capacity,
+                },
+            )),
+            Err(mpsc::error::TrySendError::Closed(_)) => Err(ExportError::Failed {
+                reason: "exporter shutdown".to_string(),
             }
-            Err(mpsc::error::TrySendError::Closed(_)) => Err(ExportError::Failed { reason: "exporter shutdown".to_string() }.into()),
+            .into()),
         }
     }
 
@@ -349,7 +364,10 @@ impl OtlpExporter {
 
         // 所有重试都失败了
         let _error = last_error.unwrap();
-        Err(ExportError::Failed { reason: "max retry attempts reached".to_string() }.into())
+        Err(ExportError::Failed {
+            reason: "max retry attempts reached".to_string(),
+        }
+        .into())
     }
 
     /// 直接导出批次

@@ -47,11 +47,11 @@ impl DistributedErrorCoordinator {
     pub fn new(config: DistributedConfig) -> Result<Self> {
         Ok(Self { config })
     }
-    
+
     pub async fn start(&self) -> Result<()> {
         Ok(())
     }
-    
+
     pub async fn get_cluster_status(&self) -> Result<ClusterStatus> {
         Ok(ClusterStatus {
             total_nodes: 3,
@@ -60,8 +60,11 @@ impl DistributedErrorCoordinator {
             consensus_status: ConsensusStatus::Stable,
         })
     }
-    
-    pub async fn handle_distributed_error(&self, _error: DistributedError) -> Result<DistributedErrorResult> {
+
+    pub async fn handle_distributed_error(
+        &self,
+        _error: DistributedError,
+    ) -> Result<DistributedErrorResult> {
         Ok(DistributedErrorResult {
             local_result: LocalResult { handled: true },
             consensus_reached: true,
@@ -372,10 +375,7 @@ async fn distributed_recovery_demo() -> Result<()> {
             if recovery_result.success { 100.0 } else { 0.0 }
         );
         println!("        - 执行时间: {:?}", recovery_result.execution_time);
-        println!(
-            "        - 参与节点: {:?}",
-            recovery_result.recovery_actions
-        );
+        println!("        - 参与节点: {:?}", recovery_result.recovery_actions);
         println!("        - 共识时间: {:?}", recovery_result.consensus_time);
 
         println!();
@@ -599,9 +599,7 @@ pub struct ConsensusResult {
     pub agreement_rate: f64,
 }
 
-fn simulate_consensus_result(
-    suggestions: &[RecoverySuggestion],
-) -> ConsensusResult {
+fn simulate_consensus_result(suggestions: &[RecoverySuggestion]) -> ConsensusResult {
     // 选择置信度最高的建议
     let best_suggestion = suggestions
         .iter()
@@ -631,7 +629,6 @@ struct RecoveryScenario {
     actions: Vec<String>,
     expected_result: RecoveryResult,
 }
-
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -716,7 +713,10 @@ fn create_resource_scaling_scenario() -> RecoveryScenario {
             "验证资源扩展效果".to_string(),
         ],
         expected_result: RecoveryResult {
-            recovery_actions: vec!["scale_resources".to_string(), "optimize_performance".to_string()],
+            recovery_actions: vec![
+                "scale_resources".to_string(),
+                "optimize_performance".to_string(),
+            ],
             success: true,
             execution_time: Duration::from_secs(120),
             consensus_time: Duration::from_millis(1000),
@@ -743,7 +743,10 @@ fn create_failover_scenario() -> RecoveryScenario {
             "同步服务状态".to_string(),
         ],
         expected_result: RecoveryResult {
-            recovery_actions: vec!["failover_to_backup".to_string(), "verify_continuity".to_string()],
+            recovery_actions: vec![
+                "failover_to_backup".to_string(),
+                "verify_continuity".to_string(),
+            ],
             success: true,
             execution_time: Duration::from_secs(15),
             consensus_time: Duration::from_millis(400),

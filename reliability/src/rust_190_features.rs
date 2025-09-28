@@ -6,14 +6,14 @@
 //! - 改进的错误处理
 //! - 新的生命周期特性
 
+use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use serde::{Serialize, Deserialize};
-use crate::error_handling::{UnifiedError, ErrorContext, ErrorSeverity};
 
 /// 异步闭包示例
-/// 
+///
 /// 展示如何使用Rust 1.90的异步闭包特性
 pub struct AsyncClosureExample;
 
@@ -33,12 +33,12 @@ impl AsyncClosureExample {
             file!(),
             line!(),
             ErrorSeverity::Medium,
-            "async_closure"
+            "async_closure",
         );
 
         // 使用异步闭包
         let result = operation().await;
-        
+
         match result {
             Ok(value) => {
                 tracing::info!("异步闭包操作成功");
@@ -66,7 +66,7 @@ impl AsyncClosureExample {
             file!(),
             line!(),
             ErrorSeverity::Medium,
-            "async_closure"
+            "async_closure",
         );
 
         let mut results = Vec::new();
@@ -80,8 +80,9 @@ impl AsyncClosureExample {
                         format!("批量操作第{}个失败", index + 1),
                         ErrorSeverity::Medium,
                         "batch_operation",
-                        context.clone()
-                    ).with_source(error);
+                        context.clone(),
+                    )
+                    .with_source(error);
                     errors.push(batch_error);
                 }
             }
@@ -97,24 +98,24 @@ impl AsyncClosureExample {
 }
 
 /// 泛型关联类型示例
-/// 
+///
 /// 展示如何使用Rust 1.90的泛型关联类型特性
 pub trait GenericAssociatedTypeExample {
     /// 关联类型：操作结果
     type OperationResult<T>;
-    
+
     /// 关联类型：错误类型
     type ErrorType;
-    
+
     /// 关联类型：配置类型
     type ConfigType<T>;
 
     /// 执行泛型操作
     fn execute_operation<T>(&self, input: T) -> Self::OperationResult<T>;
-    
+
     /// 获取配置
     fn get_config<T>(&self) -> Self::ConfigType<T>;
-    
+
     /// 处理错误
     fn handle_error(&self, error: Self::ErrorType) -> UnifiedError;
 }
@@ -137,10 +138,10 @@ impl ReliabilityService {
 impl GenericAssociatedTypeExample for ReliabilityService {
     /// 操作结果是一个包含成功值和元数据的结构
     type OperationResult<T> = OperationResult<T>;
-    
+
     /// 错误类型是统一错误
     type ErrorType = UnifiedError;
-    
+
     /// 配置类型是JSON值
     type ConfigType<T> = serde_json::Value;
 
@@ -171,15 +172,16 @@ impl GenericAssociatedTypeExample for ReliabilityService {
             file!(),
             line!(),
             ErrorSeverity::High,
-            "generic_associated_type"
+            "generic_associated_type",
         );
 
         UnifiedError::new(
             format!("服务 {} 处理错误", self.name),
             ErrorSeverity::High,
             "service_error",
-            context
-        ).with_source(error)
+            context,
+        )
+        .with_source(error)
     }
 }
 
@@ -230,18 +232,32 @@ impl Rust190FeatureDemo {
 
     /// 演示异步闭包特性
     pub async fn demonstrate_async_closures(&self) -> Result<Vec<String>, UnifiedError> {
-        let operations: Vec<Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<String, UnifiedError>> + Send>> + Send>> = vec![
-            Box::new(|| Box::pin(async { Ok::<String, UnifiedError>("操作1完成".to_string()) })),
-            Box::new(|| Box::pin(async { Ok::<String, UnifiedError>("操作2完成".to_string()) })),
-            Box::new(|| Box::pin(async { Ok::<String, UnifiedError>("操作3完成".to_string()) })),
+        let operations: Vec<
+            Box<
+                dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<String, UnifiedError>> + Send>>
+                    + Send,
+            >,
+        > = vec![
+            Box::new(|| {
+                Box::pin(async { Ok::<String, UnifiedError>("操作1完成".to_string()) })
+            }),
+            Box::new(|| {
+                Box::pin(async { Ok::<String, UnifiedError>("操作2完成".to_string()) })
+            }),
+            Box::new(|| {
+                Box::pin(async { Ok::<String, UnifiedError>("操作3完成".to_string()) })
+            }),
         ];
 
         let mut results = Vec::new();
         for operation in operations {
-            let result = self.async_closure_example.execute_with_async_closure(operation).await?;
+            let result = self
+                .async_closure_example
+                .execute_with_async_closure(operation)
+                .await?;
             results.push(result);
         }
-        
+
         Ok(results)
     }
 
@@ -262,7 +278,7 @@ impl Rust190FeatureDemo {
             "测试错误",
             ErrorSeverity::Medium,
             "test",
-            ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::Medium, "test")
+            ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::Medium, "test"),
         );
 
         self.reliability_service.handle_error(test_error)
@@ -276,7 +292,7 @@ impl Default for Rust190FeatureDemo {
 }
 
 /// 高级异步操作组合器
-/// 
+///
 /// 展示如何使用Rust 1.90的新特性创建更复杂的异步操作
 pub struct AdvancedAsyncCombinator;
 
@@ -285,7 +301,12 @@ impl AdvancedAsyncCombinator {
     pub async fn create_operation_chain<T>(
         &self,
         initial_value: T,
-        operations: Vec<Box<dyn FnOnce(T) -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>> + Send>>,
+        operations: Vec<
+            Box<
+                dyn FnOnce(T) -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>>
+                    + Send,
+            >,
+        >,
     ) -> Result<T, UnifiedError>
     where
         T: Clone + Send + Sync + 'static,
@@ -299,7 +320,7 @@ impl AdvancedAsyncCombinator {
                 file!(),
                 line!(),
                 ErrorSeverity::Medium,
-                "operation_chain"
+                "operation_chain",
             );
 
             match operation(current_value).await {
@@ -312,8 +333,9 @@ impl AdvancedAsyncCombinator {
                         format!("操作链第{}步失败", index + 1),
                         ErrorSeverity::High,
                         "operation_chain_failure",
-                        context
-                    ).with_source(error);
+                        context,
+                    )
+                    .with_source(error);
                     return Err(chain_error);
                 }
             }
@@ -325,7 +347,12 @@ impl AdvancedAsyncCombinator {
     /// 并行执行多个异步操作
     pub async fn execute_parallel_operations<T>(
         &self,
-        operations: Vec<Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>> + Send>>,
+        operations: Vec<
+            Box<
+                dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>>
+                    + Send,
+            >,
+        >,
     ) -> Result<Vec<T>, UnifiedError>
     where
         T: Send + 'static,
@@ -336,21 +363,23 @@ impl AdvancedAsyncCombinator {
             file!(),
             line!(),
             ErrorSeverity::Medium,
-            "parallel_operations"
+            "parallel_operations",
         );
 
         // 使用tokio::try_join!进行并行执行
         let futures: Vec<_> = operations.into_iter().map(|op| op()).collect();
-        
+
         // 等待所有操作完成
-        let results = futures::future::try_join_all(futures).await
+        let results = futures::future::try_join_all(futures)
+            .await
             .map_err(|error| {
                 UnifiedError::new(
                     "并行操作执行失败",
                     ErrorSeverity::High,
                     "parallel_operation_failure",
-                    context
-                ).with_source(error)
+                    context,
+                )
+                .with_source(error)
             })?;
 
         Ok(results)
@@ -371,7 +400,7 @@ mod tests {
     fn test_generic_associated_type_demonstration() {
         let demo = Rust190FeatureDemo::new();
         let result = demo.demonstrate_generic_associated_types();
-        
+
         assert_eq!(result.value, "测试数据");
         assert_eq!(result.metadata.service_name, "demo_service");
         assert!(result.metadata.success);
@@ -382,7 +411,7 @@ mod tests {
     fn test_config_access() {
         let demo = Rust190FeatureDemo::new();
         let config = demo.demonstrate_config_access();
-        
+
         assert!(config.is_object());
         assert!(config.get("timeout").is_some());
         assert!(config.get("retry_count").is_some());
@@ -393,7 +422,7 @@ mod tests {
     fn test_error_handling() {
         let demo = Rust190FeatureDemo::new();
         let error = demo.demonstrate_error_handling();
-        
+
         assert!(error.message().contains("服务"));
         assert!(error.message().contains("demo_service"));
         assert_eq!(error.severity(), ErrorSeverity::High);
@@ -404,7 +433,7 @@ mod tests {
     async fn test_async_closure_demonstration() {
         let demo = Rust190FeatureDemo::new();
         let results = demo.demonstrate_async_closures().await;
-        
+
         assert!(results.is_ok());
         let results = results.unwrap();
         assert_eq!(results.len(), 3);
@@ -417,14 +446,21 @@ mod tests {
     async fn test_operation_chain() {
         let combinator = AdvancedAsyncCombinator;
         let initial_value = 0i32;
-        
-        let operations: Vec<Box<dyn FnOnce(i32) -> Pin<Box<dyn Future<Output = Result<i32, UnifiedError>> + Send>> + Send>> = vec![
+
+        let operations: Vec<
+            Box<
+                dyn FnOnce(i32) -> Pin<Box<dyn Future<Output = Result<i32, UnifiedError>> + Send>>
+                    + Send,
+            >,
+        > = vec![
             Box::new(|x| Box::pin(async move { Ok::<i32, UnifiedError>(x + 1) })),
             Box::new(|x| Box::pin(async move { Ok::<i32, UnifiedError>(x * 2) })),
             Box::new(|x| Box::pin(async move { Ok::<i32, UnifiedError>(x - 1) })),
         ];
-        
-        let result = combinator.create_operation_chain(initial_value, operations).await;
+
+        let result = combinator
+            .create_operation_chain(initial_value, operations)
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 1); // ((0 + 1) * 2) - 1 = 1
     }
@@ -432,16 +468,21 @@ mod tests {
     #[tokio::test]
     async fn test_parallel_operations() {
         let combinator = AdvancedAsyncCombinator;
-        
-        let operations: Vec<Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<String, UnifiedError>> + Send>> + Send>> = vec![
+
+        let operations: Vec<
+            Box<
+                dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<String, UnifiedError>> + Send>>
+                    + Send,
+            >,
+        > = vec![
             Box::new(|| Box::pin(async { Ok::<String, UnifiedError>("任务1".to_string()) })),
             Box::new(|| Box::pin(async { Ok::<String, UnifiedError>("任务2".to_string()) })),
             Box::new(|| Box::pin(async { Ok::<String, UnifiedError>("任务3".to_string()) })),
         ];
-        
+
         let results = combinator.execute_parallel_operations(operations).await;
         assert!(results.is_ok());
-        
+
         let results = results.unwrap();
         assert_eq!(results.len(), 3);
         assert!(results.contains(&"任务1".to_string()));

@@ -2,11 +2,11 @@
 //!
 //! 本模块包含 OTLP 客户端的性能基准测试，用于评估不同场景下的性能表现。
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use otlp::{
+    OtlpClient, OtlpConfig, TelemetryData,
     config::TransportProtocol,
     data::{LogSeverity, MetricType, StatusCode},
-    OtlpClient, OtlpConfig, TelemetryData,
 };
 use std::hint::black_box;
 use std::time::Duration;

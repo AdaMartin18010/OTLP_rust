@@ -1,0 +1,89 @@
+# OTLP Rust 生产环境 Dockerfile
+# 多阶段构建，优化镜像大小和安全性
+
+# 构建阶段
+FROM rust:1.90-slim as builder
+
+# 安装构建依赖
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制Cargo文件
+COPY Cargo.toml Cargo.lock ./
+COPY otlp/Cargo.toml ./otlp/
+COPY reliability/Cargo.toml ./reliability/
+
+# 创建虚拟源文件以利用Docker缓存
+RUN mkdir -p otlp/src reliability/src && \
+    echo "fn main() {}" > otlp/src/main.rs && \
+    echo "fn main() {}" > reliability/src/main.rs
+
+# 构建依赖
+RUN cargo build --release --package otlp
+
+# 删除虚拟源文件
+RUN rm -rf otlp/src reliability/src
+
+# 复制实际源代码
+COPY . .
+
+# 构建应用程序
+RUN cargo build --release --package otlp
+
+# 运行时阶段
+FROM debian:bookworm-slim
+
+# 安装运行时依赖
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建非root用户
+RUN groupadd -r otlp && useradd -r -g otlp otlp
+
+# 设置工作目录
+WORKDIR /app
+
+# 从构建阶段复制二进制文件
+COPY --from=builder /app/target/release/otlp-server /app/otlp-server
+COPY --from=builder /app/target/release/otlp-client /app/otlp-client
+
+# 创建必要的目录
+RUN mkdir -p /app/data /app/logs /app/config && \
+    chown -R otlp:otlp /app
+
+# 复制配置文件
+COPY --chown=otlp:otlp otlp/config/production.toml /app/config/
+COPY --chown=otlp:otlp k8s/ssl/ /app/ssl/
+
+# 设置权限
+RUN chmod +x /app/otlp-server /app/otlp-client && \
+    chmod 600 /app/ssl/*.key && \
+    chmod 644 /app/ssl/*.crt
+
+# 切换到非root用户
+USER otlp
+
+# 暴露端口
+EXPOSE 4317 4318 9090
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:9090/health || exit 1
+
+# 设置环境变量
+ENV RUST_LOG=info \
+    RUST_BACKTRACE=1 \
+    OTLP_ENDPOINT=0.0.0.0:4317 \
+    OTLP_HTTP_ENDPOINT=0.0.0.0:4318 \
+    METRICS_PORT=9090
+
+# 启动命令
+CMD ["/app/otlp-server", "--config", "/app/config/production.toml"]

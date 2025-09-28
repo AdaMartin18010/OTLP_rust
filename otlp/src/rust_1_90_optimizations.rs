@@ -3,17 +3,17 @@
 //! 本模块展示了如何在OTLP项目中使用Rust 1.90 edition=2024的新特性
 //! 包括异步闭包、元组收集、性能优化等
 
-use std::future::Future;
-use std::sync::Arc;
-use std::collections::HashMap;
-use std::borrow::Cow;
-use tokio::sync::Mutex;
 use anyhow::Result;
 use std::arch::x86_64::*;
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::future::Future;
 use std::ptr;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 /// 异步闭包优化示例
-/// 
+///
 /// 展示如何使用Rust 1.90的新异步闭包特性替代BoxFuture
 pub struct AsyncClosureOptimizer {
     // 使用新的异步闭包特性，不再需要BoxFuture
@@ -30,7 +30,7 @@ impl AsyncClosureOptimizer {
     }
 
     /// 优化后：使用Rust 1.90异步闭包特性的版本
-    /// 
+    ///
     /// 优势：
     /// 1. 更简洁的类型签名
     /// 2. 更好的类型推导
@@ -53,21 +53,17 @@ impl AsyncClosureOptimizer {
     {
         // 模拟熔断器逻辑
         match self.check_circuit_state().await {
-            CircuitState::Closed => {
-                match f().await {
-                    Ok(result) => {
-                        self.record_success().await;
-                        Ok(result)
-                    }
-                    Err(e) => {
-                        self.record_failure().await;
-                        Err(e.into())
-                    }
+            CircuitState::Closed => match f().await {
+                Ok(result) => {
+                    self.record_success().await;
+                    Ok(result)
                 }
-            }
-            CircuitState::Open => {
-                Err(anyhow::anyhow!("Circuit breaker is open"))
-            }
+                Err(e) => {
+                    self.record_failure().await;
+                    Err(e.into())
+                }
+            },
+            CircuitState::Open => Err(anyhow::anyhow!("Circuit breaker is open")),
             CircuitState::HalfOpen => {
                 // 半开状态的逻辑
                 self.record_half_open_call().await;
@@ -104,7 +100,7 @@ pub enum CircuitState {
 }
 
 /// 元组收集优化示例
-/// 
+///
 /// 展示如何使用Rust 1.90的元组FromIterator特性
 pub struct TupleCollectionOptimizer;
 
@@ -114,19 +110,19 @@ impl TupleCollectionOptimizer {
     pub fn collect_separately(&self, data: Vec<Result<i32, String>>) -> (Vec<i32>, Vec<String>) {
         let mut successful = Vec::new();
         let mut failed = Vec::new();
-        
+
         for result in data {
             match result {
                 Ok(value) => successful.push(value),
                 Err(error) => failed.push(error),
             }
         }
-        
+
         (successful, failed)
     }
 
     /// 优化后：使用Rust 1.90的元组收集特性
-    /// 
+    ///
     /// 优势：
     /// 1. 单次迭代完成收集
     /// 2. 更简洁的代码
@@ -139,24 +135,27 @@ impl TupleCollectionOptimizer {
     }
 
     /// 更高级的元组收集：同时收集到多个不同类型的集合
-    pub fn advanced_tuple_collection(&self, data: Vec<(String, i32, bool)>) -> (HashMap<String, i32>, Vec<bool>, Vec<String>) {
+    pub fn advanced_tuple_collection(
+        &self,
+        data: Vec<(String, i32, bool)>,
+    ) -> (HashMap<String, i32>, Vec<bool>, Vec<String>) {
         // 使用Rust 1.90的元组收集特性，同时收集到三个不同的集合
         let (names, values, flags): (Vec<_>, Vec<_>, Vec<_>) = data
             .into_iter()
             .map(|(name, value, flag)| (name, value, flag))
             .collect();
-        
+
         let mut map = HashMap::new();
         for (name, value) in names.iter().zip(values.iter()) {
             map.insert(name.clone(), *value);
         }
-        
+
         (map, flags, names)
     }
 }
 
 /// 零拷贝优化示例
-/// 
+///
 /// 展示如何使用Cow类型减少不必要的克隆
 pub struct ZeroCopyOptimizer;
 
@@ -205,7 +204,7 @@ impl ZeroCopyOptimizer {
 }
 
 /// 高性能对象池优化
-/// 
+///
 /// 利用Rust 1.90的内存优化特性
 pub struct OptimizedMemoryPool<T: Clone> {
     pool: Arc<Mutex<Vec<T>>>,
@@ -240,7 +239,7 @@ impl<T: Send + Sync + Clone + 'static> OptimizedMemoryPool<T> {
     pub async fn acquire(&self) -> PooledObject<T> {
         let mut pool = self.pool.lock().await;
         let mut stats = self.stats.lock().await;
-        
+
         if let Some(obj) = pool.pop() {
             stats.total_reused += 1;
             PooledObject::new(obj, Arc::clone(&self.pool), Arc::clone(&self.stats))
@@ -297,7 +296,7 @@ impl<T: Clone + Send + 'static> Drop for PooledObject<T> {
             let pool = self.pool.clone();
             let stats = self.stats.clone();
             let max_size = self.max_size;
-            
+
             tokio::spawn(async move {
                 let mut pool = pool.lock().await;
                 if pool.len() < max_size {
@@ -312,7 +311,7 @@ impl<T: Clone + Send + 'static> Drop for PooledObject<T> {
 }
 
 /// 异步批处理优化
-/// 
+///
 /// 使用Rust 1.90的新特性优化批处理逻辑
 pub struct AsyncBatchProcessor {
     batch_size: usize,
@@ -342,21 +341,20 @@ impl AsyncBatchProcessor {
             .collect();
 
         // 使用元组收集特性同时处理成功和失败的结果
-        let (successful, failed): (Vec<_>, Vec<_>) = futures::future::join_all(
-            chunks.into_iter().map(processor)
-        )
-        .await
-        .into_iter()
-        .partition(|r| r.is_ok());
+        let (successful, failed): (Vec<_>, Vec<_>) =
+            futures::future::join_all(chunks.into_iter().map(processor))
+                .await
+                .into_iter()
+                .partition(|r| r.is_ok());
 
         if !failed.is_empty() {
-            return Err(anyhow::anyhow!("Batch processing failed: {} items failed", failed.len()));
+            return Err(anyhow::anyhow!(
+                "Batch processing failed: {} items failed",
+                failed.len()
+            ));
         }
 
-        let results: Vec<R> = successful
-            .into_iter()
-            .flat_map(|r| r.unwrap())
-            .collect();
+        let results: Vec<R> = successful.into_iter().flat_map(|r| r.unwrap()).collect();
 
         Ok(results)
     }
@@ -369,14 +367,12 @@ mod tests {
     #[tokio::test]
     async fn test_async_closure_optimization() {
         let optimizer = AsyncClosureOptimizer {};
-        
+
         // 测试异步闭包
         let result = optimizer
-            .call_with_async_closure::<_, _, i32>(|| async {
-                Ok::<i32, anyhow::Error>(42)
-            })
+            .call_with_async_closure::<_, _, i32>(|| async { Ok::<i32, anyhow::Error>(42) })
             .await;
-        
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 42);
     }
@@ -384,10 +380,15 @@ mod tests {
     #[test]
     fn test_tuple_collection_optimization() {
         let optimizer = TupleCollectionOptimizer;
-        let data = vec![Ok(1), Err("error1".to_string()), Ok(2), Err("error2".to_string())];
-        
+        let data = vec![
+            Ok(1),
+            Err("error1".to_string()),
+            Ok(2),
+            Err("error2".to_string()),
+        ];
+
         let (successful, failed) = optimizer.collect_to_tuple(data);
-        
+
         assert_eq!(successful, vec![1, 2]);
         assert_eq!(failed, vec!["error1", "error2"]);
     }
@@ -396,11 +397,11 @@ mod tests {
     fn test_zero_copy_optimization() {
         let optimizer = ZeroCopyOptimizer;
         let data = b"hello world";
-        
+
         // 测试借用的数据
         let result1 = optimizer.process_with_cow(Cow::Borrowed(data));
         assert!(result1.is_ok());
-        
+
         // 测试拥有的数据
         let result2 = optimizer.process_with_cow(Cow::Owned(data.to_vec()));
         assert!(result2.is_ok());
@@ -409,18 +410,18 @@ mod tests {
     #[tokio::test]
     async fn test_optimized_memory_pool() {
         let pool = OptimizedMemoryPool::new(|| String::with_capacity(1024), 10);
-        
+
         let obj1 = pool.acquire().await;
         assert_eq!(obj1.get().capacity(), 1024);
-        
+
         drop(obj1);
-        
+
         // 等待异步任务完成
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-        
+
         let obj2 = pool.acquire().await;
         assert_eq!(obj2.get().capacity(), 1024);
-        
+
         let stats = pool.get_stats().await;
         assert_eq!(stats.total_created, 1);
         // 由于异步回收，可能还没有被重用
@@ -431,13 +432,13 @@ mod tests {
     async fn test_async_batch_processing() {
         let processor = AsyncBatchProcessor::new(2, std::time::Duration::from_millis(100));
         let items = vec![1, 2, 3, 4, 5];
-        
+
         let results = processor
             .process_batch(items, |chunk| async move {
                 Ok::<Vec<i32>, anyhow::Error>(chunk.into_iter().map(|x| x * 2).collect())
             })
             .await;
-        
+
         assert!(results.is_ok());
         assert_eq!(results.unwrap(), vec![2, 4, 6, 8, 10]);
     }
@@ -452,7 +453,7 @@ pub struct SimdOptimizer {
 impl SimdOptimizer {
     pub fn new() -> Self {
         Self {
-            cache_line_size: 64, // 现代CPU的缓存行大小
+            cache_line_size: 64,  // 现代CPU的缓存行大小
             prefetch_distance: 2, // 预取距离
         }
     }
@@ -463,18 +464,18 @@ impl SimdOptimizer {
     pub unsafe fn process_data_simd(&self, data: &[f64], result: &mut [f64]) {
         let len = data.len();
         let simd_len = len - (len % 4); // 处理4个元素一组
-        
+
         for i in (0..simd_len).step_by(4) {
             // 加载4个f64值到AVX2寄存器
             let data_vec = unsafe { _mm256_loadu_pd(data.as_ptr().add(i)) };
-            
+
             // 执行SIMD运算（这里示例为平方运算）
             let result_vec = _mm256_mul_pd(data_vec, data_vec);
-            
+
             // 存储结果
             unsafe { _mm256_storeu_pd(result.as_mut_ptr().add(i), result_vec) };
         }
-        
+
         // 处理剩余元素
         for i in simd_len..len {
             result[i] = data[i] * data[i];
@@ -484,7 +485,7 @@ impl SimdOptimizer {
     /// 缓存友好的矩阵乘法
     pub fn matrix_multiply_optimized(&self, a: &[f64], b: &[f64], c: &mut [f64], n: usize) {
         const BLOCK_SIZE: usize = 64; // 缓存块大小
-        
+
         for ii in (0..n).step_by(BLOCK_SIZE) {
             for jj in (0..n).step_by(BLOCK_SIZE) {
                 for kk in (0..n).step_by(BLOCK_SIZE) {
@@ -492,7 +493,7 @@ impl SimdOptimizer {
                     let i_end = (ii + BLOCK_SIZE).min(n);
                     let j_end = (jj + BLOCK_SIZE).min(n);
                     let k_end = (kk + BLOCK_SIZE).min(n);
-                    
+
                     for i in ii..i_end {
                         for j in jj..j_end {
                             let mut sum = 0.0;
@@ -511,7 +512,7 @@ impl SimdOptimizer {
     pub fn prefetch_data(&self, data: &[u8]) {
         let len = data.len();
         let prefetch_step = self.cache_line_size * self.prefetch_distance;
-        
+
         for i in (0..len).step_by(prefetch_step) {
             if i + self.cache_line_size < len {
                 unsafe {
@@ -524,7 +525,8 @@ impl SimdOptimizer {
 
     /// 零拷贝字符串处理
     pub fn process_strings_zero_copy<'a>(&self, strings: &[&'a str]) -> Vec<Cow<'a, str>> {
-        strings.iter()
+        strings
+            .iter()
             .map(|&s| {
                 if s.len() > 100 {
                     // 长字符串进行优化处理
@@ -550,10 +552,10 @@ pub struct CacheOptimizer {
 impl CacheOptimizer {
     pub fn new() -> Self {
         Self {
-            l1_cache_size: 32 * 1024,  // 32KB L1缓存
-            l2_cache_size: 256 * 1024, // 256KB L2缓存
+            l1_cache_size: 32 * 1024,       // 32KB L1缓存
+            l2_cache_size: 256 * 1024,      // 256KB L2缓存
             l3_cache_size: 8 * 1024 * 1024, // 8MB L3缓存
-            cache_alignment: 64, // 64字节对齐
+            cache_alignment: 64,            // 64字节对齐
         }
     }
 
@@ -561,10 +563,11 @@ impl CacheOptimizer {
     #[allow(dead_code)]
     pub fn allocate_aligned(&self, size: usize) -> Result<*mut u8> {
         let aligned_size = (size + self.cache_alignment - 1) & !(self.cache_alignment - 1);
-        
+
         // 简化的内存分配，实际应用中应该使用更安全的方法
         unsafe {
-            let layout = std::alloc::Layout::from_size_align(aligned_size, self.cache_alignment).unwrap();
+            let layout =
+                std::alloc::Layout::from_size_align(aligned_size, self.cache_alignment).unwrap();
             let ptr = std::alloc::alloc(layout);
             if ptr.is_null() {
                 return Err(anyhow::anyhow!("内存分配失败"));
@@ -589,7 +592,7 @@ impl CacheOptimizer {
     pub fn warm_cache(&self, data: &[u8]) {
         let len = data.len();
         let step = self.cache_alignment;
-        
+
         // 顺序访问预热L1缓存
         for i in (0..len).step_by(step) {
             unsafe {
@@ -602,15 +605,15 @@ impl CacheOptimizer {
     #[allow(dead_code)]
     pub fn analyze_cache_performance(&self, data: &[u8]) -> CachePerformanceMetrics {
         let start = std::time::Instant::now();
-        
+
         // 顺序访问测试
         let mut _sum = 0u64;
         for &byte in data {
             _sum += byte as u64;
         }
-        
+
         let sequential_time = start.elapsed();
-        
+
         // 随机访问测试
         let start = std::time::Instant::now();
         let mut _sum2 = 0u64;
@@ -618,9 +621,9 @@ impl CacheOptimizer {
             let idx = (i * 7) % data.len(); // 伪随机访问
             _sum2 += data[idx] as u64;
         }
-        
+
         let random_time = start.elapsed();
-        
+
         CachePerformanceMetrics {
             sequential_access_time: sequential_time,
             random_access_time: random_time,
@@ -727,21 +730,21 @@ impl PerformanceBenchmark {
     /// 运行综合性能测试
     pub async fn run_comprehensive_benchmark(&mut self) -> BenchmarkResults {
         let mut results = BenchmarkResults::new();
-        
+
         // SIMD性能测试
         let data = vec![1.0f64; 1000000];
         let mut result = vec![0.0f64; 1000000];
-        
+
         let start = std::time::Instant::now();
         unsafe {
             self.simd_optimizer.process_data_simd(&data, &mut result);
         }
         results.simd_processing_time = start.elapsed();
-        
+
         // 缓存性能测试
         let test_data = vec![0u8; 1024 * 1024]; // 1MB测试数据
         results.cache_metrics = self.cache_optimizer.analyze_cache_performance(&test_data);
-        
+
         // 内存池性能测试
         let start = std::time::Instant::now();
         for _ in 0..1000 {
@@ -750,7 +753,7 @@ impl PerformanceBenchmark {
             }
         }
         results.memory_pool_time = start.elapsed();
-        
+
         results
     }
 }

@@ -10,21 +10,24 @@ use thiserror::Error;
 pub enum Statement {
     /// set 语句: set(path, value)
     Set { path: Path, value: Expression },
-    
+
     /// where 条件语句: where condition
     Where { condition: Expression },
-    
+
     /// keep_keys 语句: keep_keys(path, keys)
     KeepKeys { path: Path, keys: Vec<Expression> },
-    
+
     /// limit 语句: limit(path, count)
     Limit { path: Path, count: Expression },
-    
+
     /// convert 语句: convert(path, type)
     Convert { path: Path, target_type: String },
-    
+
     /// route 语句: route(path, destinations)
-    Route { path: Path, destinations: Vec<Expression> },
+    Route {
+        path: Path,
+        destinations: Vec<Expression>,
+    },
 }
 
 /// OTTL 路径表达式
@@ -32,22 +35,22 @@ pub enum Statement {
 pub enum Path {
     /// 资源属性路径: resource.attributes["key"]
     ResourceAttribute { key: String },
-    
+
     /// 作用域属性路径: scope.attributes["key"]
     ScopeAttribute { key: String },
-    
+
     /// 指标属性路径: metric.attributes["key"]
     MetricAttribute { key: String },
-    
+
     /// 跨度属性路径: span.attributes["key"]
     SpanAttribute { key: String },
-    
+
     /// 日志属性路径: log.attributes["key"]
     LogAttribute { key: String },
-    
+
     /// 嵌套路径: path.subpath
     Nested { base: Box<Path>, subpath: String },
-    
+
     /// 索引路径: path[index]
     Indexed { base: Box<Path>, index: Expression },
 }
@@ -57,21 +60,29 @@ pub enum Path {
 pub enum Expression {
     /// 字面量
     Literal(Literal),
-    
+
     /// 路径引用
     Path(Box<Path>),
-    
+
     /// 函数调用: function(args...)
     FunctionCall { name: String, args: Vec<Expression> },
-    
+
     /// 二元运算: left op right
-    Binary { left: Box<Expression>, op: BinaryOp, right: Box<Expression> },
-    
+    Binary {
+        left: Box<Expression>,
+        op: BinaryOp,
+        right: Box<Expression>,
+    },
+
     /// 一元运算: op expr
     Unary { op: UnaryOp, expr: Box<Expression> },
-    
+
     /// 条件表达式: condition ? true_expr : false_expr
-    Conditional { condition: Box<Expression>, true_expr: Box<Expression>, false_expr: Box<Expression> },
+    Conditional {
+        condition: Box<Expression>,
+        true_expr: Box<Expression>,
+        false_expr: Box<Expression>,
+    },
 }
 
 /// 字面量类型
@@ -90,17 +101,27 @@ pub enum Literal {
 #[derive(Debug, Clone, PartialEq)]
 pub enum BinaryOp {
     // 算术运算
-    Add, Sub, Mul, Div, Mod,
-    
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+
     // 比较运算
-    Eq, Ne, Lt, Le, Gt, Ge,
-    
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+
     // 逻辑运算
-    And, Or,
-    
+    And,
+    Or,
+
     // 字符串运算
     Concat,
-    
+
     // 正则匹配
     Match,
 }
@@ -117,19 +138,19 @@ pub enum UnaryOp {
 pub enum ParseError {
     #[error("语法错误: {message} at position {position}")]
     SyntaxError { message: String, position: usize },
-    
+
     #[error("意外的令牌: {token} at position {position}")]
     UnexpectedToken { token: String, position: usize },
-    
+
     #[error("意外的文件结尾")]
     UnexpectedEof,
-    
+
     #[error("无效的标识符: {identifier}")]
     InvalidIdentifier { identifier: String },
-    
+
     #[error("无效的路径: {path}")]
     InvalidPath { path: String },
-    
+
     #[error("无效的函数名: {function}")]
     InvalidFunction { function: String },
 }
@@ -190,22 +211,22 @@ impl OttlParser {
             tokens: Vec::new(),
         }
     }
-    
+
     /// 解析 OTTL 语句
     pub fn parse(&mut self) -> Result<Vec<Statement>, ParseError> {
         self.tokenize()?;
         self.parse_statements()
     }
-    
+
     /// 词法分析
     fn tokenize(&mut self) -> Result<(), ParseError> {
         let mut tokens = Vec::new();
         let mut chars = self.input.chars().peekable();
-        
+
         while let Some(ch) = chars.next() {
             match ch {
                 ' ' | '\t' | '\n' | '\r' => continue,
-                
+
                 '(' => tokens.push(Token::LeftParen),
                 ')' => tokens.push(Token::RightParen),
                 '[' => tokens.push(Token::LeftBracket),
@@ -215,7 +236,7 @@ impl OttlParser {
                 '.' => tokens.push(Token::Dot),
                 ',' => tokens.push(Token::Comma),
                 ';' => tokens.push(Token::Semicolon),
-                
+
                 '=' => {
                     if chars.peek() == Some(&'=') {
                         chars.next();
@@ -224,7 +245,7 @@ impl OttlParser {
                         tokens.push(Token::Equal);
                     }
                 }
-                
+
                 '!' => {
                     if chars.peek() == Some(&'=') {
                         chars.next();
@@ -233,7 +254,7 @@ impl OttlParser {
                         tokens.push(Token::Not);
                     }
                 }
-                
+
                 '<' => {
                     if chars.peek() == Some(&'=') {
                         chars.next();
@@ -242,7 +263,7 @@ impl OttlParser {
                         tokens.push(Token::LessThan);
                     }
                 }
-                
+
                 '>' => {
                     if chars.peek() == Some(&'=') {
                         chars.next();
@@ -251,7 +272,7 @@ impl OttlParser {
                         tokens.push(Token::GreaterThan);
                     }
                 }
-                
+
                 '+' => tokens.push(Token::Plus),
                 '-' => tokens.push(Token::Minus),
                 '*' => tokens.push(Token::Multiply),
@@ -262,9 +283,9 @@ impl OttlParser {
                         chars.next();
                         tokens.push(Token::And);
                     } else {
-                        return Err(ParseError::UnexpectedToken { 
-                            token: "&".to_string(), 
-                            position: self.position 
+                        return Err(ParseError::UnexpectedToken {
+                            token: "&".to_string(),
+                            position: self.position,
                         });
                     }
                 }
@@ -273,15 +294,15 @@ impl OttlParser {
                         chars.next();
                         tokens.push(Token::Or);
                     } else {
-                        return Err(ParseError::UnexpectedToken { 
-                            token: "|".to_string(), 
-                            position: self.position 
+                        return Err(ParseError::UnexpectedToken {
+                            token: "|".to_string(),
+                            position: self.position,
                         });
                     }
                 }
                 '?' => tokens.push(Token::Question),
                 ':' => tokens.push(Token::Colon),
-                
+
                 '"' => {
                     let mut string = String::new();
                     while let Some(ch) = chars.next() {
@@ -292,11 +313,11 @@ impl OttlParser {
                     }
                     tokens.push(Token::String(string));
                 }
-                
+
                 '0'..='9' => {
                     let mut number = String::new();
                     number.push(ch);
-                    
+
                     while let Some(&next) = chars.peek() {
                         if next.is_ascii_digit() || next == '.' {
                             number.push(chars.next().unwrap());
@@ -304,19 +325,18 @@ impl OttlParser {
                             break;
                         }
                     }
-                    
-                    let num = number.parse::<f64>()
-                        .map_err(|_| ParseError::SyntaxError { 
-                            message: format!("无效的数字: {}", number), 
-                            position: self.position 
-                        })?;
+
+                    let num = number.parse::<f64>().map_err(|_| ParseError::SyntaxError {
+                        message: format!("无效的数字: {}", number),
+                        position: self.position,
+                    })?;
                     tokens.push(Token::Number(num));
                 }
-                
+
                 _ if ch.is_ascii_alphabetic() || ch == '_' => {
                     let mut identifier = String::new();
                     identifier.push(ch);
-                    
+
                     while let Some(&next) = chars.peek() {
                         if next.is_ascii_alphanumeric() || next == '_' {
                             identifier.push(chars.next().unwrap());
@@ -324,7 +344,7 @@ impl OttlParser {
                             break;
                         }
                     }
-                    
+
                     // 检查是否为关键字
                     let token = match identifier.as_str() {
                         "where" => Token::Where,
@@ -339,35 +359,35 @@ impl OttlParser {
                     };
                     tokens.push(token);
                 }
-                
+
                 _ => {
-                    return Err(ParseError::UnexpectedToken { 
-                        token: ch.to_string(), 
-                        position: self.position 
+                    return Err(ParseError::UnexpectedToken {
+                        token: ch.to_string(),
+                        position: self.position,
                     });
                 }
             }
             self.position += 1;
         }
-        
+
         tokens.push(Token::Eof);
         self.tokens = tokens;
         Ok(())
     }
-    
+
     /// 解析语句列表
     fn parse_statements(&mut self) -> Result<Vec<Statement>, ParseError> {
         let mut statements = Vec::new();
-        
+
         while !self.is_at_end() {
             if let Some(statement) = self.parse_statement()? {
                 statements.push(statement);
             }
         }
-        
+
         Ok(statements)
     }
-    
+
     /// 解析单个语句
     fn parse_statement(&mut self) -> Result<Option<Statement>, ParseError> {
         match self.peek() {
@@ -396,13 +416,13 @@ impl OttlParser {
                 self.parse_route_statement()
             }
             Token::Eof => Ok(None),
-            _ => Err(ParseError::SyntaxError { 
-                message: "意外的令牌".to_string(), 
-                position: self.position 
+            _ => Err(ParseError::SyntaxError {
+                message: "意外的令牌".to_string(),
+                position: self.position,
             }),
         }
     }
-    
+
     /// 解析 set 语句
     fn parse_set_statement(&mut self) -> Result<Option<Statement>, ParseError> {
         self.expect(Token::LeftParen)?;
@@ -410,16 +430,16 @@ impl OttlParser {
         self.expect(Token::Comma)?;
         let value = self.parse_expression()?;
         self.expect(Token::RightParen)?;
-        
+
         Ok(Some(Statement::Set { path, value }))
     }
-    
+
     /// 解析 where 语句
     fn parse_where_statement(&mut self) -> Result<Option<Statement>, ParseError> {
         let condition = self.parse_expression()?;
         Ok(Some(Statement::Where { condition }))
     }
-    
+
     /// 解析 keep_keys 语句
     fn parse_keep_keys_statement(&mut self) -> Result<Option<Statement>, ParseError> {
         self.expect(Token::LeftParen)?;
@@ -427,10 +447,10 @@ impl OttlParser {
         self.expect(Token::Comma)?;
         let keys = self.parse_expression_list()?;
         self.expect(Token::RightParen)?;
-        
+
         Ok(Some(Statement::KeepKeys { path, keys }))
     }
-    
+
     /// 解析 limit 语句
     fn parse_limit_statement(&mut self) -> Result<Option<Statement>, ParseError> {
         self.expect(Token::LeftParen)?;
@@ -438,10 +458,10 @@ impl OttlParser {
         self.expect(Token::Comma)?;
         let count = self.parse_expression()?;
         self.expect(Token::RightParen)?;
-        
+
         Ok(Some(Statement::Limit { path, count }))
     }
-    
+
     /// 解析 convert 语句
     fn parse_convert_statement(&mut self) -> Result<Option<Statement>, ParseError> {
         self.expect(Token::LeftParen)?;
@@ -449,10 +469,10 @@ impl OttlParser {
         self.expect(Token::Comma)?;
         let target_type = self.parse_string_literal()?;
         self.expect(Token::RightParen)?;
-        
+
         Ok(Some(Statement::Convert { path, target_type }))
     }
-    
+
     /// 解析 route 语句
     fn parse_route_statement(&mut self) -> Result<Option<Statement>, ParseError> {
         self.expect(Token::LeftParen)?;
@@ -460,10 +480,10 @@ impl OttlParser {
         self.expect(Token::Comma)?;
         let destinations = self.parse_expression_list()?;
         self.expect(Token::RightParen)?;
-        
+
         Ok(Some(Statement::Route { path, destinations }))
     }
-    
+
     /// 解析路径
     fn parse_path(&mut self) -> Result<Path, ParseError> {
         // 简化的路径解析实现
@@ -480,13 +500,13 @@ impl OttlParser {
                     _ => Err(ParseError::InvalidPath { path: name }),
                 }
             }
-            _ => Err(ParseError::SyntaxError { 
-                message: "期望路径".to_string(), 
-                position: self.position 
+            _ => Err(ParseError::SyntaxError {
+                message: "期望路径".to_string(),
+                position: self.position,
             }),
         }
     }
-    
+
     /// 解析资源路径
     fn parse_resource_path(&mut self) -> Result<Path, ParseError> {
         self.expect(Token::Dot)?;
@@ -503,35 +523,39 @@ impl OttlParser {
                     Err(ParseError::InvalidPath { path: name.clone() })
                 }
             }
-            _ => Err(ParseError::SyntaxError { 
-                message: "期望 attributes".to_string(), 
-                position: self.position 
+            _ => Err(ParseError::SyntaxError {
+                message: "期望 attributes".to_string(),
+                position: self.position,
             }),
         }
     }
-    
+
     /// 解析作用域路径
     fn parse_scope_path(&mut self) -> Result<Path, ParseError> {
         self.parse_attribute_path("scope", |key| Path::ScopeAttribute { key })
     }
-    
+
     /// 解析指标路径
     fn parse_metric_path(&mut self) -> Result<Path, ParseError> {
         self.parse_attribute_path("metric", |key| Path::MetricAttribute { key })
     }
-    
+
     /// 解析跨度路径
     fn parse_span_path(&mut self) -> Result<Path, ParseError> {
         self.parse_attribute_path("span", |key| Path::SpanAttribute { key })
     }
-    
+
     /// 解析日志路径
     fn parse_log_path(&mut self) -> Result<Path, ParseError> {
         self.parse_attribute_path("log", |key| Path::LogAttribute { key })
     }
-    
+
     /// 解析属性路径的通用方法
-    fn parse_attribute_path<F>(&mut self, _prefix: &str, path_creator: F) -> Result<Path, ParseError>
+    fn parse_attribute_path<F>(
+        &mut self,
+        _prefix: &str,
+        path_creator: F,
+    ) -> Result<Path, ParseError>
     where
         F: FnOnce(String) -> Path,
     {
@@ -549,22 +573,22 @@ impl OttlParser {
                     Err(ParseError::InvalidPath { path: name })
                 }
             }
-            _ => Err(ParseError::SyntaxError { 
-                message: "期望 attributes".to_string(), 
-                position: self.position 
+            _ => Err(ParseError::SyntaxError {
+                message: "期望 attributes".to_string(),
+                position: self.position,
             }),
         }
     }
-    
+
     /// 解析表达式
     fn parse_expression(&mut self) -> Result<Expression, ParseError> {
         self.parse_conditional_expression()
     }
-    
+
     /// 解析条件表达式
     fn parse_conditional_expression(&mut self) -> Result<Expression, ParseError> {
         let expr = self.parse_or_expression()?;
-        
+
         if self.check(Token::Question) {
             self.advance();
             let true_expr = self.parse_expression()?;
@@ -576,14 +600,14 @@ impl OttlParser {
                 false_expr: Box::new(false_expr),
             });
         }
-        
+
         Ok(expr)
     }
-    
+
     /// 解析或表达式
     fn parse_or_expression(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_and_expression()?;
-        
+
         while self.check(Token::Or) {
             let op = self.get_binary_op();
             self.advance();
@@ -594,14 +618,14 @@ impl OttlParser {
                 right: Box::new(right),
             };
         }
-        
+
         Ok(expr)
     }
-    
+
     /// 解析与表达式
     fn parse_and_expression(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_equality_expression()?;
-        
+
         while self.check(Token::And) {
             let op = self.get_binary_op();
             self.advance();
@@ -612,14 +636,14 @@ impl OttlParser {
                 right: Box::new(right),
             };
         }
-        
+
         Ok(expr)
     }
-    
+
     /// 解析相等表达式
     fn parse_equality_expression(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_comparison_expression()?;
-        
+
         while self.check(Token::Equal) || self.check(Token::NotEqual) {
             let op = self.get_binary_op();
             self.advance();
@@ -630,16 +654,19 @@ impl OttlParser {
                 right: Box::new(right),
             };
         }
-        
+
         Ok(expr)
     }
-    
+
     /// 解析比较表达式
     fn parse_comparison_expression(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_term_expression()?;
-        
-        while self.check(Token::GreaterThan) || self.check(Token::GreaterEqual) ||
-              self.check(Token::LessThan) || self.check(Token::LessEqual) {
+
+        while self.check(Token::GreaterThan)
+            || self.check(Token::GreaterEqual)
+            || self.check(Token::LessThan)
+            || self.check(Token::LessEqual)
+        {
             let op = self.get_binary_op();
             self.advance();
             let right = self.parse_term_expression()?;
@@ -649,14 +676,14 @@ impl OttlParser {
                 right: Box::new(right),
             };
         }
-        
+
         Ok(expr)
     }
-    
+
     /// 解析项表达式
     fn parse_term_expression(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_factor_expression()?;
-        
+
         while self.check(Token::Plus) || self.check(Token::Minus) {
             let op = self.get_binary_op();
             self.advance();
@@ -667,15 +694,16 @@ impl OttlParser {
                 right: Box::new(right),
             };
         }
-        
+
         Ok(expr)
     }
-    
+
     /// 解析因子表达式
     fn parse_factor_expression(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_unary_expression()?;
-        
-        while self.check(Token::Multiply) || self.check(Token::Divide) || self.check(Token::Modulo) {
+
+        while self.check(Token::Multiply) || self.check(Token::Divide) || self.check(Token::Modulo)
+        {
             let op = self.get_binary_op();
             self.advance();
             let right = self.parse_unary_expression()?;
@@ -685,10 +713,10 @@ impl OttlParser {
                 right: Box::new(right),
             };
         }
-        
+
         Ok(expr)
     }
-    
+
     /// 解析一元表达式
     fn parse_unary_expression(&mut self) -> Result<Expression, ParseError> {
         if self.check(Token::Not) || self.check(Token::Minus) {
@@ -700,30 +728,34 @@ impl OttlParser {
                 expr: Box::new(expr),
             });
         }
-        
+
         self.parse_primary_expression()
     }
-    
+
     /// 解析主要表达式
     fn parse_primary_expression(&mut self) -> Result<Expression, ParseError> {
         if self.is_at_end() {
             return Err(ParseError::UnexpectedEof);
         }
-        
+
         let token = self.tokens[self.position].clone();
         self.position += 1;
-        
+
         match token {
             Token::String(s) => Ok(Expression::Literal(Literal::String(s))),
             Token::Number(n) => Ok(Expression::Literal(Literal::Float(n))),
             Token::Boolean(b) => Ok(Expression::Literal(Literal::Bool(b))),
             Token::Identifier(name) => {
-                if self.position < self.tokens.len() && matches!(self.tokens[self.position], Token::LeftParen) {
+                if self.position < self.tokens.len()
+                    && matches!(self.tokens[self.position], Token::LeftParen)
+                {
                     // 函数调用
                     self.parse_function_call(name)
                 } else {
                     // 路径引用
-                    Ok(Expression::Path(Box::new(self.parse_path_from_identifier(name)?)))
+                    Ok(Expression::Path(Box::new(
+                        self.parse_path_from_identifier(name)?,
+                    )))
                 }
             }
             Token::LeftParen => {
@@ -731,26 +763,26 @@ impl OttlParser {
                 self.expect(Token::RightParen)?;
                 Ok(expr)
             }
-            _ => Err(ParseError::SyntaxError { 
-                message: "期望表达式".to_string(), 
-                position: self.position 
+            _ => Err(ParseError::SyntaxError {
+                message: "期望表达式".to_string(),
+                position: self.position,
             }),
         }
     }
-    
+
     /// 解析函数调用
     fn parse_function_call(&mut self, name: String) -> Result<Expression, ParseError> {
         self.expect(Token::LeftParen)?;
         let args = self.parse_expression_list()?;
         self.expect(Token::RightParen)?;
-        
+
         Ok(Expression::FunctionCall { name, args })
     }
-    
+
     /// 解析表达式列表
     fn parse_expression_list(&mut self) -> Result<Vec<Expression>, ParseError> {
         let mut args = Vec::new();
-        
+
         if !self.check(Token::RightParen) {
             loop {
                 args.push(self.parse_expression()?);
@@ -760,10 +792,10 @@ impl OttlParser {
                 self.advance();
             }
         }
-        
+
         Ok(args)
     }
-    
+
     /// 从标识符解析路径
     fn parse_path_from_identifier(&mut self, name: String) -> Result<Path, ParseError> {
         match name.as_str() {
@@ -775,7 +807,7 @@ impl OttlParser {
             _ => Err(ParseError::InvalidPath { path: name }),
         }
     }
-    
+
     /// 解析字符串字面量
     fn parse_string_literal(&mut self) -> Result<String, ParseError> {
         let token = self.peek().clone();
@@ -784,13 +816,13 @@ impl OttlParser {
                 self.advance();
                 Ok(s)
             }
-            _ => Err(ParseError::SyntaxError { 
-                message: "期望字符串字面量".to_string(), 
-                position: self.position 
+            _ => Err(ParseError::SyntaxError {
+                message: "期望字符串字面量".to_string(),
+                position: self.position,
             }),
         }
     }
-    
+
     /// 获取二元操作符
     fn get_binary_op(&self) -> BinaryOp {
         match self.peek() {
@@ -810,7 +842,7 @@ impl OttlParser {
             _ => BinaryOp::Eq, // 默认值
         }
     }
-    
+
     /// 获取一元操作符
     fn get_unary_op(&self) -> UnaryOp {
         match self.peek() {
@@ -819,17 +851,19 @@ impl OttlParser {
             _ => UnaryOp::Not, // 默认值
         }
     }
-    
+
     /// 检查当前令牌
     fn check(&self, token_type: Token) -> bool {
-        !self.is_at_end() && std::mem::discriminant(&self.tokens[self.position]) == std::mem::discriminant(&token_type)
+        !self.is_at_end()
+            && std::mem::discriminant(&self.tokens[self.position])
+                == std::mem::discriminant(&token_type)
     }
-    
+
     /// 检查是否到达结尾
     fn is_at_end(&self) -> bool {
         self.position >= self.tokens.len() || matches!(self.peek(), Token::Eof)
     }
-    
+
     /// 获取当前令牌
     fn peek(&self) -> &Token {
         if self.position >= self.tokens.len() {
@@ -838,7 +872,7 @@ impl OttlParser {
             &self.tokens[self.position]
         }
     }
-    
+
     /// 前进到下一个令牌
     fn advance(&mut self) -> &Token {
         if !self.is_at_end() {
@@ -846,7 +880,7 @@ impl OttlParser {
         }
         self.previous()
     }
-    
+
     /// 获取前一个令牌
     fn previous(&self) -> &Token {
         if self.position == 0 {
@@ -855,16 +889,16 @@ impl OttlParser {
             &self.tokens[self.position - 1]
         }
     }
-    
+
     /// 期望特定令牌
     fn expect(&mut self, token_type: Token) -> Result<(), ParseError> {
         if self.check(token_type) {
             self.advance();
             Ok(())
         } else {
-            Err(ParseError::UnexpectedToken { 
-                token: format!("{:?}", self.peek()), 
-                position: self.position 
+            Err(ParseError::UnexpectedToken {
+                token: format!("{:?}", self.peek()),
+                position: self.position,
             })
         }
     }
@@ -873,7 +907,7 @@ impl OttlParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_parse_set_statement() {
         let input = r#"set(resource.attributes["service.name"], "my-service")"#;
@@ -881,7 +915,7 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_parse_where_statement() {
         let input = r#"where resource.attributes["env"] == "production""#;
@@ -889,7 +923,7 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_parse_function_call() {
         let input = r#"SHA256("test")"#;

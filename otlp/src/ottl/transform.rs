@@ -2,7 +2,7 @@
 //!
 //! 提供 OTTL 语句的执行和数据转换功能。
 
-use super::parser::{Statement, Expression, Path};
+use super::parser::{Expression, Path, Statement};
 use crate::data::TelemetryData;
 use crate::error::{OtlpError, Result};
 
@@ -26,7 +26,7 @@ impl TransformConfig {
             statements: Vec::new(),
         }
     }
-    
+
     /// 添加转换语句
     pub fn add_statement(mut self, statement: Statement) -> Self {
         self.statements.push(statement);
@@ -64,17 +64,17 @@ impl OtlpTransform {
     pub fn new(config: TransformConfig) -> Result<Self> {
         Ok(Self { config })
     }
-    
+
     /// 转换遥测数据
     pub async fn transform(&self, data: Vec<TelemetryData>) -> Result<TransformResult> {
         let mut result_data = Vec::new();
         let mut processed_count = 0;
         let mut filtered_count = 0;
         let mut transformed_count = 0;
-        
+
         for telemetry_data in data {
             processed_count += 1;
-            
+
             // 应用转换语句
             if let Some(transformed_data) = self.apply_statements(telemetry_data).await? {
                 result_data.push(transformed_data);
@@ -83,7 +83,7 @@ impl OtlpTransform {
                 filtered_count += 1;
             }
         }
-        
+
         Ok(TransformResult {
             data: result_data,
             stats: TransformStats {
@@ -93,7 +93,7 @@ impl OtlpTransform {
             },
         })
     }
-    
+
     /// 应用转换语句
     async fn apply_statements(&self, mut data: TelemetryData) -> Result<Option<TelemetryData>> {
         for statement in &self.config.statements {
@@ -126,17 +126,21 @@ impl OtlpTransform {
                 }
             }
         }
-        
+
         Ok(Some(data))
     }
-    
+
     /// 评估条件表达式
-    async fn evaluate_condition(&self, condition: &Expression, data: &TelemetryData) -> Result<bool> {
+    async fn evaluate_condition(
+        &self,
+        condition: &Expression,
+        data: &TelemetryData,
+    ) -> Result<bool> {
         match condition {
             Expression::Binary { left, op, right } => {
                 let left_val = self.evaluate_expression(left, data).await?;
                 let right_val = self.evaluate_expression(right, data).await?;
-                
+
                 match op {
                     super::parser::BinaryOp::Eq => Ok(left_val == right_val),
                     super::parser::BinaryOp::Ne => Ok(left_val != right_val),
@@ -155,38 +159,38 @@ impl OtlpTransform {
             }
         }
     }
-    
+
     /// 评估表达式
     async fn evaluate_expression(&self, expr: &Expression, data: &TelemetryData) -> Result<bool> {
         match expr {
-            Expression::Literal(literal) => {
-                match literal {
-                    super::parser::Literal::Bool(b) => Ok(*b),
-                    _ => Err(OtlpError::ValidationError("期望布尔值".to_string())),
-                }
-            }
+            Expression::Literal(literal) => match literal {
+                super::parser::Literal::Bool(b) => Ok(*b),
+                _ => Err(OtlpError::ValidationError("期望布尔值".to_string())),
+            },
             Expression::Path(path) => {
                 let value = self.get_attribute_value(data, path).await?;
                 Ok(value)
             }
-            Expression::FunctionCall { name, args } => {
-                self.call_function(name, args, data).await
-            }
+            Expression::FunctionCall { name, args } => self.call_function(name, args, data).await,
             _ => Err(OtlpError::ValidationError("不支持的表达式类型".to_string())),
         }
     }
-    
+
     /// 获取属性值
     async fn get_attribute_value(&self, data: &TelemetryData, path: &Path) -> Result<bool> {
         match path {
             Path::ResourceAttribute { key } => {
-                let value = data.resource_attributes.get(key)
+                let value = data
+                    .resource_attributes
+                    .get(key)
                     .map(|v| v.to_string())
                     .unwrap_or_default();
                 Ok(!value.is_empty())
             }
             Path::ScopeAttribute { key } => {
-                let value = data.scope_attributes.get(key)
+                let value = data
+                    .scope_attributes
+                    .get(key)
                     .map(|v| v.to_string())
                     .unwrap_or_default();
                 Ok(!value.is_empty())
@@ -194,9 +198,14 @@ impl OtlpTransform {
             _ => Ok(false),
         }
     }
-    
+
     /// 设置属性值
-    async fn set_attribute(&self, data: &mut TelemetryData, path: &Path, value: &Expression) -> Result<()> {
+    async fn set_attribute(
+        &self,
+        data: &mut TelemetryData,
+        path: &Path,
+        value: &Expression,
+    ) -> Result<()> {
         match path {
             Path::ResourceAttribute { key } => {
                 let val = self.evaluate_value_expression(value, data).await?;
@@ -210,49 +219,76 @@ impl OtlpTransform {
         }
         Ok(())
     }
-    
+
     /// 评估值表达式
-    async fn evaluate_value_expression(&self, expr: &Expression, _data: &TelemetryData) -> Result<String> {
+    async fn evaluate_value_expression(
+        &self,
+        expr: &Expression,
+        _data: &TelemetryData,
+    ) -> Result<String> {
         match expr {
-            Expression::Literal(literal) => {
-                match literal {
-                    super::parser::Literal::String(s) => Ok(s.clone()),
-                    super::parser::Literal::Int(i) => Ok(i.to_string()),
-                    super::parser::Literal::Float(f) => Ok(f.to_string()),
-                    super::parser::Literal::Bool(b) => Ok(b.to_string()),
-                    _ => Err(OtlpError::ValidationError("不支持的字面量类型".to_string())),
-                }
-            }
+            Expression::Literal(literal) => match literal {
+                super::parser::Literal::String(s) => Ok(s.clone()),
+                super::parser::Literal::Int(i) => Ok(i.to_string()),
+                super::parser::Literal::Float(f) => Ok(f.to_string()),
+                super::parser::Literal::Bool(b) => Ok(b.to_string()),
+                _ => Err(OtlpError::ValidationError("不支持的字面量类型".to_string())),
+            },
             _ => Err(OtlpError::ValidationError("不支持的表达式类型".to_string())),
         }
     }
-    
+
     /// 保留键
-    async fn keep_keys(&self, _data: &mut TelemetryData, _path: &Path, _keys: &[Expression]) -> Result<()> {
+    async fn keep_keys(
+        &self,
+        _data: &mut TelemetryData,
+        _path: &Path,
+        _keys: &[Expression],
+    ) -> Result<()> {
         // 简化实现
         Ok(())
     }
-    
+
     /// 限制数组长度
-    async fn limit_array(&self, _data: &mut TelemetryData, _path: &Path, _count: &Expression) -> Result<()> {
+    async fn limit_array(
+        &self,
+        _data: &mut TelemetryData,
+        _path: &Path,
+        _count: &Expression,
+    ) -> Result<()> {
         // 简化实现
         Ok(())
     }
-    
+
     /// 转换数据类型
-    async fn convert_type(&self, _data: &mut TelemetryData, _path: &Path, _target_type: &str) -> Result<()> {
+    async fn convert_type(
+        &self,
+        _data: &mut TelemetryData,
+        _path: &Path,
+        _target_type: &str,
+    ) -> Result<()> {
         // 简化实现
         Ok(())
     }
-    
+
     /// 路由数据
-    async fn route_data(&self, _data: &mut TelemetryData, _path: &Path, _destinations: &[Expression]) -> Result<()> {
+    async fn route_data(
+        &self,
+        _data: &mut TelemetryData,
+        _path: &Path,
+        _destinations: &[Expression],
+    ) -> Result<()> {
         // 简化实现
         Ok(())
     }
-    
+
     /// 调用函数
-    async fn call_function(&self, name: &str, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+    async fn call_function(
+        &self,
+        name: &str,
+        args: &[Expression],
+        data: &TelemetryData,
+    ) -> Result<bool> {
         match name {
             "has" => {
                 if let Some(path_expr) = args.first() {
@@ -429,9 +465,9 @@ impl OtlpTransform {
                     Ok(false)
                 }
             }
-            "now" => Ok(true), // 当前时间总是存在
+            "now" => Ok(true),       // 当前时间总是存在
             "timestamp" => Ok(true), // 时间戳总是存在
-            "time" => Ok(true), // 时间总是存在
+            "time" => Ok(true),      // 时间总是存在
             "duration" => {
                 if args.len() >= 2 {
                     let start = self.evaluate_value_expression(&args[0], data).await?;
@@ -506,12 +542,8 @@ impl OtlpTransform {
     /// 检查属性是否存在
     async fn has_attribute(&self, data: &TelemetryData, path: &Path) -> Result<bool> {
         match path {
-            Path::ResourceAttribute { key } => {
-                Ok(data.resource_attributes.contains_key(key))
-            }
-            Path::ScopeAttribute { key } => {
-                Ok(data.scope_attributes.contains_key(key))
-            }
+            Path::ResourceAttribute { key } => Ok(data.resource_attributes.contains_key(key)),
+            Path::ScopeAttribute { key } => Ok(data.scope_attributes.contains_key(key)),
             _ => Ok(false),
         }
     }
@@ -553,15 +585,17 @@ impl OtlpTransform {
     fn wildcard_match(&self, value: &str, pattern: &str) -> bool {
         let pattern_chars: Vec<char> = pattern.chars().collect();
         let value_chars: Vec<char> = value.chars().collect();
-        
+
         let mut pattern_idx = 0;
         let mut value_idx = 0;
         let mut star_idx = None;
         let mut match_idx = 0;
-        
+
         while value_idx < value_chars.len() {
-            if pattern_idx < pattern_chars.len() && 
-               (pattern_chars[pattern_idx] == '?' || pattern_chars[pattern_idx] == value_chars[value_idx]) {
+            if pattern_idx < pattern_chars.len()
+                && (pattern_chars[pattern_idx] == '?'
+                    || pattern_chars[pattern_idx] == value_chars[value_idx])
+            {
                 pattern_idx += 1;
                 value_idx += 1;
             } else if pattern_idx < pattern_chars.len() && pattern_chars[pattern_idx] == '*' {
@@ -576,11 +610,11 @@ impl OtlpTransform {
                 return false;
             }
         }
-        
+
         while pattern_idx < pattern_chars.len() && pattern_chars[pattern_idx] == '*' {
             pattern_idx += 1;
         }
-        
+
         pattern_idx == pattern_chars.len()
     }
 
@@ -589,13 +623,13 @@ impl OtlpTransform {
         if value.len() != pattern.len() {
             return false;
         }
-        
+
         for (v_char, p_char) in value.chars().zip(pattern.chars()) {
             if p_char != '?' && p_char != v_char {
                 return false;
             }
         }
-        
+
         true
     }
 }
@@ -603,14 +637,16 @@ impl OtlpTransform {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::{TelemetryData, TelemetryContent, TelemetryDataType, TraceData, SpanKind, SpanStatus};
+    use crate::data::{
+        SpanKind, SpanStatus, TelemetryContent, TelemetryData, TelemetryDataType, TraceData,
+    };
     use std::collections::HashMap;
-    
+
     #[tokio::test]
     async fn test_simple_transform() {
         let config = TransformConfig::new();
         let transformer = OtlpTransform::new(config).unwrap();
-        
+
         let trace_data = TraceData {
             trace_id: "12345678901234567890123456789012".to_string(),
             span_id: "1234567890123456".to_string(),
@@ -624,7 +660,7 @@ mod tests {
             events: vec![],
             links: vec![],
         };
-        
+
         let telemetry_data = TelemetryData {
             data_type: TelemetryDataType::Trace,
             timestamp: std::time::SystemTime::now()
@@ -635,23 +671,22 @@ mod tests {
             scope_attributes: HashMap::new(),
             content: TelemetryContent::Trace(trace_data),
         };
-        
+
         let result = transformer.transform(vec![telemetry_data]).await.unwrap();
         assert_eq!(result.stats.processed_count, 1);
         assert_eq!(result.stats.transformed_count, 1);
     }
-    
+
     #[tokio::test]
     async fn test_where_filter() {
-        use super::super::parser::{Statement, Expression, Literal};
-        
-        let config = TransformConfig::new()
-            .add_statement(Statement::Where {
-                condition: Expression::Literal(Literal::Bool(false)),
-            });
-        
+        use super::super::parser::{Expression, Literal, Statement};
+
+        let config = TransformConfig::new().add_statement(Statement::Where {
+            condition: Expression::Literal(Literal::Bool(false)),
+        });
+
         let transformer = OtlpTransform::new(config).unwrap();
-        
+
         let trace_data = TraceData {
             trace_id: "12345678901234567890123456789012".to_string(),
             span_id: "1234567890123456".to_string(),
@@ -665,7 +700,7 @@ mod tests {
             events: vec![],
             links: vec![],
         };
-        
+
         let telemetry_data = TelemetryData {
             data_type: TelemetryDataType::Trace,
             timestamp: std::time::SystemTime::now()
@@ -676,7 +711,7 @@ mod tests {
             scope_attributes: HashMap::new(),
             content: TelemetryContent::Trace(trace_data),
         };
-        
+
         let result = transformer.transform(vec![telemetry_data]).await.unwrap();
         assert_eq!(result.stats.processed_count, 1);
         assert_eq!(result.stats.filtered_count, 1);

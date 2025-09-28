@@ -5,13 +5,13 @@
 
 pub mod advanced;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
-use std::future::Future;
 use opentelemetry::global;
 use opentelemetry::metrics::{Counter, Histogram};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::future::Future;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock};
@@ -448,7 +448,7 @@ pub trait ServiceDiscoveryClient: Send + Sync {
     async fn register_service(&self, endpoint: ServiceEndpoint) -> Result<(), anyhow::Error>;
     async fn deregister_service(&self, service_id: &str) -> Result<(), anyhow::Error>;
     async fn health_check(&self, endpoint: &ServiceEndpoint)
-        -> Result<HealthStatus, anyhow::Error>;
+    -> Result<HealthStatus, anyhow::Error>;
 }
 
 /// 微服务客户端
@@ -518,7 +518,11 @@ impl MicroserviceClient {
     }
 
     #[allow(unused_variables)]
-    pub async fn call_service<F, Fut, R>(&self, service_name: &str, f: F) -> Result<R, anyhow::Error>
+    pub async fn call_service<F, Fut, R>(
+        &self,
+        service_name: &str,
+        f: F,
+    ) -> Result<R, anyhow::Error>
     where
         F: Fn(&ServiceEndpoint) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,

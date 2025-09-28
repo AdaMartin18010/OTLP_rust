@@ -6,10 +6,10 @@
 use super::{HealthStatus, LoadBalancer, RoundRobinLoadBalancer, WeightedRoundRobinLoadBalancer};
 use anyhow::Result;
 use async_trait::async_trait;
+use opentelemetry::KeyValue;
 use opentelemetry::global;
 use opentelemetry::metrics::{Counter, Gauge, Histogram};
 use opentelemetry::trace::{SpanKind, Tracer};
-use opentelemetry::KeyValue;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;

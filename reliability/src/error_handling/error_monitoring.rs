@@ -2,15 +2,13 @@
 //!
 //! 提供错误监控、统计、告警和报告功能。
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use serde::{Serialize, Deserialize};
-use tracing::{error, warn, info, debug};
+use tracing::{debug, error, info, warn};
 
-use crate::error_handling::{
-    UnifiedError, ErrorSeverity,
-};
+use crate::error_handling::{ErrorSeverity, UnifiedError};
 
 /// 错误统计信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,21 +122,22 @@ impl ErrorMonitor {
         {
             let mut stats = self.error_stats.lock().unwrap();
             stats.total_errors += 1;
-            
+
             // 按严重程度统计
             let severity_key = format!("{:?}", severity);
             *stats.errors_by_severity.entry(severity_key).or_insert(0) += 1;
-            
+
             // 按分类统计
             *stats.errors_by_category.entry(category).or_insert(0) += 1;
-            
+
             // 按模块统计
             *stats.errors_by_module.entry(module).or_insert(0) += 1;
-            
+
             // 计算最近错误数
-            let cutoff_time = chrono::Utc::now() - chrono::Duration::seconds(self.stats_window.as_secs() as i64);
+            let cutoff_time =
+                chrono::Utc::now() - chrono::Duration::seconds(self.stats_window.as_secs() as i64);
             stats.recent_errors = self.count_recent_errors(cutoff_time);
-            
+
             stats.last_updated = chrono::Utc::now();
         }
 
@@ -168,7 +167,7 @@ impl ErrorMonitor {
     fn check_and_send_alert(&self) {
         let now = Instant::now();
         let mut last_alert = self.last_alert.lock().unwrap();
-        
+
         // 检查告警间隔
         if let Some(last) = *last_alert {
             if now.duration_since(last) < self.alert_config.alert_interval {
@@ -185,8 +184,7 @@ impl ErrorMonitor {
             should_alert = true;
             alert_reasons.push(format!(
                 "错误数量超过阈值: {} >= {}",
-                stats.total_errors,
-                self.alert_config.error_count_threshold
+                stats.total_errors, self.alert_config.error_count_threshold
             ));
         }
 
@@ -201,7 +199,8 @@ impl ErrorMonitor {
         }
 
         // 检查严重错误阈值
-        let critical_count = stats.errors_by_severity
+        let critical_count = stats
+            .errors_by_severity
             .get("Critical")
             .copied()
             .unwrap_or(0);
@@ -209,8 +208,7 @@ impl ErrorMonitor {
             should_alert = true;
             alert_reasons.push(format!(
                 "严重错误数量超过阈值: {} >= {}",
-                critical_count,
-                self.alert_config.critical_error_threshold
+                critical_count, self.alert_config.critical_error_threshold
             ));
         }
 
@@ -258,7 +256,11 @@ impl ErrorMonitor {
     }
 
     /// 获取指定时间范围内的错误
-    pub fn get_errors_in_range(&self, start: chrono::DateTime<chrono::Utc>, end: chrono::DateTime<chrono::Utc>) -> Vec<UnifiedError> {
+    pub fn get_errors_in_range(
+        &self,
+        start: chrono::DateTime<chrono::Utc>,
+        end: chrono::DateTime<chrono::Utc>,
+    ) -> Vec<UnifiedError> {
         let log = self.error_log.lock().unwrap();
         log.iter()
             .filter(|error| {
@@ -295,7 +297,10 @@ impl ErrorMonitor {
         report.push_str(&format!("总错误数: {}\n", stats.total_errors));
         report.push_str(&format!("最近1小时错误数: {}\n", stats.recent_errors));
         report.push_str(&format!("错误率: {:.2}%\n", stats.error_rate * 100.0));
-        report.push_str(&format!("最后更新: {}\n", stats.last_updated.format("%Y-%m-%d %H:%M:%S UTC")));
+        report.push_str(&format!(
+            "最后更新: {}\n",
+            stats.last_updated.format("%Y-%m-%d %H:%M:%S UTC")
+        ));
 
         report.push_str("\n按严重程度统计:\n");
         for (severity, count) in &stats.errors_by_severity {
@@ -416,7 +421,7 @@ impl ErrorMonitorBuilder {
     pub fn build(self) -> ErrorMonitor {
         let max_log_size = self.max_log_size.unwrap_or(1000);
         let alert_config = self.alert_config.unwrap_or_default();
-        
+
         ErrorMonitor::new(max_log_size, alert_config)
     }
 }
@@ -430,8 +435,8 @@ impl Default for ErrorMonitorBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
     use crate::error_handling::ErrorContext;
+    use std::time::Duration;
 
     #[test]
     fn test_error_stats_default() {
@@ -459,11 +464,18 @@ mod tests {
     #[test]
     fn test_error_monitor_record_error() {
         let monitor = ErrorMonitor::new(100, AlertConfig::default());
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
         let error = UnifiedError::new("测试错误", ErrorSeverity::High, "test", context);
-        
+
         monitor.record_error(error);
-        
+
         let stats = monitor.get_error_stats();
         assert_eq!(stats.total_errors, 1);
         assert_eq!(stats.errors_by_severity.get("High"), Some(&1));
@@ -473,13 +485,25 @@ mod tests {
     #[test]
     fn test_error_monitor_recent_errors() {
         let monitor = ErrorMonitor::new(100, AlertConfig::default());
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
-        
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
+
         for i in 0..5 {
-            let error = UnifiedError::new(&format!("错误 {}", i), ErrorSeverity::Low, "test", context.clone());
+            let error = UnifiedError::new(
+                &format!("错误 {}", i),
+                ErrorSeverity::Low,
+                "test",
+                context.clone(),
+            );
             monitor.record_error(error);
         }
-        
+
         let recent = monitor.get_recent_errors(3);
         assert_eq!(recent.len(), 3);
     }
@@ -508,11 +532,18 @@ mod tests {
     #[test]
     fn test_global_error_monitor() {
         let global_monitor = GlobalErrorMonitor::new();
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
         let error = UnifiedError::new("全局错误", ErrorSeverity::Critical, "global", context);
-        
+
         global_monitor.record_error(error);
-        
+
         let stats = global_monitor.get_global_stats();
         assert_eq!(stats.total_errors, 1);
         assert_eq!(stats.errors_by_severity.get("Critical"), Some(&1));
@@ -521,17 +552,29 @@ mod tests {
     #[test]
     fn test_error_monitor_update_error_rate() {
         let monitor = ErrorMonitor::new(100, AlertConfig::default());
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
-        
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
+
         // 记录一些错误
         for i in 0..10 {
-            let error = UnifiedError::new(&format!("错误 {}", i), ErrorSeverity::Low, "test", context.clone());
+            let error = UnifiedError::new(
+                &format!("错误 {}", i),
+                ErrorSeverity::Low,
+                "test",
+                context.clone(),
+            );
             monitor.record_error(error);
         }
-        
+
         // 更新错误率
         monitor.update_error_rate(1000);
-        
+
         let stats = monitor.get_error_stats();
         assert_eq!(stats.error_rate, 0.01); // 10/1000 = 0.01
     }

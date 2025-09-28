@@ -1,0 +1,215 @@
+# Cargo 配置文件 - Rust 1.90 优化设置
+# 2025年最新配置，支持Rust 1.90新特性和性能优化
+
+[build]
+# 构建优化设置
+rustflags = [
+    # CPU指令集优化 - 2025年最新设置
+    "-C", "target-cpu=native",           # 针对当前CPU优化
+    "-C", "target-feature=+crt-static",  # 静态链接C运行时
+    "-C", "opt-level=3",                 # 最高优化级别
+    "-C", "lto=fat",                     # 链接时优化
+    "-C", "codegen-units=1",             # 单个代码生成单元
+    "-C", "panic=abort",                 # panic时直接终止
+    "-C", "strip=symbols",               # 去除调试符号
+    
+    # Rust 1.90 新特性优化
+    "-C", "target-feature=+avx2,+fma",   # 启用AVX2和FMA指令
+    "-C", "target-feature=+bmi2,+popcnt", # 启用BMI2和POPCNT指令
+    "-C", "target-feature=+sse4.2",      # 启用SSE4.2指令集
+    
+    # 内存优化
+    "-C", "force-frame-pointers=no",     # 禁用帧指针
+    "-C", "relocation-model=static",     # 静态重定位模型
+]
+
+# 网络配置
+[net]
+retry = 2
+git-fetch-with-cli = true
+
+# 注册表配置
+[registries.crates-io]
+protocol = "sparse"
+
+# 源配置
+[source.crates-io]
+protocol = "sparse"
+
+# 环境变量
+[env]
+# Rust 1.90 优化环境变量
+RUSTFLAGS = "-C target-cpu=native -C opt-level=3"
+RUST_LOG = "info"
+CARGO_INCREMENTAL = "1"
+CARGO_NET_RETRY = "2"
+
+# 目标配置
+[target.x86_64-pc-windows-msvc]
+rustflags = [
+    "-C", "target-cpu=native",
+    "-C", "target-feature=+crt-static",
+]
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+    "-C", "target-cpu=native",
+    "-C", "target-feature=+crt-static",
+    "-C", "link-arg=-static",
+]
+
+[target.aarch64-unknown-linux-gnu]
+rustflags = [
+    "-C", "target-cpu=native",
+    "-C", "target-feature=+crt-static",
+    "-C", "link-arg=-static",
+]
+
+# 别名配置
+[alias]
+# 开发别名
+dev = "run --bin"
+test = "test --lib"
+check = "check --all-targets"
+build = "build --release"
+
+# 性能测试别名
+bench = "bench --all"
+profile = "build --release --profile=bench"
+
+# 清理别名
+clean-all = "clean && cargo clean --target-dir"
+
+# 更新别名
+update-all = "update && cargo update --workspace"
+
+# 安全检查别名
+audit = "audit --deny warnings"
+security = "audit --deny warnings && cargo deny check"
+
+# 文档生成别名
+docs = "doc --all --no-deps --open"
+docs-all = "doc --all --no-deps --document-private-items --open"
+
+# 格式化别名
+fmt-all = "fmt --all"
+fmt-check = "fmt --all -- --check"
+
+# 代码检查别名
+clippy-all = "clippy --all-targets --all-features -- -D warnings"
+clippy-pedantic = "clippy --all-targets --all-features -- -W clippy::pedantic -W clippy::nursery -W clippy::cargo"
+
+# 测试别名
+test-all = "test --all --all-features"
+test-integration = "test --test"
+test-unit = "test --lib --bins"
+
+# 发布别名
+publish-all = "publish --all --dry-run"
+release = "build --release && cargo test --release"
+
+# 工作区别名
+ws-build = "build --workspace"
+ws-test = "test --workspace"
+ws-check = "check --workspace"
+ws-clippy = "clippy --workspace --all-targets --all-features -- -D warnings"
+
+# 依赖管理别名
+deps = "tree --duplicates"
+deps-update = "update --workspace"
+deps-outdated = "outdated --workspace"
+
+# 性能分析别名
+perf = "build --release --profile=bench && cargo bench"
+profile-mem = "build --release && valgrind --tool=massif target/release/otlp"
+profile-cpu = "build --release && perf record target/release/otlp"
+
+# 跨平台编译别名
+cross-build = "build --target"
+cross-test = "test --target"
+
+# 工具链管理别名
+toolchain = "toolchain"
+rustup = "rustup"
+
+# 版本管理别名
+version = "version"
+version-bump = "version --patch"
+version-minor = "version --minor"
+version-major = "version --major"
+
+# 发布管理别名
+publish-check = "publish --dry-run"
+publish-verify = "publish --verify"
+publish-package = "publish --package"
+
+# 工作区管理别名
+ws-new = "new --lib"
+ws-init = "init --lib"
+ws-generate = "generate-lockfile"
+
+# 配置管理别名
+config = "config"
+config-get = "config get"
+config-set = "config set"
+
+# 缓存管理别名
+cache = "cache"
+cache-clean = "cache clean"
+cache-autoclean = "cache autoclean"
+
+# 元数据别名
+metadata = "metadata --format-version=1"
+manifest = "read-manifest"
+
+# 包管理别名
+package = "package"
+package-list = "package --list"
+package-verify = "package --verify"
+
+# 搜索别名
+search = "search"
+search-exact = "search --exact"
+
+# 安装别名
+install = "install"
+install-list = "install --list"
+install-update = "install --force"
+
+# 卸载别名
+uninstall = "uninstall"
+
+# 位置别名
+locate-project = "locate-project"
+locate-project-root = "locate-project --workspace"
+
+# 验证别名
+verify-project = "verify-project"
+
+# 帮助别名
+help = "help"
+help-build = "help build"
+help-test = "help test"
+help-run = "help run"
+help-bench = "help bench"
+help-doc = "help doc"
+help-clean = "help clean"
+help-update = "help update"
+help-search = "help search"
+help-publish = "help publish"
+help-install = "help install"
+help-uninstall = "help uninstall"
+help-new = "help new"
+help-init = "help init"
+help-generate-lockfile = "help generate-lockfile"
+help-fetch = "help fetch"
+help-verify-project = "help verify-project"
+help-locate-project = "help locate-project"
+help-owner = "help owner"
+help-login = "help login"
+help-logout = "help logout"
+help-metadata = "help metadata"
+help-package = "help package"
+help-tree = "help tree"
+help-version = "help version"
+help-yank = "help yank"

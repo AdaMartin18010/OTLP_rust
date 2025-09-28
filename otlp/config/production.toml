@@ -1,0 +1,241 @@
+# OTLP Rust 生产环境配置文件
+# 本文件包含了生产环境的所有配置选项
+
+[server]
+# 服务器基本配置
+host = "0.0.0.0"
+grpc_port = 4317
+http_port = 4318
+metrics_port = 9090
+
+# 性能配置
+max_concurrent_requests = 1000
+max_connections = 10000
+request_timeout = "30s"
+keep_alive_timeout = "60s"
+
+# 线程池配置
+worker_threads = 8
+blocking_threads = 4
+
+[transport]
+# 传输协议配置
+protocol = "grpc"
+compression = "gzip"
+max_message_size = 4194304  # 4MB
+max_frame_size = 1048576    # 1MB
+
+[batch]
+# 批量处理配置
+max_export_batch_size = 512
+export_timeout = "30s"
+max_queue_size = 2048
+scheduled_delay = "5s"
+
+[security]
+# 安全配置
+enable_tls = true
+tls_cert_path = "/app/ssl/otlp.crt"
+tls_key_path = "/app/ssl/otlp.key"
+tls_ca_path = "/app/ssl/ca.crt"
+
+# 认证配置
+enable_auth = true
+jwt_secret = "production-jwt-secret-key"
+jwt_expiry = "24h"
+api_key_header = "X-API-Key"
+
+# 加密配置
+encryption_algorithm = "aes256gcm"
+encryption_key = "production-encryption-key"
+
+[monitoring]
+# 监控配置
+enable_metrics = true
+metrics_path = "/metrics"
+enable_tracing = true
+tracing_sample_rate = 0.1
+enable_profiling = true
+
+# Prometheus配置
+prometheus_endpoint = "http://prometheus:9090"
+push_interval = "30s"
+
+[logging]
+# 日志配置
+level = "info"
+format = "json"
+enable_structured_logging = true
+log_file = "/app/logs/otlp.log"
+max_file_size = "100MB"
+max_files = 10
+enable_rotation = true
+
+[enterprise]
+# 企业级功能配置
+enable_multi_tenant = true
+enable_data_governance = true
+enable_compliance = true
+enable_high_availability = true
+
+# 多租户配置
+default_tenant = "default"
+tenant_isolation = true
+resource_quotas = true
+
+# 数据治理配置
+data_retention_days = 30
+enable_data_classification = true
+enable_audit_logging = true
+
+# 合规性配置
+compliance_frameworks = ["GDPR", "SOX", "HIPAA"]
+audit_retention_days = 365
+
+[performance]
+# 性能优化配置
+enable_memory_pool = true
+memory_pool_size = 1000
+memory_pool_max_size = 10000
+
+# SIMD优化
+enable_simd = true
+simd_batch_size = 100
+
+# 并发优化
+max_concurrent_tasks = 100
+task_queue_size = 1000
+
+# 缓存配置
+enable_intelligent_cache = true
+cache_size = 10000
+cache_ttl = "300s"
+cache_eviction_policy = "lru"
+
+[advanced_features]
+# 高级特性配置
+enable_adaptive_sampling = true
+base_sampling_rate = 0.1
+min_sampling_rate = 0.01
+max_sampling_rate = 1.0
+
+# AI异常检测
+enable_anomaly_detection = true
+anomaly_threshold = 0.7
+training_interval = "5m"
+min_training_samples = 100
+
+[database]
+# 数据库配置（如果使用持久化存储）
+type = "postgresql"
+host = "postgresql"
+port = 5432
+database = "otlp"
+username = "otlp_user"
+password = "production_db_password"
+max_connections = 20
+connection_timeout = "30s"
+
+# 连接池配置
+pool_size = 10
+max_lifetime = "1h"
+idle_timeout = "10m"
+
+[redis]
+# Redis配置（用于缓存和会话存储）
+host = "redis"
+port = 6379
+database = 0
+password = "production_redis_password"
+max_connections = 20
+connection_timeout = "5s"
+
+# 集群配置
+enable_cluster = false
+cluster_nodes = []
+
+[external_services]
+# 外部服务配置
+jaeger_endpoint = "http://jaeger:14268/api/traces"
+prometheus_endpoint = "http://prometheus:9090"
+grafana_endpoint = "http://grafana:3000"
+
+# 告警配置
+alertmanager_endpoint = "http://alertmanager:9093"
+webhook_url = "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+
+[health_check]
+# 健康检查配置
+enable_health_check = true
+health_check_interval = "30s"
+health_check_timeout = "10s"
+health_check_path = "/health"
+readiness_check_path = "/ready"
+liveness_check_path = "/live"
+
+# 依赖检查
+check_database = true
+check_redis = true
+check_external_services = true
+
+[rate_limiting]
+# 速率限制配置
+enable_rate_limiting = true
+requests_per_second = 1000
+burst_size = 2000
+rate_limit_window = "1m"
+
+# 基于IP的速率限制
+enable_ip_rate_limiting = true
+ip_requests_per_second = 100
+ip_burst_size = 200
+
+[circuit_breaker]
+# 熔断器配置
+enable_circuit_breaker = true
+failure_threshold = 5
+recovery_timeout = "30s"
+half_open_max_calls = 3
+
+[retry]
+# 重试配置
+enable_retry = true
+max_retries = 3
+retry_delay = "1s"
+exponential_backoff = true
+max_retry_delay = "30s"
+
+[observability]
+# 可观测性配置
+enable_distributed_tracing = true
+trace_sampling_rate = 0.1
+trace_exporter = "jaeger"
+
+# 指标配置
+enable_custom_metrics = true
+metrics_export_interval = "30s"
+
+# 日志聚合
+enable_log_aggregation = true
+log_aggregation_endpoint = "http://elasticsearch:9200"
+
+[backup]
+# 备份配置
+enable_backup = true
+backup_interval = "24h"
+backup_retention_days = 30
+backup_storage_path = "/app/backups"
+backup_compression = true
+
+[maintenance]
+# 维护配置
+enable_maintenance_mode = false
+maintenance_message = "System is under maintenance"
+maintenance_start_time = "02:00"
+maintenance_duration = "2h"
+
+# 自动维护
+enable_auto_maintenance = true
+maintenance_interval = "7d"
+cleanup_old_data = true
+optimize_database = true

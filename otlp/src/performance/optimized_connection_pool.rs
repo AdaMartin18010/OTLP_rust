@@ -1,14 +1,14 @@
 //! 优化的连接池实现
-//! 
+//!
 //! 使用Rust 1.90的新特性进行性能优化，包括零拷贝、智能连接管理和高效资源复用。
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering};
-use std::collections::VecDeque;
-use std::time::{Duration, Instant};
-use tokio::sync::{Mutex, Semaphore};
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
 use thiserror::Error;
+use tokio::sync::{Mutex, Semaphore};
 
 /// 连接池错误
 #[derive(Debug, Error)]
@@ -52,7 +52,7 @@ impl Default for ConnectionPoolConfig {
             max_connections: 100,
             min_connections: 5,
             connection_timeout: Duration::from_secs(30),
-            idle_timeout: Duration::from_secs(300), // 5分钟
+            idle_timeout: Duration::from_secs(300),  // 5分钟
             max_lifetime: Duration::from_secs(3600), // 1小时
             health_check_interval: Duration::from_secs(60), // 1分钟
             enable_stats: true,
@@ -89,9 +89,9 @@ struct ConnectionMeta<T> {
 }
 
 /// 优化的连接池
-/// 
+///
 /// 使用零拷贝和智能连接管理，性能提升50-70%
-pub struct OptimizedConnectionPool<T, F> 
+pub struct OptimizedConnectionPool<T, F>
 where
     T: Send + Sync + 'static,
     F: Fn() -> Result<T, ConnectionPoolError> + Send + Sync + 'static,
@@ -118,13 +118,13 @@ where
     pub fn new(factory: F, config: ConnectionPoolConfig) -> Result<Self, ConnectionPoolError> {
         if config.max_connections == 0 {
             return Err(ConnectionPoolError::ConfigurationError(
-                "max_connections must be greater than 0".to_string()
+                "max_connections must be greater than 0".to_string(),
             ));
         }
 
         if config.min_connections > config.max_connections {
             return Err(ConnectionPoolError::ConfigurationError(
-                "min_connections cannot be greater than max_connections".to_string()
+                "min_connections cannot be greater than max_connections".to_string(),
             ));
         }
 
@@ -177,7 +177,7 @@ where
                             request_count: 0,
                             is_healthy: true,
                         };
-                        
+
                         let mut pool_guard = pool.lock().await;
                         pool_guard.push_back(meta);
                         total_connections.fetch_add(1, Ordering::AcqRel);
@@ -193,12 +193,14 @@ where
     /// 获取连接
     pub async fn acquire(&self) -> Result<PooledConnection<T, F>, ConnectionPoolError> {
         // 获取信号量许可
-        let _permit = self.semaphore.acquire().await.map_err(|_| {
-            ConnectionPoolError::PoolFull
-        })?;
+        let _permit = self
+            .semaphore
+            .acquire()
+            .await
+            .map_err(|_| ConnectionPoolError::PoolFull)?;
 
         let mut pool = self.pool.lock().await;
-        
+
         // 尝试从池中获取连接
         if let Some(mut meta) = pool.pop_front() {
             // 检查连接是否健康
@@ -208,7 +210,7 @@ where
                 self.active_connections.fetch_add(1, Ordering::AcqRel);
                 self.total_requests.fetch_add(1, Ordering::AcqRel);
                 self.update_stats().await;
-                
+
                 return Ok(PooledConnection {
                     connection: Some(meta.connection),
                     created_at: meta.created_at,
@@ -223,10 +225,10 @@ where
 
         // 池中没有可用连接，创建新连接
         drop(pool); // 释放锁
-        
+
         let connection = (self.factory)()?;
         let created_at = Instant::now();
-        
+
         self.total_connections.fetch_add(1, Ordering::AcqRel);
         self.active_connections.fetch_add(1, Ordering::AcqRel);
         self.total_requests.fetch_add(1, Ordering::AcqRel);
@@ -243,24 +245,29 @@ where
     /// 检查连接是否有效
     fn is_connection_valid(&self, meta: &ConnectionMeta<T>) -> bool {
         let _now = Instant::now();
-        
+
         // 检查连接是否过期
         if meta.created_at.elapsed() > self.config.max_lifetime {
             return false;
         }
-        
+
         // 检查连接是否空闲过久
         if meta.last_used.elapsed() > self.config.idle_timeout {
             return false;
         }
-        
+
         true
     }
 
     /// 返回连接到池中
-    async fn return_connection(&self, connection: T, created_at: Instant, request_count: usize) -> Result<(), ConnectionPoolError> {
+    async fn return_connection(
+        &self,
+        connection: T,
+        created_at: Instant,
+        request_count: usize,
+    ) -> Result<(), ConnectionPoolError> {
         let mut pool = self.pool.lock().await;
-        
+
         // 检查池是否已满
         if pool.len() >= self.config.max_connections {
             // 池已满，销毁连接
@@ -283,11 +290,11 @@ where
             request_count,
             is_healthy: true,
         };
-        
+
         pool.push_back(meta);
         self.active_connections.fetch_sub(1, Ordering::AcqRel);
         self.update_stats().await;
-        
+
         Ok(())
     }
 
@@ -299,7 +306,7 @@ where
 
         let mut stats = self.stats.lock().await;
         let pool = self.pool.lock().await;
-        
+
         stats.total_connections = self.total_connections.load(Ordering::Acquire);
         stats.active_connections = self.active_connections.load(Ordering::Acquire);
         stats.idle_connections = pool.len();
@@ -318,7 +325,7 @@ where
     pub async fn cleanup_expired(&self) -> usize {
         let mut pool = self.pool.lock().await;
         let mut removed_count = 0;
-        
+
         // 从后往前遍历，移除过期连接
         let mut i = pool.len();
         while i > 0 {
@@ -345,7 +352,7 @@ where
     pub fn start_health_check(&self) {
         let pool = Arc::new(self.clone());
         let health_check_interval = self.config.health_check_interval;
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(health_check_interval);
             loop {
@@ -370,16 +377,19 @@ where
     }
 
     /// 更新配置
-    pub fn update_config(&mut self, config: ConnectionPoolConfig) -> Result<(), ConnectionPoolError> {
+    pub fn update_config(
+        &mut self,
+        config: ConnectionPoolConfig,
+    ) -> Result<(), ConnectionPoolError> {
         if config.max_connections == 0 {
             return Err(ConnectionPoolError::ConfigurationError(
-                "max_connections must be greater than 0".to_string()
+                "max_connections must be greater than 0".to_string(),
             ));
         }
 
         if config.min_connections > config.max_connections {
             return Err(ConnectionPoolError::ConfigurationError(
-                "min_connections cannot be greater than max_connections".to_string()
+                "min_connections cannot be greater than max_connections".to_string(),
             ));
         }
 
@@ -424,7 +434,7 @@ where
 }
 
 /// 池化连接包装器
-pub struct PooledConnection<T, F> 
+pub struct PooledConnection<T, F>
 where
     T: Send + Sync + 'static,
     F: Fn() -> Result<T, ConnectionPoolError> + Send + Sync + 'static,
@@ -435,7 +445,7 @@ where
     pool: Arc<OptimizedConnectionPool<T, F>>,
 }
 
-impl<T, F> PooledConnection<T, F> 
+impl<T, F> PooledConnection<T, F>
 where
     T: Send + Sync + 'static,
     F: Fn() -> Result<T, ConnectionPoolError> + Send + Sync + 'static,
@@ -461,7 +471,7 @@ where
     }
 }
 
-impl<T, F> Drop for PooledConnection<T, F> 
+impl<T, F> Drop for PooledConnection<T, F>
 where
     T: Send + Sync + 'static,
     F: Fn() -> Result<T, ConnectionPoolError> + Send + Sync + 'static,
@@ -472,9 +482,12 @@ where
             let pool = Arc::clone(&self.pool);
             let created_at = self.created_at;
             let request_count = self.request_count;
-            
+
             tokio::spawn(async move {
-                if let Err(e) = pool.return_connection(connection, created_at, request_count).await {
+                if let Err(e) = pool
+                    .return_connection(connection, created_at, request_count)
+                    .await
+                {
                     eprintln!("Failed to return connection to pool: {}", e);
                 }
             });
@@ -491,7 +504,7 @@ mod tests {
     async fn test_connection_pool_basic() {
         let created_count = Arc::new(AtomicUsize::new(0));
         let created_count_clone = Arc::clone(&created_count);
-        
+
         let config = ConnectionPoolConfig {
             max_connections: 10,
             min_connections: 2,
@@ -506,10 +519,14 @@ mod tests {
         let pool = OptimizedConnectionPool::new(
             move || {
                 created_count_clone.fetch_add(1, Ordering::AcqRel);
-                Ok(format!("connection_{}", created_count_clone.load(Ordering::Acquire)))
+                Ok(format!(
+                    "connection_{}",
+                    created_count_clone.load(Ordering::Acquire)
+                ))
             },
             config,
-        ).unwrap();
+        )
+        .unwrap();
 
         // 等待初始化完成
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -551,10 +568,8 @@ mod tests {
             enable_connection_reuse: true,
         };
 
-        let pool = OptimizedConnectionPool::new(
-            || Ok(String::from("test_connection")),
-            config,
-        ).unwrap();
+        let pool =
+            OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config).unwrap();
 
         // 等待初始化完成
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -587,10 +602,8 @@ mod tests {
             enable_connection_reuse: true,
         };
 
-        let pool = OptimizedConnectionPool::new(
-            || Ok(String::from("test_connection")),
-            config,
-        ).unwrap();
+        let pool =
+            OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config).unwrap();
 
         // 获取最大数量的连接
         let conn1 = pool.acquire().await.unwrap();
@@ -624,10 +637,9 @@ mod tests {
             enable_connection_reuse: true,
         };
 
-        let pool = OptimizedConnectionPool::new(
-            || Ok(String::from("concurrent_connection")),
-            config,
-        ).unwrap();
+        let pool =
+            OptimizedConnectionPool::new(|| Ok(String::from("concurrent_connection")), config)
+                .unwrap();
 
         // 等待初始化完成
         tokio::time::sleep(Duration::from_millis(100)).await;

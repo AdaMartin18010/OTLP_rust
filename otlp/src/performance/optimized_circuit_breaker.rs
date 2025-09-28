@@ -1,13 +1,13 @@
 //! 优化的熔断器实现
-//! 
+//!
 //! 使用Rust 1.90的新特性进行性能优化，包括原子操作、无锁数据结构和零拷贝优化。
 
-use std::sync::atomic::{AtomicU32, AtomicU8, Ordering};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU8, AtomicU32, Ordering};
+use std::time::{Duration, Instant};
 use thiserror::Error;
+use tokio::sync::RwLock;
 
 /// 熔断器状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -81,7 +81,7 @@ pub struct CircuitBreakerMetrics {
 }
 
 /// 优化的熔断器实现
-/// 
+///
 /// 使用原子操作和无锁数据结构，性能提升40-60%
 #[derive(Clone)]
 pub struct OptimizedCircuitBreaker {
@@ -99,7 +99,7 @@ impl OptimizedCircuitBreaker {
     pub fn new(config: CircuitBreakerConfig) -> Result<Self, CircuitBreakerError> {
         if config.failure_threshold == 0 {
             return Err(CircuitBreakerError::ConfigurationError(
-                "failure_threshold must be greater than 0".to_string()
+                "failure_threshold must be greater than 0".to_string(),
             ));
         }
 
@@ -131,26 +131,19 @@ impl OptimizedCircuitBreaker {
         let current_state = self.get_state();
 
         match current_state {
-            CircuitBreakerState::Closed => {
-                self.handle_closed_state(operation).await
-            }
+            CircuitBreakerState::Closed => self.handle_closed_state(operation).await,
             CircuitBreakerState::Open => {
                 self.update_metrics_rejected_calls().await;
                 Err(CircuitBreakerError::CircuitBreakerOpen)
             }
-            CircuitBreakerState::HalfOpen => {
-                self.handle_half_open_state(operation).await
-            }
+            CircuitBreakerState::HalfOpen => self.handle_half_open_state(operation).await,
         }
     }
 
     /// 处理关闭状态
     #[allow(dead_code)]
     #[allow(unused_variables)]
-    async fn handle_closed_state<F, Fut, R>(
-        &self,
-        operation: F,
-    ) -> Result<R, CircuitBreakerError>
+    async fn handle_closed_state<F, Fut, R>(&self, operation: F) -> Result<R, CircuitBreakerError>
     where
         F: FnOnce() -> Fut,
         Fut: std::future::Future<Output = Result<R, anyhow::Error>>,
@@ -171,7 +164,6 @@ impl OptimizedCircuitBreaker {
             }
         }
     }
-
 
     /// 处理半开状态
     async fn handle_half_open_state<F, Fut, R>(
@@ -278,7 +270,8 @@ impl OptimizedCircuitBreaker {
 
     /// 转换到关闭状态
     async fn transition_to_closed(&self) {
-        self.state.store(CircuitBreakerState::Closed as u8, Ordering::Release);
+        self.state
+            .store(CircuitBreakerState::Closed as u8, Ordering::Release);
         self.failure_count.store(0, Ordering::Release);
         self.success_count.store(0, Ordering::Release);
         self.half_open_calls.store(0, Ordering::Release);
@@ -287,13 +280,15 @@ impl OptimizedCircuitBreaker {
 
     /// 转换到打开状态
     async fn transition_to_open(&self) {
-        self.state.store(CircuitBreakerState::Open as u8, Ordering::Release);
+        self.state
+            .store(CircuitBreakerState::Open as u8, Ordering::Release);
         self.update_metrics_state_transition().await;
     }
 
     /// 转换到半开状态
     async fn transition_to_half_open(&self) {
-        self.state.store(CircuitBreakerState::HalfOpen as u8, Ordering::Release);
+        self.state
+            .store(CircuitBreakerState::HalfOpen as u8, Ordering::Release);
         self.half_open_calls.store(0, Ordering::Release);
         self.update_metrics_state_transition().await;
     }
@@ -350,10 +345,13 @@ impl OptimizedCircuitBreaker {
     }
 
     /// 更新配置
-    pub fn update_config(&mut self, config: CircuitBreakerConfig) -> Result<(), CircuitBreakerError> {
+    pub fn update_config(
+        &mut self,
+        config: CircuitBreakerConfig,
+    ) -> Result<(), CircuitBreakerError> {
         if config.failure_threshold == 0 {
             return Err(CircuitBreakerError::ConfigurationError(
-                "failure_threshold must be greater than 0".to_string()
+                "failure_threshold must be greater than 0".to_string(),
             ));
         }
 
@@ -371,7 +369,7 @@ mod tests {
     async fn test_circuit_breaker_closed_to_open() {
         let config = CircuitBreakerConfig {
             failure_threshold: 3,
-            minimum_calls: 3,  // 设置最小调用次数为3
+            minimum_calls: 3, // 设置最小调用次数为3
             recovery_timeout: Duration::from_millis(100),
             ..Default::default()
         };
@@ -380,22 +378,25 @@ mod tests {
 
         // 连续失败3次，应该触发熔断
         for _ in 0..3 {
-            let result = cb.call(|| async {
-                Err::<(), anyhow::Error>(anyhow::anyhow!("test error"))
-            }).await;
+            let result = cb
+                .call(|| async { Err::<(), anyhow::Error>(anyhow::anyhow!("test error")) })
+                .await;
             assert!(result.is_err());
         }
 
         // 第4次调用应该被熔断器拦截
         let result = cb.call(|| async { Ok::<(), anyhow::Error>(()) }).await;
-        assert!(matches!(result, Err(CircuitBreakerError::CircuitBreakerOpen)));
+        assert!(matches!(
+            result,
+            Err(CircuitBreakerError::CircuitBreakerOpen)
+        ));
     }
 
     #[tokio::test]
     async fn test_circuit_breaker_recovery() {
         let config = CircuitBreakerConfig {
             failure_threshold: 2,
-            minimum_calls: 2,  // 设置最小调用次数为2
+            minimum_calls: 2, // 设置最小调用次数为2
             recovery_timeout: Duration::from_millis(100),
             ..Default::default()
         };
@@ -404,9 +405,9 @@ mod tests {
 
         // 触发熔断
         for _ in 0..2 {
-            let _ = cb.call(|| async {
-                Err::<(), anyhow::Error>(anyhow::anyhow!("test error"))
-            }).await;
+            let _ = cb
+                .call(|| async { Err::<(), anyhow::Error>(anyhow::anyhow!("test error")) })
+                .await;
         }
 
         // 等待恢复时间
@@ -424,7 +425,9 @@ mod tests {
 
         // 执行一些操作
         let _ = cb.call(|| async { Ok::<(), anyhow::Error>(()) }).await;
-        let _ = cb.call(|| async { Err::<(), anyhow::Error>(anyhow::anyhow!("error")) }).await;
+        let _ = cb
+            .call(|| async { Err::<(), anyhow::Error>(anyhow::anyhow!("error")) })
+            .await;
 
         let metrics = cb.get_metrics().await;
         assert!(metrics.total_calls >= 2);
@@ -445,9 +448,9 @@ mod tests {
         let cb = OptimizedCircuitBreaker::new(config).unwrap();
 
         // 触发熔断
-        let _ = cb.call(|| async {
-            Err::<(), anyhow::Error>(anyhow::anyhow!("test error"))
-        }).await;
+        let _ = cb
+            .call(|| async { Err::<(), anyhow::Error>(anyhow::anyhow!("test error")) })
+            .await;
 
         // 等待恢复时间
         sleep(Duration::from_millis(100)).await;

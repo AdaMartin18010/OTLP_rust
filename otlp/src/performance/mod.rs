@@ -1,42 +1,28 @@
 //! 性能优化模块
-//! 
+//!
 //! 包含使用Rust 1.90新特性的高性能组件实现
 
-pub mod optimized_circuit_breaker;
-pub mod optimized_memory_pool;
 pub mod optimized_batch_processor;
+pub mod optimized_circuit_breaker;
 pub mod optimized_connection_pool;
+pub mod optimized_memory_pool;
 
 // 重新导出主要类型
 pub use optimized_circuit_breaker::{
-    OptimizedCircuitBreaker,
-    CircuitBreakerConfig,
-    CircuitBreakerState,
-    CircuitBreakerError,
+    CircuitBreakerConfig, CircuitBreakerError, CircuitBreakerState, OptimizedCircuitBreaker,
 };
 
 pub use optimized_memory_pool::{
-    OptimizedMemoryPool,
-    MemoryPoolConfig,
-    MemoryPoolError,
-    MemoryPoolStats,
-    PooledObject,
+    MemoryPoolConfig, MemoryPoolError, MemoryPoolStats, OptimizedMemoryPool, PooledObject,
 };
 
 pub use optimized_batch_processor::{
+    BatchItem, BatchProcessorConfig, BatchProcessorError, BatchProcessorStats, BatchResult,
     OptimizedBatchProcessor,
-    BatchProcessorConfig,
-    BatchProcessorError,
-    BatchProcessorStats,
-    BatchItem,
-    BatchResult,
 };
 
 pub use optimized_connection_pool::{
-    OptimizedConnectionPool,
-    ConnectionPoolConfig,
-    ConnectionPoolError,
-    ConnectionPoolStats,
+    ConnectionPoolConfig, ConnectionPoolError, ConnectionPoolStats, OptimizedConnectionPool,
     PooledConnection,
 };
 
@@ -65,14 +51,36 @@ impl Default for PerformanceConfig {
 }
 
 /// 性能优化管理器
-/// 
+///
 /// 统一管理所有性能优化组件
 pub struct PerformanceManager {
     config: PerformanceConfig,
     circuit_breaker: Option<OptimizedCircuitBreaker>,
     memory_pool: Option<OptimizedMemoryPool<String>>,
-    batch_processor: Option<OptimizedBatchProcessor<String, Box<dyn Fn(Vec<String>) -> Result<optimized_batch_processor::BatchResult<String>, optimized_batch_processor::BatchProcessorError> + Send + Sync>>>,
-    connection_pool: Option<OptimizedConnectionPool<String, Box<dyn Fn() -> Result<String, optimized_connection_pool::ConnectionPoolError> + Send + Sync>>>,
+    batch_processor: Option<
+        OptimizedBatchProcessor<
+            String,
+            Box<
+                dyn Fn(
+                        Vec<String>,
+                    ) -> Result<
+                        optimized_batch_processor::BatchResult<String>,
+                        optimized_batch_processor::BatchProcessorError,
+                    > + Send
+                    + Sync,
+            >,
+        >,
+    >,
+    connection_pool: Option<
+        OptimizedConnectionPool<
+            String,
+            Box<
+                dyn Fn() -> Result<String, optimized_connection_pool::ConnectionPoolError>
+                    + Send
+                    + Sync,
+            >,
+        >,
+    >,
 }
 
 impl PerformanceManager {
@@ -88,23 +96,40 @@ impl PerformanceManager {
     }
 
     /// 初始化熔断器
-    pub fn init_circuit_breaker(&mut self) -> Result<(), optimized_circuit_breaker::CircuitBreakerError> {
-        self.circuit_breaker = Some(OptimizedCircuitBreaker::new(self.config.circuit_breaker.clone())?);
+    pub fn init_circuit_breaker(
+        &mut self,
+    ) -> Result<(), optimized_circuit_breaker::CircuitBreakerError> {
+        self.circuit_breaker = Some(OptimizedCircuitBreaker::new(
+            self.config.circuit_breaker.clone(),
+        )?);
         Ok(())
     }
 
     /// 初始化内存池
     pub async fn init_memory_pool(&mut self) -> Result<(), optimized_memory_pool::MemoryPoolError> {
-        self.memory_pool = Some(OptimizedMemoryPool::new(
-            || String::with_capacity(1024),
-            self.config.memory_pool.clone(),
-        ).await?);
+        self.memory_pool = Some(
+            OptimizedMemoryPool::new(
+                || String::with_capacity(1024),
+                self.config.memory_pool.clone(),
+            )
+            .await?,
+        );
         Ok(())
     }
 
     /// 初始化批处理器
-    pub fn init_batch_processor(&mut self) -> Result<(), optimized_batch_processor::BatchProcessorError> {
-        let processor: Box<dyn Fn(Vec<String>) -> Result<optimized_batch_processor::BatchResult<String>, optimized_batch_processor::BatchProcessorError> + Send + Sync> = Box::new(|items: Vec<String>| {
+    pub fn init_batch_processor(
+        &mut self,
+    ) -> Result<(), optimized_batch_processor::BatchProcessorError> {
+        let processor: Box<
+            dyn Fn(
+                    Vec<String>,
+                ) -> Result<
+                    optimized_batch_processor::BatchResult<String>,
+                    optimized_batch_processor::BatchProcessorError,
+                > + Send
+                + Sync,
+        > = Box::new(|items: Vec<String>| {
             Ok(optimized_batch_processor::BatchResult {
                 items,
                 processing_time: std::time::Duration::from_millis(10),
@@ -112,7 +137,7 @@ impl PerformanceManager {
                 original_size: 1024,
             })
         });
-        
+
         self.batch_processor = Some(OptimizedBatchProcessor::new(
             processor,
             self.config.batch_processor.clone(),
@@ -121,9 +146,15 @@ impl PerformanceManager {
     }
 
     /// 初始化连接池
-    pub fn init_connection_pool(&mut self) -> Result<(), optimized_connection_pool::ConnectionPoolError> {
-        let factory: Box<dyn Fn() -> Result<String, optimized_connection_pool::ConnectionPoolError> + Send + Sync> = Box::new(|| Ok(String::from("connection")));
-        
+    pub fn init_connection_pool(
+        &mut self,
+    ) -> Result<(), optimized_connection_pool::ConnectionPoolError> {
+        let factory: Box<
+            dyn Fn() -> Result<String, optimized_connection_pool::ConnectionPoolError>
+                + Send
+                + Sync,
+        > = Box::new(|| Ok(String::from("connection")));
+
         self.connection_pool = Some(OptimizedConnectionPool::new(
             factory,
             self.config.connection_pool.clone(),
@@ -142,12 +173,38 @@ impl PerformanceManager {
     }
 
     /// 获取批处理器
-    pub fn get_batch_processor(&self) -> Option<&OptimizedBatchProcessor<String, Box<dyn Fn(Vec<String>) -> Result<optimized_batch_processor::BatchResult<String>, optimized_batch_processor::BatchProcessorError> + Send + Sync>>> {
+    pub fn get_batch_processor(
+        &self,
+    ) -> Option<
+        &OptimizedBatchProcessor<
+            String,
+            Box<
+                dyn Fn(
+                        Vec<String>,
+                    ) -> Result<
+                        optimized_batch_processor::BatchResult<String>,
+                        optimized_batch_processor::BatchProcessorError,
+                    > + Send
+                    + Sync,
+            >,
+        >,
+    > {
         self.batch_processor.as_ref()
     }
 
     /// 获取连接池
-    pub fn get_connection_pool(&self) -> Option<&OptimizedConnectionPool<String, Box<dyn Fn() -> Result<String, optimized_connection_pool::ConnectionPoolError> + Send + Sync>>> {
+    pub fn get_connection_pool(
+        &self,
+    ) -> Option<
+        &OptimizedConnectionPool<
+            String,
+            Box<
+                dyn Fn() -> Result<String, optimized_connection_pool::ConnectionPoolError>
+                    + Send
+                    + Sync,
+            >,
+        >,
+    > {
         self.connection_pool.as_ref()
     }
 

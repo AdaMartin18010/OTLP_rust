@@ -3,7 +3,7 @@
 //! 实现OTLP协议的传输层，支持gRPC和HTTP两种传输方式，
 //! 利用Rust 1.90的异步特性实现高性能数据传输。
 
-use crate::config::{ OtlpConfig, TransportProtocol};
+use crate::config::{OtlpConfig, TransportProtocol};
 use crate::data::TelemetryData;
 use crate::error::{Result, TransportError};
 use async_trait::async_trait;
@@ -54,18 +54,17 @@ impl GrpcTransport {
     /// 发送数据到gRPC端点
     #[allow(unused_variables)]
     async fn send_data(&self, data: &[TelemetryData]) -> Result<()> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            TransportError::Connection {
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| TransportError::Connection {
                 endpoint: self.config.endpoint.clone(),
                 reason: "Client not initialized".to_string(),
-            }
-        })?;
+            })?;
 
         // 序列化数据
-        let json_data = serde_json::to_vec(data).map_err(|e| {
-            TransportError::Serialization {
-                reason: format!("Failed to serialize data: {}", e),
-            }
+        let json_data = serde_json::to_vec(data).map_err(|e| TransportError::Serialization {
+            reason: format!("Failed to serialize data: {}", e),
         })?;
 
         // 发送HTTP请求（简化实现，实际应该使用gRPC）
@@ -154,18 +153,17 @@ impl HttpTransport {
     /// 发送数据到HTTP端点
     #[allow(unused_variables)]
     async fn send_data(&self, data: &[TelemetryData]) -> Result<()> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            TransportError::Connection {
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| TransportError::Connection {
                 endpoint: self.config.endpoint.clone(),
                 reason: "Client not initialized".to_string(),
-            }
-        })?;
+            })?;
 
         // 序列化数据
-        let json_data = serde_json::to_vec(data).map_err(|e| {
-            TransportError::Serialization {
-                reason: format!("Failed to serialize data: {}", e),
-            }
+        let json_data = serde_json::to_vec(data).map_err(|e| TransportError::Serialization {
+            reason: format!("Failed to serialize data: {}", e),
         })?;
 
         // 发送HTTP请求

@@ -1,15 +1,15 @@
 //! 指标收集器实现
-//! 
+//!
 //! 提供高性能的指标收集、聚合和导出功能
 
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::collections::HashMap;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use tokio::sync::{RwLock, Mutex};
-use tokio::time::{interval, sleep};
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use tokio::sync::{Mutex, RwLock};
+use tokio::time::{interval, sleep};
 
 /// 指标收集器错误
 #[derive(Debug, Error)]
@@ -141,7 +141,7 @@ pub struct MetricsCollectorStats {
 }
 
 /// 指标收集器
-/// 
+///
 /// 高性能的指标收集、聚合和导出系统
 pub struct MetricsCollector {
     config: MetricsCollectorConfig,
@@ -161,13 +161,13 @@ impl MetricsCollector {
     pub fn new(config: MetricsCollectorConfig) -> Result<Self, MetricsCollectorError> {
         if config.collection_interval.as_secs() == 0 {
             return Err(MetricsCollectorError::ConfigurationError(
-                "collection_interval must be greater than 0".to_string()
+                "collection_interval must be greater than 0".to_string(),
             ));
         }
 
         if config.max_metrics == 0 {
             return Err(MetricsCollectorError::ConfigurationError(
-                "max_metrics must be greater than 0".to_string()
+                "max_metrics must be greater than 0".to_string(),
             ));
         }
 
@@ -204,7 +204,7 @@ impl MetricsCollector {
     fn start_background_tasks(&self) {
         // 启动收集任务
         self.start_collection_task();
-        
+
         // 启动清理任务
         if self.config.enable_auto_cleanup {
             self.start_cleanup_task();
@@ -220,13 +220,13 @@ impl MetricsCollector {
 
         tokio::spawn(async move {
             let mut interval = interval(config.collection_interval);
-            
+
             while is_running.load(Ordering::Acquire) > 0 {
                 interval.tick().await;
-                
+
                 // 执行收集
                 collection_count.fetch_add(1, Ordering::AcqRel);
-                
+
                 // 更新统计信息
                 let mut stats_guard = stats.lock().await;
                 stats_guard.collection_count = collection_count.load(Ordering::Acquire);
@@ -245,30 +245,33 @@ impl MetricsCollector {
 
         tokio::spawn(async move {
             let mut interval = interval(config.cleanup_interval);
-            
+
             while is_running.load(Ordering::Acquire) > 0 {
                 interval.tick().await;
-                
+
                 // 执行清理
-                let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
                 let cutoff_time = now - config.retention_time.as_secs();
-                
+
                 let mut data_points_guard = data_points.write().await;
                 let mut removed_count = 0;
-                
+
                 for (_, points) in data_points_guard.iter_mut() {
                     let original_len = points.len();
                     points.retain(|point| point.timestamp > cutoff_time);
                     removed_count += original_len - points.len();
                 }
-                
+
                 cleanup_count.fetch_add(1, Ordering::AcqRel);
-                
+
                 // 更新统计信息
                 let mut stats_guard = stats.lock().await;
                 stats_guard.cleanup_count = cleanup_count.load(Ordering::Acquire);
                 stats_guard.last_cleanup = Some(Instant::now());
-                
+
                 if removed_count > 0 {
                     println!("Cleaned up {} old data points", removed_count);
                 }
@@ -277,65 +280,76 @@ impl MetricsCollector {
     }
 
     /// 注册指标
-    pub async fn register_metric(&self, definition: MetricDefinition) -> Result<(), MetricsCollectorError> {
+    pub async fn register_metric(
+        &self,
+        definition: MetricDefinition,
+    ) -> Result<(), MetricsCollectorError> {
         if definition.name.is_empty() {
             return Err(MetricsCollectorError::InvalidMetricName(
-                "metric name cannot be empty".to_string()
+                "metric name cannot be empty".to_string(),
             ));
         }
 
         if self.total_metrics.load(Ordering::Acquire) >= self.config.max_metrics {
             return Err(MetricsCollectorError::ConfigurationError(
-                "maximum number of metrics reached".to_string()
+                "maximum number of metrics reached".to_string(),
             ));
         }
 
         let mut metrics_guard = self.metrics.write().await;
-        
+
         if metrics_guard.contains_key(&definition.name) {
-            return Err(MetricsCollectorError::InvalidMetricName(
-                format!("metric '{}' already exists", definition.name)
-            ));
+            return Err(MetricsCollectorError::InvalidMetricName(format!(
+                "metric '{}' already exists",
+                definition.name
+            )));
         }
 
         metrics_guard.insert(definition.name.clone(), definition);
         self.total_metrics.fetch_add(1, Ordering::AcqRel);
-        
+
         Ok(())
     }
 
     /// 记录指标值
-    pub async fn record_metric(&self, name: String, value: MetricValue, labels: Vec<MetricLabel>) -> Result<(), MetricsCollectorError> {
+    pub async fn record_metric(
+        &self,
+        name: String,
+        value: MetricValue,
+        labels: Vec<MetricLabel>,
+    ) -> Result<(), MetricsCollectorError> {
         if name.is_empty() {
             return Err(MetricsCollectorError::InvalidMetricName(
-                "metric name cannot be empty".to_string()
+                "metric name cannot be empty".to_string(),
             ));
         }
 
         // 检查指标是否存在
         let metrics_guard = self.metrics.read().await;
         let metric_def = metrics_guard.get(&name).ok_or_else(|| {
-            MetricsCollectorError::InvalidMetricName(
-                format!("metric '{}' not found", name)
-            )
+            MetricsCollectorError::InvalidMetricName(format!("metric '{}' not found", name))
         })?;
 
         // 验证指标类型
         match (&metric_def.metric_type, &value) {
-            (MetricType::Counter, MetricValue::Counter(_)) => {},
-            (MetricType::Gauge, MetricValue::Gauge(_)) => {},
-            (MetricType::Histogram, MetricValue::Histogram(_)) => {},
-            (MetricType::Summary, MetricValue::Summary(_)) => {},
+            (MetricType::Counter, MetricValue::Counter(_)) => {}
+            (MetricType::Gauge, MetricValue::Gauge(_)) => {}
+            (MetricType::Histogram, MetricValue::Histogram(_)) => {}
+            (MetricType::Summary, MetricValue::Summary(_)) => {}
             _ => {
-                return Err(MetricsCollectorError::MetricTypeMismatch(
-                    format!("metric '{}' type mismatch", name)
-                ));
+                return Err(MetricsCollectorError::MetricTypeMismatch(format!(
+                    "metric '{}' type mismatch",
+                    name
+                )));
             }
         }
 
         // 创建数据点
         let data_point = MetricDataPoint {
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             value,
             labels,
         };
@@ -344,14 +358,17 @@ impl MetricsCollector {
         let mut data_points_guard = self.data_points.write().await;
         let points = data_points_guard.entry(name).or_insert_with(Vec::new);
         points.push(data_point);
-        
+
         self.total_data_points.fetch_add(1, Ordering::AcqRel);
-        
+
         Ok(())
     }
 
     /// 获取指标数据
-    pub async fn get_metric_data(&self, name: &str) -> Result<Vec<MetricDataPoint>, MetricsCollectorError> {
+    pub async fn get_metric_data(
+        &self,
+        name: &str,
+    ) -> Result<Vec<MetricDataPoint>, MetricsCollectorError> {
         let data_points_guard = self.data_points.read().await;
         let points = data_points_guard.get(name).cloned().unwrap_or_default();
         Ok(points)
@@ -366,19 +383,19 @@ impl MetricsCollector {
     /// 导出指标数据
     pub async fn export_metrics(&self) -> Result<Vec<MetricDataPoint>, MetricsCollectorError> {
         let mut all_data_points = Vec::new();
-        
+
         let data_points_guard = self.data_points.read().await;
         for points in data_points_guard.values() {
             all_data_points.extend(points.clone());
         }
-        
+
         self.export_count.fetch_add(1, Ordering::AcqRel);
-        
+
         // 更新统计信息
         let mut stats_guard = self.stats.lock().await;
         stats_guard.export_count = self.export_count.load(Ordering::Acquire);
         stats_guard.last_export = Some(Instant::now());
-        
+
         Ok(all_data_points)
     }
 
@@ -390,11 +407,11 @@ impl MetricsCollector {
         stats.collection_count = self.collection_count.load(Ordering::Acquire);
         stats.export_count = self.export_count.load(Ordering::Acquire);
         stats.cleanup_count = self.cleanup_count.load(Ordering::Acquire);
-        
+
         // 计算活跃指标数量
         let metrics_guard = self.metrics.read().await;
         stats.active_metrics = metrics_guard.len();
-        
+
         stats.clone()
     }
 
@@ -402,12 +419,12 @@ impl MetricsCollector {
     pub async fn cleanup_metric(&self, name: &str) -> Result<(), MetricsCollectorError> {
         let mut metrics_guard = self.metrics.write().await;
         let mut data_points_guard = self.data_points.write().await;
-        
+
         if metrics_guard.remove(name).is_some() {
             data_points_guard.remove(name);
             self.total_metrics.fetch_sub(1, Ordering::AcqRel);
         }
-        
+
         Ok(())
     }
 
@@ -415,10 +432,10 @@ impl MetricsCollector {
     pub async fn cleanup_all_metrics(&self) {
         let mut metrics_guard = self.metrics.write().await;
         let mut data_points_guard = self.data_points.write().await;
-        
+
         metrics_guard.clear();
         data_points_guard.clear();
-        
+
         self.total_metrics.store(0, Ordering::Release);
         self.total_data_points.store(0, Ordering::Release);
     }
@@ -429,16 +446,19 @@ impl MetricsCollector {
     }
 
     /// 更新配置
-    pub fn update_config(&mut self, config: MetricsCollectorConfig) -> Result<(), MetricsCollectorError> {
+    pub fn update_config(
+        &mut self,
+        config: MetricsCollectorConfig,
+    ) -> Result<(), MetricsCollectorError> {
         if config.collection_interval.as_secs() == 0 {
             return Err(MetricsCollectorError::ConfigurationError(
-                "collection_interval must be greater than 0".to_string()
+                "collection_interval must be greater than 0".to_string(),
             ));
         }
 
         if config.max_metrics == 0 {
             return Err(MetricsCollectorError::ConfigurationError(
-                "max_metrics must be greater than 0".to_string()
+                "max_metrics must be greater than 0".to_string(),
             ));
         }
 
@@ -503,7 +523,10 @@ mod tests {
             value: "test".to_string(),
         }];
 
-        collector.record_metric("test_counter".to_string(), value, labels).await.unwrap();
+        collector
+            .record_metric("test_counter".to_string(), value, labels)
+            .await
+            .unwrap();
 
         // 获取指标数据
         let data = collector.get_metric_data("test_counter").await.unwrap();
@@ -542,8 +565,18 @@ mod tests {
         collector.register_metric(gauge_def).await.unwrap();
 
         // 记录不同类型的值
-        collector.record_metric("test_counter".to_string(), MetricValue::Counter(1.0), vec![]).await.unwrap();
-        collector.record_metric("test_gauge".to_string(), MetricValue::Gauge(2.5), vec![]).await.unwrap();
+        collector
+            .record_metric(
+                "test_counter".to_string(),
+                MetricValue::Counter(1.0),
+                vec![],
+            )
+            .await
+            .unwrap();
+        collector
+            .record_metric("test_gauge".to_string(), MetricValue::Gauge(2.5), vec![])
+            .await
+            .unwrap();
 
         // 验证数据
         let counter_data = collector.get_metric_data("test_counter").await.unwrap();
@@ -577,7 +610,10 @@ mod tests {
         collector.register_metric(metric_def).await.unwrap();
 
         // 记录指标值
-        collector.record_metric("test_metric".to_string(), MetricValue::Counter(1.0), vec![]).await.unwrap();
+        collector
+            .record_metric("test_metric".to_string(), MetricValue::Counter(1.0), vec![])
+            .await
+            .unwrap();
 
         // 等待清理
         sleep(Duration::from_millis(200)).await;
@@ -605,7 +641,10 @@ mod tests {
         collector.register_metric(metric_def).await.unwrap();
 
         // 记录指标值
-        collector.record_metric("test_metric".to_string(), MetricValue::Counter(1.0), vec![]).await.unwrap();
+        collector
+            .record_metric("test_metric".to_string(), MetricValue::Counter(1.0), vec![])
+            .await
+            .unwrap();
 
         // 导出指标
         let exported_data = collector.export_metrics().await.unwrap();

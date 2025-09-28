@@ -4,9 +4,9 @@
 //! 与 `otlp` crate 的一等语义对齐；提供类型别名与轻量转换，便于逐步迁移。
 
 // 对齐错误类型
-pub use otlp::error::OtlpError as UnifiedOtlpError;
-pub use otlp::error::ErrorSeverity as OtlpErrorSeverity;
 pub use otlp::error::ErrorContext as OtlpErrorContext;
+pub use otlp::error::ErrorSeverity as OtlpErrorSeverity;
+pub use otlp::error::OtlpError as UnifiedOtlpError;
 
 // 指标/监控（按需补充重导出）
 pub use otlp::monitoring::MonitoringConfig as OtlpMonitoringConfig;
@@ -15,7 +15,9 @@ pub use otlp::monitoring::MonitoringConfig as OtlpMonitoringConfig;
 #[allow(dead_code)]
 pub mod convert {
     use super::*;
-    use crate::error_handling::{UnifiedError, ErrorSeverity as LocalSeverity, ErrorContext as LocalContext};
+    use crate::error_handling::{
+        ErrorContext as LocalContext, ErrorSeverity as LocalSeverity, UnifiedError,
+    };
 
     // 映射严重度
     fn map_severity(sev: LocalSeverity) -> OtlpErrorSeverity {
@@ -29,7 +31,7 @@ pub mod convert {
 
     // 简化上下文映射（按需扩展字段）
     fn map_context(ctx: &LocalContext) -> OtlpErrorContext {
-        use otlp::error::{ErrorCategory};
+        use otlp::error::ErrorCategory;
         // 采用 System 作为默认类别；可根据本地 category 进一步细化
         let base = OtlpErrorContext::new(ErrorCategory::System, map_severity(ctx.severity));
         base
@@ -37,20 +39,36 @@ pub mod convert {
 
     /// 将本地 UnifiedError 转换为 OtlpError 的最小实现（按分类启发式映射）
     pub fn to_otlp_error(err: &UnifiedError) -> otlp::error::OtlpError {
-        use otlp::error::{OtlpError, SystemError, TransportError, DataError, ExportError, ProcessingError, ResourceError, CompatibilityError, PerformanceError};
+        use otlp::error::{
+            CompatibilityError, DataError, ExportError, OtlpError, PerformanceError,
+            ProcessingError, ResourceError, SystemError, TransportError,
+        };
         let msg = err.message().to_string();
         let cat = err.category();
 
         match cat {
-            "network" | "transport" => OtlpError::Transport(TransportError::Connection { endpoint: "unknown".into(), reason: msg }),
-            "timeout" => OtlpError::Transport(TransportError::Timeout { operation: "unknown".into(), timeout: std::time::Duration::from_secs(5) }),
-            "serialization" | "deserialization" => OtlpError::Transport(TransportError::Serialization { reason: msg }),
+            "network" | "transport" => OtlpError::Transport(TransportError::Connection {
+                endpoint: "unknown".into(),
+                reason: msg,
+            }),
+            "timeout" => OtlpError::Transport(TransportError::Timeout {
+                operation: "unknown".into(),
+                timeout: std::time::Duration::from_secs(5),
+            }),
+            "serialization" | "deserialization" => {
+                OtlpError::Transport(TransportError::Serialization { reason: msg })
+            }
             "data" | "validation" => OtlpError::Data(DataError::Validation { reason: msg }),
             "export" => OtlpError::Export(ExportError::Failed { reason: msg }),
             "processing" => OtlpError::Processing(ProcessingError::Batch { reason: msg }),
             "resource" => OtlpError::Resource(ResourceError::PermissionDenied { resource: msg }),
-            "compatibility" => OtlpError::Compatibility(CompatibilityError::ProtocolMismatch { reason: msg }),
-            "performance" => OtlpError::Performance(PerformanceError::HighLatency { current: std::time::Duration::from_millis(100), threshold: std::time::Duration::from_millis(50) }),
+            "compatibility" => {
+                OtlpError::Compatibility(CompatibilityError::ProtocolMismatch { reason: msg })
+            }
+            "performance" => OtlpError::Performance(PerformanceError::HighLatency {
+                current: std::time::Duration::from_millis(100),
+                threshold: std::time::Duration::from_millis(50),
+            }),
             _ => OtlpError::System(SystemError::SystemCall { reason: msg }),
         }
     }
@@ -61,5 +79,3 @@ pub mod convert {
         }
     }
 }
-
-

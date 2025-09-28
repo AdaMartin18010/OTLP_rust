@@ -5,13 +5,13 @@
 //! 2. 缓存优化：实现缓存友好的数据结构布局
 //! 3. 内存池优化：进一步优化内存分配策略
 
-use std::arch::x86_64::*;
-use std::ptr;
-use std::alloc::{Layout, alloc, dealloc};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::collections::HashMap;
-use std::time::Instant;
 use anyhow::Result;
+use std::alloc::{Layout, alloc, dealloc};
+use std::arch::x86_64::*;
+use std::collections::HashMap;
+use std::ptr;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Instant;
 
 /// SIMD优化处理器 - 利用AVX2指令集进行并行计算
 pub struct AdvancedSimdOptimizer {
@@ -23,7 +23,7 @@ pub struct AdvancedSimdOptimizer {
 impl AdvancedSimdOptimizer {
     pub fn new() -> Self {
         Self {
-            cache_line_size: 64, // 现代CPU的缓存行大小
+            cache_line_size: 64,  // 现代CPU的缓存行大小
             prefetch_distance: 2, // 预取距离
             simd_enabled: is_x86_feature_detected!("avx2"),
         }
@@ -32,7 +32,11 @@ impl AdvancedSimdOptimizer {
     /// SIMD加速的浮点数数组处理
     /// 使用AVX2指令集进行并行计算，支持多种数学运算
     #[target_feature(enable = "avx2")]
-    pub unsafe fn process_f64_array_simd(&self, data: &[f64], operation: SimdOperation) -> Result<Vec<f64>> {
+    pub unsafe fn process_f64_array_simd(
+        &self,
+        data: &[f64],
+        operation: SimdOperation,
+    ) -> Result<Vec<f64>> {
         if !self.simd_enabled {
             return self.process_f64_array_scalar(data, operation);
         }
@@ -42,13 +46,13 @@ impl AdvancedSimdOptimizer {
         unsafe {
             result.set_len(len);
         }
-        
+
         let simd_len = len - (len % 4); // 处理4个元素一组
-        
+
         for i in (0..simd_len).step_by(4) {
             // 加载4个f64值到AVX2寄存器
             let data_vec = unsafe { _mm256_loadu_pd(data.as_ptr().add(i)) };
-            
+
             // 根据操作类型执行SIMD运算
             let result_vec = match operation {
                 SimdOperation::Square => _mm256_mul_pd(data_vec, data_vec),
@@ -132,11 +136,11 @@ impl AdvancedSimdOptimizer {
                     unsafe { _mm256_loadu_pd(temp.as_ptr()) }
                 }
             };
-            
+
             // 存储结果
             unsafe { _mm256_storeu_pd(result.as_mut_ptr().add(i), result_vec) };
         }
-        
+
         // 处理剩余元素
         for i in simd_len..len {
             result[i] = match operation {
@@ -156,13 +160,17 @@ impl AdvancedSimdOptimizer {
                 SimdOperation::Tan => data[i].tan(),
             };
         }
-        
+
         Ok(result)
     }
 
     /// SIMD加速的整数数组处理
     #[target_feature(enable = "avx2")]
-    pub unsafe fn process_i32_array_simd(&self, data: &[i32], operation: SimdIntOperation) -> Result<Vec<i32>> {
+    pub unsafe fn process_i32_array_simd(
+        &self,
+        data: &[i32],
+        operation: SimdIntOperation,
+    ) -> Result<Vec<i32>> {
         if !self.simd_enabled {
             return self.process_i32_array_scalar(data, operation);
         }
@@ -172,13 +180,13 @@ impl AdvancedSimdOptimizer {
         unsafe {
             result.set_len(len);
         }
-        
+
         let simd_len = len - (len % 8); // 处理8个i32元素一组
-        
+
         for i in (0..simd_len).step_by(8) {
             // 加载8个i32值到AVX2寄存器
             let data_vec = unsafe { _mm256_loadu_si256(data.as_ptr().add(i) as *const __m256i) };
-            
+
             // 根据操作类型执行SIMD运算
             let result_vec = match operation {
                 SimdIntOperation::Add(value) => {
@@ -194,11 +202,11 @@ impl AdvancedSimdOptimizer {
                     _mm256_and_si256(data_vec, value_vec)
                 }
             };
-            
+
             // 存储结果
             unsafe { _mm256_storeu_si256(result.as_mut_ptr().add(i) as *mut __m256i, result_vec) };
         }
-        
+
         // 处理剩余元素
         for i in simd_len..len {
             result[i] = match operation {
@@ -207,14 +215,15 @@ impl AdvancedSimdOptimizer {
                 SimdIntOperation::BitwiseAnd(value) => data[i] & value,
             };
         }
-        
+
         Ok(result)
     }
 
     /// 标量处理（SIMD不可用时的回退）
     fn process_f64_array_scalar(&self, data: &[f64], operation: SimdOperation) -> Result<Vec<f64>> {
-        let result: Vec<f64> = data.iter().map(|&x| {
-            match operation {
+        let result: Vec<f64> = data
+            .iter()
+            .map(|&x| match operation {
                 SimdOperation::Square => x * x,
                 SimdOperation::Sqrt => x.sqrt(),
                 SimdOperation::Abs => x.abs(),
@@ -229,19 +238,24 @@ impl AdvancedSimdOptimizer {
                 SimdOperation::Sin => x.sin(),
                 SimdOperation::Cos => x.cos(),
                 SimdOperation::Tan => x.tan(),
-            }
-        }).collect();
+            })
+            .collect();
         Ok(result)
     }
 
-    fn process_i32_array_scalar(&self, data: &[i32], operation: SimdIntOperation) -> Result<Vec<i32>> {
-        let result: Vec<i32> = data.iter().map(|&x| {
-            match operation {
+    fn process_i32_array_scalar(
+        &self,
+        data: &[i32],
+        operation: SimdIntOperation,
+    ) -> Result<Vec<i32>> {
+        let result: Vec<i32> = data
+            .iter()
+            .map(|&x| match operation {
                 SimdIntOperation::Add(value) => x + value,
                 SimdIntOperation::Multiply(value) => x * value,
                 SimdIntOperation::BitwiseAnd(value) => x & value,
-            }
-        }).collect();
+            })
+            .collect();
         Ok(result)
     }
 
@@ -249,7 +263,7 @@ impl AdvancedSimdOptimizer {
     pub fn prefetch_data_advanced(&self, data: &[u8]) {
         let len = data.len();
         let prefetch_step = self.cache_line_size * self.prefetch_distance;
-        
+
         for i in (0..len).step_by(prefetch_step) {
             if i + self.cache_line_size < len {
                 unsafe {
@@ -302,18 +316,18 @@ pub struct CacheOptimizationManager {
 impl CacheOptimizationManager {
     pub fn new() -> Self {
         Self {
-            l1_cache_size: 32 * 1024,  // 32KB L1缓存
-            l2_cache_size: 256 * 1024, // 256KB L2缓存
+            l1_cache_size: 32 * 1024,       // 32KB L1缓存
+            l2_cache_size: 256 * 1024,      // 256KB L2缓存
             l3_cache_size: 8 * 1024 * 1024, // 8MB L3缓存
-            cache_alignment: 64, // 64字节对齐
-            cache_line_size: 64, // 64字节缓存行
+            cache_alignment: 64,            // 64字节对齐
+            cache_line_size: 64,            // 64字节缓存行
         }
     }
 
     /// 缓存行对齐的内存分配
     pub fn allocate_aligned(&self, size: usize) -> Result<*mut u8> {
         let aligned_size = (size + self.cache_alignment - 1) & !(self.cache_alignment - 1);
-        
+
         unsafe {
             let layout = Layout::from_size_align(aligned_size, self.cache_alignment)
                 .map_err(|e| anyhow::anyhow!("布局创建失败: {}", e))?;
@@ -349,7 +363,7 @@ impl CacheOptimizationManager {
     pub fn warm_cache(&self, data: &[u8]) {
         let len = data.len();
         let step = self.cache_line_size;
-        
+
         // 顺序访问预热L1缓存
         for i in (0..len).step_by(step) {
             unsafe {
@@ -361,15 +375,15 @@ impl CacheOptimizationManager {
     /// 缓存性能分析
     pub fn analyze_cache_performance(&self, data: &[u8]) -> CachePerformanceMetrics {
         let start = Instant::now();
-        
+
         // 顺序访问测试
         let mut _sum = 0u64;
         for &byte in data {
             _sum += byte as u64;
         }
-        
+
         let sequential_time = start.elapsed();
-        
+
         // 随机访问测试
         let start = Instant::now();
         let mut _sum2 = 0u64;
@@ -377,9 +391,9 @@ impl CacheOptimizationManager {
             let idx = (i * 7) % data.len(); // 伪随机访问
             _sum2 += data[idx] as u64;
         }
-        
+
         let random_time = start.elapsed();
-        
+
         CachePerformanceMetrics {
             sequential_access_time: sequential_time,
             random_access_time: random_time,
@@ -395,7 +409,7 @@ impl CacheOptimizationManager {
     /// 缓存友好的矩阵乘法
     pub fn matrix_multiply_cache_optimized(&self, a: &[f64], b: &[f64], c: &mut [f64], n: usize) {
         const BLOCK_SIZE: usize = 64; // 缓存块大小
-        
+
         for ii in (0..n).step_by(BLOCK_SIZE) {
             for jj in (0..n).step_by(BLOCK_SIZE) {
                 for kk in (0..n).step_by(BLOCK_SIZE) {
@@ -403,7 +417,7 @@ impl CacheOptimizationManager {
                     let i_end = (ii + BLOCK_SIZE).min(n);
                     let j_end = (jj + BLOCK_SIZE).min(n);
                     let k_end = (kk + BLOCK_SIZE).min(n);
-                    
+
                     for i in ii..i_end {
                         for j in jj..j_end {
                             let mut sum = 0.0;
@@ -540,7 +554,7 @@ impl AdvancedMemoryPoolOptimizer {
                 pools_to_remove.push(*size);
             }
         }
-        
+
         for size in pools_to_remove {
             self.pools.remove(&size);
         }
@@ -583,20 +597,22 @@ impl ComprehensivePerformanceOptimizer {
     /// 运行综合性能测试
     pub async fn run_comprehensive_benchmark(&mut self) -> Result<BenchmarkResults> {
         let mut results = BenchmarkResults::new();
-        
+
         // SIMD性能测试
         let data = vec![1.0f64; 1000000];
         let start = Instant::now();
         unsafe {
-            let simd_result = self.simd_optimizer.process_f64_array_simd(&data, SimdOperation::Square)?;
+            let simd_result = self
+                .simd_optimizer
+                .process_f64_array_simd(&data, SimdOperation::Square)?;
             results.simd_processing_time = start.elapsed();
             results.simd_result_count = simd_result.len();
         }
-        
+
         // 缓存性能测试
         let test_data = vec![0u8; 1024 * 1024]; // 1MB测试数据
         results.cache_metrics = self.cache_manager.analyze_cache_performance(&test_data);
-        
+
         // 内存池性能测试
         let start = Instant::now();
         for _ in 0..1000 {
@@ -606,7 +622,7 @@ impl ComprehensivePerformanceOptimizer {
         }
         results.memory_pool_time = start.elapsed();
         results.memory_pool_stats = self.memory_pool.get_stats();
-        
+
         Ok(results)
     }
 
@@ -688,7 +704,7 @@ mod tests {
     fn test_memory_pool_creation() {
         let pool = AdvancedMemoryPoolOptimizer::new();
         assert_eq!(pool.max_pool_size, 1000);
-        
+
         let stats = pool.get_stats();
         assert_eq!(stats.total_allocated, 0);
         assert_eq!(stats.total_freed, 0);
@@ -706,7 +722,7 @@ mod tests {
         let mut optimizer = ComprehensivePerformanceOptimizer::new();
         let results = optimizer.run_comprehensive_benchmark().await;
         assert!(results.is_ok());
-        
+
         let results = results.unwrap();
         assert!(results.simd_result_count > 0);
         assert!(results.cache_metrics.data_size > 0);

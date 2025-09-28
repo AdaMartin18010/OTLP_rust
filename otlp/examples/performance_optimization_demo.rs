@@ -44,30 +44,45 @@ impl PerformanceOptimizer {
     pub fn new(config: PerformanceConfig) -> Result<Self> {
         Ok(Self { config })
     }
-    
+
     pub async fn start(&self) -> Result<()> {
         Ok(())
     }
-    
+
     pub async fn get_performance_metrics(&self) -> Result<PerformanceMetrics> {
         Ok(PerformanceMetrics {
-            zero_copy_stats: ZeroCopyStats { operations: 1000, memory_saved: 1024 },
-            memory_pool_stats: MemoryPoolStats { allocated: 512, free: 512 },
-            concurrency_stats: ConcurrencyStats { active_tasks: 10, completed_tasks: 990 },
-            cache_stats: CacheStats { hits: 800, misses: 200 },
+            zero_copy_stats: ZeroCopyStats {
+                operations: 1000,
+                memory_saved: 1024,
+            },
+            memory_pool_stats: MemoryPoolStats {
+                allocated: 512,
+                free: 512,
+            },
+            concurrency_stats: ConcurrencyStats {
+                active_tasks: 10,
+                completed_tasks: 990,
+            },
+            cache_stats: CacheStats {
+                hits: 800,
+                misses: 200,
+            },
         })
     }
-    
+
     pub async fn optimize_error_handling(&self, error: &OtlpError) -> Result<OptimizedError> {
         Ok(OptimizedError {
-            inner: std::sync::Arc::new(OtlpError::from_anyhow(anyhow::anyhow!(format!("{}", error)))),
+            inner: std::sync::Arc::new(OtlpError::from_anyhow(anyhow::anyhow!(format!(
+                "{}",
+                error
+            )))),
             metadata: ErrorMetadata {
                 size: std::mem::size_of_val(error),
                 created_at: std::time::Instant::now(),
             },
         })
     }
-    
+
     pub async fn run_benchmarks(&self) -> Result<BenchmarkResults> {
         Ok(BenchmarkResults {
             error_handling_benchmark: BenchmarkResult {

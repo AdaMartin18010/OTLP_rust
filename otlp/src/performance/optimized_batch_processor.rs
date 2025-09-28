@@ -1,14 +1,14 @@
 //! 优化的批处理器实现
-//! 
+//!
 //! 使用Rust 1.90的新特性进行性能优化，包括零拷贝、智能批处理和高效内存管理。
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering};
-use std::time::{Duration, Instant};
-use tokio::sync::{Mutex, Semaphore, mpsc};
-use tokio::time::{timeout};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
 use thiserror::Error;
+use tokio::sync::{Mutex, Semaphore, mpsc};
+use tokio::time::timeout;
 
 /// 批处理器错误
 #[derive(Debug, Error)]
@@ -119,9 +119,9 @@ pub struct BatchResult<T> {
 }
 
 /// 优化的批处理器
-/// 
+///
 /// 使用零拷贝和智能批处理，性能提升70-90%
-pub struct OptimizedBatchProcessor<T, F> 
+pub struct OptimizedBatchProcessor<T, F>
 where
     T: Send + Sync + Clone + 'static,
     F: Fn(Vec<T>) -> Result<BatchResult<T>, BatchProcessorError> + Send + Sync + 'static,
@@ -149,19 +149,19 @@ where
     pub fn new(processor: F, config: BatchProcessorConfig) -> Result<Self, BatchProcessorError> {
         if config.max_batch_size == 0 {
             return Err(BatchProcessorError::ConfigurationError(
-                "max_batch_size must be greater than 0".to_string()
+                "max_batch_size must be greater than 0".to_string(),
             ));
         }
 
         if config.min_batch_size > config.max_batch_size {
             return Err(BatchProcessorError::ConfigurationError(
-                "min_batch_size cannot be greater than max_batch_size".to_string()
+                "min_batch_size cannot be greater than max_batch_size".to_string(),
             ));
         }
 
         if config.concurrency == 0 {
             return Err(BatchProcessorError::ConfigurationError(
-                "concurrency must be greater than 0".to_string()
+                "concurrency must be greater than 0".to_string(),
             ));
         }
 
@@ -229,7 +229,8 @@ where
                 match item {
                     Ok(Some(item)) => {
                         // 检查内存限制
-                        if current_memory.load(Ordering::Acquire) + item.size > config.memory_limit {
+                        if current_memory.load(Ordering::Acquire) + item.size > config.memory_limit
+                        {
                             // 内存不足，强制处理当前批次
                             if !batch.is_empty() {
                                 Self::process_batch(
@@ -242,7 +243,8 @@ where
                                     &total_processed,
                                     &total_failed,
                                     &config,
-                                ).await;
+                                )
+                                .await;
                                 batch.clear();
                                 batch_start_time = Instant::now();
                             }
@@ -265,7 +267,8 @@ where
                                 &total_processed,
                                 &total_failed,
                                 &config,
-                            ).await;
+                            )
+                            .await;
                             batch.clear();
                             batch_start_time = Instant::now();
                         }
@@ -287,7 +290,8 @@ where
                                 &total_processed,
                                 &total_failed,
                                 &config,
-                            ).await;
+                            )
+                            .await;
                             batch.clear();
                             batch_start_time = Instant::now();
                         }
@@ -306,7 +310,8 @@ where
                         &total_processed,
                         &total_failed,
                         &config,
-                    ).await;
+                    )
+                    .await;
                     batch.clear();
                     batch_start_time = Instant::now();
                     last_batch_time = Instant::now();
@@ -325,7 +330,8 @@ where
                     &total_processed,
                     &total_failed,
                     &config,
-                ).await;
+                )
+                .await;
             }
         });
     }
@@ -369,12 +375,14 @@ where
                     stats_guard.total_batches += 1;
                     stats_guard.total_items += batch_size;
                     stats_guard.total_processed += batch_size;
-                    stats_guard.average_batch_size = stats_guard.total_items as f64 / stats_guard.total_batches as f64;
+                    stats_guard.average_batch_size =
+                        stats_guard.total_items as f64 / stats_guard.total_batches as f64;
                     stats_guard.average_processing_time = start_time.elapsed();
                     stats_guard.last_batch_time = Some(Instant::now());
-                    
+
                     if let Some(compressed_size) = result.compressed_size {
-                        stats_guard.compression_ratio = compressed_size as f64 / result.original_size as f64;
+                        stats_guard.compression_ratio =
+                            compressed_size as f64 / result.original_size as f64;
                     }
                 }
             }
@@ -395,9 +403,9 @@ where
             return Err(BatchProcessorError::OutOfMemory);
         }
 
-        self.sender.send(item).map_err(|_| {
-            BatchProcessorError::ProcessorClosed
-        })?;
+        self.sender
+            .send(item)
+            .map_err(|_| BatchProcessorError::ProcessorClosed)?;
 
         Ok(())
     }
@@ -409,7 +417,11 @@ where
     }
 
     /// 添加普通优先级项
-    pub async fn add_normal_priority(&self, data: T, size: usize) -> Result<(), BatchProcessorError> {
+    pub async fn add_normal_priority(
+        &self,
+        data: T,
+        size: usize,
+    ) -> Result<(), BatchProcessorError> {
         let item = BatchItem::normal_priority(data, size);
         self.add_item(item).await
     }
@@ -428,7 +440,7 @@ where
         stats.total_processed = self.total_processed.load(Ordering::Acquire);
         stats.total_failed = self.total_failed.load(Ordering::Acquire);
         stats.memory_usage = self.current_memory.load(Ordering::Acquire);
-        
+
         if stats.total_batches > 0 {
             stats.average_batch_size = stats.total_items as f64 / stats.total_batches as f64;
         }
@@ -447,22 +459,25 @@ where
     }
 
     /// 更新配置
-    pub fn update_config(&mut self, config: BatchProcessorConfig) -> Result<(), BatchProcessorError> {
+    pub fn update_config(
+        &mut self,
+        config: BatchProcessorConfig,
+    ) -> Result<(), BatchProcessorError> {
         if config.max_batch_size == 0 {
             return Err(BatchProcessorError::ConfigurationError(
-                "max_batch_size must be greater than 0".to_string()
+                "max_batch_size must be greater than 0".to_string(),
             ));
         }
 
         if config.min_batch_size > config.max_batch_size {
             return Err(BatchProcessorError::ConfigurationError(
-                "min_batch_size cannot be greater than max_batch_size".to_string()
+                "min_batch_size cannot be greater than max_batch_size".to_string(),
             ));
         }
 
         if config.concurrency == 0 {
             return Err(BatchProcessorError::ConfigurationError(
-                "concurrency must be greater than 0".to_string()
+                "concurrency must be greater than 0".to_string(),
             ));
         }
 
@@ -540,7 +555,8 @@ mod tests {
                 })
             },
             config,
-        ).unwrap();
+        )
+        .unwrap();
 
         // 添加项
         for i in 0..15 {
@@ -597,13 +613,23 @@ mod tests {
                 })
             },
             config,
-        ).unwrap();
+        )
+        .unwrap();
 
         // 添加不同优先级的项
         for i in 0..10 {
-            processor.add_high_priority(format!("high_{}", i), 50).await.unwrap();
-            processor.add_normal_priority(format!("normal_{}", i), 50).await.unwrap();
-            processor.add_low_priority(format!("low_{}", i), 50).await.unwrap();
+            processor
+                .add_high_priority(format!("high_{}", i), 50)
+                .await
+                .unwrap();
+            processor
+                .add_normal_priority(format!("normal_{}", i), 50)
+                .await
+                .unwrap();
+            processor
+                .add_low_priority(format!("low_{}", i), 50)
+                .await
+                .unwrap();
         }
 
         // 等待处理完成
@@ -637,14 +663,19 @@ mod tests {
                 })
             },
             config,
-        ).unwrap();
+        )
+        .unwrap();
 
         // 添加大项，应该触发内存限制
-        let result = processor.add_normal_priority("large_item".repeat(1000), 2000).await;
+        let result = processor
+            .add_normal_priority("large_item".repeat(1000), 2000)
+            .await;
         assert!(result.is_err());
 
         // 添加小项，应该成功
-        let result = processor.add_normal_priority("small_item".to_string(), 100).await;
+        let result = processor
+            .add_normal_priority("small_item".to_string(), 100)
+            .await;
         assert!(result.is_ok());
     }
 
@@ -677,7 +708,8 @@ mod tests {
                 })
             },
             config,
-        ).unwrap();
+        )
+        .unwrap();
 
         // 并发添加项
         let mut handles = Vec::new();

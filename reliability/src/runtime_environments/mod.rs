@@ -7,9 +7,9 @@
 //!
 //! 每种环境都有其特定的资源限制、监控能力和恢复策略。
 
+use crate::error_handling::UnifiedError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use crate::error_handling::UnifiedError;
 
 /// 运行时环境类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -25,7 +25,7 @@ pub enum RuntimeEnvironment {
     GameEngine,
     /// 移动应用环境 - 移动设备优化环境
     Mobile,
-    
+
     // === 虚拟化执行环境 ===
     /// 虚拟机环境 - 传统虚拟化环境
     VirtualMachine,
@@ -35,13 +35,13 @@ pub enum RuntimeEnvironment {
     Container,
     /// Kubernetes Pod环境 - K8s编排的容器环境
     KubernetesPod,
-    
+
     // === 沙箱执行环境 ===
     /// WebAssembly环境 - 沙箱化字节码执行
     WebAssembly,
     /// 函数即服务环境 - 无服务器沙箱执行
     FunctionAsAService,
-    
+
     // === 特殊部署环境 ===
     /// 边缘计算环境 - 边缘设备部署
     EdgeComputing,
@@ -54,22 +54,24 @@ impl RuntimeEnvironment {
     pub fn description(&self) -> &'static str {
         match self {
             // 原生执行环境
-            RuntimeEnvironment::OperatingSystem => "完整的操作系统环境，支持多进程、多线程和丰富的系统调用",
+            RuntimeEnvironment::OperatingSystem => {
+                "完整的操作系统环境，支持多进程、多线程和丰富的系统调用"
+            }
             RuntimeEnvironment::EmbeddedBareMetal => "嵌入式裸机环境，无操作系统，直接运行在硬件上",
             RuntimeEnvironment::RealTimeOS => "实时操作系统环境，提供确定性的实时响应和低延迟",
             RuntimeEnvironment::GameEngine => "游戏引擎环境，优化高性能实时渲染和资源管理",
             RuntimeEnvironment::Mobile => "移动应用环境，针对移动设备优化的电池和网络管理",
-            
+
             // 虚拟化执行环境
             RuntimeEnvironment::VirtualMachine => "虚拟机环境，提供完整的虚拟化层和资源隔离",
             RuntimeEnvironment::MicroVM => "微虚拟机环境，轻量级虚拟化，快速启动和安全隔离",
             RuntimeEnvironment::Container => "Docker容器环境，提供隔离的运行环境和资源限制",
             RuntimeEnvironment::KubernetesPod => "Kubernetes Pod环境，支持服务发现、配置管理和编排",
-            
+
             // 沙箱执行环境
             RuntimeEnvironment::WebAssembly => "WebAssembly环境，沙箱化字节码执行，跨平台兼容",
             RuntimeEnvironment::FunctionAsAService => "函数即服务环境，无服务器架构，按需执行",
-            
+
             // 特殊部署环境
             RuntimeEnvironment::EdgeComputing => "边缘计算环境，低延迟处理，资源受限，网络不稳定",
             RuntimeEnvironment::Blockchain => "区块链环境，去中心化网络，共识机制，智能合约",
@@ -116,8 +118,8 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: false,
                 memory_limit: Some(1024 * 1024), // 1MB 默认限制
-                cpu_limit: Some(100), // 100MHz 默认限制
-                disk_limit: Some(1024 * 1024), // 1MB 默认限制
+                cpu_limit: Some(100),            // 100MHz 默认限制
+                disk_limit: Some(1024 * 1024),   // 1MB 默认限制
                 network_limit: None,
             },
             RuntimeEnvironment::RealTimeOS => EnvironmentCapabilities {
@@ -136,8 +138,8 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: false,
                 memory_limit: Some(16 * 1024 * 1024), // 16MB 默认限制
-                cpu_limit: Some(500), // 500MHz 默认限制
-                disk_limit: Some(64 * 1024 * 1024), // 64MB 默认限制
+                cpu_limit: Some(500),                 // 500MHz 默认限制
+                disk_limit: Some(64 * 1024 * 1024),   // 64MB 默认限制
                 network_limit: Some(10 * 1024 * 1024), // 10MB/s 默认限制
             },
             RuntimeEnvironment::GameEngine => EnvironmentCapabilities {
@@ -156,9 +158,9 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: true,
                 memory_limit: Some(2 * 1024 * 1024 * 1024), // 2GB 默认限制
-                cpu_limit: Some(3000), // 3000MHz 默认限制
-                disk_limit: Some(50 * 1024 * 1024 * 1024), // 50GB 默认限制
-                network_limit: Some(1000 * 1024 * 1024), // 1GB/s 默认限制
+                cpu_limit: Some(3000),                      // 3000MHz 默认限制
+                disk_limit: Some(50 * 1024 * 1024 * 1024),  // 50GB 默认限制
+                network_limit: Some(1000 * 1024 * 1024),    // 1GB/s 默认限制
             },
             RuntimeEnvironment::Mobile => EnvironmentCapabilities {
                 supports_multiprocessing: true,
@@ -176,11 +178,11 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: false,
                 memory_limit: Some(512 * 1024 * 1024), // 512MB 默认限制
-                cpu_limit: Some(2000), // 2000MHz 默认限制
+                cpu_limit: Some(2000),                 // 2000MHz 默认限制
                 disk_limit: Some(8 * 1024 * 1024 * 1024), // 8GB 默认限制
                 network_limit: Some(100 * 1024 * 1024), // 100MB/s 默认限制
             },
-            
+
             // 虚拟化执行环境
             RuntimeEnvironment::VirtualMachine => EnvironmentCapabilities {
                 supports_multiprocessing: true,
@@ -198,9 +200,9 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: true,
                 memory_limit: Some(4 * 1024 * 1024 * 1024), // 4GB 默认限制
-                cpu_limit: Some(2000), // 2000MHz 默认限制
+                cpu_limit: Some(2000),                      // 2000MHz 默认限制
                 disk_limit: Some(100 * 1024 * 1024 * 1024), // 100GB 默认限制
-                network_limit: Some(1000 * 1024 * 1024), // 1GB/s 默认限制
+                network_limit: Some(1000 * 1024 * 1024),    // 1GB/s 默认限制
             },
             RuntimeEnvironment::MicroVM => EnvironmentCapabilities {
                 supports_multiprocessing: true,
@@ -218,7 +220,7 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: true,
                 memory_limit: Some(256 * 1024 * 1024), // 256MB 默认限制
-                cpu_limit: Some(1000), // 1000MHz 默认限制
+                cpu_limit: Some(1000),                 // 1000MHz 默认限制
                 disk_limit: Some(10 * 1024 * 1024 * 1024), // 10GB 默认限制
                 network_limit: Some(100 * 1024 * 1024), // 100MB/s 默认限制
             },
@@ -238,7 +240,7 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: true,
                 memory_limit: Some(512 * 1024 * 1024), // 512MB 默认限制
-                cpu_limit: Some(1000), // 1000MHz 默认限制
+                cpu_limit: Some(1000),                 // 1000MHz 默认限制
                 disk_limit: Some(10 * 1024 * 1024 * 1024), // 10GB 默认限制
                 network_limit: Some(100 * 1024 * 1024), // 100MB/s 默认限制
             },
@@ -258,11 +260,11 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: true,
                 memory_limit: Some(512 * 1024 * 1024), // 512MB 默认限制
-                cpu_limit: Some(1000), // 1000MHz 默认限制
+                cpu_limit: Some(1000),                 // 1000MHz 默认限制
                 disk_limit: Some(10 * 1024 * 1024 * 1024), // 10GB 默认限制
                 network_limit: Some(100 * 1024 * 1024), // 100MB/s 默认限制
             },
-            
+
             // 沙箱执行环境
             RuntimeEnvironment::WebAssembly => EnvironmentCapabilities {
                 supports_multiprocessing: false,
@@ -280,8 +282,8 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: false,
                 memory_limit: Some(128 * 1024 * 1024), // 128MB 默认限制
-                cpu_limit: Some(1000), // 1000MHz 默认限制
-                disk_limit: Some(1024 * 1024 * 1024), // 1GB 默认限制
+                cpu_limit: Some(1000),                 // 1000MHz 默认限制
+                disk_limit: Some(1024 * 1024 * 1024),  // 1GB 默认限制
                 network_limit: Some(10 * 1024 * 1024), // 10MB/s 默认限制
             },
             RuntimeEnvironment::FunctionAsAService => EnvironmentCapabilities {
@@ -300,11 +302,11 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: false,
                 memory_limit: Some(1024 * 1024 * 1024), // 1GB 默认限制
-                cpu_limit: Some(1000), // 1000MHz 默认限制
-                disk_limit: Some(512 * 1024 * 1024), // 512MB 默认限制
+                cpu_limit: Some(1000),                  // 1000MHz 默认限制
+                disk_limit: Some(512 * 1024 * 1024),    // 512MB 默认限制
                 network_limit: Some(100 * 1024 * 1024), // 100MB/s 默认限制
             },
-            
+
             // 特殊部署环境
             RuntimeEnvironment::EdgeComputing => EnvironmentCapabilities {
                 supports_multiprocessing: true,
@@ -322,7 +324,7 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: false,
                 memory_limit: Some(256 * 1024 * 1024), // 256MB 默认限制
-                cpu_limit: Some(1000), // 1000MHz 默认限制
+                cpu_limit: Some(1000),                 // 1000MHz 默认限制
                 disk_limit: Some(4 * 1024 * 1024 * 1024), // 4GB 默认限制
                 network_limit: Some(50 * 1024 * 1024), // 50MB/s 默认限制
             },
@@ -342,13 +344,13 @@ impl RuntimeEnvironment {
                 supports_auto_recovery: true,
                 supports_chaos_engineering: false,
                 memory_limit: Some(2 * 1024 * 1024 * 1024), // 2GB 默认限制
-                cpu_limit: Some(2000), // 2000MHz 默认限制
+                cpu_limit: Some(2000),                      // 2000MHz 默认限制
                 disk_limit: Some(100 * 1024 * 1024 * 1024), // 100GB 默认限制
-                network_limit: Some(100 * 1024 * 1024), // 100MB/s 默认限制
+                network_limit: Some(100 * 1024 * 1024),     // 100MB/s 默认限制
             },
         }
     }
-    
+
     /// 检测当前运行时环境
     pub fn detect_current() -> Self {
         // 检测容器环境
@@ -358,7 +360,7 @@ impl RuntimeEnvironment {
             }
             return RuntimeEnvironment::Container;
         }
-        
+
         // 检测虚拟机环境
         if is_virtual_machine() {
             if is_micro_vm() {
@@ -366,47 +368,47 @@ impl RuntimeEnvironment {
             }
             return RuntimeEnvironment::VirtualMachine;
         }
-        
+
         // 检测WebAssembly环境
         if is_webassembly_environment() {
             return RuntimeEnvironment::WebAssembly;
         }
-        
+
         // 检测函数即服务环境
         if is_faas_environment() {
             return RuntimeEnvironment::FunctionAsAService;
         }
-        
+
         // 检测边缘计算环境
         if is_edge_computing_environment() {
             return RuntimeEnvironment::EdgeComputing;
         }
-        
+
         // 检测实时操作系统环境
         if is_rtos_environment() {
             return RuntimeEnvironment::RealTimeOS;
         }
-        
+
         // 检测游戏引擎环境
         if is_game_engine_environment() {
             return RuntimeEnvironment::GameEngine;
         }
-        
+
         // 检测区块链环境
         if is_blockchain_environment() {
             return RuntimeEnvironment::Blockchain;
         }
-        
+
         // 检测移动应用环境
         if is_mobile_environment() {
             return RuntimeEnvironment::Mobile;
         }
-        
+
         // 检测嵌入式环境
         if is_embedded_environment() {
             return RuntimeEnvironment::EmbeddedBareMetal;
         }
-        
+
         // 默认操作系统环境
         RuntimeEnvironment::OperatingSystem
     }
@@ -414,16 +416,16 @@ impl RuntimeEnvironment {
 
 /// 检测是否为容器环境
 fn is_container_environment() -> bool {
-    std::path::Path::new("/.dockerenv").exists() ||
-    std::path::Path::new("/proc/1/cgroup").exists() ||
-    std::env::var("CONTAINER").is_ok()
+    std::path::Path::new("/.dockerenv").exists()
+        || std::path::Path::new("/proc/1/cgroup").exists()
+        || std::env::var("CONTAINER").is_ok()
 }
 
 /// 检测是否为Kubernetes Pod环境
 fn is_kubernetes_pod() -> bool {
-    std::env::var("KUBERNETES_SERVICE_HOST").is_ok() ||
-    std::path::Path::new("/var/run/secrets/kubernetes.io").exists() ||
-    std::env::var("KUBERNETES_PORT").is_ok()
+    std::env::var("KUBERNETES_SERVICE_HOST").is_ok()
+        || std::path::Path::new("/var/run/secrets/kubernetes.io").exists()
+        || std::env::var("KUBERNETES_PORT").is_ok()
 }
 
 /// 检测是否为虚拟机环境
@@ -435,28 +437,28 @@ fn is_virtual_machine() -> bool {
         "/proc/vmware",
         "/sys/class/dmi/id/product_name",
     ];
-    
+
     for indicator in &vm_indicators {
         if std::path::Path::new(indicator).exists() {
             return true;
         }
     }
-    
+
     // 检测虚拟机相关的环境变量
-    std::env::var("VIRTUAL_ENV").is_ok() ||
-    std::env::var("VMWARE_ROOT").is_ok() ||
-    std::env::var("VBOX_INSTALL_PATH").is_ok()
+    std::env::var("VIRTUAL_ENV").is_ok()
+        || std::env::var("VMWARE_ROOT").is_ok()
+        || std::env::var("VBOX_INSTALL_PATH").is_ok()
 }
 
 /// 检测是否为微虚拟机环境
 fn is_micro_vm() -> bool {
     // 检测Firecracker等微虚拟机特征
-    std::env::var("FIRECRACKER_SOCKET").is_ok() ||
-    std::env::var("KATA_CONTAINERS").is_ok() ||
-    std::path::Path::new("/proc/1/environ").exists() && 
-    std::fs::read_to_string("/proc/1/environ").map_or(false, |content| {
-        content.contains("firecracker") || content.contains("kata")
-    })
+    std::env::var("FIRECRACKER_SOCKET").is_ok()
+        || std::env::var("KATA_CONTAINERS").is_ok()
+        || std::path::Path::new("/proc/1/environ").exists()
+            && std::fs::read_to_string("/proc/1/environ").map_or(false, |content| {
+                content.contains("firecracker") || content.contains("kata")
+            })
 }
 
 /// 检测是否为WebAssembly环境
@@ -466,66 +468,66 @@ fn is_webassembly_environment() -> bool {
     #[cfg(not(target_arch = "wasm32"))]
     {
         // 检测WASI环境
-        std::env::var("WASI_SDK_PATH").is_ok() ||
-        std::env::var("WASMTIME_HOME").is_ok() ||
-        std::env::var("WASMER_DIR").is_ok()
+        std::env::var("WASI_SDK_PATH").is_ok()
+            || std::env::var("WASMTIME_HOME").is_ok()
+            || std::env::var("WASMER_DIR").is_ok()
     }
 }
 
 /// 检测是否为函数即服务环境
 fn is_faas_environment() -> bool {
-    std::env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok() ||
-    std::env::var("AZURE_FUNCTIONS_ENVIRONMENT").is_ok() ||
-    std::env::var("FUNCTION_NAME").is_ok() ||
-    std::env::var("VERCEL").is_ok() ||
-    std::env::var("NETLIFY").is_ok()
+    std::env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok()
+        || std::env::var("AZURE_FUNCTIONS_ENVIRONMENT").is_ok()
+        || std::env::var("FUNCTION_NAME").is_ok()
+        || std::env::var("VERCEL").is_ok()
+        || std::env::var("NETLIFY").is_ok()
 }
 
 /// 检测是否为边缘计算环境
 fn is_edge_computing_environment() -> bool {
-    std::env::var("EDGE_COMPUTING").is_ok() ||
-    std::env::var("EDGE_NODE").is_ok() ||
-    std::env::var("K3S_NODE_NAME").is_ok() ||
-    std::env::var("MICROK8S").is_ok()
+    std::env::var("EDGE_COMPUTING").is_ok()
+        || std::env::var("EDGE_NODE").is_ok()
+        || std::env::var("K3S_NODE_NAME").is_ok()
+        || std::env::var("MICROK8S").is_ok()
 }
 
 /// 检测是否为实时操作系统环境
 fn is_rtos_environment() -> bool {
-    std::env::var("RTOS_ENVIRONMENT").is_ok() ||
-    std::env::var("FREERTOS").is_ok() ||
-    std::env::var("ZEPHYR_BASE").is_ok() ||
-    std::env::var("VXWORKS").is_ok()
+    std::env::var("RTOS_ENVIRONMENT").is_ok()
+        || std::env::var("FREERTOS").is_ok()
+        || std::env::var("ZEPHYR_BASE").is_ok()
+        || std::env::var("VXWORKS").is_ok()
 }
 
 /// 检测是否为游戏引擎环境
 fn is_game_engine_environment() -> bool {
-    std::env::var("UNITY_EDITOR").is_ok() ||
-    std::env::var("UNREAL_ENGINE").is_ok() ||
-    std::env::var("GODOT").is_ok() ||
-    std::env::var("GAME_ENGINE").is_ok()
+    std::env::var("UNITY_EDITOR").is_ok()
+        || std::env::var("UNREAL_ENGINE").is_ok()
+        || std::env::var("GODOT").is_ok()
+        || std::env::var("GAME_ENGINE").is_ok()
 }
 
 /// 检测是否为区块链环境
 fn is_blockchain_environment() -> bool {
-    std::env::var("ETHEREUM_NODE").is_ok() ||
-    std::env::var("POLKADOT_NODE").is_ok() ||
-    std::env::var("SOLANA_VALIDATOR").is_ok() ||
-    std::env::var("BLOCKCHAIN_NODE").is_ok()
+    std::env::var("ETHEREUM_NODE").is_ok()
+        || std::env::var("POLKADOT_NODE").is_ok()
+        || std::env::var("SOLANA_VALIDATOR").is_ok()
+        || std::env::var("BLOCKCHAIN_NODE").is_ok()
 }
 
 /// 检测是否为移动应用环境
 fn is_mobile_environment() -> bool {
-    std::env::var("ANDROID_ROOT").is_ok() ||
-    std::env::var("IOS_SIMULATOR").is_ok() ||
-    std::env::var("FLUTTER_ROOT").is_ok() ||
-    std::env::var("REACT_NATIVE").is_ok()
+    std::env::var("ANDROID_ROOT").is_ok()
+        || std::env::var("IOS_SIMULATOR").is_ok()
+        || std::env::var("FLUTTER_ROOT").is_ok()
+        || std::env::var("REACT_NATIVE").is_ok()
 }
 
 /// 检测是否为嵌入式环境
 fn is_embedded_environment() -> bool {
-    std::env::var("EMBEDDED_ENVIRONMENT").is_ok() ||
-    std::env::var("NO_STD").is_ok() ||
-    std::env::var("EMBEDDED_TARGET").is_ok()
+    std::env::var("EMBEDDED_ENVIRONMENT").is_ok()
+        || std::env::var("NO_STD").is_ok()
+        || std::env::var("EMBEDDED_TARGET").is_ok()
 }
 
 /// 环境能力描述
@@ -574,25 +576,25 @@ pub struct EnvironmentCapabilities {
 pub trait RuntimeEnvironmentAdapter: Send + Sync {
     /// 获取环境类型
     fn environment_type(&self) -> RuntimeEnvironment;
-    
+
     /// 获取环境能力
     fn capabilities(&self) -> EnvironmentCapabilities;
-    
+
     /// 初始化环境
     async fn initialize(&mut self) -> Result<(), UnifiedError>;
-    
+
     /// 清理环境
     async fn cleanup(&mut self) -> Result<(), UnifiedError>;
-    
+
     /// 获取系统信息
     async fn get_system_info(&self) -> Result<SystemInfo, UnifiedError>;
-    
+
     /// 获取资源使用情况
     async fn get_resource_usage(&self) -> Result<ResourceUsage, UnifiedError>;
-    
+
     /// 检查环境健康状态
     async fn check_health(&self) -> Result<HealthStatus, UnifiedError>;
-    
+
     /// 执行环境特定的恢复操作
     async fn perform_recovery(&self, recovery_type: RecoveryType) -> Result<(), UnifiedError>;
 }
@@ -704,7 +706,7 @@ impl RuntimeEnvironmentManager {
             environment_type,
         }
     }
-    
+
     /// 设置环境适配器
     pub fn set_adapter(&mut self, adapter: Box<dyn RuntimeEnvironmentAdapter>) {
         self.adapter = Some(adapter);
@@ -716,17 +718,17 @@ impl RuntimeEnvironmentManager {
         let adapter = create_adapter_for(environment);
         self.set_adapter(adapter);
     }
-    
+
     /// 获取环境类型
     pub fn environment_type(&self) -> RuntimeEnvironment {
         self.environment_type
     }
-    
+
     /// 获取环境能力
     pub fn capabilities(&self) -> EnvironmentCapabilities {
         self.environment_type.capabilities()
     }
-    
+
     /// 初始化环境
     pub async fn initialize(&mut self) -> Result<(), UnifiedError> {
         if let Some(adapter) = &mut self.adapter {
@@ -742,12 +744,12 @@ impl RuntimeEnvironmentManager {
                     file!(),
                     line!(),
                     crate::error_handling::ErrorSeverity::High,
-                    "runtime_environment"
-                )
+                    "runtime_environment",
+                ),
             ))
         }
     }
-    
+
     /// 清理环境
     pub async fn cleanup(&mut self) -> Result<(), UnifiedError> {
         if let Some(adapter) = &mut self.adapter {
@@ -763,12 +765,12 @@ impl RuntimeEnvironmentManager {
                     file!(),
                     line!(),
                     crate::error_handling::ErrorSeverity::High,
-                    "runtime_environment"
-                )
+                    "runtime_environment",
+                ),
             ))
         }
     }
-    
+
     /// 获取系统信息
     pub async fn get_system_info(&self) -> Result<SystemInfo, UnifiedError> {
         if let Some(adapter) = &self.adapter {
@@ -784,12 +786,12 @@ impl RuntimeEnvironmentManager {
                     file!(),
                     line!(),
                     crate::error_handling::ErrorSeverity::High,
-                    "runtime_environment"
-                )
+                    "runtime_environment",
+                ),
             ))
         }
     }
-    
+
     /// 获取资源使用情况
     pub async fn get_resource_usage(&self) -> Result<ResourceUsage, UnifiedError> {
         if let Some(adapter) = &self.adapter {
@@ -805,12 +807,12 @@ impl RuntimeEnvironmentManager {
                     file!(),
                     line!(),
                     crate::error_handling::ErrorSeverity::High,
-                    "runtime_environment"
-                )
+                    "runtime_environment",
+                ),
             ))
         }
     }
-    
+
     /// 检查健康状态
     pub async fn check_health(&self) -> Result<HealthStatus, UnifiedError> {
         if let Some(adapter) = &self.adapter {
@@ -826,12 +828,12 @@ impl RuntimeEnvironmentManager {
                     file!(),
                     line!(),
                     crate::error_handling::ErrorSeverity::High,
-                    "runtime_environment"
-                )
+                    "runtime_environment",
+                ),
             ))
         }
     }
-    
+
     /// 执行恢复操作
     pub async fn perform_recovery(&self, recovery_type: RecoveryType) -> Result<(), UnifiedError> {
         if let Some(adapter) = &self.adapter {
@@ -847,15 +849,18 @@ impl RuntimeEnvironmentManager {
                     file!(),
                     line!(),
                     crate::error_handling::ErrorSeverity::High,
-                    "runtime_environment"
-                )
+                    "runtime_environment",
+                ),
             ))
         }
     }
 
     /// 动态切换到新的运行时环境
     /// 该方法会清理当前适配器（若存在），然后基于目标环境自动创建并初始化新的适配器
-    pub async fn switch_environment(&mut self, new_environment: RuntimeEnvironment) -> Result<(), UnifiedError> {
+    pub async fn switch_environment(
+        &mut self,
+        new_environment: RuntimeEnvironment,
+    ) -> Result<(), UnifiedError> {
         if let Some(adapter) = &mut self.adapter {
             let _ = adapter.cleanup().await;
         }
@@ -869,58 +874,70 @@ pub fn create_adapter_for(environment: RuntimeEnvironment) -> Box<dyn RuntimeEnv
     match environment {
         RuntimeEnvironment::OperatingSystem => Box::new(OSEnvironmentAdapter::new()),
         RuntimeEnvironment::EmbeddedBareMetal => Box::new(EmbeddedEnvironmentAdapter::new()),
-        RuntimeEnvironment::Container | RuntimeEnvironment::KubernetesPod => Box::new(ContainerEnvironmentAdapter::new()),
-        RuntimeEnvironment::VirtualMachine | RuntimeEnvironment::MicroVM => Box::new(virtual_machine_environment::VirtualMachineEnvironmentAdapter::new()),
-        RuntimeEnvironment::RealTimeOS => Box::new(rtos_environment::RealTimeOSEnvironmentAdapter::new()),
-        RuntimeEnvironment::EdgeComputing => Box::new(edge_environment::EdgeComputingEnvironmentAdapter::new()),
-        RuntimeEnvironment::WebAssembly => Box::new(webassembly_environment::WebAssemblyEnvironmentAdapter::new()),
-        RuntimeEnvironment::FunctionAsAService => Box::new(faas_environment::FaaSEnvironmentAdapter::new()),
+        RuntimeEnvironment::Container | RuntimeEnvironment::KubernetesPod => {
+            Box::new(ContainerEnvironmentAdapter::new())
+        }
+        RuntimeEnvironment::VirtualMachine | RuntimeEnvironment::MicroVM => {
+            Box::new(virtual_machine_environment::VirtualMachineEnvironmentAdapter::new())
+        }
+        RuntimeEnvironment::RealTimeOS => {
+            Box::new(rtos_environment::RealTimeOSEnvironmentAdapter::new())
+        }
+        RuntimeEnvironment::EdgeComputing => {
+            Box::new(edge_environment::EdgeComputingEnvironmentAdapter::new())
+        }
+        RuntimeEnvironment::WebAssembly => {
+            Box::new(webassembly_environment::WebAssemblyEnvironmentAdapter::new())
+        }
+        RuntimeEnvironment::FunctionAsAService => {
+            Box::new(faas_environment::FaaSEnvironmentAdapter::new())
+        }
         _ => Box::new(OSEnvironmentAdapter::new()),
     }
 }
 
 // 子模块
-pub mod os_environment;
-pub mod embedded_environment;
 pub mod container_environment;
-pub mod virtual_machine_environment;
-pub mod webassembly_environment;
+pub mod edge_environment;
+pub mod embedded_environment;
 pub mod faas_environment;
 pub mod monitoring_strategies;
 pub mod optimization_algorithms;
-pub mod testing_framework;
-pub mod simulation;
+pub mod os_environment;
 pub mod rtos_environment;
-pub mod edge_environment;
+pub mod simulation;
+pub mod testing_framework;
+pub mod virtual_machine_environment;
+pub mod webassembly_environment;
 
 // 重新导出
-pub use os_environment::OSEnvironmentAdapter;
-pub use embedded_environment::EmbeddedEnvironmentAdapter;
 pub use container_environment::ContainerEnvironmentAdapter;
-pub use virtual_machine_environment::VirtualMachineEnvironmentAdapter;
-pub use webassembly_environment::WebAssemblyEnvironmentAdapter;
-pub use faas_environment::FaaSEnvironmentAdapter;
-pub use rtos_environment::RealTimeOSEnvironmentAdapter;
 pub use edge_environment::EdgeComputingEnvironmentAdapter;
+pub use embedded_environment::EmbeddedEnvironmentAdapter;
+pub use faas_environment::FaaSEnvironmentAdapter;
 pub use monitoring_strategies::{
-    MonitoringStrategy, MonitoringConfig, MonitoringStrategyFactory,
-    OperatingSystemMonitoringStrategy, EmbeddedBareMetalMonitoringStrategy,
-    ContainerMonitoringStrategy, WebAssemblyMonitoringStrategy, FaaSMonitoringStrategy,
+    ContainerMonitoringStrategy, EmbeddedBareMetalMonitoringStrategy, FaaSMonitoringStrategy,
+    MonitoringConfig, MonitoringStrategy, MonitoringStrategyFactory,
+    OperatingSystemMonitoringStrategy, WebAssemblyMonitoringStrategy,
 };
 pub use optimization_algorithms::{
-    OptimizationAlgorithm, OptimizationContext, OptimizationResult, OptimizationSuggestion,
-    OptimizationAlgorithmFactory, EmbeddedOptimizationAlgorithm, ContainerOptimizationAlgorithm,
-    WebAssemblyOptimizationAlgorithm, ResourceUsageSnapshot, PerformanceMetrics,
-    OptimizationGoal, OptimizationConstraints, SuggestionType, ImplementationCost,
-    Priority, RiskAssessment, RiskLevel, ImplementationComplexity,
+    ContainerOptimizationAlgorithm, EmbeddedOptimizationAlgorithm, ImplementationComplexity,
+    ImplementationCost, OptimizationAlgorithm, OptimizationAlgorithmFactory,
+    OptimizationConstraints, OptimizationContext, OptimizationGoal, OptimizationResult,
+    OptimizationSuggestion, PerformanceMetrics, Priority, ResourceUsageSnapshot, RiskAssessment,
+    RiskLevel, SuggestionType, WebAssemblyOptimizationAlgorithm,
 };
+pub use os_environment::OSEnvironmentAdapter;
+pub use rtos_environment::RealTimeOSEnvironmentAdapter;
+pub use simulation::{SimulatedEnvironmentAdapter, SimulationConfig, SimulationMode};
 pub use testing_framework::{
-    EnvironmentTestFramework, TestSuite, Test, TestType, ExpectedResult, EnvironmentRequirements,
-    ResourceRequirements, TestResult, TestStatus, TestResults, TestStatistics,
-    CompatibilityResult, CompatibilityIssue, IssueType, Severity, TestReport, EnvironmentInfo,
-    TestFrameworkFactory, EmbeddedTestFramework, ContainerTestFramework,
+    CompatibilityIssue, CompatibilityResult, ContainerTestFramework, EmbeddedTestFramework,
+    EnvironmentInfo, EnvironmentRequirements, EnvironmentTestFramework, ExpectedResult, IssueType,
+    ResourceRequirements, Severity, Test, TestFrameworkFactory, TestReport, TestResult,
+    TestResults, TestStatistics, TestStatus, TestSuite, TestType,
 };
-pub use simulation::{SimulationMode, SimulationConfig, SimulatedEnvironmentAdapter};
+pub use virtual_machine_environment::VirtualMachineEnvironmentAdapter;
+pub use webassembly_environment::WebAssemblyEnvironmentAdapter;
 
 // Cloud Native/CNCF 对齐：容器运行时与 K8s 编排抽象（按 feature 导出）
 #[cfg(feature = "containers")]

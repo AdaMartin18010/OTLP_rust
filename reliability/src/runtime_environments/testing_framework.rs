@@ -2,34 +2,38 @@
 //!
 //! 本模块为不同的运行时环境提供了特定的测试框架和测试策略。
 
+use super::optimization_algorithms::PerformanceMetrics;
+use super::{EnvironmentCapabilities, RuntimeEnvironment};
+use crate::error_handling::UnifiedError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use std::collections::HashMap;
-use crate::error_handling::UnifiedError;
-use super::{RuntimeEnvironment, EnvironmentCapabilities};
-use super::optimization_algorithms::PerformanceMetrics;
+use std::time::Duration;
 
 /// 测试框架接口
 #[async_trait]
 pub trait EnvironmentTestFramework: Send + Sync {
     /// 获取框架名称
     fn name(&self) -> &str;
-    
+
     /// 获取支持的测试类型
     fn supported_test_types(&self) -> Vec<TestType>;
-    
+
     /// 运行测试套件
     async fn run_test_suite(&self, test_suite: &TestSuite) -> Result<TestResults, UnifiedError>;
-    
+
     /// 运行单个测试
     async fn run_test(&self, test: &Test) -> Result<TestResult, UnifiedError>;
-    
+
     /// 验证环境兼容性
-    async fn validate_environment_compatibility(&self, environment: &RuntimeEnvironment) -> Result<CompatibilityResult, UnifiedError>;
-    
+    async fn validate_environment_compatibility(
+        &self,
+        environment: &RuntimeEnvironment,
+    ) -> Result<CompatibilityResult, UnifiedError>;
+
     /// 生成测试报告
-    async fn generate_test_report(&self, results: &TestResults) -> Result<TestReport, UnifiedError>;
+    async fn generate_test_report(&self, results: &TestResults)
+    -> Result<TestReport, UnifiedError>;
 }
 
 /// 测试类型
@@ -333,7 +337,7 @@ impl EnvironmentTestFramework for EmbeddedTestFramework {
 
     async fn run_test(&self, test: &Test) -> Result<TestResult, UnifiedError> {
         let start_time = std::time::Instant::now();
-        
+
         // 模拟测试执行
         let status = match test.test_type {
             TestType::UnitTest => TestStatus::Passed,
@@ -356,10 +360,13 @@ impl EnvironmentTestFramework for EmbeddedTestFramework {
         })
     }
 
-    async fn validate_environment_compatibility(&self, environment: &RuntimeEnvironment) -> Result<CompatibilityResult, UnifiedError> {
+    async fn validate_environment_compatibility(
+        &self,
+        environment: &RuntimeEnvironment,
+    ) -> Result<CompatibilityResult, UnifiedError> {
         let is_compatible = matches!(environment, RuntimeEnvironment::EmbeddedBareMetal);
         let compatibility_score = if is_compatible { 100.0 } else { 0.0 };
-        
+
         let issues = if !is_compatible {
             vec![CompatibilityIssue {
                 issue_type: IssueType::UnsupportedEnvironment,
@@ -379,12 +386,16 @@ impl EnvironmentTestFramework for EmbeddedTestFramework {
         })
     }
 
-    async fn generate_test_report(&self, results: &TestResults) -> Result<TestReport, UnifiedError> {
+    async fn generate_test_report(
+        &self,
+        results: &TestResults,
+    ) -> Result<TestReport, UnifiedError> {
         Ok(TestReport {
             title: format!("嵌入式环境测试报告 - {}", results.suite_name),
-            summary: format!("执行了 {} 个测试，通过率 {:.1}%", 
-                results.statistics.total_tests, 
-                results.statistics.pass_rate),
+            summary: format!(
+                "执行了 {} 个测试，通过率 {:.1}%",
+                results.statistics.total_tests, results.statistics.pass_rate
+            ),
             detailed_results: results.clone(),
             environment_info: EnvironmentInfo {
                 environment_type: RuntimeEnvironment::EmbeddedBareMetal,
@@ -456,7 +467,7 @@ impl EnvironmentTestFramework for ContainerTestFramework {
 
     async fn run_test(&self, test: &Test) -> Result<TestResult, UnifiedError> {
         let start_time = std::time::Instant::now();
-        
+
         // 模拟测试执行
         let status = match test.test_type {
             TestType::UnitTest => TestStatus::Passed,
@@ -482,14 +493,18 @@ impl EnvironmentTestFramework for ContainerTestFramework {
         })
     }
 
-    async fn validate_environment_compatibility(&self, environment: &RuntimeEnvironment) -> Result<CompatibilityResult, UnifiedError> {
-        let is_compatible = matches!(environment, 
-            RuntimeEnvironment::Container | 
-            RuntimeEnvironment::KubernetesPod |
-            RuntimeEnvironment::VirtualMachine
+    async fn validate_environment_compatibility(
+        &self,
+        environment: &RuntimeEnvironment,
+    ) -> Result<CompatibilityResult, UnifiedError> {
+        let is_compatible = matches!(
+            environment,
+            RuntimeEnvironment::Container
+                | RuntimeEnvironment::KubernetesPod
+                | RuntimeEnvironment::VirtualMachine
         );
         let compatibility_score = if is_compatible { 100.0 } else { 50.0 };
-        
+
         let issues = if !is_compatible {
             vec![CompatibilityIssue {
                 issue_type: IssueType::UnsupportedEnvironment,
@@ -513,12 +528,16 @@ impl EnvironmentTestFramework for ContainerTestFramework {
         })
     }
 
-    async fn generate_test_report(&self, results: &TestResults) -> Result<TestReport, UnifiedError> {
+    async fn generate_test_report(
+        &self,
+        results: &TestResults,
+    ) -> Result<TestReport, UnifiedError> {
         Ok(TestReport {
             title: format!("容器环境测试报告 - {}", results.suite_name),
-            summary: format!("执行了 {} 个测试，通过率 {:.1}%", 
-                results.statistics.total_tests, 
-                results.statistics.pass_rate),
+            summary: format!(
+                "执行了 {} 个测试，通过率 {:.1}%",
+                results.statistics.total_tests, results.statistics.pass_rate
+            ),
             detailed_results: results.clone(),
             environment_info: EnvironmentInfo {
                 environment_type: RuntimeEnvironment::Container,
@@ -542,17 +561,14 @@ impl TestFrameworkFactory {
     /// 根据环境类型创建测试框架
     pub fn create_framework(environment: RuntimeEnvironment) -> Box<dyn EnvironmentTestFramework> {
         match environment {
-            RuntimeEnvironment::EmbeddedBareMetal => {
-                Box::new(EmbeddedTestFramework::new())
-            },
-            RuntimeEnvironment::Container | 
-            RuntimeEnvironment::KubernetesPod => {
+            RuntimeEnvironment::EmbeddedBareMetal => Box::new(EmbeddedTestFramework::new()),
+            RuntimeEnvironment::Container | RuntimeEnvironment::KubernetesPod => {
                 Box::new(ContainerTestFramework::new())
-            },
+            }
             _ => {
                 // 默认使用容器测试框架
                 Box::new(ContainerTestFramework::new())
-            },
+            }
         }
     }
 }
@@ -560,12 +576,31 @@ impl TestFrameworkFactory {
 /// 计算测试统计信息
 fn calculate_statistics(results: &[TestResult]) -> TestStatistics {
     let total_tests = results.len() as u32;
-    let passed_tests = results.iter().filter(|r| matches!(r.status, TestStatus::Passed)).count() as u32;
-    let failed_tests = results.iter().filter(|r| matches!(r.status, TestStatus::Failed)).count() as u32;
-    let skipped_tests = results.iter().filter(|r| matches!(r.status, TestStatus::Skipped)).count() as u32;
-    let timeout_tests = results.iter().filter(|r| matches!(r.status, TestStatus::Timeout)).count() as u32;
-    let error_tests = results.iter().filter(|r| matches!(r.status, TestStatus::Error)).count() as u32;
-    let pass_rate = if total_tests > 0 { (passed_tests as f64 / total_tests as f64) * 100.0 } else { 0.0 };
+    let passed_tests = results
+        .iter()
+        .filter(|r| matches!(r.status, TestStatus::Passed))
+        .count() as u32;
+    let failed_tests = results
+        .iter()
+        .filter(|r| matches!(r.status, TestStatus::Failed))
+        .count() as u32;
+    let skipped_tests = results
+        .iter()
+        .filter(|r| matches!(r.status, TestStatus::Skipped))
+        .count() as u32;
+    let timeout_tests = results
+        .iter()
+        .filter(|r| matches!(r.status, TestStatus::Timeout))
+        .count() as u32;
+    let error_tests = results
+        .iter()
+        .filter(|r| matches!(r.status, TestStatus::Error))
+        .count() as u32;
+    let pass_rate = if total_tests > 0 {
+        (passed_tests as f64 / total_tests as f64) * 100.0
+    } else {
+        0.0
+    };
 
     TestStatistics {
         total_tests,
@@ -586,7 +621,7 @@ mod tests {
     async fn test_embedded_test_framework() {
         let framework = EmbeddedTestFramework::new();
         assert_eq!(framework.name(), "EmbeddedTestFramework");
-        
+
         let test = Test {
             name: "test_memory_usage".to_string(),
             description: "测试内存使用".to_string(),
@@ -597,7 +632,7 @@ mod tests {
             retry_count: 3,
             dependencies: Vec::new(),
         };
-        
+
         let result = framework.run_test(&test).await.unwrap();
         assert_eq!(result.test_name, "test_memory_usage");
     }
@@ -606,14 +641,18 @@ mod tests {
     async fn test_container_test_framework() {
         let framework = ContainerTestFramework::new();
         assert_eq!(framework.name(), "ContainerTestFramework");
-        
-        let compatibility = framework.validate_environment_compatibility(&RuntimeEnvironment::Container).await.unwrap();
+
+        let compatibility = framework
+            .validate_environment_compatibility(&RuntimeEnvironment::Container)
+            .await
+            .unwrap();
         assert!(compatibility.is_compatible);
     }
 
     #[test]
     fn test_test_framework_factory() {
-        let framework = TestFrameworkFactory::create_framework(RuntimeEnvironment::EmbeddedBareMetal);
+        let framework =
+            TestFrameworkFactory::create_framework(RuntimeEnvironment::EmbeddedBareMetal);
         assert_eq!(framework.name(), "EmbeddedTestFramework");
     }
 }

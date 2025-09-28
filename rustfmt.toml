@@ -1,0 +1,29 @@
+# Rustfmt 配置文件 - Rust 1.90 稳定版设置
+# 2025年最新配置，仅使用稳定特性
+
+# 基本格式化选项
+edition = "2021"
+max_width = 100
+tab_spaces = 4
+newline_style = "Unix"
+use_small_heuristics = "Default"
+
+# 导入格式化 (仅稳定特性)
+reorder_imports = true
+reorder_modules = true
+
+# 函数和结构体格式化 (仅稳定特性)
+fn_params_layout = "Tall"
+
+# 表达式格式化 (仅稳定特性)
+chain_width = 60
+
+# 宏格式化 (仅稳定特性)
+format_macro_matchers = true
+format_macro_bodies = true
+
+# 其他选项 (仅稳定特性)
+remove_nested_parens = true
+use_field_init_shorthand = true
+use_try_shorthand = true
+force_explicit_abi = true

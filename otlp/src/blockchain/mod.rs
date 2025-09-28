@@ -7,14 +7,14 @@
 //! - 加密和签名
 //! - 交易验证
 
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tokio::sync::{Mutex, RwLock};
-use serde::{Deserialize, Serialize};
-use anyhow::Result;
 use tracing::info;
-use sha2::{Sha256, Digest};
 
 /// 区块链管理器
 pub struct BlockchainManager {
@@ -294,7 +294,8 @@ impl BlockchainManager {
             return "empty_merkle".to_string();
         }
 
-        let mut hashes: Vec<String> = transactions.iter()
+        let mut hashes: Vec<String> = transactions
+            .iter()
             .map(|tx| self.hash_transaction(tx))
             .collect();
 
@@ -302,7 +303,11 @@ impl BlockchainManager {
             let mut next_level = Vec::new();
             for i in (0..hashes.len()).step_by(2) {
                 let left = &hashes[i];
-                let right = if i + 1 < hashes.len() { &hashes[i + 1] } else { left };
+                let right = if i + 1 < hashes.len() {
+                    &hashes[i + 1]
+                } else {
+                    left
+                };
                 let combined = format!("{}{}", left, right);
                 next_level.push(self.hash_string(&combined));
             }
@@ -314,7 +319,10 @@ impl BlockchainManager {
 
     /// 哈希交易
     fn hash_transaction(&self, transaction: &Transaction) -> String {
-        let tx_data = format!("{}{}{}{}", transaction.id, transaction.from, transaction.to, transaction.amount);
+        let tx_data = format!(
+            "{}{}{}{}",
+            transaction.id, transaction.from, transaction.to, transaction.amount
+        );
         self.hash_string(&tx_data)
     }
 
@@ -334,8 +342,13 @@ impl BlockchainManager {
 
         // 简化的难度调整算法
         let last_block = &chain[chain.len() - 1];
-        let target_time = Duration::from_secs(self.config.block_time.as_secs() * self.config.difficulty_adjustment_interval);
-        let actual_time = last_block.timestamp.duration_since(chain[0].timestamp).unwrap_or(Duration::from_secs(1));
+        let target_time = Duration::from_secs(
+            self.config.block_time.as_secs() * self.config.difficulty_adjustment_interval,
+        );
+        let actual_time = last_block
+            .timestamp
+            .duration_since(chain[0].timestamp)
+            .unwrap_or(Duration::from_secs(1));
 
         if actual_time < target_time / 2 {
             last_block.difficulty + 1
@@ -349,11 +362,11 @@ impl BlockchainManager {
     /// 工作量证明
     async fn proof_of_work(&self, block: &mut Block) -> Result<()> {
         let target = self.calculate_target(block.difficulty);
-        
+
         loop {
             block.nonce += 1;
             let hash = self.calculate_block_hash(block);
-            
+
             if hash < target {
                 block.hash = hash;
                 break;
@@ -372,12 +385,17 @@ impl BlockchainManager {
 
     /// 计算区块哈希
     fn calculate_block_hash(&self, block: &Block) -> String {
-        let block_data = format!("{}{}{}{}{}{}", 
-            block.index, 
-            block.timestamp.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(),
-            block.previous_hash, 
-            block.merkle_root, 
-            block.nonce, 
+        let block_data = format!(
+            "{}{}{}{}{}{}",
+            block.index,
+            block
+                .timestamp
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            block.previous_hash,
+            block.merkle_root,
+            block.nonce,
             block.difficulty
         );
         self.hash_string(&block_data)
@@ -440,13 +458,22 @@ impl BlockchainManager {
     }
 
     /// 执行智能合约
-    pub async fn execute_contract(&self, contract_address: &str, function_name: &str, args: Vec<String>) -> Result<ContractExecutionResult> {
+    pub async fn execute_contract(
+        &self,
+        contract_address: &str,
+        function_name: &str,
+        args: Vec<String>,
+    ) -> Result<ContractExecutionResult> {
         let contracts = self.smart_contracts.read().await;
-        let contract = contracts.get(contract_address)
+        let contract = contracts
+            .get(contract_address)
             .ok_or_else(|| anyhow::anyhow!("合约不存在: {}", contract_address))?;
 
         // 查找函数
-        let function = contract.abi.functions.iter()
+        let function = contract
+            .abi
+            .functions
+            .iter()
             .find(|f| f.name == function_name)
             .ok_or_else(|| anyhow::anyhow!("函数不存在: {}", function_name))?;
 
@@ -456,7 +483,9 @@ impl BlockchainManager {
         }
 
         // 执行合约函数
-        let result = self.execute_contract_function(contract, function, args).await?;
+        let result = self
+            .execute_contract_function(contract, function, args)
+            .await?;
 
         Ok(ContractExecutionResult {
             success: true,
@@ -467,7 +496,12 @@ impl BlockchainManager {
     }
 
     /// 执行合约函数
-    async fn execute_contract_function(&self, contract: &SmartContract, function: &ContractFunction, args: Vec<String>) -> Result<String> {
+    async fn execute_contract_function(
+        &self,
+        contract: &SmartContract,
+        function: &ContractFunction,
+        args: Vec<String>,
+    ) -> Result<String> {
         // 简化的合约执行
         match function.name.as_str() {
             "get" => {
@@ -537,7 +571,7 @@ impl BlockchainManager {
     async fn validate_proof_of_stake(&self, _block: &Block) -> Result<bool> {
         let validators = self.consensus.validators.read().await;
         let total_stake: f64 = validators.iter().map(|v| v.stake).sum();
-        
+
         if total_stake == 0.0 {
             return Ok(false);
         }
@@ -550,7 +584,7 @@ impl BlockchainManager {
     async fn validate_proof_of_authority(&self, _block: &Block) -> Result<bool> {
         let validators = self.consensus.validators.read().await;
         let active_validators = validators.iter().filter(|v| v.is_active).count();
-        
+
         // 需要大多数验证者同意
         Ok(active_validators > validators.len() / 2)
     }
@@ -608,7 +642,9 @@ mod tests {
         // 测试智能合约部署
         let contract = SmartContract {
             address: "contract-1".to_string(),
-            code: "contract Test { function get() public view returns (string) { return 'hello'; } }".to_string(),
+            code:
+                "contract Test { function get() public view returns (string) { return 'hello'; } }"
+                    .to_string(),
             abi: ContractABI {
                 functions: vec![ContractFunction {
                     name: "get".to_string(),
@@ -633,7 +669,10 @@ mod tests {
         assert_eq!(contract_address, "contract-1");
 
         // 测试合约执行
-        let result = manager.execute_contract("contract-1", "get", vec![]).await.unwrap();
+        let result = manager
+            .execute_contract("contract-1", "get", vec![])
+            .await
+            .unwrap();
         assert!(result.success);
 
         // 测试区块链状态

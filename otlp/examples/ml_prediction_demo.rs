@@ -32,7 +32,7 @@ impl MLErrorPrediction {
     pub fn new(config: MLPredictionConfig) -> Result<Self> {
         Ok(Self { config })
     }
-    
+
     pub async fn get_model_status(&self) -> Result<ModelStatus> {
         Ok(ModelStatus {
             model_version: "1.0.0".to_string(),
@@ -42,8 +42,11 @@ impl MLErrorPrediction {
             is_training: false,
         })
     }
-    
-    pub async fn predict_error_probability(&self, _context: &SystemContext) -> Result<PredictionResult> {
+
+    pub async fn predict_error_probability(
+        &self,
+        _context: &SystemContext,
+    ) -> Result<PredictionResult> {
         Ok(PredictionResult {
             probability: 0.3,
             confidence: 0.8,
@@ -69,7 +72,7 @@ impl MLErrorPrediction {
             ],
         })
     }
-    
+
     pub async fn train_model(&self, _training_data: &[ErrorSample]) -> Result<TrainingResult> {
         Ok(TrainingResult {
             success: true,
@@ -81,7 +84,7 @@ impl MLErrorPrediction {
             model_version: "1.1.0".to_string(),
         })
     }
-    
+
     pub async fn online_learn(&self, _feedback: PredictionFeedback) -> Result<()> {
         Ok(())
     }
@@ -664,10 +667,7 @@ fn create_training_data() -> Vec<ErrorSample> {
 
 // 辅助函数：创建其他数据结构
 
-fn create_error_history_entry(
-    error_type: &str,
-    severity: ErrorSeverity,
-) -> ErrorHistoryEntry {
+fn create_error_history_entry(error_type: &str, severity: ErrorSeverity) -> ErrorHistoryEntry {
     ErrorHistoryEntry {
         timestamp: std::time::SystemTime::now(),
         error_type: error_type.to_string(),
@@ -704,10 +704,7 @@ fn create_service_health_map(
     health_map
 }
 
-fn create_resource_metrics(
-    _cpu_usage: f64,
-    memory_usage: f64,
-) -> ResourceMetrics {
+fn create_resource_metrics(_cpu_usage: f64, memory_usage: f64) -> ResourceMetrics {
     ResourceMetrics {
         cpu_cores: 4,
         total_memory: 8192,
@@ -719,35 +716,23 @@ fn create_resource_metrics(
 
 // 辅助函数：模拟和决策逻辑
 
-fn simulate_actual_outcome(
-    context: &SystemContext,
-    round: i32,
-) -> ActualOutcome {
+fn simulate_actual_outcome(context: &SystemContext, round: i32) -> ActualOutcome {
     // 基于系统状态模拟实际结果
     if context.cpu_usage > 0.8 || context.memory_usage > 0.8 {
-        ActualOutcome::ErrorOccurred(create_error_history_entry(
-            "resource",
-            ErrorSeverity::High,
-        ))
+        ActualOutcome::ErrorOccurred(create_error_history_entry("resource", ErrorSeverity::High))
     } else if context.network_latency > Duration::from_secs(1) {
         ActualOutcome::ErrorOccurred(create_error_history_entry(
             "transport",
             ErrorSeverity::Medium,
         ))
     } else if round > 4 {
-        ActualOutcome::ErrorOccurred(create_error_history_entry(
-            "processing",
-            ErrorSeverity::Low,
-        ))
+        ActualOutcome::ErrorOccurred(create_error_history_entry("processing", ErrorSeverity::Low))
     } else {
         ActualOutcome::NoError
     }
 }
 
-fn determine_feedback_type(
-    prediction: &PredictionResult,
-    actual: &ActualOutcome,
-) -> FeedbackType {
+fn determine_feedback_type(prediction: &PredictionResult, actual: &ActualOutcome) -> FeedbackType {
     match actual {
         ActualOutcome::ErrorOccurred(_) => {
             if prediction.probability > 0.7 {

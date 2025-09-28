@@ -1,35 +1,22 @@
 //! 监控和可观测性模块
-//! 
+//!
 //! 提供完整的监控、指标收集、日志聚合和分布式追踪功能
 //! 包括错误监控系统、实时仪表板、告警管理和趋势分析
 
+pub mod error_monitoring_types;
 pub mod metrics_collector;
 pub mod prometheus_exporter;
-pub mod error_monitoring_types;
 
 // 重新导出主要类型
 pub use metrics_collector::{
-    MetricsCollector,
-    MetricsCollectorConfig,
-    MetricsCollectorError,
-    MetricsCollectorStats,
-    MetricType,
-    MetricLabel,
-    MetricValue,
-    MetricDataPoint,
-    MetricDefinition,
-    HistogramBucket,
-    SummaryValue,
-    Quantile,
+    HistogramBucket, MetricDataPoint, MetricDefinition, MetricLabel, MetricType, MetricValue,
+    MetricsCollector, MetricsCollectorConfig, MetricsCollectorError, MetricsCollectorStats,
+    Quantile, SummaryValue,
 };
 
 pub use prometheus_exporter::{
-    PrometheusExporter,
-    PrometheusExporterConfig,
-    PrometheusExporterError,
-    PrometheusExporterStats,
-    PrometheusMetric,
-    PrometheusSample,
+    PrometheusExporter, PrometheusExporterConfig, PrometheusExporterError, PrometheusExporterStats,
+    PrometheusMetric, PrometheusSample,
 };
 
 // 错误监控系统相关类型
@@ -38,22 +25,18 @@ pub use crate::error::{OtlpError, Result};
 
 // 重新导出错误监控系统类型
 pub use error_monitoring_types::{
-    ErrorMonitoringSystem, ErrorEvent, ErrorMonitoringConfig, ErrorMonitoringMetrics,
-    AlertRule, AlertCondition, Alert, AlertStatus, AlertEvent,
-    NotificationChannel, DashboardUpdate, HealthStatus,
-    RealTimeDashboard, AlertManager, ErrorMetricsCollector, ErrorAggregator,
-    NotificationService, ErrorTrendAnalyzer, ErrorHotspotDetector,
-    StreamProcessor, PredictiveMonitor, AnomalyDetector, CorrelationEngine,
-    DashboardConfig, AlertConfig, ErrorMetricsConfig, AggregationConfig,
-    NotificationConfig, TrendAnalysisConfig, HotspotDetectionConfig,
-    StreamProcessingConfig, PredictiveConfig, AnomalyDetectionConfig, CorrelationConfig,
-    DashboardMetrics, CollectorMetrics, AggregatedErrorData, TimeSeriesPoint,
-    TrendAnalysisResult, TrendDirection, ErrorPattern, ErrorHotspot, HealthMetrics,
-    PredictionModel, PredictionResult, ErrorPrediction, MonitoringDataPoint,
-    Anomaly, CorrelationRule, Correlation, CorrelationType, MonitoringError,
-    StreamConfig, Compression,
+    AggregatedErrorData, AggregationConfig, Alert, AlertCondition, AlertConfig, AlertEvent,
+    AlertManager, AlertRule, AlertStatus, Anomaly, AnomalyDetectionConfig, AnomalyDetector,
+    CollectorMetrics, Compression, Correlation, CorrelationConfig, CorrelationEngine,
+    CorrelationRule, CorrelationType, DashboardConfig, DashboardMetrics, DashboardUpdate,
+    ErrorAggregator, ErrorEvent, ErrorHotspot, ErrorHotspotDetector, ErrorMetricsCollector,
+    ErrorMetricsConfig, ErrorMonitoringConfig, ErrorMonitoringMetrics, ErrorMonitoringSystem,
+    ErrorPattern, ErrorPrediction, ErrorTrendAnalyzer, HealthMetrics, HealthStatus,
+    HotspotDetectionConfig, MonitoringDataPoint, MonitoringError, NotificationChannel,
+    NotificationConfig, NotificationService, PredictionModel, PredictionResult, PredictiveConfig,
+    PredictiveMonitor, RealTimeDashboard, StreamConfig, StreamProcessingConfig, StreamProcessor,
+    TimeSeriesPoint, TrendAnalysisConfig, TrendAnalysisResult, TrendDirection,
 };
-
 
 /// 监控系统配置
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -83,7 +66,7 @@ impl Default for MonitoringConfig {
 }
 
 /// 监控系统
-/// 
+///
 /// 统一管理所有监控组件
 pub struct MonitoringSystem {
     config: MonitoringConfig,
@@ -139,12 +122,15 @@ impl MonitoringSystem {
     }
 
     /// 更新配置
-    pub fn update_config(&mut self, config: MonitoringConfig) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    pub fn update_config(
+        &mut self,
+        config: MonitoringConfig,
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         self.config = config;
-        
+
         // 重新初始化监控系统
         self.initialize()?;
-        
+
         Ok(())
     }
 
@@ -153,7 +139,7 @@ impl MonitoringSystem {
         if let Some(collector) = &self.metrics_collector {
             collector.shutdown();
         }
-        
+
         if let Some(exporter) = &self.prometheus_exporter {
             exporter.shutdown();
         }
@@ -164,7 +150,7 @@ impl MonitoringSystem {
         if let Some(collector) = &self.metrics_collector {
             collector.wait_for_shutdown().await;
         }
-        
+
         if let Some(exporter) = &self.prometheus_exporter {
             exporter.wait_for_shutdown().await;
         }
@@ -203,7 +189,7 @@ mod tests {
     async fn test_monitoring_system_disabled() {
         let mut config = MonitoringConfig::default();
         config.enabled = false;
-        
+
         let mut monitoring_system = MonitoringSystem::new(config);
 
         // 初始化监控系统
@@ -214,4 +200,3 @@ mod tests {
         assert!(monitoring_system.get_prometheus_exporter().is_none());
     }
 }
-

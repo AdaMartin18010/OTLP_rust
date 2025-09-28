@@ -9,9 +9,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 //use opentelemetry::KeyValue;
 
 /// 遥测数据类型
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TelemetryDataType {
     /// 追踪数据
+    #[default]
     Trace,
     /// 指标数据
     Metric,
@@ -20,7 +21,7 @@ pub enum TelemetryDataType {
 }
 
 /// 遥测数据基类
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TelemetryData {
     /// 数据类型
     pub data_type: TelemetryDataType,
@@ -45,8 +46,14 @@ pub enum TelemetryContent {
     Log(LogData),
 }
 
+impl Default for TelemetryContent {
+    fn default() -> Self {
+        Self::Trace(TraceData::default())
+    }
+}
+
 /// 追踪数据
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TraceData {
     /// 追踪ID
     pub trace_id: String,
@@ -166,7 +173,7 @@ pub struct SpanLink {
 }
 
 /// 指标数据
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MetricData {
     /// 指标名称
     pub name: String,
@@ -181,9 +188,10 @@ pub struct MetricData {
 }
 
 /// 指标类型
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum MetricType {
     /// 计数器
+    #[default]
     Counter,
     /// 仪表
     Gauge,

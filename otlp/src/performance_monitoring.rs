@@ -4,11 +4,11 @@
 
 use crate::optimized_processor::*;
 use anyhow::Result;
-use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 //use std::collections::HashMap;
-use std::thread;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
 
 /// 性能监控器配置
 #[derive(Debug, Clone)]
@@ -125,7 +125,7 @@ impl RealtimePerformanceMonitor {
         }
 
         self.is_running.store(true, Ordering::Relaxed);
-        
+
         let config = self.config.clone();
         let historical_data = Arc::clone(&self.historical_data);
         let alerts = Arc::clone(&self.alerts);
@@ -152,7 +152,7 @@ impl RealtimePerformanceMonitor {
                 if config.enable_historical_collection {
                     if let Ok(mut historical) = historical_data.lock() {
                         historical.push(data_point);
-                        
+
                         // 清理过期数据
                         let cutoff_time = Instant::now() - config.historical_retention;
                         historical.retain(|dp| dp.timestamp > cutoff_time);
@@ -174,9 +174,11 @@ impl RealtimePerformanceMonitor {
         }
 
         self.is_running.store(false, Ordering::Relaxed);
-        
+
         if let Some(thread) = self.monitoring_thread.take() {
-            thread.join().map_err(|_| anyhow::anyhow!("监控线程停止失败"))?;
+            thread
+                .join()
+                .map_err(|_| anyhow::anyhow!("监控线程停止失败"))?;
         }
 
         Ok(())
@@ -242,8 +244,7 @@ impl RealtimePerformanceMonitor {
                 alert_type: AlertType::MemoryLeak,
                 message: format!(
                     "可能存在内存泄漏: 分配 {} > 释放 {}",
-                    data_point.memory_allocations,
-                    data_point.memory_deallocations
+                    data_point.memory_allocations, data_point.memory_deallocations
                 ),
                 severity: AlertSeverity::Critical,
                 metrics: data_point.clone(),
@@ -260,19 +261,28 @@ impl RealtimePerformanceMonitor {
 
     /// 获取历史性能数据
     pub fn get_historical_data(&self) -> Result<Vec<PerformanceDataPoint>> {
-        let historical = self.historical_data.lock().map_err(|_| anyhow::anyhow!("获取历史数据失败"))?;
+        let historical = self
+            .historical_data
+            .lock()
+            .map_err(|_| anyhow::anyhow!("获取历史数据失败"))?;
         Ok(historical.clone())
     }
 
     /// 获取告警列表
     pub fn get_alerts(&self) -> Result<Vec<PerformanceAlert>> {
-        let alerts = self.alerts.lock().map_err(|_| anyhow::anyhow!("获取告警失败"))?;
+        let alerts = self
+            .alerts
+            .lock()
+            .map_err(|_| anyhow::anyhow!("获取告警失败"))?;
         Ok(alerts.clone())
     }
 
     /// 清除告警
     pub fn clear_alerts(&self) -> Result<()> {
-        let mut alerts = self.alerts.lock().map_err(|_| anyhow::anyhow!("清除告警失败"))?;
+        let mut alerts = self
+            .alerts
+            .lock()
+            .map_err(|_| anyhow::anyhow!("清除告警失败"))?;
         alerts.clear();
         Ok(())
     }
@@ -281,7 +291,7 @@ impl RealtimePerformanceMonitor {
     pub fn generate_performance_report(&self) -> Result<PerformanceReport> {
         let historical = self.get_historical_data()?;
         let _alerts = self.get_alerts()?;
-        
+
         if historical.is_empty() {
             return Ok(PerformanceReport {
                 timestamp: Instant::now(),
@@ -299,18 +309,18 @@ impl RealtimePerformanceMonitor {
 
         let latest = &historical[historical.len() - 1];
         let first = &historical[0];
-        
+
         let total_processed = latest.total_processed - first.total_processed;
         let total_simd = latest.simd_processed - first.simd_processed;
-        let avg_cache_hit_ratio = historical.iter()
-            .map(|dp| dp.cache_hit_ratio)
-            .sum::<f64>() / historical.len() as f64;
-        let avg_processing_time = historical.iter()
+        let avg_cache_hit_ratio =
+            historical.iter().map(|dp| dp.cache_hit_ratio).sum::<f64>() / historical.len() as f64;
+        let avg_processing_time = historical
+            .iter()
             .map(|dp| dp.average_processing_time)
-            .sum::<Duration>() / historical.len() as u32;
-        let avg_memory_pressure = historical.iter()
-            .map(|dp| dp.memory_pressure)
-            .sum::<f64>() / historical.len() as f64;
+            .sum::<Duration>()
+            / historical.len() as u32;
+        let avg_memory_pressure =
+            historical.iter().map(|dp| dp.memory_pressure).sum::<f64>() / historical.len() as f64;
 
         Ok(PerformanceReport {
             timestamp: latest.timestamp,
@@ -321,7 +331,7 @@ impl RealtimePerformanceMonitor {
             memory_pressure: avg_memory_pressure,
             memory_allocations: latest.memory_allocations,
             memory_deallocations: latest.memory_deallocations,
-            pool_count: 0, // 需要从内存统计获取
+            pool_count: 0,           // 需要从内存统计获取
             total_pooled_objects: 0, // 需要从内存统计获取
         })
     }
@@ -330,7 +340,7 @@ impl RealtimePerformanceMonitor {
     pub fn get_performance_summary(&self) -> Result<PerformanceSummary> {
         let historical = self.get_historical_data()?;
         let alerts = self.get_alerts()?;
-        
+
         if historical.is_empty() {
             return Ok(PerformanceSummary {
                 monitoring_duration: Duration::ZERO,
@@ -347,25 +357,31 @@ impl RealtimePerformanceMonitor {
         let first = &historical[0];
         let latest = &historical[historical.len() - 1];
         let monitoring_duration = latest.timestamp - first.timestamp;
-        
+
         let total_alerts = alerts.len();
-        let critical_alerts = alerts.iter().filter(|a| matches!(a.severity, AlertSeverity::Critical)).count();
-        let warning_alerts = alerts.iter().filter(|a| matches!(a.severity, AlertSeverity::Warning)).count();
-        
+        let critical_alerts = alerts
+            .iter()
+            .filter(|a| matches!(a.severity, AlertSeverity::Critical))
+            .count();
+        let warning_alerts = alerts
+            .iter()
+            .filter(|a| matches!(a.severity, AlertSeverity::Warning))
+            .count();
+
         let total_processed = latest.total_processed - first.total_processed;
         let average_throughput = if monitoring_duration.as_secs() > 0 {
             total_processed as f64 / monitoring_duration.as_secs() as f64
         } else {
             0.0
         };
-        
-        let peak_memory_pressure = historical.iter()
+
+        let peak_memory_pressure = historical
+            .iter()
             .map(|dp| dp.memory_pressure)
             .fold(0.0, f64::max);
-        
-        let average_cache_hit_ratio = historical.iter()
-            .map(|dp| dp.cache_hit_ratio)
-            .sum::<f64>() / historical.len() as f64;
+
+        let average_cache_hit_ratio =
+            historical.iter().map(|dp| dp.cache_hit_ratio).sum::<f64>() / historical.len() as f64;
 
         Ok(PerformanceSummary {
             monitoring_duration,
@@ -436,7 +452,10 @@ mod tests {
         assert_eq!(config.monitoring_interval, Duration::from_secs(5));
         assert!(config.enable_realtime_monitoring);
         assert!(config.enable_historical_collection);
-        assert_eq!(config.performance_thresholds.max_processing_time, Duration::from_millis(100));
+        assert_eq!(
+            config.performance_thresholds.max_processing_time,
+            Duration::from_millis(100)
+        );
     }
 
     #[test]

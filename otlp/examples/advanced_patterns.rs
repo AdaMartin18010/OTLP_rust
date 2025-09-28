@@ -7,6 +7,7 @@ use futures::future::{
     //try_join_all,
 };
 use otlp::{
+    OtlpClient, OtlpConfig, TelemetryData,
     config::{BatchConfig, Compression, RetryConfig, TransportProtocol},
     data::{
         //MetricType,
@@ -14,7 +15,6 @@ use otlp::{
         //LogSeverity,
         StatusCode,
     },
-    OtlpClient, OtlpConfig, TelemetryData,
 };
 use std::collections::HashMap;
 use std::sync::Arc;

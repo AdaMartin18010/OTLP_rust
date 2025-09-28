@@ -1,0 +1,197 @@
+# Clippy 配置文件 - Rust 1.90 优化设置
+# 2025年最新配置，支持Rust 1.90新特性和代码质量优化
+
+# 函数参数数量阈值
+too-many-arguments-threshold = 7
+
+# 函数复杂度阈值
+cognitive-complexity-threshold = 30
+
+# 函数行数阈值
+too-many-lines-threshold = 100
+
+# 结构体字段数量阈值
+struct-field-name-threshold = 7
+
+# 类型复杂度阈值
+type-complexity-threshold = 250
+
+# 禁止的方法
+disallowed-methods = [
+    "std::env::var",
+    "std::env::var_os",
+]
+
+# 禁止的类型
+disallowed-types = [
+    "std::collections::HashMap",
+    "std::collections::BTreeMap",
+]
+
+# 允许的脚本
+allowed-scripts = ["Latin", "Cyrillic"]
+
+# MSRV (最低支持的Rust版本)
+msrv = "1.90.0"
+
+# 避免破坏导出的API
+avoid-breaking-exported-api = true
+
+# 检查私有项目
+check-private-items = true
+
+# 单字符绑定名称阈值
+single-char-binding-names-threshold = 4
+
+# 最小标识符字符阈值
+min-ident-chars-threshold = 1
+
+# 文档有效标识符
+doc-valid-idents = [
+    "KiB", "MiB", "GiB", "TiB", "PiB", "EiB",
+    "HTTP", "HTTPS", "JSON", "XML", "API", "URL", "URI",
+    "OTLP", "OpenTelemetry", "gRPC", "HTTP/2",
+]
+
+# 允许的通配符导入
+allowed-wildcard-imports = [
+    "std::prelude::*",
+    "tokio::prelude::*",
+]
+
+# 标准宏大括号
+standard-macro-braces = [
+    "assert_eq!", "())",
+    "assert_ne!", "())",
+    "debug_assert_eq!", "())",
+    "debug_assert_ne!", "())",
+]
+
+# 强制导入重命名
+enforced-import-renames = [
+    { path = "std::collections::HashMap", rename = "StdHashMap" },
+    { path = "std::collections::BTreeMap", rename = "StdBTreeMap" },
+]
+
+# 允许的重复crate
+allowed-duplicate-crates = [
+    "log",
+    "env_logger",
+]
+
+# 第三方crate
+third-party = [
+    "anyhow",
+    "thiserror",
+    "serde",
+    "tokio",
+    "tracing",
+    "opentelemetry",
+]
+
+# 栈大小阈值
+stack-size-threshold = 512000
+
+# 未来大小阈值
+future-size-threshold = 16384
+
+# Vec Box大小阈值
+vec-box-size-threshold = 4096
+
+# 不必要的Box大小
+unnecessary-box-size = 128
+
+# 大错误阈值
+large-error-threshold = 128
+
+# 琐碎拷贝大小限制
+trivial-copy-size-limit = 128
+
+# 按值传递大小限制
+pass-by-value-size-limit = 256
+
+# 数组大小阈值
+array-size-threshold = 512000
+
+# 字面量表示阈值
+literal-representation-threshold = 16384
+
+# 详细位掩码阈值
+verbose-bit-mask-threshold = 1
+
+# 算术副作用允许的类型
+arithmetic-side-effects-allowed = ["*"]
+
+# 枚举变体名称阈值
+enum-variant-name-threshold = 3
+
+# 枚举变体大小阈值
+enum-variant-size-threshold = 200
+
+# 特质关联项目种类顺序
+trait-assoc-item-kinds-order = [
+    "const", "type", "fn"
+]
+
+# 模块项目排序分组
+module-item-order-groupings = [
+    ["modules", "use"],
+    ["static", "const"],
+    ["macro"],
+    ["foreign_mod"],
+    ["type", "struct", "union", "enum"],
+    ["trait"],
+    ["impl"],
+    ["function"],
+]
+
+# 源项目排序
+source-item-ordering = "trait_impl_then_statics"
+
+# 过度嵌套阈值
+excessive-nesting-threshold = 3
+
+# 最大建议切片模式长度
+max-suggested-slice-pattern-length = 3
+
+# 最大特质边界
+max-trait-bounds = 3
+
+# 最大结构体布尔值
+max-struct-bools = 3
+
+# 最大函数参数布尔值
+max-fn-params-bools = 3
+
+# 最大包含文件大小
+max-include-file-size = 1000000
+
+# 允许在测试中使用panic
+allow-panic-in-tests = true
+
+# 允许在测试中使用print
+allow-print-in-tests = true
+
+# 允许在测试中使用dbg
+allow-dbg-in-tests = true
+
+# 允许在测试中使用unwrap
+allow-unwrap-in-tests = true
+
+# 允许在测试中使用expect
+allow-expect-in-tests = true
+
+# 允许在测试中使用索引切片
+allow-indexing-slicing-in-tests = true
+
+# 允许在测试中使用无用的vec
+allow-useless-vec-in-tests = true
+
+# 忽略内部可变性
+ignore-interior-mutability = [
+    "std::cell::Cell",
+    "std::cell::RefCell",
+    "std::sync::atomic::AtomicBool",
+    "std::sync::atomic::AtomicIsize",
+    "std::sync::atomic::AtomicUsize",
+]

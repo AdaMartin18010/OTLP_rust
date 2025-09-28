@@ -11,12 +11,12 @@ use tracing::{error, info, warn};
 // use opentelemetry::global; // 当前库未提供 create_tracer，取消直接集成
 
 use otlp::{
+    OtlpConfig, TransportProtocol,
     microservices::{
         CircuitBreaker, CircuitBreakerConfig, HealthStatus, LoadBalancer, MicroserviceClient,
         MockConsulClient, RetryConfig, Retryer, RoundRobinLoadBalancer, ServiceDiscoveryClient,
         ServiceEndpoint, WeightedRoundRobinLoadBalancer,
     },
-    OtlpConfig, TransportProtocol,
 };
 
 /// 初始化OTLP追踪

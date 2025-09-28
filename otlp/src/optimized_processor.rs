@@ -4,8 +4,8 @@
 
 use crate::performance_optimization_advanced::*;
 use anyhow::Result;
-use std::time::{Duration, Instant};
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 /// OTLP数据处理器配置
 #[derive(Debug, Clone)]
@@ -102,7 +102,7 @@ impl OptimizedOtlpProcessor {
     /// 处理单个数据项
     pub fn process_single_item(&mut self, item: &OtlpDataItem) -> Result<ProcessedItem> {
         let start_time = Instant::now();
-        
+
         // 使用内存池分配（暂时禁用）
         // let _processed_data = if self.config.enable_memory_pool {
         //     self.allocate_processed_data()?
@@ -148,7 +148,7 @@ impl OptimizedOtlpProcessor {
         if self.config.enable_simd && items.len() >= 4 {
             let values: Vec<f64> = items.iter().map(|item| item.value).collect();
             let processed_values = self.process_batch_values_with_simd(&values)?;
-            
+
             for (i, item) in items.iter().enumerate() {
                 let processed_attributes = if self.config.enable_cache_optimization {
                     self.process_attributes_with_cache(&item.attributes)?
@@ -182,7 +182,9 @@ impl OptimizedOtlpProcessor {
     fn process_value_with_simd(&mut self, value: f64) -> Result<f64> {
         let data = vec![value];
         unsafe {
-            let result = self.simd_optimizer.process_f64_array_simd(&data, SimdOperation::Square)?;
+            let result = self
+                .simd_optimizer
+                .process_f64_array_simd(&data, SimdOperation::Square)?;
             self.performance_metrics.simd_processed += 1;
             Ok(result[0])
         }
@@ -191,23 +193,28 @@ impl OptimizedOtlpProcessor {
     /// 使用SIMD批量处理数值
     fn process_batch_values_with_simd(&mut self, values: &[f64]) -> Result<Vec<f64>> {
         unsafe {
-            let result = self.simd_optimizer.process_f64_array_simd(values, SimdOperation::Square)?;
+            let result = self
+                .simd_optimizer
+                .process_f64_array_simd(values, SimdOperation::Square)?;
             self.performance_metrics.simd_processed += values.len() as u64;
             Ok(result)
         }
     }
 
     /// 使用缓存优化处理属性
-    fn process_attributes_with_cache(&mut self, attributes: &HashMap<String, String>) -> Result<HashMap<String, String>> {
+    fn process_attributes_with_cache(
+        &mut self,
+        attributes: &HashMap<String, String>,
+    ) -> Result<HashMap<String, String>> {
         let mut processed = HashMap::new();
-        
+
         for (key, value) in attributes {
             // 使用缓存友好的方式处理属性
             let processed_key = self.cache_manager.optimize_string(key)?;
             let processed_value = self.cache_manager.optimize_string(value)?;
             processed.insert(processed_key, processed_value);
         }
-        
+
         self.performance_metrics.cache_hits += 1;
         Ok(processed)
     }
@@ -217,16 +224,16 @@ impl OptimizedOtlpProcessor {
     //     let size = self.config.batch_size * std::mem::size_of::<ProcessedItem>();
     //     let _ptr = self.memory_strategy.smart_allocate(size)?;
     //     self.performance_metrics.memory_allocations += 1;
-    //     
+    //
     //     // 这里简化处理，实际应该使用分配的内存
     //     Ok(Vec::with_capacity(size))
     // }
 
     /// 更新性能指标
     fn update_performance_metrics(&mut self, processing_time: Duration) {
-        self.performance_metrics.average_processing_time = 
+        self.performance_metrics.average_processing_time =
             (self.performance_metrics.average_processing_time + processing_time) / 2;
-        
+
         // 定期更新内存压力（暂时禁用）
         if self.last_monitoring_time.elapsed() >= self.config.monitoring_interval {
             // let stats = self.memory_strategy.get_memory_stats();
@@ -299,7 +306,7 @@ impl PerformanceMonitor {
     pub fn generate_report(&mut self) -> PerformanceReport {
         let metrics = self.processor.get_performance_metrics();
         // let memory_stats = self.processor.get_memory_stats(); // 暂时禁用
-        
+
         PerformanceReport {
             timestamp: Instant::now(),
             total_processed: metrics.total_processed,
@@ -311,9 +318,9 @@ impl PerformanceMonitor {
             },
             average_processing_time: metrics.average_processing_time,
             memory_pressure: metrics.memory_pressure,
-            memory_allocations: 0, // 暂时禁用
+            memory_allocations: 0,   // 暂时禁用
             memory_deallocations: 0, // 暂时禁用
-            pool_count: 0, // 暂时禁用
+            pool_count: 0,           // 暂时禁用
             total_pooled_objects: 0, // 暂时禁用
         }
     }
@@ -383,7 +390,7 @@ mod tests {
     fn test_optimized_processor_creation() {
         let config = OptimizedProcessorConfig::default();
         let processor = OptimizedOtlpProcessor::new(config);
-        
+
         let metrics = processor.get_performance_metrics();
         assert_eq!(metrics.total_processed, 0);
         assert_eq!(metrics.simd_processed, 0);
@@ -393,17 +400,17 @@ mod tests {
     fn test_single_item_processing() {
         let config = OptimizedProcessorConfig::default();
         let mut processor = OptimizedOtlpProcessor::new(config);
-        
+
         let mut attributes = HashMap::new();
         attributes.insert("service".to_string(), "test-service".to_string());
-        
+
         let item = OtlpDataItem {
             timestamp: 1234567890,
             value: 42.0,
             attributes,
             resource_attributes: HashMap::new(),
         };
-        
+
         let result = processor.process_single_item(&item).unwrap();
         assert_eq!(result.timestamp, 1234567890);
         assert_eq!(result.value, 42.0 * 42.0); // 平方运算
@@ -417,17 +424,19 @@ mod tests {
             ..Default::default()
         };
         let mut processor = OptimizedOtlpProcessor::new(config);
-        
-        let items: Vec<OtlpDataItem> = (0..10).map(|i| OtlpDataItem {
-            timestamp: i as u64,
-            value: i as f64,
-            attributes: HashMap::new(),
-            resource_attributes: HashMap::new(),
-        }).collect();
-        
+
+        let items: Vec<OtlpDataItem> = (0..10)
+            .map(|i| OtlpDataItem {
+                timestamp: i as u64,
+                value: i as f64,
+                attributes: HashMap::new(),
+                resource_attributes: HashMap::new(),
+            })
+            .collect();
+
         let results = processor.process_batch(&items).unwrap();
         assert_eq!(results.len(), 10);
-        
+
         for (i, result) in results.iter().enumerate() {
             assert_eq!(result.value, (i as f64) * (i as f64));
         }
@@ -438,7 +447,7 @@ mod tests {
         let config = OptimizedProcessorConfig::default();
         let processor = OptimizedOtlpProcessor::new(config);
         let mut monitor = PerformanceMonitor::new(processor);
-        
+
         let report = monitor.generate_report();
         assert_eq!(report.total_processed, 0);
         assert_eq!(report.simd_processed, 0);

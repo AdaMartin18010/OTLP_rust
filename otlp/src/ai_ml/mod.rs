@@ -6,10 +6,10 @@
 //! - 智能告警
 //! - 自动优化建议
 
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-use serde::{Deserialize, Serialize};
-use anyhow::Result;
 use tracing::info;
 
 /// AI/ML 分析器
@@ -109,7 +109,7 @@ impl AiMlAnalyzer {
     /// 添加训练数据
     pub fn add_training_data(&mut self, data_point: TrainingDataPoint) {
         self.training_data.push(data_point);
-        
+
         // 如果启用了实时学习，立即更新模型
         if self.config.enable_real_time_learning {
             self.update_models_incremental();
@@ -157,8 +157,14 @@ impl AiMlAnalyzer {
     }
 
     /// 检测异常
-    pub async fn detect_anomaly(&self, features: &[f64], model_name: &str) -> Result<AnomalyResult> {
-        let model = self.models.get(model_name)
+    pub async fn detect_anomaly(
+        &self,
+        features: &[f64],
+        model_name: &str,
+    ) -> Result<AnomalyResult> {
+        let model = self
+            .models
+            .get(model_name)
             .ok_or_else(|| anyhow::anyhow!("模型不存在: {}", model_name))?;
 
         let anomaly_score = self.calculate_anomaly_score(features, model);
@@ -184,16 +190,23 @@ impl AiMlAnalyzer {
     }
 
     /// 预测未来值
-    pub async fn predict_future(&self, features: &[f64], model_name: &str, steps: usize) -> Result<Vec<PredictionResult>> {
-        let model = self.models.get(model_name)
+    pub async fn predict_future(
+        &self,
+        features: &[f64],
+        model_name: &str,
+        steps: usize,
+    ) -> Result<Vec<PredictionResult>> {
+        let model = self
+            .models
+            .get(model_name)
             .ok_or_else(|| anyhow::anyhow!("模型不存在: {}", model_name))?;
 
         let mut predictions = Vec::new();
-        
+
         for step in 1..=steps {
             let prediction = self.calculate_prediction(features, model, step);
             let confidence = self.calculate_confidence(prediction, model);
-            
+
             if confidence >= self.config.prediction_confidence_threshold {
                 predictions.push(PredictionResult {
                     prediction,
@@ -209,9 +222,12 @@ impl AiMlAnalyzer {
     }
 
     /// 生成智能告警
-    pub async fn generate_smart_alert(&self, metrics: &HashMap<String, f64>) -> Result<Option<SmartAlert>> {
+    pub async fn generate_smart_alert(
+        &self,
+        metrics: &HashMap<String, f64>,
+    ) -> Result<Option<SmartAlert>> {
         let features = self.metrics_to_features(metrics);
-        
+
         // 使用多个模型进行综合分析
         let mut alert_score = 0.0;
         let mut contributing_models = Vec::new();
@@ -240,7 +256,8 @@ impl AiMlAnalyzer {
             }
         }
 
-        if alert_score > 1.5 { // 多模型综合阈值
+        if alert_score > 1.5 {
+            // 多模型综合阈值
             Ok(Some(SmartAlert {
                 severity: self.determine_alert_severity(alert_score),
                 message: self.generate_alert_message(&contributing_models, alert_score),
@@ -254,7 +271,10 @@ impl AiMlAnalyzer {
     }
 
     /// 自动优化建议
-    pub async fn generate_optimization_suggestions(&self, performance_metrics: &HashMap<String, f64>) -> Result<Vec<OptimizationSuggestion>> {
+    pub async fn generate_optimization_suggestions(
+        &self,
+        performance_metrics: &HashMap<String, f64>,
+    ) -> Result<Vec<OptimizationSuggestion>> {
         let mut suggestions = Vec::new();
 
         // 分析CPU使用率
@@ -317,28 +337,28 @@ impl AiMlAnalyzer {
     // 私有辅助方法
 
     fn extract_features(&self) -> Vec<Vec<f64>> {
-        self.training_data.iter()
+        self.training_data
+            .iter()
             .map(|dp| dp.features.clone())
             .collect()
     }
 
     fn calculate_anomaly_parameters(&self, features: &[Vec<f64>]) -> HashMap<String, f64> {
         let mut params = HashMap::new();
-        
+
         if !features.is_empty() {
             let feature_count = features[0].len();
             for i in 0..feature_count {
                 let values: Vec<f64> = features.iter().map(|f| f[i]).collect();
                 let mean = values.iter().sum::<f64>() / values.len() as f64;
-                let variance = values.iter()
-                    .map(|v| (v - mean).powi(2))
-                    .sum::<f64>() / values.len() as f64;
-                
+                let variance =
+                    values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
+
                 params.insert(format!("mean_{}", i), mean);
                 params.insert(format!("variance_{}", i), variance);
             }
         }
-        
+
         params
     }
 
@@ -368,7 +388,7 @@ impl AiMlAnalyzer {
         // 简化的预测计算
         let trend = model.parameters.get("trend_coefficient").unwrap_or(&0.1);
         let seasonality = model.parameters.get("seasonality_factor").unwrap_or(&0.05);
-        
+
         let base_value = features.iter().sum::<f64>() / features.len() as f64;
         base_value + trend * step as f64 + seasonality * (step as f64).sin()
     }
@@ -394,16 +414,14 @@ impl AiMlAnalyzer {
                 "检查相关日志".to_string(),
                 "准备预防措施".to_string(),
             ],
-            _ => vec![
-                "继续观察".to_string(),
-                "记录异常情况".to_string(),
-            ],
+            _ => vec!["继续观察".to_string(), "记录异常情况".to_string()],
         }
     }
 
     fn metrics_to_features(&self, metrics: &HashMap<String, f64>) -> Vec<f64> {
         let feature_names = self.get_feature_names();
-        feature_names.iter()
+        feature_names
+            .iter()
             .map(|name| metrics.get(name).copied().unwrap_or(0.0))
             .collect()
     }
@@ -428,12 +446,15 @@ impl AiMlAnalyzer {
     }
 
     fn generate_alert_message(&self, models: &[String], score: f64) -> String {
-        format!("智能告警: 多个模型检测到异常 (模型: {:?}, 综合分数: {:.2})", models, score)
+        format!(
+            "智能告警: 多个模型检测到异常 (模型: {:?}, 综合分数: {:.2})",
+            models, score
+        )
     }
 
     fn generate_recommendations(&self, models: &[String]) -> Vec<String> {
         let mut recommendations = Vec::new();
-        
+
         for model in models {
             match model.as_str() {
                 name if name.contains("anomaly") => {
@@ -447,7 +468,7 @@ impl AiMlAnalyzer {
                 }
             }
         }
-        
+
         recommendations
     }
 
@@ -499,7 +520,8 @@ mod tests {
         let mut analyzer = AiMlAnalyzer::new(config);
 
         // 添加训练数据
-        for i in 0..1500 { // 增加到1500个样本以满足最小训练样本要求
+        for i in 0..1500 {
+            // 增加到1500个样本以满足最小训练样本要求
             let data_point = TrainingDataPoint {
                 timestamp: SystemTime::now(),
                 features: vec![i as f64, (i * 2) as f64, (i * 3) as f64],
@@ -510,11 +532,19 @@ mod tests {
         }
 
         // 训练模型
-        assert!(analyzer.train_anomaly_detection_model("test_model").await.is_ok());
+        assert!(
+            analyzer
+                .train_anomaly_detection_model("test_model")
+                .await
+                .is_ok()
+        );
 
         // 测试异常检测
         let features = vec![1000.0, 2000.0, 3000.0]; // 异常值
-        let result = analyzer.detect_anomaly(&features, "test_model").await.unwrap();
+        let result = analyzer
+            .detect_anomaly(&features, "test_model")
+            .await
+            .unwrap();
         assert!(result.is_anomaly);
     }
 

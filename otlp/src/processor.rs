@@ -6,14 +6,13 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock, mpsc};
 use tokio::time::{
     interval,
     //sleep,
 };
 //use futures::stream::{StreamExt, FuturesUnordered};
 //use futures::FutureExt;
-use crate::rust_1_90_optimizations::AsyncBatchProcessor;
 use crate::data::{
     TelemetryData,
     //TelemetryDataType,
@@ -24,6 +23,7 @@ use crate::error::{
     Result,
 };
 use crate::resilience::{ResilienceConfig, ResilienceManager};
+use crate::rust_1_90_optimizations::AsyncBatchProcessor;
 use crate::utils::{
     PerformanceUtils,
     //BatchUtils,
@@ -211,7 +211,9 @@ impl DataAggregator for MetricAggregator {
         let mut metrics = self
             .metrics
             .try_write()
-            .map_err(|_| ProcessingError::Aggregation { reason: "Failed to acquire write lock".to_string() })?;
+            .map_err(|_| ProcessingError::Aggregation {
+                reason: "Failed to acquire write lock".to_string(),
+            })?;
 
         for telemetry_data in data {
             if let crate::data::TelemetryContent::Metric(metric_data) = &telemetry_data.content {
@@ -316,7 +318,10 @@ impl OtlpProcessor {
     pub async fn start(&self) -> Result<()> {
         let mut is_running = self.is_running.write().await;
         if *is_running {
-            return Err(ProcessingError::Batch { reason: "Processor is already running".to_string() }.into());
+            return Err(ProcessingError::Batch {
+                reason: "Processor is already running".to_string(),
+            }
+            .into());
         }
         *is_running = true;
         drop(is_running);
@@ -362,7 +367,9 @@ impl OtlpProcessor {
     pub async fn process(&self, data: TelemetryData) -> Result<()> {
         self.input_queue
             .send(data)
-            .map_err(|_| ProcessingError::Batch { reason: "Failed to send data to processing queue".to_string() })?;
+            .map_err(|_| ProcessingError::Batch {
+                reason: "Failed to send data to processing queue".to_string(),
+            })?;
         Ok(())
     }
 

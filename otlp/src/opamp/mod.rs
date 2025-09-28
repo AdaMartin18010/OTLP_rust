@@ -26,13 +26,12 @@
 
 pub mod messages;
 
-use uuid;
 use tonic;
 use tracing::info;
+use uuid;
 
 pub use messages::{
-    AgentToServer, ServerToAgent, AgentCapabilities,
-    RemoteConfigStatus, PackageStatus, AgentHealth,
+    AgentCapabilities, AgentHealth, AgentToServer, PackageStatus, RemoteConfigStatus, ServerToAgent,
 };
 
 /// OPAMP 错误类型
@@ -40,22 +39,22 @@ pub use messages::{
 pub enum OpampError {
     #[error("协议错误: {0}")]
     Protocol(String),
-    
+
     #[error("配置错误: {0}")]
     Config(String),
-    
+
     #[error("网络错误: {0}")]
     Network(String),
-    
+
     #[error("证书错误: {0}")]
     Certificate(String),
-    
+
     #[error("包管理错误: {0}")]
     Package(String),
-    
+
     #[error("gRPC 错误: {0}")]
     Grpc(#[from] tonic::Status),
-    
+
     #[error("IO 错误: {0}")]
     Io(#[from] std::io::Error),
 }
@@ -97,7 +96,7 @@ impl OpampCapabilities {
             reports_own_attributes: true,
         }
     }
-    
+
     /// 创建基础能力
     pub fn basic() -> Self {
         Self {
@@ -213,39 +212,46 @@ impl OpampClient {
     pub async fn start(&mut self) -> Result<()> {
         // 建立连接
         self.connect().await?;
-        
+
         // 发送初始报告
         self.send_initial_report().await?;
-        
+
         // 启动心跳和报告循环
         self.start_heartbeat_loop().await?;
-        
+
         Ok(())
     }
 
     /// 建立连接
     #[allow(dead_code)]
     async fn connect(&mut self) -> Result<()> {
-        let mut endpoint = tonic::transport::Endpoint::from_shared(self.config.server_endpoint.clone())
-            .map_err(|e| OpampError::Network(format!("无效的服务器端点: {}", e)))?;
+        let mut endpoint =
+            tonic::transport::Endpoint::from_shared(self.config.server_endpoint.clone())
+                .map_err(|e| OpampError::Network(format!("无效的服务器端点: {}", e)))?;
 
         // 配置TLS
         if let Some(tls_config) = &self.config.tls_config {
             endpoint = self.configure_tls(endpoint, tls_config)?;
         }
 
-        let channel = endpoint.connect().await
+        let channel = endpoint
+            .connect()
+            .await
             .map_err(|e| OpampError::Network(format!("连接失败: {}", e)))?;
 
         self.client = Some(channel);
         self.is_connected = true;
-        
+
         Ok(())
     }
 
     /// 配置TLS
     #[allow(dead_code)]
-    fn configure_tls(&self, endpoint: tonic::transport::Endpoint, _tls_config: &TlsConfig) -> Result<tonic::transport::Endpoint> {
+    fn configure_tls(
+        &self,
+        endpoint: tonic::transport::Endpoint,
+        _tls_config: &TlsConfig,
+    ) -> Result<tonic::transport::Endpoint> {
         // 这里应该实现TLS配置逻辑
         // 由于简化，我们直接返回endpoint
         Ok(endpoint)
@@ -310,13 +316,15 @@ impl CertificateManager {
     /// 加载证书
     #[allow(dead_code)]
     pub async fn load_certificates(&self) -> Result<Vec<u8>> {
-        tokio::fs::read(&self.cert_path).await
+        tokio::fs::read(&self.cert_path)
+            .await
             .map_err(|e| OpampError::Certificate(format!("无法读取证书文件: {}", e)))
     }
 
     /// 加载私钥
     pub async fn load_private_key(&self) -> Result<Vec<u8>> {
-        tokio::fs::read(&self.key_path).await
+        tokio::fs::read(&self.key_path)
+            .await
             .map_err(|e| OpampError::Certificate(format!("无法读取私钥文件: {}", e)))
     }
 
@@ -331,22 +339,26 @@ impl CertificateManager {
         // 备份当前证书
         let backup_cert_path = format!("{}.backup", self.cert_path);
         let backup_key_path = format!("{}.backup", self.key_path);
-        
+
         if tokio::fs::metadata(&self.cert_path).await.is_ok() {
-            tokio::fs::copy(&self.cert_path, &backup_cert_path).await
+            tokio::fs::copy(&self.cert_path, &backup_cert_path)
+                .await
                 .map_err(|e| OpampError::Certificate(format!("无法备份证书: {}", e)))?;
         }
-        
+
         if tokio::fs::metadata(&self.key_path).await.is_ok() {
-            tokio::fs::copy(&self.key_path, &backup_key_path).await
+            tokio::fs::copy(&self.key_path, &backup_key_path)
+                .await
                 .map_err(|e| OpampError::Certificate(format!("无法备份私钥: {}", e)))?;
         }
 
         // 写入新证书
-        tokio::fs::write(&self.cert_path, new_cert).await
+        tokio::fs::write(&self.cert_path, new_cert)
+            .await
             .map_err(|e| OpampError::Certificate(format!("无法写入新证书: {}", e)))?;
-        
-        tokio::fs::write(&self.key_path, new_key).await
+
+        tokio::fs::write(&self.key_path, new_key)
+            .await
             .map_err(|e| OpampError::Certificate(format!("无法写入新私钥: {}", e)))?;
 
         info!("证书轮转完成");
@@ -372,16 +384,18 @@ impl PackageManager {
     /// 安装包
     pub async fn install_package(&self, package_name: &str, package_data: &[u8]) -> Result<()> {
         let package_path = format!("{}/{}", self.install_dir, package_name);
-        
+
         // 备份现有包
         if tokio::fs::metadata(&package_path).await.is_ok() {
             let backup_path = format!("{}/{}", self.backup_dir, package_name);
-            tokio::fs::copy(&package_path, &backup_path).await
+            tokio::fs::copy(&package_path, &backup_path)
+                .await
                 .map_err(|e| OpampError::Package(format!("无法备份现有包: {}", e)))?;
         }
 
         // 写入新包
-        tokio::fs::write(&package_path, package_data).await
+        tokio::fs::write(&package_path, package_data)
+            .await
             .map_err(|e| OpampError::Package(format!("无法安装包: {}", e)))?;
 
         info!("包 {} 安装完成", package_name);
@@ -391,9 +405,10 @@ impl PackageManager {
     /// 卸载包
     pub async fn uninstall_package(&self, package_name: &str) -> Result<()> {
         let package_path = format!("{}/{}", self.install_dir, package_name);
-        
+
         if tokio::fs::metadata(&package_path).await.is_ok() {
-            tokio::fs::remove_file(&package_path).await
+            tokio::fs::remove_file(&package_path)
+                .await
                 .map_err(|e| OpampError::Package(format!("无法卸载包: {}", e)))?;
         }
 
@@ -404,7 +419,7 @@ impl PackageManager {
     /// 验证包
     pub async fn validate_package(&self, package_name: &str) -> Result<bool> {
         let package_path = format!("{}/{}", self.install_dir, package_name);
-        
+
         // 实现包验证逻辑
         Ok(tokio::fs::metadata(&package_path).await.is_ok())
     }

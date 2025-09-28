@@ -24,8 +24,8 @@ impl CompressionUtils {
     pub async fn gzip_compress(&self, data: &[u8]) -> Result<Vec<u8>> {
         let data = data.to_vec();
         tokio::task::spawn_blocking(move || {
-            use flate2::write::GzEncoder;
             use flate2::Compression;
+            use flate2::write::GzEncoder;
             use std::io::Write;
 
             let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
@@ -590,7 +590,10 @@ mod tests {
         let should_retry = RetryUtils::should_retry(
             1,
             3,
-            &crate::error::OtlpError::Transport(crate::error::TransportError::Timeout { operation: "test".to_string(), timeout: Duration::from_secs(1) }),
+            &crate::error::OtlpError::Transport(crate::error::TransportError::Timeout {
+                operation: "test".to_string(),
+                timeout: Duration::from_secs(1),
+            }),
         );
         assert!(should_retry);
     }

@@ -1,14 +1,14 @@
 //! 优化的内存池实现
-//! 
+//!
 //! 使用Rust 1.90的新特性进行性能优化，包括零拷贝、对象复用和智能内存管理。
 
+use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::collections::VecDeque;
-use tokio::sync::{Mutex, Semaphore};
 use std::time::{Duration, Instant};
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use tokio::sync::{Mutex, Semaphore};
 
 /// 内存池错误
 #[derive(Debug, Error)]
@@ -41,7 +41,7 @@ impl Default for MemoryPoolConfig {
         Self {
             max_size: 100,
             initial_size: 10,
-            object_ttl: Duration::from_secs(300), // 5分钟
+            object_ttl: Duration::from_secs(300),      // 5分钟
             cleanup_interval: Duration::from_secs(60), // 1分钟
             enable_stats: true,
         }
@@ -49,7 +49,7 @@ impl Default for MemoryPoolConfig {
 }
 
 /// 池化对象包装器
-pub struct PooledObject<T> 
+pub struct PooledObject<T>
 where
     T: Send + Sync + Default + 'static,
 {
@@ -86,7 +86,7 @@ impl<T: Send + Sync + Default + 'static> Drop for PooledObject<T> {
         let pool = Arc::clone(&self.pool);
         let object = std::mem::take(&mut self.object);
         let created_at = self.created_at;
-        
+
         tokio::spawn(async move {
             if let Err(e) = pool.return_object(object, created_at).await {
                 eprintln!("Failed to return object to pool: {}", e);
@@ -118,7 +118,7 @@ struct PooledObjectMeta<T> {
 }
 
 /// 优化的内存池实现
-/// 
+///
 /// 使用零拷贝和智能对象管理，性能提升60-80%
 pub struct OptimizedMemoryPool<T> {
     config: MemoryPoolConfig,
@@ -139,13 +139,13 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
     {
         if config.max_size == 0 {
             return Err(MemoryPoolError::ConfigurationError(
-                "max_size must be greater than 0".to_string()
+                "max_size must be greater than 0".to_string(),
             ));
         }
 
         if config.initial_size > config.max_size {
             return Err(MemoryPoolError::ConfigurationError(
-                "initial_size cannot be greater than max_size".to_string()
+                "initial_size cannot be greater than max_size".to_string(),
             ));
         }
 
@@ -181,7 +181,9 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
                 pool.push_back(meta);
             }
         }
-        memory_pool.total_created.fetch_add(memory_pool.config.initial_size, Ordering::AcqRel);
+        memory_pool
+            .total_created
+            .fetch_add(memory_pool.config.initial_size, Ordering::AcqRel);
 
         Ok(memory_pool)
     }
@@ -191,7 +193,7 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
     #[allow(unused_variables)]
     async fn initialize_pool(&self) -> Result<(), MemoryPoolError> {
         let mut pool = self.pool.lock().await;
-        
+
         for _ in 0..self.config.initial_size {
             let object = (self.factory)();
             let meta = PooledObjectMeta {
@@ -202,19 +204,22 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
             pool.push_back(meta);
         }
 
-        self.total_created.fetch_add(self.config.initial_size, Ordering::AcqRel);
+        self.total_created
+            .fetch_add(self.config.initial_size, Ordering::AcqRel);
         Ok(())
     }
 
     /// 获取对象
     pub async fn acquire(&self) -> Result<PooledObject<T>, MemoryPoolError> {
         // 获取信号量许可
-        let _permit = self.semaphore.acquire().await.map_err(|_| {
-            MemoryPoolError::PoolFull
-        })?;
+        let _permit = self
+            .semaphore
+            .acquire()
+            .await
+            .map_err(|_| MemoryPoolError::PoolFull)?;
 
         let mut pool = self.pool.lock().await;
-        
+
         // 尝试从池中获取对象
         if let Some(mut meta) = pool.pop_front() {
             // 检查对象是否过期
@@ -222,7 +227,7 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
                 meta.last_used = Instant::now();
                 self.total_reused.fetch_add(1, Ordering::AcqRel);
                 self.update_stats().await;
-                
+
                 return Ok(PooledObject {
                     object: meta.object,
                     created_at: meta.created_at,
@@ -236,10 +241,10 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
 
         // 池中没有可用对象，创建新对象
         drop(pool); // 释放锁
-        
+
         let object = (self.factory)();
         let created_at = Instant::now();
-        
+
         self.total_created.fetch_add(1, Ordering::AcqRel);
         self.update_stats().await;
 
@@ -255,7 +260,7 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
     #[allow(unused_variables)]
     async fn return_object(&self, object: T, created_at: Instant) -> Result<(), MemoryPoolError> {
         let mut pool = self.pool.lock().await;
-        
+
         // 检查池是否已满
         if pool.len() >= self.config.max_size {
             // 池已满，销毁对象
@@ -276,10 +281,10 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
             created_at,
             last_used: Instant::now(),
         };
-        
+
         pool.push_back(meta);
         self.update_stats().await;
-        
+
         Ok(())
     }
 
@@ -293,12 +298,12 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
 
         let mut stats = self.stats.lock().await;
         let pool = self.pool.lock().await;
-        
+
         stats.total_created = self.total_created.load(Ordering::Acquire);
         stats.total_reused = self.total_reused.load(Ordering::Acquire);
         stats.total_destroyed = self.total_destroyed.load(Ordering::Acquire);
         stats.current_size = pool.len();
-        
+
         let total_requests = stats.total_created + stats.total_reused;
         if total_requests > 0 {
             stats.hit_rate = stats.total_reused as f64 / total_requests as f64;
@@ -318,7 +323,7 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
     pub async fn cleanup_expired(&self) -> usize {
         let mut pool = self.pool.lock().await;
         let mut removed_count = 0;
-        
+
         // 从后往前遍历，移除过期对象
         let mut i = pool.len();
         while i > 0 {
@@ -347,7 +352,7 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
     pub fn start_cleanup_task(&self) {
         let pool = Arc::new(self.clone());
         let cleanup_interval = self.config.cleanup_interval;
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(cleanup_interval);
             loop {
@@ -377,13 +382,13 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
     pub fn update_config(&mut self, config: MemoryPoolConfig) -> Result<(), MemoryPoolError> {
         if config.max_size == 0 {
             return Err(MemoryPoolError::ConfigurationError(
-                "max_size must be greater than 0".to_string()
+                "max_size must be greater than 0".to_string(),
             ));
         }
 
         if config.initial_size > config.max_size {
             return Err(MemoryPoolError::ConfigurationError(
-                "initial_size cannot be greater than max_size".to_string()
+                "initial_size cannot be greater than max_size".to_string(),
             ));
         }
 
@@ -396,7 +401,7 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
         let mut pool = self.pool.lock().await;
         let count = pool.len();
         pool.clear();
-        
+
         self.total_destroyed.fetch_add(count, Ordering::AcqRel);
         self.update_stats().await;
     }
@@ -426,7 +431,7 @@ mod tests {
     async fn test_memory_pool_basic() {
         let counter = Arc::new(AtomicUsize::new(0));
         let counter_clone = Arc::clone(&counter);
-        
+
         let config = MemoryPoolConfig {
             max_size: 10,
             initial_size: 2,
@@ -441,7 +446,9 @@ mod tests {
                 String::with_capacity(1024)
             },
             config,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // 获取对象
         let obj1 = pool.acquire().await.unwrap();
@@ -477,10 +484,9 @@ mod tests {
             enable_stats: true,
         };
 
-        let pool = OptimizedMemoryPool::new(
-            || String::with_capacity(512),
-            config,
-        ).await.unwrap();
+        let pool = OptimizedMemoryPool::new(|| String::with_capacity(512), config)
+            .await
+            .unwrap();
 
         // 获取对象
         let obj = pool.acquire().await.unwrap();
@@ -507,10 +513,9 @@ mod tests {
             enable_stats: true,
         };
 
-        let pool = OptimizedMemoryPool::new(
-            || String::with_capacity(256),
-            config,
-        ).await.unwrap();
+        let pool = OptimizedMemoryPool::new(|| String::with_capacity(256), config)
+            .await
+            .unwrap();
 
         // 获取最大数量的对象
         let obj1 = pool.acquire().await.unwrap();
@@ -541,10 +546,9 @@ mod tests {
             enable_stats: true,
         };
 
-        let pool = OptimizedMemoryPool::new(
-            || String::with_capacity(1024),
-            config,
-        ).await.unwrap();
+        let pool = OptimizedMemoryPool::new(|| String::with_capacity(1024), config)
+            .await
+            .unwrap();
 
         // 并发获取和释放对象
         let mut handles = Vec::new();

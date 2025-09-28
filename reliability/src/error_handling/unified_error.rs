@@ -2,15 +2,15 @@
 //!
 //! 提供类型安全、上下文丰富的错误类型，支持错误分类、堆栈跟踪和恢复信息。
 
-use std::fmt;
+use serde::{Deserialize, Serialize};
 use std::error::Error as StdError;
+use std::fmt;
 use std::sync::Arc;
-use serde::{Serialize, Deserialize};
 
-use crate::error_handling::{ErrorSeverity, ErrorContext};
+use crate::error_handling::{ErrorContext, ErrorSeverity};
 
 /// 统一错误类型
-/// 
+///
 /// 这是整个可靠性框架的核心错误类型，提供了丰富的错误信息和上下文
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnifiedError {
@@ -144,10 +144,10 @@ impl UnifiedError {
     /// 获取错误链
     pub fn error_chain(&self) -> Vec<String> {
         let mut chain = vec![self.message.clone()];
-        
+
         if let Some(source) = &self.source {
             chain.push(source.to_string());
-            
+
             // 递归获取错误链
             let mut current = source.source();
             while let Some(err) = current {
@@ -155,18 +155,13 @@ impl UnifiedError {
                 current = err.source();
             }
         }
-        
+
         chain
     }
 
     /// 获取简化的错误信息
     pub fn summary(&self) -> String {
-        format!(
-            "[{}] {}: {}",
-            self.severity,
-            self.category,
-            self.message
-        )
+        format!("[{}] {}: {}", self.severity, self.category, self.message)
     }
 
     /// 获取详细的错误信息
@@ -224,14 +219,16 @@ impl fmt::Display for UnifiedError {
 
 impl StdError for UnifiedError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        self.source.as_ref().map(|e| e.as_ref() as &(dyn StdError + 'static))
+        self.source
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn StdError + 'static))
     }
 }
 
 /// 预定义的错误类型
 pub mod predefined {
     use super::*;
-    use crate::error_handling::{ErrorSeverity, ErrorContext};
+    use crate::error_handling::{ErrorContext, ErrorSeverity};
 
     /// 网络错误
     pub fn network_error(message: impl Into<String>, context: ErrorContext) -> UnifiedError {
@@ -439,7 +436,14 @@ mod tests {
 
     #[test]
     fn test_unified_error_creation() {
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
         let error = UnifiedError::new("测试错误", ErrorSeverity::High, "test", context.clone());
 
         assert_eq!(error.message(), "测试错误");
@@ -450,8 +454,15 @@ mod tests {
 
     #[test]
     fn test_unified_error_builder() {
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
-        
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
+
         let error = ErrorBuilder::new()
             .message("构建器测试错误")
             .severity(ErrorSeverity::Critical)
@@ -473,8 +484,15 @@ mod tests {
 
     #[test]
     fn test_predefined_errors() {
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
-        
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
+
         let network_error = predefined::network_error("网络连接失败", context.clone());
         assert_eq!(network_error.category(), "network");
         assert_eq!(network_error.code(), Some("NET_001"));
@@ -487,9 +505,16 @@ mod tests {
 
     #[test]
     fn test_error_chain() {
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
         let io_error = io::Error::new(io::ErrorKind::NotFound, "文件未找到");
-        
+
         let unified_error = UnifiedError::new("操作失败", ErrorSeverity::High, "test", context)
             .with_source(io_error);
 
@@ -501,9 +526,16 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
         let error = UnifiedError::new("显示测试", ErrorSeverity::High, "display", context);
-        
+
         let summary = error.summary();
         assert!(summary.contains("高"));
         assert!(summary.contains("display"));
@@ -517,9 +549,16 @@ mod tests {
 
     #[test]
     fn test_into_unified_error() {
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
         let io_error = io::Error::new(io::ErrorKind::PermissionDenied, "权限不足");
-        
+
         let unified_error = io_error.into_unified_error(context);
         assert_eq!(unified_error.category(), "std_error");
         assert!(unified_error.message().contains("权限不足"));

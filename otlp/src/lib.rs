@@ -178,78 +178,107 @@
 //! }
 //! ```
 
+pub mod advanced_features;
+pub mod advanced_performance;
+pub mod advanced_security;
+pub mod ai_ml;
+pub mod compliance_manager;
 pub mod benchmarks;
+pub mod blockchain;
 pub mod client;
 pub mod config;
 pub mod data;
+pub mod edge_computing;
+pub mod enterprise_features;
 pub mod error;
 pub mod exporter;
 pub mod microservices;
 pub mod monitoring;
-pub mod ottl;
+pub mod monitoring_integration;
 pub mod opamp;
+pub mod optimized_processor;
+pub mod ottl;
 pub mod performance;
-pub mod profiling;
+pub mod performance_enhancements;
+pub mod performance_monitoring;
+pub mod performance_optimization_advanced;
+pub mod performance_optimizer;
 pub mod processor;
+pub mod profiling;
 pub mod protobuf;
 pub mod resilience;
 pub mod rust_1_90_optimizations;
+pub mod security_enhancer;
 pub mod simple_client;
-pub mod performance_enhancements;
-pub mod performance_optimization_advanced;
-pub mod optimized_processor;
-pub mod performance_monitoring;
 pub mod transport;
 pub mod utils;
 pub mod validation;
-pub mod ai_ml;
-pub mod edge_computing;
-pub mod blockchain;
 
 // 重新导出主要类型
 pub use client::{LogBuilder, MetricBuilder, OtlpClient, OtlpClientBuilder, TraceBuilder};
 pub use config::{BatchConfig, Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol};
-pub use data::{AttributeValue, DataPoint, DataPointValue, LogData, LogSeverity, MetricData, MetricType, SpanKind, SpanStatus, StatusCode, TelemetryContent, TelemetryData, TelemetryDataType, TraceData};
+pub use data::{
+    AttributeValue, DataPoint, DataPointValue, LogData, LogSeverity, MetricData, MetricType,
+    SpanKind, SpanStatus, StatusCode, TelemetryContent, TelemetryData, TelemetryDataType,
+    TraceData,
+};
 pub use error::{ErrorCategory, ErrorContext, ErrorSeverity, OtlpError, Result};
 pub use exporter::{ExportResult, ExporterMetrics, OtlpExporter};
 pub use monitoring::{
-    AlertCondition, AlertRule, ErrorEvent, ErrorMonitoringSystem, MonitoringConfig,
-    ErrorMonitoringMetrics,
+    AlertCondition, AlertRule, ErrorEvent, ErrorMonitoringMetrics, ErrorMonitoringSystem,
+    MonitoringConfig,
+};
+pub use monitoring_integration::{
+    Alert, AlertCondition as NewAlertCondition, AlertManager, AlertRule as NewAlertRule, AlertSeverity as NewAlertSeverity, AlertStatsSnapshot,
+    ComprehensiveMonitoringManager, ComprehensiveMonitoringStatsSnapshot, Dashboard, DataSource,
+    DataSourceAccess, DataSourceType, GrafanaDashboardManager, GrafanaStatsSnapshot,
+    MetricCollector, MetricUpdate, MetricValue, MonitoringStatsSnapshot, Panel, PanelOptions,
+    PanelPosition, PanelType, PerformanceMetricCollector, PrometheusCollector,
+    PrometheusStatsSnapshot, QueryTarget, RealtimeMonitoringSystem, SecurityMetricCollector,
+};
+pub use optimized_processor::{
+    OptimizedOtlpProcessor, OptimizedProcessorConfig, OtlpDataItem, PerformanceMetrics,
+    PerformanceMonitor, PerformanceReport, ProcessedItem,
+};
+pub use performance::{
+    BatchItem, BatchProcessorConfig, BatchProcessorError, BatchProcessorStats, BatchResult,
+    CircuitBreakerConfig, CircuitBreakerError, CircuitBreakerState, ConnectionPoolConfig,
+    ConnectionPoolError, ConnectionPoolStats, MemoryPoolConfig, MemoryPoolError, MemoryPoolStats,
+    OptimizedBatchProcessor, OptimizedCircuitBreaker, OptimizedConnectionPool, OptimizedMemoryPool,
+    PerformanceConfig, PerformanceManager, PooledConnection, PooledObject,
+};
+pub use performance_enhancements::{
+    AsyncGenerator, BatchProcessorMetricsSnapshot, ExecutorMetricsSnapshot,
+    HighPerformanceBatchProcessor, HighPerformanceExecutor, HighPerformanceMemoryPool as LegacyHighPerformanceMemoryPool,
+    MemoryPoolMetricsSnapshot,
+};
+pub use performance_monitoring::{
+    AlertSeverity, AlertType, PerformanceAlert, PerformanceDataPoint, PerformanceMonitoringConfig,
+    PerformanceSummary, PerformanceThresholds, RealtimePerformanceMonitor,
+};
+pub use performance_optimization_advanced::{
+    AdvancedMemoryPoolOptimizer, AdvancedSimdOptimizer, BenchmarkResults, CacheOptimizationManager,
+    CachePerformanceMetrics, ComprehensivePerformanceOptimizer, SimdIntOperation, SimdOperation,
+};
+pub use performance_optimizer::{
+    BenchmarkConfig, BenchmarkResult, ComprehensivePerformanceOptimizer as NewComprehensivePerformanceOptimizer,
+    ComprehensivePerformanceStats, ConcurrencyOptimizer, ConcurrencyStatsSnapshot, HighPerformanceMemoryPool,
+    MemoryPoolStatsSnapshot, PerformanceBenchmarker, PooledObject as NewPooledObject, SimdOptimizer, SimdStatsSnapshot,
 };
 pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};
 pub use rust_1_90_optimizations::{
     AsyncBatchProcessor, AsyncClosureOptimizer, TupleCollectionOptimizer, ZeroCopyOptimizer,
 };
+pub use security_enhancer::{
+    AuditLog, AuditLogFilter, AuditLogger, AuditResult, AuditStatsSnapshot, AuthCondition,
+    AuthPolicy, AuthResult, AuthRule, AuthStatsSnapshot, AuthValidationResult, AuthenticationManager,
+    ComprehensiveSecurityManager, ComprehensiveSecurityStats, EncryptionAlgorithm, EncryptionManager,
+    EncryptionStatsSnapshot, EncryptedData, SecurityPolicy, SecurityRule, SecuritySeverity,
+    SecureRequest, SecureResponse, Session, User,
+};
 pub use simple_client::{
-    SimpleOtlpClient, SimpleClientBuilder, LogLevel, SimpleOperation, 
-    HealthStatus,
-};
-pub use performance::{
-    OptimizedCircuitBreaker, CircuitBreakerConfig, CircuitBreakerState, CircuitBreakerError,
-    OptimizedMemoryPool, MemoryPoolConfig, MemoryPoolError, MemoryPoolStats, PooledObject,
-    OptimizedBatchProcessor, BatchProcessorConfig, BatchProcessorError, BatchProcessorStats, BatchItem, BatchResult,
-    OptimizedConnectionPool, ConnectionPoolConfig, ConnectionPoolError, ConnectionPoolStats, PooledConnection,
-    PerformanceConfig, PerformanceManager,
-};
-pub use performance_enhancements::{
-    AsyncGenerator, HighPerformanceBatchProcessor, HighPerformanceExecutor,
-    HighPerformanceMemoryPool, BatchProcessorMetricsSnapshot,
-    ExecutorMetricsSnapshot, MemoryPoolMetricsSnapshot,
-};
-pub use performance_optimization_advanced::{
-    AdvancedSimdOptimizer, AdvancedMemoryPoolOptimizer, CacheOptimizationManager,
-    ComprehensivePerformanceOptimizer,
-    SimdOperation, SimdIntOperation, CachePerformanceMetrics, BenchmarkResults,
-};
-pub use optimized_processor::{
-    OptimizedOtlpProcessor, OptimizedProcessorConfig, OtlpDataItem, ProcessedItem,
-    PerformanceMetrics, PerformanceMonitor, PerformanceReport,
-};
-pub use performance_monitoring::{
-    RealtimePerformanceMonitor, PerformanceMonitoringConfig, PerformanceThresholds,
-    PerformanceDataPoint, PerformanceAlert, AlertType, AlertSeverity,
-    PerformanceSummary,
+    HealthStatus, LogLevel, SimpleClientBuilder, SimpleOperation, SimpleOtlpClient,
 };
 pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{
@@ -257,9 +286,45 @@ pub use utils::{
 };
 
 // 重新导出新模块的主要类型
-pub use ai_ml::{AiMlAnalyzer, AiMlConfig, MlModel, ModelType, PredictionResult, AnomalyResult};
-pub use edge_computing::{EdgeComputingManager, EdgeNode, EdgeTask, TaskType, TaskPriority};
-pub use blockchain::{BlockchainManager, Block, Transaction, SmartContract, ConsensusAlgorithm};
+pub use advanced_features::{
+    AdvancedFeaturesConfig, AdvancedFeaturesManager, AIAnomalyDetector, AnomalyConfig,
+    AnomalyResult as AdvancedAnomalyResult, CacheConfig, CacheStats, EvictionPolicy, IntelligentCache,
+    ProcessedResult, SamplingConfig, SamplingContext, SamplingMetrics, SystemStats,
+    TrainingDataPoint, ModelType as AnomalyModelType,
+};
+pub use advanced_performance::{
+    BatchProcessor, BatchStatsSnapshot, BufferPool, BufferPoolStatsSnapshot, CacheOptimizer,
+    CacheStatsSnapshot, Connection, ConnectionPool, LockFreeDataManager, LockFreeStatsSnapshot,
+    NetworkOptimizer, NetworkStatsSnapshot, ProcessingStatsSnapshot, ZeroCopyProcessor,
+};
+pub use advanced_security::{
+    AuditEntry, AuditEvent, AuditFilter, DifferentialPrivacyManager, DifferentialPrivacyStatsSnapshot,
+    HomomorphicEncryptionManager, HomomorphicEncryptionStatsSnapshot, PrivacyResult,
+    Proof, SecureMultiPartyComputationManager, SecureMultiPartyStatsSnapshot, SecurityAuditManager,
+    SecurityAuditStatsSnapshot, Threat, ThreatDetectionManager, ThreatDetectionStatsSnapshot,
+    ZeroKnowledgeProofManager, ZeroKnowledgeStatsSnapshot,
+};
+pub use compliance_manager::{
+    AccessLog, CardData, ControlTest, ControlTestResult, DataSubject, DataSubjectRequest,
+    DataSubjectRequestType, DataSubjectResponse, FinancialRecord, GDPRComplianceManager,
+    GDPRStatsSnapshot, HIPAAComplianceManager, HIPAAStatsSnapshot, PCIDSSComplianceManager,
+    PCIDSSStatsSnapshot, PHIRecord, ProcessingRecord, RiskAssessment, RiskAssessmentResult,
+    SecurityTest, SecurityTestResult, SOXComplianceManager, SOXComplianceReport, SOXStatsSnapshot,
+};
+pub use ai_ml::{AiMlAnalyzer, AiMlConfig, AnomalyResult, MlModel, ModelType, PredictionResult};
+pub use blockchain::{Block, BlockchainManager, ConsensusAlgorithm, SmartContract, Transaction};
+pub use edge_computing::{EdgeComputingManager, EdgeNode, EdgeTask, TaskPriority, TaskType};
+pub use enterprise_features::{
+    ComplianceAssessment, ComplianceCategory, ComplianceControl, ComplianceFinding,
+    ComplianceFramework, ComplianceManager, ComplianceRequirement, ComplianceSeverity,
+    ComplianceStatsSnapshot, ComprehensiveEnterpriseManager, ComprehensiveEnterpriseStats,
+    DataAction, DataClassification, DataClassificationLevel, DataCondition, DataGovernanceManager,
+    DataGovernanceStatsSnapshot, DataItem, DataPolicy, DataRule, EnterpriseRequest,
+    EnterpriseResponse, FindingStatus, HighAvailabilityManager, HighAvailabilityStatsSnapshot,
+    HealthCheck, HealthCheckType, ImplementationStatus, MultiTenantManager,
+    MultiTenantStatsSnapshot, Node, NodeStatus, Tenant, TenantQuota, TenantSettings,
+    TenantStatus,
+};
 
 // 重新导出微服务相关类型
 pub use microservices::{
