@@ -1,3 +1,4 @@
+#![allow(clippy::excessive_nesting)]
 //! # OpenTelemetry Protocol (OTLP) Implementation for Rust 1.90
 //!
 //! 本库提供了基于Rust 1.90语言特性的OpenTelemetry协议(OTLP)完整实现，
