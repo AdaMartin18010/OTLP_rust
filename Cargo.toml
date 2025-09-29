@@ -113,7 +113,7 @@ distributed-tracing = "0.4.0"  # 分布式追踪增强，与OTLP协议深度集�
 # ========== Web 框架 ==========
 # 2025年1月最新稳定版本，支持Rust 1.90性能优化
 # Axum: 基于Tokio的现代Web框架
-axum = { version = "0.8.4", features = ["macros", "multipart", "tracing"] }
+axum = { version = "0.8.5", features = ["macros", "multipart", "tracing"] }
 axum-core = "0.6.1"            # Axum核心组件
 # Tower: 服务抽象层，提供中间件支持
 tower = "0.5.2"                 # 服务抽象和中间件框架

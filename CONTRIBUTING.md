@@ -7,18 +7,21 @@
 ### 贡献方式
 
 #### 1. 代码贡献
+
 - **Bug修复**: 修复项目中的bug
 - **功能开发**: 实现新功能或改进现有功能
 - **性能优化**: 优化代码性能和内存使用
 - **测试完善**: 添加或改进测试用例
 
 #### 2. 文档贡献
+
 - **文档编写**: 编写或改进项目文档
 - **示例代码**: 提供使用示例和教程
 - **翻译工作**: 翻译文档到其他语言
 - **文档审查**: 审查和改进现有文档
 
 #### 3. 社区贡献
+
 - **问题报告**: 报告bug或提出改进建议
 - **讨论参与**: 参与技术讨论和设计决策
 - **用户支持**: 帮助其他用户解决问题
@@ -127,6 +130,7 @@ git push origin feature/your-feature-name
 ### 1. Rust代码规范
 
 #### 代码格式化
+
 ```bash
 # 使用cargo fmt格式化代码
 cargo fmt
@@ -136,6 +140,7 @@ cargo fmt --check
 ```
 
 #### 代码检查
+
 ```bash
 # 使用cargo clippy检查代码
 cargo clippy --all
@@ -145,6 +150,7 @@ cargo clippy --all
 ```
 
 #### 安全检查
+
 ```bash
 # 使用cargo audit进行安全检查
 cargo audit
@@ -166,6 +172,7 @@ cargo update
 ```
 
 #### 类型说明
+
 - `feat`: 新功能
 - `fix`: 修复bug
 - `docs`: 文档更新
@@ -175,6 +182,7 @@ cargo update
 - `chore`: 构建过程或辅助工具的变动
 
 #### 示例
+
 ```
 feat: 添加零拷贝数据处理功能
 
@@ -324,6 +332,7 @@ let client = OtlpClient::new()
 |------|------|--------|------|
 | endpoint | String | - | OTLP端点地址 |
 | timeout | Duration | 30s | 请求超时时间 |
+
 ```
 
 ### 3. API文档
@@ -406,7 +415,9 @@ pub async fn send_telemetry_data(&self, data: TelemetryData) -> Result<()> {
 ```
 
 ## 附加信息
+
 [任何其他相关信息]
+
 ```
 
 ## 🔍 代码审查
