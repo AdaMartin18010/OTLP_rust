@@ -28,11 +28,11 @@
       - [2.2 IEEE 1588: Precision Time Protocol](#22-ieee-1588-precision-time-protocol)
   - [ISO标准对齐](#iso标准对齐)
     - [1. 质量管理标准](#1-质量管理标准)
-      - [1.1 ISO 9001:2015 Quality Management Systems](#11-iso-90012015-quality-management-systems)
-      - [1.2 ISO 27001:2013 Information Security Management](#12-iso-270012013-information-security-management)
+      - [1.1 ISO 9001-2015 Quality Management Systems](#11-iso-9001-2015-quality-management-systems)
+      - [1.2 ISO 27001-2013 Information Security Management](#12-iso-27001-2013-information-security-management)
     - [2. 软件工程标准](#2-软件工程标准)
-      - [2.1 ISO/IEC 12207:2017 Software Life Cycle Processes](#21-isoiec-122072017-software-life-cycle-processes)
-      - [2.2 ISO/IEC 25000:2014 Software Quality Requirements](#22-isoiec-250002014-software-quality-requirements)
+      - [2.1 ISO/IEC 12207-2017 Software Life Cycle Processes](#21-isoiec-12207-2017-software-life-cycle-processes)
+      - [2.2 ISO/IEC 25000-2014 Software Quality Requirements](#22-isoiec-25000-2014-software-quality-requirements)
   - [行业最佳实践](#行业最佳实践)
     - [1. DevOps最佳实践](#1-devops最佳实践)
       - [1.1 CI/CD最佳实践](#11-cicd最佳实践)
@@ -309,7 +309,7 @@
 
 ### 1. 质量管理标准
 
-#### 1.1 ISO 9001:2015 Quality Management Systems
+#### 1.1 ISO 9001-2015 Quality Management Systems
 
 **标准**: ISO 9001:2015
 
@@ -333,7 +333,7 @@
   - 可维护性 (Maintainability)
   - 可移植性 (Portability)
 
-#### 1.2 ISO 27001:2013 Information Security Management
+#### 1.2 ISO 27001-2013 Information Security Management
 
 **标准**: ISO 27001:2013
 
@@ -355,7 +355,7 @@
 
 ### 2. 软件工程标准
 
-#### 2.1 ISO/IEC 12207:2017 Software Life Cycle Processes
+#### 2.1 ISO/IEC 12207-2017 Software Life Cycle Processes
 
 **标准**: ISO/IEC 12207:2017
 
@@ -376,7 +376,7 @@
   - 协议过程
   - 组织项目使能过程
 
-#### 2.2 ISO/IEC 25000:2014 Software Quality Requirements
+#### 2.2 ISO/IEC 25000-2014 Software Quality Requirements
 
 **标准**: ISO/IEC 25000:2014
 
