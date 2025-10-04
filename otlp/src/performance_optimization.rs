@@ -554,21 +554,24 @@ mod tests {
     #[tokio::test]
     async fn test_performance_optimizer() {
         let config = PerformanceConfig::default();
-        let optimizer = PerformanceOptimizer::new(config).unwrap();
-        optimizer.start().await.unwrap();
+        let optimizer = PerformanceOptimizer::new(config).expect("Failed to create performance optimizer");
+        optimizer.start().await.expect("Failed to start performance optimizer");
 
         let error = OtlpError::from_anyhow(anyhow::anyhow!("test error"));
-        let optimized = optimizer.optimize_error_handling(&error).await.unwrap();
+        let optimized = optimizer.optimize_error_handling(&error).await.expect("Failed to optimize error handling");
         assert!(optimized.inner.to_string().contains("test error"));
     }
 
     #[tokio::test]
     async fn test_benchmarks() {
         let config = PerformanceConfig::default();
-        let optimizer = PerformanceOptimizer::new(config).unwrap();
-        optimizer.start().await.unwrap();
+        let optimizer = PerformanceOptimizer::new(config)
+            .expect("Failed to create performance optimizer");
+        optimizer.start().await
+            .expect("Failed to start performance optimizer");
 
-        let results = optimizer.run_benchmarks().await.unwrap();
+        let results = optimizer.run_benchmarks().await
+            .expect("Failed to run benchmarks");
         assert!(results.error_handling_benchmark.operations_per_second > 0.0);
     }
 }

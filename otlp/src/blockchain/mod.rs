@@ -197,7 +197,7 @@ impl BlockchainManager {
             difficulty: 1,
         };
 
-        let mut chain = self.chain.try_write().unwrap();
+        let mut chain = self.chain.try_write().expect("Failed to acquire write lock on blockchain");
         chain.push(genesis_block);
         info!("创世区块已创建");
     }
@@ -256,7 +256,7 @@ impl BlockchainManager {
         let transactions: Vec<Transaction> = pending.drain(..max_tx).collect();
 
         let chain = self.chain.read().await;
-        let previous_block = chain.last().unwrap();
+        let previous_block = chain.last().expect("Blockchain should have at least genesis block");
         let index = previous_block.index + 1;
 
         // 计算Merkle根
@@ -391,7 +391,7 @@ impl BlockchainManager {
             block
                 .timestamp
                 .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
+                .expect("Block timestamp should be after UNIX_EPOCH")
                 .as_secs(),
             block.previous_hash,
             block.merkle_root,
@@ -631,11 +631,13 @@ mod tests {
             gas_price: 0.001,
         };
 
-        let tx_id = manager.add_transaction(transaction).await.unwrap();
+        let tx_id = manager.add_transaction(transaction).await
+            .expect("Failed to add transaction");
         assert_eq!(tx_id, "tx-1");
 
         // 测试挖矿
-        let block = manager.mine_block().await.unwrap();
+        let block = manager.mine_block().await
+            .expect("Failed to mine block");
         assert_eq!(block.index, 1);
         assert!(!block.hash.is_empty());
 
@@ -665,14 +667,15 @@ mod tests {
             gas_limit: 100000,
         };
 
-        let contract_address = manager.deploy_contract(contract).await.unwrap();
+        let contract_address = manager.deploy_contract(contract).await
+            .expect("Failed to deploy smart contract");
         assert_eq!(contract_address, "contract-1");
 
         // 测试合约执行
         let result = manager
             .execute_contract("contract-1", "get", vec![])
             .await
-            .unwrap();
+            .expect("Failed to execute smart contract");
         assert!(result.success);
 
         // 测试区块链状态

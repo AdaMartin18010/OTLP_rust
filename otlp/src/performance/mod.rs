@@ -251,10 +251,10 @@ mod tests {
         let mut manager = PerformanceManager::new(config);
 
         // 初始化组件
-        manager.init_circuit_breaker().unwrap();
-        manager.init_memory_pool().await.unwrap();
-        manager.init_batch_processor().unwrap();
-        manager.init_connection_pool().unwrap();
+        manager.init_circuit_breaker().expect("Failed to initialize circuit breaker");
+        manager.init_memory_pool().await.expect("Failed to initialize memory pool");
+        manager.init_batch_processor().expect("Failed to initialize batch processor");
+        manager.init_connection_pool().expect("Failed to initialize connection pool");
 
         // 验证组件已初始化
         assert!(manager.get_circuit_breaker().is_some());

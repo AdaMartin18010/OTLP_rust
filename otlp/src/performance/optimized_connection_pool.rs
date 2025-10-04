@@ -451,13 +451,19 @@ where
     F: Fn() -> Result<T, ConnectionPoolError> + Send + Sync + 'static,
 {
     /// 获取连接引用
+    /// 
+    /// # Panics
+    /// 如果连接已被取出(在Drop时)则会panic
     pub fn get(&self) -> &T {
-        self.connection.as_ref().unwrap()
+        self.connection.as_ref().expect("Connection has been taken")
     }
 
     /// 获取连接可变引用
+    /// 
+    /// # Panics
+    /// 如果连接已被取出(在Drop时)则会panic
     pub fn get_mut(&mut self) -> &mut T {
-        self.connection.as_mut().unwrap()
+        self.connection.as_mut().expect("Connection has been taken")
     }
 
     /// 获取连接创建时间
@@ -526,17 +532,17 @@ mod tests {
             },
             config,
         )
-        .unwrap();
+        .expect("Failed to create connection pool");
 
         // 等待初始化完成
         tokio::time::sleep(Duration::from_millis(100)).await;
 
         // 获取连接
-        let conn1 = pool.acquire().await.unwrap();
+        let conn1 = pool.acquire().await.expect("Failed to acquire connection");
         assert!(conn1.get().starts_with("connection_"));
 
         // 获取第二个连接
-        let conn2 = pool.acquire().await.unwrap();
+        let conn2 = pool.acquire().await.expect("Failed to acquire second connection");
         assert!(conn2.get().starts_with("connection_"));
 
         // 释放连接
@@ -547,7 +553,7 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(10)).await;
 
         // 再次获取连接，应该重用
-        let conn3 = pool.acquire().await.unwrap();
+        let conn3 = pool.acquire().await.expect("Failed to acquire connection");
         assert!(conn3.get().starts_with("connection_"));
 
         let stats = pool.get_stats().await;
@@ -569,13 +575,14 @@ mod tests {
         };
 
         let pool =
-            OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config).unwrap();
+            OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config)
+                .expect("Failed to create connection pool");
 
         // 等待初始化完成
         tokio::time::sleep(Duration::from_millis(100)).await;
 
         // 获取连接
-        let conn = pool.acquire().await.unwrap();
+        let conn = pool.acquire().await.expect("Failed to acquire connection");
         drop(conn);
 
         // 等待连接过期
@@ -603,11 +610,12 @@ mod tests {
         };
 
         let pool =
-            OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config).unwrap();
+            OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config)
+                .expect("Failed to create connection pool");
 
         // 获取最大数量的连接
-        let conn1 = pool.acquire().await.unwrap();
-        let conn2 = pool.acquire().await.unwrap();
+        let conn1 = pool.acquire().await.expect("Failed to acquire connection 1");
+        let conn2 = pool.acquire().await.expect("Failed to acquire connection 2");
 
         // 尝试获取第三个连接应该失败
         let result = pool.acquire().await;
@@ -617,7 +625,7 @@ mod tests {
         drop(conn1);
 
         // 现在应该能够获取连接
-        let conn3 = pool.acquire().await.unwrap();
+        let conn3 = pool.acquire().await.expect("Failed to acquire connection after release");
         assert_eq!(conn3.get(), "test_connection");
 
         drop(conn2);
@@ -639,7 +647,7 @@ mod tests {
 
         let pool =
             OptimizedConnectionPool::new(|| Ok(String::from("concurrent_connection")), config)
-                .unwrap();
+                .expect("Failed to create connection pool for concurrent test");
 
         // 等待初始化完成
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -649,7 +657,8 @@ mod tests {
         for i in 0..20 {
             let pool_clone = pool.clone();
             let handle = tokio::spawn(async move {
-                let conn = pool_clone.acquire().await.unwrap();
+                let conn = pool_clone.acquire().await
+                    .expect("Failed to acquire connection in concurrent test");
                 // 模拟使用连接
                 tokio::time::sleep(Duration::from_millis(10)).await;
                 drop(conn);
@@ -660,7 +669,8 @@ mod tests {
 
         // 等待所有任务完成
         for handle in handles {
-            handle.await.unwrap();
+            handle.await
+                .expect("Concurrent task should complete successfully");
         }
 
         let stats = pool.get_stats().await;

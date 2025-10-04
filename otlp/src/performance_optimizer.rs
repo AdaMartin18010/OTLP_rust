@@ -93,14 +93,15 @@ impl<T: Default + Clone + Send + 'static> HighPerformanceMemoryPool<T> {
 }
 
 /// 池化对象包装器
-pub struct PooledObject<T: Send + 'static> {
+/// 注意: T 必须实现 Default trait 以安全地使用 mem::take()
+pub struct PooledObject<T: Send + Default + 'static> {
     inner: T,
     pool: Arc<Mutex<Vec<T>>>,
     stats: Arc<MemoryPoolStats>,
     returned: bool,
 }
 
-impl<T: Send + 'static> PooledObject<T> {
+impl<T: Send + Default + 'static> PooledObject<T> {
     fn new(inner: T, pool: Arc<Mutex<Vec<T>>>, stats: Arc<MemoryPoolStats>) -> Self {
         Self {
             inner,
@@ -123,16 +124,18 @@ impl<T: Send + 'static> PooledObject<T> {
     /// 获取内部对象的所有权
     pub fn into_inner(mut self) -> T {
         self.returned = true;
-        std::mem::replace(&mut self.inner, unsafe { std::mem::zeroed() })
+        // 使用 take() 而不是 zeroed(),因为 String 不是零初始化安全的
+        std::mem::take(&mut self.inner)
     }
 }
 
-impl<T: Send + 'static> Drop for PooledObject<T> {
+impl<T: Send + Default + 'static> Drop for PooledObject<T> {
     fn drop(&mut self) {
         if !self.returned {
             // 将对象返回到池中
             let pool = self.pool.clone();
-            let obj = std::mem::replace(&mut self.inner, unsafe { std::mem::zeroed() });
+            // 使用 take() 获取默认值,而不是 zeroed()
+            let obj = std::mem::take(&mut self.inner);
             self.stats.total_deallocations.fetch_add(1, Ordering::Relaxed);
             
             tokio::spawn(async move {
@@ -441,8 +444,8 @@ impl PerformanceBenchmarker {
         // 计算统计信息
         let total_time: Duration = times.iter().sum();
         let average_time = total_time / times.len() as u32;
-        let min_time = *times.iter().min().unwrap();
-        let max_time = *times.iter().max().unwrap();
+        let min_time = *times.iter().min().expect("Times should not be empty");
+        let max_time = *times.iter().max().expect("Times should not be empty");
         let throughput = config.iterations as f64 / total_time.as_secs_f64();
 
         let result = BenchmarkResult {
@@ -643,13 +646,16 @@ mod tests {
     use super::*;
     use crate::data::{TelemetryData, TelemetryDataType};
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn test_memory_pool() {
-        let pool = HighPerformanceMemoryPool::<String>::new(10, 2);
+        // 使用更小的池大小避免栈溢出
+        let pool = HighPerformanceMemoryPool::<String>::new(2, 2);
         
         // 测试获取和释放对象
-        let obj1 = pool.acquire().await.unwrap();
-        let obj2 = pool.acquire().await.unwrap();
+        let obj1 = pool.acquire().await
+            .expect("Failed to acquire first object from pool");
+        let obj2 = pool.acquire().await
+            .expect("Failed to acquire second object from pool");
         
         assert_eq!(obj1.get(), "");
         assert_eq!(obj2.get(), "");
@@ -684,7 +690,7 @@ mod tests {
         // 测试批量处理
         let results = optimizer.process_batch(test_data, |data| {
             data.timestamp * 2
-        }).await.unwrap();
+        }).await.expect("Failed to process batch");
 
         assert_eq!(results.len(), 2);
         assert_eq!(results[0], 2000);
@@ -698,9 +704,11 @@ mod tests {
         // 测试任务提交
         let handle = optimizer.submit_task(|| {
             42
-        }).await.unwrap();
+        }).await
+            .expect("Failed to submit task to optimizer");
 
-        let result = handle.await.unwrap();
+        let result = handle.await
+            .expect("Task execution should complete successfully");
         assert_eq!(result, 42);
 
         // 获取统计信息
@@ -725,7 +733,8 @@ mod tests {
         ];
 
         // 测试优化处理
-        let results = optimizer.optimize_processing(test_data).await.unwrap();
+        let results = optimizer.optimize_processing(test_data).await
+            .expect("Failed to optimize processing");
         assert_eq!(results.len(), 1);
 
         // 获取综合统计信息

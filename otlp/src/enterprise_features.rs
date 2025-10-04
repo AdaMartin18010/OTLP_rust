@@ -922,11 +922,11 @@ mod tests {
             },
         };
         
-        manager.create_tenant(tenant).await.unwrap();
+        manager.create_tenant(tenant).await.expect("Failed to create tenant");
         
         let retrieved_tenant = manager.get_tenant("test_tenant").await;
         assert!(retrieved_tenant.is_some());
-        assert_eq!(retrieved_tenant.unwrap().name, "Test Tenant");
+        assert_eq!(retrieved_tenant.expect("Tenant should exist").name, "Test Tenant");
     }
 
     #[tokio::test]
@@ -951,7 +951,7 @@ mod tests {
             updated_at: SystemTime::now(),
         };
         
-        manager.add_policy(policy).await.unwrap();
+        manager.add_policy(policy).await.expect("Failed to add data governance policy");
         
         let data_item = DataItem {
             id: "test_data".to_string(),
@@ -961,7 +961,7 @@ mod tests {
             classification: None,
         };
         
-        let actions = manager.evaluate_policies(&data_item).await.unwrap();
+        let actions = manager.evaluate_policies(&data_item).await.expect("Failed to evaluate policies");
         assert!(!actions.is_empty());
         assert!(matches!(actions[0], DataAction::Encrypt));
     }
@@ -995,9 +995,9 @@ mod tests {
             is_active: true,
         };
         
-        manager.register_framework(framework).await.unwrap();
+        manager.register_framework(framework).await.expect("Failed to register framework");
         
-        let assessment = manager.conduct_assessment("test_framework").await.unwrap();
+        let assessment = manager.conduct_assessment("test_framework").await.expect("Failed to conduct assessment");
         assert_eq!(assessment.overall_score, 100.0);
         assert_eq!(assessment.requirements_met, 1);
     }
@@ -1015,9 +1015,11 @@ mod tests {
             capabilities: vec!["processing".to_string()],
         };
         
-        manager.add_node(node).await.unwrap();
+        manager.add_node(node).await
+            .expect("Failed to add failover node");
         
-        let failover_required = manager.check_failover_required().await.unwrap();
+        let failover_required = manager.check_failover_required().await
+            .expect("Failed to check failover requirement");
         assert!(!failover_required);
         
         let stats = manager.get_stats();
@@ -1029,7 +1031,8 @@ mod tests {
     async fn test_comprehensive_enterprise_manager() {
         let manager = ComprehensiveEnterpriseManager::new();
         
-        manager.initialize().await.unwrap();
+        manager.initialize().await
+            .expect("Failed to initialize comprehensive enterprise manager");
         
         let request = EnterpriseRequest {
             id: "test_request".to_string(),
@@ -1039,7 +1042,8 @@ mod tests {
             user_id: Some("user1".to_string()),
         };
         
-        let response = manager.process_enterprise_request(request).await.unwrap();
+        let response = manager.process_enterprise_request(request).await
+            .expect("Failed to process enterprise request");
         assert!(response.success);
         assert_eq!(response.tenant_id, "default");
         

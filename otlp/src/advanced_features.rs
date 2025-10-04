@@ -751,13 +751,14 @@ mod tests {
         let cache = IntelligentCache::new(config);
 
         // 测试基本操作
-        cache.set("key1".to_string(), "value1".to_string(), None).await.unwrap();
+        cache.set("key1".to_string(), "value1".to_string(), None).await
+            .expect("Failed to set cache value");
         assert_eq!(cache.get(&"key1".to_string()).await, Some("value1".to_string()));
 
         // 测试异步计算
         let result = cache.get_or_compute("key2".to_string(), || async {
             Ok::<String, anyhow::Error>("computed_value".to_string())
-        }).await.unwrap();
+        }).await.expect("Failed to compute cache value");
         assert_eq!(result, "computed_value");
     }
 
@@ -809,7 +810,8 @@ mod tests {
 
         // 测试异常检测
         let features = vec![1.0, 2.0, 3.0];
-        let result = detector.detect_anomaly(&features, "statistical_model").await.unwrap();
+        let result = detector.detect_anomaly(&features, "statistical_model").await
+            .expect("Failed to detect anomaly");
         assert!(result.anomaly_score >= 0.0 && result.anomaly_score <= 1.0);
     }
 }

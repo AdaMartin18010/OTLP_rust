@@ -129,7 +129,7 @@ impl TupleCollectionOptimizer {
     /// 3. 更好的性能
     pub fn collect_to_tuple(&self, data: Vec<Result<i32, String>>) -> (Vec<i32>, Vec<String>) {
         let (ok_results, err_results): (Vec<_>, Vec<_>) = data.into_iter().partition(|r| r.is_ok());
-        let successful: Vec<i32> = ok_results.into_iter().map(|r| r.unwrap()).collect();
+        let successful: Vec<i32> = ok_results.into_iter().map(|r| r.expect("Partition ensures Ok values")).collect();
         let failed: Vec<String> = err_results.into_iter().map(|r| r.unwrap_err()).collect();
         (successful, failed)
     }
@@ -281,12 +281,12 @@ impl<T: Clone + Send + 'static> PooledObject<T> {
 
     /// 获取对象的引用
     pub fn get(&self) -> &T {
-        self.object.as_ref().unwrap()
+        self.object.as_ref().expect("PooledObject should always contain an object")
     }
 
     /// 获取对象的可变引用
     pub fn get_mut(&mut self) -> &mut T {
-        self.object.as_mut().unwrap()
+        self.object.as_mut().expect("PooledObject should always contain an object")
     }
 }
 
@@ -354,7 +354,9 @@ impl AsyncBatchProcessor {
             ));
         }
 
-        let results: Vec<R> = successful.into_iter().flat_map(|r| r.unwrap()).collect();
+        let results: Vec<R> = successful.into_iter()
+            .flat_map(|r| r.expect("Successful results should be Ok"))
+            .collect();
 
         Ok(results)
     }
@@ -374,7 +376,7 @@ mod tests {
             .await;
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 42);
+        assert_eq!(result.expect("Async closure should succeed"), 42);
     }
 
     #[test]
@@ -439,8 +441,8 @@ mod tests {
             })
             .await;
 
-        assert!(results.is_ok());
-        assert_eq!(results.unwrap(), vec![2, 4, 6, 8, 10]);
+        let results_vec = results.expect("Async collect should succeed");
+        assert_eq!(results_vec, vec![2, 4, 6, 8, 10]);
     }
 }
 
@@ -567,7 +569,8 @@ impl CacheOptimizer {
         // 简化的内存分配，实际应用中应该使用更安全的方法
         unsafe {
             let layout =
-                std::alloc::Layout::from_size_align(aligned_size, self.cache_alignment).unwrap();
+                std::alloc::Layout::from_size_align(aligned_size, self.cache_alignment)
+                    .expect("Cache alignment must be a power of two");
             let ptr = std::alloc::alloc(layout);
             if ptr.is_null() {
                 return Err(anyhow::anyhow!("内存分配失败"));
@@ -679,7 +682,8 @@ impl MemoryPoolOptimizer {
             } else {
                 // 简化的内存释放，实际应用中应该使用更安全的方法
                 unsafe {
-                    let layout = std::alloc::Layout::from_size_align(1024, 64).unwrap();
+                    let layout = std::alloc::Layout::from_size_align(1024, 64)
+                        .expect("Memory alignment must be valid (64 is a power of two)");
                     std::alloc::dealloc(ptr, layout);
                 }
             }
@@ -696,7 +700,8 @@ impl MemoryPoolOptimizer {
             for &ptr in pool.iter() {
                 // 简化的内存释放，实际应用中应该使用更安全的方法
                 unsafe {
-                    let layout = std::alloc::Layout::from_size_align(1024, 64).unwrap();
+                    let layout = std::alloc::Layout::from_size_align(1024, 64)
+                        .expect("Memory alignment must be valid (64 is a power of two)");
                     std::alloc::dealloc(ptr, layout);
                 }
             }

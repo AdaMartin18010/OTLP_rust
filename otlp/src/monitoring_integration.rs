@@ -1030,7 +1030,7 @@ mod tests {
         let collector = PrometheusCollector::new();
         
         // 测试指标收集
-        let metrics = collector.collect_metrics().await.unwrap();
+        let metrics = collector.collect_metrics().await.expect("Failed to collect Prometheus metrics");
         assert!(metrics.is_empty()); // 初始状态应该为空
         
         // 测试统计信息
@@ -1043,7 +1043,7 @@ mod tests {
         let manager = GrafanaDashboardManager::new();
         
         // 测试创建性能仪表板
-        let dashboard_id = manager.create_performance_dashboard().await.unwrap();
+        let dashboard_id = manager.create_performance_dashboard().await.expect("Failed to create Grafana dashboard");
         assert_eq!(dashboard_id, "performance_monitoring");
         
         // 测试获取仪表板
@@ -1072,7 +1072,8 @@ mod tests {
             is_enabled: true,
         };
         
-        manager.add_rule(rule).await.unwrap();
+        manager.add_rule(rule).await
+            .expect("Failed to add alert rule");
         
         // 测试告警触发
         let update = MetricUpdate {
@@ -1082,7 +1083,8 @@ mod tests {
             labels: HashMap::new(),
         };
         
-        manager.check_alerts(&update).await.unwrap();
+        manager.check_alerts(&update).await
+            .expect("Failed to check alerts");
         
         // 检查活跃告警
         let alerts = manager.get_active_alerts().await;
@@ -1094,7 +1096,8 @@ mod tests {
         let manager = ComprehensiveMonitoringManager::new();
         
         // 测试初始化
-        manager.initialize().await.unwrap();
+        manager.initialize().await
+            .expect("Failed to initialize comprehensive monitoring manager");
         
         // 测试获取Prometheus指标
         let metrics = manager.get_prometheus_metrics().await;

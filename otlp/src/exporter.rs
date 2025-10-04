@@ -295,7 +295,7 @@ impl OtlpExporter {
         if receiver_opt.is_none() {
             return;
         }
-        let mut rx = receiver_opt.take().unwrap();
+        let mut rx = receiver_opt.take().expect("Receiver should exist after None check");
 
         tokio::spawn(async move {
             loop {
@@ -342,7 +342,7 @@ impl OtlpExporter {
                     if !RetryUtils::should_retry(
                         attempt,
                         self.config.retry_config.max_retries,
-                        last_error.as_ref().unwrap(),
+                        last_error.as_ref().expect("Error should exist when checking retry"),
                     ) {
                         break;
                     }
@@ -363,7 +363,7 @@ impl OtlpExporter {
         }
 
         // 所有重试都失败了
-        let _error = last_error.unwrap();
+        let _error = last_error.expect("At least one error should have occurred after retries");
         Err(ExportError::Failed {
             reason: "max retry attempts reached".to_string(),
         }

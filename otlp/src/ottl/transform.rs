@@ -645,7 +645,8 @@ mod tests {
     #[tokio::test]
     async fn test_simple_transform() {
         let config = TransformConfig::new();
-        let transformer = OtlpTransform::new(config).unwrap();
+        let transformer = OtlpTransform::new(config)
+            .expect("Failed to create OTLP transformer");
 
         let trace_data = TraceData {
             trace_id: "12345678901234567890123456789012".to_string(),
@@ -665,14 +666,14 @@ mod tests {
             data_type: TelemetryDataType::Trace,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .expect("System time should be after UNIX_EPOCH")
                 .as_nanos() as u64,
             resource_attributes: HashMap::new(),
             scope_attributes: HashMap::new(),
             content: TelemetryContent::Trace(trace_data),
         };
 
-        let result = transformer.transform(vec![telemetry_data]).await.unwrap();
+        let result = transformer.transform(vec![telemetry_data]).await.expect("Failed to transform telemetry data");
         assert_eq!(result.stats.processed_count, 1);
         assert_eq!(result.stats.transformed_count, 1);
     }
@@ -685,7 +686,8 @@ mod tests {
             condition: Expression::Literal(Literal::Bool(false)),
         });
 
-        let transformer = OtlpTransform::new(config).unwrap();
+        let transformer = OtlpTransform::new(config)
+            .expect("Failed to create OTLP transformer for filtering test");
 
         let trace_data = TraceData {
             trace_id: "12345678901234567890123456789012".to_string(),
@@ -705,14 +707,15 @@ mod tests {
             data_type: TelemetryDataType::Trace,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .expect("System time should be after UNIX_EPOCH")
                 .as_nanos() as u64,
             resource_attributes: HashMap::new(),
             scope_attributes: HashMap::new(),
             content: TelemetryContent::Trace(trace_data),
         };
 
-        let result = transformer.transform(vec![telemetry_data]).await.unwrap();
+        let result = transformer.transform(vec![telemetry_data]).await
+            .expect("Failed to transform telemetry data");
         assert_eq!(result.stats.processed_count, 1);
         assert_eq!(result.stats.filtered_count, 1);
         assert_eq!(result.stats.transformed_count, 0);

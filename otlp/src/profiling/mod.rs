@@ -668,7 +668,7 @@ mod tests {
 
         // 启动后收集数据应该成功
         assert!(profiler.start().await.is_ok());
-        let data = profiler.collect_data().await.unwrap();
+        let data = profiler.collect_data().await.expect("Failed to collect profiler data");
         assert!(!data.is_empty());
     }
 }

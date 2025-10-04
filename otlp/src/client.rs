@@ -811,9 +811,9 @@ mod tests {
     #[tokio::test]
     async fn test_trace_builder() {
         let config = OtlpConfig::default();
-        let client = OtlpClient::new(config).await.unwrap();
+        let client = OtlpClient::new(config).await.expect("Failed to create OTLP client");
 
-        let trace_builder = client.send_trace("test-operation").await.unwrap();
+        let trace_builder = client.send_trace("test-operation").await.expect("Failed to create trace builder");
         let _result = trace_builder
             .with_attribute("service.name", "test-service")
             .with_numeric_attribute("duration", 100.0)
@@ -828,9 +828,9 @@ mod tests {
     #[tokio::test]
     async fn test_metric_builder() {
         let config = OtlpConfig::default();
-        let client = OtlpClient::new(config).await.unwrap();
+        let client = OtlpClient::new(config).await.expect("Failed to create OTLP client");
 
-        let metric_builder = client.send_metric("test-metric", 42.0).await.unwrap();
+        let metric_builder = client.send_metric("test-metric", 42.0).await.expect("Failed to create metric builder");
         let _result = metric_builder
             .with_label("environment", "test")
             .with_description("Test metric")
@@ -844,12 +844,12 @@ mod tests {
     #[tokio::test]
     async fn test_log_builder() {
         let config = OtlpConfig::default();
-        let client = OtlpClient::new(config).await.unwrap();
+        let client = OtlpClient::new(config).await.expect("Failed to create OTLP client");
 
         let log_builder = client
             .send_log("Test log message", LogSeverity::Info)
             .await
-            .unwrap();
+            .expect("Failed to create log builder");
         let _result = log_builder
             .with_attribute("logger", "test")
             .with_numeric_attribute("line", 42.0)

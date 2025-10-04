@@ -771,10 +771,10 @@ mod tests {
     #[tokio::test]
     async fn test_zero_knowledge_proof() {
         let manager = ZeroKnowledgeProofManager::new();
-        let proof = manager.generate_proof("statement", "witness").await.unwrap();
+        let proof = manager.generate_proof("statement", "witness").await.expect("Failed to generate ZK proof");
         assert_eq!(proof.statement, "statement");
         
-        let is_valid = manager.verify_proof(&proof).await.unwrap();
+        let is_valid = manager.verify_proof(&proof).await.expect("Failed to verify ZK proof");
         assert!(is_valid);
     }
 
@@ -782,10 +782,10 @@ mod tests {
     async fn test_homomorphic_encryption() {
         let manager = HomomorphicEncryptionManager::new();
         let data = b"test data";
-        let encrypted = manager.encrypt(data, "key").await.unwrap();
+        let encrypted = manager.encrypt(data, "key").await.expect("Failed to encrypt data");
         assert_eq!(encrypted.data, data);
         
-        let computed = manager.homomorphic_compute(&[encrypted], "add").await.unwrap();
+        let computed = manager.homomorphic_compute(&[encrypted], "add").await.expect("Failed to compute homomorphic operation");
         assert_eq!(computed.encryption_type, "homomorphic_computed");
     }
 
@@ -793,10 +793,12 @@ mod tests {
     async fn test_secure_multi_party_computation() {
         let manager = SecureMultiPartyComputationManager::new();
         let participants = vec!["alice".to_string(), "bob".to_string()];
-        let result = manager.execute_computation(&participants, "sum").await.unwrap();
+        let result = manager.execute_computation(&participants, "sum").await
+            .expect("Failed to execute multi-party computation");
         assert_eq!(result.participants, participants);
         
-        let is_valid = manager.verify_result(&result).await.unwrap();
+        let is_valid = manager.verify_result(&result).await
+            .expect("Failed to verify multi-party computation result");
         assert!(is_valid);
     }
 
@@ -804,10 +806,12 @@ mod tests {
     async fn test_differential_privacy() {
         let manager = DifferentialPrivacyManager::new();
         let data = b"private data";
-        let result = manager.apply_privacy(data, 1.0).await.unwrap();
+        let result = manager.apply_privacy(data, 1.0).await
+            .expect("Failed to apply differential privacy");
         assert_eq!(result.epsilon, 1.0);
         
-        let is_private = manager.verify_privacy(&result).await.unwrap();
+        let is_private = manager.verify_privacy(&result).await
+            .expect("Failed to verify privacy");
         assert!(is_private);
     }
 
@@ -825,7 +829,8 @@ mod tests {
             user_agent: Some("browser".to_string()),
         };
         
-        manager.log_event(&event).await.unwrap();
+        manager.log_event(&event).await
+            .expect("Failed to log audit event");
         
         let filter = AuditFilter {
             user_id: Some("user1".to_string()),
@@ -834,7 +839,8 @@ mod tests {
             end_time: None,
         };
         
-        let results = manager.query_audit_log(&filter).await.unwrap();
+        let results = manager.query_audit_log(&filter).await
+            .expect("Failed to query audit log");
         assert_eq!(results.len(), 1);
     }
 
@@ -864,7 +870,8 @@ mod tests {
             }),
         };
         
-        let threats = manager.detect_threat(&data).await.unwrap();
+        let threats = manager.detect_threat(&data).await
+            .expect("Failed to detect threats");
         assert_eq!(threats.len(), 1);
         assert_eq!(threats[0].threat_type, "anomaly");
     }

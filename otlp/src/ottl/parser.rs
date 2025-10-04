@@ -320,7 +320,10 @@ impl OttlParser {
 
                     while let Some(&next) = chars.peek() {
                         if next.is_ascii_digit() || next == '.' {
-                            number.push(chars.next().unwrap());
+                            // 安全：peek()已确认有值
+                            if let Some(ch) = chars.next() {
+                                number.push(ch);
+                            }
                         } else {
                             break;
                         }
@@ -339,7 +342,10 @@ impl OttlParser {
 
                     while let Some(&next) = chars.peek() {
                         if next.is_ascii_alphanumeric() || next == '_' {
-                            identifier.push(chars.next().unwrap());
+                            // 安全：peek()已确认有值
+                            if let Some(ch) = chars.next() {
+                                identifier.push(ch);
+                            }
                         } else {
                             break;
                         }

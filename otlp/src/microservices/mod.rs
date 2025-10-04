@@ -434,7 +434,7 @@ impl Retryer {
             }
         }
 
-        Err(last_error.unwrap())
+        Err(last_error.expect("At least one error should have occurred after retries"))
     }
 }
 

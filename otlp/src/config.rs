@@ -561,7 +561,7 @@ mod tests {
             .protocol(TransportProtocol::Http)
             .service("test-service", "1.0.0")
             .build()
-            .unwrap();
+            .expect("Failed to build OTLP config");
 
         assert_eq!(config.endpoint, "http://localhost:4317");
         assert_eq!(config.protocol, TransportProtocol::Http);

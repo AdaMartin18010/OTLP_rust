@@ -175,7 +175,7 @@ mod tests {
         let mut monitoring_system = MonitoringSystem::new(config);
 
         // 初始化监控系统
-        monitoring_system.initialize().unwrap();
+        monitoring_system.initialize().expect("Failed to initialize monitoring system");
 
         // 验证组件已初始化
         assert!(monitoring_system.get_metrics_collector().is_some());
@@ -193,7 +193,7 @@ mod tests {
         let mut monitoring_system = MonitoringSystem::new(config);
 
         // 初始化监控系统
-        monitoring_system.initialize().unwrap();
+        monitoring_system.initialize().expect("Failed to initialize monitoring system");
 
         // 验证组件未初始化
         assert!(monitoring_system.get_metrics_collector().is_none());

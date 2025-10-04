@@ -342,7 +342,8 @@ impl CacheOptimizationManager {
     /// 释放对齐的内存
     pub unsafe fn deallocate_aligned(&self, ptr: *mut u8, size: usize) {
         let aligned_size = (size + self.cache_alignment - 1) & !(self.cache_alignment - 1);
-        let layout = Layout::from_size_align(aligned_size, self.cache_alignment).unwrap();
+        let layout = Layout::from_size_align(aligned_size, self.cache_alignment)
+            .expect("Failed to create aligned memory layout");
         unsafe {
             dealloc(ptr, layout);
         }
@@ -723,7 +724,7 @@ mod tests {
         let results = optimizer.run_comprehensive_benchmark().await;
         assert!(results.is_ok());
 
-        let results = results.unwrap();
+        let results = results.expect("Benchmark should succeed");
         assert!(results.simd_result_count > 0);
         assert!(results.cache_metrics.data_size > 0);
     }

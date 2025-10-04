@@ -933,7 +933,7 @@ mod tests {
             },
         };
 
-        router.add_rule(rule).await.unwrap();
+        router.add_rule(rule).await.expect("Failed to add routing rule");
 
         // 创建测试请求
         let request = RouteRequest {
@@ -1007,7 +1007,7 @@ mod tests {
         // 测试故障注入
         let result = injector.inject_fault("test-service", "test-request").await;
         assert!(result.is_ok());
-        assert!(result.unwrap().is_some());
+        assert!(result.expect("Fault injection should succeed").is_some());
     }
 }
 

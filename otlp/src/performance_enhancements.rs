@@ -35,7 +35,7 @@ impl<T> AsyncGenerator<T> {
 
     /// 添加项目到生成器
     pub async fn push(&mut self, item: T) {
-        let _permit = self.semaphore.acquire().await.unwrap();
+        let _permit = self.semaphore.acquire().await.expect("Failed to acquire semaphore permit for push");
         self.items.push_back(item);
     }
 
@@ -223,7 +223,7 @@ impl HighPerformanceExecutor {
         Fut: Future<Output = Result<R>> + Send + 'static,
         R: Send + 'static,
     {
-        let _permit = self.semaphore.acquire().await.unwrap();
+        let _permit = self.semaphore.acquire().await.expect("Failed to acquire semaphore permit for task execution");
         let start_time = Instant::now();
 
         // 更新指标
@@ -421,12 +421,12 @@ impl<T: Send + Sync + 'static> PooledObject<T> {
 
     /// 获取对象的引用
     pub fn get(&self) -> &T {
-        self.object.as_ref().unwrap()
+        self.object.as_ref().expect("PooledObject should always contain an object")
     }
 
     /// 获取对象的可变引用
     pub fn get_mut(&mut self) -> &mut T {
-        self.object.as_mut().unwrap()
+        self.object.as_mut().expect("PooledObject should always contain an object")
     }
 }
 
@@ -482,16 +482,20 @@ mod tests {
         let processor = HighPerformanceBatchProcessor::new(3, Duration::from_millis(100), 10);
 
         for i in 0..5 {
-            processor.add_item(i).await.unwrap();
+            processor.add_item(i).await
+                .expect("Failed to add item to batch processor");
         }
 
         let batch = processor.get_next_batch().await;
         assert!(batch.is_some());
-        assert_eq!(batch.unwrap().len(), 3);
+        let batch_vec = batch.expect("Batch should be present");
+        assert_eq!(batch_vec.len(), 3);
 
-        let remaining = processor.flush().await.unwrap();
+        let remaining = processor.flush().await
+            .expect("Failed to flush batch processor");
         assert!(remaining.is_some());
-        assert_eq!(remaining.unwrap().len(), 2);
+        let remaining_vec = remaining.expect("Remaining items should be present");
+        assert_eq!(remaining_vec.len(), 2);
     }
 
     #[tokio::test]
@@ -502,8 +506,8 @@ mod tests {
             .execute(|| async { Ok::<i32, anyhow::Error>(42) })
             .await;
 
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 42);
+        let value = result.expect("Executor should return successful result");
+        assert_eq!(value, 42);
 
         let metrics = executor.get_metrics();
         assert_eq!(metrics.total_tasks, 1);

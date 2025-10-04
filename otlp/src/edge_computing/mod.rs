@@ -400,8 +400,8 @@ impl EdgeComputingManager {
                 // 选择资源最充足的节点
                 candidates
                     .iter()
-                    .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-                    .unwrap()
+                    .max_by(|a, b| a.1.partial_cmp(&b.1).expect("Failed to compare resource scores"))
+                    .expect("Candidates list should not be empty")
                     .0
                     .clone()
             }
@@ -409,8 +409,8 @@ impl EdgeComputingManager {
                 // 选择延迟最低的节点
                 candidates
                     .iter()
-                    .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-                    .unwrap()
+                    .min_by(|a, b| a.1.partial_cmp(&b.1).expect("Failed to compare latency scores"))
+                    .expect("Candidates list should not be empty")
                     .0
                     .clone()
             }
@@ -764,7 +764,7 @@ mod tests {
             created_at: SystemTime::now(),
         };
 
-        let task_id = manager.submit_task(task).await.unwrap();
+        let task_id = manager.submit_task(task).await.expect("Failed to submit edge task");
         assert_eq!(task_id, "task-1");
 
         // 检查系统状态

@@ -411,7 +411,7 @@ mod tests {
             resource_attributes: HashMap::new(),
         };
 
-        let result = processor.process_single_item(&item).unwrap();
+        let result = processor.process_single_item(&item).expect("Failed to process single item");
         assert_eq!(result.timestamp, 1234567890);
         assert_eq!(result.value, 42.0 * 42.0); // 平方运算
         assert!(!result.attributes.is_empty());
@@ -434,7 +434,7 @@ mod tests {
             })
             .collect();
 
-        let results = processor.process_batch(&items).unwrap();
+        let results = processor.process_batch(&items).expect("Failed to process batch");
         assert_eq!(results.len(), 10);
 
         for (i, result) in results.iter().enumerate() {

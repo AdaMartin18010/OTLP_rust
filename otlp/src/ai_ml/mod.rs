@@ -544,7 +544,7 @@ mod tests {
         let result = analyzer
             .detect_anomaly(&features, "test_model")
             .await
-            .unwrap();
+            .expect("Failed to detect anomaly");
         assert!(result.is_anomaly);
     }
 
@@ -557,7 +557,7 @@ mod tests {
         metrics.insert("cpu_usage".to_string(), 95.0);
         metrics.insert("memory_usage".to_string(), 90.0);
 
-        let alert = analyzer.generate_smart_alert(&metrics).await.unwrap();
+        let alert = analyzer.generate_smart_alert(&metrics).await.expect("Failed to generate smart alert");
         assert!(alert.is_some());
     }
 }

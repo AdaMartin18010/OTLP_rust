@@ -467,7 +467,8 @@ mod tests {
 
         // 添加数据
         for i in 0..5 {
-            batch_processor.add_data(format!("data-{}", i)).await.unwrap();
+            batch_processor.add_data(format!("data-{}", i)).await
+                .expect("Failed to add data to batch processor");
         }
 
         // 等待处理完成

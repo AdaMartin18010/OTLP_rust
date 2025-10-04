@@ -336,7 +336,7 @@ mod tests {
             .with_endpoint("http://localhost:4317")
             .with_protocol(TransportProtocol::Grpc);
 
-        let transport = GrpcTransport::new(config).await.unwrap();
+        let transport = GrpcTransport::new(config).await.expect("Failed to create GRPC transport");
         pool.add_transport(Box::new(transport));
 
         assert!(pool.get_next().is_some());

@@ -388,7 +388,7 @@ mod tests {
     async fn test_simple_operations() {
         let client = SimpleOtlpClient::new("http://localhost:4317")
             .await
-            .unwrap();
+            .expect("Failed to create simple OTLP client");
 
         // 测试追踪
         let result = client
@@ -411,7 +411,7 @@ mod tests {
     async fn test_batch_operations() {
         let client = SimpleOtlpClient::new("http://localhost:4317")
             .await
-            .unwrap();
+            .expect("Failed to create simple OTLP client");
 
         let operations = vec![
             SimpleOperation::Trace {

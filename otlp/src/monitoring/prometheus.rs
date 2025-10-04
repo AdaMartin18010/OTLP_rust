@@ -268,13 +268,13 @@ mod tests {
     
     #[tokio::test]
     async fn test_prometheus_monitor_creation() {
-        let monitor = PrometheusMonitor::new().unwrap();
+        let monitor = PrometheusMonitor::new().expect("Failed to create Prometheus monitor");
         assert!(monitor.registry().gather().is_empty());
     }
     
     #[tokio::test]
     async fn test_metrics_recording() {
-        let monitor = PrometheusMonitor::new().unwrap();
+        let monitor = PrometheusMonitor::new().expect("Failed to create Prometheus monitor");
         
         // 记录请求指标
         monitor.record_request("GET", "/health", "200", 0.1).await;
@@ -290,9 +290,12 @@ mod tests {
         
         // 验证指标已记录
         let metrics = monitor.metrics().read().await;
-        assert_eq!(metrics.requests_total.get_metric_with_label_values(&["GET", "/health", "200"]).unwrap().get(), 1.0);
-        assert_eq!(metrics.data_processed_total.get_metric_with_label_values(&["trace", "success"]).unwrap().get(), 100.0);
-        assert_eq!(metrics.transport_requests_total.get_metric_with_label_values(&["grpc", "localhost:4317", "success"]).unwrap().get(), 1.0);
+        assert_eq!(metrics.requests_total.get_metric_with_label_values(&["GET", "/health", "200"])
+            .expect("Failed to get requests metric").get(), 1.0);
+        assert_eq!(metrics.data_processed_total.get_metric_with_label_values(&["trace", "success"])
+            .expect("Failed to get data processed metric").get(), 100.0);
+        assert_eq!(metrics.transport_requests_total.get_metric_with_label_values(&["grpc", "localhost:4317", "success"])
+            .expect("Failed to get transport requests metric").get(), 1.0);
         assert_eq!(metrics.memory_usage.get(), 1024.0 * 1024.0);
         assert_eq!(metrics.cpu_usage.get(), 50.0);
         assert_eq!(metrics.active_connections.get(), 10.0);

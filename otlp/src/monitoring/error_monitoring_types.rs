@@ -481,9 +481,9 @@ impl ErrorTrendAnalyzer {
         let error_rate = if data.len() > 1 {
             let duration = data
                 .back()
-                .unwrap()
+                .expect("Data should not be empty when len > 1")
                 .timestamp
-                .duration_since(data.front().unwrap().timestamp)
+                .duration_since(data.front().expect("Data should not be empty when len > 1").timestamp)
                 .unwrap_or(Duration::from_secs(1));
             total_errors as f64 / duration.as_secs() as f64
         } else {

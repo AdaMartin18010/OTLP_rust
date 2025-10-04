@@ -556,12 +556,12 @@ mod tests {
             },
             config,
         )
-        .unwrap();
+        .expect("Failed to create batch processor");
 
         // 添加项
         for i in 0..15 {
             let item = BatchItem::normal_priority(format!("item_{}", i), 100);
-            processor.add_item(item).await.unwrap();
+            processor.add_item(item).await.expect("Failed to add item to processor");
         }
 
         // 等待处理完成
@@ -614,22 +614,22 @@ mod tests {
             },
             config,
         )
-        .unwrap();
+        .expect("Failed to create batch processor for priority test");
 
         // 添加不同优先级的项
         for i in 0..10 {
             processor
                 .add_high_priority(format!("high_{}", i), 50)
                 .await
-                .unwrap();
+                .expect("Failed to add high priority item");
             processor
                 .add_normal_priority(format!("normal_{}", i), 50)
                 .await
-                .unwrap();
+                .expect("Failed to add normal priority item");
             processor
                 .add_low_priority(format!("low_{}", i), 50)
                 .await
-                .unwrap();
+                .expect("Failed to add low priority item");
         }
 
         // 等待处理完成
@@ -664,7 +664,7 @@ mod tests {
             },
             config,
         )
-        .unwrap();
+        .expect("Failed to create batch processor for memory limit test");
 
         // 添加大项，应该触发内存限制
         let result = processor
@@ -709,7 +709,7 @@ mod tests {
             },
             config,
         )
-        .unwrap();
+        .expect("Failed to create batch processor for concurrent stress test");
 
         // 并发添加项
         let mut handles = Vec::new();
@@ -717,14 +717,16 @@ mod tests {
             let processor_clone = processor.clone();
             let handle = tokio::spawn(async move {
                 let item = BatchItem::normal_priority(format!("item_{}", i), 100);
-                processor_clone.add_item(item).await.unwrap();
+                processor_clone.add_item(item).await
+                    .expect("Failed to add item in concurrent stress test");
             });
             handles.push(handle);
         }
 
         // 等待所有任务完成
         for handle in handles {
-            handle.await.unwrap();
+            handle.await
+                .expect("Concurrent task should complete successfully in stress test");
         }
 
         // 等待处理完成

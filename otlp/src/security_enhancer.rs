@@ -430,7 +430,8 @@ impl AuthenticationManager {
 
     /// 生成令牌
     fn generate_token(&self) -> String {
-        format!("token_{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs())
+        format!("token_{}", SystemTime::now().duration_since(UNIX_EPOCH)
+            .expect("System time should be after UNIX_EPOCH").as_secs())
     }
 
     /// 检查角色权限
@@ -734,7 +735,8 @@ impl ComprehensiveSecurityManager {
         let auth_result = self.auth_manager.validate_token(&request.token).await?;
         if !auth_result.valid {
             self.audit_logger.log(AuditLog {
-                id: format!("audit_{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
+                id: format!("audit_{}", SystemTime::now().duration_since(UNIX_EPOCH)
+                    .expect("System time should be after UNIX_EPOCH").as_secs()),
                 timestamp: SystemTime::now(),
                 user_id: None,
                 action: "access_denied".to_string(),
@@ -755,7 +757,7 @@ impl ComprehensiveSecurityManager {
         }
 
         // 检查权限
-        let user_id = auth_result.user_id.clone().unwrap();
+        let user_id = auth_result.user_id.clone().expect("Authenticated user should have user_id");
         let has_permission = self.auth_manager.check_permission(
             &user_id,
             &request.resource,
@@ -764,7 +766,8 @@ impl ComprehensiveSecurityManager {
 
         if !has_permission {
             self.audit_logger.log(AuditLog {
-                id: format!("audit_{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
+                id: format!("audit_{}", SystemTime::now().duration_since(UNIX_EPOCH)
+                    .expect("System time should be after UNIX_EPOCH").as_secs()),
                 timestamp: SystemTime::now(),
                 user_id: auth_result.user_id.clone(),
                 action: "permission_denied".to_string(),
@@ -793,7 +796,8 @@ impl ComprehensiveSecurityManager {
 
         // 记录成功访问
         self.audit_logger.log(AuditLog {
-            id: format!("audit_{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
+            id: format!("audit_{}", SystemTime::now().duration_since(UNIX_EPOCH)
+                .expect("System time should be after UNIX_EPOCH").as_secs()),
             timestamp: SystemTime::now(),
             user_id: auth_result.user_id.clone(),
             action: request.action.clone(),
@@ -879,8 +883,10 @@ mod tests {
         let manager = EncryptionManager::new();
         
         let test_data = b"Hello, World!";
-        let encrypted = manager.encrypt(test_data, "aes256gcm").await.unwrap();
-        let decrypted = manager.decrypt(&encrypted).await.unwrap();
+        let encrypted = manager.encrypt(test_data, "aes256gcm").await
+            .expect("Failed to encrypt data");
+        let decrypted = manager.decrypt(&encrypted).await
+            .expect("Failed to decrypt data");
         
         assert_eq!(test_data, decrypted.as_slice());
     }
@@ -890,7 +896,8 @@ mod tests {
         let manager = AuthenticationManager::new();
         
         // 测试登录（用户不存在）
-        let result = manager.login("testuser", "password").await.unwrap();
+        let result = manager.login("testuser", "password").await
+            .expect("Failed to attempt login");
         assert!(!result.success);
         assert_eq!(result.message, "用户不存在");
     }
@@ -911,7 +918,8 @@ mod tests {
             user_agent: Some("test-agent".to_string()),
         };
         
-        logger.log(log).await.unwrap();
+        logger.log(log).await
+            .expect("Failed to log audit entry");
         
         let stats = logger.get_stats();
         assert_eq!(stats.total_logs, 1);
@@ -932,7 +940,8 @@ mod tests {
             user_agent: Some("test-agent".to_string()),
         };
         
-        let response = manager.process_secure_request(request).await.unwrap();
+        let response = manager.process_secure_request(request).await
+            .expect("Failed to process secure request");
         assert!(!response.success);
         assert_eq!(response.message, "认证失败");
     }

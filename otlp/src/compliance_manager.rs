@@ -745,7 +745,7 @@ mod tests {
             consent_timestamp: 1234567890,
         };
         
-        manager.register_data_subject(subject).await.unwrap();
+        manager.register_data_subject(subject).await.expect("Failed to register data subject");
         
         let request = DataSubjectRequest {
             request_id: "req1".to_string(),
@@ -755,7 +755,7 @@ mod tests {
             timestamp: 1234567890,
         };
         
-        let response = manager.handle_data_subject_request(request).await.unwrap();
+        let response = manager.handle_data_subject_request(request).await.expect("Failed to handle data subject request");
         assert_eq!(response.status, "completed");
     }
 
@@ -770,9 +770,9 @@ mod tests {
             timestamp: 1234567890,
         };
         
-        manager.record_financial_data(record).await.unwrap();
+        manager.record_financial_data(record).await.expect("Failed to record financial data");
         
-        let report = manager.generate_compliance_report().await.unwrap();
+        let report = manager.generate_compliance_report().await.expect("Failed to generate compliance report");
         assert_eq!(report.overall_status, "compliant");
     }
 
@@ -787,7 +787,8 @@ mod tests {
             timestamp: 1234567890,
         };
         
-        manager.record_phi_data(record).await.unwrap();
+        manager.record_phi_data(record).await
+            .expect("Failed to record PHI data");
         
         let assessment = RiskAssessment {
             assessment_id: "assess1".to_string(),
@@ -796,7 +797,8 @@ mod tests {
             timestamp: 1234567890,
         };
         
-        let result = manager.perform_risk_assessment(assessment).await.unwrap();
+        let result = manager.perform_risk_assessment(assessment).await
+            .expect("Failed to perform risk assessment");
         assert_eq!(result.risk_level, "low");
     }
 
@@ -811,7 +813,8 @@ mod tests {
             timestamp: 1234567890,
         };
         
-        manager.process_card_data(data).await.unwrap();
+        manager.process_card_data(data).await
+            .expect("Failed to process card data");
         
         let test = SecurityTest {
             test_id: "test1".to_string(),
@@ -820,7 +823,8 @@ mod tests {
             timestamp: 1234567890,
         };
         
-        let result = manager.execute_security_test(test).await.unwrap();
+        let result = manager.execute_security_test(test).await
+            .expect("Failed to execute security test");
         assert_eq!(result.status, "passed");
     }
 }

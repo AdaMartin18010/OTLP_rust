@@ -280,7 +280,7 @@ impl BenchmarkRunner {
         let mut iteration = 0;
 
         while test_start.elapsed() < self.config.duration {
-            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let permit = semaphore.clone().acquire_owned().await.expect("Failed to acquire semaphore permit for benchmark");
             let iteration_clone = iteration;
             let latencies = latencies.clone();
             let errors = errors.clone();
@@ -334,7 +334,7 @@ impl BenchmarkRunner {
         ));
 
         for iteration in 0..self.config.iterations {
-            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let permit = semaphore.clone().acquire_owned().await.expect("Failed to acquire semaphore permit for benchmark iteration");
             let latencies = latencies.clone();
             let errors = errors.clone();
             let iterations_completed = iterations_completed.clone();
