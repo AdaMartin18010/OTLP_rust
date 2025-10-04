@@ -163,7 +163,7 @@ cargo update
 
 使用以下格式编写提交信息：
 
-```
+```text
 <type>: <description>
 
 [optional body]
@@ -183,7 +183,7 @@ cargo update
 
 #### 示例
 
-```
+```text
 feat: 添加零拷贝数据处理功能
 
 - 实现ZeroCopyProcessor
@@ -314,24 +314,24 @@ pub struct HighPerformanceProcessor {
 ### 2. 用户文档
 
 ```markdown
-## 功能使用指南
+    ## 功能使用指南
 
-### 基本使用
+    ### 基本使用
 
-```rust
-use otlp::OtlpClient;
+    ```rust
+    use otlp::OtlpClient;
 
-let client = OtlpClient::new()
-    .with_endpoint("http://localhost:4317")
-    .build()?;
-```
+    let client = OtlpClient::new()
+        .with_endpoint("http://localhost:4317")
+        .build()?;
+    ```
 
-### 配置选项
+    ### 配置选项
 
-| 选项 | 类型 | 默认值 | 描述 |
-|------|------|--------|------|
-| endpoint | String | - | OTLP端点地址 |
-| timeout | Duration | 30s | 请求超时时间 |
+    | 选项 | 类型 | 默认值 | 描述 |
+    |------|------|--------|------|
+    | endpoint | String | - | OTLP端点地址 |
+    | timeout | Duration | 30s | 请求超时时间 |
 
 ```
 
@@ -390,33 +390,33 @@ pub async fn send_telemetry_data(&self, data: TelemetryData) -> Result<()> {
 ### 3. 问题模板
 
 ```markdown
-## 问题描述
-[详细描述遇到的问题]
+    ## 问题描述
+    [详细描述遇到的问题]
 
-## 重现步骤
-1. 步骤1
-2. 步骤2
-3. 步骤3
+    ## 重现步骤
+    1. 步骤1
+    2. 步骤2
+    3. 步骤3
 
-## 预期行为
-[描述预期的行为]
+    ## 预期行为
+    [描述预期的行为]
 
-## 实际行为
-[描述实际发生的行为]
+    ## 实际行为
+    [描述实际发生的行为]
 
-## 环境信息
-- 操作系统: [例如: Ubuntu 20.04]
-- Rust版本: [例如: 1.90.0]
-- 项目版本: [例如: 1.0.0]
+    ## 环境信息
+    - 操作系统: [例如: Ubuntu 20.04]
+    - Rust版本: [例如: 1.90.0]
+    - 项目版本: [例如: 1.0.0]
 
-## 代码示例
-```rust
-// 相关的代码示例
-```
+    ## 代码示例
+    ```rust
+    // 相关的代码示例
+    ```
 
-## 附加信息
+    ## 附加信息
 
-[任何其他相关信息]
+    [任何其他相关信息]
 
 ```
 
