@@ -71,11 +71,13 @@
 ### 错误消息改进示例
 
 **Before**:
+
 ```rust
 pool.acquire().await.unwrap()
 ```
 
 **After**:
+
 ```rust
 pool.acquire().await
     .expect("Failed to acquire first object in full test")
@@ -84,6 +86,7 @@ pool.acquire().await
 ### 编译错误修复
 
 发现并修复了一个错误类型名称问题:
+
 - 错误: `MetricsCollectorError::InvalidValue`
 - 正确: `MetricsCollectorError::InvalidMetricValue`
 
@@ -150,4 +153,3 @@ pool.acquire().await
 **状态**: ✅ 进展顺利！
 
 **🎊 已经完成了10.5%的unwrap替换！**
-
