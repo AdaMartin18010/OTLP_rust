@@ -38,7 +38,7 @@ crossbeam = { workspace = true }
 dashmap = "6.1"
 
 # 压缩算法
-flate2 = "1.0"
+flate2 = "1.1"
 brotli = "8.0.2"
 zstd = "0.13"
 lz4_flex = "0.11"
