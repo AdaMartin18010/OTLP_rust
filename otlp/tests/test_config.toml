@@ -1,68 +1,160 @@
-# OTLP 测试配置文件
+# OTLP测试配置文件
 
-[test]
-# 测试超时时间（秒）
-timeout = 30
+[test_settings]
+# 测试超时设置
+timeout_seconds = 30
+integration_timeout_seconds = 60
+performance_timeout_seconds = 300
 
-# 测试重试次数
-retry_count = 3
+# 并发测试设置
+max_concurrent_tests = 10
+max_concurrent_operations = 100
 
-# 测试数据大小
-batch_size = 100
-large_batch_size = 10000
-
-# 性能测试配置
+# 性能测试设置
 [performance]
-# 并发测试线程数
-concurrent_threads = 10
+# 延迟测试
+latency_test_iterations = 100
+max_acceptable_latency_ms = 10
+max_acceptable_latency_p99_ms = 50
 
-# 性能测试持续时间（秒）
-duration = 60
+# 吞吐量测试
+throughput_test_operations = 1000
+min_acceptable_throughput_ops_per_sec = 100
 
-# 内存测试数据大小
-memory_test_size = 100000
+# 内存测试
+memory_test_sizes = [1024, 10240, 102400, 1024000]  # 1KB, 10KB, 100KB, 1MB
+max_memory_usage_mb = 100
 
-# Mock服务器配置
-[mock_server]
-# 服务器端口范围
-port_range = "4317-4320"
+# 并发测试
+concurrent_test_tasks = 50
+min_concurrent_throughput_ops_per_sec = 10
 
-# 服务器启动超时（秒）
-startup_timeout = 5
+# 压力测试
+stress_test_duration_seconds = 5
+min_stress_operations = 100
+min_stress_throughput_ops_per_sec = 20
 
-# 服务器响应延迟（毫秒）
-response_delay = 100
+# 可扩展性测试
+scalability_test_scales = [1, 5, 10, 20, 50]
 
-# 测试数据配置
-[test_data]
-# 默认消息大小
-default_message_size = 1024
+# 集成测试设置
+[integration]
+# 服务器设置
+mock_server_port = 8080
+mock_server_timeout_ms = 5000
 
-# 大消息大小
-large_message_size = 10240
+# 客户端设置
+client_timeout_ms = 5000
+client_retry_attempts = 3
+client_retry_delay_ms = 100
 
-# 特殊字符测试
-special_characters = true
+# 数据设置
+test_data_sizes = [1024, 10240, 102400]  # 1KB, 10KB, 100KB
+test_batch_sizes = [1, 10, 100]
 
-# 多语言测试
-multilingual = true
+# 端到端测试设置
+[e2e]
+# 数据采集设置
+collector_batch_size = 100
+collector_flush_interval_ms = 100
 
-# 日志级别测试
-log_levels = ["debug", "info", "warn", "error", "fatal"]
+# 处理器设置
+processor_batch_size = 50
+processor_flush_interval_ms = 50
 
-# 网络测试配置
-[network]
-# 连接超时（秒）
-connect_timeout = 5
+# 导出器设置
+exporter_timeout_ms = 5000
+exporter_retry_attempts = 3
 
-# 读取超时（秒）
-read_timeout = 10
+# 测试数据设置
+trace_count = 1000
+metric_count = 500
+log_count = 200
 
-# 写入超时（秒）
-write_timeout = 10
+# 性能基准设置
+[benchmarks]
+# 基准测试迭代次数
+benchmark_iterations = 1000
+benchmark_warmup_iterations = 100
 
-# 重试间隔（秒）
-retry_interval = 1
+# 基准测试数据大小
+benchmark_data_sizes = [1024, 10240, 102400, 1024000]
 
-# 最大重试次数
-max_retries = 3
+# 基准测试并发级别
+benchmark_concurrent_levels = [1, 5, 10, 20, 50, 100]
+
+# 基准测试报告设置
+benchmark_report_format = "html"
+benchmark_save_baseline = true
+benchmark_compare_baseline = true
+
+# 测试环境设置
+[environment]
+# 测试环境类型
+test_environment = "local"  # local, ci, staging, production
+
+# 测试数据目录
+test_data_dir = "./test_data"
+
+# 测试结果目录
+test_results_dir = "./test_results"
+
+# 测试日志级别
+log_level = "info"  # debug, info, warn, error
+
+# 测试报告设置
+[reporting]
+# 测试报告格式
+report_format = "html"  # html, json, xml
+
+# 测试报告输出目录
+report_output_dir = "./test_reports"
+
+# 测试覆盖率设置
+coverage_enabled = true
+coverage_threshold = 80.0
+coverage_report_format = "html"
+
+# 性能报告设置
+performance_report_enabled = true
+performance_report_format = "html"
+performance_baseline_file = "./performance_baseline.json"
+
+# 测试通知设置
+[notifications]
+# 测试失败通知
+notify_on_failure = true
+notify_email = "test-team@example.com"
+
+# 性能回归通知
+notify_on_performance_regression = true
+performance_regression_threshold = 0.1  # 10% regression threshold
+
+# 测试数据库设置
+[database]
+# 测试数据库类型
+db_type = "sqlite"  # sqlite, postgresql, mysql
+
+# 测试数据库连接
+db_url = "sqlite://test.db"
+db_pool_size = 10
+db_timeout_ms = 5000
+
+# 测试数据清理
+cleanup_after_test = true
+cleanup_interval_hours = 24
+
+# 测试安全设置
+[security]
+# 测试数据加密
+encrypt_test_data = false
+encryption_key = ""
+
+# 测试访问控制
+require_authentication = false
+test_user = "test"
+test_password = "test"
+
+# 测试审计日志
+audit_log_enabled = true
+audit_log_level = "info"

@@ -3,12 +3,11 @@
 //! 展示如何使用 OTLP Rust 的弹性机制来处理各种异常情况。
 
 use otlp::resilience::{
-    CircuitBreakerConfig, DegradationStrategy, GracefulDegradationConfig, RetryConfig,
-    TimeoutConfig, TriggerCondition,
+    CircuitBreakerConfig, RetryConfig, RetryStrategy, TimeoutConfig,
 };
-use otlp::{OtlpError, ResilienceConfig, ResilienceError, ResilienceManager, Result};
+use otlp::{ResilienceConfig, ResilienceManager, Result};
 use std::time::Duration;
-//use anyhow::anyhow;
+use anyhow;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -43,18 +42,17 @@ async fn basic_resilience_example() -> Result<()> {
     println!("------------------------");
 
     // 使用默认配置创建弹性管理器
-    let config = ResilienceConfig::default();
-    let manager = ResilienceManager::new(config);
+    let _config = ResilienceConfig::default();
+    let manager = ResilienceManager::new();
 
-    // 执行一个简单的操作
-    let result = manager
-        .execute_with_resilience("basic_operation", || {
-            Box::pin(async move {
-                println!("  执行基本操作...");
-                // 模拟一些工作
-                tokio::time::sleep(Duration::from_millis(100)).await;
-                Ok::<String, anyhow::Error>("操作成功".to_string())
-            })
+    // 使用断路器直接执行操作
+    let breaker = manager.get_or_create_circuit_breaker("basic_operation", CircuitBreakerConfig::default()).await;
+    let result = breaker
+        .execute(async {
+            println!("  执行基本操作...");
+            // 模拟一些工作
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            Ok::<String, anyhow::Error>("操作成功".to_string())
         })
         .await;
 
@@ -72,37 +70,36 @@ async fn custom_retry_example() -> Result<()> {
     println!("---------------------------");
 
     // 创建自定义重试配置
-    let config = ResilienceConfig {
+    let _config = ResilienceConfig {
         retry: RetryConfig {
             max_attempts: 5,
-            base_delay: Duration::from_millis(100),
-            max_delay: Duration::from_secs(2),
-            backoff_multiplier: 2.0,
-            jitter: true,
-            retryable_errors: vec![
-                "timeout".to_string(),
-                "connection".to_string(),
-                "temporary".to_string(),
-            ],
+            strategy: RetryStrategy::Exponential {
+                initial_interval: Duration::from_millis(100),
+                max_interval: Duration::from_secs(2),
+                multiplier: 2.0,
+            },
+            total_timeout: Some(Duration::from_secs(10)),
+            health_check: false,
         },
         ..Default::default()
     };
 
-    let manager = ResilienceManager::new(config);
+    let manager = ResilienceManager::new();
 
     // 模拟一个会失败几次的操作
     let attempt = 0;
-    let result = manager
-        .execute_with_resilience("retry_operation", move || {
+    let retrier = manager.get_or_create_retrier("retry_operation", RetryConfig::default()).await;
+    let result = retrier
+        .execute(move || {
             let mut attempt = attempt;
             Box::pin(async move {
                 attempt += 1;
                 println!("  尝试第 {} 次...", attempt);
 
                 if attempt < 3 {
-                    Err(anyhow::anyhow!("临时错误 - 尝试 {}", attempt))
+                    Err(format!("临时错误 - 尝试 {}", attempt))
                 } else {
-                    Ok::<String, anyhow::Error>(format!("重试成功，共尝试 {} 次", attempt))
+                    Ok(format!("重试成功，共尝试 {} 次", attempt))
                 }
             })
         })
@@ -122,33 +119,31 @@ async fn circuit_breaker_example() -> Result<()> {
     println!("---------------------");
 
     // 创建熔断器配置
-    let config = ResilienceConfig {
+    let _config = ResilienceConfig {
         circuit_breaker: CircuitBreakerConfig {
             failure_threshold: 3,                     // 3次失败后开启熔断器
             recovery_timeout: Duration::from_secs(5), // 5秒后尝试恢复
-            half_open_max_calls: 2,                   // 半开状态最多2次调用
-            sliding_window_size: Duration::from_secs(60),
-            minimum_calls: 5,
+            half_open_max_requests: 2,                // 半开状态最多2次调用
+            success_threshold: 2,                     // 成功阈值
         },
         ..Default::default()
     };
 
-    let manager = ResilienceManager::new(config);
+    let manager = ResilienceManager::new();
 
     // 模拟多次失败的操作
     for i in 1..=6 {
         println!("  第 {} 次调用:", i);
 
         let i = i; // 复制变量
-        let result = manager
-            .execute_with_resilience("circuit_breaker_test", move || {
-                Box::pin(async move {
-                    if i <= 3 {
-                        Err(anyhow::anyhow!("服务不可用"))
-                    } else {
-                        Ok::<String, anyhow::Error>("服务恢复正常".to_string())
-                    }
-                })
+        let breaker = manager.get_or_create_circuit_breaker("circuit_breaker", CircuitBreakerConfig::default()).await;
+        let result = breaker
+            .execute(async move {
+                if i <= 3 {
+                    Err(anyhow::anyhow!("服务不可用"))
+                } else {
+                    Ok("服务恢复正常".to_string())
+                }
             })
             .await;
 
@@ -170,34 +165,19 @@ async fn graceful_degradation_example() -> Result<()> {
     println!("-------------------------");
 
     // 创建优雅降级配置
-    let config = ResilienceConfig {
-        graceful_degradation: GracefulDegradationConfig {
-            enabled: true,
-            strategies: vec![
-                DegradationStrategy::UseCache,
-                DegradationStrategy::UseFallback,
-                DegradationStrategy::ReduceQuality,
-            ],
-            trigger_conditions: vec![
-                TriggerCondition::HighErrorRate { threshold: 0.5 },
-                TriggerCondition::HighLatency {
-                    threshold: Duration::from_secs(2),
-                },
-            ],
-        },
+    let _config = ResilienceConfig {
         ..Default::default()
     };
 
-    let manager = ResilienceManager::new(config);
+    let manager = ResilienceManager::new();
 
     // 模拟高延迟操作
-    let result = manager
-        .execute_with_resilience("slow_operation", || {
-            Box::pin(async move {
-                println!("  执行慢操作...");
-                tokio::time::sleep(Duration::from_millis(2500)).await; // 超过2秒阈值
-                Ok::<String, anyhow::Error>("慢操作完成".to_string())
-            })
+    let timeout = manager.get_or_create_timeout("timeout", TimeoutConfig::default()).await;
+    let result = timeout
+        .execute::<_, String, anyhow::Error>(async {
+            println!("  执行慢操作...");
+            tokio::time::sleep(Duration::from_millis(2500)).await; // 超过2秒阈值
+            Ok("慢操作完成".to_string())
         })
         .await;
 
@@ -214,8 +194,8 @@ async fn error_handling_example() -> Result<()> {
     println!("\n🔍 示例 5: 错误处理示例");
     println!("------------------------");
 
-    let config = ResilienceConfig::default();
-    let manager = ResilienceManager::new(config);
+    let _config = ResilienceConfig::default();
+    let manager = ResilienceManager::new();
 
     // 模拟不同类型的错误
     let error_types = vec![
@@ -228,12 +208,11 @@ async fn error_handling_example() -> Result<()> {
     for (name, error_type) in error_types {
         println!("  测试 {}:", name);
 
-        let result = manager
-            .execute_with_resilience(&format!("error_test_{}", error_type), || {
+        let breaker = manager.get_or_create_circuit_breaker("error_test", CircuitBreakerConfig::default()).await;
+        let result = breaker
+            .execute(async move {
                 let error_type = error_type.to_string();
-                Box::pin(
-                    async move { Err::<String, anyhow::Error>(anyhow::anyhow!("{}", error_type)) },
-                )
+                Err::<String, anyhow::Error>(anyhow::anyhow!("{}", error_type))
             })
             .await;
 
@@ -243,17 +222,7 @@ async fn error_handling_example() -> Result<()> {
                 println!("    ❌ 错误: {}", e);
 
                 // 获取错误上下文信息
-                if let ResilienceError::OperationFailed(err) = &e {
-                    if let Some(otlp_err) = err.downcast_ref::<OtlpError>() {
-                        let context = otlp_err.context();
-                        println!("      错误类别: {:?}", context.category);
-                        println!("      严重程度: {:?}", context.severity);
-                        println!("      可重试: {}", context.is_retryable);
-                        if let Some(suggestion) = context.recovery_suggestion {
-                            println!("      恢复建议: {}", suggestion);
-                        }
-                    }
-                }
+                println!("      错误详情: {}", e);
             }
         }
     }
@@ -265,24 +234,15 @@ async fn error_handling_example() -> Result<()> {
 #[allow(dead_code)]
 fn create_timeout_config() -> TimeoutConfig {
     TimeoutConfig {
-        connect_timeout: Duration::from_secs(10),
-        read_timeout: Duration::from_secs(30),
-        write_timeout: Duration::from_secs(30),
-        operation_timeout: Duration::from_secs(60),
+        default_timeout: Duration::from_secs(60),
+        max_timeout: Duration::from_secs(30),
+        min_timeout: Duration::from_secs(10),
+        enable_stats: true,
+        enable_adaptive: true,
+        adaptive_factor: 1.5,
     }
 }
 
-/// 辅助函数：创建自定义健康检查配置
-#[allow(dead_code)]
-fn create_health_check_config() -> otlp::resilience::HealthCheckConfig {
-    otlp::resilience::HealthCheckConfig {
-        interval: Duration::from_secs(30),
-        timeout: Duration::from_secs(5),
-        path: "/health".to_string(),
-        unhealthy_threshold: 3,
-        healthy_threshold: 2,
-    }
-}
 
 #[cfg(test)]
 mod tests {

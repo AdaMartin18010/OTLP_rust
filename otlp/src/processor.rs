@@ -22,7 +22,7 @@ use crate::error::{
     //OtlpError,
     Result,
 };
-use crate::resilience::{ResilienceConfig, ResilienceManager};
+use crate::resilience::ResilienceManager;
 use crate::rust_1_90_optimizations::AsyncBatchProcessor;
 use crate::utils::{
     PerformanceUtils,
@@ -280,8 +280,7 @@ impl OtlpProcessor {
         let (output_tx, output_rx) = mpsc::unbounded_channel();
 
         // 创建弹性管理器
-        let resilience_config = ResilienceConfig::default();
-        let resilience_manager = Arc::new(ResilienceManager::new(resilience_config));
+        let resilience_manager = Arc::new(ResilienceManager::new());
 
         // 创建Rust 1.90优化的异步批处理器
         let async_batch_processor = Arc::new(AsyncBatchProcessor::new(

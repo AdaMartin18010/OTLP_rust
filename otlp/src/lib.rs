@@ -208,6 +208,8 @@ pub mod processor;
 pub mod profiling;
 pub mod protobuf;
 pub mod resilience;
+pub mod network;
+pub mod optimization;
 pub mod rust_1_90_optimizations;
 pub mod security_enhancer;
 pub mod simple_client;
@@ -243,10 +245,10 @@ pub use optimized_processor::{
 };
 pub use performance::{
     BatchItem, BatchProcessorConfig, BatchProcessorError, BatchProcessorStats, BatchResult,
-    CircuitBreakerConfig, CircuitBreakerError, CircuitBreakerState, ConnectionPoolConfig,
-    ConnectionPoolError, ConnectionPoolStats, MemoryPoolConfig, MemoryPoolError, MemoryPoolStats,
+    CircuitBreakerConfig, CircuitBreakerError, CircuitBreakerState,
+    ConnectionPoolError, MemoryPoolConfig, MemoryPoolError, MemoryPoolStats,
     OptimizedBatchProcessor, OptimizedCircuitBreaker, OptimizedConnectionPool, OptimizedMemoryPool,
-    PerformanceConfig, PerformanceManager, PooledConnection, PooledObject,
+    PerformanceConfig, PerformanceManager, PooledObject,
 };
 pub use performance_enhancements::{
     AsyncGenerator, BatchProcessorMetricsSnapshot, ExecutorMetricsSnapshot,
@@ -268,6 +270,21 @@ pub use performance_optimizer::{
 };
 pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};
+pub use network::{
+    AsyncConnection, AsyncIoConfig, AsyncIoManager, AsyncIoStats, BackendServer,
+    ConnectionPool, ConnectionPoolConfig, ConnectionPoolStats, HealthChecker,
+    LoadBalancer, LoadBalancerConfig, LoadBalancerStats, LoadBalancingStrategy,
+    NetworkConfig, NetworkManager, NetworkMonitor, NetworkStats, PooledConnection,
+    PooledConnectionInfo,
+};
+pub use optimization::{
+    ConfigCategory, ConfigConstraint, ConfigImpact, ConfigItem, ConfigOptimization, ConfigValue,
+    ConstraintType, ImplementationEffort, OptimizationCategory, OptimizationManager,
+    OptimizationPriority, OptimizationReport, OptimizationResult, OptimizationSuggestion,
+    OptimizationStats, PerformanceSnapshot, PerformanceTargets,
+    PerformanceTuner, PerformanceTunerStats, RiskLevel, SmartConfigManager, SmartConfigStats,
+    TuningConfig,
+};
 pub use rust_1_90_optimizations::{
     AsyncBatchProcessor, AsyncClosureOptimizer, TupleCollectionOptimizer, ZeroCopyOptimizer,
 };
@@ -295,7 +312,7 @@ pub use advanced_features::{
 };
 pub use advanced_performance::{
     BatchProcessor, BatchStatsSnapshot, BufferPool, BufferPoolStatsSnapshot, CacheOptimizer,
-    CacheStatsSnapshot, Connection, ConnectionPool, LockFreeDataManager, LockFreeStatsSnapshot,
+    CacheStatsSnapshot, Connection, LockFreeDataManager, LockFreeStatsSnapshot,
     NetworkOptimizer, NetworkStatsSnapshot, ProcessingStatsSnapshot, ZeroCopyProcessor,
 };
 pub use advanced_security::{
@@ -337,11 +354,11 @@ pub use microservices::{
     FaultInjector,
     FaultResult,
     FaultType,
-    HealthChecker,
+    HealthChecker as MicroserviceHealthChecker,
     HealthStatus as MicroserviceHealthStatus,
     InstanceMetrics,
     IntelligentRouter,
-    LoadBalancer,
+    LoadBalancer as MicroserviceLoadBalancer,
     MatchCondition,
     MicroserviceClient,
     MockConsulClient,

@@ -6,7 +6,7 @@
 use crate::config::OtlpConfig;
 use crate::data::TelemetryData;
 use crate::error::{ExportError, Result};
-use crate::resilience::{ResilienceConfig, ResilienceManager};
+use crate::resilience::ResilienceManager;
 use crate::transport::TransportPool;
 use crate::utils::{PerformanceUtils, RetryUtils};
 use std::sync::Arc;
@@ -130,15 +130,7 @@ impl OtlpExporter {
         let (export_tx, export_rx) = mpsc::channel(capacity);
 
         // 创建弹性管理器
-        let resilience_config = ResilienceConfig {
-            timeout: crate::resilience::TimeoutConfig {
-                connect_timeout: config.connect_timeout,
-                operation_timeout: config.request_timeout,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-        let resilience_manager = Arc::new(ResilienceManager::new(resilience_config));
+        let resilience_manager = Arc::new(ResilienceManager::new());
 
         Self {
             config,

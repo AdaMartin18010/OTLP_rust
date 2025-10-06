@@ -8,7 +8,7 @@ use crate::data::TelemetryData;
 use crate::error::{OtlpError, Result};
 use crate::exporter::{ExportResult, ExporterMetrics, OtlpExporter};
 use crate::processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
-use crate::resilience::{ResilienceConfig, ResilienceManager};
+use crate::resilience::ResilienceManager;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -150,15 +150,7 @@ impl OtlpClient {
         let exporter = Arc::new(OtlpExporter::new(config.clone()));
 
         // 创建弹性管理器
-        let resilience_config = ResilienceConfig {
-            timeout: crate::resilience::TimeoutConfig {
-                connect_timeout: config.connect_timeout,
-                operation_timeout: config.request_timeout,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-        let resilience_manager = Arc::new(ResilienceManager::new(resilience_config));
+        let resilience_manager = Arc::new(ResilienceManager::new());
 
         Ok(Self {
             config,

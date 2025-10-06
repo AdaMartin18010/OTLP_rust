@@ -99,18 +99,6 @@ harness = false
 name = "advanced_performance_benchmarks"
 harness = false
 
-[[bench]]
-name = "memory_pool_benchmarks"
-harness = false
-
-[[bench]]
-name = "network_io_benchmarks"
-harness = false
-
-[[bench]]
-name = "optimization_benchmarks"
-harness = false
-
 [features]
 default = ["async", "grpc", "http"]
 full = ["async", "grpc", "http", "monitoring"]

@@ -5,8 +5,7 @@
 use otlp::data::{SpanKind, SpanStatus, TelemetryData, TraceData};
 use otlp::error::{ExportError, ProcessingError, TransportError};
 use otlp::resilience::{
-    CircuitBreakerConfig, DegradationStrategy, GracefulDegradationConfig, RetryConfig,
-    TimeoutConfig, TriggerCondition,
+    CircuitBreakerConfig, RetryConfig, TimeoutConfig,
 };
 use otlp::{OtlpClient, OtlpConfig, OtlpError, ResilienceConfig, ResilienceManager};
 use std::collections::HashMap;
@@ -54,14 +53,12 @@ async fn test_error_handling_integration() {
 #[tokio::test]
 async fn test_resilience_integration() {
     // 测试弹性机制的完整集成
-    let config = ResilienceConfig::default();
-    let manager = ResilienceManager::new(config);
+    let manager = ResilienceManager::new();
 
-    // 测试基本操作
-    let result = manager
-        .execute_with_resilience("test_operation", || {
-            Box::pin(async move { Ok::<String, anyhow::Error>("success".to_string()) })
-        })
+    // 测试基本操作 - 使用断路器
+    let breaker = manager.get_or_create_circuit_breaker("test_operation", CircuitBreakerConfig::default()).await;
+    let result = breaker
+        .execute::<_, String, anyhow::Error>(async { Ok("success".to_string()) })
         .await;
 
     assert!(result.is_ok());
@@ -71,31 +68,25 @@ async fn test_resilience_integration() {
 #[tokio::test]
 async fn test_circuit_breaker_integration() {
     // 测试熔断器集成
-    let config = ResilienceConfig {
-        circuit_breaker: CircuitBreakerConfig {
-            failure_threshold: 3,
-            recovery_timeout: Duration::from_secs(1),
-            half_open_max_calls: 2,
-            sliding_window_size: Duration::from_secs(60),
-            minimum_calls: 5,
-        },
-        ..Default::default()
+    let config = CircuitBreakerConfig {
+        failure_threshold: 3,
+        recovery_timeout: Duration::from_secs(1),
+        half_open_max_requests: 2,
+        success_threshold: 2,
     };
 
-    let manager = ResilienceManager::new(config);
+    let manager = ResilienceManager::new();
+    let breaker = manager.get_or_create_circuit_breaker("failing_operation", config).await;
 
     // 模拟多次失败
     for i in 1..=5 {
-        let i = i; // 复制变量以解决生命周期问题
-        let result = manager
-            .execute_with_resilience("failing_operation", move || {
-                Box::pin(async move {
-                    if i <= 3 {
-                        Err::<String, anyhow::Error>(anyhow::anyhow!("Service unavailable"))
-                    } else {
-                        Ok::<String, anyhow::Error>("Service recovered".to_string())
-                    }
-                })
+        let result = breaker
+            .execute::<_, String, anyhow::Error>(async move {
+                if i <= 3 {
+                    Err(anyhow::anyhow!("Service unavailable"))
+                } else {
+                    Ok("Service recovered".to_string())
+                }
             })
             .await;
 
@@ -114,62 +105,21 @@ async fn test_circuit_breaker_integration() {
 #[tokio::test]
 async fn test_retry_mechanism_integration() {
     // 测试重试机制集成
-    let config = ResilienceConfig {
-        retry: RetryConfig {
-            max_attempts: 3,
-            base_delay: Duration::from_millis(10),
-            max_delay: Duration::from_secs(1),
-            backoff_multiplier: 2.0,
-            jitter: true,
-            retryable_errors: vec!["temporary".to_string()],
+    let config = RetryConfig {
+        max_attempts: 3,
+        strategy: otlp::resilience::RetryStrategy::Fixed {
+            interval: Duration::from_millis(10),
         },
-        ..Default::default()
+        total_timeout: None,
+        health_check: false,
     };
 
-    let manager = ResilienceManager::new(config);
+    let manager = ResilienceManager::new();
+    let retrier = manager.get_or_create_retrier("retry_test", config).await;
 
-    // 测试重试逻辑（注意：当前实现中重试逻辑被简化）
-    let result = manager
-        .execute_with_resilience("retry_test", || {
-            Box::pin(async move { Ok::<String, anyhow::Error>("success after retry".to_string()) })
-        })
-        .await;
-
-    assert!(result.is_ok());
-}
-
-#[tokio::test]
-async fn test_graceful_degradation_integration() {
-    // 测试优雅降级集成
-    let config = ResilienceConfig {
-        graceful_degradation: GracefulDegradationConfig {
-            enabled: true,
-            strategies: vec![
-                DegradationStrategy::UseCache,
-                DegradationStrategy::UseFallback,
-                DegradationStrategy::ReduceQuality,
-            ],
-            trigger_conditions: vec![
-                TriggerCondition::HighErrorRate { threshold: 0.5 },
-                TriggerCondition::HighLatency {
-                    threshold: Duration::from_secs(2),
-                },
-            ],
-        },
-        ..Default::default()
-    };
-
-    let manager = ResilienceManager::new(config);
-
-    // 测试降级逻辑
-    let result = manager
-        .execute_with_resilience("degradation_test", || {
-            Box::pin(async move {
-                // 模拟高延迟操作
-                tokio::time::sleep(Duration::from_millis(100)).await;
-                Ok::<String, anyhow::Error>("operation completed".to_string())
-            })
-        })
+    // 测试重试逻辑
+    let result = retrier
+        .execute(|| Box::pin(async { Ok::<String, &str>("success after retry".to_string()) }))
         .await;
 
     assert!(result.is_ok());
@@ -231,19 +181,19 @@ async fn test_config_compatibility() {
     // 验证配置转换
     let resilience_config = ResilienceConfig {
         timeout: TimeoutConfig {
-            connect_timeout: otlp_config.connect_timeout,
-            operation_timeout: otlp_config.request_timeout,
+            default_timeout: otlp_config.connect_timeout,
+            max_timeout: otlp_config.request_timeout,
             ..Default::default()
         },
         ..Default::default()
     };
 
     assert_eq!(
-        resilience_config.timeout.connect_timeout,
+        resilience_config.timeout.default_timeout,
         Duration::from_secs(5)
     );
     assert_eq!(
-        resilience_config.timeout.operation_timeout,
+        resilience_config.timeout.max_timeout,
         Duration::from_secs(30)
     );
 }
@@ -270,40 +220,21 @@ async fn test_error_propagation() {
 }
 
 #[tokio::test]
-async fn test_metrics_integration() {
-    // 测试指标集成
-    let config = ResilienceConfig::default();
-    let manager = ResilienceManager::new(config);
+async fn test_resilience_status() {
+    // 测试弹性状态
+    let manager = ResilienceManager::new();
 
-    // 执行一些操作来生成指标
+    // 执行一些操作来生成状态
     for _ in 0..5 {
-        let _ = manager
-            .execute_with_resilience("metrics_test", || {
-                Box::pin(async move { Ok::<(), anyhow::Error>(()) })
-            })
+        let breaker = manager.get_or_create_circuit_breaker("metrics_test", CircuitBreakerConfig::default()).await;
+        let _ = breaker
+            .execute::<_, (), anyhow::Error>(async { Ok(()) })
             .await;
     }
 
-    // 获取指标
-    let metrics = manager.get_metrics().await;
-    assert!(metrics.total_operations > 0);
-}
-
-#[tokio::test]
-async fn test_health_check_integration() {
-    // 测试健康检查集成
-    let config = ResilienceConfig::default();
-    let manager = ResilienceManager::new(config);
-
-    // 获取健康状态
-    let health_status = manager.get_health_status().await;
-
-    // 验证健康状态
-    match health_status {
-        otlp::resilience::HealthStatus::Healthy => println!("System is healthy"),
-        otlp::resilience::HealthStatus::Unhealthy => println!("System is unhealthy"),
-        otlp::resilience::HealthStatus::Degraded => println!("System is degraded"),
-    }
+    // 获取状态
+    let status = manager.get_all_status().await;
+    assert!(status.circuit_breakers.contains_key("metrics_test"));
 }
 
 #[tokio::test]

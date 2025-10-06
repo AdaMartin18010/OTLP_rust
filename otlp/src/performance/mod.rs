@@ -6,6 +6,10 @@ pub mod optimized_batch_processor;
 pub mod optimized_circuit_breaker;
 pub mod optimized_connection_pool;
 pub mod optimized_memory_pool;
+pub mod object_pool;
+pub mod simd_optimizations;
+pub mod zero_copy_simple;
+pub mod memory_pool;
 
 // 重新导出主要类型
 pub use optimized_circuit_breaker::{
@@ -26,8 +30,24 @@ pub use optimized_connection_pool::{
     PooledConnection,
 };
 
+pub use object_pool::{
+    ObjectPool, ObjectPoolConfig, ObjectPoolError, ObjectPoolStats, PooledObject as ObjectPooledObject,
+};
+
+pub use simd_optimizations::{
+    CpuFeatures, SimdConfig, SimdMonitor, SimdOptimizer, SimdStats,
+};
+
+pub use zero_copy_simple::{
+    TransmissionError, TransmissionStats, ZeroCopyBuffer, ZeroCopyTransporter,
+};
+
+pub use memory_pool::{
+    MemoryBlock, MemoryPool, MemoryPoolConfig as MemoryPoolConfigV2, MemoryPoolManager, MemoryPoolStats as MemoryPoolStatsV2,
+};
+
 /// 性能优化配置
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone)]
 pub struct PerformanceConfig {
     /// 熔断器配置
     pub circuit_breaker: CircuitBreakerConfig,
@@ -37,6 +57,36 @@ pub struct PerformanceConfig {
     pub batch_processor: BatchProcessorConfig,
     /// 连接池配置
     pub connection_pool: ConnectionPoolConfig,
+    /// 对象池配置
+    pub object_pool: ObjectPoolConfig,
+    /// SIMD优化配置
+    pub simd: SimdConfig,
+    /// 零拷贝传输配置
+    pub zero_copy: ZeroCopyConfig,
+}
+
+/// 零拷贝传输配置
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ZeroCopyConfig {
+    /// 缓冲区池大小
+    pub buffer_pool_size: usize,
+    /// 缓冲区大小
+    pub buffer_size: usize,
+    /// 网络套接字缓冲区大小
+    pub socket_buffer_size: usize,
+    /// 启用零拷贝传输
+    pub enable_zero_copy: bool,
+}
+
+impl Default for ZeroCopyConfig {
+    fn default() -> Self {
+        Self {
+            buffer_pool_size: 100,
+            buffer_size: 8192,
+            socket_buffer_size: 65536,
+            enable_zero_copy: true,
+        }
+    }
 }
 
 impl Default for PerformanceConfig {
@@ -46,6 +96,9 @@ impl Default for PerformanceConfig {
             memory_pool: MemoryPoolConfig::default(),
             batch_processor: BatchProcessorConfig::default(),
             connection_pool: ConnectionPoolConfig::default(),
+            object_pool: ObjectPoolConfig::default(),
+            simd: SimdConfig::default(),
+            zero_copy: ZeroCopyConfig::default(),
         }
     }
 }
