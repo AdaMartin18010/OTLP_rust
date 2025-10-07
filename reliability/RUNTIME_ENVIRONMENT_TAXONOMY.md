@@ -1,8 +1,48 @@
 # 运行时环境分类体系 (Runtime Environment Taxonomy)
 
+## 目录
+
+- [运行时环境分类体系 (Runtime Environment Taxonomy)](#运行时环境分类体系-runtime-environment-taxonomy)
+  - [目录](#目录)
+  - [概述](#概述)
+  - [分类维度](#分类维度)
+    - [1. 按执行模式分类 (Execution Mode)](#1-按执行模式分类-execution-mode)
+      - [1.1 原生执行 (Native Execution)](#11-原生执行-native-execution)
+      - [1.2 虚拟化执行 (Virtualized Execution)](#12-虚拟化执行-virtualized-execution)
+      - [1.3 沙箱执行 (Sandboxed Execution)](#13-沙箱执行-sandboxed-execution)
+    - [2. 按部署模式分类 (Deployment Mode)](#2-按部署模式分类-deployment-mode)
+      - [2.1 传统部署 (Traditional Deployment)](#21-传统部署-traditional-deployment)
+      - [2.2 云原生部署 (Cloud-Native Deployment)](#22-云原生部署-cloud-native-deployment)
+      - [2.3 边缘部署 (Edge Deployment)](#23-边缘部署-edge-deployment)
+      - [2.4 无服务器部署 (Serverless Deployment)](#24-无服务器部署-serverless-deployment)
+    - [3. 按资源特性分类 (Resource Characteristics)](#3-按资源特性分类-resource-characteristics)
+      - [3.1 资源丰富环境 (Resource-Rich)](#31-资源丰富环境-resource-rich)
+      - [3.2 资源受限环境 (Resource-Constrained)](#32-资源受限环境-resource-constrained)
+      - [3.3 资源动态环境 (Resource-Dynamic)](#33-资源动态环境-resource-dynamic)
+    - [4. 按实时性要求分类 (Real-time Requirements)](#4-按实时性要求分类-real-time-requirements)
+      - [4.1 实时环境 (Real-time)](#41-实时环境-real-time)
+      - [4.2 准实时环境 (Near Real-time)](#42-准实时环境-near-real-time)
+      - [4.3 非实时环境 (Non Real-time)](#43-非实时环境-non-real-time)
+  - [完整环境分类表](#完整环境分类表)
+  - [环境能力矩阵](#环境能力矩阵)
+    - [基础能力](#基础能力)
+    - [高级能力](#高级能力)
+  - [环境特定优化策略](#环境特定优化策略)
+    - [1. 资源丰富环境优化](#1-资源丰富环境优化)
+    - [2. 资源受限环境优化](#2-资源受限环境优化)
+    - [3. 资源动态环境优化](#3-资源动态环境优化)
+    - [4. 实时环境优化](#4-实时环境优化)
+  - [环境检测策略](#环境检测策略)
+    - [1. 自动检测](#1-自动检测)
+    - [2. 环境特定检测函数](#2-环境特定检测函数)
+  - [配置管理](#配置管理)
+    - [环境特定配置](#环境特定配置)
+  - [总结](#总结)
+
 ## 概述
 
-本文档定义了reliability框架支持的完整运行时环境分类体系。通过多维度分类，我们可以更好地理解不同环境的特性，并为其提供针对性的可靠性保障。
+本文档定义了reliability框架支持的完整运行时环境分类体系。
+通过多维度分类，我们可以更好地理解不同环境的特性，并为其提供针对性的可靠性保障。
 
 ## 分类维度
 
