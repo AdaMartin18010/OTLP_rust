@@ -59,19 +59,19 @@
 
 ```text
 ┌────────────────────────────────────────────────────┐
-│            迁移路径对比                            │
+│            迁移路径对比                             │
 ├────────────────────────────────────────────────────┤
 │                                                    │
-│  Jaeger SDK → OpenTelemetry SDK → OTLP            │
+│  Jaeger SDK → OpenTelemetry SDK → OTLP             │
 │      或                                            │
-│  Zipkin SDK → OpenTelemetry SDK → OTLP            │
+│  Zipkin SDK → OpenTelemetry SDK → OTLP             │
 │                                                    │
 │  优势：                                            │
-│  ✅ 统一的可观测性标准                            │
-│  ✅ 支持Traces + Metrics + Logs                   │
-│  ✅ 更好的跨语言互操作性                          │
-│  ✅ 厂商中立                                      │
-│  ✅ 更活跃的社区和生态                            │
+│  ✅ 统一的可观测性标准                              │
+│  ✅ 支持Traces + Metrics + Logs                    │
+│  ✅ 更好的跨语言互操作性                            │
+│  ✅ 厂商中立                                       │
+│  ✅ 更活跃的社区和生态                              │
 │                                                    │
 └────────────────────────────────────────────────────┘
 ```

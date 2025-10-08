@@ -9,12 +9,40 @@
 
 ## 📋 目录
 
-1. [概述](#概述)
-2. [从Prometheus迁移](#从prometheus迁移)
-3. [从ELK Stack迁移](#从elk-stack迁移)
-4. [统一可观测性架构](#统一可观测性架构)
-5. [共存策略](#共存策略)
-6. [迁移检查清单](#迁移检查清单)
+- [从Prometheus/ELK迁移到OTLP](#从prometheuselk迁移到otlp)
+  - [📋 目录](#-目录)
+  - [概述](#概述)
+    - [为什么迁移到OTLP？](#为什么迁移到otlp)
+  - [从Prometheus迁移](#从prometheus迁移)
+    - [Step 1: 评估当前Prometheus使用](#step-1-评估当前prometheus使用)
+    - [Step 2: 保留vs迁移决策](#step-2-保留vs迁移决策)
+      - [选项A: 完全迁移到OTLP Metrics](#选项a-完全迁移到otlp-metrics)
+      - [选项B: 混合方案（推荐）](#选项b-混合方案推荐)
+    - [Step 3: 代码迁移 - Prometheus → OTLP](#step-3-代码迁移---prometheus--otlp)
+    - [Step 4: 配置OTLP Collector导出到Prometheus](#step-4-配置otlp-collector导出到prometheus)
+    - [Step 5: Metrics映射对照表](#step-5-metrics映射对照表)
+    - [Step 6: 查询语言适配](#step-6-查询语言适配)
+  - [从ELK Stack迁移](#从elk-stack迁移)
+    - [Step 1: 评估当前ELK使用](#step-1-评估当前elk使用)
+    - [Step 2: 迁移策略](#step-2-迁移策略)
+      - [选项A: 保留ELK，添加OTLP](#选项a-保留elk添加otlp)
+      - [选项B: 完全迁移到OTLP Logs（推荐）](#选项b-完全迁移到otlp-logs推荐)
+    - [Step 3: 代码迁移 - ELK → OTLP](#step-3-代码迁移---elk--otlp)
+    - [Step 4: 配置Collector导出到Elasticsearch](#step-4-配置collector导出到elasticsearch)
+    - [Step 5: Kibana查询适配](#step-5-kibana查询适配)
+    - [Step 6: 日志与Trace关联](#step-6-日志与trace关联)
+  - [统一可观测性架构](#统一可观测性架构)
+    - [完整架构设计](#完整架构设计)
+    - [Rust应用完整实现](#rust应用完整实现)
+  - [共存策略](#共存策略)
+    - [双写方案（过渡期）](#双写方案过渡期)
+    - [分阶段迁移](#分阶段迁移)
+  - [迁移检查清单](#迁移检查清单)
+    - [Metrics迁移](#metrics迁移)
+    - [Logs迁移](#logs迁移)
+  - [总结](#总结)
+    - [迁移收益](#迁移收益)
+    - [最终架构](#最终架构)
 
 ---
 
@@ -24,24 +52,24 @@
 
 ```text
 ╔════════════════════════════════════════════════════╗
-║         传统方案 vs OTLP统一方案                  ║
+║         传统方案 vs OTLP统一方案                     ║
 ╠════════════════════════════════════════════════════╣
 ║                                                    ║
-║  传统方案（分散）:                                ║
-║  ┌────────────────────────────────────┐          ║
-║  │ App → Prometheus (Metrics)         │          ║
-║  │ App → ELK (Logs)                   │          ║
-║  │ App → Jaeger (Traces)              │          ║
-║  └────────────────────────────────────┘          ║
-║  问题: 3套SDK, 3套配置, 难以关联                ║
+║  传统方案（分散）:                                  ║
+║  ┌────────────────────────────────────┐            ║
+║  │ App → Prometheus (Metrics)         │            ║
+║  │ App → ELK (Logs)                   │            ║
+║  │ App → Jaeger (Traces)              │            ║
+║  └────────────────────────────────────┘            ║
+║  问题: 3套SDK, 3套配置, 难以关联                     ║
 ║                                                    ║
-║  OTLP统一方案:                                    ║
-║  ┌────────────────────────────────────┐          ║
-║  │ App → OTLP Collector               │          ║
-║  │        ↓    ↓    ↓                 │          ║
-║  │   Prometheus ELK Jaeger            │          ║
-║  └────────────────────────────────────┘          ║
-║  优势: 1套SDK, 统一配置, 自动关联               ║
+║  OTLP统一方案:                                      ║
+║  ┌────────────────────────────────────┐            ║
+║  │ App → OTLP Collector               │            ║
+║  │        ↓    ↓    ↓                 │            ║
+║  │   Prometheus ELK Jaeger            │            ║
+║  └────────────────────────────────────┘            ║
+║  优势: 1套SDK, 统一配置, 自动关联                    ║
 ║                                                    ║
 ╚════════════════════════════════════════════════════╝
 ```
@@ -298,13 +326,13 @@ grep "log\|slog\|tracing" Cargo.toml
 ┌──────────────────────────────────────────┐
 │  Rust App                                │
 │    ↓                                     │
-│  tracing-subscriber                     │
-│    ↓        ↓                           │
-│  Stdout   OTLP                          │
-│    ↓        ↓                           │
-│  Filebeat  Collector                    │
-│    ↓        ↓                           │
-│  ELK     Elasticsearch                  │
+│  tracing-subscriber                      │
+│    ↓        ↓                            │
+│  Stdout   OTLP                           │
+│    ↓        ↓                            │
+│  Filebeat  Collector                     │
+│    ↓        ↓                            │
+│  ELK     Elasticsearch                   │
 └──────────────────────────────────────────┘
 ```
 
@@ -314,13 +342,13 @@ grep "log\|slog\|tracing" Cargo.toml
 ┌──────────────────────────────────────────┐
 │  Rust App                                │
 │    ↓                                     │
-│  tracing-subscriber                     │
+│  tracing-subscriber                      │
 │    ↓                                     │
-│  OTLP Exporter                          │
+│  OTLP Exporter                           │
 │    ↓                                     │
-│  OTLP Collector                         │
-│    ↓        ↓                           │
-│  ELK    Grafana Loki                    │
+│  OTLP Collector                          │
+│    ↓        ↓                            │
+│  ELK    Grafana Loki                     │
 └──────────────────────────────────────────┘
 ```
 
