@@ -77,7 +77,7 @@ opentelemetry_sdk = "0.31.0"
 # HTTP 客户端
 reqwest = "0.12.23"
 hyper = "1.7.0"
-axum = "0.8.7"
+axum = "0.8.6"  # 最新稳定版（2025年10月）
 
 # 序列化
 serde = { version = "1.0.216", features = ["derive"] }

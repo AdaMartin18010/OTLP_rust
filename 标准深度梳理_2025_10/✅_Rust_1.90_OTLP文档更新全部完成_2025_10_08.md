@@ -70,7 +70,7 @@ tracing = "0.1.41"
 tracing-opentelemetry = "0.31"
 
 # Web 框架
-axum = "0.8.7"
+axum = "0.8.6"  # 最新稳定版（2025年10月）
 tower = "0.5.3"
 
 # gRPC
@@ -82,7 +82,7 @@ reqwest = "0.12.23"
 hyper = "1.7.0"
 
 # 数据库
-sqlx = "0.8.5"
+sqlx = "0.8.6"  # 最新稳定版（2025年10月）
 redis = "0.32.7"
 
 # TLS

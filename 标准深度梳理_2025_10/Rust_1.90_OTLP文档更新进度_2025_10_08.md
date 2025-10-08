@@ -330,7 +330,7 @@ tokio-stream = "0.1.17"
 futures = "0.3.31"
 
 # HTTP 和 gRPC
-axum = "0.8.7"
+axum = "0.8.6"  # 最新稳定版（2025年10月）
 tonic = "0.14.2"
 reqwest = "0.12.23"
 hyper = "1.7.0"
@@ -349,7 +349,7 @@ rustls = "0.23.33"
 tokio-rustls = "0.26.5"
 
 # 数据库
-sqlx = "0.8.7"
+sqlx = "0.8.6"  # 最新稳定版（2025年10月）
 sea-orm = "1.1.16"
 
 # 消息队列
