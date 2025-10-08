@@ -71,8 +71,8 @@
 │  (Collection)   │  (Processing)   │  (Transport)    │ (Storage)   │
 │                 │                 │                 │             │
 │ • Traces        │ • 过滤/聚合      │ • gRPC/HTTP     │ • Jaeger    │
-│ • Metrics       │ • 批处理        │ • 压缩传输      │ • Prometheus│
-│ • Logs          │ • 采样控制      │ • 重试机制      │ • ELK Stack │
+│ • Metrics       │ • 批处理         │ • 压缩传输      │ • Prometheus│
+│ • Logs          │ • 采样控制       │ • 重试机制      │ • ELK Stack │
 └─────────────────┴─────────────────┴─────────────────┴─────────────┘
                                 │
 ┌───────────────────────────────────────────────────────────────────┐
@@ -410,6 +410,35 @@ client.set_audit_hook(Arc::new(HttpAuditHook::new("https://audit.example.com/ing
 - [算法和设计模式](otlp/docs/algorithms/OTLP_ALGORITHMS_DESIGN_PATTERNS_2025.md)
 - [采样控制和动态调整](otlp/docs/sampling/OTLP_SAMPLING_CONTROL_2025.md)
 - [递归和调度组合](otlp/docs/advanced/OTLP_RECURSIVE_MIXED_SCHEDULING_2025.md)
+
+#### 🎓 OTLP统一理论框架 ⭐ NEW
+
+**系统性的多维度理论分析体系 (~265页)**-
+
+- 📖 [**理论框架总导航**](docs/OTLP_THEORETICAL_FRAMEWORK_INDEX.md) ⭐ **推荐起点**
+- 📋 [**文档结构说明**](docs/理论框架文档结构说明.md) ⭐ **了解文档组织**
+- 📘 [第一部分: 形式化基础与三流分析](docs/OTLP_UNIFIED_THEORETICAL_FRAMEWORK.md)
+  - 类型系统、代数结构、范畴论
+  - 控制流、执行流、数据流统一模型
+- 📗 [第二部分: 并发理论与分布式系统](docs/OTLP_UNIFIED_THEORETICAL_FRAMEWORK_PART2.md)
+  - 图灵机、进程代数(CCS/CSP/π-calculus)
+  - CAP定理、共识算法(Paxos/Raft)、因果关系
+- 📙 [第三部分: 容错机制与故障分析](docs/OTLP_UNIFIED_THEORETICAL_FRAMEWORK_PART3.md)
+  - 故障模型、检测算法、容错机制
+  - 根因分析、程序切片、异常检测
+- 📕 [第四部分: Rust异步与数据分析](docs/OTLP_UNIFIED_THEORETICAL_FRAMEWORK_PART4.md)
+  - Future语义、Tokio运行时建模
+  - OLAP多维分析、相关分析、因果推断
+- 📔 [第五部分: 自动化运维与自适应控制](docs/OTLP_UNIFIED_THEORETICAL_FRAMEWORK_PART5.md)
+  - PID控制、MAPE-K自主计算环
+  - 预测性维护、强化学习
+
+**理论框架特点**:
+
+- ✅ 理论完备性: 覆盖控制流、数据流、执行流、并发、分布式等所有维度
+- ✅ 形式化严格性: 数学方法保证正确性,提供定理和证明
+- ✅ 可计算性: 所有模型可计算和验证,提供50+Rust实现示例
+- ✅ 实践导向: 为故障诊断、性能优化、可靠性保障提供理论支撑
 
 ## 🤝 贡献指南
 
