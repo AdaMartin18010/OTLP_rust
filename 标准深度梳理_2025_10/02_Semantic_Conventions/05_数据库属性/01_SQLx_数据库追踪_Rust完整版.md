@@ -1,226 +1,165 @@
-# SQLx 数据库追踪 - Rust 完整实现指南
+# SQLx 数据库追踪 - Rust 完整实现
 
 > **Rust版本**: 1.90+  
-> **SQLx**: 0.8.3  
+> **SQLx**: 0.8.2  
 > **OpenTelemetry**: 0.31.0  
-> **Tokio**: 1.47.1  
-> **最后更新**: 2025年10月8日  
-> **支持数据库**: PostgreSQL, MySQL, SQLite, MSSQL
+> **最后更新**: 2025年10月9日
 
 ---
 
 ## 目录
 
-- [SQLx 数据库追踪 - Rust 完整实现指南](#sqlx-数据库追踪---rust-完整实现指南)
+- [SQLx 数据库追踪 - Rust 完整实现](#sqlx-数据库追踪---rust-完整实现)
   - [目录](#目录)
   - [1. SQLx 追踪概述](#1-sqlx-追踪概述)
   - [2. 依赖配置](#2-依赖配置)
-  - [3. 数据库语义约定](#3-数据库语义约定)
-  - [4. PostgreSQL 完整集成](#4-postgresql-完整集成)
-    - [4.1 基础查询追踪](#41-基础查询追踪)
-    - [4.2 事务追踪](#42-事务追踪)
-    - [4.3 连接池追踪](#43-连接池追踪)
-  - [5. MySQL 完整集成](#5-mysql-完整集成)
-  - [6. SQLite 完整集成](#6-sqlite-完整集成)
-  - [7. 自动追踪宏](#7-自动追踪宏)
-  - [8. 性能优化](#8-性能优化)
+  - [3. SQLx 中间件实现](#3-sqlx-中间件实现)
+  - [4. PostgreSQL 追踪](#4-postgresql-追踪)
+  - [5. MySQL 追踪](#5-mysql-追踪)
+  - [6. SQLite 追踪](#6-sqlite-追踪)
+  - [7. 事务追踪](#7-事务追踪)
+  - [8. 连接池监控](#8-连接池监控)
   - [9. 完整示例](#9-完整示例)
-  - [10. 生产环境最佳实践](#10-生产环境最佳实践)
-  - [11. 参考资源](#11-参考资源)
 
 ---
 
 ## 1. SQLx 追踪概述
 
-**为什么追踪数据库操作**:
+**数据库追踪语义约定**:
 
-```text
-数据库通常是性能瓶颈:
-- 查询慢
-- 连接泄漏
-- 事务阻塞
-- N+1 问题
+```rust
+use opentelemetry_semantic_conventions::trace::{
+    DB_SYSTEM,           // 数据库类型: "postgresql", "mysql", "sqlite"
+    DB_NAME,             // 数据库名称
+    DB_STATEMENT,        // SQL 语句
+    DB_OPERATION,        // 操作类型: "SELECT", "INSERT", "UPDATE", "DELETE"
+    DB_SQL_TABLE,        // 表名
+    DB_USER,             // 数据库用户
+    DB_CONNECTION_STRING, // 连接字符串 (不含密码)
+};
 
-追踪数据库可以:
-✅ 定位慢查询
-✅ 发现 N+1 问题
-✅ 监控连接池状态
-✅ 追踪事务生命周期
-✅ 优化查询性能
-```
-
-**Span 模型**:
-
-```text
-┌─────────────────────────────────────────────┐
-│         HTTP Request Span                   │
-│  ┌─────────────────────────────────────┐   │
-│  │  Database Query Span                │   │
-│  │  SpanKind::Client                   │   │
-│  │  db.system: postgresql              │   │
-│  │  db.statement: SELECT * FROM users  │   │
-│  │  db.operation: SELECT               │   │
-│  └─────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────┐   │
-│  │  Database Transaction Span          │   │
-│  │  BEGIN → Query → Query → COMMIT     │   │
-│  └─────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
+/// 数据库 Span 属性
+#[derive(Debug, Clone)]
+pub struct DbSpanAttributes {
+    pub system: String,        // "postgresql"
+    pub name: String,          // "mydb"
+    pub statement: String,     // "SELECT * FROM users WHERE id = $1"
+    pub operation: String,     // "SELECT"
+    pub table: Option<String>, // "users"
+    pub user: Option<String>,  // "dbuser"
+}
 ```
 
 ---
 
 ## 2. 依赖配置
 
-**Cargo.toml**:
-
 ```toml
-[package]
-name = "sqlx-otlp-tracing"
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.90"
-
 [dependencies]
-# SQLx (Rust 1.90 兼容, 2025年10月最新)
-sqlx = { version = "0.8.3", features = [
-    "runtime-tokio",       # Tokio 运行时
-    "postgres",            # PostgreSQL 支持
-    "mysql",               # MySQL 支持
-    "sqlite",              # SQLite 支持
-    "uuid",                # UUID 类型
-    "chrono",              # 时间类型
-    "json",                # JSON 类型
-    "macros",              # SQL 宏
+# SQLx
+sqlx = { version = "0.8.2", features = [
+    "runtime-tokio",
+    "postgres",
+    "mysql",
+    "sqlite",
+    "uuid",
+    "chrono",
+    "json",
 ] }
 
-# OpenTelemetry 生态系统 (2025年10月最新)
-opentelemetry = "0.31.0"
+# OpenTelemetry
+opentelemetry = { version = "0.31.0", features = ["trace"] }
 opentelemetry_sdk = { version = "0.31.0", features = ["rt-tokio", "trace"] }
-opentelemetry-otlp = { version = "0.31.0", features = ["grpc-tonic", "trace"] }
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json"] }
-tracing-opentelemetry = "0.31"
+opentelemetry-semantic-conventions = "0.31.0"
 
-# 异步运行时 (Rust 1.90 优化)
-tokio = { version = "1.47.1", features = ["full"] }
-tokio-stream = "0.1.17"
-futures = "0.3.31"
+# Tracing
+tracing = "0.1.40"
+tracing-opentelemetry = "0.31.0"
 
-# 序列化
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.145"
-
-# 错误处理
-thiserror = "2.0.17"
-anyhow = "1.0.100"
-
-# 工具库
-uuid = { version = "1.18.1", features = ["v4", "serde"] }
-chrono = { version = "0.4.42", features = ["serde"] }
-
-[dev-dependencies]
-tokio-test = "0.4.4"
+# Async runtime
+tokio = { version = "1.47", features = ["full"] }
 ```
 
 ---
 
-## 3. 数据库语义约定
+## 3. SQLx 中间件实现
 
-**OpenTelemetry 数据库属性** (Rust 类型安全):
+**自定义 Executor 包装器**:
 
 ```rust
-use opentelemetry::KeyValue;
-use serde::Serialize;
+use sqlx::{Database, Executor, postgres::PgRow};
+use tracing::{instrument, info};
+use opentelemetry::trace::{SpanKind, TraceContextExt};
 
-/// 数据库语义约定属性
-#[derive(Debug, Clone, Serialize)]
-pub struct DatabaseAttributes {
-    /// 数据库系统 (postgresql, mysql, sqlite, mssql)
-    pub system: &'static str,
-    
-    /// 连接字符串
-    pub connection_string: String,
-    
-    /// 数据库名称
-    pub name: Option<String>,
-    
-    /// 用户名
-    pub user: Option<String>,
-    
-    /// 服务器地址
-    pub server_address: Option<String>,
-    
-    /// 服务器端口
-    pub server_port: Option<u16>,
-    
-    /// SQL 语句
-    pub statement: Option<String>,
-    
-    /// 操作类型 (SELECT, INSERT, UPDATE, DELETE, etc.)
-    pub operation: Option<String>,
-    
-    /// 表名
-    pub table: Option<String>,
+/// 带追踪的 SQLx Executor 包装器
+pub struct TracedExecutor<'a, DB: Database> {
+    executor: &'a mut dyn Executor<'a, Database = DB>,
+    db_system: &'static str,
+    db_name: String,
 }
 
-impl DatabaseAttributes {
-    /// 转换为 OpenTelemetry KeyValue
-    pub fn to_key_values(&self) -> Vec<KeyValue> {
-        let mut attrs = vec![
-            KeyValue::new("db.system", self.system),
-        ];
+impl<'a, DB: Database> TracedExecutor<'a, DB> {
+    pub fn new(
+        executor: &'a mut dyn Executor<'a, Database = DB>,
+        db_system: &'static str,
+        db_name: String,
+    ) -> Self {
+        Self {
+            executor,
+            db_system,
+            db_name,
+        }
+    }
+    
+    /// 执行带追踪的查询
+    #[instrument(skip(self, query))]
+    pub async fn execute_traced<'q>(
+        &mut self,
+        query: &'q str,
+    ) -> Result<u64, sqlx::Error> {
+        let span = tracing::Span::current();
         
-        if let Some(ref name) = self.name {
-            attrs.push(KeyValue::new("db.name", name.clone()));
+        // 设置数据库属性
+        span.record("db.system", self.db_system);
+        span.record("db.name", &self.db_name);
+        span.record("db.statement", query);
+        
+        // 提取操作类型
+        if let Some(operation) = extract_operation(query) {
+            span.record("db.operation", operation);
         }
         
-        if let Some(ref user) = self.user {
-            attrs.push(KeyValue::new("db.user", user.clone()));
-        }
+        // 执行查询
+        let start = std::time::Instant::now();
+        let result = sqlx::query(query).execute(self.executor).await;
+        let duration = start.elapsed();
         
-        if let Some(ref address) = self.server_address {
-            attrs.push(KeyValue::new("server.address", address.clone()));
-        }
+        // 记录性能
+        info!(
+            duration_ms = duration.as_millis(),
+            "Query executed"
+        );
         
-        if let Some(port) = self.server_port {
-            attrs.push(KeyValue::new("server.port", port as i64));
-        }
-        
-        if let Some(ref statement) = self.statement {
-            attrs.push(KeyValue::new("db.statement", statement.clone()));
-        }
-        
-        if let Some(ref operation) = self.operation {
-            attrs.push(KeyValue::new("db.operation", operation.clone()));
-        }
-        
-        if let Some(ref table) = self.table {
-            attrs.push(KeyValue::new("db.sql.table", table.clone()));
-        }
-        
-        attrs
+        result.map(|r| r.rows_affected())
     }
 }
 
-/// 从 SQL 语句提取操作类型
-pub fn extract_operation(sql: &str) -> Option<String> {
-    let sql = sql.trim_start().to_uppercase();
+/// 提取 SQL 操作类型
+fn extract_operation(sql: &str) -> Option<&str> {
+    let sql = sql.trim().to_uppercase();
     
     if sql.starts_with("SELECT") {
-        Some("SELECT".to_string())
+        Some("SELECT")
     } else if sql.starts_with("INSERT") {
-        Some("INSERT".to_string())
+        Some("INSERT")
     } else if sql.starts_with("UPDATE") {
-        Some("UPDATE".to_string())
+        Some("UPDATE")
     } else if sql.starts_with("DELETE") {
-        Some("DELETE".to_string())
-    } else if sql.starts_with("BEGIN") || sql.starts_with("START TRANSACTION") {
-        Some("BEGIN".to_string())
-    } else if sql.starts_with("COMMIT") {
-        Some("COMMIT".to_string())
-    } else if sql.starts_with("ROLLBACK") {
-        Some("ROLLBACK".to_string())
+        Some("DELETE")
+    } else if sql.starts_with("CREATE") {
+        Some("CREATE")
+    } else if sql.starts_with("DROP") {
+        Some("DROP")
     } else {
         None
     }
@@ -229,550 +168,346 @@ pub fn extract_operation(sql: &str) -> Option<String> {
 
 ---
 
-## 4. PostgreSQL 完整集成
+## 4. PostgreSQL 追踪
 
-### 4.1 基础查询追踪
-
-**完整的 PostgreSQL 查询追踪**:
+**完整 PostgreSQL 集成**:
 
 ```rust
-use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow};
-use sqlx::{Executor, Row};
-use opentelemetry::{
-    global,
-    trace::{Span, SpanKind, Status, Tracer},
-    Context, KeyValue,
-};
-use tracing::{error, info, instrument};
+use sqlx::postgres::{PgPool, PgPoolOptions};
+use sqlx::Row;
 
 /// 带追踪的 PostgreSQL 连接池
 pub struct TracedPgPool {
     pool: PgPool,
-    tracer: Box<dyn Tracer + Send + Sync>,
     db_name: String,
-    server_address: String,
-    server_port: u16,
 }
 
 impl TracedPgPool {
-    /// 创建新的追踪连接池
+    /// 创建连接池
     pub async fn connect(database_url: &str) -> Result<Self, sqlx::Error> {
-        // 解析数据库 URL
-        let (db_name, server_address, server_port) = parse_database_url(database_url)?;
-        
-        // 创建连接池
         let pool = PgPoolOptions::new()
-            .max_connections(20)
-            .min_connections(5)
-            .acquire_timeout(std::time::Duration::from_secs(30))
-            .idle_timeout(std::time::Duration::from_secs(600))
-            .max_lifetime(std::time::Duration::from_secs(1800))
+            .max_connections(5)
             .connect(database_url)
             .await?;
         
-        info!(
-            db = %db_name,
-            server = %server_address,
-            port = server_port,
-            "Connected to PostgreSQL"
-        );
+        let db_name = pool.connect_options()
+            .get_database()
+            .unwrap_or("unknown")
+            .to_string();
         
-        let tracer = global::tracer("sqlx-postgres");
-        
-        Ok(Self {
-            pool,
-            tracer: Box::new(tracer),
-            db_name,
-            server_address,
-            server_port,
-        })
+        Ok(Self { pool, db_name })
     }
     
-    /// 执行查询并追踪
+    /// 执行查询
     #[instrument(skip(self, query))]
-    pub async fn query_traced<'q>(
-        &self,
-        query: &'q str,
-    ) -> Result<Vec<PgRow>, sqlx::Error> {
-        // 创建 Database Span
-        let operation = extract_operation(query).unwrap_or_else(|| "QUERY".to_string());
-        let span_name = format!("postgres.{}", operation);
-        
-        let mut span = self.tracer
-            .span_builder(span_name)
-            .with_kind(SpanKind::Client)
-            .start(&*self.tracer);
-        
-        // 设置数据库属性
-        let attrs = DatabaseAttributes {
-            system: "postgresql",
-            connection_string: "***".to_string(),  // 隐藏敏感信息
-            name: Some(self.db_name.clone()),
-            user: None,  // 可选: 从连接中提取
-            server_address: Some(self.server_address.clone()),
-            server_port: Some(self.server_port),
-            statement: Some(query.to_string()),
-            operation: Some(operation),
-            table: None,  // 可选: 从 SQL 提取表名
-        };
-        
-        span.set_attributes(attrs.to_key_values());
-        
-        // 执行查询
-        let start = std::time::Instant::now();
-        let result = sqlx::query(query)
-            .fetch_all(&self.pool)
-            .await;
-        let duration = start.elapsed();
-        
-        // 记录结果
-        match &result {
-            Ok(rows) => {
-                span.set_attribute(KeyValue::new("db.result.row_count", rows.len() as i64));
-                span.set_attribute(KeyValue::new("db.duration_ms", duration.as_millis() as i64));
-                span.set_status(Status::Ok);
-                
-                info!(
-                    operation = %operation,
-                    rows = rows.len(),
-                    duration_ms = duration.as_millis(),
-                    "Query executed successfully"
-                );
-            }
-            Err(e) => {
-                let error_msg = e.to_string();
-                span.record_error(&error_msg);
-                span.set_status(Status::error(error_msg.clone()));
-                
-                error!(
-                    operation = %operation,
-                    error = %error_msg,
-                    "Query failed"
-                );
-            }
-        }
-        
-        result
-    }
-    
-    /// 执行插入/更新/删除并追踪
-    #[instrument(skip(self, query))]
-    pub async fn execute_traced<'q>(
-        &self,
-        query: &'q str,
-    ) -> Result<PgQueryResult, sqlx::Error> {
-        let operation = extract_operation(query).unwrap_or_else(|| "EXECUTE".to_string());
-        let span_name = format!("postgres.{}", operation);
-        
-        let mut span = self.tracer
-            .span_builder(span_name)
-            .with_kind(SpanKind::Client)
-            .start(&*self.tracer);
+    pub async fn query(&self, query: &str) -> Result<Vec<PgRow>, sqlx::Error> {
+        let span = tracing::Span::current();
         
         // 设置属性
-        let attrs = DatabaseAttributes {
-            system: "postgresql",
-            connection_string: "***".to_string(),
-            name: Some(self.db_name.clone()),
-            user: None,
-            server_address: Some(self.server_address.clone()),
-            server_port: Some(self.server_port),
-            statement: Some(query.to_string()),
-            operation: Some(operation.clone()),
-            table: None,
-        };
+        span.record("db.system", "postgresql");
+        span.record("db.name", &self.db_name);
+        span.record("db.statement", query);
         
-        span.set_attributes(attrs.to_key_values());
-        
-        // 执行命令
-        let start = std::time::Instant::now();
-        let result = sqlx::query(query)
-            .execute(&self.pool)
-            .await;
-        let duration = start.elapsed();
-        
-        // 记录结果
-        match &result {
-            Ok(query_result) => {
-                span.set_attribute(KeyValue::new("db.result.rows_affected", 
-                    query_result.rows_affected() as i64));
-                span.set_attribute(KeyValue::new("db.duration_ms", 
-                    duration.as_millis() as i64));
-                span.set_status(Status::Ok);
-                
-                info!(
-                    operation = %operation,
-                    rows_affected = query_result.rows_affected(),
-                    duration_ms = duration.as_millis(),
-                    "Command executed successfully"
-                );
-            }
-            Err(e) => {
-                let error_msg = e.to_string();
-                span.record_error(&error_msg);
-                span.set_status(Status::error(error_msg));
-            }
+        if let Some(op) = extract_operation(query) {
+            span.record("db.operation", op);
         }
         
-        result
+        // 执行查询
+        let rows = sqlx::query(query)
+            .fetch_all(&self.pool)
+            .await?;
+        
+        tracing::info!(rows_count = rows.len(), "Query completed");
+        
+        Ok(rows)
     }
-}
-
-/// 解析数据库 URL
-fn parse_database_url(url: &str) -> Result<(String, String, u16), sqlx::Error> {
-    // 简化版解析: postgresql://user:password@localhost:5432/dbname
-    let default_db = "postgres".to_string();
-    let default_host = "localhost".to_string();
-    let default_port = 5432;
     
-    // 实际项目中使用更健壮的 URL 解析
-    Ok((default_db, default_host, default_port))
+    /// 查询单行
+    #[instrument(skip(self, query))]
+    pub async fn query_one(&self, query: &str) -> Result<PgRow, sqlx::Error> {
+        span_attributes!(
+            "db.system" => "postgresql",
+            "db.name" => &self.db_name,
+            "db.statement" => query
+        );
+        
+        sqlx::query(query).fetch_one(&self.pool).await
+    }
+    
+    /// 执行语句
+    #[instrument(skip(self, query))]
+    pub async fn execute(&self, query: &str) -> Result<u64, sqlx::Error> {
+        span_attributes!(
+            "db.system" => "postgresql",
+            "db.name" => &self.db_name,
+            "db.statement" => query
+        );
+        
+        let result = sqlx::query(query).execute(&self.pool).await?;
+        
+        Ok(result.rows_affected())
+    }
 }
 
 /// 使用示例
 #[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-    // 初始化 OpenTelemetry
-    init_telemetry().await?;
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 连接数据库
+    let pool = TracedPgPool::connect("postgres://user:pass@localhost/mydb").await?;
     
-    // 创建追踪连接池
-    let pool = TracedPgPool::connect("postgresql://user:password@localhost:5432/mydb").await?;
+    // 查询用户
+    let users = pool.query("SELECT * FROM users WHERE active = true").await?;
     
-    // 执行查询
-    let rows = pool.query_traced("SELECT * FROM users WHERE active = true").await?;
+    println!("Found {} users", users.len());
     
-    for row in rows {
-        let id: i32 = row.get("id");
-        let name: String = row.get("name");
-        println!("User: {} - {}", id, name);
-    }
-    
-    // 执行插入
-    let result = pool.execute_traced(
-        "INSERT INTO users (name, email) VALUES ('John', 'john@example.com')"
+    // 插入用户
+    let rows_affected = pool.execute(
+        "INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com')"
     ).await?;
     
-    println!("Inserted {} rows", result.rows_affected());
+    println!("Inserted {} rows", rows_affected);
     
     Ok(())
 }
 ```
 
-### 4.2 事务追踪
-
-**完整的事务追踪**:
+**类型安全的查询**:
 
 ```rust
-use sqlx::Transaction;
+use sqlx::FromRow;
+
+#[derive(Debug, FromRow)]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub email: String,
+}
 
 impl TracedPgPool {
-    /// 开始事务并追踪
+    /// 查询用户列表
     #[instrument(skip(self))]
-    pub async fn begin_traced(&self) -> Result<TracedTransaction<'_>, sqlx::Error> {
-        // 创建事务 Span
-        let mut span = self.tracer
-            .span_builder("postgres.transaction")
-            .with_kind(SpanKind::Client)
-            .start(&*self.tracer);
+    pub async fn get_users(&self) -> Result<Vec<User>, sqlx::Error> {
+        span_attributes!("db.operation" => "SELECT", "db.table" => "users");
         
-        span.set_attribute(KeyValue::new("db.system", "postgresql"));
-        span.set_attribute(KeyValue::new("db.operation", "BEGIN"));
+        let users = sqlx::query_as::<_, User>("SELECT id, name, email FROM users")
+            .fetch_all(&self.pool)
+            .await?;
         
-        // 开始事务
-        let tx = self.pool.begin().await?;
+        tracing::info!(count = users.len(), "Users fetched");
         
-        info!("Transaction started");
-        
-        Ok(TracedTransaction {
-            tx,
-            span,
-            tracer: self.tracer.clone(),
-            db_name: self.db_name.clone(),
-        })
-    }
-}
-
-/// 带追踪的事务
-pub struct TracedTransaction<'c> {
-    tx: Transaction<'c, sqlx::Postgres>,
-    span: Box<dyn Span>,
-    tracer: Box<dyn Tracer + Send + Sync>,
-    db_name: String,
-}
-
-impl<'c> TracedTransaction<'c> {
-    /// 在事务中执行查询
-    pub async fn query_traced(
-        &mut self,
-        query: &str,
-    ) -> Result<Vec<PgRow>, sqlx::Error> {
-        let operation = extract_operation(query).unwrap_or_else(|| "QUERY".to_string());
-        let span_name = format!("postgres.{}", operation);
-        
-        let mut query_span = self.tracer
-            .span_builder(span_name)
-            .with_kind(SpanKind::Client)
-            .start(&*self.tracer);
-        
-        query_span.set_attribute(KeyValue::new("db.system", "postgresql"));
-        query_span.set_attribute(KeyValue::new("db.statement", query.to_string()));
-        query_span.set_attribute(KeyValue::new("db.operation", operation));
-        
-        let result = sqlx::query(query)
-            .fetch_all(&mut *self.tx)
-            .await;
-        
-        match &result {
-            Ok(rows) => {
-                query_span.set_attribute(KeyValue::new("db.result.row_count", rows.len() as i64));
-                query_span.set_status(Status::Ok);
-            }
-            Err(e) => {
-                query_span.record_error(&e.to_string());
-                query_span.set_status(Status::error(e.to_string()));
-            }
-        }
-        
-        result
+        Ok(users)
     }
     
-    /// 提交事务
-    pub async fn commit_traced(self) -> Result<(), sqlx::Error> {
-        self.span.set_attribute(KeyValue::new("db.operation", "COMMIT"));
+    /// 根据ID获取用户
+    #[instrument(skip(self))]
+    pub async fn get_user_by_id(&self, id: i32) -> Result<User, sqlx::Error> {
+        span_attributes!(
+            "db.operation" => "SELECT",
+            "db.table" => "users",
+            "user.id" => id
+        );
         
-        let result = self.tx.commit().await;
+        let user = sqlx::query_as::<_, User>(
+            "SELECT id, name, email FROM users WHERE id = $1"
+        )
+        .bind(id)
+        .fetch_one(&self.pool)
+        .await?;
         
-        match &result {
-            Ok(_) => {
-                self.span.set_status(Status::Ok);
-                info!("Transaction committed");
-            }
-            Err(e) => {
-                self.span.record_error(&e.to_string());
-                self.span.set_status(Status::error(e.to_string()));
-                error!("Transaction commit failed: {}", e);
-            }
-        }
-        
-        result
-    }
-    
-    /// 回滚事务
-    pub async fn rollback_traced(self) -> Result<(), sqlx::Error> {
-        self.span.set_attribute(KeyValue::new("db.operation", "ROLLBACK"));
-        
-        let result = self.tx.rollback().await;
-        
-        match &result {
-            Ok(_) => {
-                self.span.set_status(Status::Ok);
-                info!("Transaction rolled back");
-            }
-            Err(e) => {
-                self.span.record_error(&e.to_string());
-                self.span.set_status(Status::error(e.to_string()));
-            }
-        }
-        
-        result
-    }
-}
-
-/// 事务使用示例
-pub async fn transfer_money_traced(
-    pool: &TracedPgPool,
-    from_user: i32,
-    to_user: i32,
-    amount: f64,
-) -> Result<(), anyhow::Error> {
-    // 开始事务
-    let mut tx = pool.begin_traced().await?;
-    
-    // 扣款
-    tx.query_traced(&format!(
-        "UPDATE accounts SET balance = balance - {} WHERE user_id = {}",
-        amount, from_user
-    )).await?;
-    
-    // 加款
-    tx.query_traced(&format!(
-        "UPDATE accounts SET balance = balance + {} WHERE user_id = {}",
-        amount, to_user
-    )).await?;
-    
-    // 提交事务
-    tx.commit_traced().await?;
-    
-    Ok(())
-}
-```
-
-### 4.3 连接池追踪
-
-**连接池状态监控**:
-
-```rust
-use opentelemetry::metrics::{Gauge, Counter};
-
-pub struct PoolMetrics {
-    connections_total: Gauge<u64>,
-    connections_active: Gauge<u64>,
-    connections_idle: Gauge<u64>,
-    acquire_duration: Counter<f64>,
-}
-
-impl PoolMetrics {
-    pub fn new() -> Self {
-        let meter = opentelemetry::global::meter("sqlx-pool");
-        
-        Self {
-            connections_total: meter
-                .u64_gauge("db.pool.connections.total")
-                .init(),
-            connections_active: meter
-                .u64_gauge("db.pool.connections.active")
-                .init(),
-            connections_idle: meter
-                .u64_gauge("db.pool.connections.idle")
-                .init(),
-            acquire_duration: meter
-                .f64_counter("db.pool.acquire.duration")
-                .init(),
-        }
-    }
-    
-    pub fn record_pool_state(&self, pool: &PgPool) {
-        self.connections_total.record(pool.size() as u64, &[]);
-        // 注: SQLx 0.8.3 可能需要不同的 API 获取活跃/空闲连接数
+        Ok(user)
     }
 }
 ```
 
 ---
 
-## 5. MySQL 完整集成
+## 5. MySQL 追踪
 
-**MySQL 追踪实现** (类似 PostgreSQL):
+**MySQL 实现**:
 
 ```rust
 use sqlx::mysql::{MySqlPool, MySqlPoolOptions};
 
 pub struct TracedMySqlPool {
     pool: MySqlPool,
-    tracer: Box<dyn Tracer + Send + Sync>,
     db_name: String,
 }
 
 impl TracedMySqlPool {
     pub async fn connect(database_url: &str) -> Result<Self, sqlx::Error> {
         let pool = MySqlPoolOptions::new()
-            .max_connections(20)
+            .max_connections(5)
             .connect(database_url)
             .await?;
         
-        let tracer = global::tracer("sqlx-mysql");
+        let db_name = "mydb".to_string(); // 从 URL 提取
         
-        Ok(Self {
-            pool,
-            tracer: Box::new(tracer),
-            db_name: "mydb".to_string(),  // 从 URL 提取
-        })
+        Ok(Self { pool, db_name })
     }
     
-    // ... (类似 TracedPgPool 的方法)
+    #[instrument(skip(self, query))]
+    pub async fn query(&self, query: &str) -> Result<Vec<sqlx::mysql::MySqlRow>, sqlx::Error> {
+        span_attributes!(
+            "db.system" => "mysql",
+            "db.name" => &self.db_name,
+            "db.statement" => query
+        );
+        
+        sqlx::query(query).fetch_all(&self.pool).await
+    }
 }
 ```
 
 ---
 
-## 6. SQLite 完整集成
+## 6. SQLite 追踪
 
-**SQLite 追踪实现**:
+**SQLite 实现**:
 
 ```rust
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
 pub struct TracedSqlitePool {
     pool: SqlitePool,
-    tracer: Box<dyn Tracer + Send + Sync>,
     db_path: String,
 }
 
 impl TracedSqlitePool {
     pub async fn connect(database_url: &str) -> Result<Self, sqlx::Error> {
         let pool = SqlitePoolOptions::new()
-            .max_connections(10)
+            .max_connections(5)
             .connect(database_url)
             .await?;
         
-        let tracer = global::tracer("sqlx-sqlite");
+        let db_path = database_url.replace("sqlite:", "");
         
-        Ok(Self {
-            pool,
-            tracer: Box::new(tracer),
-            db_path: database_url.to_string(),
-        })
+        Ok(Self { pool, db_path })
     }
     
-    // ... (类似 TracedPgPool 的方法)
+    #[instrument(skip(self, query))]
+    pub async fn query(&self, query: &str) -> Result<Vec<sqlx::sqlite::SqliteRow>, sqlx::Error> {
+        span_attributes!(
+            "db.system" => "sqlite",
+            "db.name" => &self.db_path,
+            "db.statement" => query
+        );
+        
+        sqlx::query(query).fetch_all(&self.pool).await
+    }
 }
 ```
 
 ---
 
-## 7. 自动追踪宏
+## 7. 事务追踪
 
-**自定义宏简化追踪**:
+**完整事务追踪**:
 
 ```rust
-/// 自动追踪查询的宏
-#[macro_export]
-macro_rules! query_traced {
-    ($pool:expr, $query:expr) => {{
-        let operation = extract_operation($query).unwrap_or_else(|| "QUERY".to_string());
-        tracing::info!(operation = %operation, query = %$query, "Executing query");
-        $pool.query_traced($query).await
-    }};
+use sqlx::Transaction;
+use sqlx::postgres::Postgres;
+
+impl TracedPgPool {
+    /// 执行事务
+    #[instrument(skip(self, f))]
+    pub async fn transaction<F, T>(&self, f: F) -> Result<T, sqlx::Error>
+    where
+        F: for<'c> FnOnce(&'c mut Transaction<'_, Postgres>) -> 
+            std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, sqlx::Error>> + Send + 'c>>,
+    {
+        let mut tx = self.pool.begin().await?;
+        
+        tracing::info!("Transaction started");
+        
+        // 执行事务逻辑
+        match f(&mut tx).await {
+            Ok(result) => {
+                tx.commit().await?;
+                tracing::info!("Transaction committed");
+                Ok(result)
+            }
+            Err(e) => {
+                tx.rollback().await?;
+                tracing::error!("Transaction rolled back: {:?}", e);
+                Err(e)
+            }
+        }
+    }
 }
 
 /// 使用示例
-async fn get_users(pool: &TracedPgPool) -> Result<Vec<PgRow>, sqlx::Error> {
-    query_traced!(pool, "SELECT * FROM users")
+async fn transfer_funds(
+    pool: &TracedPgPool,
+    from_id: i32,
+    to_id: i32,
+    amount: f64,
+) -> Result<(), sqlx::Error> {
+    pool.transaction(|tx| {
+        Box::pin(async move {
+            // 扣款
+            sqlx::query("UPDATE accounts SET balance = balance - $1 WHERE id = $2")
+                .bind(amount)
+                .bind(from_id)
+                .execute(&mut **tx)
+                .await?;
+            
+            // 入账
+            sqlx::query("UPDATE accounts SET balance = balance + $1 WHERE id = $2")
+                .bind(amount)
+                .bind(to_id)
+                .execute(&mut **tx)
+                .await?;
+            
+            Ok(())
+        })
+    }).await
 }
 ```
 
 ---
 
-## 8. 性能优化
+## 8. 连接池监控
 
-**批量操作追踪**:
+**连接池指标**:
 
 ```rust
-impl TracedPgPool {
-    /// 批量插入
-    pub async fn batch_insert_traced(
-        &self,
-        table: &str,
-        rows: Vec<Vec<&str>>,
-    ) -> Result<u64, sqlx::Error> {
-        let mut span = self.tracer
-            .span_builder(format!("postgres.BATCH_INSERT {}", table))
-            .with_kind(SpanKind::Client)
-            .start(&*self.tracer);
-        
-        span.set_attribute(KeyValue::new("db.batch.size", rows.len() as i64));
-        
-        let mut total_affected = 0;
-        
-        for row in rows {
-            // 批量插入逻辑
-            // ...
+use opentelemetry::metrics::{Counter, Histogram, Meter};
+
+pub struct PoolMetrics {
+    connections_active: Histogram<u64>,
+    connections_idle: Histogram<u64>,
+    connection_acquire_duration: Histogram<f64>,
+    queries_executed: Counter<u64>,
+}
+
+impl PoolMetrics {
+    pub fn new(meter: &Meter) -> Self {
+        Self {
+            connections_active: meter
+                .u64_histogram("db.connections.active")
+                .with_description("Active database connections")
+                .init(),
+            
+            connections_idle: meter
+                .u64_histogram("db.connections.idle")
+                .with_description("Idle database connections")
+                .init(),
+            
+            connection_acquire_duration: meter
+                .f64_histogram("db.connection.acquire_duration")
+                .with_unit("ms")
+                .init(),
+            
+            queries_executed: meter
+                .u64_counter("db.queries.executed")
+                .with_description("Total queries executed")
+                .init(),
         }
-        
-        span.set_attribute(KeyValue::new("db.result.rows_affected", total_affected as i64));
-        span.set_status(Status::Ok);
-        
-        Ok(total_affected)
+    }
+    
+    pub fn record_pool_state(&self, pool: &PgPool) {
+        self.connections_active.record(pool.size() as u64, &[]);
+        self.connections_idle.record(pool.num_idle() as u64, &[]);
     }
 }
 ```
@@ -781,110 +516,88 @@ impl TracedPgPool {
 
 ## 9. 完整示例
 
-**生产级数据库服务**:
+**生产级应用**:
 
 ```rust
-use std::sync::Arc;
+use sqlx::postgres::PgPool;
+use opentelemetry::{global, KeyValue};
 
-pub struct UserRepository {
-    pool: Arc<TracedPgPool>,
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 初始化 OpenTelemetry
+    init_telemetry().await?;
+    
+    // 连接数据库
+    let pool = TracedPgPool::connect("postgres://user:pass@localhost/mydb").await?;
+    
+    // 创建用户
+    let user_id = create_user(&pool, "Alice", "alice@example.com").await?;
+    println!("Created user: {}", user_id);
+    
+    // 查询用户
+    let user = pool.get_user_by_id(user_id).await?;
+    println!("User: {:?}", user);
+    
+    // 更新用户
+    update_user(&pool, user_id, "Alice Smith").await?;
+    
+    // 删除用户
+    delete_user(&pool, user_id).await?;
+    
+    // 关闭
+    global::shutdown_tracer_provider();
+    
+    Ok(())
 }
 
-impl UserRepository {
-    pub fn new(pool: Arc<TracedPgPool>) -> Self {
-        Self { pool }
-    }
+#[instrument(skip(pool))]
+async fn create_user(
+    pool: &TracedPgPool,
+    name: &str,
+    email: &str,
+) -> Result<i32, sqlx::Error> {
+    let row = sqlx::query(
+        "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id"
+    )
+    .bind(name)
+    .bind(email)
+    .fetch_one(&pool.pool)
+    .await?;
     
-    #[instrument(skip(self))]
-    pub async fn find_by_id(&self, id: i32) -> Result<Option<User>, anyhow::Error> {
-        let rows = self.pool
-            .query_traced(&format!("SELECT * FROM users WHERE id = {}", id))
-            .await?;
-        
-        if let Some(row) = rows.first() {
-            Ok(Some(User {
-                id: row.get("id"),
-                name: row.get("name"),
-                email: row.get("email"),
-            }))
-        } else {
-            Ok(None)
-        }
-    }
-    
-    #[instrument(skip(self))]
-    pub async fn create(&self, name: &str, email: &str) -> Result<User, anyhow::Error> {
-        let result = self.pool
-            .execute_traced(&format!(
-                "INSERT INTO users (name, email) VALUES ('{}', '{}') RETURNING id",
-                name, email
-            ))
-            .await?;
-        
-        // ... (返回创建的用户)
-        
-        Ok(User {
-            id: 1,  // 从 result 提取
-            name: name.to_string(),
-            email: email.to_string(),
-        })
-    }
+    Ok(row.get(0))
 }
 
-#[derive(Debug)]
-pub struct User {
-    pub id: i32,
-    pub name: String,
-    pub email: String,
+#[instrument(skip(pool))]
+async fn update_user(
+    pool: &TracedPgPool,
+    id: i32,
+    name: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE users SET name = $1 WHERE id = $2")
+        .bind(name)
+        .bind(id)
+        .execute(&pool.pool)
+        .await?;
+    
+    Ok(())
+}
+
+#[instrument(skip(pool))]
+async fn delete_user(pool: &TracedPgPool, id: i32) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(id)
+        .execute(&pool.pool)
+        .await?;
+    
+    Ok(())
 }
 ```
 
 ---
 
-## 10. 生产环境最佳实践
+**相关文档**:
+- [HTTP追踪 Rust实现](../02_追踪属性/01_HTTP_Rust完整版.md)
+- [Context Propagation](../../04_核心组件/04_Context_Propagation详解_Rust完整版.md)
 
-```text
-✅ 连接池配置
-  □ 设置合理的连接数
-  □ 配置超时时间
-  □ 监控连接状态
-  □ 连接泄漏检测
-
-✅ 追踪配置
-  □ 记录 SQL 语句
-  □ 记录操作类型
-  □ 记录影响行数
-  □ 记录执行时间
-
-✅ 性能优化
-  □ 使用预编译语句
-  □ 批量操作
-  □ 连接复用
-  □ 索引优化
-
-✅ 安全
-  □ 防止 SQL 注入
-  □ 隐藏敏感信息
-  □ 使用参数化查询
-  □ 审计日志
-```
-
----
-
-## 11. 参考资源
-
-**官方文档** (2025年10月最新):
-
-- [SQLx Documentation](https://docs.rs/sqlx/0.8.3)
-- [OpenTelemetry Database Conventions](https://opentelemetry.io/docs/specs/semconv/database/)
-
----
-
-**文档状态**: ✅ 完成 (Rust 1.90 + SQLx 0.8.3)  
-**最后更新**: 2025年10月8日  
-**审核状态**: 生产就绪  
-**许可证**: MIT OR Apache-2.0
-
----
-
-[🏠 返回主目录](../../README.md) | [📖 查看其他集成](../README.md)
+**文档状态**: ✅ 完成  
+**最后更新**: 2025年10月9日

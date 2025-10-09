@@ -23,7 +23,13 @@
   - [10. 完整实战示例](#10-完整实战示例)
   - [11. 性能优化](#11-性能优化)
   - [12. 生产环境最佳实践](#12-生产环境最佳实践)
-  - [13. 参考资源](#13-参考资源)
+  - [13. Rust 1.90 Stream 高级特性](#13-rust-190-stream-高级特性)
+    - [13.1 TryStream 和错误处理](#131-trystream-和错误处理)
+    - [13.2 Stream 合并和组合](#132-stream-合并和组合)
+    - [13.3 Stream 缓冲和节流](#133-stream-缓冲和节流)
+    - [13.4 Stream 分割和广播](#134-stream-分割和广播)
+    - [13.5 性能最佳实践](#135-性能最佳实践)
+  - [14. 参考资源](#14-参考资源)
 
 ---
 
@@ -139,6 +145,16 @@ criterion = "0.7.0"
 use futures::stream::{Stream, StreamExt};
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use tokio_stream::StreamExt as TokioStreamExt;
+
+/// Rust 1.90: Stream Trait 概述
+/// 
+/// Stream 是异步的迭代器，可以按需产生值
+/// 特性:
+/// - 懒惰评估 (Lazy evaluation)
+/// - 背压控制 (Backpressure control)
+/// - 零拷贝 (Zero-copy when possible)
+/// - 组合器模式 (Combinator pattern)
 
 /// 基础 Stream 示例
 async fn basic_stream_example() {
@@ -148,6 +164,40 @@ async fn basic_stream_example() {
     // 消费 Stream
     let result: Vec<i32> = stream.collect().await;
     println!("Collected: {:?}", result);
+}
+
+/// Rust 1.90: 改进的 Stream 组合器
+async fn advanced_stream_combinators() {
+    use futures::stream;
+    
+    let stream = stream::iter(1..=10);
+    
+    // map: 转换每个元素
+    let mapped = stream
+        .map(|x| x * 2)
+        // filter: 过滤元素
+        .filter(|x| futures::future::ready(*x % 3 == 0))
+        // take: 只取前N个
+        .take(3);
+    
+    let result: Vec<i32> = mapped.collect().await;
+    println!("Result: {:?}", result); // [6, 12, 18]
+}
+
+/// Rust 1.90: Stream 与 Future 的互操作
+async fn stream_future_interop() {
+    use futures::stream;
+    
+    let stream = stream::iter(vec![1, 2, 3, 4, 5]);
+    
+    // for_each: 对每个元素执行异步操作
+    stream
+        .for_each(|x| async move {
+            // 模拟异步操作
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            println!("Processed: {}", x);
+        })
+        .await;
 }
 
 /// 自定义 Stream 实现
@@ -187,6 +237,50 @@ async fn custom_stream_example() {
     
     while let Some(value) = stream.next().await {
         println!("Value: {}", value);
+    }
+}
+
+/// Rust 1.90: 使用 async-stream 宏简化 Stream 创建
+/// 
+/// async-stream 提供了 `stream!` 和 `try_stream!` 宏
+/// 可以使用 async/await 语法创建 Stream
+use async_stream::stream;
+
+fn fibonacci_stream(limit: u32) -> impl Stream<Item = u64> {
+    stream! {
+        let mut a = 0u64;
+        let mut b = 1u64;
+        
+        for _ in 0..limit {
+            yield a;
+            let temp = a;
+            a = b;
+            b = temp + b;
+        }
+    }
+}
+
+async fn fibonacci_example() {
+    let stream = fibonacci_stream(10);
+    tokio::pin!(stream);
+    
+    while let Some(value) = stream.next().await {
+        println!("Fibonacci: {}", value);
+    }
+}
+
+/// Rust 1.90: 异步生成器模式 (使用 async_stream)
+fn span_generator(rate_per_sec: u32) -> impl Stream<Item = String> {
+    stream! {
+        let interval = std::time::Duration::from_millis(1000 / rate_per_sec as u64);
+        let mut ticker = tokio::time::interval(interval);
+        let mut counter = 0u64;
+        
+        loop {
+            ticker.tick().await;
+            counter += 1;
+            yield format!("span-{}", counter);
+        }
     }
 }
 ```
@@ -909,19 +1003,370 @@ impl ProductionOtlpStreamProcessor {
 
 ---
 
-## 13. 参考资源
+## 13. Rust 1.90 Stream 高级特性
+
+### 13.1 TryStream 和错误处理
+
+**Rust 1.90: TryStream 特性**：
+
+```rust
+use futures::stream::{TryStreamExt, StreamExt};
+use tokio_stream as stream;
+
+/// TryStream 提供了强大的错误处理能力
+async fn try_stream_example() {
+    // 创建一个可能失败的 Stream
+    let stream = stream::iter(vec![Ok(1), Err("error"), Ok(3), Ok(4)]);
+    
+    // try_filter: 过滤成功的元素
+    let filtered = stream
+        .try_filter(|&x| futures::future::ready(x > 2));
+    
+    // try_collect: 收集结果，遇到错误会停止
+    match filtered.try_collect::<Vec<_>>().await {
+        Ok(values) => println!("Success: {:?}", values),
+        Err(e) => println!("Error: {}", e),
+    }
+}
+
+/// Rust 1.90: 错误恢复策略
+async fn error_recovery_stream() {
+    use futures::stream;
+    
+    let stream = stream::iter(vec![Ok(1), Err("error"), Ok(3)]);
+    
+    // or_else: 错误恢复
+    let recovered = stream.or_else(|e| {
+        tracing::warn!("Recovered from error: {}", e);
+        futures::future::ok(0)
+    });
+    
+    let result: Result<Vec<_>, _> = recovered.try_collect().await;
+    println!("Result: {:?}", result); // Ok([1, 0, 3])
+}
+
+/// OTLP Span TryStream 处理
+async fn otlp_try_stream_processing() {
+    use anyhow::Result;
+    
+    async fn process_span(span: OtlpSpan) -> Result<OtlpSpan> {
+        // 模拟可能失败的处理
+        if span.name.is_empty() {
+            anyhow::bail!("Invalid span name");
+        }
+        Ok(span)
+    }
+    
+    let span_stream = create_span_stream();
+    
+    // 使用 try_filter_map 处理和过滤
+    let processed = span_stream
+        .then(|span| async move { process_span(span).await })
+        .filter_map(|result| async move {
+            match result {
+                Ok(span) => Some(span),
+                Err(e) => {
+                    tracing::error!("Failed to process span: {}", e);
+                    None
+                }
+            }
+        });
+    
+    tokio::pin!(processed);
+    
+    while let Some(span) = processed.next().await {
+        // 导出处理后的 span
+        tracing::debug!("Exporting span: {}", span.name);
+    }
+}
+```
+
+### 13.2 Stream 合并和组合
+
+**Rust 1.90: 多 Stream 合并**：
+
+```rust
+use futures::stream::{select, select_all, StreamExt};
+
+/// 合并多个 Stream
+async fn merge_streams() {
+    let stream1 = stream::iter(vec![1, 2, 3]);
+    let stream2 = stream::iter(vec![4, 5, 6]);
+    let stream3 = stream::iter(vec![7, 8, 9]);
+    
+    // select_all: 合并多个 Stream
+    let merged = select_all(vec![stream1, stream2, stream3]);
+    
+    let result: Vec<_> = merged.collect().await;
+    println!("Merged: {:?}", result);
+}
+
+/// Rust 1.90: Stream 交叉
+async fn interleave_streams() {
+    use futures::stream::{select, StreamExt};
+    
+    let stream1 = stream::iter(vec![1, 3, 5]);
+    let stream2 = stream::iter(vec![2, 4, 6]);
+    
+    // select: 交叉合并两个 Stream
+    let interleaved = select(stream1, stream2);
+    
+    let result: Vec<_> = interleaved.collect().await;
+    println!("Interleaved: {:?}", result);
+}
+
+/// OTLP 多源 Span 合并
+async fn merge_multi_source_spans() {
+    // 创建多个 Span 源
+    let source1 = create_http_span_stream();
+    let source2 = create_grpc_span_stream();
+    let source3 = create_db_span_stream();
+    
+    // 合并所有源
+    let merged_stream = select_all(vec![
+        Box::pin(source1) as Pin<Box<dyn Stream<Item = OtlpSpan> + Send>>,
+        Box::pin(source2),
+        Box::pin(source3),
+    ]);
+    
+    // 统一处理
+    let processed = merged_stream
+        .map(|span| async move {
+            // 添加源标识
+            let mut span = span;
+            span.attributes.push(("source.type".to_string(), "merged".to_string()));
+            span
+        })
+        .buffer_unordered(10);
+    
+    tokio::pin!(processed);
+    
+    while let Some(span) = processed.next().await {
+        export_span(span).await;
+    }
+}
+
+// 辅助函数
+fn create_http_span_stream() -> impl Stream<Item = OtlpSpan> + Send {
+    stream::iter(vec![])
+}
+
+fn create_grpc_span_stream() -> impl Stream<Item = OtlpSpan> + Send {
+    stream::iter(vec![])
+}
+
+fn create_db_span_stream() -> impl Stream<Item = OtlpSpan> + Send {
+    stream::iter(vec![])
+}
+
+async fn export_span(span: OtlpSpan) {
+    tracing::trace!("Exporting span: {}", span.name);
+}
+```
+
+### 13.3 Stream 缓冲和节流
+
+**Rust 1.90: 高级缓冲策略**：
+
+```rust
+use tokio_stream::StreamExt;
+use std::time::Duration;
+
+/// 缓冲策略
+async fn buffer_strategies() {
+    let stream = stream::iter(1..=10);
+    
+    // buffer_unordered: 无序缓冲，最大并发
+    let buffered = stream
+        .map(|x| async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            x * 2
+        })
+        .buffer_unordered(5); // 最多5个并发任务
+    
+    let result: Vec<_> = buffered.collect().await;
+    println!("Buffered (unordered): {:?}", result);
+}
+
+/// Rust 1.90: 流量控制
+async fn throttle_stream() {
+    use tokio_stream::StreamExt;
+    
+    let stream = stream::iter(1..=100);
+    
+    // throttle: 限制每秒产生的元素数量
+    let throttled = stream.throttle(Duration::from_millis(100));
+    
+    tokio::pin!(throttled);
+    
+    let start = std::time::Instant::now();
+    let mut count = 0;
+    
+    while let Some(value) = throttled.next().await {
+        count += 1;
+        println!("Value: {}", value);
+    }
+    
+    let elapsed = start.elapsed();
+    println!("Processed {} items in {:?}", count, elapsed);
+}
+
+/// OTLP Span 自适应节流
+pub struct AdaptiveThrottler {
+    base_rate: Duration,
+    max_rate: Duration,
+    current_rate: std::sync::Arc<tokio::sync::RwLock<Duration>>,
+}
+
+impl AdaptiveThrottler {
+    pub fn new(base_rate: Duration, max_rate: Duration) -> Self {
+        Self {
+            base_rate,
+            max_rate,
+            current_rate: std::sync::Arc::new(tokio::sync::RwLock::new(base_rate)),
+        }
+    }
+    
+    /// 应用自适应节流
+    pub fn throttle<S>(&self, stream: S) -> impl Stream<Item = OtlpSpan>
+    where
+        S: Stream<Item = OtlpSpan> + Send + 'static,
+    {
+        let current_rate = self.current_rate.clone();
+        
+        stream! {
+            tokio::pin!(stream);
+            
+            while let Some(span) = stream.next().await {
+                let rate = *current_rate.read().await;
+                tokio::time::sleep(rate).await;
+                yield span;
+            }
+        }
+    }
+    
+    /// 根据负载调整速率
+    pub async fn adjust_rate(&self, load_factor: f64) {
+        let mut rate = self.current_rate.write().await;
+        let new_rate = self.base_rate.mul_f64(load_factor);
+        *rate = new_rate.clamp(self.base_rate, self.max_rate);
+        tracing::debug!("Adjusted throttle rate to: {:?}", *rate);
+    }
+}
+```
+
+### 13.4 Stream 分割和广播
+
+**Rust 1.90: Stream 分割**：
+
+```rust
+use futures::stream::StreamExt;
+
+/// Rust 1.90: Stream 分割
+async fn split_stream() {
+    let stream = stream::iter(1..=10);
+    
+    // partition: 根据条件分割
+    let (even, odd): (Vec<_>, Vec<_>) = stream
+        .partition(|x| async move { x % 2 == 0 })
+        .await;
+    
+    println!("Even: {:?}", even);
+    println!("Odd: {:?}", odd);
+}
+
+/// OTLP Span 广播
+pub struct SpanBroadcaster {
+    senders: Vec<tokio::sync::mpsc::Sender<OtlpSpan>>,
+}
+
+impl SpanBroadcaster {
+    pub fn new(num_consumers: usize, buffer_size: usize) -> (Self, Vec<tokio::sync::mpsc::Receiver<OtlpSpan>>) {
+        let (senders, receivers): (Vec<_>, Vec<_>) = (0..num_consumers)
+            .map(|_| tokio::sync::mpsc::channel(buffer_size))
+            .unzip();
+        
+        (Self { senders }, receivers)
+    }
+    
+    /// 广播 Span 到所有消费者
+    pub async fn broadcast<S>(&self, mut stream: S) -> Result<(), anyhow::Error>
+    where
+        S: Stream<Item = OtlpSpan> + Unpin,
+    {
+        while let Some(span) = stream.next().await {
+            // 克隆 span 发送给所有消费者
+            for sender in &self.senders {
+                if let Err(e) = sender.send(span.clone()).await {
+                    tracing::error!("Failed to broadcast span: {}", e);
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+/// 使用示例
+async fn broadcast_example() {
+    let (broadcaster, mut receivers) = SpanBroadcaster::new(3, 100);
+    
+    // 启动消费者任务
+    for (i, mut rx) in receivers.into_iter().enumerate() {
+        tokio::spawn(async move {
+            while let Some(span) = rx.recv().await {
+                tracing::info!("Consumer {} received span: {}", i, span.name);
+            }
+        });
+    }
+    
+    // 广播 span
+    let span_stream = create_span_stream();
+    broadcaster.broadcast(span_stream).await.ok();
+}
+```
+
+### 13.5 性能最佳实践
+
+**Rust 1.90 Stream 性能优化清单**：
+
+```text
+✅ 使用 buffer_unordered 提高并发
+✅ 合理设置缓冲区大小（避免内存过度使用）
+✅ 使用 tokio::spawn 处理CPU密集型任务
+✅ 实现背压控制防止OOM
+✅ 使用 Bytes 实现零拷贝
+✅ 避免在 Stream 中持有长时间的锁
+✅ 使用 select_all 合并多个源
+✅ 应用节流避免下游过载
+✅ 使用 try_stream 简化错误处理
+✅ 批处理减少系统调用
+✅ 预分配容量减少重新分配
+✅ 使用 FuturesUnordered 处理动态任务
+```
+
+---
+
+## 14. 参考资源
 
 **官方文档**:
 
-- [Tokio Stream](https://docs.rs/tokio-stream/)
-- [Futures Stream](https://docs.rs/futures/latest/futures/stream/)
+- [Tokio Stream 1.47.1](https://docs.rs/tokio-stream/0.1.17)
+- [Futures Stream](https://docs.rs/futures/0.3.31/futures/stream/)
+- [async-stream crate](https://docs.rs/async-stream/0.3.7)
 - [Rust Async Book](https://rust-lang.github.io/async-book/)
+- [Stream Trait RFC](https://rust-lang.github.io/rfcs/2996-async-iterator.html)
+
+**性能优化资源**:
+
+- [Tokio Performance Guide](https://tokio.rs/tokio/topics/performance)
+- [Stream Performance Best Practices](https://tokio.rs/tokio/topics/streams)
 
 ---
 
 **文档状态**: ✅ 完成 (Rust 1.90 + Tokio 1.47.1)  
-**最后更新**: 2025年10月8日  
+**最后更新**: 2025年10月9日  
 **审核状态**: 生产就绪  
+**更新内容**: 补充 Rust 1.90 最新 Stream API 和异步迭代器特性  
 **许可证**: MIT OR Apache-2.0
 
 ---
