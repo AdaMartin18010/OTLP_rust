@@ -794,4 +794,3 @@ async fn run_application() -> Result<(), Box<dyn std::error::Error>> {
 **最后更新**: 2025-10-08  
 **维护者**: OTLP Rust Team  
 **许可证**: MIT OR Apache-2.0
-

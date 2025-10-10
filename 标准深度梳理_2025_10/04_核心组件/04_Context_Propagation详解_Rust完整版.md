@@ -1020,10 +1020,10 @@ fn validate_baggage(key: &str, value: &str) -> Result<(), Error> {
 ---
 
 **相关文档**:
+
 - [Rust同步异步编程集成](05_Rust同步异步编程集成.md)
 - [HTTP客户端追踪](08_HTTP_客户端追踪_Reqwest_中间件完整版.md)
 - [gRPC传输层](../01_OTLP核心协议/02_传输层_gRPC_Rust完整版.md)
 
 **文档状态**: ✅ 完成  
 **最后更新**: 2025年10月9日
-

@@ -9,13 +9,27 @@
 
 ## 📋 目录
 
-- [1. 负载均衡概述](#1-负载均衡概述)
-- [2. 基础负载均衡算法](#2-基础负载均衡算法)
-- [3. 动态负载均衡](#3-动态负载均衡)
-- [4. 一致性哈希](#4-一致性哈希)
-- [5. 智能路由](#5-智能路由)
-- [6. 故障转移](#6-故障转移)
-- [7. 完整实现](#7-完整实现)
+- [负载均衡与路由算法 - Rust完整实现](#负载均衡与路由算法---rust完整实现)
+  - [📋 目录](#-目录)
+  - [1. 负载均衡概述](#1-负载均衡概述)
+    - [1.1 算法对比](#11-算法对比)
+    - [1.2 负载均衡器trait](#12-负载均衡器trait)
+  - [2. 基础负载均衡算法](#2-基础负载均衡算法)
+    - [2.1 轮询(Round Robin)](#21-轮询round-robin)
+    - [2.2 加权轮询(Weighted Round Robin)](#22-加权轮询weighted-round-robin)
+    - [2.3 最少连接(Least Connections)](#23-最少连接least-connections)
+  - [3. 动态负载均衡](#3-动态负载均衡)
+    - [3.1 Power of Two Choices (P2C)](#31-power-of-two-choices-p2c)
+    - [3.2 最小延迟(Least Latency)](#32-最小延迟least-latency)
+  - [4. 一致性哈希](#4-一致性哈希)
+    - [4.1 一致性哈希实现](#41-一致性哈希实现)
+  - [5. 智能路由](#5-智能路由)
+    - [5.1 基于优先级的路由](#51-基于优先级的路由)
+  - [6. 故障转移](#6-故障转移)
+    - [6.1 重试机制](#61-重试机制)
+  - [7. 完整实现](#7-完整实现)
+    - [7.1 综合示例](#71-综合示例)
+  - [总结](#总结)
 
 ---
 
@@ -933,24 +947,29 @@ async fn test_balancer(balancer: Arc<dyn LoadBalancer>) {
 本文档提供了负载均衡与路由算法的完整Rust实现，包括:
 
 ✅ **基础算法**:
+
 - 轮询(Round Robin)
 - 加权轮询(Weighted RR)
 - 最少连接(Least Connections)
 
 ✅ **动态算法**:
+
 - Power of Two Choices (P2C)
 - 最小延迟(Least Latency)
 
 ✅ **一致性哈希**:
+
 - 虚拟节点
 - 动态扩缩容
 
 ✅ **智能路由**:
+
 - 优先级路由
 - 故障转移
 - 重试机制
 
 ✅ **生产特性**:
+
 - 健康检查
 - 指标收集
 - 自动恢复
@@ -958,7 +977,7 @@ async fn test_balancer(balancer: Arc<dyn LoadBalancer>) {
 ---
 
 **参考资源**:
+
 - [Load Balancing Algorithms](https://en.wikipedia.org/wiki/Load_balancing_(computing))
 - [Consistent Hashing](https://en.wikipedia.org/wiki/Consistent_hashing)
 - [The Power of Two Random Choices](https://www.eecs.harvard.edu/~michaelm/postscripts/handbook2001.pdf)
-
