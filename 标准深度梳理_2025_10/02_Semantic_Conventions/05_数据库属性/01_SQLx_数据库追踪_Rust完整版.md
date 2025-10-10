@@ -596,6 +596,7 @@ async fn delete_user(pool: &TracedPgPool, id: i32) -> Result<(), sqlx::Error> {
 ---
 
 **相关文档**:
+
 - [HTTP追踪 Rust实现](../02_追踪属性/01_HTTP_Rust完整版.md)
 - [Context Propagation](../../04_核心组件/04_Context_Propagation详解_Rust完整版.md)
 

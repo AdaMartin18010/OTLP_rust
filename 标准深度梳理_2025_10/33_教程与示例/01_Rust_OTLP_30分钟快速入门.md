@@ -1,45 +1,109 @@
 # Rust OTLP 30分钟快速入门
 
-> **Rust版本**: 1.90+  
-> **OpenTelemetry**: 0.31.0  
-> **学习时间**: 30分钟  
-> **难度**: ⭐⭐ 初级  
-> **最后更新**: 2025年10月9日
+> **从零开始**: 30分钟内掌握 Rust OpenTelemetry  
+> **适合人群**: Rust 初学者 & OpenTelemetry 新手  
+> **最后更新**: 2025年10月10日
+
+---
+
+## 📚 目录
+
+- [Rust OTLP 30分钟快速入门](#rust-otlp-30分钟快速入门)
+  - [📚 目录](#-目录)
+  - [🎯 学习目标](#-学习目标)
+  - [⏱️ 时间规划](#️-时间规划)
+  - [📦 环境准备 (5分钟)](#-环境准备-5分钟)
+    - [1. 安装 Rust](#1-安装-rust)
+    - [2. 创建项目](#2-创建项目)
+    - [3. 添加依赖](#3-添加依赖)
+  - [🚀 第一个追踪程序 (10分钟)](#-第一个追踪程序-10分钟)
+    - [Step 1: 初始化 Tracer](#step-1-初始化-tracer)
+    - [Step 2: 创建 Span](#step-2-创建-span)
+    - [Step 3: 完整示例](#step-3-完整示例)
+    - [Step 4: 运行程序](#step-4-运行程序)
+  - [📊 添加 Metrics (5分钟)](#-添加-metrics-5分钟)
+    - [Metrics 完整示例](#metrics-完整示例)
+  - [🌐 HTTP 服务追踪 (10分钟)](#-http-服务追踪-10分钟)
+    - [HTTP 服务器示例](#http-服务器示例)
+    - [测试 HTTP 追踪](#测试-http-追踪)
+  - [🔍 查看追踪数据](#-查看追踪数据)
+    - [使用 Jaeger](#使用-jaeger)
+    - [查看 Traces](#查看-traces)
+  - [💡 核心概念速查](#-核心概念速查)
+    - [Trace 追踪](#trace-追踪)
+    - [Span 范围](#span-范围)
+    - [Metrics 指标](#metrics-指标)
+    - [Logs 日志](#logs-日志)
+  - [🎨 最佳实践](#-最佳实践)
+    - [✅ DO (推荐做法)](#-do-推荐做法)
+    - [❌ DON'T (避免做法)](#-dont-避免做法)
+  - [🐛 常见问题](#-常见问题)
+    - [Q1: 为什么看不到追踪数据？](#q1-为什么看不到追踪数据)
+    - [Q2: 如何调试 OpenTelemetry？](#q2-如何调试-opentelemetry)
+    - [Q3: 性能影响有多大？](#q3-性能影响有多大)
+  - [📚 下一步学习](#-下一步学习)
+  - [🔗 快速链接](#-快速链接)
+    - [官方文档](#官方文档)
+    - [示例代码](#示例代码)
+    - [社区](#社区)
+  - [🎉 恭喜](#-恭喜)
 
 ---
 
 ## 🎯 学习目标
 
-完成本教程后，你将能够：
+完成本教程后，你将学会：
 
-1. ✅ 在 Rust 项目中配置 OpenTelemetry
-2. ✅ 创建和发送 Traces (分布式追踪)
-3. ✅ 记录 Metrics (指标)
-4. ✅ 集成 Logs (日志)
-5. ✅ 将数据导出到 OTLP Collector
-
----
-
-## 📋 前置要求
-
-- Rust 1.75+ (推荐 1.90+)
-- Docker (用于运行 OTLP Collector)
-- 基本的 Rust async/await 知识
+- ✅ 搭建 Rust OpenTelemetry 开发环境
+- ✅ 创建和管理 Span（追踪单元）
+- ✅ 记录 Metrics（性能指标）
+- ✅ 在 HTTP 服务中集成 OpenTelemetry
+- ✅ 在 Jaeger 中查看追踪数据
 
 ---
 
-## 🚀 第1步: 项目设置 (5分钟)
+## ⏱️ 时间规划
 
-### 创建新项目
+| 阶段 | 时间 | 内容 |
+|------|------|------|
+| 🛠️ 环境准备 | 5分钟 | 安装工具、创建项目 |
+| 🚀 第一个程序 | 10分钟 | 基础追踪实现 |
+| 📊 Metrics | 5分钟 | 添加性能指标 |
+| 🌐 HTTP 追踪 | 10分钟 | 实战 Web 服务 |
+
+---
+
+## 📦 环境准备 (5分钟)
+
+### 1. 安装 Rust
 
 ```bash
-cargo new otlp-quickstart
-cd otlp-quickstart
+# macOS / Linux
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Windows
+# 访问 https://rustup.rs/ 下载安装器
+
+# 验证安装
+rustc --version
+cargo --version
 ```
 
-### 添加依赖
+### 2. 创建项目
 
-编辑 `Cargo.toml`:
+```bash
+# 创建新项目
+cargo new otlp-quickstart
+cd otlp-quickstart
+
+# 测试项目
+cargo run
+# 输出: Hello, world!
+```
+
+### 3. 添加依赖
+
+编辑 `Cargo.toml`：
 
 ```toml
 [package]
@@ -49,578 +113,652 @@ edition = "2021"
 
 [dependencies]
 # OpenTelemetry 核心
-opentelemetry = "0.31"
-opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.24", features = ["grpc-tonic"] }
-opentelemetry-semantic-conventions = "0.31"
+opentelemetry = { version = "0.22", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.22", features = ["rt-tokio", "trace", "metrics"] }
 
-# Tracing
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing-opentelemetry = "0.32"
+# OTLP 导出器
+opentelemetry-otlp = { version = "0.15", features = ["tonic", "metrics"] }
 
 # 异步运行时
-tokio = { version = "1.47", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 
-# 工具
+# 日志 (可选)
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-opentelemetry = "0.23"
+
+# 实用工具
 anyhow = "1.0"
 ```
 
-### 启动 OTLP Collector
-
-创建 `docker-compose.yml`:
-
-```yaml
-version: '3'
-services:
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - "16686:16686"  # Jaeger UI
-      - "4317:4317"    # OTLP gRPC receiver
-      - "4318:4318"    # OTLP HTTP receiver
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-```
-
-启动服务:
+安装依赖：
 
 ```bash
-docker-compose up -d
+cargo build
 ```
-
-访问 Jaeger UI: <http://localhost:16686>
 
 ---
 
-## 📊 第2步: 基础追踪 (Traces) (10分钟)
+## 🚀 第一个追踪程序 (10分钟)
 
-### 初始化 Tracer
+### Step 1: 初始化 Tracer
 
-创建 `src/main.rs`:
+创建 `src/main.rs`：
 
 ```rust
-use opentelemetry::{
-    global,
-    trace::{Tracer, TracerProvider as _, TraceContextExt},
-    KeyValue,
-};
-use opentelemetry_sdk::{runtime, Resource};
-use opentelemetry_otlp::WithExportConfig;
+use opentelemetry::{global, trace::{Tracer, TracerProvider as _}, KeyValue};
+use opentelemetry_sdk::{trace as sdktrace, Resource};
 use anyhow::Result;
 
-/// 初始化 OpenTelemetry
-fn init_tracer() -> Result<opentelemetry_sdk::trace::TracerProvider> {
-    let provider = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint("http://localhost:4317")
-        )
-        .with_trace_config(
-            opentelemetry_sdk::trace::Config::default()
-                .with_resource(Resource::new(vec![
-                    KeyValue::new("service.name", "otlp-quickstart"),
-                    KeyValue::new("service.version", "0.1.0"),
-                ]))
-        )
-        .install_batch(runtime::Tokio)?;
+fn init_tracer() -> Result<sdktrace::Tracer> {
+    // 1. 创建资源 (标识你的服务)
+    let resource = Resource::new(vec![
+        KeyValue::new("service.name", "quickstart-service"),
+        KeyValue::new("service.version", "1.0.0"),
+    ]);
+
+    // 2. 创建 OTLP 导出器 (发送到 Jaeger/Collector)
+    let otlp_exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint("http://localhost:4317") // Jaeger gRPC endpoint
+        .build_span_exporter()?;
+
+    // 3. 创建 TracerProvider
+    let tracer_provider = sdktrace::TracerProvider::builder()
+        .with_config(sdktrace::Config::default().with_resource(resource))
+        .with_batch_exporter(otlp_exporter, opentelemetry_sdk::runtime::Tokio)
+        .build();
+
+    // 4. 获取 Tracer
+    let tracer = tracer_provider.tracer("quickstart");
     
-    Ok(provider)
+    // 5. 设置为全局 Tracer
+    global::set_tracer_provider(tracer_provider);
+    
+    Ok(tracer)
+}
+```
+
+### Step 2: 创建 Span
+
+```rust
+use opentelemetry::trace::{Span, Status};
+
+async fn do_work() {
+    let tracer = global::tracer("quickstart");
+    
+    // 创建一个 Span
+    let mut span = tracer
+        .span_builder("do_work")
+        .start(&tracer);
+    
+    // 添加属性
+    span.set_attribute(KeyValue::new("work.type", "example"));
+    span.set_attribute(KeyValue::new("work.id", 12345));
+    
+    // 模拟工作
+    println!("Working...");
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    
+    // 设置状态
+    span.set_status(Status::Ok);
+    
+    // Span 自动在作用域结束时关闭
+}
+```
+
+### Step 3: 完整示例
+
+```rust
+use opentelemetry::{global, trace::{Tracer, TracerProvider as _, Span, Status}, KeyValue};
+use opentelemetry_sdk::{trace as sdktrace, Resource};
+use anyhow::Result;
+
+fn init_tracer() -> Result<sdktrace::Tracer> {
+    let resource = Resource::new(vec![
+        KeyValue::new("service.name", "quickstart-service"),
+        KeyValue::new("service.version", "1.0.0"),
+    ]);
+
+    let otlp_exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint("http://localhost:4317")
+        .build_span_exporter()?;
+
+    let tracer_provider = sdktrace::TracerProvider::builder()
+        .with_config(sdktrace::Config::default().with_resource(resource))
+        .with_batch_exporter(otlp_exporter, opentelemetry_sdk::runtime::Tokio)
+        .build();
+
+    let tracer = tracer_provider.tracer("quickstart");
+    global::set_tracer_provider(tracer_provider);
+    
+    Ok(tracer)
+}
+
+async fn do_work() {
+    let tracer = global::tracer("quickstart");
+    
+    let mut span = tracer
+        .span_builder("do_work")
+        .start(&tracer);
+    
+    span.set_attribute(KeyValue::new("work.type", "example"));
+    span.set_attribute(KeyValue::new("work.id", 12345));
+    
+    println!("✅ Working...");
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    
+    span.set_status(Status::Ok);
+    println!("✅ Work completed!");
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // 初始化 tracer
-    let provider = init_tracer()?;
-    global::set_tracer_provider(provider.clone());
+    init_tracer()?;
     
-    // 获取 tracer
-    let tracer = global::tracer("main");
+    println!("🚀 Starting quickstart...");
     
-    // 创建 root span
-    let span = tracer.start("main");
-    let cx = opentelemetry::Context::current_with_span(span);
-    let _guard = cx.attach();
+    // 执行工作
+    do_work().await;
     
-    println!("🚀 OpenTelemetry initialized!");
-    
-    // 执行业务逻辑
-    process_order().await?;
-    
-    // 关闭 tracer (flush 数据)
+    // 确保数据被发送
     global::shutdown_tracer_provider();
     
-    println!("✅ Traces sent! Check Jaeger UI at http://localhost:16686");
-    
-    Ok(())
-}
-
-/// 业务逻辑示例
-async fn process_order() -> Result<()> {
-    let tracer = global::tracer("business");
-    
-    // 创建子 span
-    let mut span = tracer.start("process_order");
-    span.set_attribute(KeyValue::new("order.id", "12345"));
-    span.set_attribute(KeyValue::new("order.amount", 99.99));
-    
-    let cx = opentelemetry::Context::current_with_span(span.clone());
-    let _guard = cx.attach();
-    
-    // 模拟业务逻辑
-    validate_order().await?;
-    charge_payment().await?;
-    send_confirmation().await?;
-    
-    println!("📦 Order processed successfully!");
-    
-    Ok(())
-}
-
-async fn validate_order() -> Result<()> {
-    let tracer = global::tracer("business");
-    let span = tracer.start("validate_order");
-    let _cx = opentelemetry::Context::current_with_span(span);
-    
-    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-    Ok(())
-}
-
-async fn charge_payment() -> Result<()> {
-    let tracer = global::tracer("business");
-    let span = tracer.start("charge_payment");
-    let _cx = opentelemetry::Context::current_with_span(span);
-    
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    Ok(())
-}
-
-async fn send_confirmation() -> Result<()> {
-    let tracer = global::tracer("business");
-    let span = tracer.start("send_confirmation");
-    let _cx = opentelemetry::Context::current_with_span(span);
-    
-    tokio::time::sleep(tokio::time::Duration::from_millis(30)).await;
+    println!("🎉 Done!");
     Ok(())
 }
 ```
 
-### 运行程序
+### Step 4: 运行程序
+
+**启动 Jaeger**（用于接收追踪数据）：
+
+```bash
+# 使用 Docker 运行 Jaeger
+docker run -d --name jaeger \
+  -e COLLECTOR_OTLP_ENABLED=true \
+  -p 4317:4317 \
+  -p 4318:4318 \
+  -p 16686:16686 \
+  jaegertracing/all-in-one:latest
+```
+
+**运行你的程序**：
 
 ```bash
 cargo run
 ```
 
-### 查看追踪数据
+**输出**：
 
-1. 打开 Jaeger UI: <http://localhost:16686>
-2. 选择服务: `otlp-quickstart`
-3. 点击 "Find Traces"
-4. 查看 span 树状结构
+```text
+🚀 Starting quickstart...
+✅ Working...
+✅ Work completed!
+🎉 Done!
+```
 
 ---
 
-## 📈 第3步: 添加 Metrics (5分钟)
+## 📊 添加 Metrics (5分钟)
 
-### 初始化 Meter
+Metrics 用于记录性能指标（如请求数、延迟、CPU 使用率）。
 
-在 `main.rs` 中添加:
+### Metrics 完整示例
 
 ```rust
-use opentelemetry::metrics::{Meter, MeterProvider as _};
+use opentelemetry::{global, metrics::MeterProvider, KeyValue};
+use opentelemetry_sdk::metrics::{MeterProvider as SdkMeterProvider, PeriodicReader};
+use std::time::Duration;
 
-/// 初始化 Metrics
-fn init_metrics() -> Result<opentelemetry_sdk::metrics::MeterProvider> {
-    let provider = opentelemetry_otlp::new_pipeline()
-        .metrics(runtime::Tokio)
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint("http://localhost:4317")
-        )
-        .with_resource(Resource::new(vec![
-            KeyValue::new("service.name", "otlp-quickstart"),
-        ]))
-        .build()?;
+fn init_metrics() -> Result<SdkMeterProvider> {
+    // 创建 OTLP Metrics 导出器
+    let otlp_exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint("http://localhost:4317")
+        .build_metrics_exporter(
+            Box::new(opentelemetry_sdk::metrics::selectors::simple::histogram(vec![])),
+            Box::new(opentelemetry_sdk::metrics::aggregators::stateless::temporality_cumulative()),
+        )?;
+
+    // 创建 Periodic Reader
+    let reader = PeriodicReader::builder(otlp_exporter, opentelemetry_sdk::runtime::Tokio)
+        .with_interval(Duration::from_secs(30))
+        .build();
+
+    // 创建 MeterProvider
+    let meter_provider = SdkMeterProvider::builder()
+        .with_reader(reader)
+        .build();
+
+    global::set_meter_provider(meter_provider.clone());
     
-    Ok(provider)
+    Ok(meter_provider)
 }
 
-/// 记录指标示例
-async fn record_metrics() -> Result<()> {
-    let meter = global::meter("metrics-example");
+async fn record_metrics() {
+    let meter = global::meter("quickstart");
     
-    // Counter: 累加计数器
-    let order_counter = meter
-        .u64_counter("orders.total")
-        .with_description("Total number of orders")
+    // 创建 Counter (计数器)
+    let request_counter = meter
+        .u64_counter("requests.total")
+        .with_description("Total number of requests")
         .init();
     
-    // Histogram: 直方图 (用于延迟等)
-    let order_duration = meter
-        .f64_histogram("orders.duration")
-        .with_unit("ms")
-        .with_description("Order processing duration")
-        .init();
-    
-    // UpDownCounter: 可增可减的计数器
-    let active_orders = meter
-        .i64_up_down_counter("orders.active")
-        .with_description("Number of active orders")
+    // 创建 Histogram (直方图)
+    let latency_histogram = meter
+        .f64_histogram("request.latency")
+        .with_description("Request latency in seconds")
+        .with_unit("s")
         .init();
     
     // 记录指标
-    order_counter.add(1, &[KeyValue::new("status", "success")]);
-    order_duration.record(156.78, &[]);
-    active_orders.add(1, &[]);
-    
-    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-    
-    active_orders.add(-1, &[]);
+    for i in 0..10 {
+        let labels = [
+            KeyValue::new("method", "GET"),
+            KeyValue::new("status", "200"),
+        ];
+        
+        request_counter.add(1, &labels);
+        latency_histogram.record(0.1 * (i as f64), &labels);
+        
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
     
     println!("📊 Metrics recorded!");
-    
-    Ok(())
 }
-```
 
-更新 `main()`:
-
-```rust
 #[tokio::main]
 async fn main() -> Result<()> {
     // 初始化 tracer 和 metrics
-    let tracer_provider = init_tracer()?;
-    let metrics_provider = init_metrics()?;
+    init_tracer()?;
+    init_metrics()?;
     
-    global::set_tracer_provider(tracer_provider.clone());
-    global::set_meter_provider(metrics_provider.clone());
+    println!("🚀 Starting with metrics...");
     
-    // 业务逻辑
-    process_order().await?;
-    record_metrics().await?;
+    // 记录指标
+    record_metrics().await;
     
-    // 关闭
+    // 清理
     global::shutdown_tracer_provider();
-    metrics_provider.shutdown()?;
     
+    println!("🎉 Done!");
     Ok(())
 }
 ```
 
 ---
 
-## 📝 第4步: 集成 Logs (5分钟)
+## 🌐 HTTP 服务追踪 (10分钟)
 
-### 使用 tracing 集成
+让我们创建一个真实的 HTTP 服务，并集成 OpenTelemetry。
 
-```rust
-use tracing::{info, warn, error, instrument};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-/// 初始化 Logging
-fn init_logging() -> Result<()> {
-    let tracer = global::tracer("logging");
-    
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new("info"))
-        .with(tracing_subscriber::fmt::layer())
-        .with(tracing_opentelemetry::layer().with_tracer(tracer))
-        .init();
-    
-    Ok(())
-}
-
-/// 使用 #[instrument] 自动追踪函数
-#[instrument(
-    name = "process_order",
-    fields(order.id = %order_id)
-)]
-async fn process_order_with_logs(order_id: &str) -> Result<()> {
-    info!("Processing order: {}", order_id);
-    
-    // 验证订单
-    validate_order_with_logs(order_id).await?;
-    
-    // 支付
-    charge_payment_with_logs(order_id).await?;
-    
-    info!("Order {} completed successfully", order_id);
-    
-    Ok(())
-}
-
-#[instrument]
-async fn validate_order_with_logs(order_id: &str) -> Result<()> {
-    info!("Validating order: {}", order_id);
-    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-    Ok(())
-}
-
-#[instrument]
-async fn charge_payment_with_logs(order_id: &str) -> Result<()> {
-    info!("Charging payment for order: {}", order_id);
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
-    // 模拟错误
-    if order_id == "error" {
-        error!("Payment failed for order: {}", order_id);
-        return Err(anyhow::anyhow!("Payment failed"));
-    }
-    
-    Ok(())
-}
-```
-
----
-
-## 🌐 第5步: HTTP 服务集成 (5分钟)
-
-### 添加 Axum 依赖
-
-在 `Cargo.toml` 中添加:
+**添加 HTTP 依赖**到 `Cargo.toml`：
 
 ```toml
-axum = "0.8"
-tower = "0.5"
-tower-http = { version = "0.6", features = ["trace"] }
+[dependencies]
+# ... 之前的依赖 ...
+
+# HTTP 框架
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["trace"] }
 ```
 
-### 创建 HTTP 服务
+### HTTP 服务器示例
 
 ```rust
 use axum::{
     routing::get,
     Router,
     extract::Path,
-    http::StatusCode,
-    response::IntoResponse,
+    response::Json,
 };
-use tower_http::trace::TraceLayer;
+use opentelemetry::{global, trace::{Tracer, Span, Status}, KeyValue};
+use serde_json::{json, Value};
+use std::net::SocketAddr;
 
-async fn start_server() -> Result<()> {
-    let app = Router::new()
-        .route("/", get(root))
-        .route("/order/:id", get(get_order))
-        .route("/health", get(health_check))
-        .layer(TraceLayer::new_for_http());
-    
-    println!("🌐 Server listening on http://localhost:3000");
-    
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
-    axum::serve(listener, app).await?;
-    
-    Ok(())
+// 初始化函数 (同上)
+fn init_tracer() -> Result<sdktrace::Tracer> {
+    // ... (同前面的代码)
 }
 
-async fn root() -> &'static str {
-    "Welcome to OTLP Quickstart!"
-}
-
-#[instrument(name = "get_order_handler", fields(order_id = %id))]
-async fn get_order(Path(id): Path<String>) -> impl IntoResponse {
-    info!("Fetching order: {}", id);
+// HTTP 处理函数
+async fn hello_handler(Path(name): Path<String>) -> Json<Value> {
+    let tracer = global::tracer("quickstart");
     
-    // 模拟数据库查询
+    // 创建 Span
+    let mut span = tracer
+        .span_builder("handle_hello")
+        .start(&tracer);
+    
+    span.set_attribute(KeyValue::new("http.route", "/hello/:name"));
+    span.set_attribute(KeyValue::new("user.name", name.clone()));
+    
+    // 模拟处理
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
     
-    (StatusCode::OK, format!("Order {} details", id))
+    let response = json!({
+        "message": format!("Hello, {}!", name),
+        "timestamp": chrono::Utc::now().to_rfc3339()
+    });
+    
+    span.set_status(Status::Ok);
+    
+    Json(response)
 }
 
 async fn health_check() -> &'static str {
     "OK"
 }
-```
-
----
-
-## 🎨 第6步: 完整示例
-
-### 完整的 `main.rs`
-
-```rust
-use opentelemetry::{global, trace::{Tracer, TraceContextExt}, KeyValue};
-use opentelemetry_sdk::{runtime, Resource};
-use opentelemetry_otlp::WithExportConfig;
-use tracing::{info, instrument};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use axum::{routing::get, Router, extract::Path, http::StatusCode};
-use tower_http::trace::TraceLayer;
-use anyhow::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // 1. 初始化 OpenTelemetry
-    init_telemetry()?;
+    // 初始化 OpenTelemetry
+    init_tracer()?;
     
-    info!("🚀 Application started");
-    
-    // 2. 启动 HTTP 服务器
+    // 构建路由
     let app = Router::new()
-        .route("/", get(|| async { "OTLP Quickstart" }))
-        .route("/order/:id", get(get_order))
-        .layer(TraceLayer::new_for_http());
+        .route("/health", get(health_check))
+        .route("/hello/:name", get(hello_handler));
     
-    println!("🌐 Server: http://localhost:3000");
-    println!("📊 Jaeger: http://localhost:16686");
+    // 启动服务器
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    println!("🚀 Server listening on http://{}", addr);
+    println!("📍 Try: http://localhost:3000/hello/World");
     
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
     
     Ok(())
 }
-
-/// 初始化所有遥测组件
-fn init_telemetry() -> Result<()> {
-    // Tracer
-    let tracer_provider = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint("http://localhost:4317")
-        )
-        .with_trace_config(
-            opentelemetry_sdk::trace::Config::default()
-                .with_resource(Resource::new(vec![
-                    KeyValue::new("service.name", "otlp-quickstart"),
-                    KeyValue::new("service.version", "0.1.0"),
-                ]))
-        )
-        .install_batch(runtime::Tokio)?;
-    
-    global::set_tracer_provider(tracer_provider);
-    
-    // Logging with tracing
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new("info"))
-        .with(tracing_subscriber::fmt::layer())
-        .with(tracing_opentelemetry::layer())
-        .init();
-    
-    Ok(())
-}
-
-#[instrument(name = "GET /order/:id", fields(order_id = %id))]
-async fn get_order(Path(id): Path<String>) -> (StatusCode, String) {
-    info!("Fetching order details");
-    
-    // 创建子 span
-    let tracer = global::tracer("handlers");
-    let span = tracer.start("database.query");
-    let _cx = opentelemetry::Context::current_with_span(span);
-    
-    // 模拟数据库查询
-    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-    
-    (StatusCode::OK, format!("Order {} found", id))
-}
 ```
 
----
+### 测试 HTTP 追踪
 
-## 🧪 测试
-
-### 发送请求
+**启动服务器**：
 
 ```bash
-# 根路径
-curl http://localhost:3000/
-
-# 获取订单
-curl http://localhost:3000/order/12345
-curl http://localhost:3000/order/67890
-curl http://localhost:3000/order/abcde
+cargo run
 ```
 
-### 查看追踪
+**发送请求**：
 
-1. 打开 Jaeger: <http://localhost:16686>
-2. 选择服务: `otlp-quickstart`
-3. 点击 "Find Traces"
-4. 查看请求链路
+```bash
+# 健康检查
+curl http://localhost:3000/health
 
----
+# Hello 请求
+curl http://localhost:3000/hello/World
+curl http://localhost:3000/hello/Rust
+curl http://localhost:3000/hello/OpenTelemetry
+```
 
-## 🎓 下一步学习
+**输出**：
 
-### 进阶主题
-
-1. **Context 传播**: [Context Propagation详解](../04_核心组件/04_Context_Propagation详解_Rust完整版.md)
-2. **数据库追踪**: [数据库集成](../02_Semantic_Conventions/02_追踪属性/03_数据库_Rust完整版.md)
-3. **消息队列**: [Kafka追踪](../02_Semantic_Conventions/03_消息队列属性/01_Kafka_Rust.md)
-4. **性能优化**: [Rust性能优化](../05_采样与性能/01_Rust_1.90_性能优化完整指南.md)
-
-### 推荐资源
-
-- 📖 [OpenTelemetry 官方文档](https://opentelemetry.io/docs/)
-- 📖 [Rust SDK 文档](https://docs.rs/opentelemetry/)
-- 💻 [示例仓库](https://github.com/open-telemetry/opentelemetry-rust)
+```json
+{
+  "message": "Hello, World!",
+  "timestamp": "2025-10-10T12:00:00Z"
+}
+```
 
 ---
 
-## ❓ 常见问题
+## 🔍 查看追踪数据
 
-### Q: 为什么看不到追踪数据？
+### 使用 Jaeger
+
+1. **打开 Jaeger UI**：
+
+   ```text
+   http://localhost:16686
+   ```
+
+2. **选择服务**：
+   - Service: `quickstart-service`
+
+3. **点击 "Find Traces"**
+
+### 查看 Traces
+
+你会看到：
+
+- **Service 名称**: `quickstart-service`
+- **Operation**: `handle_hello`, `do_work`
+- **Span 详情**:
+  - Duration (持续时间)
+  - Attributes (属性)
+    - `http.route`: `/hello/:name`
+    - `user.name`: `World`
+  - Status: `OK`
+
+---
+
+## 💡 核心概念速查
+
+### Trace 追踪
+
+```rust
+// Trace = 完整的请求链路
+// 一个 Trace 包含多个 Span
+```
+
+### Span 范围
+
+```rust
+// Span = 单个操作单元
+let mut span = tracer.span_builder("operation_name").start(&tracer);
+
+// 添加属性
+span.set_attribute(KeyValue::new("key", "value"));
+
+// 设置状态
+span.set_status(Status::Ok);
+
+// Span 自动结束
+```
+
+### Metrics 指标
+
+```rust
+// Counter: 只增计数器
+let counter = meter.u64_counter("requests").init();
+counter.add(1, &labels);
+
+// Histogram: 分布统计
+let histogram = meter.f64_histogram("latency").init();
+histogram.record(0.123, &labels);
+
+// Gauge: 瞬时值
+let gauge = meter.i64_gauge("active_connections").init();
+gauge.record(42, &labels);
+```
+
+### Logs 日志
+
+```rust
+// 集成 tracing crate
+use tracing::{info, error};
+
+info!("Request received");
+error!("Processing failed");
+```
+
+---
+
+## 🎨 最佳实践
+
+### ✅ DO (推荐做法)
+
+```rust
+// 1. 使用有意义的 Span 名称
+span_builder("handle_user_request")  // ✅ 好
+span_builder("operation")            // ❌ 差
+
+// 2. 添加上下文属性
+span.set_attribute(KeyValue::new("user.id", user_id));
+span.set_attribute(KeyValue::new("order.id", order_id));
+
+// 3. 设置 Span 状态
+span.set_status(Status::Ok);  // 成功
+span.set_status(Status::error("Database timeout"));  // 失败
+
+// 4. 使用资源标识服务
+Resource::new(vec![
+    KeyValue::new("service.name", "my-service"),
+    KeyValue::new("service.version", "1.0.0"),
+    KeyValue::new("deployment.environment", "production"),
+]);
+
+// 5. 记录异常
+span.record_exception(&error);
+```
+
+### ❌ DON'T (避免做法)
+
+```rust
+// 1. 不要在循环中创建 Tracer
+for item in items {
+    let tracer = global::tracer("my-tracer");  // ❌ 每次都创建
+}
+
+// 2. 不要忘记关闭 TracerProvider
+// ❌ 缺少这行会导致数据丢失
+global::shutdown_tracer_provider();
+
+// 3. 不要记录敏感信息
+span.set_attribute(KeyValue::new("password", password));  // ❌ 危险！
+span.set_attribute(KeyValue::new("credit_card", cc));     // ❌ 危险！
+
+// 4. 不要创建过多 Span
+for i in 0..1000000 {
+    let span = tracer.span_builder("tiny_op").start(&tracer);  // ❌ 开销巨大
+}
+```
+
+---
+
+## 🐛 常见问题
+
+### Q1: 为什么看不到追踪数据？
 
 **A**: 检查以下几点：
 
-1. OTLP Collector 是否运行: `docker ps`
-2. 端口是否正确: `4317` (gRPC) 或 `4318` (HTTP)
-3. 是否调用了 `global::shutdown_tracer_provider()`
+1. Jaeger 是否启动？
 
-### Q: 如何调试连接问题？
+   ```bash
+   docker ps | grep jaeger
+   ```
 
-**A**: 启用调试日志:
+2. 端口是否正确？
+   - gRPC: `4317`
+   - HTTP: `4318`
+   - UI: `16686`
+
+3. 是否调用了 `shutdown_tracer_provider()`？
+
+   ```rust
+   global::shutdown_tracer_provider();  // 必须调用！
+   ```
+
+### Q2: 如何调试 OpenTelemetry？
+
+**A**: 启用日志：
 
 ```rust
-std::env::set_var("RUST_LOG", "opentelemetry=debug");
-env_logger::init();
+use tracing_subscriber;
+
+fn main() {
+    // 初始化日志
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
+    
+    // 你的代码...
+}
 ```
 
-### Q: 生产环境如何配置？
+### Q3: 性能影响有多大？
 
-**A**: 使用环境变量:
+**A**:
 
-```bash
-export OTEL_EXPORTER_OTLP_ENDPOINT="http://my-collector:4317"
-export OTEL_SERVICE_NAME="my-service"
-export OTEL_RESOURCE_ATTRIBUTES="deployment.environment=production"
+- **生产环境**: 通常 < 1% CPU 开销
+- **采样率**: 可配置（如 10% 采样）
+- **批量导出**: 减少网络开销
+
+```rust
+// 配置采样率
+use opentelemetry_sdk::trace::Sampler;
+
+let tracer_provider = TracerProvider::builder()
+    .with_config(
+        Config::default()
+            .with_sampler(Sampler::TraceIdRatioBased(0.1))  // 10% 采样
+    )
+    .build();
 ```
 
 ---
 
-## 📦 完整项目结构
+## 📚 下一步学习
 
-```text
-otlp-quickstart/
-├── Cargo.toml
-├── docker-compose.yml
-├── src/
-│   └── main.rs
-└── README.md
-```
+完成快速入门后，建议学习：
+
+1. **中级教程**:
+   - 📖 `02_Rust_OTLP_常见模式.md` - 设计模式
+   - 📖 数据库追踪 (PostgreSQL, MongoDB)
+   - 📖 分布式追踪（跨服务传播）
+
+2. **高级主题**:
+   - 📖 自定义 Exporter
+   - 📖 性能优化技巧
+   - 📖 生产环境部署
+
+3. **实战项目**:
+   - 🛠️ 微服务系统完整追踪
+   - 🛠️ gRPC 服务监控
+   - 🛠️ Kafka 消息追踪
 
 ---
 
-## ✅ 总结
+## 🔗 快速链接
 
-恭喜！你已经完成了 Rust OTLP 快速入门。你现在知道如何：
+### 官方文档
 
-- ✅ 配置 OpenTelemetry SDK
-- ✅ 创建和发送 Traces
+- **OpenTelemetry Rust**: <https://github.com/open-telemetry/opentelemetry-rust>
+- **OpenTelemetry 规范**: <https://opentelemetry.io/docs/specs/>
+- **Jaeger 文档**: <https://www.jaegertracing.io/docs/>
+
+### 示例代码
+
+- **官方示例**: <https://github.com/open-telemetry/opentelemetry-rust/tree/main/examples>
+- **完整项目模板**: `33_教程与示例/完整项目模板/`
+
+### 社区
+
+- **Discord**: <https://discord.gg/opentelemetry>
+- **GitHub Discussions**: <https://github.com/open-telemetry/opentelemetry-rust/discussions>
+
+---
+
+## 🎉 恭喜
+
+你已经完成了 Rust OpenTelemetry 快速入门！
+
+**你学会了**:
+
+- ✅ 创建 Tracer 和 Span
 - ✅ 记录 Metrics
-- ✅ 集成 Logs
-- ✅ 在 HTTP 服务中使用追踪
+- ✅ HTTP 服务追踪
+- ✅ 在 Jaeger 中查看数据
 
-**下一步**: 探索 [完整实战案例](../06_实战案例/00_Rust微服务完整实战_2025最新版.md) 了解生产级实现！
+**下一步**: 尝试将 OpenTelemetry 集成到你的实际项目中！
 
 ---
 
-**学习时间**: ✅ 30分钟完成  
-**项目地址**: [GitHub](https://github.com/your-repo/otlp-quickstart)  
-**问题反馈**: 通过 Issues 提交
-
-**祝学习顺利！** 🎉
+**文档版本**: v1.0  
+**最后更新**: 2025-10-10  
+**作者**: OTLP Rust 标准深度梳理团队
