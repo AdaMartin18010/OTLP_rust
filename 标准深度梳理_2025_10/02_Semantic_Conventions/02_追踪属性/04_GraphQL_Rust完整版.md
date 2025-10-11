@@ -46,7 +46,7 @@
 ┌─────────────────────────────────────────┐
 │          GraphQL Server (async-graphql) │
 ├─────────────────────────────────────────┤
-│  - Schema 定义                           │
+│  - Schema 定义                          │
 │  - Query/Mutation/Subscription          │
 │  - Resolver（解析器）                    │
 │  - DataLoader（数据加载器）              │

@@ -1,1021 +1,695 @@
-# Rust OTLP 最佳实践 Checklist
+# ✅ Rust OTLP 最佳实践 Checklist
 
-> **生产环境必备**: 完整的检查清单与实施指南  
-> **适用场景**: 从开发到生产的全生命周期  
+> **适用场景**: 生产环境部署前检查  
+> **Rust 版本**: 1.90+  
+> **OpenTelemetry**: 0.31.0+  
 > **最后更新**: 2025年10月10日
 
 ---
 
-## 📚 目录
+## 📋 使用说明
 
-- [Rust OTLP 最佳实践 Checklist](#rust-otlp-最佳实践-checklist)
-  - [📚 目录](#-目录)
-  - [🎯 检查清单概览](#-检查清单概览)
-  - [📦 1. 项目初始化 Checklist](#-1-项目初始化-checklist)
-    - [1.1 依赖管理](#11-依赖管理)
-      - [✅ 必须包含的依赖](#-必须包含的依赖)
-      - [✅ 版本管理](#-版本管理)
-    - [1.2 项目结构](#12-项目结构)
-      - [✅ 推荐的目录结构](#-推荐的目录结构)
-  - [🔧 2. 配置最佳实践 Checklist](#-2-配置最佳实践-checklist)
-    - [2.1 资源 (Resource) 配置](#21-资源-resource-配置)
-      - [✅ 必需的 Resource 属性](#-必需的-resource-属性)
-    - [2.2 导出器 (Exporter) 配置](#22-导出器-exporter-配置)
-      - [✅ OTLP Exporter 配置](#-otlp-exporter-配置)
-    - [2.3 采样 (Sampling) 配置](#23-采样-sampling-配置)
-      - [✅ 采样策略](#-采样策略)
-  - [📊 3. 追踪 (Tracing) 最佳实践 Checklist](#-3-追踪-tracing-最佳实践-checklist)
-    - [3.1 Span 管理](#31-span-管理)
-      - [✅ Span 创建](#-span-创建)
-    - [3.2 属性设置](#32-属性设置)
-      - [✅ 语义约定 (Semantic Conventions)](#-语义约定-semantic-conventions)
-    - [3.3 错误处理](#33-错误处理)
-      - [✅ 异常记录](#-异常记录)
-  - [📈 4. Metrics 最佳实践 Checklist](#-4-metrics-最佳实践-checklist)
-    - [4.1 Instrument 选择](#41-instrument-选择)
-      - [✅ Instrument 类型选择](#-instrument-类型选择)
-    - [4.2 标签管理](#42-标签管理)
-      - [✅ 标签 (Labels) 最佳实践](#-标签-labels-最佳实践)
-  - [🚀 5. 性能优化 Checklist](#-5-性能优化-checklist)
-    - [5.1 批量导出](#51-批量导出)
-      - [✅ 批量导出配置](#-批量导出配置)
-    - [5.2 异步处理](#52-异步处理)
-      - [✅ 异步最佳实践](#-异步最佳实践)
-    - [5.3 内存优化](#53-内存优化)
-      - [✅ 内存管理](#-内存管理)
-  - [🔒 6. 安全性 Checklist](#-6-安全性-checklist)
-    - [6.1 敏感数据保护](#61-敏感数据保护)
-      - [✅ 数据脱敏](#-数据脱敏)
-    - [6.2 TLS/SSL 配置](#62-tlsssl-配置)
-      - [✅ 加密传输](#-加密传输)
-  - [🧪 7. 测试 Checklist](#-7-测试-checklist)
-    - [7.1 单元测试](#71-单元测试)
-      - [✅ 测试示例](#-测试示例)
-    - [7.2 集成测试](#72-集成测试)
-      - [✅ 集成测试](#-集成测试)
-  - [📦 8. 生产部署 Checklist](#-8-生产部署-checklist)
-    - [8.1 环境配置](#81-环境配置)
-      - [✅ 环境变量](#-环境变量)
-    - [8.2 监控设置](#82-监控设置)
-      - [✅ 关键指标监控](#-关键指标监控)
-    - [8.3 告警配置](#83-告警配置)
-      - [✅ 告警规则](#-告警规则)
-  - [🔍 9. 可观测性成熟度评估](#-9-可观测性成熟度评估)
-    - [Level 1: 基础 (Basic)](#level-1-基础-basic)
-    - [Level 2: 中级 (Intermediate)](#level-2-中级-intermediate)
-    - [Level 3: 高级 (Advanced)](#level-3-高级-advanced)
-    - [Level 4: 专家 (Expert)](#level-4-专家-expert)
-  - [📋 10. 快速检查清单](#-10-快速检查清单)
-    - [🔴 生产部署前必查 (P0)](#-生产部署前必查-p0)
-    - [🟡 优化项 (P1)](#-优化项-p1)
+本 Checklist 分为以下几个级别：
+
+- 🔴 **P0 - 必须**: 生产环境必须满足
+- 🟡 **P1 - 推荐**: 强烈推荐，影响稳定性和性能
+- 🟢 **P2 - 可选**: 锦上添花，进一步优化
+
+在每个检查项前打勾 ✅ 表示已完成。
 
 ---
 
-## 🎯 检查清单概览
+## 📑 目录
 
-本文档提供从开发到生产的完整检查清单：
-
-| 阶段 | 检查项 | 优先级 |
-|------|---------|--------|
-| 🛠️ **项目初始化** | 依赖、结构 | 🔴 P0 |
-| 🔧 **配置** | Resource、Exporter、Sampling | 🔴 P0 |
-| 📊 **追踪** | Span、属性、错误 | 🔴 P0 |
-| 📈 **Metrics** | Instrument、标签 | 🟡 P1 |
-| 🚀 **性能** | 批量、异步、内存 | 🟡 P1 |
-| 🔒 **安全** | 数据保护、TLS | 🔴 P0 |
-| 🧪 **测试** | 单元、集成 | 🟡 P1 |
-| 📦 **部署** | 环境、监控、告警 | 🔴 P0 |
-
----
-
-## 📦 1. 项目初始化 Checklist
-
-### 1.1 依赖管理
-
-#### ✅ 必须包含的依赖
-
-```toml
-[dependencies]
-# 核心库
-- [ ] opentelemetry = { version = "0.22", features = ["trace", "metrics"] }
-- [ ] opentelemetry_sdk = { version = "0.22", features = ["rt-tokio"] }
-
-# OTLP 导出器
-- [ ] opentelemetry-otlp = { version = "0.15", features = ["tonic"] }
-
-# 异步运行时
-- [ ] tokio = { version = "1", features = ["full"] }
-
-# 日志集成 (推荐)
-- [ ] tracing = "0.1"
-- [ ] tracing-subscriber = "0.3"
-- [ ] tracing-opentelemetry = "0.23"
-```
-
-#### ✅ 版本管理
-
-```toml
-- [ ] 使用兼容的版本组合
-- [ ] 定期更新到最新稳定版
-- [ ] 使用 Cargo.lock 锁定生产版本
-```
-
-**示例 `Cargo.toml`**:
-
-```toml
-[package]
-name = "my-service"
-version = "1.0.0"
-edition = "2021"
-
-[dependencies]
-opentelemetry = { version = "0.22", features = ["trace", "metrics"] }
-opentelemetry_sdk = { version = "0.22", features = ["rt-tokio", "trace", "metrics"] }
-opentelemetry-otlp = { version = "0.15", features = ["tonic", "metrics"] }
-tokio = { version = "1", features = ["full"] }
-anyhow = "1.0"
-
-# 日志
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-tracing-opentelemetry = "0.23"
-
-[dev-dependencies]
-tokio-test = "0.4"
-```
-
-### 1.2 项目结构
-
-#### ✅ 推荐的目录结构
-
-```text
-my-service/
-├── src/
-│   ├── main.rs              # 入口文件
-│   ├── telemetry/
-│   │   ├── mod.rs           # ✅ Telemetry 模块
-│   │   ├── tracer.rs        # ✅ Tracer 初始化
-│   │   ├── metrics.rs       # ✅ Metrics 初始化
-│   │   └── config.rs        # ✅ 配置管理
-│   ├── handlers/            # 业务逻辑
-│   └── models/              # 数据模型
-├── Cargo.toml
-├── .env                     # ✅ 环境变量
-└── config/
-    ├── dev.yaml             # ✅ 开发环境配置
-    ├── staging.yaml         # ✅ 测试环境配置
-    └── prod.yaml            # ✅ 生产环境配置
-```
-
-**Checklist**:
-
-```text
-- [ ] 独立的 telemetry 模块
-- [ ] 分离的配置文件
-- [ ] 环境变量管理
-- [ ] 清晰的代码组织
-```
+- [✅ Rust OTLP 最佳实践 Checklist](#-rust-otlp-最佳实践-checklist)
+  - [📋 使用说明](#-使用说明)
+  - [📑 目录](#-目录)
+  - [1. 🏗️ 架构设计](#1-️-架构设计)
+    - [🔴 P0 - 必须](#-p0---必须)
+    - [🟡 P1 - 推荐](#-p1---推荐)
+    - [🟢 P2 - 可选](#-p2---可选)
+  - [2. ⚙️ 配置管理](#2-️-配置管理)
+    - [2.1 🔴 P0 - 必须](#21--p0---必须)
+    - [2.2 🟡 P1 - 推荐](#22--p1---推荐)
+    - [2.3 🟢 P2 - 可选](#23--p2---可选)
+  - [3. 🔧 SDK 集成](#3--sdk-集成)
+    - [3.1 🔴 P0 - 必须](#31--p0---必须)
+    - [3.2 🟡 P1 - 推荐](#32--p1---推荐)
+    - [3.3 🟢 P2 - 可选](#33--p2---可选)
+  - [4. 📊 追踪 (Traces)](#4--追踪-traces)
+    - [4.1 🔴 P0 - 必须](#41--p0---必须)
+    - [4.2 🟡 P1 - 推荐](#42--p1---推荐)
+    - [4.3 🟢 P2 - 可选](#43--p2---可选)
+  - [5. 📈 指标 (Metrics)](#5--指标-metrics)
+    - [5.1 🔴 P0 - 必须](#51--p0---必须)
+    - [5.2 🟡 P1 - 推荐](#52--p1---推荐)
+    - [5.3 🟢 P2 - 可选](#53--p2---可选)
+  - [6. 📝 日志 (Logs)](#6--日志-logs)
+    - [6.1 🔴 P0 - 必须](#61--p0---必须)
+    - [6.2 🟡 P1 - 推荐](#62--p1---推荐)
+    - [6.3 🟢 P2 - 可选](#63--p2---可选)
+  - [7. 🎯 采样策略](#7--采样策略)
+    - [7.1 🔴 P0 - 必须](#71--p0---必须)
+    - [7.2 🟡 P1 - 推荐](#72--p1---推荐)
+    - [7.3 🟢 P2 - 可选](#73--p2---可选)
+  - [8. ⚡ 性能优化](#8--性能优化)
+    - [8.1 🔴 P0 - 必须](#81--p0---必须)
+    - [8.2 🟡 P1 - 推荐](#82--p1---推荐)
+    - [8.3 🟢 P2 - 可选](#83--p2---可选)
+  - [9. 🔒 安全加固](#9--安全加固)
+    - [9.1 🔴 P0 - 必须](#91--p0---必须)
+    - [9.2 🟡 P1 - 推荐](#92--p1---推荐)
+    - [9.3 🟢 P2 - 可选](#93--p2---可选)
+  - [10. 🧪 测试](#10--测试)
+    - [10.1 🔴 P0 - 必须](#101--p0---必须)
+    - [10.2 🟡 P1 - 推荐](#102--p1---推荐)
+    - [10.3 🟢 P2 - 可选](#103--p2---可选)
+  - [11. 📦 部署](#11--部署)
+    - [11.1 🔴 P0 - 必须](#111--p0---必须)
+    - [11.2 🟡 P1 - 推荐](#112--p1---推荐)
+    - [11.3 🟢 P2 - 可选](#113--p2---可选)
+  - [12. 🔍 监控和告警](#12--监控和告警)
+    - [12.1 🔴 P0 - 必须](#121--p0---必须)
+    - [12.2 🟡 P1 - 推荐](#122--p1---推荐)
+    - [12.3 🟢 P2 - 可选](#123--p2---可选)
+  - [📊 检查总结](#-检查总结)
+    - [完成度统计](#完成度统计)
+    - [风险评估](#风险评估)
+    - [建议](#建议)
+  - [🔗 参考资源](#-参考资源)
 
 ---
 
-## 🔧 2. 配置最佳实践 Checklist
+## 1. 🏗️ 架构设计
 
-### 2.1 资源 (Resource) 配置
+### 🔴 P0 - 必须
 
-#### ✅ 必需的 Resource 属性
+- [ ] **服务标识**
+  - [ ] 每个服务都有唯一的 `service.name`
+  - [ ] 设置 `service.version` 用于版本追踪
+  - [ ] 配置 `service.namespace` 区分环境（dev/staging/prod）
+  
+  ```rust
+  Resource::new(vec![
+      KeyValue::new("service.name", "my-service"),
+      KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
+      KeyValue::new("service.namespace", "production"),
+      KeyValue::new("deployment.environment", "prod"),
+  ])
+  ```
 
-```rust
-use opentelemetry::{KeyValue, Resource};
+- [ ] **Collector 部署**
+  - [ ] 使用 OpenTelemetry Collector 作为中间层（不要直接发送到后端）
+  - [ ] Collector 配置高可用（至少 2 个实例）
+  - [ ] 配置 Collector 的健康检查
 
-fn create_resource() -> Resource {
-    Resource::new(vec![
-        // ✅ 必需: 服务标识
-        KeyValue::new("service.name", env::var("SERVICE_NAME")
-            .unwrap_or_else(|_| "my-service".to_string())),
-        KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
-        KeyValue::new("service.namespace", "production"),
-        
-        // ✅ 必需: 部署信息
-        KeyValue::new("deployment.environment", 
-            env::var("ENVIRONMENT").unwrap_or_else(|_| "dev".to_string())),
-        
-        // ✅ 推荐: 主机信息
-        KeyValue::new("host.name", hostname::get()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string()),
-        
-        // ✅ 推荐: 云环境
-        KeyValue::new("cloud.provider", "aws"),  // 如适用
-        KeyValue::new("cloud.region", "us-east-1"),
-        
-        // ✅ 推荐: 容器/K8s
-        KeyValue::new("container.id", env::var("HOSTNAME").unwrap_or_default()),
-        KeyValue::new("k8s.namespace.name", env::var("K8S_NAMESPACE").unwrap_or_default()),
-        KeyValue::new("k8s.pod.name", env::var("K8S_POD_NAME").unwrap_or_default()),
-    ])
-}
-```
+- [ ] **容错机制**
+  - [ ] 实现 Exporter 失败时的降级策略
+  - [ ] 配置重试机制（指数退避）
+  - [ ] 设置合理的超时时间
 
-**Checklist**:
+### 🟡 P1 - 推荐
 
-```text
-- [ ] service.name (必需)
-- [ ] service.version (必需)
-- [ ] deployment.environment (必需)
-- [ ] 云/容器信息 (如适用)
-- [ ] 从环境变量读取
-```
+- [ ] **资源属性标准化**
+  - [ ] 使用 Semantic Conventions 标准属性
+  - [ ] 添加 `host.name`, `host.id` 等基础设施信息
+  - [ ] 设置 `cloud.provider`, `cloud.region` 等云环境信息
 
-### 2.2 导出器 (Exporter) 配置
+- [ ] **多环境支持**
+  - [ ] 不同环境使用不同的 Collector 端点
+  - [ ] 环境配置通过环境变量管理
+  - [ ] 测试环境可以使用更高的采样率
 
-#### ✅ OTLP Exporter 配置
+### 🟢 P2 - 可选
 
-```rust
-use opentelemetry_otlp::WithExportConfig;
-use std::time::Duration;
-
-fn create_otlp_exporter() -> Result<SpanExporter> {
-    let otlp_endpoint = env::var("OTLP_ENDPOINT")
-        .unwrap_or_else(|_| "http://localhost:4317".to_string());
-    
-    let exporter = opentelemetry_otlp::new_exporter()
-        .tonic()
-        .with_endpoint(otlp_endpoint)
-        .with_timeout(Duration::from_secs(3))  // ✅ 设置超时
-        .with_metadata({                       // ✅ 添加认证头
-            let mut map = tonic::metadata::MetadataMap::new();
-            if let Ok(token) = env::var("OTLP_AUTH_TOKEN") {
-                map.insert("authorization", token.parse().unwrap());
-            }
-            map
-        })
-        .build_span_exporter()?;
-    
-    Ok(exporter)
-}
-```
-
-**Checklist**:
-
-```text
-- [ ] Endpoint 可配置
-- [ ] 超时设置
-- [ ] 认证配置
-- [ ] TLS 配置 (生产环境)
-- [ ] 重试策略
-- [ ] 批量大小配置
-```
-
-### 2.3 采样 (Sampling) 配置
-
-#### ✅ 采样策略
-
-```rust
-use opentelemetry_sdk::trace::{Sampler, Config};
-
-fn create_sampler() -> Sampler {
-    let sample_rate = env::var("TRACE_SAMPLE_RATE")
-        .ok()
-        .and_then(|s| s.parse::<f64>().ok())
-        .unwrap_or(1.0);  // 默认 100%
-    
-    if sample_rate >= 1.0 {
-        Sampler::AlwaysOn       // ✅ 开发: 全部采样
-    } else if sample_rate <= 0.0 {
-        Sampler::AlwaysOff      // ✅ 关闭采样
-    } else {
-        Sampler::TraceIdRatioBased(sample_rate)  // ✅ 生产: 部分采样
-    }
-}
-
-fn create_tracer_provider() -> TracerProvider {
-    TracerProvider::builder()
-        .with_config(
-            Config::default()
-                .with_sampler(create_sampler())  // ✅ 应用采样器
-                .with_resource(create_resource())
-        )
-        .with_batch_exporter(create_otlp_exporter()?, opentelemetry_sdk::runtime::Tokio)
-        .build()
-}
-```
-
-**Checklist**:
-
-```text
-- [ ] 开发环境: AlwaysOn (100%)
-- [ ] 生产环境: TraceIdRatioBased (10-50%)
-- [ ] 可配置采样率
-- [ ] 考虑成本与可见性平衡
-```
-
-**推荐采样率**:
-
-| 环境 | 采样率 | 说明 |
-|------|--------|------|
-| 开发 | 100% | 全部追踪 |
-| 测试 | 50% | 平衡测试 |
-| 生产 (低流量) | 50-100% | 高可见性 |
-| 生产 (高流量) | 10-20% | 降低成本 |
+- [ ] **服务网格集成**
+  - [ ] 如使用 Istio/Linkerd，配置自动追踪注入
+  - [ ] 验证 Envoy Proxy 的追踪配置
 
 ---
 
-## 📊 3. 追踪 (Tracing) 最佳实践 Checklist
+## 2. ⚙️ 配置管理
 
-### 3.1 Span 管理
+### 2.1 🔴 P0 - 必须
 
-#### ✅ Span 创建
+- [ ] **配置外部化**
+  - [ ] OTLP 端点通过环境变量配置
+  - [ ] 采样率可动态调整
+  - [ ] 敏感信息（API Key）使用密钥管理系统
+  
+  ```rust
+  let endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+      .unwrap_or_else(|_| "http://localhost:4317".to_string());
+  ```
 
-```rust
-use opentelemetry::trace::{Span, Tracer, SpanKind, Status};
+- [ ] **配置验证**
+  - [ ] 启动时验证 OTLP 配置正确性
+  - [ ] 检查 Collector 连接可用性
+  - [ ] 配置加载失败时提供明确错误信息
 
-// ✅ 好的做法
-async fn handle_request() -> Result<()> {
-    let tracer = global::tracer("my-service");
-    
-    // ✅ 使用有意义的名称
-    let mut span = tracer
-        .span_builder("handle_user_request")  // ✅ 描述性名称
-        .with_kind(SpanKind::Server)          // ✅ 设置 SpanKind
-        .start(&tracer);
-    
-    // ✅ 设置属性
-    span.set_attribute(KeyValue::new("http.method", "POST"));
-    span.set_attribute(KeyValue::new("http.route", "/api/users"));
-    
-    // 执行业务逻辑
-    match process_user().await {
-        Ok(result) => {
-            span.set_status(Status::Ok);  // ✅ 设置成功状态
-            Ok(result)
-        }
-        Err(e) => {
-            span.record_exception(&e);    // ✅ 记录异常
-            span.set_status(Status::error(e.to_string()));  // ✅ 设置错误状态
-            Err(e)
-        }
-    }
-}  // ✅ Span 自动结束
+### 2.2 🟡 P1 - 推荐
 
-// ❌ 不好的做法
-async fn bad_handle_request() -> Result<()> {
-    let mut span = tracer
-        .span_builder("op")            // ❌ 名称不清晰
-        .start(&tracer);
-    
-    // ❌ 没有设置 SpanKind
-    // ❌ 没有设置属性
-    // ❌ 没有错误处理
-    
-    process_user().await?;
-    
-    // ❌ 忘记设置状态
-    Ok(())
-}
-```
+- [ ] **配置热重载**
+  - [ ] 支持动态调整采样率而无需重启
+  - [ ] 使用配置管理系统（如 etcd, Consul）
 
-**Checklist**:
+- [ ] **配置模板**
+  - [ ] 为不同服务类型提供配置模板
+  - [ ] 文档化所有配置选项
 
-```text
-- [ ] 使用描述性 Span 名称
-- [ ] 设置 SpanKind (Server/Client/Producer/Consumer/Internal)
-- [ ] 添加上下文属性
-- [ ] 记录异常 (record_exception)
-- [ ] 设置 Span 状态 (Ok/Error)
-- [ ] Span 自动结束 (作用域管理)
-```
+### 2.3 🟢 P2 - 可选
 
-### 3.2 属性设置
-
-#### ✅ 语义约定 (Semantic Conventions)
-
-```rust
-// ✅ HTTP 属性
-span.set_attribute(KeyValue::new("http.method", "GET"));
-span.set_attribute(KeyValue::new("http.url", "https://api.example.com/users"));
-span.set_attribute(KeyValue::new("http.status_code", 200));
-span.set_attribute(KeyValue::new("http.user_agent", user_agent));
-
-// ✅ 数据库属性
-span.set_attribute(KeyValue::new("db.system", "postgresql"));
-span.set_attribute(KeyValue::new("db.name", "users_db"));
-span.set_attribute(KeyValue::new("db.statement", "SELECT * FROM users WHERE id = $1"));
-span.set_attribute(KeyValue::new("db.operation", "SELECT"));
-
-// ✅ 消息队列属性
-span.set_attribute(KeyValue::new("messaging.system", "kafka"));
-span.set_attribute(KeyValue::new("messaging.destination", "user-events"));
-span.set_attribute(KeyValue::new("messaging.operation", "publish"));
-
-// ✅ 业务属性
-span.set_attribute(KeyValue::new("user.id", user_id));
-span.set_attribute(KeyValue::new("order.id", order_id));
-span.set_attribute(KeyValue::new("transaction.amount", amount));
-```
-
-**Checklist**:
-
-```text
-- [ ] 遵循 OpenTelemetry 语义约定
-- [ ] 添加业务上下文属性
-- [ ] 属性值类型正确
-- [ ] 不记录敏感信息 (PII)
-```
-
-### 3.3 错误处理
-
-#### ✅ 异常记录
-
-```rust
-use opentelemetry::trace::Status;
-
-async fn process_with_error_handling() -> Result<()> {
-    let tracer = global::tracer("my-service");
-    let mut span = tracer.span_builder("process").start(&tracer);
-    
-    match risky_operation().await {
-        Ok(result) => {
-            span.set_status(Status::Ok);  // ✅ 成功
-            Ok(result)
-        }
-        Err(e) => {
-            // ✅ 记录异常详情
-            span.record_exception(&e);
-            
-            // ✅ 设置错误状态
-            span.set_status(Status::error(format!("Operation failed: {}", e)));
-            
-            // ✅ 添加错误上下文
-            span.set_attribute(KeyValue::new("error.type", e.type_name()));
-            span.set_attribute(KeyValue::new("error.phase", "processing"));
-            
-            Err(e)
-        }
-    }
-}
-```
-
-**Checklist**:
-
-```text
-- [ ] 使用 record_exception 记录异常
-- [ ] 设置 Span 状态为 Error
-- [ ] 添加错误类型和消息
-- [ ] 包含错误堆栈 (如需要)
-- [ ] 不泄露敏感信息
-```
+- [ ] **配置即代码**
+  - [ ] 使用 Terraform/Pulumi 管理 Collector 配置
+  - [ ] 版本控制所有配置文件
 
 ---
 
-## 📈 4. Metrics 最佳实践 Checklist
+## 3. 🔧 SDK 集成
 
-### 4.1 Instrument 选择
+### 3.1 🔴 P0 - 必须
 
-#### ✅ Instrument 类型选择
+- [ ] **依赖版本锁定**
+  - [ ] 在 `Cargo.toml` 中使用精确版本或锁定主版本
+  - [ ] 定期更新到最新稳定版
+  
+  ```toml
+  opentelemetry = "0.31.0"  # 锁定版本
+  opentelemetry_sdk = { version = "0.31.0", features = ["rt-tokio"] }
+  ```
 
-```rust
-use opentelemetry::metrics::{Counter, Histogram, Gauge, Meter};
-
-fn setup_metrics(meter: &Meter) {
-    // ✅ Counter: 只增计数
-    let request_counter = meter
-        .u64_counter("http.server.requests")
-        .with_description("Total HTTP requests")
-        .with_unit("1")
-        .init();
-    
-    // ✅ Histogram: 分布统计
-    let latency_histogram = meter
-        .f64_histogram("http.server.duration")
-        .with_description("HTTP request duration")
-        .with_unit("s")
-        .init();
-    
-    // ✅ Gauge: 瞬时值
-    let active_connections = meter
-        .i64_gauge("http.server.active_connections")
-        .with_description("Active HTTP connections")
-        .init();
-    
-    // ✅ UpDownCounter: 可增可减计数
-    let queue_size = meter
-        .i64_up_down_counter("queue.size")
-        .with_description("Message queue size")
-        .init();
-}
-```
-
-**Checklist**:
-
-```text
-- [ ] Counter: 累计计数 (requests, errors, bytes)
-- [ ] Histogram: 分布测量 (latency, size)
-- [ ] Gauge: 当前值 (connections, memory, CPU)
-- [ ] UpDownCounter: 可增可减 (queue size, active sessions)
-- [ ] 命名遵循语义约定
-- [ ] 添加描述和单位
-```
-
-### 4.2 标签管理
-
-#### ✅ 标签 (Labels) 最佳实践
+- [ ] **正确初始化顺序**
+  - [ ] 在应用启动早期初始化 OpenTelemetry
+  - [ ] 在应用关闭前调用 `shutdown()` 或 `force_flush()`
 
 ```rust
-// ✅ 好的做法: 低基数标签
-let labels = [
-    KeyValue::new("http.method", "GET"),     // ✅ 有限值
-    KeyValue::new("http.status_code", "200"), // ✅ 有限值
-    KeyValue::new("service.name", "api"),    // ✅ 有限值
-];
-request_counter.add(1, &labels);
+  // 初始化
+  let provider = init_tracer()?;
+  
+  // 运行应用...
+  
+  // 清理
+  provider.shutdown()?;
+  ```
 
-// ❌ 坏的做法: 高基数标签
-let bad_labels = [
-    KeyValue::new("user.id", "12345"),       // ❌ 高基数!
-    KeyValue::new("request.id", "uuid"),     // ❌ 高基数!
-    KeyValue::new("timestamp", "2025..."),   // ❌ 高基数!
-];
-```
+- [ ] **错误处理**
+  - [ ] 处理 Tracer 初始化失败
+  - [ ] Span 创建失败不应导致业务逻辑中断
+  - [ ] 使用 `Result` 类型处理可能的错误
 
-**Checklist**:
+### 3.2 🟡 P1 - 推荐
 
-```text
-- [ ] 标签基数 < 10 (低基数)
-- [ ] 不使用用户 ID、请求 ID 作为标签
-- [ ] 标签值有限且已知
-- [ ] 标签名称符合命名约定
-```
+- [ ] **使用批量导出器**
+  - [ ] 避免同步导出（性能差）
+  - [ ] 配置合理的批次大小和刷新间隔
 
-**标签基数指南**:
+```rust
+  .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
+  ```
 
-| 标签 | 基数 | 推荐 |
-|------|------|------|
-| http.method | ~10 | ✅ 低 |
-| http.status_code | ~60 | ✅ 低 |
-| region | ~20 | ✅ 低 |
-| user.id | 百万+ | ❌ 高 |
-| request.id | 无限 | ❌ 高 |
+- [ ] **Context 传播**
+  - [ ] HTTP 客户端自动注入 Trace Context
+  - [ ] HTTP 服务器自动提取 Trace Context
+  - [ ] 使用 W3C Trace Context 格式
+
+### 3.3 🟢 P2 - 可选
+
+- [ ] **自定义传播器**
+  - [ ] 支持多种 Context 传播格式（Baggage, B3 等）
+  - [ ] 实现自定义传播逻辑
 
 ---
 
-## 🚀 5. 性能优化 Checklist
+## 4. 📊 追踪 (Traces)
 
-### 5.1 批量导出
+### 4.1 🔴 P0 - 必须
 
-#### ✅ 批量导出配置
+- [ ] **关键路径追踪**
+  - [ ] 所有 HTTP 请求都有 Span
+  - [ ] 所有 RPC 调用都有 Span
+  - [ ] 所有数据库操作都有 Span
+  - [ ] 所有消息队列操作都有 Span
 
-```rust
-use opentelemetry_sdk::trace::{BatchConfig, BatchSpanProcessor};
-use std::time::Duration;
+- [ ] **Span 属性标准化**
+  - [ ] 使用 Semantic Conventions 标准属性名
+  - [ ] HTTP: `http.method`, `http.status_code`, `http.route`
+  - [ ] DB: `db.system`, `db.operation`, `db.statement`
+  - [ ] RPC: `rpc.system`, `rpc.service`, `rpc.method`
 
-fn create_batch_processor(exporter: SpanExporter) -> BatchSpanProcessor {
-    BatchSpanProcessor::builder(exporter, opentelemetry_sdk::runtime::Tokio)
-        .with_batch_config(
-            BatchConfig::default()
-                .with_max_queue_size(2048)              // ✅ 队列大小
-                .with_scheduled_delay(Duration::from_secs(5))  // ✅ 导出间隔
-                .with_max_export_batch_size(512)        // ✅ 批量大小
-                .with_max_concurrent_exports(1)         // ✅ 并发导出
-        )
-        .build()
-}
-```
+- [ ] **错误追踪**
+  - [ ] 捕获所有异常并记录到 Span
+  - [ ] 设置 Span 状态为 `Status::Error`
+  - [ ] 添加 `exception.type`, `exception.message` 属性
+  
+  ```rust
+  span.record_exception(&error);
+  span.set_status(Status::error(error.to_string()));
+  ```
 
-**Checklist**:
+- [ ] **SpanKind 正确设置**
+  - [ ] HTTP 服务器: `SpanKind::Server`
+  - [ ] HTTP 客户端: `SpanKind::Client`
+  - [ ] 消息生产者: `SpanKind::Producer`
+  - [ ] 消息消费者: `SpanKind::Consumer`
+  - [ ] 内部操作: `SpanKind::Internal`
 
-```text
-- [ ] 使用 BatchSpanProcessor (而非 SimpleSpanProcessor)
-- [ ] 设置合理的队列大小
-- [ ] 配置导出间隔
-- [ ] 设置批量大小
-- [ ] 限制并发导出
-```
+### 4.2 🟡 P1 - 推荐
 
-**推荐配置**:
+- [ ] **Span 生命周期管理**
+  - [ ] 使用 RAII 模式自动结束 Span
+  - [ ] 避免忘记结束 Span
+  
+  ```rust
+  // 推荐: Span 在作用域结束时自动结束
+  {
+      let _span = tracer.start("operation");
+      // ... 业务逻辑
+  } // Span 自动结束
+  ```
 
-| 环境 | 队列大小 | 导出间隔 | 批量大小 |
-|------|---------|---------|---------|
-| 开发 | 512 | 1s | 128 |
-| 生产 (低流量) | 2048 | 5s | 512 |
-| 生产 (高流量) | 4096 | 10s | 1024 |
+- [ ] **Span 嵌套**
+  - [ ] 正确建立父子 Span 关系
+  - [ ] 使用 `with_parent_context()` 或 `Context::current()`
 
-### 5.2 异步处理
+- [ ] **避免过度追踪**
+  - [ ] 不要为每个小函数创建 Span
+  - [ ] 关注业务关键路径
+  - [ ] 避免追踪循环内部（批量操作）
 
-#### ✅ 异步最佳实践
+### 4.3 🟢 P2 - 可选
 
-```rust
-// ✅ 好的做法: 非阻塞操作
-async fn handle_request() -> Result<()> {
-    let span = tracer.span_builder("handle_request").start(&tracer);
-    
-    // ✅ 异步操作不阻塞
-    let result = async_operation().await?;
-    
-    // ✅ Span 在 await 点保持活跃
-    span.set_status(Status::Ok);
-    
-    Ok(result)
-}
+- [ ] **Span 事件 (Events)**
+  - [ ] 记录关键业务事件
+  - [ ] 添加结构化事件属性
 
-// ❌ 坏的做法: 阻塞操作
-fn bad_handle_request() -> Result<()> {
-    let span = tracer.span_builder("handle_request").start(&tracer);
-    
-    // ❌ 同步阻塞操作
-    std::thread::sleep(Duration::from_secs(1));
-    
-    Ok(())
-}
-```
-
-**Checklist**:
-
-```text
-- [ ] 使用异步操作 (async/await)
-- [ ] 避免阻塞调用
-- [ ] 使用 Tokio 运行时
-- [ ] Span 正确跨 await 点
-```
-
-### 5.3 内存优化
-
-#### ✅ 内存管理
-
-```rust
-// ✅ 限制 Span 属性数量
-const MAX_ATTRIBUTES: usize = 128;
-
-// ✅ 限制字符串长度
-fn truncate_attribute(value: &str) -> String {
-    if value.len() > 1024 {
-        format!("{}...", &value[..1024])
-    } else {
-        value.to_string()
-    }
-}
-
-// ✅ 避免大对象作为属性
-span.set_attribute(KeyValue::new("response.size", response.len()));  // ✅ 记录大小
-// ❌ 不要这样做:
-// span.set_attribute(KeyValue::new("response.body", response));  // ❌ 记录整个响应体
-```
-
-**Checklist**:
-
-```text
-- [ ] 限制 Span 属性数量 (< 128)
-- [ ] 限制属性值长度 (< 1KB)
-- [ ] 避免记录大对象
-- [ ] 定期监控内存使用
-```
+- [ ] **Span 链接 (Links)**
+  - [ ] 跨 Trace 关联（批处理场景）
+  - [ ] 异步任务关联
 
 ---
 
-## 🔒 6. 安全性 Checklist
+## 5. 📈 指标 (Metrics)
 
-### 6.1 敏感数据保护
+### 5.1 🔴 P0 - 必须
 
-#### ✅ 数据脱敏
+- [ ] **系统指标**
+  - [ ] CPU 使用率
+  - [ ] 内存使用率
+  - [ ] 进程句柄数
+
+- [ ] **业务指标**
+  - [ ] 请求总数 (Counter)
+  - [ ] 请求延迟分布 (Histogram)
+  - [ ] 并发连接数 (Gauge)
+
+- [ ] **指标命名规范**
+  - [ ] 使用小写字母和下划线
+  - [ ] 添加单位后缀（`_bytes`, `_seconds`, `_total`）
+  - [ ] 使用 Semantic Conventions 标准名称
 
 ```rust
-// ✅ 脱敏工具
-fn sanitize_sql(sql: &str) -> String {
-    // 移除参数值
-    sql.split_whitespace()
-        .map(|word| if word.contains('\'') { "?" } else { word })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
+  let request_counter = meter
+      .u64_counter("http_server_requests_total")
+      .with_description("Total HTTP requests")
+      .init();
+  ```
 
-fn mask_email(email: &str) -> String {
-    if let Some(at_pos) = email.find('@') {
-        let (name, domain) = email.split_at(at_pos);
-        format!("{}***@{}", &name[..name.len().min(2)], domain.split_at(1).1)
-    } else {
-        "***".to_string()
-    }
-}
+### 5.2 🟡 P1 - 推荐
 
-// ✅ 使用脱敏数据
-span.set_attribute(KeyValue::new("db.statement", sanitize_sql(sql)));
-span.set_attribute(KeyValue::new("user.email", mask_email(email)));
-```
+- [ ] **RED 指标**
+  - [ ] Rate (请求速率)
+  - [ ] Errors (错误率)
+  - [ ] Duration (延迟分布)
 
-**Checklist**:
+- [ ] **USE 指标** (资源)
+  - [ ] Utilization (利用率)
+  - [ ] Saturation (饱和度)
+  - [ ] Errors (错误)
 
-```text
-- [ ] 不记录密码
-- [ ] 不记录信用卡号
-- [ ] 不记录 API 密钥/Token
-- [ ] 脱敏邮箱地址
-- [ ] 脱敏 SQL 语句
-- [ ] 脱敏 URL 参数
-```
+- [ ] **标签管理**
+  - [ ] 限制标签基数（避免高基数标签）
+  - [ ] 使用有意义的标签名
+  - [ ] 避免动态标签值（如 user_id）
 
-**禁止记录的信息**:
+### 5.3 🟢 P2 - 可选
 
-```text
-❌ 密码 (password, passwd, pwd)
-❌ 密钥 (secret, api_key, token)
-❌ 信用卡 (credit_card, ccn)
-❌ SSN (social_security_number)
-❌ 个人身份信息 (PII)
-```
+- [ ] **自定义指标**
+  - [ ] 业务KPI指标
+  - [ ] SLO/SLA 相关指标
 
-### 6.2 TLS/SSL 配置
+---
 
-#### ✅ 加密传输
+## 6. 📝 日志 (Logs)
+
+### 6.1 🔴 P0 - 必须
+
+- [ ] **结构化日志**
+  - [ ] 使用 JSON 格式输出日志
+  - [ ] 包含 `trace_id`, `span_id` 字段
+  - [ ] 日志级别正确设置
+
+```rust
+  use tracing::{info, span};
+  
+  info!(
+      trace_id = %span.context().trace_id(),
+      span_id = %span.context().span_id(),
+      "User logged in"
+  );
+  ```
+
+- [ ] **关键操作日志**
+  - [ ] 记录所有API请求/响应
+  - [ ] 记录所有错误和异常
+  - [ ] 记录认证/授权事件
+
+- [ ] **敏感信息脱敏**
+  - [ ] 不记录密码、Token
+  - [ ] 脱敏用户身份信息
+  - [ ] 脱敏支付信息
+
+### 6.2 🟡 P1 - 推荐
+
+- [ ] **日志关联**
+  - [ ] 日志自动关联 Trace ID
+  - [ ] 使用 `tracing-opentelemetry` 集成
+
+- [ ] **日志采样**
+  - [ ] 高频日志进行采样
+  - [ ] 错误日志始终记录
+
+### 6.3 🟢 P2 - 可选
+
+- [ ] **日志聚合**
+  - [ ] 集成 ELK/Loki
+  - [ ] 配置日志保留策略
+
+---
+
+## 7. 🎯 采样策略
+
+### 7.1 🔴 P0 - 必须
+
+- [ ] **配置采样率**
+  - [ ] 生产环境使用 1-10% 采样率
+  - [ ] 测试环境可使用 100% 采样
+
+```rust
+  use opentelemetry_sdk::trace::Sampler;
+  
+  .with_config(
+      trace::Config::default()
+          .with_sampler(Sampler::TraceIdRatioBased(0.01)) // 1%
+  )
+  ```
+
+- [ ] **错误始终采样**
+  - [ ] 所有错误 Trace 都被采样
+  - [ ] 配置 `ParentBased` 采样器
+
+### 7.2 🟡 P1 - 推荐
+
+- [ ] **智能采样**
+  - [ ] 慢请求（P95+ 延迟）始终采样
+  - [ ] 关键业务路径提高采样率
+
+- [ ] **动态采样**
+  - [ ] 根据负载动态调整采样率
+  - [ ] 使用 Collector 的尾部采样功能
+
+### 7.3 🟢 P2 - 可选
+
+- [ ] **自定义采样器**
+  - [ ] 基于用户ID采样（测试特定用户）
+  - [ ] 基于HTTP header采样（调试模式）
+
+---
+
+## 8. ⚡ 性能优化
+
+### 8.1 🔴 P0 - 必须
+
+- [ ] **使用异步导出**
+  - [ ] 避免同步阻塞
+  - [ ] 使用 `rt-tokio` feature
+  
+  ```toml
+  opentelemetry_sdk = { version = "0.31.0", features = ["rt-tokio"] }
+  ```
+
+- [ ] **批量导出配置**
+  - [ ] `max_queue_size`: 2048-8192
+  - [ ] `max_export_batch_size`: 512-2048
+  - [ ] `scheduled_delay`: 1-5秒
+
+- [ ] **资源限制**
+  - [ ] 设置导出超时（5-10秒）
+  - [ ] 限制内存使用
+  - [ ] 配置最大队列长度
+
+### 8.2 🟡 P1 - 推荐
+
+- [ ] **零分配优化**
+  - [ ] 使用 `Arc` 共享数据
+  - [ ] 复用 buffer
+  - [ ] 避免不必要的克隆
+
+- [ ] **CPU 优化**
+  - [ ] 使用 SIMD 加速（Arrow）
+  - [ ] 启用 LTO 编译优化
+  
+  ```toml
+  [profile.release]
+  lto = true
+  codegen-units = 1
+  ```
+
+### 8.3 🟢 P2 - 可选
+
+- [ ] **Arrow 列式存储**
+  - [ ] 使用 Arrow Flight 传输
+  - [ ] 启用列式压缩
+
+- [ ] **内存池**
+  - [ ] 实现自定义内存分配器
+  - [ ] 监控内存使用
+
+---
+
+## 9. 🔒 安全加固
+
+### 9.1 🔴 P0 - 必须
+
+- [ ] **TLS 加密**
+  - [ ] 生产环境必须使用 TLS
+  - [ ] 验证证书有效性
 
 ```rust
 use tonic::transport::ClientTlsConfig;
 
-fn create_secure_exporter() -> Result<SpanExporter> {
-    let tls_config = ClientTlsConfig::new()
-        .domain_name("otlp.example.com")              // ✅ 域名验证
-        .ca_certificate(Certificate::from_pem(ca))    // ✅ CA 证书
-        .identity(Identity::from_pem(cert, key));     // ✅ 客户端证书
+  let tls = ClientTlsConfig::new()
+      .ca_certificate(Certificate::from_pem(ca_cert))
+      .domain_name("collector.example.com");
     
     let exporter = opentelemetry_otlp::new_exporter()
         .tonic()
-        .with_endpoint("https://otlp.example.com:4317")  // ✅ HTTPS
-        .with_tls_config(tls_config)                     // ✅ TLS 配置
+      .with_tls_config(tls)
         .build_span_exporter()?;
-    
-    Ok(exporter)
-}
-```
+  ```
 
-**Checklist**:
+- [ ] **认证配置**
+  - [ ] API Key 通过 Header 传递
+  - [ ] 使用密钥管理系统存储凭据
+  - [ ] 定期轮换密钥
 
-```text
-- [ ] 生产环境使用 HTTPS/TLS
-- [ ] 配置 CA 证书
-- [ ] 启用域名验证
-- [ ] 使用客户端证书 (如需要)
-- [ ] 定期更新证书
-```
+- [ ] **数据脱敏**
+  - [ ] SQL 语句脱敏（隐藏参数值）
+  - [ ] HTTP Header 脱敏（Authorization, Cookie）
+  - [ ] 敏感属性值脱敏
+
+### 9.2 🟡 P1 - 推荐
+
+- [ ] **最小权限原则**
+  - [ ] 服务账户只有发送遥测数据权限
+  - [ ] 使用 RBAC 控制访问
+
+- [ ] **数据保留策略**
+  - [ ] 定义数据保留期限
+  - [ ] 自动清理过期数据
+
+### 9.3 🟢 P2 - 可选
+
+- [ ] **合规性**
+  - [ ] GDPR 合规
+  - [ ] 数据本地化需求
 
 ---
 
-## 🧪 7. 测试 Checklist
+## 10. 🧪 测试
 
-### 7.1 单元测试
+### 10.1 🔴 P0 - 必须
 
-#### ✅ 测试示例
+- [ ] **单元测试**
+  - [ ] 测试 Tracer 初始化
+  - [ ] 测试 Span 创建和属性设置
+  - [ ] 使用 `opentelemetry::testing` 模块
 
 ```rust
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use opentelemetry::{global, testing::TestSpan};
-    
-    #[tokio::test]
-    async fn test_span_creation() {
-        // ✅ 初始化测试 tracer
-        let tracer_provider = TracerProvider::builder()
-            .with_simple_exporter(TestExporter::new())
-            .build();
-        global::set_tracer_provider(tracer_provider);
-        
-        // ✅ 测试 Span 创建
-        let tracer = global::tracer("test");
-        let span = tracer.span_builder("test_span").start(&tracer);
-        
-        assert_eq!(span.span_context().is_valid(), true);
-    }
-    
-    #[tokio::test]
-    async fn test_span_attributes() {
-        let tracer = global::tracer("test");
-        let mut span = tracer.span_builder("test").start(&tracer);
-        
-        // ✅ 测试属性设置
-        span.set_attribute(KeyValue::new("test.key", "test.value"));
-        
-        // 验证属性
-        // ...
+      use opentelemetry::testing::trace::NoopTracer;
+      
+      #[test]
+      fn test_span_creation() {
+          let tracer = NoopTracer::new();
+          let span = tracer.start("test");
+          assert_eq!(span.span_context().is_valid(), false);
     }
 }
 ```
 
-**Checklist**:
+- [ ] **集成测试**
+  - [ ] 测试与 Collector 的连接
+  - [ ] 验证 Span 数据正确导出
+  - [ ] 测试错误场景
 
-```text
-- [ ] 测试 Span 创建
-- [ ] 测试属性设置
-- [ ] 测试错误处理
-- [ ] 测试 Context 传播
-- [ ] 测试采样逻辑
-```
+### 10.2 🟡 P1 - 推荐
 
-### 7.2 集成测试
+- [ ] **性能测试**
+  - [ ] 基准测试（Criterion）
+  - [ ] 负载测试
+  - [ ] 内存泄漏测试
 
-#### ✅ 集成测试
+- [ ] **E2E 测试**
+  - [ ] 端到端追踪验证
+  - [ ] 跨服务链路测试
 
-```rust
-#[tokio::test]
-async fn integration_test_http_tracing() {
-    // ✅ 启动测试服务器
-    let app = create_app();
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    
-    tokio::spawn(async move {
-        axum::serve(listener, app).await.unwrap();
-    });
-    
-    // ✅ 发送请求
-    let response = reqwest::get(format!("http://{}/health", addr))
-        .await
-        .unwrap();
-    
-    // ✅ 验证响应
-    assert_eq!(response.status(), 200);
-    
-    // ✅ 验证 Span 被创建 (需要 TestExporter)
-}
-```
+### 10.3 🟢 P2 - 可选
 
-**Checklist**:
-
-```text
-- [ ] HTTP 端到端测试
-- [ ] 数据库集成测试
-- [ ] 消息队列集成测试
-- [ ] 分布式追踪测试
-```
+- [ ] **混沌测试**
+  - [ ] Collector 不可用场景
+  - [ ] 网络分区场景
 
 ---
 
-## 📦 8. 生产部署 Checklist
+## 11. 📦 部署
 
-### 8.1 环境配置
+### 11.1 🔴 P0 - 必须
 
-#### ✅ 环境变量
-
-```bash
-# ✅ 必需的环境变量
-export SERVICE_NAME=my-service
-export SERVICE_VERSION=1.0.0
-export ENVIRONMENT=production
-
-# ✅ OTLP 配置
-export OTLP_ENDPOINT=https://otlp.example.com:4317
-export OTLP_AUTH_TOKEN=secret-token
-
-# ✅ 采样配置
-export TRACE_SAMPLE_RATE=0.1  # 10% 采样
-
-# ✅ 资源配置
-export K8S_NAMESPACE=production
-export K8S_POD_NAME=$HOSTNAME
-
-# ✅ 日志级别
-export RUST_LOG=info,opentelemetry=debug
-```
-
-**Checklist**:
-
-```text
-- [ ] SERVICE_NAME 已设置
-- [ ] OTLP_ENDPOINT 已配置
-- [ ] 采样率已调整
-- [ ] 认证已配置
-- [ ] 日志级别合理
-```
-
-### 8.2 监控设置
-
-#### ✅ 关键指标监控
-
-```text
-- [ ] Span 导出成功率 > 99%
-- [ ] Span 导出延迟 < 100ms (p99)
-- [ ] Metrics 导出成功率 > 99%
-- [ ] 队列溢出次数 = 0
-- [ ] 内存使用 < 阈值
-- [ ] CPU 使用 < 阈值
-```
-
-### 8.3 告警配置
-
-#### ✅ 告警规则
-
-```yaml
-# ✅ Span 导出失败告警
-- alert: SpanExportFailure
-  expr: rate(otlp_exporter_failed_total[5m]) > 0.01
-  severity: warning
+- [ ] **容器化**
+  - [ ] 使用多阶段构建减小镜像大小
+  - [ ] 配置健康检查
   
-# ✅ 队列溢出告警
-- alert: QueueOverflow
-  expr: otlp_queue_dropped_total > 0
-  severity: critical
+  ```dockerfile
+  FROM rust:1.90 as builder
+  # ... 构建 ...
   
-# ✅ 导出延迟告警
-- alert: HighExportLatency
-  expr: histogram_quantile(0.99, otlp_export_duration_seconds) > 0.5
-  severity: warning
-```
+  FROM debian:bookworm-slim
+  # ... 运行时 ...
+  
+  HEALTHCHECK --interval=30s --timeout=3s \
+    CMD curl -f http://localhost:8080/health || exit 1
+  ```
 
-**Checklist**:
+- [ ] **Kubernetes 配置**
+  - [ ] 设置资源限制（CPU/Memory）
+  - [ ] 配置 liveness 和 readiness 探针
+  - [ ] 使用 ConfigMap 管理配置
 
-```text
-- [ ] 导出失败告警
-- [ ] 队列溢出告警
-- [ ] 高延迟告警
-- [ ] 资源使用告警
-```
+- [ ] **环境变量**
+  - [ ] `OTEL_EXPORTER_OTLP_ENDPOINT`
+  - [ ] `OTEL_SERVICE_NAME`
+  - [ ] `OTEL_TRACES_SAMPLER`
 
----
+### 11.2 🟡 P1 - 推荐
 
-## 🔍 9. 可观测性成熟度评估
+- [ ] **服务网格**
+  - [ ] 配置 Istio/Linkerd 自动追踪
+  - [ ] 验证 sidecar 注入
 
-### Level 1: 基础 (Basic)
+- [ ] **自动扩缩容**
+  - [ ] 配置 HPA（基于 CPU/内存）
+  - [ ] 使用 KEDA（基于队列长度）
 
-```text
-- [ ] 服务有基本的追踪
-- [ ] 记录 HTTP 请求
-- [ ] 有基本的 Metrics
-- [ ] 数据导出到 Collector
-```
+### 11.3 🟢 P2 - 可选
 
-### Level 2: 中级 (Intermediate)
-
-```text
-- [ ] 完整的分布式追踪
-- [ ] Context 跨服务传播
-- [ ] 数据库操作追踪
-- [ ] 消息队列追踪
-- [ ] 完整的 Metrics 覆盖
-- [ ] 告警规则配置
-```
-
-### Level 3: 高级 (Advanced)
-
-```text
-- [ ] 自定义 Span 处理器
-- [ ] 动态采样
-- [ ] 完整的安全配置
-- [ ] 性能优化完成
-- [ ] 自动化测试覆盖
-- [ ] 完整的文档
-```
-
-### Level 4: 专家 (Expert)
-
-```text
-- [ ] 自定义 Exporter
-- [ ] 实时流处理
-- [ ] ML 驱动的异常检测
-- [ ] 自动化 SLO 监控
-- [ ] 完整的可观测性平台
-```
+- [ ] **Helm Chart**
+  - [ ] 打包为 Helm Chart
+  - [ ] 参数化配置
 
 ---
 
-## 📋 10. 快速检查清单
+## 12. 🔍 监控和告警
 
-### 🔴 生产部署前必查 (P0)
+### 12.1 🔴 P0 - 必须
 
-```text
-开发阶段:
-- [ ] ✅ 依赖版本兼容
-- [ ] ✅ Resource 配置完整
-- [ ] ✅ Exporter 可连接
-- [ ] ✅ 采样率已设置
+- [ ] **Exporter 健康监控**
+  - [ ] 监控 Exporter 成功率
+  - [ ] 监控导出延迟
+  - [ ] 监控队列长度
 
-安全检查:
-- [ ] 🔒 敏感数据已脱敏
-- [ ] 🔒 TLS 已启用
-- [ ] 🔒 认证已配置
+- [ ] **关键告警**
+  - [ ] Collector 不可用告警
+  - [ ] Trace 丢失率过高告警
+  - [ ] 内存使用过高告警
 
-性能检查:
-- [ ] 🚀 使用批量导出
-- [ ] 🚀 队列大小合理
-- [ ] 🚀 内存使用可控
+### 12.2 🟡 P1 - 推荐
 
-监控告警:
-- [ ] 📊 关键指标已监控
-- [ ] 📊 告警规则已配置
-- [ ] 📊 仪表盘已创建
-```
+- [ ] **仪表盘**
+  - [ ] 服务拓扑图
+  - [ ] 延迟分布图
+  - [ ] 错误率趋势
 
-### 🟡 优化项 (P1)
+- [ ] **SLO/SLA 监控**
+  - [ ] P95/P99 延迟
+  - [ ] 可用性百分比
+  - [ ] 错误预算
 
-```text
-- [ ] 完整的单元测试
-- [ ] 完整的集成测试
-- [ ] 性能基准测试
-- [ ] 压力测试
-- [ ] 文档完整
-```
+### 12.3 🟢 P2 - 可选
+
+- [ ] **成本监控**
+  - [ ] 遥测数据量
+  - [ ] Collector 资源消耗
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025-10-10  
-**作者**: OTLP Rust 标准深度梳理团队
+## 📊 检查总结
 
-**下一步**: 定期审查本清单，持续提升可观测性成熟度！
+### 完成度统计
+
+- **P0 必须项**: _____ / 50
+- **P1 推荐项**: _____ / 35
+- **P2 可选项**: _____ / 20
+- **总完成度**: _____ / 105
+
+### 风险评估
+
+- 🔴 **高风险**: P0 完成度 < 80%
+- 🟡 **中风险**: P0 完成度 80-95%
+- 🟢 **低风险**: P0 完成度 > 95%
+
+### 建议
+
+根据你的完成度，建议采取以下行动：
+
+- **< 50%**: ⛔ 不建议生产部署，需要大量补充工作
+- **50-80%**: ⚠️ 可以部署到测试环境，但需谨慎
+- **> 80%**: ✅ 可以考虑生产部署，继续完善剩余项
+
+---
+
+## 🔗 参考资源
+
+- [OpenTelemetry 官方最佳实践](https://opentelemetry.io/docs/concepts/best-practices/)
+- [Rust OpenTelemetry 文档](https://docs.rs/opentelemetry/)
+- [完整文档导航](../README.md)
+
+---
+
+**Checklist 版本**: v1.0  
+**创建日期**: 2025年10月10日  
+**适用范围**: 生产环境 Rust OTLP 部署
+
+---
+
+[🏠 返回主目录](../README.md) | [📚 快速入门](../33_教程与示例/01_Rust_OTLP_30分钟快速入门.md) | [📖 学习路径](../20_学习路径导航/)
