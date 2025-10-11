@@ -1,1298 +1,652 @@
-# IoT 设备 Rust 完整追踪（嵌入式 & 边缘计算）
+# 🌐 IoT 设备 Rust 完整追踪
 
-> **Rust 版本**: 1.90+  
-> **OpenTelemetry**: 0.31.0  
-> **目标平台**: `no_std`, ARM Cortex-M, RISC-V, ESP32, Raspberry Pi  
-> **状态**: Production Ready  
-> **最后更新**: 2025年10月9日
-
----
-
-## 目录
-
-- [IoT 设备 Rust 完整追踪（嵌入式 \& 边缘计算）](#iot-设备-rust-完整追踪嵌入式--边缘计算)
-  - [目录](#目录)
-  - [1. 概述](#1-概述)
-    - [1.1 为什么选择 Rust 嵌入式可观测性](#11-为什么选择-rust-嵌入式可观测性)
-    - [1.2 适用场景](#12-适用场景)
-  - [2. 嵌入式 Rust 架构](#2-嵌入式-rust-架构)
-    - [2.1 三层架构](#21-三层架构)
-    - [2.2 依赖配置](#22-依赖配置)
-  - [3. no\_std 环境适配](#3-no_std-环境适配)
-    - [3.1 轻量级 Span 结构](#31-轻量级-span-结构)
-  - [4. 轻量级 Span 实现](#4-轻量级-span-实现)
-    - [4.1 Span 生成器（泛型设计）](#41-span-生成器泛型设计)
-    - [4.2 传感器数据追踪示例](#42-传感器数据追踪示例)
-  - [5. 离线数据缓存](#5-离线数据缓存)
-    - [5.1 Flash 存储（no\_std）](#51-flash-存储no_std)
-  - [6. MQTT 传输集成](#6-mqtt-传输集成)
-    - [6.1 MQTT 客户端（no\_std）](#61-mqtt-客户端no_std)
-  - [7. 边缘网关实现](#7-边缘网关实现)
-    - [7.1 网关架构（Tokio + MQTT）](#71-网关架构tokio--mqtt)
-    - [7.2 Span 转换器](#72-span-转换器)
-  - [8. 传感器数据采集](#8-传感器数据采集)
-    - [8.1 工业传感器集成](#81-工业传感器集成)
-  - [9. 低功耗优化](#9-低功耗优化)
-    - [9.1 动态采样策略](#91-动态采样策略)
-    - [9.2 深度睡眠管理](#92-深度睡眠管理)
-  - [10. ESP32 完整示例](#10-esp32-完整示例)
-    - [10.1 ESP32-C3 传感器节点](#101-esp32-c3-传感器节点)
-  - [11. Raspberry Pi 边缘网关](#11-raspberry-pi-边缘网关)
-    - [11.1 完整网关实现](#111-完整网关实现)
-  - [12. 生产环境最佳实践](#12-生产环境最佳实践)
-    - [12.1 关键指标](#121-关键指标)
-    - [12.2 安全加固](#122-安全加固)
-    - [12.3 性能基准](#123-性能基准)
-  - [参考资源](#参考资源)
-    - [官方文档](#官方文档)
-    - [工具库](#工具库)
+> **Rust 版本**: 1.90+ (stable/nightly)  
+> **OpenTelemetry**: 0.31.0 (标准) / 自定义实现 (no_std)  
+> **目标平台**: ARM Cortex-M, RISC-V, ESP32  
+> **最后更新**: 2025年10月10日
 
 ---
 
-## 1. 概述
+## 📋 目录
 
-### 1.1 为什么选择 Rust 嵌入式可观测性
+- [🌐 IoT 设备 Rust 完整追踪](#-iot-设备-rust-完整追踪)
+  - [📋 目录](#-目录)
+  - [1. IoT 可观测性概述](#1-iot-可观测性概述)
+    - [1.1 IoT 设备面临的挑战](#11-iot-设备面临的挑战)
+    - [1.2 IoT OTLP 架构](#12-iot-otlp-架构)
+  - [2. 嵌入式 Rust 生态](#2-嵌入式-rust-生态)
+    - [2.1 核心库](#21-核心库)
+    - [2.2 目标平台配置](#22-目标平台配置)
+  - [3. no\_std 环境下的 OTLP](#3-no_std-环境下的-otlp)
+    - [3.1 最小化 Span 数据结构](#31-最小化-span-数据结构)
+    - [3.2 环形缓冲区 Span 存储](#32-环形缓冲区-span-存储)
+    - [3.3 序列化与压缩](#33-序列化与压缩)
+  - [4. 轻量级追踪实现](#4-轻量级追踪实现)
+    - [4.1 基础 Tracer](#41-基础-tracer)
+    - [4.2 RAII Span Guard](#42-raii-span-guard)
+  - [5. 网络传输优化](#5-网络传输优化)
+    - [5.1 CoAP 传输 (轻量级)](#51-coap-传输-轻量级)
+    - [5.2 MQTT 传输](#52-mqtt-传输)
+  - [6. 电源与资源管理](#6-电源与资源管理)
+    - [6.1 动态采样](#61-动态采样)
+    - [6.2 批量上报策略](#62-批量上报策略)
+  - [7. 实战案例](#7-实战案例)
+    - [7.1 温度传感器监控](#71-温度传感器监控)
+  - [🔗 参考资源](#-参考资源)
+
+---
+
+## 1. IoT 可观测性概述
+
+### 1.1 IoT 设备面临的挑战
+
+| 挑战 | 说明 | 解决方案 |
+|------|------|---------|
+| **资源受限** | RAM < 256KB, Flash < 1MB | 最小化数据结构、零拷贝 |
+| **低功耗** | 电池供电，需长期运行 | 批量处理、按需采样 |
+| **网络不稳定** | 间歇性连接、低带宽 | 本地缓存、压缩传输 |
+| **实时性要求** | 快速响应、低延迟 | 轻量级处理、优先级队列 |
+| **安全要求** | 数据加密、安全传输 | TLS/DTLS、轻量级加密 |
+
+### 1.2 IoT OTLP 架构
 
 ```text
-✅ 零成本抽象（无运行时开销）
-✅ 类型安全（编译期错误检测）
-✅ 无 GC 暂停（实时性保证）
-✅ 极小的内存占用（<100KB）
-✅ 跨平台支持（ARM, RISC-V, x86）
-✅ 强大的异步支持（embassy, tokio）
-✅ 成熟的生态（embedded-hal, rumqttc）
-```
-
-### 1.2 适用场景
-
-```text
-- 工业传感器（温度、压力、湿度）
-- 智能家居设备（恒温器、门锁、照明）
-- 车联网（OBD-II, CAN总线）
-- 智慧农业（土壤监测、气象站）
-- 边缘计算网关（数据聚合、本地处理）
-- 可穿戴设备（健康监测、运动追踪）
+┌─────────────────────────────────────────────┐
+│            IoT Device (Rust)                │
+│  ┌────────────┐  ┌──────────────────┐       │
+│  │ Sensors    │→ │ Tracing Layer    │       │
+│  └────────────┘  │ (Lightweight)    │       │
+│                  └──────────────────┘       │
+│                          ↓                  │
+│  ┌────────────────────────────────────┐     │
+│  │  Local Buffer (Ring Buffer)        │     │
+│  │  - Span Queue (固定大小)            │     │
+│  │  - Compression (可选)              │     │
+│  └────────────────────────────────────┘     │
+│                          ↓                  │
+│  ┌────────────────────────────────────┐     │
+│  │  Network Layer                     │     │
+│  │  - CoAP / MQTT / HTTP              │     │
+│  │  - TLS (可选)                      │     │
+│  └────────────────────────────────────┘     │
+└─────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────┐
+│        Edge Gateway / Cloud Collector       │
+└─────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. 嵌入式 Rust 架构
+## 2. 嵌入式 Rust 生态
 
-### 2.1 三层架构
-
-```text
-┌────────────────────────────────────────────────────────────┐
-│                    IoT 设备层 (no_std)                      │
-│  - 传感器驱动 (embedded-hal)                                │
-│  - 轻量级 Span 生成                                          │
-│  - 本地缓存 (Flash/SD Card)                                 │
-│  - MQTT/CoAP 客户端                                         │
-└─────────────────────┬──────────────────────────────────────┘
-                      │ MQTT / HTTP
-┌─────────────────────▼──────────────────────────────────────┐
-│                   边缘网关层 (std/tokio)                     │
-│  - 数据聚合 (EdgeDataAggregator)                             │
-│  - 协议转换 (MQTT → OTLP)                                    │
-│  - 离线缓存 (SQLite/RocksDB)                                 │
-│  - 设备管理 (DeviceRegistry)                                 │
-└─────────────────────┬──────────────────────────────────────┘
-                      │ OTLP (gRPC/HTTP)
-┌─────────────────────▼──────────────────────────────────────┐
-│                  云端后端 (OTLP Collector)                   │
-│  - Jaeger, Tempo, Prometheus, Grafana                       │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 2.2 依赖配置
-
-**IoT 设备端 (`Cargo.toml`)**:
+### 2.1 核心库
 
 ```toml
-[package]
-name = "iot-device-otel"
-version = "0.1.0"
-edition = "2021"
-
 [dependencies]
-# no_std 兼容的核心库
-heapless = "0.8"           # 无堆集合（Vec, String）
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-postcard = "1.0"           # 二进制序列化（替代 serde_json）
-
-# 嵌入式 HAL
+# 核心库 (no_std)
 embedded-hal = "1.0"
-embedded-io = "0.6"
-
-# MQTT 客户端（no_std）
-minimq = { version = "0.8", default-features = false }
-
-# 时间库（no_std）
-fugit = "0.3"
-
-# 异步运行时（可选）
-embassy-executor = { version = "0.6", optional = true }
-embassy-time = { version = "0.3", optional = true }
-
-[profile.release]
-opt-level = "z"        # 最小体积
-lto = true
-codegen-units = 1
-panic = "abort"
-```
-
-**边缘网关 (`Cargo.toml`)**:
-
-```toml
-[package]
-name = "iot-gateway-otel"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-# OpenTelemetry 核心
-opentelemetry = { version = "0.31.0", features = ["trace", "metrics"] }
-opentelemetry_sdk = { version = "0.31.0", features = ["trace", "metrics", "tokio"] }
-opentelemetry-otlp = { version = "0.31.0", features = ["grpc-tonic", "trace", "metrics"] }
-opentelemetry-semantic-conventions = "0.31.0"
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
 
 # 异步运行时
-tokio = { version = "1.47", features = ["full"] }
+embassy-executor = { version = "0.5", features = ["nightly"] }
+embassy-time = "0.3"
+embassy-net = { version = "0.4", features = ["tcp", "udp"] }
 
-# MQTT 客户端
-rumqttc = "0.24"
+# 序列化 (no_std 兼容)
+heapless = "0.8"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+postcard = "1.0"  # 轻量级序列化
 
-# 序列化
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-postcard = "1.0"
+# 网络协议
+coap-lite = { version = "0.11", default-features = false }
+embedded-mqtt = "0.9"
 
-# 数据库（离线缓存）
-sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio"] }
+# 可选: 标准库功能 (如果平台支持)
+# std 需要根据目标平台决定
+```
 
-# 工具库
-anyhow = "1.0"
-thiserror = "2.0"
-tracing = "0.1"
-tracing-subscriber = "0.3"
+### 2.2 目标平台配置
+
+```toml
+# .cargo/config.toml
+
+# ARM Cortex-M4F (例如: STM32F4)
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip STM32F407VGTx"
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=--nmagic",
+]
+
+# ESP32 (RISC-V)
+[target.riscv32imc-esp-espidf]
+linker = "ldproxy"
+rustflags = ["-C", "default-linker-libraries"]
+
+# 优化配置
+[profile.release]
+opt-level = "z"      # 最小化代码大小
+lto = "fat"          # 链接时优化
+codegen-units = 1    # 单一代码生成单元
+debug = false
+strip = true
 ```
 
 ---
 
-## 3. no_std 环境适配
+## 3. no_std 环境下的 OTLP
 
-### 3.1 轻量级 Span 结构
-
-**`device/src/span.rs`**:
+### 3.1 最小化 Span 数据结构
 
 ```rust
 #![no_std]
 
 use heapless::{String, Vec};
-use serde::{Deserialize, Serialize};
+use core::fmt;
 
-/// 轻量级 Span（适用于 no_std 环境）
-///
-/// 内存占用：约 128 字节（栈分配）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LightweightSpan {
-    /// Trace ID（16 字节）
-    pub trace_id: [u8; 16],
-    /// Span ID（8 字节）
-    pub span_id: [u8; 8],
-    /// Parent Span ID（8 字节）
-    pub parent_span_id: Option<[u8; 8]>,
-    /// Span 名称（最多 32 字符）
-    pub name: String<32>,
-    /// 开始时间戳（微秒）
-    pub start_time_us: u64,
-    /// 结束时间戳（微秒）
-    pub end_time_us: Option<u64>,
-    /// SpanKind (0: Internal, 1: Client, 2: Server, 3: Producer, 4: Consumer)
-    pub kind: u8,
-    /// 属性（最多 8 个键值对）
-    pub attributes: Vec<Attribute, 8>,
-    /// 状态码 (0: Unset, 1: Ok, 2: Error)
-    pub status: u8,
+/// 轻量级 TraceId (16 字节)
+#[derive(Copy, Clone, Debug)]
+pub struct TraceId([u8; 16]);
+
+impl TraceId {
+    pub fn new() -> Self {
+        // 使用硬件 RNG 生成
+        let mut bytes = [0u8; 16];
+        // 假设有 RNG 硬件
+        // rng.fill_bytes(&mut bytes);
+        Self(bytes)
+    }
+    
+    pub fn to_hex(&self) -> String<32> {
+        let mut s = String::new();
+        for byte in &self.0 {
+            let _ = write!(&mut s, "{:02x}", byte);
+        }
+        s
+    }
 }
 
-/// 轻量级属性
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Attribute {
-    pub key: String<32>,
-    pub value: AttributeValue,
+/// 轻量级 SpanId (8 字节)
+#[derive(Copy, Clone, Debug)]
+pub struct SpanId([u8; 8]);
+
+impl SpanId {
+    pub fn new() -> Self {
+        let mut bytes = [0u8; 8];
+        // rng.fill_bytes(&mut bytes);
+        Self(bytes)
+    }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AttributeValue {
-    String(String<64>),
-    Int(i64),
-    Float(f64),
-    Bool(bool),
+/// 最小化 Span 数据 (固定大小)
+#[derive(Debug)]
+pub struct MicroSpan {
+    pub trace_id: TraceId,
+    pub span_id: SpanId,
+    pub parent_span_id: Option<SpanId>,
+    pub name: String<32>,  // 最大 32 字符
+    pub start_time_us: u64,  // 微秒时间戳
+    pub duration_us: u32,    // 持续时间 (微秒)
+    pub attributes: Vec<(String<16>, i32), 4>,  // 最多 4 个属性
 }
 
-impl LightweightSpan {
-    /// 创建新 Span（栈分配）
+impl MicroSpan {
     pub fn new(name: &str) -> Self {
         Self {
-            trace_id: generate_trace_id(),
-            span_id: generate_span_id(),
+            trace_id: TraceId::new(),
+            span_id: SpanId::new(),
             parent_span_id: None,
             name: String::from(name),
-            start_time_us: get_current_time_us(),
-            end_time_us: None,
-            kind: 0, // Internal
+            start_time_us: get_timestamp_us(),
+            duration_us: 0,
             attributes: Vec::new(),
-            status: 0, // Unset
         }
     }
-
-    /// 添加属性
-    pub fn set_attribute(&mut self, key: &str, value: AttributeValue) -> Result<(), ()> {
-        if self.attributes.len() >= 8 {
-            return Err(()); // 属性已满
-        }
-
-        self.attributes
-            .push(Attribute {
-                key: String::from(key),
-                value,
-            })
-            .map_err(|_| ())
-    }
-
-    /// 结束 Span
+    
     pub fn end(&mut self) {
-        self.end_time_us = Some(get_current_time_us());
+        self.duration_us = (get_timestamp_us() - self.start_time_us) as u32;
     }
-
-    /// 序列化为二进制（Postcard 格式）
-    pub fn serialize(&self) -> Result<heapless::Vec<u8, 256>, postcard::Error> {
-        postcard::to_vec(self)
+    
+    pub fn set_attribute(&mut self, key: &str, value: i32) {
+        if self.attributes.len() < 4 {
+            let _ = self.attributes.push((String::from(key), value));
+        }
     }
 }
 
-/// 生成 Trace ID（使用硬件 RNG 或伪随机）
-fn generate_trace_id() -> [u8; 16] {
-    // 实现：使用 MCU 的硬件随机数生成器
-    // 或者使用确定性算法（设备 ID + 时间戳）
-    let mut trace_id = [0u8; 16];
-    
-    // 示例：使用设备 ID 和时间戳
-    let device_id = get_device_id();
-    let timestamp = get_current_time_us();
-    
-    trace_id[..8].copy_from_slice(&device_id.to_le_bytes());
-    trace_id[8..].copy_from_slice(&timestamp.to_le_bytes());
-    
-    trace_id
+// 获取时间戳（需要根据平台实现）
+fn get_timestamp_us() -> u64 {
+    // 使用硬件计时器
+    // timer::get_microseconds()
+    0
+}
+```
+
+### 3.2 环形缓冲区 Span 存储
+
+```rust
+use heapless::spsc::{Queue, Producer, Consumer};
+
+/// Span 缓冲区 (固定大小，零分配)
+pub struct SpanBuffer {
+    queue: Queue<MicroSpan, 32>,  // 最多存储 32 个 Span
 }
 
-fn generate_span_id() -> [u8; 8] {
-    let mut span_id = [0u8; 8];
-    let counter = get_and_increment_counter();
-    span_id.copy_from_slice(&counter.to_le_bytes());
-    span_id
+impl SpanBuffer {
+    pub const fn new() -> Self {
+        Self {
+            queue: Queue::new(),
+        }
+    }
+    
+    pub fn push(&mut self, span: MicroSpan) -> Result<(), MicroSpan> {
+        self.queue.enqueue(span)
+    }
+    
+    pub fn pop(&mut self) -> Option<MicroSpan> {
+        self.queue.dequeue()
+    }
+    
+    pub fn is_full(&self) -> bool {
+        self.queue.is_full()
+    }
+    
+    pub fn len(&self) -> usize {
+        self.queue.len()
+    }
 }
 
-// 设备特定实现（需根据平台调整）
-extern "C" {
-    fn get_current_time_us() -> u64;
-    fn get_device_id() -> u64;
-    fn get_and_increment_counter() -> u64;
+/// 全局 Span 缓冲区（使用静态变量）
+static mut SPAN_BUFFER: SpanBuffer = SpanBuffer::new();
+
+pub fn record_span(span: MicroSpan) {
+    unsafe {
+        if let Err(_) = SPAN_BUFFER.push(span) {
+            // 缓冲区满，丢弃最旧的 Span
+            let _ = SPAN_BUFFER.pop();
+            let _ = SPAN_BUFFER.push(span);
+        }
+    }
+}
+```
+
+### 3.3 序列化与压缩
+
+```rust
+use postcard::{to_slice, from_bytes};
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CompactSpan {
+    pub tid: [u8; 16],      // TraceId
+    pub sid: [u8; 8],       // SpanId
+    pub name: String<32>,
+    pub start: u64,         // 开始时间
+    pub dur: u32,           // 持续时间
+    pub attrs: Vec<(String<16>, i32), 4>,
+}
+
+impl From<MicroSpan> for CompactSpan {
+    fn from(span: MicroSpan) -> Self {
+        Self {
+            tid: span.trace_id.0,
+            sid: span.span_id.0,
+            name: span.name,
+            start: span.start_time_us,
+            dur: span.duration_us,
+            attrs: span.attributes,
+        }
+    }
+}
+
+/// 序列化 Span 到字节数组
+pub fn serialize_span(span: &MicroSpan) -> Result<Vec<u8, 128>, postcard::Error> {
+    let compact: CompactSpan = span.clone().into();
+    let mut buf = [0u8; 128];
+    to_slice(&compact, &mut buf).map(|slice| {
+        let mut vec = Vec::new();
+        vec.extend_from_slice(slice).unwrap();
+        vec
+    })
 }
 ```
 
 ---
 
-## 4. 轻量级 Span 实现
+## 4. 轻量级追踪实现
 
-### 4.1 Span 生成器（泛型设计）
-
-**`device/src/tracer.rs`**:
+### 4.1 基础 Tracer
 
 ```rust
 #![no_std]
 
-use crate::span::{LightweightSpan, AttributeValue};
-use heapless::{String, Vec};
+use core::cell::RefCell;
+use critical_section::Mutex;
 
-/// 轻量级 Tracer（无堆分配）
-pub struct LightweightTracer {
-    service_name: String<32>,
-    device_id: u64,
+/// 轻量级 Tracer
+pub struct MicroTracer {
+    buffer: Mutex<RefCell<SpanBuffer>>,
 }
 
-impl LightweightTracer {
-    pub fn new(service_name: &str, device_id: u64) -> Self {
+impl MicroTracer {
+    pub const fn new() -> Self {
         Self {
-            service_name: String::from(service_name),
-            device_id,
+            buffer: Mutex::new(RefCell::new(SpanBuffer::new())),
         }
     }
+    
+    /// 开始一个 Span
+    pub fn start_span(&self, name: &str) -> MicroSpan {
+        MicroSpan::new(name)
+    }
+    
+    /// 结束并记录 Span
+    pub fn end_span(&self, mut span: MicroSpan) {
+        span.end();
+        
+        critical_section::with(|cs| {
+            let mut buffer = self.buffer.borrow_ref_mut(cs);
+            let _ = buffer.push(span);
+        });
+    }
+    
+    /// 导出所有 Span
+    pub fn export_spans<F>(&self, mut callback: F) -> usize
+    where
+        F: FnMut(MicroSpan),
+    {
+        let mut count = 0;
+        
+        critical_section::with(|cs| {
+            let mut buffer = self.buffer.borrow_ref_mut(cs);
+            while let Some(span) = buffer.pop() {
+                callback(span);
+                count += 1;
+            }
+        });
+        
+        count
+    }
+}
 
-    /// 创建 Span Builder
-    pub fn span_builder(&self, name: &str) -> SpanBuilder {
-        SpanBuilder {
-            span: LightweightSpan::new(name),
+/// 全局 Tracer 实例
+static TRACER: MicroTracer = MicroTracer::new();
+
+pub fn global_tracer() -> &'static MicroTracer {
+    &TRACER
+}
+```
+
+### 4.2 RAII Span Guard
+
+```rust
+/// RAII Span Guard - 自动结束 Span
+pub struct SpanGuard {
+    span: Option<MicroSpan>,
+}
+
+impl SpanGuard {
+    pub fn new(name: &str) -> Self {
+        let span = global_tracer().start_span(name);
+        Self { span: Some(span) }
+    }
+    
+    pub fn set_attribute(&mut self, key: &str, value: i32) {
+        if let Some(span) = &mut self.span {
+            span.set_attribute(key, value);
         }
     }
 }
 
-/// Span 构建器（Builder 模式）
-pub struct SpanBuilder {
-    span: LightweightSpan,
-}
-
-impl SpanBuilder {
-    pub fn with_kind(mut self, kind: SpanKind) -> Self {
-        self.span.kind = kind as u8;
-        self
-    }
-
-    pub fn with_attribute(mut self, key: &str, value: AttributeValue) -> Self {
-        let _ = self.span.set_attribute(key, value);
-        self
-    }
-
-    pub fn start(self) -> ActiveSpan {
-        ActiveSpan { span: self.span }
-    }
-}
-
-#[repr(u8)]
-pub enum SpanKind {
-    Internal = 0,
-    Client = 1,
-    Server = 2,
-    Producer = 3,
-    Consumer = 4,
-}
-
-/// 活跃 Span（RAII 自动结束）
-pub struct ActiveSpan {
-    span: LightweightSpan,
-}
-
-impl ActiveSpan {
-    pub fn set_attribute(&mut self, key: &str, value: AttributeValue) {
-        let _ = self.span.set_attribute(key, value);
-    }
-
-    pub fn set_error(&mut self) {
-        self.span.status = 2; // Error
-    }
-
-    pub fn end(mut self) -> LightweightSpan {
-        self.span.end();
-        self.span
-    }
-}
-
-impl Drop for ActiveSpan {
+impl Drop for SpanGuard {
     fn drop(&mut self) {
-        // RAII：自动结束 Span
-        if self.span.end_time_us.is_none() {
-            self.span.end();
+        if let Some(span) = self.span.take() {
+            global_tracer().end_span(span);
         }
     }
 }
-```
 
-### 4.2 传感器数据追踪示例
-
-**`device/src/sensor.rs`**:
-
-```rust
-use crate::tracer::{LightweightTracer, SpanKind};
-use crate::span::AttributeValue;
-
-/// 温度传感器驱动
-pub struct TemperatureSensor {
-    tracer: LightweightTracer,
-}
-
-impl TemperatureSensor {
-    pub fn new(tracer: LightweightTracer) -> Self {
-        Self { tracer }
-    }
-
-    /// 读取温度并生成 Span
-    pub fn read_temperature(&self) -> (f32, LightweightSpan) {
-        let mut span = self
-            .tracer
-            .span_builder("sensor.read_temperature")
-            .with_kind(SpanKind::Internal)
-            .start();
-
-        // 读取传感器（硬件交互）
-        let temperature = self.read_from_hardware();
-
-        span.set_attribute("sensor.type", AttributeValue::String(heapless::String::from("temperature")));
-        span.set_attribute("sensor.value", AttributeValue::Float(temperature as f64));
-        span.set_attribute("sensor.unit", AttributeValue::String(heapless::String::from("celsius")));
-
-        // 检测异常温度
-        if temperature > 80.0 || temperature < -20.0 {
-            span.set_attribute("sensor.reading_quality", AttributeValue::String(heapless::String::from("poor")));
-            span.set_error();
-        }
-
-        let finished_span = span.end();
-        (temperature, finished_span)
-    }
-
-    fn read_from_hardware(&self) -> f32 {
-        // 实现：通过 I2C/SPI 读取传感器
-        // 示例返回值
-        25.5
-    }
+// 使用示例
+fn sensor_read() -> i32 {
+    let _span = SpanGuard::new("sensor_read");
+    
+    // 读取传感器
+    let value = 42;
+    
+    value  // Span 在函数结束时自动记录
 }
 ```
 
 ---
 
-## 5. 离线数据缓存
+## 5. 网络传输优化
 
-### 5.1 Flash 存储（no_std）
-
-**`device/src/cache.rs`**:
+### 5.1 CoAP 传输 (轻量级)
 
 ```rust
-#![no_std]
+use coap_lite::{CoapRequest, RequestType, Packet};
+use embassy_net::udp::UdpSocket;
 
-use heapless::Vec;
-use crate::span::LightweightSpan;
-
-/// Flash 缓存管理器（使用外部 Flash 芯片）
-pub struct FlashCache {
-    /// Flash 地址范围: 0x00000 - 0x10000 (64KB)
-    base_address: u32,
-    write_offset: u32,
-    capacity: u32,
+/// CoAP Exporter
+pub struct CoapExporter<'a> {
+    socket: UdpSocket<'a>,
+    server_addr: SocketAddr,
 }
 
-impl FlashCache {
-    pub fn new(base_address: u32, capacity: u32) -> Self {
-        Self {
-            base_address,
-            write_offset: 0,
-            capacity,
-        }
+impl<'a> CoapExporter<'a> {
+    pub fn new(socket: UdpSocket<'a>, server_addr: SocketAddr) -> Self {
+        Self { socket, server_addr }
     }
-
-    /// 缓存 Span 到 Flash
-    pub fn cache_span(&mut self, span: &LightweightSpan) -> Result<(), CacheError> {
+    
+    /// 导出 Span
+    pub async fn export(&mut self, span: &MicroSpan) -> Result<(), Error> {
         // 序列化 Span
-        let serialized = span.serialize().map_err(|_| CacheError::SerializationFailed)?;
-
-        // 检查空间
-        if self.write_offset + serialized.len() as u32 > self.capacity {
-            return Err(CacheError::OutOfSpace);
-        }
-
-        // 写入 Flash（需要硬件驱动支持）
-        self.write_to_flash(self.base_address + self.write_offset, &serialized)?;
-
-        self.write_offset += serialized.len() as u32;
+        let payload = serialize_span(span)?;
+        
+        // 构建 CoAP 请求
+        let mut request = CoapRequest::new(RequestType::Post);
+        request.set_path("/v1/traces");
+        request.message.payload = payload.to_vec();
+        
+        // 发送
+        let packet = request.message.to_bytes()?;
+        self.socket.send_to(&packet, self.server_addr).await?;
+        
         Ok(())
     }
-
-    /// 网络恢复后读取所有缓存的 Spans
-    pub fn read_all_spans(&self) -> Result<Vec<LightweightSpan, 32>, CacheError> {
-        let mut spans = Vec::new();
-        let mut offset = 0;
-
-        while offset < self.write_offset {
-            // 读取 Span 长度（前 2 字节）
-            let mut len_buf = [0u8; 2];
-            self.read_from_flash(self.base_address + offset, &mut len_buf)?;
-            let span_len = u16::from_le_bytes(len_buf) as u32;
-
-            // 读取 Span 数据
-            let mut span_buf = heapless::Vec::<u8, 256>::new();
-            span_buf.resize(span_len as usize, 0).map_err(|_| CacheError::BufferTooSmall)?;
-            self.read_from_flash(self.base_address + offset + 2, &mut span_buf)?;
-
-            // 反序列化
-            let span: LightweightSpan = postcard::from_bytes(&span_buf)
-                .map_err(|_| CacheError::DeserializationFailed)?;
-
-            spans.push(span).map_err(|_| CacheError::TooManySpans)?;
-
-            offset += 2 + span_len;
-        }
-
-        Ok(spans)
-    }
-
-    /// 清空缓存（擦除 Flash）
-    pub fn clear(&mut self) -> Result<(), CacheError> {
-        // 擦除 Flash 扇区
-        self.erase_flash_sector(self.base_address)?;
-        self.write_offset = 0;
-        Ok(())
-    }
-
-    // 硬件驱动接口（需根据平台实现）
-    fn write_to_flash(&self, address: u32, data: &[u8]) -> Result<(), CacheError> {
-        // 实现：调用 Flash 驱动写入
-        Ok(())
-    }
-
-    fn read_from_flash(&self, address: u32, buffer: &mut [u8]) -> Result<(), CacheError> {
-        // 实现：调用 Flash 驱动读取
-        Ok(())
-    }
-
-    fn erase_flash_sector(&self, address: u32) -> Result<(), CacheError> {
-        // 实现：擦除 Flash 扇区
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub enum CacheError {
-    OutOfSpace,
-    SerializationFailed,
-    DeserializationFailed,
-    BufferTooSmall,
-    TooManySpans,
-    FlashWriteFailed,
-    FlashReadFailed,
-}
-```
-
----
-
-## 6. MQTT 传输集成
-
-### 6.1 MQTT 客户端（no_std）
-
-**`device/src/mqtt.rs`**:
-
-```rust
-#![no_std]
-
-use heapless::{String, Vec};
-use minimq::{Publication, QoS};
-use crate::span::LightweightSpan;
-
-/// MQTT 传输客户端
-pub struct MqttTransport {
-    client: minimq::Minimq<'static>,
-    topic_prefix: String<64>,
-}
-
-impl MqttTransport {
-    pub fn new(broker_address: &str, device_id: &str) -> Self {
-        // 初始化 MQTT 客户端
-        let client_id = heapless::String::<32>::from(device_id);
-        let client = minimq::Minimq::new(broker_address, client_id);
-
-        Self {
-            client,
-            topic_prefix: String::from("devices/{}/telemetry"),
-        }
-    }
-
-    /// 发送 Span 数据到 MQTT Broker
-    pub fn publish_span(&mut self, span: &LightweightSpan) -> Result<(), MqttError> {
-        // 序列化 Span
-        let payload = span.serialize().map_err(|_| MqttError::SerializationFailed)?;
-
-        // 构建 Topic
-        let topic = self.build_topic(&span.name)?;
-
-        // 发布消息
-        self.client
-            .publish(
-                &topic,
-                &payload,
-                QoS::AtLeastOnce,
-                &[], // Properties
-            )
-            .map_err(|_| MqttError::PublishFailed)?;
-
-        Ok(())
-    }
-
-    /// 批量发送 Spans
-    pub fn publish_spans(&mut self, spans: &[LightweightSpan]) -> Result<(), MqttError> {
+    
+    /// 批量导出
+    pub async fn export_batch(&mut self, spans: &[MicroSpan]) -> Result<(), Error> {
+        // 批量序列化
+        let mut batch_buf = Vec::<u8, 512>::new();
+        
         for span in spans {
-            self.publish_span(span)?;
+            let span_bytes = serialize_span(span)?;
+            batch_buf.extend_from_slice(&span_bytes)?;
         }
+        
+        // 发送
+        let mut request = CoapRequest::new(RequestType::Post);
+        request.set_path("/v1/traces/batch");
+        request.message.payload = batch_buf.to_vec();
+        
+        let packet = request.message.to_bytes()?;
+        self.socket.send_to(&packet, self.server_addr).await?;
+        
         Ok(())
     }
+}
+```
 
-    fn build_topic(&self, span_name: &str) -> Result<String<128>, MqttError> {
-        let mut topic = String::new();
-        topic.push_str(&self.topic_prefix).map_err(|_| MqttError::TopicTooLong)?;
-        topic.push('/').map_err(|_| MqttError::TopicTooLong)?;
-        topic.push_str(span_name).map_err(|_| MqttError::TopicTooLong)?;
-        Ok(topic)
-    }
+### 5.2 MQTT 传输
+
+```rust
+use embedded_mqtt::{Client, QoS};
+
+/// MQTT Exporter
+pub struct MqttExporter<'a, T> {
+    client: Client<'a, T>,
+    topic: &'static str,
 }
 
-#[derive(Debug)]
-pub enum MqttError {
-    SerializationFailed,
-    PublishFailed,
-    TopicTooLong,
-    ConnectionFailed,
+impl<'a, T> MqttExporter<'a, T>
+where
+    T: embedded_io_async::Read + embedded_io_async::Write,
+{
+    pub fn new(client: Client<'a, T>, topic: &'static str) -> Self {
+        Self { client, topic }
+    }
+    
+    pub async fn export(&mut self, span: &MicroSpan) -> Result<(), Error> {
+        let payload = serialize_span(span)?;
+        
+        self.client
+            .publish(self.topic, &payload, QoS::AtLeastOnce)
+            .await?;
+        
+        Ok(())
+    }
 }
 ```
 
 ---
 
-## 7. 边缘网关实现
+## 6. 电源与资源管理
 
-### 7.1 网关架构（Tokio + MQTT）
-
-**`gateway/src/main.rs`**:
+### 6.1 动态采样
 
 ```rust
-use opentelemetry::{global, KeyValue};
-use opentelemetry_sdk::{
-    trace::{Config, TracerProvider},
-    Resource,
-};
-use opentelemetry_semantic_conventions::resource::{SERVICE_NAME, SERVICE_VERSION};
-use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, Packet, QoS};
-use tokio::sync::mpsc;
-use anyhow::Result;
-
-mod device_registry;
-mod otlp_exporter;
-mod span_translator;
-
-use device_registry::DeviceRegistry;
-use otlp_exporter::OtlpExporter;
-use span_translator::SpanTranslator;
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
-
-    // 1. 初始化 OpenTelemetry
-    init_otel().await?;
-
-    // 2. 初始化 MQTT 客户端
-    let mqtt_options = MqttOptions::new("iot-gateway", "localhost", 1883);
-    let (client, mut eventloop) = AsyncClient::new(mqtt_options, 10);
-
-    // 订阅设备遥测主题
-    client.subscribe("devices/+/telemetry/#", QoS::AtLeastOnce).await?;
-
-    // 3. 初始化组件
-    let device_registry = DeviceRegistry::new();
-    let otlp_exporter = OtlpExporter::new("http://localhost:4318").await?;
-    let span_translator = SpanTranslator::new();
-
-    // 4. 事件循环
-    loop {
-        match eventloop.poll().await {
-            Ok(Event::Incoming(Packet::Publish(publish))) => {
-                tracing::info!("Received: topic={}, payload_len={}", publish.topic, publish.payload.len());
-
-                // 解析设备 ID
-                let device_id = extract_device_id(&publish.topic);
-
-                // 反序列化 LightweightSpan
-                if let Ok(lightweight_span) = postcard::from_bytes::<crate::span::LightweightSpan>(&publish.payload) {
-                    // 转换为 OpenTelemetry Span
-                    let otel_span = span_translator.translate(lightweight_span, &device_id);
-
-                    // 导出到 OTLP Collector
-                    otlp_exporter.export_span(otel_span).await?;
-
-                    tracing::info!("✅ Span forwarded to OTLP Collector");
-                }
-            }
-            Ok(_) => {}
-            Err(e) => {
-                tracing::error!("MQTT error: {:?}", e);
-            }
-        }
-    }
+/// 智能采样器 - 根据电池电量调整
+pub struct AdaptiveSampler {
+    battery_level: u8,  // 0-100%
 }
 
-async fn init_otel() -> Result<()> {
-    let resource = Resource::new(vec![
-        KeyValue::new(SERVICE_NAME, "iot-gateway"),
-        KeyValue::new(SERVICE_VERSION, "1.0.0"),
-        KeyValue::new("deployment.environment", "edge"),
-    ]);
-
-    let exporter = opentelemetry_otlp::SpanExporter::builder()
-        .with_tonic()
-        .with_endpoint("http://localhost:4317")
-        .build()?;
-
-    let batch_processor = opentelemetry_sdk::trace::BatchSpanProcessor::builder(
-        exporter,
-        opentelemetry_sdk::runtime::Tokio,
-    )
-    .build();
-
-    let tracer_provider = TracerProvider::builder()
-        .with_config(Config::default().with_resource(resource))
-        .with_span_processor(batch_processor)
-        .build();
-
-    global::set_tracer_provider(tracer_provider);
-
-    Ok(())
-}
-
-fn extract_device_id(topic: &str) -> String {
-    // 从 "devices/{device_id}/telemetry/..." 提取 device_id
-    topic.split('/').nth(1).unwrap_or("unknown").to_string()
-}
-```
-
-### 7.2 Span 转换器
-
-**`gateway/src/span_translator.rs`**:
-
-```rust
-use opentelemetry::{
-    trace::{SpanKind, Status, TraceContextExt, TraceId, SpanId},
-    KeyValue,
-};
-use opentelemetry_sdk::trace::{SpanData, SpanEvents, SpanLinks};
-
-/// 将 LightweightSpan 转换为 OpenTelemetry SpanData
-pub struct SpanTranslator;
-
-impl SpanTranslator {
+impl AdaptiveSampler {
     pub fn new() -> Self {
-        Self
+        Self { battery_level: 100 }
     }
-
-    pub fn translate(&self, lightweight_span: LightweightSpan, device_id: &str) -> SpanData {
-        // 构建 SpanContext
-        let trace_id = TraceId::from_bytes(lightweight_span.trace_id);
-        let span_id = SpanId::from_bytes(lightweight_span.span_id);
-
-        let span_kind = match lightweight_span.kind {
-            0 => SpanKind::Internal,
-            1 => SpanKind::Client,
-            2 => SpanKind::Server,
-            3 => SpanKind::Producer,
-            4 => SpanKind::Consumer,
-            _ => SpanKind::Internal,
-        };
-
-        let status = match lightweight_span.status {
-            0 => Status::Unset,
-            1 => Status::Ok,
-            2 => Status::error("Error"),
-            _ => Status::Unset,
-        };
-
-        // 转换属性
-        let mut attributes = Vec::new();
-        attributes.push(KeyValue::new("device.id", device_id.to_string()));
-
-        for attr in lightweight_span.attributes {
-            match attr.value {
-                AttributeValue::String(s) => {
-                    attributes.push(KeyValue::new(attr.key.to_string(), s.to_string()));
-                }
-                AttributeValue::Int(i) => {
-                    attributes.push(KeyValue::new(attr.key.to_string(), i));
-                }
-                AttributeValue::Float(f) => {
-                    attributes.push(KeyValue::new(attr.key.to_string(), f));
-                }
-                AttributeValue::Bool(b) => {
-                    attributes.push(KeyValue::new(attr.key.to_string(), b));
-                }
-            }
-        }
-
-        // 构建 SpanData（简化版本）
-        // 实际实现需要完整构建 SpanData 结构
-        // 这里仅作示意
-        todo!("Complete SpanData construction")
-    }
-}
-```
-
----
-
-## 8. 传感器数据采集
-
-### 8.1 工业传感器集成
-
-**`device/src/industrial_sensor.rs`**:
-
-```rust
-use crate::tracer::{LightweightTracer, SpanKind};
-use crate::span::AttributeValue;
-use embedded_hal::i2c::I2c;
-
-/// 工业温湿度传感器（SHT31）
-pub struct SHT31Sensor<I2C> {
-    i2c: I2C,
-    address: u8,
-    tracer: LightweightTracer,
-}
-
-impl<I2C: I2c> SHT31Sensor<I2C> {
-    pub fn new(i2c: I2C, tracer: LightweightTracer) -> Self {
-        Self {
-            i2c,
-            address: 0x44, // SHT31 默认地址
-            tracer,
-        }
-    }
-
-    /// 读取温湿度并生成 Span
-    pub fn read_sensor(&mut self) -> Result<(f32, f32, LightweightSpan), SensorError> {
-        let mut span = self
-            .tracer
-            .span_builder("industrial.sensor.read")
-            .with_kind(SpanKind::Internal)
-            .start();
-
-        span.set_attribute("sensor.type", AttributeValue::String(heapless::String::from("SHT31")));
-        span.set_attribute("sensor.address", AttributeValue::Int(self.address as i64));
-
-        // 发送测量命令
-        self.i2c
-            .write(self.address, &[0x24, 0x00])
-            .map_err(|_| SensorError::I2cWriteFailed)?;
-
-        // 等待测量完成（15ms）
-        cortex_m::asm::delay(15_000); // 假设 1MHz 系统时钟
-
-        // 读取数据
-        let mut buffer = [0u8; 6];
-        self.i2c
-            .read(self.address, &mut buffer)
-            .map_err(|_| SensorError::I2cReadFailed)?;
-
-        // 解析温湿度
-        let temp_raw = u16::from_be_bytes([buffer[0], buffer[1]]);
-        let hum_raw = u16::from_be_bytes([buffer[3], buffer[4]]);
-
-        let temperature = -45.0 + 175.0 * (temp_raw as f32 / 65535.0);
-        let humidity = 100.0 * (hum_raw as f32 / 65535.0);
-
-        span.set_attribute("sensor.temperature", AttributeValue::Float(temperature as f64));
-        span.set_attribute("sensor.humidity", AttributeValue::Float(humidity as f64));
-
-        // 检测数据质量
-        if temperature < -40.0 || temperature > 125.0 || humidity < 0.0 || humidity > 100.0 {
-            span.set_attribute("sensor.reading_quality", AttributeValue::String(heapless::String::from("failed")));
-            span.set_error();
-        } else {
-            span.set_attribute("sensor.reading_quality", AttributeValue::String(heapless::String::from("good")));
-        }
-
-        let finished_span = span.end();
-        Ok((temperature, humidity, finished_span))
-    }
-}
-
-#[derive(Debug)]
-pub enum SensorError {
-    I2cWriteFailed,
-    I2cReadFailed,
-    InvalidData,
-}
-```
-
----
-
-## 9. 低功耗优化
-
-### 9.1 动态采样策略
-
-**`device/src/power.rs`**:
-
-```rust
-/// 低功耗采样策略
-pub struct PowerAwareSampler {
-    battery_level: u8,       // 0-100
-    sampling_interval_ms: u32,
-}
-
-impl PowerAwareSampler {
-    pub fn new() -> Self {
-        Self {
-            battery_level: 100,
-            sampling_interval_ms: 60_000, // 默认 60 秒
-        }
-    }
-
-    /// 根据电池电量调整采样间隔
-    pub fn update_battery_level(&mut self, level: u8) {
+    
+    pub fn update_battery(&mut self, level: u8) {
         self.battery_level = level;
-
-        self.sampling_interval_ms = match level {
-            80..=100 => 30_000,  // 高电量：30 秒
-            50..=79 => 60_000,   // 中电量：60 秒
-            20..=49 => 300_000,  // 低电量：5 分钟
-            _ => 600_000,        // 极低电量：10 分钟
-        };
     }
-
-    pub fn get_sampling_interval(&self) -> u32 {
-        self.sampling_interval_ms
+    
+    /// 应该采样吗？
+    pub fn should_sample(&self) -> bool {
+        match self.battery_level {
+            80..=100 => true,           // 100% 采样
+            50..=79 => self.sample_50(),  // 50% 采样
+            20..=49 => self.sample_20(),  // 20% 采样
+            _ => self.sample_5(),         // 5% 采样
+        }
     }
-
-    /// 判断是否应该采样（基于变化率）
-    pub fn should_sample(&self, current_value: f32, last_value: f32, threshold: f32) -> bool {
-        let change_rate = ((current_value - last_value) / last_value).abs();
-        change_rate > threshold
+    
+    fn sample_50(&self) -> bool {
+        get_random_u8() % 2 == 0
     }
+    
+    fn sample_20(&self) -> bool {
+        get_random_u8() % 5 == 0
+    }
+    
+    fn sample_5(&self) -> bool {
+        get_random_u8() % 20 == 0
+    }
+}
+
+fn get_random_u8() -> u8 {
+    // 使用硬件 RNG
+    42
 }
 ```
 
-### 9.2 深度睡眠管理
+### 6.2 批量上报策略
 
 ```rust
-/// 进入深度睡眠模式
-pub fn enter_deep_sleep(duration_ms: u32) {
-    // 1. 保存当前状态
-    save_state_to_flash();
+use embassy_time::{Duration, Timer};
 
-    // 2. 关闭外设
-    disable_peripherals();
-
-    // 3. 配置唤醒定时器
-    configure_rtc_wakeup(duration_ms);
-
-    // 4. 进入深度睡眠
-    cortex_m::asm::wfi(); // Wait For Interrupt
-
-    // 5. 唤醒后恢复状态
-    restore_state_from_flash();
-    enable_peripherals();
-}
-
-fn save_state_to_flash() {
-    // 保存关键状态到 Flash
-}
-
-fn restore_state_from_flash() {
-    // 从 Flash 恢复状态
-}
-
-fn disable_peripherals() {
-    // 关闭 I2C, SPI, UART 等外设
-}
-
-fn enable_peripherals() {
-    // 重新启用外设
-}
-
-fn configure_rtc_wakeup(duration_ms: u32) {
-    // 配置 RTC 唤醒定时器
+/// 批量上报任务
+#[embassy_executor::task]
+pub async fn batch_export_task(mut exporter: CoapExporter<'static>) {
+    let mut interval = Timer::after(Duration::from_secs(60));
+    
+    loop {
+        interval.await;
+        
+        // 收集所有 Span
+        let mut spans = Vec::<MicroSpan, 32>::new();
+        
+        global_tracer().export_spans(|span| {
+            let _ = spans.push(span);
+        });
+        
+        // 批量发送
+        if !spans.is_empty() {
+            let _ = exporter.export_batch(&spans).await;
+        }
+    }
 }
 ```
 
 ---
 
-## 10. ESP32 完整示例
+## 7. 实战案例
 
-### 10.1 ESP32-C3 传感器节点
-
-**`examples/esp32_sensor_node.rs`**:
+### 7.1 温度传感器监控
 
 ```rust
 #![no_std]
 #![no_main]
 
-use esp_backtrace as _;
-use esp_hal::{
-    clock::ClockControl,
-    peripherals::Peripherals,
-    prelude::*,
-    timer::TimerGroup,
-    i2c::I2C,
-    Delay,
-};
-use esp_wifi::{initialize, EspWifiInitFor};
+use embassy_executor::Spawner;
+use embassy_time::{Duration, Timer};
 
-mod tracer;
-mod span;
-mod mqtt;
-mod sensor;
-mod cache;
-
-use tracer::LightweightTracer;
-use sensor::TemperatureSensor;
-use mqtt::MqttTransport;
-use cache::FlashCache;
-
-#[entry]
-fn main() -> ! {
-    let peripherals = Peripherals::take();
-    let system = peripherals.SYSTEM.split();
-    let clocks = ClockControl::max(system.clock_control).freeze();
-
-    // 初始化定时器
-    let timer_group0 = TimerGroup::new(peripherals.TIMG0, &clocks);
-    let mut delay = Delay::new(&clocks);
-
-    // 初始化 WiFi
-    let timer = timer_group0.timer0;
-    let init = initialize(
-        EspWifiInitFor::Wifi,
-        timer,
-        esp_hal::rng::Rng::new(peripherals.RNG),
-        system.radio_clock_control,
-        &clocks,
-    )
-    .unwrap();
-
-    // 初始化 I2C（传感器通信）
-    let i2c = I2C::new(
-        peripherals.I2C0,
-        peripherals.GPIO4,
-        peripherals.GPIO5,
-        100u32.kHz(),
-        &clocks,
-    );
-
-    // 初始化 OpenTelemetry 组件
-    let tracer = LightweightTracer::new("esp32-sensor-node", 0x12345678);
-    let mut sensor = TemperatureSensor::new(i2c, tracer.clone());
-    let mut mqtt_client = MqttTransport::new("192.168.1.100:1883", "esp32-001");
-    let mut flash_cache = FlashCache::new(0x00310000, 65536); // 64KB 缓存
-
+#[embassy_executor::main]
+async fn main(spawner: Spawner) {
+    // 初始化硬件
+    let p = embassy_stm32::init(Default::default());
+    
+    // 启动批量导出任务
+    spawner.spawn(batch_export_task()).unwrap();
+    
     // 主循环
     loop {
-        // 读取传感器
-        let (temperature, span) = sensor.read_temperature();
-
-        // 尝试发送到 MQTT
-        match mqtt_client.publish_span(&span) {
-            Ok(_) => {
-                esp_println::println!("✅ Span published: temp={}°C", temperature);
-            }
-            Err(_) => {
-                // 网络不可用，缓存到 Flash
-                flash_cache.cache_span(&span).ok();
-                esp_println::println!("⚠️ Network down, span cached");
-            }
-        }
-
-        // 检查网络恢复并刷新缓存
-        if mqtt_client.is_connected() {
-            if let Ok(cached_spans) = flash_cache.read_all_spans() {
-                if !cached_spans.is_empty() {
-                    mqtt_client.publish_spans(&cached_spans).ok();
-                    flash_cache.clear().ok();
-                    esp_println::println!("✅ Flushed {} cached spans", cached_spans.len());
-                }
-            }
-        }
-
-        // 睡眠 60 秒
-        delay.delay_ms(60_000u32);
+        read_and_report_temperature().await;
+        Timer::after(Duration::from_secs(10)).await;
     }
+}
+
+async fn read_and_report_temperature() {
+    let mut span = SpanGuard::new("read_temp");
+    
+    // 读取温度
+    let temp = read_temperature_sensor();
+    span.set_attribute("temp", temp);
+    
+    // Span 自动结束
+}
+
+fn read_temperature_sensor() -> i32 {
+    // 模拟读取
+    25
 }
 ```
 
 ---
 
-## 11. Raspberry Pi 边缘网关
+## 🔗 参考资源
 
-### 11.1 完整网关实现
-
-**`gateway/examples/rpi_gateway.rs`**:
-
-```rust
-use anyhow::Result;
-use opentelemetry::{global, KeyValue};
-use opentelemetry_sdk::{
-    trace::{Config, TracerProvider},
-    Resource,
-};
-use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
-use std::collections::HashMap;
-use tokio::sync::Mutex;
-use std::sync::Arc;
-
-#[derive(Clone)]
-struct DeviceState {
-    last_seen: std::time::SystemTime,
-    span_count: u64,
-}
-
-struct Gateway {
-    device_registry: Arc<Mutex<HashMap<String, DeviceState>>>,
-    otlp_endpoint: String,
-}
-
-impl Gateway {
-    async fn new(otlp_endpoint: String) -> Self {
-        Self {
-            device_registry: Arc::new(Mutex::new(HashMap::new())),
-            otlp_endpoint,
-        }
-    }
-
-    async fn handle_device_span(&self, device_id: String, span_data: Vec<u8>) -> Result<()> {
-        // 更新设备注册表
-        let mut registry = self.device_registry.lock().await;
-        registry
-            .entry(device_id.clone())
-            .and_modify(|state| {
-                state.last_seen = std::time::SystemTime::now();
-                state.span_count += 1;
-            })
-            .or_insert(DeviceState {
-                last_seen: std::time::SystemTime::now(),
-                span_count: 1,
-            });
-
-        // 反序列化并转发到 OTLP
-        // （实现省略，参考上文 span_translator.rs）
-
-        tracing::info!("✅ Forwarded span from device: {}", device_id);
-        Ok(())
-    }
-
-    async fn monitor_devices(&self) {
-        loop {
-            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
-
-            let registry = self.device_registry.lock().await;
-            let now = std::time::SystemTime::now();
-
-            for (device_id, state) in registry.iter() {
-                let elapsed = now.duration_since(state.last_seen).unwrap().as_secs();
-
-                if elapsed > 300 {
-                    tracing::warn!("⚠️ Device {} offline for {} seconds", device_id, elapsed);
-                } else {
-                    tracing::info!(
-                        "✅ Device {} online, span_count={}",
-                        device_id,
-                        state.span_count
-                    );
-                }
-            }
-        }
-    }
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
-
-    // 初始化网关
-    let gateway = Arc::new(Gateway::new("http://localhost:4318".to_string()).await);
-
-    // 启动设备监控任务
-    let gateway_clone = gateway.clone();
-    tokio::spawn(async move {
-        gateway_clone.monitor_devices().await;
-    });
-
-    // 初始化 MQTT 客户端
-    let mqtt_options = MqttOptions::new("rpi-gateway", "localhost", 1883);
-    let (client, mut eventloop) = AsyncClient::new(mqtt_options, 10);
-
-    client.subscribe("devices/+/telemetry", QoS::AtLeastOnce).await?;
-
-    // 事件循环
-    loop {
-        match eventloop.poll().await {
-            Ok(Event::Incoming(Packet::Publish(publish))) => {
-                let device_id = extract_device_id(&publish.topic);
-                gateway
-                    .handle_device_span(device_id, publish.payload.to_vec())
-                    .await?;
-            }
-            Ok(_) => {}
-            Err(e) => {
-                tracing::error!("MQTT error: {:?}", e);
-            }
-        }
-    }
-}
-
-fn extract_device_id(topic: &str) -> String {
-    topic.split('/').nth(1).unwrap_or("unknown").to_string()
-}
-```
+- [Embedded Rust Book](https://doc.rust-lang.org/embedded-book/)
+- [Embassy Documentation](https://embassy.dev/)
+- [Rust OTLP 快速入门](../33_教程与示例/01_Rust_OTLP_30分钟快速入门.md)
 
 ---
 
-## 12. 生产环境最佳实践
-
-### 12.1 关键指标
-
-```text
-✅ 设备在线率监控
-✅ 传感器数据质量检测
-✅ 网络延迟追踪
-✅ 电池电量告警
-✅ Flash 使用率监控
-✅ 固件版本管理
-```
-
-### 12.2 安全加固
-
-```rust
-/// 数据加密（AES-128-GCM）
-pub fn encrypt_span_data(span: &LightweightSpan, key: &[u8; 16]) -> Result<Vec<u8>, EncryptionError> {
-    // 使用硬件 AES 加速器（如果可用）
-    // 或软件实现（如 aes-gcm crate）
-    todo!("Implement AES-GCM encryption")
-}
-
-/// 数据签名（HMAC-SHA256）
-pub fn sign_span_data(span: &LightweightSpan, secret: &[u8; 32]) -> [u8; 32] {
-    // 使用 HMAC-SHA256 签名，防止数据篡改
-    todo!("Implement HMAC-SHA256 signature")
-}
-```
-
-### 12.3 性能基准
-
-```text
-ESP32-C3 (160MHz, 400KB RAM):
-- Span 生成: ~200μs
-- 序列化 (Postcard): ~50μs
-- Flash 写入: ~2ms
-- MQTT 发布: ~10ms
-
-STM32F4 (168MHz, 192KB RAM):
-- Span 生成: ~150μs
-- 序列化: ~40μs
-- Flash 写入: ~1.5ms
-
-Raspberry Pi 4 (边缘网关):
-- MQTT → OTLP 转换: ~1ms
-- 批量处理 (1000 spans): ~50ms
-```
-
----
-
-## 参考资源
-
-### 官方文档
-
-- **Rust Embedded Book**: <https://rust-embedded.github.io/book/>
-- **embassy**: <https://embassy.dev/>
-- **ESP-RS**: <https://esp-rs.github.io/book/>
-
-### 工具库
-
-- **rumqttc**: <https://github.com/bytebeamio/rumqtt>
-- **postcard**: <https://github.com/jamesmunns/postcard>
-- **heapless**: <https://github.com/japaric/heapless>
-
----
-
-**文档维护**: OTLP Rust 项目组  
-**最后更新**: 2025年10月9日  
 **文档版本**: v1.0  
-**质量等级**: ⭐⭐⭐⭐⭐
+**创建日期**: 2025年10月10日  
+**维护者**: OTLP Rust 文档团队
+
+---
+
+[🏠 返回主目录](../README.md) | [📱 IoT 可观测性](./README.md)

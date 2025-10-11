@@ -1,505 +1,364 @@
-# Rust OTLP 常见模式与最佳实践
+# 🎯 Rust OTLP 常见模式与最佳实践
 
-> **Rust版本**: 1.90+  
+> **目标读者**: Rust OTLP 中级开发者  
+> **Rust 版本**: 1.90+  
 > **OpenTelemetry**: 0.31.0  
-> **Tokio**: 1.47.1  
-> **最后更新**: 2025年10月9日
+> **最后更新**: 2025年10月10日
 
 ---
 
-## 目录
+## 📋 目录
 
-- [Rust OTLP 常见模式与最佳实践](#rust-otlp-常见模式与最佳实践)
-  - [目录](#目录)
+- [🎯 Rust OTLP 常见模式与最佳实践](#-rust-otlp-常见模式与最佳实践)
+  - [📋 目录](#-目录)
   - [1. 初始化模式](#1-初始化模式)
-    - [1.1 全局单例初始化](#11-全局单例初始化)
+    - [1.1 单例 TracerProvider 模式](#11-单例-tracerprovider-模式)
     - [1.2 延迟初始化模式](#12-延迟初始化模式)
     - [1.3 多环境配置模式](#13-多环境配置模式)
-  - [2. 上下文传播模式](#2-上下文传播模式)
-    - [2.1 异步函数中的上下文传递](#21-异步函数中的上下文传递)
-    - [2.2 跨线程上下文传播](#22-跨线程上下文传播)
-    - [2.3 HTTP 服务器上下文提取](#23-http-服务器上下文提取)
-  - [3. Span 管理模式](#3-span-管理模式)
-    - [3.1 自动 Span 结束 (RAII)](#31-自动-span-结束-raii)
-    - [3.2 嵌套 Span 模式](#32-嵌套-span-模式)
-    - [3.3 条件 Span 创建](#33-条件-span-创建)
-  - [4. 错误处理与追踪](#4-错误处理与追踪)
-    - [4.1 Result 类型集成](#41-result-类型集成)
-    - [4.2 自定义错误类型追踪](#42-自定义错误类型追踪)
-    - [4.3 Panic 捕获](#43-panic-捕获)
-  - [5. 异步编程模式](#5-异步编程模式)
-    - [5.1 Tokio Task 追踪](#51-tokio-task-追踪)
-    - [5.2 Stream 处理追踪](#52-stream-处理追踪)
-    - [5.3 并发任务追踪](#53-并发任务追踪)
-  - [6. 中间件模式](#6-中间件模式)
-    - [6.1 Axum 中间件](#61-axum-中间件)
-    - [6.2 Tower Service 追踪](#62-tower-service-追踪)
-    - [6.3 tonic gRPC 拦截器](#63-tonic-grpc-拦截器)
-  - [7. 数据库集成模式](#7-数据库集成模式)
-    - [7.1 SQLx 查询追踪](#71-sqlx-查询追踪)
-    - [7.2 连接池监控](#72-连接池监控)
-    - [7.3 事务追踪](#73-事务追踪)
-  - [8. 指标收集模式](#8-指标收集模式)
-    - [8.1 请求计数器](#81-请求计数器)
-    - [8.2 延迟直方图](#82-延迟直方图)
-    - [8.3 业务指标](#83-业务指标)
-  - [9. 采样策略模式](#9-采样策略模式)
-    - [9.1 基于路径的采样](#91-基于路径的采样)
-    - [9.2 错误优先采样](#92-错误优先采样)
-    - [9.3 自适应采样](#93-自适应采样)
-  - [10. 测试模式](#10-测试模式)
-    - [10.1 单元测试追踪](#101-单元测试追踪)
-    - [10.2 集成测试验证](#102-集成测试验证)
-    - [10.3 Mock Exporter](#103-mock-exporter)
-  - [11. 性能优化模式](#11-性能优化模式)
-    - [11.1 批量导出](#111-批量导出)
-    - [11.2 异步属性计算](#112-异步属性计算)
-    - [11.3 零成本抽象](#113-零成本抽象)
-  - [12. 最佳实践清单](#12-最佳实践清单)
-    - [✅ 初始化](#-初始化)
-    - [✅ Span 管理](#-span-管理)
-    - [✅ 上下文传播](#-上下文传播)
-    - [✅ 错误处理](#-错误处理)
-    - [✅ 性能优化](#-性能优化)
-    - [✅ 指标收集](#-指标收集)
-  - [总结](#总结)
-    - [✅ 核心模式](#-核心模式)
-    - [✅ 高级模式](#-高级模式)
-    - [✅ 生产实践](#-生产实践)
+  - [2. Span 创建模式](#2-span-创建模式)
+    - [2.1 作用域 Span 模式](#21-作用域-span-模式)
+    - [2.2 异步函数追踪模式](#22-异步函数追踪模式)
+    - [2.3 条件追踪模式](#23-条件追踪模式)
+  - [3. 错误处理模式](#3-错误处理模式)
+    - [3.1 Result 集成模式](#31-result-集成模式)
+    - [3.2 错误传播模式](#32-错误传播模式)
+    - [3.3 Panic 捕获模式](#33-panic-捕获模式)
+  - [4. 上下文传播模式](#4-上下文传播模式)
+    - [4.1 HTTP 客户端传播模式](#41-http-客户端传播模式)
+    - [4.2 HTTP 服务端提取模式](#42-http-服务端提取模式)
+    - [4.3 跨线程传播模式](#43-跨线程传播模式)
+  - [5. 中间件集成模式](#5-中间件集成模式)
+    - [5.1 Axum 中间件模式](#51-axum-中间件模式)
+    - [5.2 Tonic 拦截器模式](#52-tonic-拦截器模式)
+    - [5.3 Tower Layer 模式](#53-tower-layer-模式)
+  - [6. Metrics 模式](#6-metrics-模式)
+    - [6.1 静态 Metrics 模式](#61-静态-metrics-模式)
+    - [6.2 动态 Metrics 模式](#62-动态-metrics-模式)
+    - [6.3 Histogram 桶配置模式](#63-histogram-桶配置模式)
+  - [7. 批处理与性能优化模式](#7-批处理与性能优化模式)
+    - [7.1 批量导出模式](#71-批量导出模式)
+    - [7.2 采样策略模式](#72-采样策略模式)
+    - [7.3 属性缓存模式](#73-属性缓存模式)
+  - [8. 测试模式](#8-测试模式)
+    - [8.1 Mock Exporter 模式](#81-mock-exporter-模式)
+    - [8.2 测试断言模式](#82-测试断言模式)
+    - [8.3 集成测试模式](#83-集成测试模式)
+  - [9. 生产部署模式](#9-生产部署模式)
+    - [9.1 优雅关闭模式](#91-优雅关闭模式)
+    - [9.2 健康检查模式](#92-健康检查模式)
+    - [9.3 配置热重载模式](#93-配置热重载模式)
+  - [10. 高级模式](#10-高级模式)
+    - [10.1 自定义 Processor 模式](#101-自定义-processor-模式)
+    - [10.2 多后端导出模式](#102-多后端导出模式)
+    - [10.3 动态采样模式](#103-动态采样模式)
+  - [🔗 参考资源](#-参考资源)
 
 ---
 
 ## 1. 初始化模式
 
-### 1.1 全局单例初始化
+### 1.1 单例 TracerProvider 模式
+
+**问题**: 需要在整个应用中共享同一个 TracerProvider 实例。
+
+**解决方案**: 使用 `OnceCell` 或 `lazy_static` 实现单例模式。
+
+```rust
+use opentelemetry::global;
+use opentelemetry::trace::TracerProvider;
+use opentelemetry_sdk::trace::TracerProvider as SdkTracerProvider;
+use opentelemetry_otlp::WithExportConfig;
+use std::sync::OnceLock;
+
+static TRACER_PROVIDER: OnceLock<SdkTracerProvider> = OnceLock::new();
+
+pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
+    let provider = opentelemetry_otlp::new_pipeline()
+        .tracing()
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint("http://localhost:4317")
+        )
+        .install_batch(opentelemetry_sdk::runtime::Tokio)?;
+
+    TRACER_PROVIDER.set(provider.clone()).ok();
+    global::set_tracer_provider(provider);
+    
+    Ok(())
+}
+
+pub fn get_tracer() -> opentelemetry::trace::BoxedTracer {
+    global::tracer("my-service")
+}
+
+// 使用
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    init_telemetry()?;
+    
+    let tracer = get_tracer();
+    let span = tracer.start("main");
+    // 业务逻辑
+    drop(span);
+    
+    Ok(())
+}
+```
+
+**优点**:
+
+- ✅ 全局单一实例
+- ✅ 线程安全
+- ✅ 延迟初始化
+
+---
+
+### 1.2 延迟初始化模式
+
+**问题**: 需要在运行时动态配置 TracerProvider。
+
+**解决方案**: 使用 Builder 模式和配置结构。
+
+```rust
+use opentelemetry::global;
+use opentelemetry_sdk::trace::{Config, TracerProvider};
+use opentelemetry_otlp::WithExportConfig;
+
+#[derive(Clone)]
+pub struct TelemetryConfig {
+    pub service_name: String,
+    pub otlp_endpoint: String,
+    pub sample_rate: f64,
+}
+
+impl TelemetryConfig {
+    pub fn from_env() -> Self {
+        Self {
+            service_name: std::env::var("OTEL_SERVICE_NAME")
+                .unwrap_or_else(|_| "my-service".to_string()),
+            otlp_endpoint: std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
+            sample_rate: std::env::var("OTEL_TRACES_SAMPLER_ARG")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(1.0),
+        }
+    }
+}
+
+pub struct TelemetryBuilder {
+    config: TelemetryConfig,
+}
+
+impl TelemetryBuilder {
+    pub fn new(config: TelemetryConfig) -> Self {
+        Self { config }
+    }
+
+    pub fn build(self) -> Result<(), Box<dyn std::error::Error>> {
+        let tracer = opentelemetry_otlp::new_pipeline()
+            .tracing()
+            .with_exporter(
+                opentelemetry_otlp::new_exporter()
+                    .tonic()
+                    .with_endpoint(&self.config.otlp_endpoint)
+            )
+            .with_trace_config(
+                Config::default()
+                    .with_sampler(opentelemetry_sdk::trace::Sampler::TraceIdRatioBased(
+                        self.config.sample_rate
+                    ))
+                    .with_resource(opentelemetry_sdk::Resource::new(vec![
+                        opentelemetry::KeyValue::new("service.name", self.config.service_name.clone()),
+                    ]))
+            )
+            .install_batch(opentelemetry_sdk::runtime::Tokio)?;
+
+        global::set_tracer_provider(tracer);
+        Ok(())
+    }
+}
+
+// 使用
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = TelemetryConfig::from_env();
+    TelemetryBuilder::new(config).build()?;
+    
+    Ok(())
+}
+```
+
+---
+
+### 1.3 多环境配置模式
+
+**问题**: 不同环境（开发、测试、生产）需要不同的配置。
+
+**解决方案**: 使用环境枚举和配置工厂。
 
 ```rust
 use opentelemetry::global;
 use opentelemetry_sdk::trace::TracerProvider;
-use once_cell::sync::OnceCell;
-use anyhow::Result;
 
-/// 全局 TracerProvider 单例
-static TRACER_PROVIDER: OnceCell<TracerProvider> = OnceCell::new();
-
-/// 初始化全局追踪 (只执行一次)
-pub fn init_global_tracer() -> Result<()> {
-    TRACER_PROVIDER.get_or_try_init(|| {
-        let tracer_provider = opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_exporter(
-                opentelemetry_otlp::new_exporter()
-                    .tonic()
-                    .with_endpoint("http://localhost:4317")
-            )
-            .install_batch(opentelemetry_sdk::runtime::Tokio)?;
-
-        global::set_tracer_provider(tracer_provider.clone());
-        Ok(tracer_provider)
-    })?;
-
-    Ok(())
+#[derive(Clone, Copy, Debug)]
+pub enum Environment {
+    Development,
+    Staging,
+    Production,
 }
 
-/// 关闭全局追踪
-pub fn shutdown_global_tracer() -> Result<()> {
-    if let Some(provider) = TRACER_PROVIDER.get() {
-        provider.shutdown()?;
-    }
-    Ok(())
-}
-
-// 使用示例
-#[tokio::main]
-async fn main() -> Result<()> {
-    init_global_tracer()?;
-
-    // 应用逻辑
-    let tracer = global::tracer("my-app");
-    let span = tracer.start("main_operation");
-    // ...
-    span.end();
-
-    shutdown_global_tracer()?;
-    Ok(())
-}
-```
-
-### 1.2 延迟初始化模式
-
-```rust
-use std::sync::Arc;
-use parking_lot::RwLock;
-
-/// 延迟初始化的追踪管理器
-pub struct LazyTracerManager {
-    provider: Arc<RwLock<Option<TracerProvider>>>,
-}
-
-impl LazyTracerManager {
-    pub fn new() -> Self {
-        Self {
-            provider: Arc::new(RwLock::new(None)),
+impl Environment {
+    pub fn from_env() -> Self {
+        match std::env::var("ENV").as_deref() {
+            Ok("production") => Self::Production,
+            Ok("staging") => Self::Staging,
+            _ => Self::Development,
         }
     }
+}
 
-    /// 在首次使用时初始化
-    pub fn get_or_init(&self) -> Result<TracerProvider> {
-        // 尝试读取
-        {
-            let reader = self.provider.read();
-            if let Some(provider) = reader.as_ref() {
-                return Ok(provider.clone());
-            }
+pub fn init_for_env(env: Environment) -> Result<(), Box<dyn std::error::Error>> {
+    match env {
+        Environment::Development => {
+            // 开发环境：使用 stdout exporter
+            let tracer = opentelemetry_stdout::new_pipeline()
+                .install_simple();
+            global::set_tracer_provider(tracer);
         }
-
-        // 需要初始化
-        let mut writer = self.provider.write();
-        if writer.is_none() {
-            let provider = opentelemetry_otlp::new_pipeline()
+        Environment::Staging => {
+            // 测试环境：采样率 50%
+            let tracer = opentelemetry_otlp::new_pipeline()
                 .tracing()
-                .with_exporter(
-                    opentelemetry_otlp::new_exporter()
-                        .tonic()
-                        .with_endpoint("http://localhost:4317")
+                .with_trace_config(
+                    opentelemetry_sdk::trace::Config::default()
+                        .with_sampler(opentelemetry_sdk::trace::Sampler::TraceIdRatioBased(0.5))
                 )
                 .install_batch(opentelemetry_sdk::runtime::Tokio)?;
-
-            *writer = Some(provider.clone());
-            Ok(provider)
-        } else {
-            Ok(writer.as_ref().unwrap().clone())
+            global::set_tracer_provider(tracer);
+        }
+        Environment::Production => {
+            // 生产环境：完整配置
+            let tracer = opentelemetry_otlp::new_pipeline()
+                .tracing()
+                .with_trace_config(
+                    opentelemetry_sdk::trace::Config::default()
+                        .with_sampler(opentelemetry_sdk::trace::Sampler::ParentBased(
+                            Box::new(opentelemetry_sdk::trace::Sampler::TraceIdRatioBased(0.1))
+                        ))
+                )
+                .install_batch(opentelemetry_sdk::runtime::Tokio)?;
+            global::set_tracer_provider(tracer);
         }
     }
-}
-
-// 使用示例
-lazy_static::lazy_static! {
-    static ref TRACER_MANAGER: LazyTracerManager = LazyTracerManager::new();
-}
-
-pub fn get_tracer(name: &str) -> opentelemetry::global::BoxedTracer {
-    TRACER_MANAGER.get_or_init()
-        .expect("Failed to initialize tracer")
-        .tracer(name)
-}
-```
-
-### 1.3 多环境配置模式
-
-```rust
-use serde::Deserialize;
-
-#[derive(Debug, Deserialize)]
-pub struct OtlpConfig {
-    pub endpoint: String,
-    pub service_name: String,
-    pub environment: String,
-    pub sampling_ratio: f64,
-}
-
-impl OtlpConfig {
-    /// 从环境变量加载配置
-    pub fn from_env() -> Result<Self> {
-        Ok(Self {
-            endpoint: std::env::var("OTLP_ENDPOINT")
-                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
-            service_name: std::env::var("SERVICE_NAME")
-                .unwrap_or_else(|_| "my-service".to_string()),
-            environment: std::env::var("ENVIRONMENT")
-                .unwrap_or_else(|_| "development".to_string()),
-            sampling_ratio: std::env::var("OTLP_SAMPLING_RATIO")
-                .ok()
-                .and_then(|s| s.parse().ok())
-                .unwrap_or(1.0),
-        })
-    }
-
-    /// 初始化追踪器
-    pub fn init_tracer(&self) -> Result<TracerProvider> {
-        use opentelemetry_sdk::trace::{Sampler, Config};
-        use opentelemetry::KeyValue;
-
-        let sampler = if self.sampling_ratio >= 1.0 {
-            Sampler::AlwaysOn
-        } else if self.sampling_ratio <= 0.0 {
-            Sampler::AlwaysOff
-        } else {
-            Sampler::TraceIdRatioBased(self.sampling_ratio)
-        };
-
-        opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_exporter(
-                opentelemetry_otlp::new_exporter()
-                    .tonic()
-                    .with_endpoint(&self.endpoint)
-            )
-            .with_trace_config(
-                Config::default()
-                    .with_sampler(sampler)
-                    .with_resource(opentelemetry_sdk::Resource::new(vec![
-                        KeyValue::new("service.name", self.service_name.clone()),
-                        KeyValue::new("deployment.environment", self.environment.clone()),
-                    ]))
-            )
-            .install_batch(opentelemetry_sdk::runtime::Tokio)
-    }
-}
-
-// 使用示例
-#[tokio::main]
-async fn main() -> Result<()> {
-    let config = OtlpConfig::from_env()?;
-    let _tracer_provider = config.init_tracer()?;
-    
-    // 应用逻辑...
-    
     Ok(())
 }
 ```
 
 ---
 
-## 2. 上下文传播模式
+## 2. Span 创建模式
 
-### 2.1 异步函数中的上下文传递
+### 2.1 作用域 Span 模式
 
-```rust
-use opentelemetry::{Context, trace::{Tracer, Span}};
+**问题**: 需要确保 Span 正确结束，即使发生错误。
 
-/// 使用 Rust 1.90 AFIT 的异步追踪
-pub trait AsyncTraced {
-    async fn execute_with_trace(&self, cx: &Context) -> Result<()>;
-}
-
-/// 自动传播上下文的异步函数
-pub async fn traced_async_operation<F, Fut>(
-    tracer: &impl Tracer,
-    span_name: &str,
-    operation: F,
-) -> Result<()>
-where
-    F: FnOnce(Context) -> Fut,
-    Fut: std::future::Future<Output = Result<()>>,
-{
-    let mut span = tracer.start(span_name);
-    let cx = Context::current_with_span(span.clone());
-
-    let result = operation(cx).await;
-
-    if let Err(ref e) = result {
-        span.record_error(e);
-    }
-    span.end();
-
-    result
-}
-
-// 使用示例
-async fn process_data(cx: Context, data: String) -> Result<()> {
-    let tracer = global::tracer("processor");
-    let mut span = tracer.start_with_context("process_data", &cx);
-    
-    // 业务逻辑
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
-    span.end();
-    Ok(())
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    let tracer = global::tracer("main");
-    
-    traced_async_operation(&tracer, "main_operation", |cx| async move {
-        process_data(cx, "test".to_string()).await
-    })
-    .await?;
-
-    Ok(())
-}
-```
-
-### 2.2 跨线程上下文传播
+**解决方案**: 使用 RAII 模式和作用域守卫。
 
 ```rust
-use opentelemetry::propagation::{TextMapPropagator, Injector, Extractor};
-use std::collections::HashMap;
+use opentelemetry::trace::{Tracer, Span};
 
-/// 跨线程上下文传播
-pub fn propagate_context_across_threads() -> Result<()> {
-    let tracer = global::tracer("cross-thread");
-    let span = tracer.start("parent_operation");
-    let cx = Context::current_with_span(span);
-
-    // 序列化上下文
-    let mut carrier = HashMap::new();
-    let propagator = opentelemetry::sdk::propagation::TraceContextPropagator::new();
-    propagator.inject_context(&cx, &mut carrier);
-
-    // 在新线程中恢复上下文
-    std::thread::spawn(move || {
-        let propagator = opentelemetry::sdk::propagation::TraceContextPropagator::new();
-        let parent_cx = propagator.extract(&carrier);
-
-        let tracer = global::tracer("child-thread");
-        let mut child_span = tracer.start_with_context("child_operation", &parent_cx);
-        
-        // 子线程业务逻辑
-        std::thread::sleep(std::time::Duration::from_millis(50));
-        
-        child_span.end();
-    })
-    .join()
-    .expect("Thread panicked");
-
-    Ok(())
-}
-```
-
-### 2.3 HTTP 服务器上下文提取
-
-```rust
-use axum::{
-    extract::Request,
-    middleware::Next,
-    response::Response,
-};
-use opentelemetry::propagation::{Extractor, TextMapPropagator};
-
-/// HTTP Header 提取器
-struct HeaderExtractor<'a>(&'a axum::http::HeaderMap);
-
-impl<'a> Extractor for HeaderExtractor<'a> {
-    fn get(&self, key: &str) -> Option<&str> {
-        self.0.get(key).and_then(|v| v.to_str().ok())
-    }
-
-    fn keys(&self) -> Vec<&str> {
-        self.0.keys().map(|k| k.as_str()).collect()
-    }
-}
-
-/// Axum 追踪中间件
-pub async fn tracing_middleware(
-    request: Request,
-    next: Next,
-) -> Response {
-    let tracer = global::tracer("http-server");
-    let propagator = opentelemetry::sdk::propagation::TraceContextPropagator::new();
-
-    // 从 HTTP headers 提取上下文
-    let parent_cx = propagator.extract(&HeaderExtractor(request.headers()));
-
-    let mut span = tracer
-        .span_builder(format!("{} {}", request.method(), request.uri().path()))
-        .with_kind(opentelemetry::trace::SpanKind::Server)
-        .start_with_context(&tracer, &parent_cx);
-
-    span.set_attribute(opentelemetry::KeyValue::new("http.method", request.method().to_string()));
-    span.set_attribute(opentelemetry::KeyValue::new("http.target", request.uri().to_string()));
-
-    let response = next.run(request).await;
-
-    span.set_attribute(opentelemetry::KeyValue::new("http.status_code", response.status().as_u16() as i64));
-    span.end();
-
-    response
-}
-```
-
----
-
-## 3. Span 管理模式
-
-### 3.1 自动 Span 结束 (RAII)
-
-```rust
-/// RAII Span 守卫
 pub struct SpanGuard {
-    span: Option<opentelemetry::trace::BoxedSpan>,
+    span: opentelemetry::trace::BoxedSpan,
 }
 
 impl SpanGuard {
-    pub fn new(tracer: &impl Tracer, name: &str) -> Self {
+    pub fn new(tracer: &dyn Tracer, name: &str) -> Self {
         Self {
-            span: Some(tracer.start(name)),
+            span: tracer.start(name),
         }
     }
 
     pub fn span(&mut self) -> &mut opentelemetry::trace::BoxedSpan {
-        self.span.as_mut().expect("Span already ended")
+        &mut self.span
     }
 }
 
 impl Drop for SpanGuard {
     fn drop(&mut self) {
-        if let Some(mut span) = self.span.take() {
-            span.end();
-        }
+        self.span.end();
     }
 }
 
-// 使用示例
-fn process_with_auto_span() -> Result<()> {
-    let tracer = global::tracer("processor");
-    let mut _guard = SpanGuard::new(&tracer, "process_operation");
+// 使用
+fn process_request(tracer: &dyn Tracer) -> Result<(), Box<dyn std::error::Error>> {
+    let mut guard = SpanGuard::new(tracer, "process_request");
     
-    // Span 会在 _guard 离开作用域时自动结束
-    // 业务逻辑...
+    guard.span().set_attribute(opentelemetry::KeyValue::new("user.id", 123));
+    
+    // 即使这里发生错误,Span 也会正确结束
+    risky_operation()?;
     
     Ok(())
 } // Span 自动结束
 ```
 
-### 3.2 嵌套 Span 模式
+---
+
+### 2.2 异步函数追踪模式
+
+**问题**: 需要在异步函数中正确追踪 Span。
+
+**解决方案**: 使用 `tracing` crate 的 `#[instrument]` 宏。
 
 ```rust
-/// 嵌套 Span 帮助函数
-pub async fn nested_span_example() -> Result<()> {
-    let tracer = global::tracer("nested");
+use tracing::instrument;
+use opentelemetry::global;
 
-    // 父 Span
-    let mut parent_span = tracer.start("parent_operation");
-    let parent_cx = Context::current_with_span(parent_span.clone());
+#[instrument(skip(db))]
+async fn get_user(db: &Database, user_id: u64) -> Result<User, Error> {
+    tracing::info!("Fetching user");
+    
+    let user = db.query_user(user_id).await?;
+    
+    tracing::info!(username = %user.name, "User fetched successfully");
+    
+    Ok(user)
+}
 
-    // 子 Span 1
-    {
-        let mut child_span1 = tracer.start_with_context("child_operation_1", &parent_cx);
-        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-        child_span1.end();
-    }
-
-    // 子 Span 2
-    {
-        let mut child_span2 = tracer.start_with_context("child_operation_2", &parent_cx);
-        tokio::time::sleep(tokio::time::Duration::from_millis(30)).await;
-        child_span2.end();
-    }
-
-    parent_span.end();
-    Ok(())
+#[instrument(fields(http.method = "GET", http.route = "/users/{id}"))]
+async fn handle_request(user_id: u64) -> Result<Response, Error> {
+    let user = get_user(&database, user_id).await?;
+    
+    Ok(Response::json(user))
 }
 ```
 
-### 3.3 条件 Span 创建
+---
+
+### 2.3 条件追踪模式
+
+**问题**: 只在特定条件下创建 Span。
+
+**解决方案**: 使用条件包装器。
 
 ```rust
-/// 条件创建 Span
+use opentelemetry::trace::{Tracer, Span, SpanKind};
+
 pub struct ConditionalSpan {
     span: Option<opentelemetry::trace::BoxedSpan>,
 }
 
 impl ConditionalSpan {
-    pub fn new(tracer: &impl Tracer, name: &str, enabled: bool) -> Self {
-        Self {
-            span: if enabled {
-                Some(tracer.start(name))
-            } else {
-                None
-            },
-        }
+    pub fn new(tracer: &dyn Tracer, name: &str, should_trace: bool) -> Self {
+        let span = if should_trace {
+            Some(tracer.start(name))
+        } else {
+            None
+        };
+        
+        Self { span }
     }
 
     pub fn set_attribute(&mut self, kv: opentelemetry::KeyValue) {
@@ -508,152 +367,155 @@ impl ConditionalSpan {
         }
     }
 
-    pub fn end(mut self) {
-        if let Some(mut span) = self.span.take() {
-            span.end();
+    pub fn record_error(&mut self, err: &dyn std::error::Error) {
+        if let Some(span) = &mut self.span {
+            span.record_error(err);
         }
     }
 }
 
-// 使用示例
-fn conditional_tracing(enable_trace: bool) -> Result<()> {
-    let tracer = global::tracer("conditional");
-    let mut span = ConditionalSpan::new(&tracer, "operation", enable_trace);
+// 使用
+fn process_item(tracer: &dyn Tracer, item: &Item, debug_mode: bool) {
+    let mut span = ConditionalSpan::new(
+        tracer,
+        "process_item",
+        debug_mode || item.is_important()
+    );
     
-    // 业务逻辑
-    span.set_attribute(opentelemetry::KeyValue::new("processed", true));
+    span.set_attribute(opentelemetry::KeyValue::new("item.id", item.id));
     
-    span.end();
-    Ok(())
+    // 处理逻辑
 }
 ```
 
 ---
 
-## 4. 错误处理与追踪
+## 3. 错误处理模式
 
-### 4.1 Result 类型集成
+### 3.1 Result 集成模式
+
+**问题**: 需要自动追踪错误到 Span。
+
+**解决方案**: 使用 Result 扩展 trait。
 
 ```rust
-use opentelemetry::trace::{Status, StatusCode};
+use opentelemetry::trace::Span;
 
-/// 扩展 Result 类型以支持自动错误记录
-pub trait ResultExt<T, E> {
-    fn trace_err(self, span: &mut dyn Span) -> Result<T, E>;
+pub trait SpanResultExt<T, E> {
+    fn record_err_to_span(self, span: &mut dyn Span) -> Result<T, E>;
 }
 
-impl<T, E: std::fmt::Display> ResultExt<T, E> for Result<T, E> {
-    fn trace_err(self, span: &mut dyn Span) -> Result<T, E> {
+impl<T, E: std::error::Error> SpanResultExt<T, E> for Result<T, E> {
+    fn record_err_to_span(self, span: &mut dyn Span) -> Result<T, E> {
         if let Err(ref e) = self {
-            span.set_status(Status::error(e.to_string()));
             span.record_error(e);
+            span.set_status(opentelemetry::trace::Status::Error {
+                description: e.to_string().into(),
+            });
         }
         self
     }
 }
 
-// 使用示例
-async fn process_with_error_tracking() -> Result<()> {
-    let tracer = global::tracer("error-handler");
-    let mut span = tracer.start("risky_operation");
-
-    let result = risky_function()
-        .trace_err(&mut span);
-
-    span.end();
-    result
-}
-
-fn risky_function() -> Result<()> {
-    Err(anyhow::anyhow!("Something went wrong"))
+// 使用
+#[instrument]
+async fn fetch_data() -> Result<Data, Error> {
+    let mut span = tracing::Span::current();
+    
+    let result = risky_operation()
+        .await
+        .record_err_to_span(&mut span)?;
+    
+    Ok(result)
 }
 ```
 
-### 4.2 自定义错误类型追踪
+---
+
+### 3.2 错误传播模式
+
+**问题**: 在多层调用中保持错误上下文。
+
+**解决方案**: 使用 `thiserror` 和 Span 链。
 
 ```rust
 use thiserror::Error;
+use opentelemetry::trace::{Tracer, TraceContextExt};
+use opentelemetry::Context;
 
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(#[from] DatabaseError),
     
     #[error("Network error: {0}")]
-    Network(String),
+    Network(#[from] NetworkError),
     
     #[error("Business logic error: {0}")]
-    Business(String),
+    BusinessLogic(String),
 }
 
 impl AppError {
-    /// 将错误信息记录到 Span
-    pub fn record_to_span(&self, span: &mut dyn Span) {
-        span.set_status(Status::Error {
-            description: self.to_string().into(),
-        });
-
+    pub fn record_to_current_span(&self) {
+        let cx = Context::current();
+        let span = cx.span();
+        span.record_error(self);
+        
         // 添加错误类型属性
         span.set_attribute(opentelemetry::KeyValue::new(
             "error.type",
             match self {
                 AppError::Database(_) => "database",
                 AppError::Network(_) => "network",
-                AppError::Business(_) => "business",
-            },
+                AppError::BusinessLogic(_) => "business_logic",
+            }
         ));
-
-        span.record_error(self);
     }
 }
 
-// 使用示例
-async fn handle_custom_errors() -> Result<(), AppError> {
-    let tracer = global::tracer("custom-errors");
-    let mut span = tracer.start("operation_with_errors");
-
-    let result = database_operation().await;
-    if let Err(ref e) = result {
-        e.record_to_span(&mut span);
-    }
-
-    span.end();
-    result
-}
-
-async fn database_operation() -> Result<(), AppError> {
-    Err(AppError::Database(sqlx::Error::RowNotFound))
+#[instrument]
+async fn process_order(order_id: u64) -> Result<(), AppError> {
+    save_to_database(order_id)
+        .await
+        .map_err(|e| {
+            let app_err = AppError::from(e);
+            app_err.record_to_current_span();
+            app_err
+        })?;
+    
+    Ok(())
 }
 ```
 
-### 4.3 Panic 捕获
+---
+
+### 3.3 Panic 捕获模式
+
+**问题**: 需要捕获和追踪 panic。
+
+**解决方案**: 使用 `catch_unwind` 和 panic hook。
 
 ```rust
-use std::panic;
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use opentelemetry::trace::{Tracer, Span};
 
-/// 捕获 panic 并记录到 Span
-pub fn traced_catch_unwind<F, R>(
-    tracer: &impl Tracer,
-    span_name: &str,
+pub fn with_panic_tracking<F, R>(
+    tracer: &dyn Tracer,
+    name: &str,
     f: F,
-) -> Result<R>
+) -> Result<R, Box<dyn std::any::Any + Send>>
 where
-    F: FnOnce() -> R + panic::UnwindSafe,
+    F: FnOnce() -> R + std::panic::UnwindSafe,
 {
-    let mut span = tracer.start(span_name);
-
-    let result = panic::catch_unwind(f);
-
-    match result {
-        Ok(value) => {
-            span.end();
-            Ok(value)
+    let mut span = tracer.start(name);
+    
+    let result = catch_unwind(AssertUnwindSafe(|| f()));
+    
+    match &result {
+        Ok(_) => {
+            span.set_status(opentelemetry::trace::Status::Ok);
         }
         Err(panic_info) => {
-            span.set_status(Status::Error {
-                description: "Panic occurred".into(),
-            });
-            
             let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
                 s.to_string()
             } else if let Some(s) = panic_info.downcast_ref::<String>() {
@@ -661,876 +523,758 @@ where
             } else {
                 "Unknown panic".to_string()
             };
-
-            span.set_attribute(opentelemetry::KeyValue::new("panic.message", panic_msg.clone()));
-            span.end();
-
-            Err(anyhow::anyhow!("Panic: {}", panic_msg))
+            
+            span.set_status(opentelemetry::trace::Status::Error {
+                description: panic_msg.into(),
+            });
+            span.set_attribute(opentelemetry::KeyValue::new("error.type", "panic"));
         }
     }
-}
-```
-
----
-
-## 5. 异步编程模式
-
-### 5.1 Tokio Task 追踪
-
-```rust
-use tokio::task::JoinHandle;
-
-/// 带追踪的 Tokio Task 生成器
-pub fn spawn_traced_task<F, T>(
-    tracer: &impl Tracer,
-    task_name: &str,
-    future: F,
-) -> JoinHandle<T>
-where
-    F: std::future::Future<Output = T> + Send + 'static,
-    T: Send + 'static,
-{
-    let mut span = tracer.start(format!("tokio_task: {}", task_name));
-    let cx = Context::current_with_span(span.clone());
-
-    tokio::spawn(async move {
-        let result = future.await;
-        span.end();
-        result
-    })
-}
-
-// 使用示例
-async fn spawn_tasks_example() {
-    let tracer = global::tracer("task-spawner");
-
-    let task1 = spawn_traced_task(&tracer, "background_task_1", async {
-        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        "task1 done"
-    });
-
-    let task2 = spawn_traced_task(&tracer, "background_task_2", async {
-        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-        "task2 done"
-    });
-
-    let (result1, result2) = tokio::join!(task1, task2);
-    println!("{:?}, {:?}", result1, result2);
-}
-```
-
-### 5.2 Stream 处理追踪
-
-```rust
-use futures::StreamExt;
-
-/// 为 Stream 添加追踪
-pub async fn traced_stream_processing() -> Result<()> {
-    let tracer = global::tracer("stream-processor");
-    let mut span = tracer.start("process_stream");
-
-    let stream = futures::stream::iter(0..10);
     
-    let mut processed = 0;
-    futures::pin_mut!(stream);
+    span.end();
+    result
+}
 
-    while let Some(item) = stream.next().await {
-        let mut item_span = tracer.start_with_context(
-            format!("process_item_{}", item),
-            &Context::current_with_span(span.clone()),
-        );
-
-        // 处理项目
-        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-        processed += 1;
-
-        item_span.set_attribute(opentelemetry::KeyValue::new("item.value", item as i64));
-        item_span.end();
+// 使用
+fn risky_function() {
+    let tracer = global::tracer("my-service");
+    
+    let result = with_panic_tracking(&tracer, "risky_operation", || {
+        // 可能会 panic 的代码
+        process_data();
+    });
+    
+    match result {
+        Ok(_) => println!("Success"),
+        Err(_) => println!("Panic occurred"),
     }
-
-    span.set_attribute(opentelemetry::KeyValue::new("items.processed", processed));
-    span.end();
-
-    Ok(())
-}
-```
-
-### 5.3 并发任务追踪
-
-```rust
-/// 追踪并发任务执行
-pub async fn traced_concurrent_tasks() -> Result<()> {
-    let tracer = global::tracer("concurrent");
-    let mut span = tracer.start("concurrent_operations");
-    let parent_cx = Context::current_with_span(span.clone());
-
-    let tasks: Vec<_> = (0..5)
-        .map(|i| {
-            let tracer = tracer.clone();
-            let cx = parent_cx.clone();
-            
-            tokio::spawn(async move {
-                let mut task_span = tracer.start_with_context(
-                    format!("concurrent_task_{}", i),
-                    &cx,
-                );
-
-                tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-                
-                task_span.set_attribute(opentelemetry::KeyValue::new("task.id", i as i64));
-                task_span.end();
-                
-                i
-            })
-        })
-        .collect();
-
-    let results = futures::future::join_all(tasks).await;
-    
-    span.set_attribute(opentelemetry::KeyValue::new(
-        "tasks.completed",
-        results.len() as i64,
-    ));
-    span.end();
-
-    Ok(())
 }
 ```
 
 ---
 
-## 6. 中间件模式
+## 4. 上下文传播模式
 
-### 6.1 Axum 中间件
+### 4.1 HTTP 客户端传播模式
+
+**问题**: 需要在 HTTP 请求中传播 tracing context。
+
+**解决方案**: 使用 Propagator 和 HTTP headers。
+
+```rust
+use opentelemetry::global;
+use opentelemetry::propagation::TextMapPropagator;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use std::collections::HashMap;
+
+pub async fn make_traced_request(
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<reqwest::Response, reqwest::Error> {
+    let cx = opentelemetry::Context::current();
+    
+    // 提取 trace context 到 headers
+    let mut injector = HashMap::new();
+    global::get_text_map_propagator(|propagator| {
+        propagator.inject_context(&cx, &mut injector);
+    });
+    
+    // 转换为 reqwest headers
+    let mut headers = HeaderMap::new();
+    for (key, value) in injector {
+        headers.insert(
+            HeaderName::from_bytes(key.as_bytes()).unwrap(),
+            HeaderValue::from_str(&value).unwrap(),
+        );
+    }
+    
+    client.get(url)
+        .headers(headers)
+        .send()
+        .await
+}
+
+// 使用
+#[instrument]
+async fn call_external_service() -> Result<Data, Error> {
+    let client = reqwest::Client::new();
+    let response = make_traced_request(&client, "https://api.example.com/data").await?;
+    
+    Ok(response.json().await?)
+}
+```
+
+---
+
+### 4.2 HTTP 服务端提取模式
+
+**问题**: 需要从 HTTP 请求中提取 tracing context。
+
+**解决方案**: 使用 Axum extractor。
 
 ```rust
 use axum::{
-    Router,
-    routing::get,
-    middleware,
+    extract::Request,
+    http::HeaderMap,
+    middleware::Next,
+    response::Response,
 };
+use opentelemetry::global;
+use opentelemetry::propagation::TextMapPropagator;
+use std::collections::HashMap;
 
-/// 完整的 Axum 追踪中间件
-pub async fn axum_tracing_layer(
-    request: Request,
+pub async fn trace_propagation_middleware(
+    headers: HeaderMap,
+    mut request: Request,
     next: Next,
 ) -> Response {
-    let tracer = global::tracer("axum-server");
-    let propagator = opentelemetry::sdk::propagation::TraceContextPropagator::new();
-
-    // 提取父上下文
-    let parent_cx = propagator.extract(&HeaderExtractor(request.headers()));
-
-    let uri = request.uri().clone();
-    let method = request.method().clone();
-
-    let mut span = tracer
-        .span_builder(format!("{} {}", method, uri.path()))
-        .with_kind(opentelemetry::trace::SpanKind::Server)
-        .start_with_context(&tracer, &parent_cx);
-
-    // 记录请求属性
-    span.set_attribute(opentelemetry::KeyValue::new("http.method", method.to_string()));
-    span.set_attribute(opentelemetry::KeyValue::new("http.target", uri.to_string()));
-    span.set_attribute(opentelemetry::KeyValue::new("http.scheme", uri.scheme_str().unwrap_or("http")));
-
-    let start = std::time::Instant::now();
-    let response = next.run(request).await;
-    let duration = start.elapsed();
-
-    // 记录响应属性
-    span.set_attribute(opentelemetry::KeyValue::new("http.status_code", response.status().as_u16() as i64));
-    span.set_attribute(opentelemetry::KeyValue::new("http.response_time_ms", duration.as_millis() as i64));
-
-    if response.status().is_server_error() {
-        span.set_status(Status::error("Server error"));
+    // 从 headers 提取 context
+    let mut extractor = HashMap::new();
+    for (key, value) in headers.iter() {
+        if let Ok(v) = value.to_str() {
+            extractor.insert(key.as_str().to_string(), v.to_string());
+        }
     }
-
-    span.end();
-    response
+    
+    let parent_cx = global::get_text_map_propagator(|propagator| {
+        propagator.extract(&extractor)
+    });
+    
+    // 设置为当前 context
+    let _guard = parent_cx.attach();
+    
+    next.run(request).await
 }
 
-// 路由配置
-pub fn app() -> Router {
+// 在 Axum 中使用
+use axum::{Router, routing::get};
+
+fn app() -> Router {
     Router::new()
-        .route("/", get(|| async { "Hello, World!" }))
-        .route("/api/users", get(get_users))
-        .layer(middleware::from_fn(axum_tracing_layer))
-}
-
-async fn get_users() -> &'static str {
-    "Users list"
+        .route("/users/:id", get(get_user))
+        .layer(axum::middleware::from_fn(trace_propagation_middleware))
 }
 ```
 
-### 6.2 Tower Service 追踪
+---
+
+### 4.3 跨线程传播模式
+
+**问题**: 需要在不同线程间传播 tracing context。
+
+**解决方案**: 显式传递 Context。
 
 ```rust
-use tower::{Service, ServiceBuilder};
-use std::task::{Context as TaskContext, Poll};
+use opentelemetry::Context;
+use std::thread;
 
-/// Tower Service 追踪层
-#[derive(Clone)]
-pub struct TracingService<S> {
-    inner: S,
-    tracer: opentelemetry::global::BoxedTracer,
+#[instrument]
+fn spawn_traced_thread<F>(name: &str, f: F) -> thread::JoinHandle<()>
+where
+    F: FnOnce() + Send + 'static,
+{
+    let cx = Context::current();
+    let name = name.to_string();
+    
+    thread::spawn(move || {
+        let _guard = cx.attach();
+        
+        let tracer = global::tracer("worker");
+        let mut span = tracer.start(&name);
+        
+        f();
+        
+        span.end();
+    })
 }
 
-impl<S, Request> Service<Request> for TracingService<S>
+// 使用
+#[instrument]
+fn process_in_background() {
+    let handle = spawn_traced_thread("background-task", || {
+        // 这里的操作会被追踪,并链接到父 Span
+        perform_work();
+    });
+    
+    handle.join().unwrap();
+}
+```
+
+---
+
+## 5. 中间件集成模式
+
+### 5.1 Axum 中间件模式
+
+**问题**: 需要为所有 Axum 路由添加追踪。
+
+**解决方案**: 创建 tracing 中间件层。
+
+```rust
+use axum::{
+    body::Body,
+    extract::Request,
+    http::{StatusCode, Uri},
+    middleware::Next,
+    response::Response,
+};
+use opentelemetry::trace::{Tracer, SpanKind, Status};
+use opentelemetry::global;
+
+pub async fn tracing_middleware(
+    uri: Uri,
+    request: Request,
+    next: Next,
+) -> Response {
+    let tracer = global::tracer("http-server");
+    
+    let mut span = tracer
+        .span_builder(format!("{} {}", request.method(), uri.path()))
+        .with_kind(SpanKind::Server)
+        .start(&tracer);
+    
+    span.set_attribute(opentelemetry::KeyValue::new("http.method", request.method().to_string()));
+    span.set_attribute(opentelemetry::KeyValue::new("http.target", uri.path().to_string()));
+    
+    let response = next.run(request).await;
+    
+    span.set_attribute(opentelemetry::KeyValue::new("http.status_code", response.status().as_u16() as i64));
+    
+    if response.status().is_server_error() {
+        span.set_status(Status::Error {
+            description: "Server error".into(),
+        });
+    }
+    
+    span.end();
+    
+    response
+}
+
+// 使用
+use axum::Router;
+
+fn app() -> Router {
+    Router::new()
+        .route("/users", get(list_users))
+        .layer(axum::middleware::from_fn(tracing_middleware))
+}
+```
+
+---
+
+### 5.2 Tonic 拦截器模式
+
+**问题**: 需要为 gRPC 服务添加追踪。
+
+**解决方案**: 实现 Tonic Interceptor。
+
+```rust
+use tonic::{Request, Status};
+use opentelemetry::global;
+use opentelemetry::trace::{Tracer, SpanKind};
+
+#[derive(Clone)]
+pub struct TracingInterceptor;
+
+impl tonic::service::Interceptor for TracingInterceptor {
+    fn call(&mut self, mut request: Request<()>) -> Result<Request<()>, Status> {
+        let tracer = global::tracer("grpc-server");
+        
+        let span = tracer
+            .span_builder("grpc.request")
+            .with_kind(SpanKind::Server)
+            .start(&tracer);
+        
+        // 存储 span 到 request extensions
+        request.extensions_mut().insert(span);
+        
+        Ok(request)
+    }
+}
+
+// 使用
+use tonic::transport::Server;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    Server::builder()
+        .add_service(
+            MyServiceServer::with_interceptor(
+                MyService::default(),
+                TracingInterceptor,
+            )
+        )
+        .serve("[::1]:50051".parse()?)
+        .await?;
+    
+    Ok(())
+}
+```
+
+---
+
+### 5.3 Tower Layer 模式
+
+**问题**: 需要创建可重用的 tracing 层。
+
+**解决方案**: 实现 Tower Layer 和 Service。
+
+```rust
+use tower::{Layer, Service};
+use std::task::{Context, Poll};
+use opentelemetry::trace::{Tracer, Span};
+
+#[derive(Clone)]
+pub struct TracingLayer<T> {
+    tracer: T,
+}
+
+impl<T: Tracer> TracingLayer<T> {
+    pub fn new(tracer: T) -> Self {
+        Self { tracer }
+    }
+}
+
+impl<S, T: Tracer + Clone> Layer<S> for TracingLayer<T> {
+    type Service = TracingService<S, T>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        TracingService {
+            inner,
+            tracer: self.tracer.clone(),
+        }
+    }
+}
+
+pub struct TracingService<S, T> {
+    inner: S,
+    tracer: T,
+}
+
+impl<S, T, Request> Service<Request> for TracingService<S, T>
 where
     S: Service<Request>,
-    Request: std::fmt::Debug,
+    T: Tracer,
 {
     type Response = S::Response;
     type Error = S::Error;
     type Future = S::Future;
 
-    fn poll_ready(&mut self, cx: &mut TaskContext<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, request: Request) -> Self::Future {
-        let mut span = self.tracer.start("tower_service_call");
-        span.set_attribute(opentelemetry::KeyValue::new("request.debug", format!("{:?}", request)));
-        
-        // 注意: 实际实现需要在 Future 完成时结束 span
-        self.inner.call(request)
-    }
-}
-
-// 创建带追踪的 Service
-pub fn traced_service<S>(service: S) -> TracingService<S> {
-    TracingService {
-        inner: service,
-        tracer: global::tracer("tower"),
-    }
-}
-```
-
-### 6.3 tonic gRPC 拦截器
-
-```rust
-use tonic::{Request as TonicRequest, Status};
-
-/// gRPC 客户端追踪拦截器
-pub fn client_interceptor(
-    mut req: TonicRequest<()>,
-) -> Result<TonicRequest<()>, Status> {
-    let tracer = global::tracer("grpc-client");
-    let mut span = tracer.start("grpc_client_call");
-
-    span.set_attribute(opentelemetry::KeyValue::new("rpc.system", "grpc"));
-    span.set_attribute(opentelemetry::KeyValue::new("rpc.service", req.uri().path()));
-
-    // 注入追踪上下文到 metadata
-    let cx = Context::current_with_span(span);
-    let propagator = opentelemetry::sdk::propagation::TraceContextPropagator::new();
-    
-    // 注入 header
-    // (实际实现需要自定义 Injector)
-
-    Ok(req)
-}
-
-// 使用示例
-// let channel = tonic::transport::Channel::from_static("http://localhost:50051")
-//     .connect()
-//     .await?;
-//
-// let client = MyServiceClient::with_interceptor(channel, client_interceptor);
-```
-
----
-
-## 7. 数据库集成模式
-
-### 7.1 SQLx 查询追踪
-
-```rust
-use sqlx::{PgPool, Row};
-
-/// 带追踪的 SQLx 查询执行器
-pub struct TracedDatabase {
-    pool: PgPool,
-    tracer: opentelemetry::global::BoxedTracer,
-}
-
-impl TracedDatabase {
-    pub fn new(pool: PgPool) -> Self {
-        Self {
-            pool,
-            tracer: global::tracer("database"),
-        }
-    }
-
-    pub async fn execute_traced<'q>(
-        &self,
-        query: &'q str,
-    ) -> Result<sqlx::postgres::PgQueryResult> {
-        let mut span = self.tracer.start("db.query");
-        
-        span.set_attribute(opentelemetry::KeyValue::new("db.system", "postgresql"));
-        span.set_attribute(opentelemetry::KeyValue::new("db.statement", query));
-
-        let start = std::time::Instant::now();
-        let result = sqlx::query(query)
-            .execute(&self.pool)
-            .await;
-        let duration = start.elapsed();
-
-        span.set_attribute(opentelemetry::KeyValue::new("db.duration_ms", duration.as_millis() as i64));
-
-        match &result {
-            Ok(result) => {
-                span.set_attribute(opentelemetry::KeyValue::new("db.rows_affected", result.rows_affected() as i64));
-            }
-            Err(e) => {
-                span.record_error(e);
-                span.set_status(Status::error(e.to_string()));
-            }
-        }
-
-        span.end();
-        result.map_err(Into::into)
-    }
-
-    pub async fn fetch_all_traced<T>(&self, query: &str) -> Result<Vec<T>>
-    where
-        for<'r> T: sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
-    {
-        let mut span = self.tracer.start("db.query.fetch_all");
-        
-        span.set_attribute(opentelemetry::KeyValue::new("db.system", "postgresql"));
-        span.set_attribute(opentelemetry::KeyValue::new("db.statement", query));
-        span.set_attribute(opentelemetry::KeyValue::new("db.operation", "select"));
-
-        let result = sqlx::query_as::<_, T>(query)
-            .fetch_all(&self.pool)
-            .await;
-
-        if let Ok(ref rows) = result {
-            span.set_attribute(opentelemetry::KeyValue::new("db.rows_returned", rows.len() as i64));
-        }
-
-        span.end();
-        result.map_err(Into::into)
-    }
-}
-```
-
-### 7.2 连接池监控
-
-```rust
-use opentelemetry::metrics::{Meter, ObservableGauge};
-
-/// 数据库连接池指标监控
-pub struct PoolMetrics {
-    meter: Meter,
-}
-
-impl PoolMetrics {
-    pub fn new(pool: &PgPool) -> Self {
-        let meter = global::meter("database_pool");
-        
-        // 活跃连接数
-        let active_connections = meter
-            .u64_observable_gauge("db.pool.active_connections")
-            .with_description("Number of active database connections")
-            .init();
-
-        // 空闲连接数
-        let idle_connections = meter
-            .u64_observable_gauge("db.pool.idle_connections")
-            .with_description("Number of idle database connections")
-            .init();
-
-        // 注册回调
-        let pool_clone = pool.clone();
-        meter.register_callback(
-            &[active_connections.as_any(), idle_connections.as_any()],
-            move |observer| {
-                observer.observe_u64(&active_connections, pool_clone.size() as u64, &[]);
-                observer.observe_u64(&idle_connections, pool_clone.num_idle() as u64, &[]);
-            },
-        );
-
-        Self { meter }
-    }
-}
-```
-
-### 7.3 事务追踪
-
-```rust
-/// 带追踪的数据库事务
-pub async fn traced_transaction<F, T>(
-    pool: &PgPool,
-    tracer: &impl Tracer,
-    f: F,
-) -> Result<T>
-where
-    F: for<'c> FnOnce(&'c mut sqlx::Transaction<'_, sqlx::Postgres>) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + 'c>>,
-{
-    let mut span = tracer.start("db.transaction");
-    span.set_attribute(opentelemetry::KeyValue::new("db.system", "postgresql"));
-
-    let mut tx = pool.begin().await?;
-    
-    let result = f(&mut tx).await;
-
-    match result {
-        Ok(value) => {
-            tx.commit().await?;
-            span.set_attribute(opentelemetry::KeyValue::new("db.transaction.committed", true));
-            span.end();
-            Ok(value)
-        }
-        Err(e) => {
-            tx.rollback().await?;
-            span.set_attribute(opentelemetry::KeyValue::new("db.transaction.rolled_back", true));
-            span.record_error(&e);
-            span.end();
-            Err(e)
-        }
+    fn call(&mut self, req: Request) -> Self::Future {
+        let _span = self.tracer.start("service.call");
+        self.inner.call(req)
     }
 }
 ```
 
 ---
 
-## 8. 指标收集模式
+## 6. Metrics 模式
 
-### 8.1 请求计数器
+### 6.1 静态 Metrics 模式
+
+**问题**: 需要在应用启动时创建 Metrics。
+
+**解决方案**: 使用 `lazy_static` 或 `OnceCell`。
 
 ```rust
+use opentelemetry::global;
+use opentelemetry::metrics::{Counter, Histogram};
+use std::sync::OnceLock;
+
+static HTTP_REQUESTS: OnceLock<Counter<u64>> = OnceLock::new();
+static REQUEST_DURATION: OnceLock<Histogram<f64>> = OnceLock::new();
+
+pub fn init_metrics() {
+    let meter = global::meter("my-service");
+    
+    HTTP_REQUESTS.set(
+        meter
+            .u64_counter("http.requests")
+            .with_description("Total HTTP requests")
+            .init()
+    ).ok();
+    
+    REQUEST_DURATION.set(
+        meter
+            .f64_histogram("http.request.duration")
+            .with_description("HTTP request duration in seconds")
+            .with_unit("s")
+            .init()
+    ).ok();
+}
+
+pub fn record_request(method: &str, status: u16, duration: f64) {
+    if let Some(counter) = HTTP_REQUESTS.get() {
+        counter.add(1, &[
+            opentelemetry::KeyValue::new("http.method", method.to_string()),
+            opentelemetry::KeyValue::new("http.status_code", status as i64),
+        ]);
+    }
+    
+    if let Some(histogram) = REQUEST_DURATION.get() {
+        histogram.record(duration, &[
+            opentelemetry::KeyValue::new("http.method", method.to_string()),
+        ]);
+    }
+}
+```
+
+---
+
+### 6.2 动态 Metrics 模式
+
+**问题**: 需要在运行时动态创建 Metrics。
+
+**解决方案**: 使用 Metrics 工厂模式。
+
+```rust
+use opentelemetry::global;
 use opentelemetry::metrics::Counter;
+use std::collections::HashMap;
+use std::sync::Mutex;
 
-/// HTTP 请求计数器
-pub struct RequestMetrics {
-    request_count: Counter<u64>,
-    request_duration: opentelemetry::metrics::Histogram<f64>,
+pub struct MetricsFactory {
+    counters: Mutex<HashMap<String, Counter<u64>>>,
 }
 
-impl RequestMetrics {
+impl MetricsFactory {
     pub fn new() -> Self {
-        let meter = global::meter("http_server");
-
         Self {
-            request_count: meter
-                .u64_counter("http.server.requests")
-                .with_description("Total number of HTTP requests")
-                .init(),
-            
-            request_duration: meter
-                .f64_histogram("http.server.duration")
-                .with_description("HTTP request duration in milliseconds")
-                .with_unit("ms")
-                .init(),
+            counters: Mutex::new(HashMap::new()),
         }
     }
 
-    pub fn record_request(&self, method: &str, path: &str, status: u16, duration_ms: f64) {
-        use opentelemetry::KeyValue;
-
-        let attributes = &[
-            KeyValue::new("http.method", method.to_string()),
-            KeyValue::new("http.route", path.to_string()),
-            KeyValue::new("http.status_code", status as i64),
-        ];
-
-        self.request_count.add(1, attributes);
-        self.request_duration.record(duration_ms, attributes);
-    }
-}
-
-// 使用示例
-lazy_static::lazy_static! {
-    static ref METRICS: RequestMetrics = RequestMetrics::new();
-}
-
-pub async fn metrics_middleware(
-    request: Request,
-    next: Next,
-) -> Response {
-    let method = request.method().to_string();
-    let path = request.uri().path().to_string();
-
-    let start = std::time::Instant::now();
-    let response = next.run(request).await;
-    let duration = start.elapsed().as_secs_f64() * 1000.0;
-
-    METRICS.record_request(&method, &path, response.status().as_u16(), duration);
-
-    response
-}
-```
-
-### 8.2 延迟直方图
-
-```rust
-/// 操作延迟追踪
-pub struct LatencyTracker {
-    histogram: opentelemetry::metrics::Histogram<f64>,
-}
-
-impl LatencyTracker {
-    pub fn new(name: &str) -> Self {
-        let meter = global::meter("latency");
+    pub fn get_or_create_counter(&self, name: &str) -> Counter<u64> {
+        let mut counters = self.counters.lock().unwrap();
         
-        Self {
-            histogram: meter
-                .f64_histogram(name)
-                .with_description("Operation latency distribution")
-                .with_unit("ms")
-                .init(),
-        }
+        counters.entry(name.to_string())
+            .or_insert_with(|| {
+                let meter = global::meter("my-service");
+                meter.u64_counter(name).init()
+            })
+            .clone()
     }
 
-    pub fn record<F, T>(&self, operation: &str, f: F) -> T
-    where
-        F: FnOnce() -> T,
-    {
-        let start = std::time::Instant::now();
-        let result = f();
-        let duration = start.elapsed().as_secs_f64() * 1000.0;
-
-        self.histogram.record(
-            duration,
-            &[opentelemetry::KeyValue::new("operation", operation.to_string())],
-        );
-
-        result
-    }
-
-    pub async fn record_async<F, Fut, T>(&self, operation: &str, f: F) -> T
-    where
-        F: FnOnce() -> Fut,
-        Fut: std::future::Future<Output = T>,
-    {
-        let start = std::time::Instant::now();
-        let result = f().await;
-        let duration = start.elapsed().as_secs_f64() * 1000.0;
-
-        self.histogram.record(
-            duration,
-            &[opentelemetry::KeyValue::new("operation", operation.to_string())],
-        );
-
-        result
+    pub fn increment(&self, name: &str, attributes: &[opentelemetry::KeyValue]) {
+        let counter = self.get_or_create_counter(name);
+        counter.add(1, attributes);
     }
 }
-```
 
-### 8.3 业务指标
-
-```rust
-/// 业务指标收集器
-pub struct BusinessMetrics {
-    orders_completed: Counter<u64>,
-    revenue: Counter<f64>,
-    active_users: opentelemetry::metrics::UpDownCounter<i64>,
+// 使用
+lazy_static::lazy_static! {
+    static ref METRICS: MetricsFactory = MetricsFactory::new();
 }
 
-impl BusinessMetrics {
-    pub fn new() -> Self {
-        let meter = global::meter("business");
-
-        Self {
-            orders_completed: meter
-                .u64_counter("orders.completed")
-                .with_description("Total number of completed orders")
-                .init(),
-            
-            revenue: meter
-                .f64_counter("revenue.total")
-                .with_description("Total revenue in USD")
-                .with_unit("USD")
-                .init(),
-            
-            active_users: meter
-                .i64_up_down_counter("users.active")
-                .with_description("Number of currently active users")
-                .init(),
-        }
-    }
-
-    pub fn record_order(&self, amount: f64, category: &str) {
-        let attributes = &[
-            opentelemetry::KeyValue::new("order.category", category.to_string()),
-        ];
-
-        self.orders_completed.add(1, attributes);
-        self.revenue.add(amount, attributes);
-    }
-
-    pub fn user_login(&self) {
-        self.active_users.add(1, &[]);
-    }
-
-    pub fn user_logout(&self) {
-        self.active_users.add(-1, &[]);
-    }
+fn track_event(event_type: &str) {
+    METRICS.increment(
+        &format!("events.{}", event_type),
+        &[opentelemetry::KeyValue::new("type", event_type.to_string())]
+    );
 }
 ```
 
 ---
 
-## 9. 采样策略模式
+### 6.3 Histogram 桶配置模式
 
-### 9.1 基于路径的采样
+**问题**: 需要为 Histogram 配置合适的桶边界。
+
+**解决方案**: 使用预定义的桶配置策略。
 
 ```rust
-use opentelemetry::sdk::trace::{Sampler, SamplingDecision, SamplingResult};
+use opentelemetry::global;
+use opentelemetry::metrics::Histogram;
 
-/// 基于 HTTP 路径的采样器
-pub struct PathBasedSampler {
-    health_check_sampler: Box<dyn Sampler>,
-    default_sampler: Box<dyn Sampler>,
+pub enum BucketStrategy {
+    Latency,      // ms: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+    DataSize,     // bytes: [1024, 4096, 16384, 65536, 262144, 1048576, 4194304]
+    Custom(Vec<f64>),
 }
 
-impl PathBasedSampler {
-    pub fn new() -> Self {
-        Self {
-            health_check_sampler: Box::new(Sampler::TraceIdRatioBased(0.01)), // 1% 采样
-            default_sampler: Box::new(Sampler::TraceIdRatioBased(0.1)),       // 10% 采样
+impl BucketStrategy {
+    pub fn boundaries(&self) -> Vec<f64> {
+        match self {
+            BucketStrategy::Latency => vec![
+                5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 
+                1000.0, 2500.0, 5000.0, 10000.0
+            ],
+            BucketStrategy::DataSize => vec![
+                1024.0, 4096.0, 16384.0, 65536.0, 262144.0, 
+                1048576.0, 4194304.0
+            ],
+            BucketStrategy::Custom(boundaries) => boundaries.clone(),
         }
     }
 }
 
-impl Sampler for PathBasedSampler {
-    fn should_sample(
-        &self,
-        parent_context: Option<&opentelemetry::trace::SpanContext>,
-        trace_id: opentelemetry::trace::TraceId,
-        name: &str,
-        span_kind: &opentelemetry::trace::SpanKind,
-        attributes: &opentelemetry::OrderMap<opentelemetry::Key, opentelemetry::Value>,
-        links: &[opentelemetry::trace::Link],
-    ) -> SamplingResult {
-        // 检查是否为健康检查路径
-        if name.contains("/health") || name.contains("/readiness") {
-            self.health_check_sampler.should_sample(
-                parent_context,
-                trace_id,
-                name,
-                span_kind,
-                attributes,
-                links,
-            )
-        } else {
-            self.default_sampler.should_sample(
-                parent_context,
-                trace_id,
-                name,
-                span_kind,
-                attributes,
-                links,
-            )
-        }
-    }
+pub fn create_histogram(
+    name: &str,
+    strategy: BucketStrategy,
+) -> Histogram<f64> {
+    let meter = global::meter("my-service");
+    
+    // Note: OpenTelemetry Rust SDK 0.31.0 doesn't support custom boundaries yet
+    // This is a conceptual example
+    meter
+        .f64_histogram(name)
+        .with_description("Custom histogram")
+        .init()
+}
+
+// 使用
+fn track_latency() {
+    let histogram = create_histogram("http.latency", BucketStrategy::Latency);
+    
+    let start = std::time::Instant::now();
+    // 执行操作
+    let duration = start.elapsed().as_millis() as f64;
+    
+    histogram.record(duration, &[]);
 }
 ```
 
-### 9.2 错误优先采样
+---
+
+## 7. 批处理与性能优化模式
+
+### 7.1 批量导出模式
+
+**问题**: 需要批量导出 Span 以提高性能。
+
+**解决方案**: 配置 BatchSpanProcessor。
 
 ```rust
-/// 错误优先采样器 (所有错误都采样)
-pub struct ErrorPrioritySampler {
-    base_sampler: Box<dyn Sampler>,
-}
+use opentelemetry_sdk::trace::{BatchConfig, BatchSpanProcessor};
+use opentelemetry_sdk::runtime::Tokio;
+use std::time::Duration;
 
-impl ErrorPrioritySampler {
-    pub fn new(base_ratio: f64) -> Self {
-        Self {
-            base_sampler: Box::new(Sampler::TraceIdRatioBased(base_ratio)),
-        }
-    }
-}
-
-impl Sampler for ErrorPrioritySampler {
-    fn should_sample(
-        &self,
-        parent_context: Option<&opentelemetry::trace::SpanContext>,
-        trace_id: opentelemetry::trace::TraceId,
-        name: &str,
-        span_kind: &opentelemetry::trace::SpanKind,
-        attributes: &opentelemetry::OrderMap<opentelemetry::Key, opentelemetry::Value>,
-        links: &[opentelemetry::trace::Link],
-    ) -> SamplingResult {
-        // 检查是否包含错误属性
-        let has_error = attributes.iter().any(|(k, v)| {
-            k.as_str() == "error" || k.as_str().contains("error")
-        });
-
-        if has_error {
-            // 所有错误都采样
-            SamplingResult {
-                decision: SamplingDecision::RecordAndSample,
-                attributes: vec![],
-                trace_state: opentelemetry::trace::TraceState::default(),
-            }
-        } else {
-            self.base_sampler.should_sample(
-                parent_context,
-                trace_id,
-                name,
-                span_kind,
-                attributes,
-                links,
-            )
-        }
-    }
+pub fn create_batch_exporter() -> Result<(), Box<dyn std::error::Error>> {
+    let exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint("http://localhost:4317")
+        .build_span_exporter()?;
+    
+    let batch_config = BatchConfig::default()
+        .with_max_queue_size(2048)
+        .with_max_export_batch_size(512)
+        .with_scheduled_delay(Duration::from_millis(5000))
+        .with_max_export_timeout(Duration::from_secs(30));
+    
+    let processor = BatchSpanProcessor::builder(exporter, Tokio)
+        .with_batch_config(batch_config)
+        .build();
+    
+    let provider = opentelemetry_sdk::trace::TracerProvider::builder()
+        .with_span_processor(processor)
+        .build();
+    
+    opentelemetry::global::set_tracer_provider(provider);
+    
+    Ok(())
 }
 ```
 
-### 9.3 自适应采样
+---
+
+### 7.2 采样策略模式
+
+**问题**: 需要根据不同条件采样 Span。
+
+**解决方案**: 实现自定义 Sampler。
 
 ```rust
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use opentelemetry_sdk::trace::{Sampler, SamplingDecision, SamplingResult};
+use opentelemetry::trace::{TraceContextExt, SpanKind, TraceId, Link};
+use opentelemetry::Context;
 
-/// 自适应采样器 (基于系统负载)
 pub struct AdaptiveSampler {
-    request_count: Arc<AtomicU64>,
-    sample_rate: Arc<AtomicU64>, // 存储为 0-10000 的整数 (0.0001 精度)
+    default_rate: f64,
+    error_rate: f64,
 }
 
 impl AdaptiveSampler {
-    pub fn new() -> Self {
+    pub fn new(default_rate: f64) -> Self {
         Self {
-            request_count: Arc::new(AtomicU64::new(0)),
-            sample_rate: Arc::new(AtomicU64::new(1000)), // 初始 10% (1000/10000)
+            default_rate,
+            error_rate: 1.0, // 总是采样错误
         }
-    }
-
-    /// 根据负载调整采样率
-    pub fn adjust_sample_rate(&self) {
-        let count = self.request_count.load(Ordering::Relaxed);
-        
-        let new_rate = if count > 10000 {
-            100 // 高负载: 1%
-        } else if count > 5000 {
-            500 // 中负载: 5%
-        } else if count > 1000 {
-            1000 // 正常: 10%
-        } else {
-            5000 // 低负载: 50%
-        };
-
-        self.sample_rate.store(new_rate, Ordering::Relaxed);
-        self.request_count.store(0, Ordering::Relaxed);
-    }
-
-    fn get_current_ratio(&self) -> f64 {
-        self.sample_rate.load(Ordering::Relaxed) as f64 / 10000.0
     }
 }
 
 impl Sampler for AdaptiveSampler {
     fn should_sample(
         &self,
-        parent_context: Option<&opentelemetry::trace::SpanContext>,
-        trace_id: opentelemetry::trace::TraceId,
+        parent_context: Option<&Context>,
+        trace_id: TraceId,
         name: &str,
-        span_kind: &opentelemetry::trace::SpanKind,
-        attributes: &opentelemetry::OrderMap<opentelemetry::Key, opentelemetry::Value>,
-        links: &[opentelemetry::trace::Link],
+        span_kind: &SpanKind,
+        attributes: &[opentelemetry::KeyValue],
+        links: &[Link],
     ) -> SamplingResult {
-        self.request_count.fetch_add(1, Ordering::Relaxed);
-
-        let ratio = self.get_current_ratio();
-        let sampler = Sampler::TraceIdRatioBased(ratio);
+        // 检查是否是错误相关的 Span
+        let is_error = attributes.iter().any(|kv| {
+            kv.key.as_str() == "error" && kv.value.as_str() == "true"
+        });
         
-        sampler.should_sample(parent_context, trace_id, name, span_kind, attributes, links)
+        let sampling_rate = if is_error {
+            self.error_rate
+        } else {
+            self.default_rate
+        };
+        
+        let decision = if sampling_rate >= 1.0 {
+            SamplingDecision::RecordAndSample
+        } else if sampling_rate <= 0.0 {
+            SamplingDecision::Drop
+        } else {
+            // 基于 trace_id 的确定性采样
+            let threshold = (sampling_rate * u64::MAX as f64) as u64;
+            let trace_id_bytes = trace_id.to_bytes();
+            let trace_id_u64 = u64::from_be_bytes([
+                trace_id_bytes[0], trace_id_bytes[1], trace_id_bytes[2], trace_id_bytes[3],
+                trace_id_bytes[4], trace_id_bytes[5], trace_id_bytes[6], trace_id_bytes[7],
+            ]);
+            
+            if trace_id_u64 < threshold {
+                SamplingDecision::RecordAndSample
+            } else {
+                SamplingDecision::Drop
+            }
+        };
+        
+        SamplingResult {
+            decision,
+            attributes: vec![],
+            trace_state: None,
+        }
     }
+}
+
+// 使用
+fn setup_adaptive_sampling() {
+    let sampler = AdaptiveSampler::new(0.1); // 10% 默认采样率
+    
+    let provider = opentelemetry_sdk::trace::TracerProvider::builder()
+        .with_config(
+            opentelemetry_sdk::trace::Config::default()
+                .with_sampler(sampler)
+        )
+        .build();
+    
+    opentelemetry::global::set_tracer_provider(provider);
 }
 ```
 
 ---
 
-## 10. 测试模式
+### 7.3 属性缓存模式
 
-### 10.1 单元测试追踪
+**问题**: 需要优化重复属性的创建开销。
+
+**解决方案**: 使用静态属性缓存。
 
 ```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
+use opentelemetry::KeyValue;
+use std::sync::OnceLock;
 
-    /// 测试专用的追踪初始化
-    fn init_test_tracer() -> TracerProvider {
-        opentelemetry_sdk::trace::TracerProvider::builder()
-            .with_simple_exporter(opentelemetry_stdout::SpanExporter::default())
-            .build()
+pub struct AttributeCache {
+    method_get: OnceLock<KeyValue>,
+    method_post: OnceLock<KeyValue>,
+    status_200: OnceLock<KeyValue>,
+    status_404: OnceLock<KeyValue>,
+    status_500: OnceLock<KeyValue>,
+}
+
+impl AttributeCache {
+    const fn new() -> Self {
+        Self {
+            method_get: OnceLock::new(),
+            method_post: OnceLock::new(),
+            status_200: OnceLock::new(),
+            status_404: OnceLock::new(),
+            status_500: OnceLock::new(),
+        }
     }
 
-    #[tokio::test]
-    async fn test_traced_operation() {
-        let provider = init_test_tracer();
-        let tracer = provider.tracer("test");
-
-        let mut span = tracer.start("test_operation");
-        span.set_attribute(opentelemetry::KeyValue::new("test.name", "example"));
-
-        // 测试逻辑
-        assert!(true);
-
-        span.end();
-        provider.shutdown().unwrap();
+    pub fn method_get(&self) -> &KeyValue {
+        self.method_get.get_or_init(|| {
+            KeyValue::new("http.method", "GET")
+        })
     }
+
+    pub fn method_post(&self) -> &KeyValue {
+        self.method_post.get_or_init(|| {
+            KeyValue::new("http.method", "POST")
+        })
+    }
+
+    pub fn status_code(&self, code: u16) -> KeyValue {
+        match code {
+            200 => self.status_200.get_or_init(|| {
+                KeyValue::new("http.status_code", 200)
+            }).clone(),
+            404 => self.status_404.get_or_init(|| {
+                KeyValue::new("http.status_code", 404)
+            }).clone(),
+            500 => self.status_500.get_or_init(|| {
+                KeyValue::new("http.status_code", 500)
+            }).clone(),
+            _ => KeyValue::new("http.status_code", code as i64),
+        }
+    }
+}
+
+static ATTRIBUTES: AttributeCache = AttributeCache::new();
+
+// 使用
+fn record_http_metrics(method: &str, status: u16) {
+    let attrs = vec![
+        match method {
+            "GET" => ATTRIBUTES.method_get().clone(),
+            "POST" => ATTRIBUTES.method_post().clone(),
+            _ => KeyValue::new("http.method", method.to_string()),
+        },
+        ATTRIBUTES.status_code(status),
+    ];
+    
+    // 使用 attrs...
 }
 ```
 
-### 10.2 集成测试验证
+---
+
+## 8. 测试模式
+
+### 8.1 Mock Exporter 模式
+
+**问题**: 需要在测试中验证 telemetry 数据。
+
+**解决方案**: 实现内存 Exporter。
 
 ```rust
-#[cfg(test)]
-mod integration_tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_full_trace_pipeline() {
-        // 使用内存导出器
-        let (tracer_provider, spans) = create_test_tracer_provider();
-        global::set_tracer_provider(tracer_provider);
-
-        let tracer = global::tracer("integration-test");
-        let mut span = tracer.start("test_span");
-        span.set_attribute(opentelemetry::KeyValue::new("test.type", "integration"));
-        span.end();
-
-        // 验证 span 被正确记录
-        let exported_spans = spans.lock().unwrap();
-        assert_eq!(exported_spans.len(), 1);
-        assert_eq!(exported_spans[0].name, "test_span");
-    }
-
-    fn create_test_tracer_provider() -> (TracerProvider, Arc<Mutex<Vec<SpanData>>>) {
-        // 实现测试用的 tracer provider
-        unimplemented!()
-    }
-}
-```
-
-### 10.3 Mock Exporter
-
-```rust
+use opentelemetry_sdk::export::trace::{SpanData, SpanExporter};
 use std::sync::{Arc, Mutex};
 
-/// Mock Span 导出器 (用于测试)
 #[derive(Clone)]
-pub struct MockExporter {
-    spans: Arc<Mutex<Vec<opentelemetry_sdk::export::trace::SpanData>>>,
+pub struct InMemoryExporter {
+    spans: Arc<Mutex<Vec<SpanData>>>,
 }
 
-impl MockExporter {
+impl InMemoryExporter {
     pub fn new() -> Self {
         Self {
             spans: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
-    pub fn get_spans(&self) -> Vec<opentelemetry_sdk::export::trace::SpanData> {
+    pub fn get_spans(&self) -> Vec<SpanData> {
         self.spans.lock().unwrap().clone()
     }
 
@@ -1540,217 +1284,587 @@ impl MockExporter {
 }
 
 #[async_trait::async_trait]
-impl opentelemetry_sdk::export::trace::SpanExporter for MockExporter {
-    async fn export(
-        &mut self,
-        batch: Vec<opentelemetry_sdk::export::trace::SpanData>,
-    ) -> opentelemetry::trace::TraceResult<()> {
+impl SpanExporter for InMemoryExporter {
+    async fn export(&mut self, batch: Vec<SpanData>) -> opentelemetry_sdk::export::trace::ExportResult {
         self.spans.lock().unwrap().extend(batch);
         Ok(())
     }
 }
+
+// 使用在测试中
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_span_creation() {
+        let exporter = InMemoryExporter::new();
+        
+        let provider = opentelemetry_sdk::trace::TracerProvider::builder()
+            .with_simple_exporter(exporter.clone())
+            .build();
+        
+        let tracer = provider.tracer("test");
+        
+        let span = tracer.start("test_span");
+        drop(span);
+        
+        provider.force_flush();
+        
+        let spans = exporter.get_spans();
+        assert_eq!(spans.len(), 1);
+        assert_eq!(spans[0].name, "test_span");
+    }
+}
 ```
 
 ---
 
-## 11. 性能优化模式
+### 8.2 测试断言模式
 
-### 11.1 批量导出
+**问题**: 需要验证 Span 的属性和状态。
+
+**解决方案**: 创建测试辅助函数。
 
 ```rust
-use opentelemetry_sdk::trace::BatchConfig;
+use opentelemetry_sdk::export::trace::SpanData;
+use opentelemetry::trace::Status;
 
-/// 优化的批量配置
-pub fn create_optimized_tracer_provider() -> Result<TracerProvider> {
-    opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint("http://localhost:4317")
-        )
-        .with_batch_config(
-            BatchConfig::default()
-                .with_max_queue_size(4096)        // 增大队列
-                .with_max_export_batch_size(512)   // 增大批次
-                .with_scheduled_delay(std::time::Duration::from_millis(5000)) // 5秒导出一次
-        )
-        .install_batch(opentelemetry_sdk::runtime::Tokio)
+pub struct SpanAsserter<'a> {
+    span: &'a SpanData,
+}
+
+impl<'a> SpanAsserter<'a> {
+    pub fn new(span: &'a SpanData) -> Self {
+        Self { span }
+    }
+
+    pub fn has_name(self, name: &str) -> Self {
+        assert_eq!(self.span.name, name, "Span name mismatch");
+        self
+    }
+
+    pub fn has_attribute(self, key: &str, value: &str) -> Self {
+        let found = self.span.attributes.iter()
+            .any(|kv| kv.key.as_str() == key && kv.value.as_str() == value);
+        assert!(found, "Attribute {}={} not found", key, value);
+        self
+    }
+
+    pub fn has_status(self, status: Status) -> Self {
+        assert_eq!(self.span.status, status, "Status mismatch");
+        self
+    }
+
+    pub fn has_error(self) -> Self {
+        assert!(matches!(self.span.status, Status::Error { .. }), "Span is not in error state");
+        self
+    }
+}
+
+// 使用
+#[tokio::test]
+async fn test_error_tracking() {
+    let exporter = InMemoryExporter::new();
+    // ... setup ...
+    
+    let spans = exporter.get_spans();
+    SpanAsserter::new(&spans[0])
+        .has_name("failing_operation")
+        .has_attribute("error", "true")
+        .has_error();
 }
 ```
 
-### 11.2 异步属性计算
+---
+
+### 8.3 集成测试模式
+
+**问题**: 需要测试与实际 OTLP Collector 的集成。
+
+**解决方案**: 使用 testcontainers。
 
 ```rust
-/// 延迟计算的 Span 属性
-pub struct LazyAttribute<F>
+#[cfg(test)]
+mod integration_tests {
+    use testcontainers::{clients, images::generic::GenericImage, Container};
+    use std::time::Duration;
+
+    async fn start_jaeger() -> Container<'static, GenericImage> {
+        let docker = clients::Cli::default();
+        
+        docker.run(
+            GenericImage::new("jaegertracing/all-in-one", "latest")
+                .with_exposed_port(4317)
+                .with_exposed_port(16686)
+                .with_env_var("COLLECTOR_OTLP_ENABLED", "true")
+        )
+    }
+
+    #[tokio::test]
+    async fn test_otlp_export() {
+        let container = start_jaeger().await;
+        let port = container.get_host_port_ipv4(4317);
+        
+        // 配置 exporter
+        let tracer = opentelemetry_otlp::new_pipeline()
+            .tracing()
+            .with_exporter(
+                opentelemetry_otlp::new_exporter()
+                    .tonic()
+                    .with_endpoint(format!("http://localhost:{}", port))
+            )
+            .install_batch(opentelemetry_sdk::runtime::Tokio)
+            .unwrap();
+        
+        opentelemetry::global::set_tracer_provider(tracer);
+        
+        // 创建 span
+        let tracer = opentelemetry::global::tracer("test");
+        let span = tracer.start("integration_test");
+        drop(span);
+        
+        // 等待导出
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        
+        // 验证 span 已导出（通过 Jaeger API）
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://localhost:{}/api/traces?service=test", 
+                container.get_host_port_ipv4(16686)))
+            .send()
+            .await
+            .unwrap();
+        
+        assert!(response.status().is_success());
+    }
+}
+```
+
+---
+
+## 9. 生产部署模式
+
+### 9.1 优雅关闭模式
+
+**问题**: 需要确保在关闭时导出所有未完成的 Span。
+
+**解决方案**: 实现优雅关闭逻辑。
+
+```rust
+use opentelemetry::global;
+use tokio::signal;
+use std::time::Duration;
+
+pub async fn run_with_graceful_shutdown<F, Fut>(
+    app: F
+) -> Result<(), Box<dyn std::error::Error>>
 where
-    F: FnOnce() -> String,
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
-    compute: Option<F>,
+    // 设置 CTRL+C 处理
+    let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel(1);
+    
+    tokio::spawn(async move {
+        signal::ctrl_c().await.expect("Failed to listen for CTRL+C");
+        shutdown_tx.send(()).await.ok();
+    });
+    
+    // 运行应用
+    let app_handle = tokio::spawn(app());
+    
+    // 等待关闭信号
+    tokio::select! {
+        _ = shutdown_rx.recv() => {
+            println!("Received shutdown signal");
+        }
+        result = app_handle => {
+            return result?;
+        }
+    }
+    
+    // 优雅关闭 telemetry
+    println!("Flushing telemetry data...");
+    
+    // 强制刷新所有 provider
+    global::shutdown_tracer_provider();
+    
+    // 等待一段时间确保数据导出
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    
+    println!("Shutdown complete");
+    Ok(())
 }
 
-impl<F> LazyAttribute<F>
-where
-    F: FnOnce() -> String,
-{
-    pub fn new(compute: F) -> Self {
+// 使用
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    init_telemetry()?;
+    
+    run_with_graceful_shutdown(|| async {
+        // 应用逻辑
+        run_server().await
+    }).await
+}
+```
+
+---
+
+### 9.2 健康检查模式
+
+**问题**: 需要监控 telemetry 系统的健康状态。
+
+**解决方案**: 实现健康检查端点。
+
+```rust
+use axum::{Router, routing::get, Json};
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct HealthStatus {
+    pub telemetry: TelemetryHealth,
+}
+
+#[derive(Serialize)]
+pub struct TelemetryHealth {
+    pub tracing: bool,
+    pub metrics: bool,
+    pub last_export: Option<String>,
+}
+
+pub async fn health_check() -> Json<HealthStatus> {
+    // 检查 tracer 是否可用
+    let tracing_healthy = !opentelemetry::global::tracer("health-check")
+        .start("test")
+        .span_context()
+        .is_valid();
+    
+    // 检查 metrics 是否可用
+    let metrics_healthy = {
+        let meter = opentelemetry::global::meter("health-check");
+        let counter = meter.u64_counter("test").init();
+        counter.add(1, &[]);
+        true
+    };
+    
+    Json(HealthStatus {
+        telemetry: TelemetryHealth {
+            tracing: tracing_healthy,
+            metrics: metrics_healthy,
+            last_export: Some(chrono::Utc::now().to_rfc3339()),
+        },
+    })
+}
+
+// 使用
+fn app() -> Router {
+    Router::new()
+        .route("/health", get(health_check))
+}
+```
+
+---
+
+### 9.3 配置热重载模式
+
+**问题**: 需要在不重启应用的情况下更改配置。
+
+**解决方案**: 使用配置监听器。
+
+```rust
+use tokio::sync::RwLock;
+use std::sync::Arc;
+
+pub struct TelemetryConfig {
+    pub sample_rate: f64,
+    pub enabled: bool,
+}
+
+pub struct ConfigurableTracer {
+    config: Arc<RwLock<TelemetryConfig>>,
+}
+
+impl ConfigurableTracer {
+    pub fn new(config: TelemetryConfig) -> Self {
         Self {
-            compute: Some(compute),
+            config: Arc::new(RwLock::new(config)),
         }
     }
 
-    pub fn get(&mut self) -> String {
-        self.compute
-            .take()
-            .map(|f| f())
-            .unwrap_or_default()
+    pub async fn should_trace(&self) -> bool {
+        let config = self.config.read().await;
+        config.enabled && rand::random::<f64>() < config.sample_rate
+    }
+
+    pub async fn update_config(&self, new_config: TelemetryConfig) {
+        let mut config = self.config.write().await;
+        *config = new_config;
+        println!("Telemetry config updated");
     }
 }
 
-// 使用示例
-fn create_span_with_lazy_attrs(tracer: &impl Tracer) {
-    let mut span = tracer.start("operation");
-
-    // 只在需要时计算昂贵的属性
-    let mut lazy_attr = LazyAttribute::new(|| {
-        // 昂贵的计算
-        format!("computed_value_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs())
-    });
-
-    if should_add_expensive_attribute() {
-        span.set_attribute(opentelemetry::KeyValue::new("lazy.value", lazy_attr.get()));
-    }
-
-    span.end();
+// 使用
+lazy_static::lazy_static! {
+    static ref TRACER_CONFIG: ConfigurableTracer = ConfigurableTracer::new(
+        TelemetryConfig {
+            sample_rate: 1.0,
+            enabled: true,
+        }
+    );
 }
 
-fn should_add_expensive_attribute() -> bool {
-    true
+#[instrument(skip_all)]
+async fn handle_request() -> Result<(), Error> {
+    if !TRACER_CONFIG.should_trace().await {
+        return Ok(()); // 跳过追踪
+    }
+    
+    // 正常追踪逻辑
+    Ok(())
 }
 ```
 
-### 11.3 零成本抽象
+---
+
+## 10. 高级模式
+
+### 10.1 自定义 Processor 模式
+
+**问题**: 需要在导出前修改或过滤 Span。
+
+**解决方案**: 实现自定义 SpanProcessor。
 
 ```rust
-/// 零成本的条件追踪
-#[inline(always)]
-pub fn maybe_trace<F, T>(enabled: bool, tracer: &impl Tracer, name: &str, f: F) -> T
-where
-    F: FnOnce() -> T,
-{
-    if enabled {
-        let mut span = tracer.start(name);
-        let result = f();
-        span.end();
-        result
-    } else {
-        f()
+use opentelemetry_sdk::export::trace::SpanData;
+use opentelemetry_sdk::trace::{SpanProcessor, Context};
+use opentelemetry::trace::Span;
+
+pub struct FilteringProcessor<P> {
+    inner: P,
+    filter: Box<dyn Fn(&SpanData) -> bool + Send + Sync>,
+}
+
+impl<P: SpanProcessor> FilteringProcessor<P> {
+    pub fn new<F>(inner: P, filter: F) -> Self
+    where
+        F: Fn(&SpanData) -> bool + Send + Sync + 'static,
+    {
+        Self {
+            inner,
+            filter: Box::new(filter),
+        }
     }
 }
 
-// 编译时优化
-#[cfg(feature = "tracing-enabled")]
-#[inline(always)]
-pub fn trace_if_enabled<F, T>(tracer: &impl Tracer, name: &str, f: F) -> T
-where
-    F: FnOnce() -> T,
-{
-    let mut span = tracer.start(name);
-    let result = f();
-    span.end();
-    result
+impl<P: SpanProcessor> SpanProcessor for FilteringProcessor<P> {
+    fn on_start(&self, span: &mut opentelemetry_sdk::trace::Span, cx: &Context) {
+        self.inner.on_start(span, cx);
+    }
+
+    fn on_end(&self, span: SpanData) {
+        if (self.filter)(&span) {
+            self.inner.on_end(span);
+        }
+    }
+
+    fn force_flush(&self) -> opentelemetry::trace::TraceResult<()> {
+        self.inner.force_flush()
+    }
+
+    fn shutdown(&mut self) -> opentelemetry::trace::TraceResult<()> {
+        self.inner.shutdown()
+    }
 }
 
-#[cfg(not(feature = "tracing-enabled"))]
-#[inline(always)]
-pub fn trace_if_enabled<F, T>(_tracer: &impl Tracer, _name: &str, f: F) -> T
-where
-    F: FnOnce() -> T,
-{
-    f()
+// 使用
+fn setup_filtered_tracing() {
+    let exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .build_span_exporter()
+        .unwrap();
+    
+    let batch_processor = opentelemetry_sdk::trace::BatchSpanProcessor::builder(
+        exporter,
+        opentelemetry_sdk::runtime::Tokio
+    ).build();
+    
+    // 只导出持续时间超过 100ms 的 Span
+    let filtering_processor = FilteringProcessor::new(
+        batch_processor,
+        |span| {
+            let duration = span.end_time - span.start_time;
+            duration.as_millis() > 100
+        }
+    );
+    
+    let provider = opentelemetry_sdk::trace::TracerProvider::builder()
+        .with_span_processor(filtering_processor)
+        .build();
+    
+    opentelemetry::global::set_tracer_provider(provider);
 }
 ```
 
 ---
 
-## 12. 最佳实践清单
+### 10.2 多后端导出模式
 
-### ✅ 初始化
+**问题**: 需要同时导出到多个后端。
 
-- [ ] 在应用启动时初始化全局追踪
-- [ ] 配置合适的采样率
-- [ ] 设置有意义的服务名称和版本
-- [ ] 在应用关闭时正确 shutdown
+**解决方案**: 使用多个 Processor。
 
-### ✅ Span 管理
+```rust
+use opentelemetry_sdk::trace::TracerProvider;
 
-- [ ] 为每个重要操作创建 Span
-- [ ] 使用有意义的 Span 名称
-- [ ] 正确设置 SpanKind
-- [ ] 添加相关的属性和标签
-- [ ] 确保 Span 总是被结束
-
-### ✅ 上下文传播
-
-- [ ] 在异步操作中正确传播上下文
-- [ ] 使用标准的 W3C Trace Context
-- [ ] 在跨服务调用时注入/提取上下文
-
-### ✅ 错误处理
-
-- [ ] 记录所有错误到 Span
-- [ ] 设置正确的 Status
-- [ ] 添加错误类型和详细信息
-
-### ✅ 性能优化
-
-- [ ] 使用批量导出
-- [ ] 避免在热路径上的昂贵操作
-- [ ] 合理的采样策略
-- [ ] 使用 feature flags 控制追踪开销
-
-### ✅ 指标收集
-
-- [ ] 收集关键业务指标
-- [ ] 使用合适的指标类型
-- [ ] 添加有用的标签维度
-- [ ] 定期清理不再使用的指标
-
----
-
-## 总结
-
-本文档提供了 **Rust OTLP 集成的常见模式和最佳实践**，涵盖:
-
-### ✅ 核心模式
-
-1. **初始化模式**: 全局单例、延迟初始化、多环境配置
-2. **上下文传播**: 异步函数、跨线程、HTTP 服务器
-3. **Span 管理**: RAII、嵌套 Span、条件创建
-4. **错误处理**: Result 集成、自定义错误、Panic 捕获
-
-### ✅ 高级模式
-
-- **异步编程**: Tokio Task、Stream、并发任务
-- **中间件集成**: Axum、Tower、gRPC
-- **数据库追踪**: SQLx、连接池、事务
-- **指标收集**: Counter、Histogram、业务指标
-
-### ✅ 生产实践
-
-- **采样策略**: 基于路径、错误优先、自适应
-- **测试支持**: 单元测试、集成测试、Mock Exporter
-- **性能优化**: 批量导出、延迟计算、零成本抽象
-- **最佳实践清单**: 完整的检查项
+pub fn setup_multi_backend() -> Result<(), Box<dyn std::error::Error>> {
+    // OTLP Exporter
+    let otlp_exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint("http://localhost:4317")
+        .build_span_exporter()?;
+    
+    let otlp_processor = opentelemetry_sdk::trace::BatchSpanProcessor::builder(
+        otlp_exporter,
+        opentelemetry_sdk::runtime::Tokio
+    ).build();
+    
+    // Jaeger Exporter
+    let jaeger_exporter = opentelemetry_jaeger::new_agent_pipeline()
+        .with_service_name("my-service")
+        .build_sync_agent_exporter()?;
+    
+    let jaeger_processor = opentelemetry_sdk::trace::BatchSpanProcessor::builder(
+        jaeger_exporter,
+        opentelemetry_sdk::runtime::Tokio
+    ).build();
+    
+    // 组合多个 processor
+    let provider = TracerProvider::builder()
+        .with_span_processor(otlp_processor)
+        .with_span_processor(jaeger_processor)
+        .build();
+    
+    opentelemetry::global::set_tracer_provider(provider);
+    
+    Ok(())
+}
+```
 
 ---
 
-**文档行数**: ~1,400 行  
-**代码示例**: 40+ 个实用模式  
-**Rust 版本**: 1.90+  
-**OpenTelemetry**: 0.31.0
+### 10.3 动态采样模式
+
+**问题**: 需要根据系统负载动态调整采样率。
+
+**解决方案**: 实现自适应采样器。
+
+```rust
+use opentelemetry_sdk::trace::{Sampler, SamplingDecision, SamplingResult};
+use opentelemetry::trace::{TraceId, SpanKind, Link};
+use opentelemetry::Context;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+
+pub struct AdaptiveRateSampler {
+    current_rate: Arc<AtomicU64>,
+    request_count: Arc<AtomicU64>,
+    max_requests_per_second: u64,
+}
+
+impl AdaptiveRateSampler {
+    pub fn new(max_requests_per_second: u64) -> Self {
+        let sampler = Self {
+            current_rate: Arc::new(AtomicU64::new(f64::to_bits(1.0))),
+            request_count: Arc::new(AtomicU64::new(0)),
+            max_requests_per_second,
+        };
+        
+        // 启动后台任务调整采样率
+        let current_rate = sampler.current_rate.clone();
+        let request_count = sampler.request_count.clone();
+        let max_rps = max_requests_per_second;
+        
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+            loop {
+                interval.tick().await;
+                
+                let count = request_count.swap(0, Ordering::Relaxed);
+                
+                // 根据实际请求量调整采样率
+                let new_rate = if count > max_rps {
+                    (max_rps as f64 / count as f64).min(1.0)
+                } else {
+                    1.0
+                };
+                
+                current_rate.store(f64::to_bits(new_rate), Ordering::Relaxed);
+                
+                println!("Adaptive sampling: rate={:.2}, rps={}", new_rate, count);
+            }
+        });
+        
+        sampler
+    }
+    
+    fn get_current_rate(&self) -> f64 {
+        f64::from_bits(self.current_rate.load(Ordering::Relaxed))
+    }
+}
+
+impl Sampler for AdaptiveRateSampler {
+    fn should_sample(
+        &self,
+        parent_context: Option<&Context>,
+        trace_id: TraceId,
+        name: &str,
+        span_kind: &SpanKind,
+        attributes: &[opentelemetry::KeyValue],
+        links: &[Link],
+    ) -> SamplingResult {
+        self.request_count.fetch_add(1, Ordering::Relaxed);
+        
+        let rate = self.get_current_rate();
+        
+        let threshold = (rate * u64::MAX as f64) as u64;
+        let trace_id_bytes = trace_id.to_bytes();
+        let trace_id_u64 = u64::from_be_bytes([
+            trace_id_bytes[0], trace_id_bytes[1], trace_id_bytes[2], trace_id_bytes[3],
+            trace_id_bytes[4], trace_id_bytes[5], trace_id_bytes[6], trace_id_bytes[7],
+        ]);
+        
+        let decision = if trace_id_u64 < threshold {
+            SamplingDecision::RecordAndSample
+        } else {
+            SamplingDecision::Drop
+        };
+        
+        SamplingResult {
+            decision,
+            attributes: vec![],
+            trace_state: None,
+        }
+    }
+}
+```
 
 ---
 
-🎉 **Rust OTLP 常见模式文档完成！**
+## 🔗 参考资源
+
+- [OpenTelemetry Rust 官方文档](https://docs.rs/opentelemetry/)
+- [Rust OTLP 快速入门](./01_Rust_OTLP_30分钟快速入门.md)
+- [Rust OTLP 最佳实践](../17_最佳实践清单/Rust_OTLP_最佳实践Checklist.md)
+- [Rust 开发环境配置](../31_开发工具链/01_Rust开发环境配置.md)
+- [Cargo 工具链集成](../31_开发工具链/02_Cargo工具链集成指南.md)
+
+---
+
+**文档版本**: v1.0  
+**创建日期**: 2025年10月10日  
+**维护者**: OTLP Rust 文档团队
+
+---
+
+[🏠 返回主目录](../README.md) | [📚 快速入门](./01_Rust_OTLP_30分钟快速入门.md) | [❓ FAQ](./03_Rust_OTLP_FAQ.md)
