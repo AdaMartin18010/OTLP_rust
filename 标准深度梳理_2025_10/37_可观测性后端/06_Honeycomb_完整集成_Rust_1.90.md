@@ -58,13 +58,13 @@
 ```text
 ┌─────────────────────────────────────┐
 │        Honeycomb Platform           │
-│  ┌──────────────────────────────┐  │
-│  │  • BubbleUp (异常检测)       │  │
-│  │  • 高维度查询                │  │
-│  │  │  • Triggers (智能告警)     │  │
-│  │  • SLO 监控                  │  │
-│  │  • Boards (仪表板)           │  │
-│  └──────────────────────────────┘  │
+│  ┌──────────────────────────────┐   │
+│  │  • BubbleUp (异常检测)        │   │
+│  │  • 高维度查询                 │   │
+│  │  │  • Triggers (智能告警)     │   │
+│  │  • SLO 监控                   │   │
+│  │  • Boards (仪表板)            │   │
+│  └──────────────────────────────┘   │
 └─────────────────────────────────────┘
          ↑ OTLP
 ┌─────────────────────────────────────┐
@@ -73,6 +73,7 @@
 ```
 
 **核心特性**:
+
 - **高基数支持**: 支持数百万唯一值
 - **BubbleUp**: 自动发现异常原因
 - **实时查询**: 秒级查询响应
@@ -98,6 +99,7 @@ Rust App → OpenTelemetry SDK → OTLP → Honeycomb
 ```
 
 **优势**:
+
 - **供应商中立**: OpenTelemetry 标准
 - **丰富上下文**: 高基数字段支持
 - **灵活查询**: 探索式分析
@@ -420,6 +422,7 @@ async fn api_handler(req: Request) -> Result<Response> {
 ```
 
 **在 Honeycomb UI 中**:
+
 1. 选择 `duration_ms > 1000` (慢请求)
 2. 点击 **BubbleUp**
 3. Honeycomb 自动显示: "region=us-west AND device_type=mobile 的请求慢 3x"
@@ -484,6 +487,7 @@ async fn track_slo_latency(duration_ms: f64) {
 ```
 
 **在 Honeycomb UI 中设置 SLO**:
+
 ```text
 1. 导航到 SLOs → Create SLO
 2. 名称: API Latency P99 < 500ms
@@ -520,6 +524,7 @@ async fn handle_error(error: &AppError) {
 ```
 
 **Honeycomb UI Trigger 配置**:
+
 ```yaml
 # Trigger: High Error Rate
 name: "High Error Rate Alert"
@@ -1017,4 +1022,3 @@ async fn cost_optimized_handler(large_payload: Vec<u8>) -> Result<()> {
 **Rust 版本**: 1.90+  
 **OpenTelemetry**: 0.30+  
 **Honeycomb**: Latest
-

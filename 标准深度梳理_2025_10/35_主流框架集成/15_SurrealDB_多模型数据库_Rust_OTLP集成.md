@@ -70,6 +70,7 @@
 ```
 
 **核心特性**:
+
 - **多模型**: 文档、图、键值、时序
 - **SurrealQL**: SQL-like 查询语言
 - **实时查询**: Live Query 推送更新
@@ -95,6 +96,7 @@
 ```
 
 **可追踪操作**:
+
 - Query 执行时间
 - Transaction 性能
 - Live Query 订阅
@@ -122,6 +124,7 @@
 ```
 
 **统一访问层**:
+
 ```sql
 -- 文档查询
 SELECT * FROM users WHERE age > 18;
@@ -1032,4 +1035,3 @@ impl SurrealMetrics {
 **Rust 版本**: 1.90+  
 **SurrealDB**: 1.4+  
 **OpenTelemetry**: 0.30+
-
