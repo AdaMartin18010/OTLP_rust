@@ -126,7 +126,7 @@ spec:
 
 ### 2.1 安装Prometheus Operator
 
-**方法一：Helm安装（推荐）**
+**方法一：Helm安装（推荐）**:
 
 ```bash
 # 添加Helm仓库
@@ -144,7 +144,7 @@ helm install prometheus prometheus-community/kube-prometheus-stack \
 kubectl get pods -n monitoring
 ```
 
-**方法二：kubectl安装**
+**方法二：kubectl安装**:
 
 ```bash
 # 下载YAML
@@ -248,7 +248,7 @@ spec:
 
 ### 3.2 Rust应用集成
 
-**步骤1：Rust应用暴露指标**
+**步骤1：Rust应用暴露指标**:
 
 ```rust
 // src/main.rs
@@ -279,7 +279,7 @@ async fn main() {
 }
 ```
 
-**步骤2：创建Kubernetes Service**
+**步骤2：创建Kubernetes Service**:
 
 ```yaml
 # service.yaml
@@ -303,7 +303,7 @@ spec:
   type: ClusterIP
 ```
 
-**步骤3：部署Deployment**
+**步骤3：部署Deployment**:
 
 ```yaml
 # deployment.yaml
@@ -353,7 +353,7 @@ spec:
               cpu: "500m"
 ```
 
-**步骤4：应用所有资源**
+**步骤4：应用所有资源**:
 
 ```bash
 kubectl apply -f deployment.yaml

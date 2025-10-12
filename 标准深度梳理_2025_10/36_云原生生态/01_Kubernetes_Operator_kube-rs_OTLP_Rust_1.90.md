@@ -9,6 +9,18 @@
 
 ---
 
+## 📋 目录
+
+- [Kubernetes Operator - kube-rs + OTLP 完整指南 (Rust 1.90)](#kubernetes-operator---kube-rs--otlp-完整指南-rust-190)
+  - [📋 目录](#-目录)
+  - [📋 概述](#-概述)
+  - [性能对比](#性能对比)
+  - [完整示例: MySQL Operator](#完整示例-mysql-operator)
+    - [1. 自定义资源 (CRD)](#1-自定义资源-crd)
+    - [2. Controller 实现](#2-controller-实现)
+    - [3. 主函数](#3-主函数)
+  - [Cargo.toml](#cargotoml)
+
 ## 📋 概述
 
 **kube-rs** 是 Rust 官方 Kubernetes 客户端,用于构建高性能 Operator。相比 Go Operator:

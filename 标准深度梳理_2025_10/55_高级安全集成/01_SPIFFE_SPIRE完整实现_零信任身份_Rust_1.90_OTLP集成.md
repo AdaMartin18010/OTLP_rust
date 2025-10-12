@@ -27,6 +27,24 @@
     - [6.1 gRPC Workload API](#61-grpc-workload-api)
     - [6.2 SVID 获取与缓存](#62-svid-获取与缓存)
     - [6.3 Trust Bundle 管理](#63-trust-bundle-管理)
+  - [7. 服务间认证](#7-服务间认证)
+    - [7.1 mTLS 配置](#71-mtls-配置)
+    - [7.2 Envoy 集成](#72-envoy-集成)
+    - [7.3 身份验证中间件](#73-身份验证中间件)
+  - [8. OTLP 可观测性集成](#8-otlp-可观测性集成)
+    - [8.1 分布式追踪](#81-分布式追踪)
+    - [8.2 指标监控](#82-指标监控)
+    - [8.3 审计日志](#83-审计日志)
+  - [9. 生产部署实践](#9-生产部署实践)
+    - [9.1 Kubernetes 部署](#91-kubernetes-部署)
+    - [9.2 高可用配置](#92-高可用配置)
+    - [9.3 安全最佳实践](#93-安全最佳实践)
+  - [10. 测试策略](#10-测试策略)
+  - [11. 参考资源](#11-参考资源)
+    - [官方文档](#官方文档)
+    - [Rust 生态](#rust-生态)
+    - [标准与协议](#标准与协议)
+    - [云原生](#云原生)
 
 ---
 
@@ -48,48 +66,48 @@ SPIFFE (Secure Production Identity Framework For Everyone) 是云原生身份标
 ### 1.2 SPIRE 架构模型
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    SPIRE Architecture                       │
-│                                                             │
+┌────────────────────────────────────────────────────────────┐
+│                    SPIRE Architecture                      │
+│                                                            │
 │  ┌────────────────────────────────────────────────────┐    │
 │  │              SPIRE Server Cluster                  │    │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐         │    │
-│  │  │ Server 1 │  │ Server 2 │  │ Server 3 │         │    │
-│  │  │ (Leader) │◄─┤(Follower)│◄─┤(Follower)│         │    │
-│  │  └────┬─────┘  └──────────┘  └──────────┘         │    │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │    │
+│  │  │ Server 1 │  │ Server 2 │  │ Server 3 │          │    │
+│  │  │ (Leader) │◄─┤(Follower)│◄─┤(Follower)│          │    │
+│  │  └────┬─────┘  └──────────┘  └──────────┘          │    │
 │  │       │                                            │    │
 │  │       │ Registration API                           │    │
 │  │       │ Node API                                   │    │
 │  │       │                                            │    │
 │  │  ┌────▼──────────────────────────────────┐         │    │
 │  │  │     Trust Domain & CA                 │         │    │
-│  │  │  - Root CA                             │         │    │
-│  │  │  - Intermediate CA                     │         │    │
-│  │  │  - SVID Signing                        │         │    │
-│  │  └────────────────────────────────────────┘         │    │
+│  │  │  - Root CA                             │        │    │
+│  │  │  - Intermediate CA                     │        │    │
+│  │  │  - SVID Signing                        │        │    │
+│  │  └────────────────────────────────────────┘        │    │
 │  └────────────────────────────────────────────────────┘    │
-│                          │                                  │
-│                          │ Node Attestation                 │
-│                          ▼                                  │
+│                          │                                 │
+│                          │ Node Attestation                │
+│                          ▼                                 │
 │  ┌────────────────────────────────────────────────────┐    │
 │  │              SPIRE Agent Nodes                     │    │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐         │    │
-│  │  │  Agent 1 │  │  Agent 2 │  │  Agent 3 │         │    │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘         │    │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │    │
+│  │  │  Agent 1 │  │  Agent 2 │  │  Agent 3 │          │    │
+│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘          │    │
 │  └───────┼──────────────┼──────────────┼──────────────┘    │
 │          │              │              │                   │
 │          │ Workload API │              │                   │
 │          ▼              ▼              ▼                   │
 │  ┌────────────────────────────────────────────────────┐    │
 │  │              Workloads                             │    │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐         │    │
-│  │  │Service A │──│Service B │──│Service C │         │    │
-│  │  │(X.509)   │  │(X.509)   │  │(JWT)     │         │    │
-│  │  └──────────┘  └──────────┘  └──────────┘         │    │
-│  │                                                     │    │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │    │
+│  │  │Service A │──│Service B │──│Service C │          │    │
+│  │  │(X.509)   │  │(X.509)   │  │(JWT)     │          │    │
+│  │  └──────────┘  └──────────┘  └──────────┘          │    │
+│  │                                                    │    │
 │  │       mTLS Authentication & Authorization          │    │
 │  └────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────┘
 ```
 
 **核心组件说明**：
@@ -2148,28 +2166,28 @@ mod tests {
 
 ### 官方文档
 
-- **SPIFFE**: https://spiffe.io/
-- **SPIRE**: https://spiffe.io/docs/latest/spire/
-- **SPIFFE Specifications**: https://github.com/spiffe/spiffe
+- **SPIFFE**: <https://spiffe.io/>
+- **SPIRE**: <https://spiffe.io/docs/latest/spire/>
+- **SPIFFE Specifications**: <https://github.com/spiffe/spiffe>
 
 ### Rust 生态
 
-- **spiffe** crate: https://crates.io/crates/spiffe
-- **tonic**: https://docs.rs/tonic/
-- **tokio-rustls**: https://docs.rs/tokio-rustls/
+- **spiffe** crate: <https://crates.io/crates/spiffe>
+- **tonic**: <https://docs.rs/tonic/>
+- **tokio-rustls**: <https://docs.rs/tokio-rustls/>
 
 ### 标准与协议
 
-- **X.509 (RFC 5280)**: https://datatracker.ietf.org/doc/html/rfc5280
-- **JWT (RFC 7519)**: https://datatracker.ietf.org/doc/html/rfc7519
-- **mTLS (RFC 8446)**: https://datatracker.ietf.org/doc/html/rfc8446
-- **Zero Trust Architecture (NIST SP 800-207)**: https://csrc.nist.gov/publications/detail/sp/800-207/final
+- **X.509 (RFC 5280)**: <https://datatracker.ietf.org/doc/html/rfc5280>
+- **JWT (RFC 7519)**: <https://datatracker.ietf.org/doc/html/rfc7519>
+- **mTLS (RFC 8446)**: <https://datatracker.ietf.org/doc/html/rfc8446>
+- **Zero Trust Architecture (NIST SP 800-207)**: <https://csrc.nist.gov/publications/detail/sp/800-207/final>
 
 ### 云原生
 
-- **Envoy SDS**: https://www.envoyproxy.io/docs/envoy/latest/configuration/security/secret
-- **Istio SPIRE Integration**: https://istio.io/latest/docs/ops/integrations/spire/
-- **Kubernetes CSI Driver**: https://github.com/spiffe/spiffe-csi
+- **Envoy SDS**: <https://www.envoyproxy.io/docs/envoy/latest/configuration/security/secret>
+- **Istio SPIRE Integration**: <https://istio.io/latest/docs/ops/integrations/spire/>
+- **Kubernetes CSI Driver**: <https://github.com/spiffe/spiffe-csi>
 
 ---
 
