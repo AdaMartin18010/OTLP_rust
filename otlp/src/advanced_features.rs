@@ -777,8 +777,8 @@ mod tests {
             custom_attributes: HashMap::new(),
         };
 
-        let should_sample = sampler.should_sample(&context).await;
-        assert!(should_sample || !should_sample); // 结果应该是布尔值
+        let _should_sample = sampler.should_sample(&context).await;
+        assert!(true, "Sampling result should be boolean");
     }
 
     #[tokio::test]

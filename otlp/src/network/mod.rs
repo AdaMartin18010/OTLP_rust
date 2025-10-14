@@ -243,7 +243,11 @@ impl NetworkMonitor {
                 timer.tick().await;
                 let new_stats = manager.get_stats().await;
                 {
-                    let mut current_stats = stats.lock().unwrap();
+                    let mut current_stats = stats.lock()
+                        .unwrap_or_else(|e| {
+                            eprintln!("Failed to acquire network stats lock: {}", e);
+                            std::process::exit(1);
+                        });
                     *current_stats = new_stats;
                 }
             }
@@ -252,7 +256,12 @@ impl NetworkMonitor {
 
     /// 获取当前统计信息
     pub fn get_stats(&self) -> NetworkStats {
-        self.stats.lock().unwrap().clone()
+        self.stats.lock()
+            .unwrap_or_else(|e| {
+                eprintln!("Failed to acquire network stats lock: {}", e);
+                std::process::exit(1);
+            })
+            .clone()
     }
 }
 

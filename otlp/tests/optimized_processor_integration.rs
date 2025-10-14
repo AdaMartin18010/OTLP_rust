@@ -188,7 +188,7 @@ fn test_performance_monitoring() {
     };
 
     let processor = OptimizedOtlpProcessor::new(config);
-    let mut monitor = PerformanceMonitor::new(processor);
+    let monitor = PerformanceMonitor::new(processor);
 
     // 生成性能报告
     let report = monitor.generate_report();

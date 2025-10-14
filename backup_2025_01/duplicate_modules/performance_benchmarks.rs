@@ -11,7 +11,7 @@ use otlp::{
         TraceData,
     },
     ottl::{OtlpTransform, TransformConfig},
-    profiling::{Profiler, ProfilingConfig},
+    // profiling::{Profiler, ProfilingConfig}, // 已迁移到备份
     validation::DataValidator,
 };
 use std::collections::HashMap;

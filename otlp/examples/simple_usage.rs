@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 方式1: 使用最简单的API
     println!("📝 方式1: 最简单的API");
-    let client = SimpleOtlpClient::new("http://localhost:4317").await?;
+    let mut client = SimpleOtlpClient::new("http://localhost:4317").await?;
 
     // 发送追踪数据
     client
@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 方式2: 使用构建器模式
     println!("📝 方式2: 构建器模式");
-    let client = SimpleClientBuilder::new()
+    let mut client = SimpleClientBuilder::new()
         .endpoint("http://localhost:4317")
         .service("simple-example", "1.0.0")
         .timeout(Duration::from_secs(10))
@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 发送带错误信息的追踪
     client
-        .trace("error-operation", 200, false, Some("Connection timeout"))
+        .trace("error-operation", 200, false, Some("Connection timeout".to_string()))
         .await?;
     println!("✅ 错误追踪数据发送成功");
 

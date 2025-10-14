@@ -3,7 +3,8 @@
 //! 测试新增的SIMD数学运算性能
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use otlp::performance_optimization_advanced::*;
+// 使用performance模块中的类型
+use otlp::performance::*;
 use std::hint::black_box;
 
 /// 基准测试：扩展SIMD操作性能

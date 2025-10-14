@@ -75,7 +75,7 @@ MIT 6.824是世界顶尖的分布式系统课程,涵盖:
 - [Chain Replication - 链式复制](#5-chain-replication)
 - [Vector Clocks - 向量时钟](#6-vector-clocks)
 - [Paxos算法 - 完整实现](#7-paxos)
-- [Spanner - 全球分布式数据库](#8-spanner)
+- [Spanner - 全球分布式数据库](#8-spanner)1
 
 ---
 
