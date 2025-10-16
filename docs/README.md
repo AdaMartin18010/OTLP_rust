@@ -10,24 +10,17 @@
 
 ### 📖 核心文档
 
-1. **[项目概述](README.md)** - 项目介绍和快速开始
-2. **[架构设计](architecture.md)** - 系统架构和设计理念
-3. **[API参考](api.md)** - 完整的API文档
-4. **[性能报告](performance.md)** - 性能基准和优化指南
+1. **[快速开始指南](01_GETTING_STARTED/README.md)** - 项目介绍和快速上手
+2. **[理论框架](02_THEORETICAL_FRAMEWORK/README.md)** - 形式化语义和理论基础
+3. **[API参考文档](03_API_REFERENCE/README.md)** - 完整的API文档
+4. **[架构设计文档](04_ARCHITECTURE/README.md)** - 系统架构和设计理念
 
-### 🔧 开发文档
+### 🛠️ 实践文档
 
-1. **[开发指南](development.md)** - 开发环境设置和贡献指南
-2. **[测试指南](testing.md)** - 测试策略和最佳实践
-3. **[部署指南](deployment.md)** - 生产环境部署指南
-4. **[故障排除](troubleshooting.md)** - 常见问题和解决方案
-
-### 📊 理论文档
-
-1. **[理论框架](theory.md)** - 形式化语义和可计算性理论
-2. **[设计模式](patterns.md)** - 架构模式和最佳实践
-3. **[性能优化](optimization.md)** - 性能优化策略和技巧
-4. **[安全指南](security.md)** - 安全最佳实践
+1. **[实现指南](05_IMPLEMENTATION/README.md)** - Rust 1.90 特性和实现细节
+2. **[部署运维指南](06_DEPLOYMENT/README.md)** - 生产环境部署和运维
+3. **[集成指南](07_INTEGRATION/README.md)** - 第三方工具和生态系统集成
+4. **[参考资料](08_REFERENCE/README.md)** - 最佳实践、术语表和故障排除
 
 ---
 
@@ -91,21 +84,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### 初学者
 
-1. 阅读[项目概述](README.md)
-2. 运行[快速开始](quickstart.md)示例
-3. 学习[基本概念](concepts.md)
+1. 阅读[快速开始指南](01_GETTING_STARTED/README.md)
+2. 学习[基本概念](08_REFERENCE/glossary.md)
+3. 查看[常见问题](08_REFERENCE/troubleshooting_guide.md)
 
 ### 开发者
 
-1. 查看[API参考](api.md)
-2. 阅读[架构设计](architecture.md)
-3. 参与[开发指南](development.md)
+1. 查看[API参考文档](03_API_REFERENCE/README.md)
+2. 阅读[架构设计文档](04_ARCHITECTURE/README.md)
+3. 学习[实现指南](05_IMPLEMENTATION/README.md)
 
 ### 研究者
 
-1. 深入研究[理论框架](theory.md)
-2. 分析[设计模式](patterns.md)
-3. 探索[性能优化](optimization.md)
+1. 深入研究[理论框架](02_THEORETICAL_FRAMEWORK/README.md)
+2. 分析[最佳实践](08_REFERENCE/best_practices.md)
+3. 探索[标准合规性](08_REFERENCE/standards_compliance.md)
 
 ---
 
