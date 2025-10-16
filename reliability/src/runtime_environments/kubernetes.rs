@@ -1,6 +1,6 @@
 //! Cloud Native: Kubernetes 编排抽象（轻量占位，后续可接入 kube-rs）
 #[cfg(feature = "containers")]
-use super::container_runtime::{ContainerRunConfig, HealthProbe};
+use super::container_runtime::ContainerRunConfig;
 use serde::{Deserialize, Serialize};
 
 /// K8s 探针配置（与容器健康探针对齐）

@@ -53,14 +53,22 @@ impl<R: ContainerRuntime + Send + Sync> Orchestrator for LocalContainerOrchestra
     }
 
     async fn terminate(&self, _name: &str) -> Result<(), UnifiedError> {
-        if let Some(id) = self.last_id.lock().unwrap().clone() {
+        let id = {
+            let guard = self.last_id.lock().unwrap();
+            guard.clone()
+        };
+        if let Some(id) = id {
             self.runtime.stop(&id).await?;
         }
         Ok(())
     }
 
     async fn status(&self, _name: &str) -> Result<WorkloadStatus, UnifiedError> {
-        if let Some(id) = self.last_id.lock().unwrap().clone() {
+        let id = {
+            let guard = self.last_id.lock().unwrap();
+            guard.clone()
+        };
+        if let Some(id) = id {
             match self.runtime.inspect(&id).await? {
                 ContainerState::Created => Ok(WorkloadStatus::Pending),
                 ContainerState::Running => Ok(WorkloadStatus::Running),

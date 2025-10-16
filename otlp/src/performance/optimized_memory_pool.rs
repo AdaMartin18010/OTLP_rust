@@ -462,8 +462,8 @@ mod tests {
         drop(obj1);
         drop(obj2);
 
-        // 等待异步回收（增加等待时间）
-        tokio::time::sleep(Duration::from_millis(50)).await;
+        // 等待异步回收（减少等待时间，避免超时）
+        tokio::time::sleep(Duration::from_millis(10)).await;
 
         // 再次获取对象，应该重用
         let obj3 = pool.acquire().await.expect("Failed to acquire third object");
@@ -494,8 +494,8 @@ mod tests {
         let obj = pool.acquire().await.expect("Failed to acquire object for expiration test");
         drop(obj);
 
-        // 等待对象过期（增加一些余量）
-        tokio::time::sleep(Duration::from_millis(200)).await;
+        // 等待对象过期（减少等待时间，避免超时）
+        tokio::time::sleep(Duration::from_millis(50)).await;
 
         // 清理过期对象
         let removed = pool.cleanup_expired().await;

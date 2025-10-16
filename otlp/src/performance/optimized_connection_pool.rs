@@ -535,7 +535,7 @@ mod tests {
         .expect("Failed to create connection pool");
 
         // 等待初始化完成
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
 
         // 获取连接
         let conn1 = pool.acquire().await.expect("Failed to acquire connection");
@@ -579,7 +579,7 @@ mod tests {
                 .expect("Failed to create connection pool");
 
         // 等待初始化完成
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
 
         // 获取连接
         let conn = pool.acquire().await.expect("Failed to acquire connection");
@@ -650,7 +650,7 @@ mod tests {
                 .expect("Failed to create connection pool for concurrent test");
 
         // 等待初始化完成
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
 
         // 并发获取和释放连接
         let mut handles = Vec::new();
