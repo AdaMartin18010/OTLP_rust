@@ -10,6 +10,7 @@ pub mod object_pool;
 pub mod simd_optimizations;
 pub mod zero_copy_simple;
 pub mod memory_pool;
+pub mod quick_optimizations;
 
 // 重新导出主要类型
 pub use optimized_circuit_breaker::{
@@ -28,6 +29,11 @@ pub use optimized_batch_processor::{
 pub use optimized_connection_pool::{
     ConnectionPoolConfig, ConnectionPoolError, ConnectionPoolStats, OptimizedConnectionPool,
     PooledConnection,
+};
+
+pub use quick_optimizations::{
+    BatchConfig, CompressionAlgorithm, CompressionConfig, QuickOptimizationsConfig,
+    QuickOptimizationsManager,
 };
 
 pub use object_pool::{
