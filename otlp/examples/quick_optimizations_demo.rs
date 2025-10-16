@@ -32,23 +32,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             min_size_threshold: 100,
             enable_compression: true,
         },
-        connection_pool_config: otlp::performance::ConnectionPoolConfig {
-            max_connections: 20,
-            min_connections: 5,
-            connection_timeout: Duration::from_secs(10),
-            idle_timeout: Duration::from_secs(60),
-            max_lifetime: Duration::from_secs(300),
-            health_check_interval: Duration::from_secs(30),
-            enable_stats: true,
-            enable_connection_reuse: true,
-        },
-        memory_pool_config: otlp::performance::MemoryPoolConfig {
-            max_size: 1000,
-            initial_size: 100,
-            object_ttl: Duration::from_secs(300),
-            cleanup_interval: Duration::from_secs(60),
-            enable_stats: true,
-        },
         enable_all_optimizations: true,
     };
 

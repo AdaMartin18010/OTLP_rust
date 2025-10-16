@@ -5,8 +5,7 @@
 use crate::config::OtlpConfig;
 use crate::data::TelemetryData;
 use crate::error::Result;
-use crate::performance::optimized_connection_pool::{ConnectionPoolConfig, OptimizedConnectionPool};
-use crate::performance::optimized_memory_pool::{MemoryPoolConfig, OptimizedMemoryPool};
+// 暂时移除连接池和内存池的复杂集成，专注于批量发送和压缩
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -21,10 +20,6 @@ pub struct QuickOptimizationsConfig {
     pub batch_config: BatchConfig,
     /// 压缩配置
     pub compression_config: CompressionConfig,
-    /// 连接池配置
-    pub connection_pool_config: ConnectionPoolConfig,
-    /// 内存池配置
-    pub memory_pool_config: MemoryPoolConfig,
     /// 是否启用所有优化
     pub enable_all_optimizations: bool,
 }
@@ -68,8 +63,6 @@ impl Default for QuickOptimizationsConfig {
         Self {
             batch_config: BatchConfig::default(),
             compression_config: CompressionConfig::default(),
-            connection_pool_config: ConnectionPoolConfig::default(),
-            memory_pool_config: MemoryPoolConfig::default(),
             enable_all_optimizations: true,
         }
     }
@@ -237,7 +230,7 @@ impl Compressor {
         use async_compression::tokio::write::ZstdEncoder;
         use tokio::io::AsyncWriteExt;
         
-        let mut encoder = ZstdEncoder::with_quality(Vec::new(), self.config.level);
+        let mut encoder = ZstdEncoder::with_quality(Vec::new(), async_compression::Level::Precise(self.config.level as i32));
         encoder.write_all(data).await?;
         encoder.shutdown().await?;
         
@@ -249,7 +242,7 @@ impl Compressor {
         use async_compression::tokio::write::BrotliEncoder;
         use tokio::io::AsyncWriteExt;
         
-        let mut encoder = BrotliEncoder::with_quality(Vec::new(), self.config.level);
+        let mut encoder = BrotliEncoder::with_quality(Vec::new(), async_compression::Level::Precise(self.config.level as i32));
         encoder.write_all(data).await?;
         encoder.shutdown().await?;
         
@@ -259,11 +252,10 @@ impl Compressor {
 
 /// 快速优化管理器
 pub struct QuickOptimizationsManager {
+    #[allow(dead_code)]
     config: QuickOptimizationsConfig,
     batch_sender: Option<BatchSender>,
     compressor: Compressor,
-    connection_pool: Option<OptimizedConnectionPool>,
-    memory_pool: Option<OptimizedMemoryPool>,
 }
 
 impl QuickOptimizationsManager {
@@ -281,23 +273,11 @@ impl QuickOptimizationsManager {
             config,
             batch_sender,
             compressor,
-            connection_pool: None,
-            memory_pool: None,
         }
     }
 
     /// 初始化优化管理器
     pub async fn initialize(&mut self) -> Result<()> {
-        // 初始化连接池
-        if self.config.enable_all_optimizations {
-            self.connection_pool = Some(
-                OptimizedConnectionPool::new(
-                    || Ok("connection".to_string()),
-                    self.config.connection_pool_config.clone(),
-                )?
-            );
-        }
-
         // 启动批量发送器
         if let Some(ref batch_sender) = self.batch_sender {
             batch_sender.start().await?;
@@ -323,14 +303,10 @@ impl QuickOptimizationsManager {
         self.compressor.compress(data).await
     }
 
-    /// 获取连接
+    /// 获取连接（简化版本）
     pub async fn get_connection(&self) -> Result<String> {
-        if let Some(ref pool) = self.connection_pool {
-            let conn = pool.acquire().await?;
-            Ok(conn.get().to_string())
-        } else {
-            Ok("direct_connection".to_string())
-        }
+        // 简化版本，返回模拟连接
+        Ok("direct_connection".to_string())
     }
 
     /// 停止优化管理器
@@ -346,7 +322,7 @@ impl QuickOptimizationsManager {
 /// 为OtlpConfig添加快速优化配置
 impl OtlpConfig {
     /// 启用快速性能优化
-    pub fn with_quick_optimizations(mut self) -> Self {
+    pub fn with_quick_optimizations(self) -> Self {
         // 这里可以添加优化配置到OtlpConfig中
         // 为了演示，我们只是返回self
         self
@@ -361,7 +337,7 @@ impl OtlpConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::{LogSeverity, MetricType, StatusCode};
+    use crate::data::{MetricType, StatusCode};
 
     #[tokio::test]
     async fn test_batch_sender() {

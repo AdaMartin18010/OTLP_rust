@@ -9,6 +9,7 @@ use crate::error::{OtlpError, Result};
 use crate::exporter::{ExportResult, ExporterMetrics, OtlpExporter};
 use crate::processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 use crate::resilience::ResilienceManager;
+use crate::performance::{QuickOptimizationsConfig, QuickOptimizationsManager};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -29,6 +30,8 @@ pub struct OtlpClient {
     audit_hook: Arc<RwLock<Option<Arc<dyn AuditHook>>>>,
     // 弹性管理器
     resilience_manager: Arc<ResilienceManager>,
+    // 快速优化管理器
+    quick_optimizations: Arc<RwLock<Option<QuickOptimizationsManager>>>,
 }
 
 /// 客户端指标
@@ -162,6 +165,7 @@ impl OtlpClient {
             tenant_counters: Arc::new(RwLock::new(TenantCounters::default())),
             audit_hook: Arc::new(RwLock::new(None)),
             resilience_manager,
+            quick_optimizations: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -400,6 +404,17 @@ impl OtlpClient {
         *guard = Some(hook);
     }
 
+    /// 启用快速性能优化
+    pub async fn enable_quick_optimizations(&self, config: QuickOptimizationsConfig) -> Result<()> {
+        let mut manager = QuickOptimizationsManager::new(config);
+        manager.initialize().await?;
+        
+        let mut optimizations = self.quick_optimizations.write().await;
+        *optimizations = Some(manager);
+        
+        Ok(())
+    }
+
     /// 发送追踪数据
     pub async fn send_trace(&self, name: impl Into<String>) -> Result<TraceBuilder> {
         let data = TelemetryData::trace(name);
@@ -420,6 +435,18 @@ impl OtlpClient {
     ) -> Result<LogBuilder> {
         let data = TelemetryData::log(message, severity);
         Ok(LogBuilder::new(self.clone(), data))
+    }
+
+    /// 使用快速优化发送数据
+    pub async fn send_with_optimizations(&self, data: TelemetryData) -> Result<()> {
+        let optimizations = self.quick_optimizations.read().await;
+        if let Some(ref manager) = *optimizations {
+            manager.send_data(data).await?;
+        } else {
+            // 如果没有启用优化，使用默认发送方式
+            self.exporter.export_single(data).await?;
+        }
+        Ok(())
     }
 
     /// 获取客户端指标
@@ -543,6 +570,7 @@ impl Clone for OtlpClient {
             tenant_counters: self.tenant_counters.clone(),
             audit_hook: self.audit_hook.clone(),
             resilience_manager: self.resilience_manager.clone(),
+            quick_optimizations: self.quick_optimizations.clone(),
         }
     }
 }

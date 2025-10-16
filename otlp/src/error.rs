@@ -38,6 +38,9 @@ pub enum OtlpError {
 
     #[error("系统错误: {0}")]
     System(#[from] SystemError),
+
+    #[error("IO错误: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 /// 配置错误
@@ -142,6 +145,9 @@ pub enum PerformanceError {
         current: std::time::Duration,
         threshold: std::time::Duration,
     },
+
+    #[error("连接池错误: {0}")]
+    ConnectionPoolError(String),
 }
 
 /// 并发错误
@@ -287,6 +293,7 @@ impl OtlpError {
             OtlpError::Resource(_) => ErrorSeverity::High,
             OtlpError::Compatibility(_) => ErrorSeverity::Medium,
             OtlpError::System(_) => ErrorSeverity::Critical,
+            OtlpError::Io(_) => ErrorSeverity::High,
         }
     }
 
@@ -304,6 +311,7 @@ impl OtlpError {
             OtlpError::Resource(_) => ErrorCategory::Resource,
             OtlpError::Compatibility(_) => ErrorCategory::Compatibility,
             OtlpError::System(_) => ErrorCategory::System,
+            OtlpError::Io(_) => ErrorCategory::System,
         }
     }
 

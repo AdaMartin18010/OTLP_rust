@@ -6,6 +6,7 @@
 pub mod error_monitoring_types;
 pub mod metrics_collector;
 pub mod prometheus_exporter;
+pub mod enhanced_alert_manager;
 
 // 重新导出主要类型
 pub use metrics_collector::{
@@ -36,6 +37,15 @@ pub use error_monitoring_types::{
     NotificationConfig, NotificationService, PredictionModel, PredictionResult, PredictiveConfig,
     PredictiveMonitor, RealTimeDashboard, StreamConfig, StreamProcessingConfig, StreamProcessor,
     TimeSeriesPoint, TrendAnalysisConfig, TrendAnalysisResult, TrendDirection,
+};
+
+// 重新导出增强告警管理器
+pub use enhanced_alert_manager::{
+    Alert as EnhancedAlert, AlertCondition as EnhancedAlertCondition, 
+    AlertRule as EnhancedAlertRule, AlertSeverity as EnhancedAlertSeverity, 
+    AlertStatsSnapshot as EnhancedAlertStatsSnapshot, AlertStatus as EnhancedAlertStatus,
+    ComparisonOperator, EnhancedAlertManager, NotificationChannel as EnhancedNotificationChannel, 
+    PredefinedAlertRules,
 };
 
 /// 监控系统配置

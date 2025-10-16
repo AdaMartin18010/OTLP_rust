@@ -88,9 +88,9 @@ opt-level = 2
 [workspace.dependencies]
 
 # ========== 网络和 HTTP 相关依赖 ==========
-# 2025年10月最新稳定版本，支持Rust 1.90新特性
+# 2025年10月16日最新稳定版本，支持Rust 1.90新特性
 # reqwest: 高级HTTP客户端库，支持异步操作、TLS、压缩等特性
-reqwest = { version = "0.12.23", features = ["json", "rustls-tls", "stream", "gzip", "brotli", "deflate"] }
+reqwest = { version = "0.12.24", features = ["json", "rustls-tls", "stream", "gzip", "brotli", "deflate"] }
 # hyper: 底层HTTP库，提供高性能的HTTP/1.1和HTTP/2支持
 hyper = { version = "1.7.0", features = ["full", "http2"] }
 # hyper生态系统组件 - 最新稳定版本
@@ -162,6 +162,9 @@ rcgen = "0.14.6"                # 证书生成器
 # 基础依赖统一，提供常用功能支持
 dotenvy = "0.15.8"              # 环境变量管理
 tempfile = "3.23.0"             # 临时文件处理
+# 系统调用和底层接口
+libc = "0.2.177"                # 系统调用接口
+socket2 = "0.6.1"               # 套接字抽象
 
 # ========== gRPC 生态系统 ==========
 # gRPC 相关 - 2025年10月最新稳定版本，高性能RPC框架
@@ -179,12 +182,13 @@ prost-types = "0.14.1"          # 类型定义
 protobuf = "3.7.3"              # 修复递归崩溃漏洞，确保系统安全
 
 # ========== TLS 和加密 ==========
-# TLS 和加密 - 2025年10月最新稳定版本，确保通信安全
+# TLS 和加密 - 2025年10月16日最新稳定版本，确保通信安全
 # RustLS: 纯Rust实现的TLS库
 rustls = { version = "0.23.33", features = ["ring"] }  # TLS实现
 rustls-webpki = "0.104.2"       # Web PKI支持
 rustls-pemfile = "2.2.1"        # PEM文件解析
 tokio-rustls = "0.26.5"         # Tokio集成
+rustls-native-certs = "0.8.2"   # 原生证书支持
 # 加密库
 ring = "0.17.15"                # 加密原语库
 webpki-roots = "1.1.2"          # Web PKI根证书
@@ -202,9 +206,9 @@ serde_yaml = "0.9.34"           # YAML支持
 bincode = "2.0.1"               # 二进制序列化
 
 # ========== 异步运行时 ==========
-# 异步运行时 - 2025年10月最新稳定版本，高性能异步编程
+# 异步运行时 - 2025年10月16日最新稳定版本，高性能异步编程
 # Tokio: 异步运行时和工具
-tokio = { version = "1.47.1", features = ["full"] }     # 异步运行时
+tokio = { version = "1.48.0", features = ["full"] }     # 异步运行时
 tokio-util = "0.7.16"           # 工具库
 tokio-stream = "0.1.17"         # 异步流
 # Futures: 异步编程基础
@@ -237,7 +241,7 @@ chrono = { version = "0.4.42", features = ["serde"] }   # 日期时间库
 time = { version = "0.3.44", features = ["serde", "macros"] }  # 现代时间库，支持Rust 1.90
 
 # ========== 常用工具库 ==========
-# 其他常用库 - 2025年10月最新稳定版本，提供基础功能支持
+# 其他常用库 - 2025年10月16日最新稳定版本，提供基础功能支持
 # 标识符和URL
 uuid = { version = "1.18.1", features = ["v4", "serde"] }  # UUID生成
 url = "2.5.7"                  # URL解析
@@ -247,11 +251,14 @@ indexmap = "2.11.4"            # 有序哈希映射
 # 系统信息
 once_cell = "1.21.3"           # 单次初始化单元格
 num_cpus = "1.17.0"            # CPU核心数检测
-libc = "0.2.177"               # 系统调用接口
 # 加密和随机数
 rand = "0.9.2"                 # 随机数生成
 sha2 = "0.10.9"                # SHA-2哈希
 hex = "0.4.3"                  # 十六进制编码
+# 正则表达式
+regex = "1.12.2"               # 正则表达式
+regex-syntax = "0.8.8"         # 正则表达式语法
+regex-automata = "0.4.13"      # 正则表达式自动机
 
 # ========== 数据库和存储 ==========
 # 数据库和存储 - 2025年10月最新稳定版本，支持多种数据库
@@ -266,9 +273,11 @@ rusqlite = { version = "0.37.0", default-features = false }  # SQLite绑定
 criterion = "0.7.0"            # 基准测试框架
 
 # ========== 配置管理 ==========
-# 配置管理 - 2025年10月最新稳定版本
+# 配置管理 - 2025年10月16日最新稳定版本
 config = "0.15.18"             # 配置管理库
 toml = "0.9.8"                 # TOML格式支持
+# 环境变量和配置
+getrandom = "0.3.4"            # 随机数生成
 
 # ========== 并发和同步 ==========
 # 并发和同步 - 2025年10月最新稳定版本，高性能并发编程

@@ -42,8 +42,8 @@ dashmap = "6.1"
 # 压缩算法
 flate2 = "1.1.4"
 brotli = "8.0.2"
-zstd = "0.13"
-lz4_flex = "0.11"
+zstd = "0.13.3"
+lz4_flex = "0.11.5"
 
 # 异步trait
 async-trait = { workspace = true, optional = true }
@@ -74,6 +74,7 @@ uuid = { workspace = true }
 url = { workspace = true }
 bytes = { workspace = true }
 hex = "0.4.3"
+async-compression = { version = "0.4.32", features = ["tokio", "zstd", "gzip", "brotli"] }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
@@ -103,6 +104,17 @@ http = ["reqwest", "hyper"]
 # 监控和可观测性特性
 monitoring = []
 
+# 性能优化特性
+performance = []
+
 [[example]]
 name = "quick_optimizations_demo"
 path = "examples/quick_optimizations_demo.rs"
+
+[[example]]
+name = "integrated_optimizations_demo"
+path = "examples/integrated_optimizations_demo.rs"
+
+[[example]]
+name = "enhanced_monitoring_demo"
+path = "examples/enhanced_monitoring_demo.rs"
