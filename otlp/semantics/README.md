@@ -47,21 +47,25 @@
 ### 根据角色选择入口
 
 #### 👨‍💼 架构师
+
 1. 阅读 [00_INDEX.md](./00_INDEX.md) 了解全貌
 2. 深入 [01_OTLP语义模型](./01_OTLP_SEMANTIC_MODEL_COMPLETE.md) 理解数据模型
 3. 参考 [03_标准对标](./03_STANDARDS_TRENDS_2025_COMPLETE.md) 了解趋势
 
 #### 👨‍💻 开发者
+
 1. 浏览 [00_INDEX.md](./00_INDEX.md) 的快速参考部分
 2. 查看 [01_OTLP语义模型](./01_OTLP_SEMANTIC_MODEL_COMPLETE.md) 的代码示例
 3. 学习 [02_流模型分析](./02_FLOW_ANALYSIS_COMPLETE.md) 的实践部分
 
 #### 🔧 运维工程师
+
 1. 从 [03_标准对标](./03_STANDARDS_TRENDS_2025_COMPLETE.md) 开始
 2. 关注OTTL转换和OpAMP管理章节
 3. 参考性能优化和安全合规部分
 
 #### 👨‍🔬 研究人员
+
 1. 完整阅读所有核心文档
 2. 重点研究语义模型和流模型的理论部分
 3. 参考最新的规范和标准
@@ -98,17 +102,20 @@
 ## 🎓 学习路径
 
 ### 路径1: 快速上手（2小时）
+
 1. 阅读 [00_INDEX.md](./00_INDEX.md)
 2. 浏览 [01_OTLP语义模型](./01_OTLP_SEMANTIC_MODEL_COMPLETE.md) 的概述部分
 3. 查看 [03_标准对标](./03_STANDARDS_TRENDS_2025_COMPLETE.md) 的OTLP协议章节
 
 ### 路径2: 系统学习（1周）
+
 1. 完整阅读 [01_OTLP语义模型](./01_OTLP_SEMANTIC_MODEL_COMPLETE.md)
 2. 深入学习 [02_流模型分析](./02_FLOW_ANALYSIS_COMPLETE.md)
 3. 掌握 [03_标准对标](./03_STANDARDS_TRENDS_2025_COMPLETE.md)
 4. 实践代码示例
 
 ### 路径3: 深度研究（1月）
+
 1. 研读所有核心文档
 2. 对比理论框架文档
 3. 实现原型系统
