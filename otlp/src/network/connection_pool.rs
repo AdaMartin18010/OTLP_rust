@@ -452,6 +452,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "需要运行测试服务器: 此测试需要在127.0.0.1:8080上运行服务器"]
     async fn test_load_balancing_strategies() {
         let config = ConnectionPoolConfig {
             load_balancing_strategy: LoadBalancingStrategy::RoundRobin,

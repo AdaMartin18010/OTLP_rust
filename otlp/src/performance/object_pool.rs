@@ -64,31 +64,27 @@ pub struct ObjectPoolStats {
 }
 
 /// 池化对象包装器
-pub struct PooledObject<T> {
-    object: T,
-    #[allow(dead_code)]
-    pool: Box<ObjectPool<T>>,
+pub struct PooledObject<T: Send + 'static> {
+    object: Option<T>,
+    pool: Arc<ObjectPool<T>>,
     created_at: Instant,
     last_used_at: Instant,
 }
 
-impl<T> PooledObject<T> {
+impl<T: Send + 'static> PooledObject<T> {
     /// 获取对象的引用
     pub fn get(&self) -> &T {
-        &self.object
+        self.object.as_ref().expect("Object already returned to pool")
     }
 
     /// 获取对象的可变引用
     pub fn get_mut(&mut self) -> &mut T {
-        &mut self.object
+        self.object.as_mut().expect("Object already returned to pool")
     }
 
     /// 获取对象的拥有权（消耗包装器）
-    pub fn into_inner(self) -> T 
-    where
-        T: Clone,
-    {
-        self.object.clone()
+    pub fn into_inner(mut self) -> T {
+        self.object.take().expect("Object already returned to pool")
     }
 
     /// 获取对象创建时间
@@ -107,10 +103,12 @@ impl<T> PooledObject<T> {
     }
 }
 
-impl<T> Drop for PooledObject<T> {
+impl<T: Send + 'static> Drop for PooledObject<T> {
     fn drop(&mut self) {
-        // 对象会在作用域结束时自动返回池中
-        // 这里不需要手动处理，因为对象会被自动回收
+        // 将对象返回到池中
+        if let Some(object) = self.object.take() {
+            let _ = self.pool.return_object(object);
+        }
     }
 }
 
@@ -159,22 +157,22 @@ pub struct ObjectPool<T> {
 
 impl<T: Send + 'static> ObjectPool<T> {
     /// 创建新的对象池
-    pub fn new(config: ObjectPoolConfig, factory: Box<dyn ObjectFactory<T>>) -> Self {
-        let pool = Self {
+    pub fn new(config: ObjectPoolConfig, factory: Box<dyn ObjectFactory<T>>) -> Arc<Self> {
+        let pool = Arc::new(Self {
             config,
             factory,
             available: Mutex::new(VecDeque::new()),
             stats: Arc::new(ObjectPoolStats::default()),
             is_closed: AtomicUsize::new(0),
-        };
+        });
 
         // 预创建最小数量的对象
         pool.initialize_pool();
         pool
     }
 
-    /// 获取对象
-    pub async fn acquire(&self) -> Result<PooledObject<T>, ObjectPoolError> {
+    /// 获取对象（需要传入Arc<Self>）
+    pub async fn acquire(self: &Arc<Self>) -> Result<PooledObject<T>, ObjectPoolError> {
         if self.is_closed.load(Ordering::Acquire) != 0 {
             return Err(ObjectPoolError::PoolClosed);
         }
@@ -184,9 +182,10 @@ impl<T: Send + 'static> ObjectPool<T> {
         // 尝试从可用对象中获取
         if let Some(object) = self.try_acquire_from_available().await {
             self.update_stats_on_acquire(start_time);
+            self.stats.active_objects.fetch_add(1, Ordering::Relaxed);
             return Ok(PooledObject {
-                object,
-                pool: Box::new(self.clone()),
+                object: Some(object),
+                pool: Arc::clone(self),
                 created_at: Instant::now(),
                 last_used_at: Instant::now(),
             });
@@ -197,9 +196,10 @@ impl<T: Send + 'static> ObjectPool<T> {
             match self.create_new_object().await {
                 Ok(object) => {
                     self.update_stats_on_acquire(start_time);
+                    self.stats.active_objects.fetch_add(1, Ordering::Relaxed);
                     return Ok(PooledObject {
-                        object,
-                        pool: Box::new(self.clone()),
+                        object: Some(object),
+                        pool: Arc::clone(self),
                         created_at: Instant::now(),
                         last_used_at: Instant::now(),
                     });
@@ -278,7 +278,7 @@ impl<T: Send + 'static> ObjectPool<T> {
     /// 尝试从可用对象中获取
     async fn try_acquire_from_available(&self) -> Option<T> {
         let mut available = self.available.lock().await;
-        available.pop_front()
+        available.pop_back() // 使用LIFO以提高缓存局部性
     }
 
     /// 检查是否可以创建新对象
@@ -306,7 +306,7 @@ impl<T: Send + 'static> ObjectPool<T> {
     }
 
     /// 等待可用对象
-    async fn wait_for_available_object(&self) -> Result<PooledObject<T>, ObjectPoolError> {
+    async fn wait_for_available_object(self: &Arc<Self>) -> Result<PooledObject<T>, ObjectPoolError> {
         let start_time = Instant::now();
         
         loop {
@@ -318,9 +318,10 @@ impl<T: Send + 'static> ObjectPool<T> {
 
             if let Some(object) = self.try_acquire_from_available().await {
                 self.update_stats_on_acquire(start_time);
+                self.stats.active_objects.fetch_add(1, Ordering::Relaxed);
                 return Ok(PooledObject {
-                    object,
-                    pool: Box::new(self.clone()),
+                    object: Some(object),
+                    pool: Arc::clone(self),
                     created_at: Instant::now(),
                     last_used_at: Instant::now(),
                 });
@@ -399,7 +400,7 @@ impl<T: Send + 'static> ObjectPoolBuilder<T> {
     }
 
     /// 构建对象池
-    pub fn build(self) -> Result<ObjectPool<T>, ObjectPoolError> {
+    pub fn build(self) -> Result<Arc<ObjectPool<T>>, ObjectPoolError> {
         let factory = self.factory.ok_or_else(|| {
             ObjectPoolError::CreationFailed("Factory not set".to_string())
         })?;
@@ -478,14 +479,14 @@ mod tests {
 
         // 获取对象
         let pooled_object = pool.acquire().await.unwrap();
-        assert_eq!(pooled_object.get().id, 1);
+        let first_id = pooled_object.get().id;
 
         // 释放对象（通过Drop）
         drop(pooled_object);
 
         // 再次获取对象
         let pooled_object = pool.acquire().await.unwrap();
-        assert_eq!(pooled_object.get().id, 1); // 应该是同一个对象
+        assert_eq!(pooled_object.get().id, first_id); // 应该是同一个对象
     }
 
     #[tokio::test]

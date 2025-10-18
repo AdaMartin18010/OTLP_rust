@@ -272,19 +272,37 @@ mod tests {
         let manager = OptimizationManager::new();
         manager.initialize().await.unwrap();
         
-        // 记录一些性能数据
-        let metrics = PerformanceMetrics {
-            cpu_usage: 95.0,
-            memory_usage: 90.0,
-            throughput: 500,
-            latency: Duration::from_millis(200),
-            error_rate: 2.0,
-            connection_count: 100,
-            queue_depth: 10,
-            cache_hit_rate: 80.0,
-        };
-        
-        manager.update_performance_metrics(metrics).unwrap();
+        // 记录多次性能数据（至少10次）以便进行分析
+        for i in 0..12 {
+            let metrics = PerformanceMetrics {
+                cpu_usage: 95.0 - (i as f64 * 0.5), // 逐渐降低
+                memory_usage: 90.0,
+                throughput: 500 + (i * 10),
+                latency: Duration::from_millis(200),
+                error_rate: 2.0,
+                connection_count: 100,
+                queue_depth: 10,
+                cache_hit_rate: 80.0,
+            };
+            
+            // 更新性能指标（用于performance_tuner）
+            manager.update_performance_metrics(metrics.clone()).unwrap();
+            
+            // 记录性能快照（用于smart_config_manager）
+            let snapshot = PerformanceSnapshot {
+                timestamp: std::time::Instant::now(),
+                cpu_usage: metrics.cpu_usage,
+                memory_usage: metrics.memory_usage,
+                throughput: metrics.throughput as u64,
+                latency: metrics.latency,
+                error_rate: metrics.error_rate,
+                config_hash: format!("test_config_{}", i),
+            };
+            manager.record_performance_snapshot(snapshot).unwrap();
+            
+            // 小延迟以模拟实际场景
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
         
         let report = manager.perform_optimization_analysis().await.unwrap();
         assert!(report.total_suggestions > 0);

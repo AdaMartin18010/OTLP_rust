@@ -257,7 +257,7 @@ impl DifferentialPrivacyManager {
 /// 安全审计管理器
 #[allow(dead_code)]
 pub struct SecurityAuditManager {
-    audit_log: Arc<Vec<AuditEntry>>,
+    audit_log: Arc<tokio::sync::RwLock<Vec<AuditEntry>>>,
     stats: Arc<SecurityAuditStats>,
 }
 
@@ -265,7 +265,7 @@ impl SecurityAuditManager {
     /// 创建新的安全审计管理器
     pub fn new() -> Self {
         Self {
-            audit_log: Arc::new(Vec::new()),
+            audit_log: Arc::new(tokio::sync::RwLock::new(Vec::new())),
             stats: Arc::new(SecurityAuditStats::new()),
         }
     }
@@ -274,7 +274,7 @@ impl SecurityAuditManager {
     pub async fn log_event(&self, event: &AuditEvent) -> Result<()> {
         let start_time = Instant::now();
         
-        let _audit_entry = AuditEntry {
+        let audit_entry = AuditEntry {
             event_id: format!("event_{}", event.timestamp),
             event_type: event.event_type.clone(),
             user_id: event.user_id.clone(),
@@ -287,8 +287,8 @@ impl SecurityAuditManager {
         };
         
         // 记录审计事件
-        // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
-        // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
+        let mut log = self.audit_log.write().await;
+        log.push(audit_entry);
         
         // 更新统计信息
         self.stats.record_audit_event(start_time.elapsed());
@@ -300,9 +300,10 @@ impl SecurityAuditManager {
     pub async fn query_audit_log(&self, filter: &AuditFilter) -> Result<Vec<AuditEntry>> {
         let start_time = Instant::now();
         
-        // 模拟审计日志查询
+        // 查询审计日志
+        let log = self.audit_log.read().await;
         let mut results = Vec::new();
-        for entry in self.audit_log.iter() {
+        for entry in log.iter() {
             if self.matches_filter(entry, filter) {
                 results.push(entry.clone());
             }
