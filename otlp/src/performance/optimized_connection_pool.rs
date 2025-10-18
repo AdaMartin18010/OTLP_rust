@@ -614,22 +614,28 @@ mod tests {
                 .expect("Failed to create connection pool");
 
         // 获取最大数量的连接
-        let conn1 = pool.acquire().await.expect("Failed to acquire connection 1");
-        let conn2 = pool.acquire().await.expect("Failed to acquire connection 2");
+        let _conn1 = pool.acquire().await.expect("Failed to acquire connection 1");
+        let _conn2 = pool.acquire().await.expect("Failed to acquire connection 2");
 
-        // 尝试获取第三个连接应该失败
-        let result = pool.acquire().await;
-        assert!(result.is_err());
+        // 尝试获取第三个连接应该超时（因为池满了会阻塞）
+        // 使用一个新的作用域来确保前面的连接还在使用中
+        {
+            let result = tokio::time::timeout(
+                Duration::from_millis(100),
+                pool.acquire()
+            ).await;
+            assert!(result.is_err(), "Expected timeout when pool is full");
+        }
 
         // 释放一个连接
-        drop(conn1);
+        drop(_conn1);
+        
+        // 等待一小段时间让连接返回池中
+        tokio::time::sleep(Duration::from_millis(50)).await;
 
         // 现在应该能够获取连接
         let conn3 = pool.acquire().await.expect("Failed to acquire connection after release");
         assert_eq!(conn3.get(), "test_connection");
-
-        drop(conn2);
-        drop(conn3);
     }
 
     #[tokio::test]
