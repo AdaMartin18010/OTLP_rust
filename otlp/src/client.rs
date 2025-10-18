@@ -7,9 +7,9 @@ use crate::config::TransportProtocol;
 use crate::data::TelemetryData;
 use crate::error::{OtlpError, Result};
 use crate::exporter::{ExportResult, ExporterMetrics, OtlpExporter};
+use crate::performance::{QuickOptimizationsConfig, QuickOptimizationsManager};
 use crate::processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 use crate::resilience::ResilienceManager;
-use crate::performance::{QuickOptimizationsConfig, QuickOptimizationsManager};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -408,10 +408,10 @@ impl OtlpClient {
     pub async fn enable_quick_optimizations(&self, config: QuickOptimizationsConfig) -> Result<()> {
         let mut manager = QuickOptimizationsManager::new(config);
         manager.initialize().await?;
-        
+
         let mut optimizations = self.quick_optimizations.write().await;
         *optimizations = Some(manager);
-        
+
         Ok(())
     }
 
@@ -831,9 +831,14 @@ mod tests {
     #[tokio::test]
     async fn test_trace_builder() {
         let config = OtlpConfig::default();
-        let client = OtlpClient::new(config).await.expect("Failed to create OTLP client");
+        let client = OtlpClient::new(config)
+            .await
+            .expect("Failed to create OTLP client");
 
-        let trace_builder = client.send_trace("test-operation").await.expect("Failed to create trace builder");
+        let trace_builder = client
+            .send_trace("test-operation")
+            .await
+            .expect("Failed to create trace builder");
         let _result = trace_builder
             .with_attribute("service.name", "test-service")
             .with_numeric_attribute("duration", 100.0)
@@ -848,9 +853,14 @@ mod tests {
     #[tokio::test]
     async fn test_metric_builder() {
         let config = OtlpConfig::default();
-        let client = OtlpClient::new(config).await.expect("Failed to create OTLP client");
+        let client = OtlpClient::new(config)
+            .await
+            .expect("Failed to create OTLP client");
 
-        let metric_builder = client.send_metric("test-metric", 42.0).await.expect("Failed to create metric builder");
+        let metric_builder = client
+            .send_metric("test-metric", 42.0)
+            .await
+            .expect("Failed to create metric builder");
         let _result = metric_builder
             .with_label("environment", "test")
             .with_description("Test metric")
@@ -864,7 +874,9 @@ mod tests {
     #[tokio::test]
     async fn test_log_builder() {
         let config = OtlpConfig::default();
-        let client = OtlpClient::new(config).await.expect("Failed to create OTLP client");
+        let client = OtlpClient::new(config)
+            .await
+            .expect("Failed to create OTLP client");
 
         let log_builder = client
             .send_log("Test log message", LogSeverity::Info)

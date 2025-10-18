@@ -1,13 +1,13 @@
 //! 内存池性能基准测试
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use std::hint::black_box;
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use otlp::performance::memory_pool::{MemoryPool, MemoryPoolConfig, MemoryPoolManager};
+use std::hint::black_box;
 use std::time::Duration;
 
 fn bench_memory_pool_allocation(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_pool_allocation");
-    
+
     let config = MemoryPoolConfig {
         initial_size: 100,
         max_size: 1000,
@@ -23,13 +23,13 @@ fn bench_memory_pool_allocation(c: &mut Criterion) {
             })
         });
     }
-    
+
     group.finish();
 }
 
 fn bench_memory_pool_vs_std_allocation(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_pool_vs_std");
-    
+
     let config = MemoryPoolConfig {
         initial_size: 1000,
         max_size: 10000,
@@ -50,13 +50,13 @@ fn bench_memory_pool_vs_std_allocation(c: &mut Criterion) {
             black_box(data)
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_memory_pool_reuse(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_pool_reuse");
-    
+
     let config = MemoryPoolConfig {
         initial_size: 100,
         max_size: 1000,
@@ -76,22 +76,19 @@ fn bench_memory_pool_reuse(c: &mut Criterion) {
             let _data = pool.allocate(black_box(1024));
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_memory_pool_manager(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_pool_manager");
-    
+
     let manager = MemoryPoolManager::new();
     let config = MemoryPoolConfig::default();
-    
+
     group.bench_function("create_pool", |b| {
         b.iter(|| {
-            let pool = manager.create_pool(
-                black_box("test_pool".to_string()),
-                config.clone()
-            );
+            let pool = manager.create_pool(black_box("test_pool".to_string()), config.clone());
             black_box(pool)
         })
     });
@@ -103,13 +100,13 @@ fn bench_memory_pool_manager(c: &mut Criterion) {
             black_box(pool)
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_memory_pool_concurrent(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_pool_concurrent");
-    
+
     let config = MemoryPoolConfig {
         initial_size: 1000,
         max_size: 10000,
@@ -137,13 +134,13 @@ fn bench_memory_pool_concurrent(c: &mut Criterion) {
             }
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_memory_pool_cleanup(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_pool_cleanup");
-    
+
     let config = MemoryPoolConfig {
         initial_size: 100,
         max_size: 1000,
@@ -161,13 +158,13 @@ fn bench_memory_pool_cleanup(c: &mut Criterion) {
             }
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_memory_pool_stats(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_pool_stats");
-    
+
     let config = MemoryPoolConfig::default();
     let pool = MemoryPool::new(config);
 
@@ -186,7 +183,7 @@ fn bench_memory_pool_stats(c: &mut Criterion) {
             black_box(stats)
         })
     });
-    
+
     group.finish();
 }
 

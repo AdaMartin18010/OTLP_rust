@@ -1,10 +1,10 @@
 //! 网络I/O优化模块
-//! 
+//!
 //! 提供高性能的网络I/O操作、连接池和负载均衡
 
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
-use std::sync::{Mutex};
+use std::sync::Mutex;
 use std::time::Duration;
 
 pub mod async_io;
@@ -66,7 +66,7 @@ impl NetworkManager {
     /// 创建新的网络管理器
     pub async fn new(config: NetworkConfig) -> Result<Self, anyhow::Error> {
         let async_io_manager = AsyncIoManager::new(config.async_io.clone());
-        
+
         let mut manager = Self {
             config,
             async_io_manager,
@@ -98,7 +98,8 @@ impl NetworkManager {
             self.config.connection_pool.clone(),
             self.config.async_io.clone(),
             addresses,
-        ).await?;
+        )
+        .await?;
         self.connection_pool = Some(pool);
         Ok(())
     }
@@ -143,7 +144,10 @@ impl NetworkManager {
     }
 
     /// 选择后端服务器
-    pub async fn select_backend(&self, strategy: &LoadBalancingStrategy) -> Result<String, anyhow::Error> {
+    pub async fn select_backend(
+        &self,
+        strategy: &LoadBalancingStrategy,
+    ) -> Result<String, anyhow::Error> {
         if let Some(ref lb) = self.load_balancer {
             lb.select_backend(strategy).await
         } else {
@@ -180,7 +184,7 @@ impl NetworkManager {
     /// 更新配置
     pub async fn update_config(&mut self, config: NetworkConfig) -> Result<(), anyhow::Error> {
         self.config = config;
-        
+
         // 重新初始化组件
         if self.config.enable_connection_pool {
             self.init_connection_pool().await?;
@@ -243,11 +247,10 @@ impl NetworkMonitor {
                 timer.tick().await;
                 let new_stats = manager.get_stats().await;
                 {
-                    let mut current_stats = stats.lock()
-                        .unwrap_or_else(|e| {
-                            eprintln!("Failed to acquire network stats lock: {}", e);
-                            std::process::exit(1);
-                        });
+                    let mut current_stats = stats.lock().unwrap_or_else(|e| {
+                        eprintln!("Failed to acquire network stats lock: {}", e);
+                        std::process::exit(1);
+                    });
                     *current_stats = new_stats;
                 }
             }
@@ -256,7 +259,8 @@ impl NetworkMonitor {
 
     /// 获取当前统计信息
     pub fn get_stats(&self) -> NetworkStats {
-        self.stats.lock()
+        self.stats
+            .lock()
             .unwrap_or_else(|e| {
                 eprintln!("Failed to acquire network stats lock: {}", e);
                 std::process::exit(1);

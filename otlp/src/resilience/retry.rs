@@ -3,12 +3,12 @@
 //! 基于理论文档中的容错设计模式，实现智能重试机制。
 //! 参考: OTLP_Rust编程规范与实践指南.md 第3.1.1节
 
-use std::collections::HashMap;
-use std::time::{Duration, Instant};
-use tokio::time::{sleep, timeout};
-use tokio::sync::RwLock;
-use std::sync::Arc;
 use anyhow;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
+use tokio::time::{sleep, timeout};
 
 /// 重试策略类型
 #[derive(Debug, Clone, PartialEq)]
@@ -16,13 +16,21 @@ pub enum RetryStrategy {
     /// 固定间隔重试
     Fixed { interval: Duration },
     /// 线性退避重试
-    Linear { initial_interval: Duration, max_interval: Duration, increment: Duration },
+    Linear {
+        initial_interval: Duration,
+        max_interval: Duration,
+        increment: Duration,
+    },
     /// 指数退避重试
-    Exponential { initial_interval: Duration, max_interval: Duration, multiplier: f64 },
+    Exponential {
+        initial_interval: Duration,
+        max_interval: Duration,
+        multiplier: f64,
+    },
     /// 指数退避带抖动
-    ExponentialWithJitter { 
-        initial_interval: Duration, 
-        max_interval: Duration, 
+    ExponentialWithJitter {
+        initial_interval: Duration,
+        max_interval: Duration,
         multiplier: f64,
         jitter_factor: f64,
     },
@@ -130,7 +138,7 @@ impl Retrier {
                 }
                 Err(error) => {
                     last_error = Some(error.clone());
-                    
+
                     // 如果是最后一次尝试，返回MaxAttemptsReached
                     if attempt >= self.config.max_attempts {
                         self.update_stats_on_failure(attempt).await;
@@ -142,7 +150,7 @@ impl Retrier {
 
                     // 计算重试间隔
                     let retry_interval = self.calculate_retry_interval(attempt);
-                    
+
                     // 更新统计信息
                     self.update_stats_on_retry(attempt, retry_interval).await;
 
@@ -200,7 +208,7 @@ impl Retrier {
                 }
                 Ok(Err(error)) => {
                     last_error = Some(error.clone());
-                    
+
                     // 如果是最后一次尝试，返回MaxAttemptsReached
                     if attempt >= self.config.max_attempts {
                         self.update_stats_on_failure(attempt).await;
@@ -212,7 +220,7 @@ impl Retrier {
 
                     // 计算重试间隔
                     let retry_interval = self.calculate_retry_interval(attempt);
-                    
+
                     // 更新统计信息
                     self.update_stats_on_retry(attempt, retry_interval).await;
 
@@ -242,33 +250,35 @@ impl Retrier {
     fn calculate_retry_interval(&self, attempt: u32) -> Duration {
         match &self.config.strategy {
             RetryStrategy::Fixed { interval } => *interval,
-            
-            RetryStrategy::Linear { 
-                initial_interval, 
-                max_interval, 
-                increment 
+
+            RetryStrategy::Linear {
+                initial_interval,
+                max_interval,
+                increment,
             } => {
                 let interval = *initial_interval + *increment * (attempt - 1) as u32;
                 interval.min(*max_interval)
             }
-            
-            RetryStrategy::Exponential { 
-                initial_interval, 
-                max_interval, 
-                multiplier 
+
+            RetryStrategy::Exponential {
+                initial_interval,
+                max_interval,
+                multiplier,
             } => {
-                let interval_ms = initial_interval.as_millis() as f64 * multiplier.powi(attempt as i32 - 1);
+                let interval_ms =
+                    initial_interval.as_millis() as f64 * multiplier.powi(attempt as i32 - 1);
                 let interval = Duration::from_millis(interval_ms as u64);
                 interval.min(*max_interval)
             }
-            
-            RetryStrategy::ExponentialWithJitter { 
-                initial_interval, 
-                max_interval, 
+
+            RetryStrategy::ExponentialWithJitter {
+                initial_interval,
+                max_interval,
                 multiplier,
                 jitter_factor,
             } => {
-                let base_interval_ms = initial_interval.as_millis() as f64 * multiplier.powi(attempt as i32 - 1);
+                let base_interval_ms =
+                    initial_interval.as_millis() as f64 * multiplier.powi(attempt as i32 - 1);
                 let jitter = base_interval_ms * jitter_factor * (2.0 * rand::random::<f64>() - 1.0);
                 let interval_ms = (base_interval_ms + jitter).max(0.0) as u64;
                 let interval = Duration::from_millis(interval_ms);
@@ -295,13 +305,14 @@ impl Retrier {
     async fn update_stats_on_retry(&self, _attempt: u32, interval: Duration) {
         let mut stats = self.stats.write().await;
         stats.total_retries += 1;
-        
+
         // 更新平均重试间隔
         let total_retries = stats.total_retries;
         let current_avg = stats.average_retry_interval.as_millis() as f64;
-        let new_avg = (current_avg * (total_retries - 1) as f64 + interval.as_millis() as f64) / total_retries as f64;
+        let new_avg = (current_avg * (total_retries - 1) as f64 + interval.as_millis() as f64)
+            / total_retries as f64;
         stats.average_retry_interval = Duration::from_millis(new_avg as u64);
-        
+
         // 更新最大重试间隔
         if interval > stats.max_retry_interval {
             stats.max_retry_interval = interval;
@@ -313,18 +324,24 @@ impl Retrier {
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum RetryError<E = anyhow::Error> {
     #[error("操作失败: 尝试了 {attempts} 次")]
-    OperationFailed { attempts: u32, last_error: Option<E> },
-    
-    #[error("达到最大重试次数: {max_attempts}")]
-    MaxAttemptsReached { max_attempts: u32, last_error: Option<E> },
-    
-    #[error("总超时: {total_timeout:?}, 已用时间: {elapsed:?}")]
-    Timeout { 
-        total_timeout: Duration, 
-        elapsed: Duration, 
-        last_error: Option<E> 
+    OperationFailed {
+        attempts: u32,
+        last_error: Option<E>,
     },
-    
+
+    #[error("达到最大重试次数: {max_attempts}")]
+    MaxAttemptsReached {
+        max_attempts: u32,
+        last_error: Option<E>,
+    },
+
+    #[error("总超时: {total_timeout:?}, 已用时间: {elapsed:?}")]
+    Timeout {
+        total_timeout: Duration,
+        elapsed: Duration,
+        last_error: Option<E>,
+    },
+
     #[error("操作超时: {0:?}")]
     OperationTimeout(Duration),
 }
@@ -392,11 +409,7 @@ impl RetrierManager {
     }
 
     /// 获取或创建重试器
-    pub async fn get_or_create_retrier(
-        &self,
-        name: &str,
-        config: RetryConfig,
-    ) -> Arc<Retrier> {
+    pub async fn get_or_create_retrier(&self, name: &str, config: RetryConfig) -> Arc<Retrier> {
         let mut retriers = self.retriers.write().await;
         if let Some(retrier) = retriers.get(name) {
             return retrier.clone();
@@ -411,11 +424,11 @@ impl RetrierManager {
     pub async fn get_all_stats(&self) -> HashMap<String, RetryStats> {
         let retriers = self.retriers.read().await;
         let mut stats_map = HashMap::new();
-        
+
         for (name, retrier) in retriers.iter() {
             stats_map.insert(name.clone(), retrier.stats().await);
         }
-        
+
         stats_map
     }
 }
@@ -444,13 +457,9 @@ mod tests {
         let retrier = Retrier::new(config);
 
         let result: Result<i32, RetryError<&str>> = retrier
-            .execute(|| {
-                Box::pin(async {
-                    Err("temporary error")
-                })
-            })
+            .execute(|| Box::pin(async { Err("temporary error") }))
             .await;
-        
+
         assert!(result.is_err());
     }
 
@@ -469,13 +478,9 @@ mod tests {
         let retrier = Retrier::new(config);
 
         let result: Result<i32, RetryError<&str>> = retrier
-            .execute(|| {
-                Box::pin(async {
-                    Err("temporary error")
-                })
-            })
+            .execute(|| Box::pin(async { Err("temporary error") }))
             .await;
-        
+
         assert!(result.is_err());
     }
 
@@ -492,9 +497,7 @@ mod tests {
         let retrier = Retrier::new(config);
 
         let result: Result<i32, RetryError<&str>> = retrier
-            .execute(|| {
-                Box::pin(async { Err("permanent error") })
-            })
+            .execute(|| Box::pin(async { Err("permanent error") }))
             .await;
 
         assert!(matches!(result, Err(RetryError::MaxAttemptsReached { .. })));

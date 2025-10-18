@@ -2,9 +2,9 @@
 //!
 //! 集成SIMD优化、缓存优化和内存池优化的OTLP数据处理器
 
+use anyhow::Result;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use anyhow::Result;
 
 /// OTLP数据项
 #[derive(Debug, Clone)]
@@ -71,15 +71,15 @@ impl OptimizedOtlpProcessor {
     /// 处理单个数据项
     pub fn process_single_item(&mut self, item: &OtlpDataItem) -> Result<OtlpDataItem> {
         let start_time = Instant::now();
-        
+
         let mut result = item.clone();
-        
+
         // SIMD优化处理
         if self.config.enable_simd {
             result.value = result.value * result.value; // 简单的平方运算作为示例
             self.metrics.simd_processed += 1;
         }
-        
+
         // 缓存优化处理
         if self.config.enable_cache_optimization {
             // 模拟缓存处理
@@ -89,25 +89,27 @@ impl OptimizedOtlpProcessor {
                 self.metrics.cache_misses += 1;
             }
         }
-        
+
         self.metrics.total_processed += 1;
         self.metrics.average_processing_time = Duration::from_nanos(
-            (self.metrics.average_processing_time.as_nanos() as u64 * (self.metrics.total_processed - 1) 
-             + start_time.elapsed().as_nanos() as u64) / self.metrics.total_processed
+            (self.metrics.average_processing_time.as_nanos() as u64
+                * (self.metrics.total_processed - 1)
+                + start_time.elapsed().as_nanos() as u64)
+                / self.metrics.total_processed,
         );
-        
+
         Ok(result)
     }
 
     /// 批量处理数据项
     pub fn process_batch(&mut self, items: &[OtlpDataItem]) -> Result<Vec<OtlpDataItem>> {
         let mut results = Vec::with_capacity(items.len());
-        
+
         for item in items {
             let result = self.process_single_item(item)?;
             results.push(result);
         }
-        
+
         Ok(results)
     }
 
@@ -127,11 +129,11 @@ impl OptimizedOtlpProcessor {
         if self.config.enable_memory_pool {
             // 内存池优化
         }
-        
+
         if self.config.enable_cache_optimization {
             // 缓存优化
         }
-        
+
         Ok(())
     }
 }
@@ -151,7 +153,7 @@ impl PerformanceMonitor {
     /// 生成性能报告
     pub fn generate_report(&self) -> PerformanceReport {
         let metrics = self.processor.get_performance_metrics();
-        
+
         PerformanceReport {
             total_processed: metrics.total_processed,
             simd_processed: metrics.simd_processed,
@@ -160,7 +162,7 @@ impl PerformanceMonitor {
             } else {
                 0.0
             },
-            memory_allocations: 0, // 暂时禁用
+            memory_allocations: 0,   // 暂时禁用
             memory_deallocations: 0, // 暂时禁用
         }
     }
@@ -205,7 +207,7 @@ mod tests {
         let config = OptimizedProcessorConfig::default();
         let processor = OptimizedOtlpProcessor::new(config);
         let metrics = processor.get_performance_metrics();
-        
+
         assert_eq!(metrics.total_processed, 0);
         assert_eq!(metrics.simd_processed, 0);
     }
@@ -217,18 +219,18 @@ mod tests {
             enable_cache_optimization: true,
             ..Default::default()
         };
-        
+
         let mut processor = OptimizedOtlpProcessor::new(config);
-        
+
         let item = OtlpDataItem {
             timestamp: 1234567890,
             value: 5.0,
             attributes: HashMap::new(),
             resource_attributes: HashMap::new(),
         };
-        
+
         let result = processor.process_single_item(&item).unwrap();
-        
+
         assert_eq!(result.timestamp, 1234567890);
         assert_eq!(result.value, 25.0); // 5.0 * 5.0
     }
@@ -237,7 +239,7 @@ mod tests {
     fn test_batch_processing() {
         let config = OptimizedProcessorConfig::default();
         let mut processor = OptimizedOtlpProcessor::new(config);
-        
+
         let items: Vec<OtlpDataItem> = (0..10)
             .map(|i| OtlpDataItem {
                 timestamp: i as u64,
@@ -246,9 +248,9 @@ mod tests {
                 resource_attributes: HashMap::new(),
             })
             .collect();
-        
+
         let results = processor.process_batch(&items).unwrap();
-        
+
         assert_eq!(results.len(), 10);
         for (i, result) in results.iter().enumerate() {
             assert_eq!(result.timestamp, i as u64);

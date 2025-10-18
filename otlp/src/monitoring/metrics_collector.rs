@@ -352,7 +352,7 @@ impl MetricsCollector {
             .duration_since(UNIX_EPOCH)
             .map_err(|e| MetricsCollectorError::InvalidMetricValue(format!("系统时间错误: {}", e)))?
             .as_secs();
-        
+
         let data_point = MetricDataPoint {
             timestamp,
             value,
@@ -509,8 +509,8 @@ mod tests {
     #[tokio::test]
     async fn test_metrics_collector_basic() {
         let config = MetricsCollectorConfig::default();
-        let collector = MetricsCollector::new(config)
-            .expect("Failed to create MetricsCollector for test");
+        let collector =
+            MetricsCollector::new(config).expect("Failed to create MetricsCollector for test");
 
         // 注册指标
         let metric_def = MetricDefinition {
@@ -520,7 +520,9 @@ mod tests {
             labels: vec![],
         };
 
-        collector.register_metric(metric_def).await
+        collector
+            .register_metric(metric_def)
+            .await
             .expect("Failed to register metric");
 
         // 记录指标值
@@ -536,7 +538,9 @@ mod tests {
             .expect("Failed to record metric");
 
         // 获取指标数据
-        let data = collector.get_metric_data("test_counter").await
+        let data = collector
+            .get_metric_data("test_counter")
+            .await
             .expect("Failed to get metric data");
         assert_eq!(data.len(), 1);
         assert!(matches!(data[0].value, MetricValue::Counter(1.0)));
@@ -569,8 +573,14 @@ mod tests {
             labels: vec![],
         };
 
-        collector.register_metric(counter_def).await.expect("Failed to register counter metric");
-        collector.register_metric(gauge_def).await.expect("Failed to register gauge metric");
+        collector
+            .register_metric(counter_def)
+            .await
+            .expect("Failed to register counter metric");
+        collector
+            .register_metric(gauge_def)
+            .await
+            .expect("Failed to register gauge metric");
 
         // 记录不同类型的值
         collector
@@ -587,9 +597,13 @@ mod tests {
             .expect("Failed to record gauge metric");
 
         // 验证数据
-        let counter_data = collector.get_metric_data("test_counter").await
+        let counter_data = collector
+            .get_metric_data("test_counter")
+            .await
             .expect("Failed to get counter metric data");
-        let gauge_data = collector.get_metric_data("test_gauge").await
+        let gauge_data = collector
+            .get_metric_data("test_gauge")
+            .await
             .expect("Failed to get gauge metric data");
 
         assert_eq!(counter_data.len(), 1);
@@ -607,8 +621,7 @@ mod tests {
             cleanup_interval: Duration::from_millis(50),
             ..Default::default()
         };
-        let collector = MetricsCollector::new(config)
-            .expect("Failed to create MetricsCollector");
+        let collector = MetricsCollector::new(config).expect("Failed to create MetricsCollector");
 
         // 注册指标
         let metric_def = MetricDefinition {
@@ -618,7 +631,9 @@ mod tests {
             labels: vec![],
         };
 
-        collector.register_metric(metric_def).await
+        collector
+            .register_metric(metric_def)
+            .await
             .expect("Failed to register metric");
 
         // 记录指标值
@@ -631,7 +646,9 @@ mod tests {
         sleep(Duration::from_millis(200)).await;
 
         // 验证数据被清理
-        let data = collector.get_metric_data("test_metric").await
+        let data = collector
+            .get_metric_data("test_metric")
+            .await
             .expect("Failed to get metric data after cleanup");
         assert_eq!(data.len(), 0);
 
@@ -641,8 +658,7 @@ mod tests {
     #[tokio::test]
     async fn test_metrics_collector_export() {
         let config = MetricsCollectorConfig::default();
-        let collector = MetricsCollector::new(config)
-            .expect("Failed to create MetricsCollector");
+        let collector = MetricsCollector::new(config).expect("Failed to create MetricsCollector");
 
         // 注册指标
         let metric_def = MetricDefinition {
@@ -652,7 +668,9 @@ mod tests {
             labels: vec![],
         };
 
-        collector.register_metric(metric_def).await
+        collector
+            .register_metric(metric_def)
+            .await
             .expect("Failed to register metric");
 
         // 记录指标值
@@ -662,7 +680,9 @@ mod tests {
             .expect("Failed to record metric");
 
         // 导出指标
-        let exported_data = collector.export_metrics().await
+        let exported_data = collector
+            .export_metrics()
+            .await
             .expect("Failed to export metrics");
         assert_eq!(exported_data.len(), 1);
 

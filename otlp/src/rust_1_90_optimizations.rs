@@ -129,7 +129,10 @@ impl TupleCollectionOptimizer {
     /// 3. 更好的性能
     pub fn collect_to_tuple(&self, data: Vec<Result<i32, String>>) -> (Vec<i32>, Vec<String>) {
         let (ok_results, err_results): (Vec<_>, Vec<_>) = data.into_iter().partition(|r| r.is_ok());
-        let successful: Vec<i32> = ok_results.into_iter().map(|r| r.expect("Partition ensures Ok values")).collect();
+        let successful: Vec<i32> = ok_results
+            .into_iter()
+            .map(|r| r.expect("Partition ensures Ok values"))
+            .collect();
         let failed: Vec<String> = err_results.into_iter().map(|r| r.unwrap_err()).collect();
         (successful, failed)
     }
@@ -281,12 +284,16 @@ impl<T: Clone + Send + 'static> PooledObject<T> {
 
     /// 获取对象的引用
     pub fn get(&self) -> &T {
-        self.object.as_ref().expect("PooledObject should always contain an object")
+        self.object
+            .as_ref()
+            .expect("PooledObject should always contain an object")
     }
 
     /// 获取对象的可变引用
     pub fn get_mut(&mut self) -> &mut T {
-        self.object.as_mut().expect("PooledObject should always contain an object")
+        self.object
+            .as_mut()
+            .expect("PooledObject should always contain an object")
     }
 }
 
@@ -354,7 +361,8 @@ impl AsyncBatchProcessor {
             ));
         }
 
-        let results: Vec<R> = successful.into_iter()
+        let results: Vec<R> = successful
+            .into_iter()
             .flat_map(|r| r.expect("Successful results should be Ok"))
             .collect();
 
@@ -568,9 +576,8 @@ impl CacheOptimizer {
 
         // 简化的内存分配，实际应用中应该使用更安全的方法
         unsafe {
-            let layout =
-                std::alloc::Layout::from_size_align(aligned_size, self.cache_alignment)
-                    .expect("Cache alignment must be a power of two");
+            let layout = std::alloc::Layout::from_size_align(aligned_size, self.cache_alignment)
+                .expect("Cache alignment must be a power of two");
             let ptr = std::alloc::alloc(layout);
             if ptr.is_null() {
                 return Err(anyhow::anyhow!("内存分配失败"));

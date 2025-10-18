@@ -3,9 +3,9 @@
 //! 展示如何在主客户端中集成和使用快速性能优化功能
 
 use otlp::{
+    OtlpClient, OtlpConfig, TelemetryData,
     data::{LogSeverity, MetricType, StatusCode},
     performance::QuickOptimizationsConfig,
-    OtlpClient, OtlpConfig, TelemetryData,
 };
 use std::time::Duration;
 use tokio::time::sleep;
@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 创建客户端
     let client = OtlpClient::new(config).await?;
-    
+
     // 初始化客户端
     client.initialize().await?;
     println!("✅ 客户端初始化完成");
@@ -50,12 +50,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 启用快速优化
     println!("🔧 启用快速性能优化...");
-    client.enable_quick_optimizations(optimization_config).await?;
+    client
+        .enable_quick_optimizations(optimization_config)
+        .await?;
     println!("✅ 快速优化启用完成");
 
     // 演示优化后的数据发送
     println!("\n📊 演示优化后的数据发送...");
-    
+
     // 发送追踪数据
     for i in 0..50 {
         let trace_data = TelemetryData::trace(format!("optimized_operation_{}", i))
@@ -65,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_status(StatusCode::Ok, Some("success".to_string()));
 
         client.send_with_optimizations(trace_data).await?;
-        
+
         if i % 10 == 0 {
             println!("  发送了 {} 条追踪数据", i + 1);
         }
@@ -73,12 +75,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 发送指标数据
     for i in 0..30 {
-        let metric_data = TelemetryData::metric(format!("optimized_metric_{}", i), MetricType::Counter)
-            .with_attribute("environment", "demo")
-            .with_numeric_attribute("value", (i * 2) as f64);
+        let metric_data =
+            TelemetryData::metric(format!("optimized_metric_{}", i), MetricType::Counter)
+                .with_attribute("environment", "demo")
+                .with_numeric_attribute("value", (i * 2) as f64);
 
         client.send_with_optimizations(metric_data).await?;
-        
+
         if i % 10 == 0 {
             println!("  发送了 {} 条指标数据", i + 1);
         }
@@ -86,12 +89,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 发送日志数据
     for i in 0..20 {
-        let log_data = TelemetryData::log(format!("Optimized log message {}", i), LogSeverity::Info)
-            .with_attribute("logger", "optimized-demo")
-            .with_attribute("thread", "main");
+        let log_data =
+            TelemetryData::log(format!("Optimized log message {}", i), LogSeverity::Info)
+                .with_attribute("logger", "optimized-demo")
+                .with_attribute("thread", "main");
 
         client.send_with_optimizations(log_data).await?;
-        
+
         if i % 5 == 0 {
             println!("  发送了 {} 条日志数据", i + 1);
         }
@@ -114,11 +118,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🔄 演示传统发送方式...");
     for i in 0..10 {
         // 使用传统方式发送
-        let builder = client.send_trace(format!("traditional_operation_{}", i)).await?;
+        let builder = client
+            .send_trace(format!("traditional_operation_{}", i))
+            .await?;
         builder
             .with_attribute("service.name", "traditional-demo")
             .with_attribute("operation.id", i.to_string())
-            .finish().await?;
+            .finish()
+            .await?;
     }
     println!("✅ 传统发送方式完成");
 

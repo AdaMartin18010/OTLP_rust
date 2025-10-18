@@ -1,22 +1,22 @@
 //! 高级功能模块 - 展示 Rust 1.90 新特性
-//! 
+//!
 //! 本模块实现了基于 Rust 1.90 最新语言特性的高级功能，
 //! 包括智能缓存、自适应采样、AI驱动的异常检测等。
 
 use std::collections::HashMap;
+use std::future::Future;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
-use std::future::Future;
 
-use tokio::sync::{RwLock, Mutex};
-use tokio::time::interval;
 use anyhow::{Result, anyhow};
+use tokio::sync::{Mutex, RwLock};
+use tokio::time::interval;
 
 use crate::data::TelemetryData;
 
 /// 智能缓存系统 - 利用 Rust 1.90 的类型系统优化
 #[derive(Debug, Clone)]
-pub struct IntelligentCache<K, V> 
+pub struct IntelligentCache<K, V>
 where
     K: Clone + std::hash::Hash + Eq + Send + Sync + 'static,
     V: Clone + Send + Sync + 'static,
@@ -71,7 +71,7 @@ where
             config,
             stats: Arc::new(Mutex::new(CacheStats::default())),
         };
-        
+
         // 启动后台清理任务
         cache.start_cleanup_task();
         cache
@@ -83,7 +83,7 @@ where
         stats.total_operations += 1;
 
         let mut cache = self.inner.write().await;
-        
+
         if let Some(entry) = cache.get_mut(key) {
             // 检查是否过期
             if entry.created_at.elapsed() > entry.ttl {
@@ -96,7 +96,7 @@ where
             entry.last_accessed = Instant::now();
             entry.access_count += 1;
             stats.hits += 1;
-            
+
             Some(entry.value.clone())
         } else {
             stats.misses += 1;
@@ -107,7 +107,7 @@ where
     /// 设置缓存值
     pub async fn set(&self, key: K, value: V, ttl: Option<Duration>) -> Result<()> {
         let mut cache = self.inner.write().await;
-        
+
         // 检查缓存大小限制
         if cache.len() >= self.config.max_size {
             self.evict_entries(&mut cache).await;
@@ -138,39 +138,43 @@ where
 
         // 缓存未命中，执行计算
         let value = compute_fn().await?;
-        
+
         // 将结果存入缓存
         self.set(key, value.clone(), None).await?;
-        
+
         Ok(value)
     }
 
     /// 驱逐缓存条目
     async fn evict_entries(&self, cache: &mut HashMap<K, CacheEntry<V>>) {
         let mut stats = self.stats.lock().await;
-        
+
         let key_to_remove = match self.config.eviction_policy {
             EvictionPolicy::LRU => {
                 // 找到最久未访问的条目
-                cache.iter()
+                cache
+                    .iter()
                     .min_by_key(|(_, entry)| entry.last_accessed)
                     .map(|(key, _)| key.clone())
-            },
+            }
             EvictionPolicy::LFU => {
                 // 找到访问次数最少的条目
-                cache.iter()
+                cache
+                    .iter()
                     .min_by_key(|(_, entry)| entry.access_count)
                     .map(|(key, _)| key.clone())
-            },
+            }
             EvictionPolicy::TTL => {
                 // 找到最旧的条目
-                cache.iter()
+                cache
+                    .iter()
                     .min_by_key(|(_, entry)| entry.created_at)
                     .map(|(key, _)| key.clone())
-            },
+            }
             EvictionPolicy::Hybrid => {
                 // 混合策略：结合访问频率和最近访问时间
-                cache.iter()
+                cache
+                    .iter()
                     .min_by_key(|(_, entry)| {
                         // 计算综合分数：访问次数权重 + 时间权重
                         let time_score = entry.last_accessed.elapsed().as_secs() as f64;
@@ -180,7 +184,7 @@ where
                     .map(|(key, _)| key.clone())
             }
         };
-        
+
         if let Some(key) = key_to_remove {
             cache.remove(&key);
             stats.evictions += 1;
@@ -195,19 +199,17 @@ where
 
         tokio::spawn(async move {
             let mut interval = interval(config.cleanup_interval);
-            
+
             loop {
                 interval.tick().await;
-                
+
                 let mut cache_guard = cache.write().await;
                 let mut stats_guard = stats.lock().await;
-                
+
                 // 清理过期条目
                 let initial_size = cache_guard.len();
-                cache_guard.retain(|_, entry| {
-                    entry.created_at.elapsed() <= entry.ttl
-                });
-                
+                cache_guard.retain(|_, entry| entry.created_at.elapsed() <= entry.ttl);
+
                 let removed = initial_size - cache_guard.len();
                 stats_guard.evictions += removed as u64;
             }
@@ -325,12 +327,12 @@ impl AdaptiveSampler {
         // 使用随机数决定是否采样
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         context.trace_id.hash(&mut hasher);
         let hash = hasher.finish();
         let random_value = (hash % 10000) as f64 / 10000.0;
-        
+
         random_value < adjusted_rate
     }
 
@@ -401,9 +403,9 @@ struct AnomalyModel {
 #[allow(unused_variables)]
 #[derive(Debug, Clone)]
 pub enum ModelType {
-    Statistical,      // 统计模型
-    MachineLearning,  // 机器学习模型
-    TimeSeries,       // 时间序列模型
+    Statistical,     // 统计模型
+    MachineLearning, // 机器学习模型
+    TimeSeries,      // 时间序列模型
     Hybrid,          // 混合模型
 }
 
@@ -447,9 +449,13 @@ impl AIAnomalyDetector {
     }
 
     /// 检测异常
-    pub async fn detect_anomaly(&self, features: &[f64], model_name: &str) -> Result<AnomalyResult> {
+    pub async fn detect_anomaly(
+        &self,
+        features: &[f64],
+        model_name: &str,
+    ) -> Result<AnomalyResult> {
         let models = self.models.read().await;
-        
+
         if let Some(model) = models.get(model_name) {
             let anomaly_score = self.calculate_anomaly_score(features, model);
             let is_anomaly = anomaly_score > self.config.anomaly_threshold;
@@ -470,17 +476,21 @@ impl AIAnomalyDetector {
     /// 训练模型
     async fn train_models(&self) {
         let training_data = self.training_data.lock().await.clone();
-        
+
         for model_type in &self.config.model_types {
             let model = self.train_model(&training_data, model_type).await;
-            
+
             let mut models = self.models.write().await;
             models.insert(model.name.clone(), model);
         }
     }
 
     /// 训练单个模型
-    async fn train_model(&self, data: &[TrainingDataPoint], model_type: &ModelType) -> AnomalyModel {
+    async fn train_model(
+        &self,
+        data: &[TrainingDataPoint],
+        model_type: &ModelType,
+    ) -> AnomalyModel {
         match model_type {
             ModelType::Statistical => self.train_statistical_model(data).await,
             ModelType::MachineLearning => self.train_ml_model(data).await,
@@ -498,9 +508,8 @@ impl AIAnomalyDetector {
         for i in 0..feature_count {
             let values: Vec<f64> = data.iter().map(|d| d.features[i]).collect();
             let mean = values.iter().sum::<f64>() / values.len() as f64;
-            let variance = values.iter()
-                .map(|v| (v - mean).powi(2))
-                .sum::<f64>() / values.len() as f64;
+            let variance =
+                values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
 
             parameters.insert(format!("mean_{}", i), mean);
             parameters.insert(format!("variance_{}", i), variance);
@@ -564,7 +573,7 @@ impl AIAnomalyDetector {
                     }
                 }
                 score / features.len() as f64
-            },
+            }
             _ => {
                 // 其他模型类型的实现
                 0.5 // 模拟分数
@@ -637,7 +646,7 @@ impl AdvancedFeaturesManager {
     /// 处理遥测数据
     pub async fn process_telemetry_data(&self, data: TelemetryData) -> Result<ProcessedResult> {
         let data_id = format!("{}_{:?}", data.timestamp, data.data_type);
-        
+
         // 检查缓存
         if let Some(cached_data) = self.cache.get(&data_id).await {
             return Ok(ProcessedResult {
@@ -654,7 +663,7 @@ impl AdvancedFeaturesManager {
             trace_id: "default_trace".to_string(),
             service_name: "default_service".to_string(),
             operation_name: "default_operation".to_string(),
-            error_rate: 0.05, // 模拟错误率
+            error_rate: 0.05,                        // 模拟错误率
             latency_p99: Duration::from_millis(100), // 模拟延迟
             service_importance: 1.0,
             user_id: None,
@@ -663,7 +672,7 @@ impl AdvancedFeaturesManager {
 
         // 决定是否采样
         let should_sample = self.sampler.should_sample(&context).await;
-        
+
         if !should_sample {
             return Ok(ProcessedResult {
                 data,
@@ -674,18 +683,32 @@ impl AdvancedFeaturesManager {
 
         // 异常检测
         let features = self.extract_features(&data);
-        let anomaly_result = self.anomaly_detector.detect_anomaly(&features, "statistical_model").await?;
+        let anomaly_result = self
+            .anomaly_detector
+            .detect_anomaly(&features, "statistical_model")
+            .await?;
 
         // 处理数据
         let mut processed_data = data;
         if anomaly_result.is_anomaly {
             // 添加异常属性到资源属性中
-            processed_data.resource_attributes.insert("anomaly.detected".to_string(), "true".to_string());
-            processed_data.resource_attributes.insert("anomaly.score".to_string(), anomaly_result.anomaly_score.to_string());
+            processed_data
+                .resource_attributes
+                .insert("anomaly.detected".to_string(), "true".to_string());
+            processed_data.resource_attributes.insert(
+                "anomaly.score".to_string(),
+                anomaly_result.anomaly_score.to_string(),
+            );
         }
 
         // 缓存结果
-        self.cache.set(data_id, processed_data.clone(), Some(Duration::from_secs(300))).await?;
+        self.cache
+            .set(
+                data_id,
+                processed_data.clone(),
+                Some(Duration::from_secs(300)),
+            )
+            .await?;
 
         Ok(ProcessedResult {
             data: processed_data,
@@ -699,14 +722,22 @@ impl AdvancedFeaturesManager {
         vec![
             data.timestamp as f64,
             data.resource_attributes.len() as f64,
-            if data.resource_attributes.get("status").map_or(false, |s| s == "OK") { 0.0 } else { 1.0 },
+            if data
+                .resource_attributes
+                .get("status")
+                .map_or(false, |s| s == "OK")
+            {
+                0.0
+            } else {
+                1.0
+            },
         ]
     }
 
     /// 获取系统统计信息
     pub async fn get_system_stats(&self) -> SystemStats {
         let cache_stats = self.cache.get_stats().await;
-        
+
         SystemStats {
             cache_hit_rate: if cache_stats.total_operations > 0 {
                 cache_stats.hits as f64 / cache_stats.total_operations as f64
@@ -751,14 +782,22 @@ mod tests {
         let cache = IntelligentCache::new(config);
 
         // 测试基本操作
-        cache.set("key1".to_string(), "value1".to_string(), None).await
+        cache
+            .set("key1".to_string(), "value1".to_string(), None)
+            .await
             .expect("Failed to set cache value");
-        assert_eq!(cache.get(&"key1".to_string()).await, Some("value1".to_string()));
+        assert_eq!(
+            cache.get(&"key1".to_string()).await,
+            Some("value1".to_string())
+        );
 
         // 测试异步计算
-        let result = cache.get_or_compute("key2".to_string(), || async {
-            Ok::<String, anyhow::Error>("computed_value".to_string())
-        }).await.expect("Failed to compute cache value");
+        let result = cache
+            .get_or_compute("key2".to_string(), || async {
+                Ok::<String, anyhow::Error>("computed_value".to_string())
+            })
+            .await
+            .expect("Failed to compute cache value");
         assert_eq!(result, "computed_value");
     }
 
@@ -784,7 +823,7 @@ mod tests {
     #[tokio::test]
     async fn test_ai_anomaly_detector() {
         use tokio::time::sleep;
-        
+
         let config = AnomalyConfig {
             training_interval: Duration::from_secs(60),
             min_training_samples: 10,
@@ -810,7 +849,9 @@ mod tests {
 
         // 测试异常检测
         let features = vec![1.0, 2.0, 3.0];
-        let result = detector.detect_anomaly(&features, "statistical_model").await
+        let result = detector
+            .detect_anomaly(&features, "statistical_model")
+            .await
             .expect("Failed to detect anomaly");
         assert!(result.anomaly_score >= 0.0 && result.anomaly_score <= 1.0);
     }

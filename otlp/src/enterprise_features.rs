@@ -1,16 +1,16 @@
 //! 企业级功能模块 - Rust 1.90 企业级特性和功能
-//! 
+//!
 //! 本模块实现了基于Rust 1.90的企业级特性和功能，
 //! 包括多租户支持、数据治理、合规性、高可用性等。
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use tokio::sync::RwLock;
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
+use tokio::sync::RwLock;
 
 /// 多租户管理器
 #[derive(Debug)]
@@ -79,7 +79,7 @@ impl MultiTenantManager {
     pub async fn create_tenant(&self, tenant: Tenant) -> Result<()> {
         let mut tenants = self.tenants.write().await;
         let mut quotas = self.tenant_quotas.write().await;
-        
+
         let quota = TenantQuota {
             tenant_id: tenant.id.clone(),
             data_retention_used: Duration::ZERO,
@@ -87,13 +87,13 @@ impl MultiTenantManager {
             storage_used_gb: 0,
             last_reset: SystemTime::now(),
         };
-        
+
         tenants.insert(tenant.id.clone(), tenant);
         quotas.insert(quota.tenant_id.clone(), quota);
-        
+
         self.stats.total_tenants.fetch_add(1, Ordering::Relaxed);
         self.stats.active_tenants.fetch_add(1, Ordering::Relaxed);
-        
+
         Ok(())
     }
 
@@ -104,47 +104,59 @@ impl MultiTenantManager {
     }
 
     /// 检查租户配额
-    pub async fn check_quota(&self, tenant_id: &str, resource_type: &str, amount: u64) -> Result<bool> {
+    pub async fn check_quota(
+        &self,
+        tenant_id: &str,
+        resource_type: &str,
+        amount: u64,
+    ) -> Result<bool> {
         let tenants = self.tenants.read().await;
         let quotas = self.tenant_quotas.read().await;
-        
+
         if let (Some(tenant), Some(quota)) = (tenants.get(tenant_id), quotas.get(tenant_id)) {
             match resource_type {
                 "requests_per_second" => {
-                    if quota.requests_per_second_used + amount > tenant.settings.max_requests_per_second {
+                    if quota.requests_per_second_used + amount
+                        > tenant.settings.max_requests_per_second
+                    {
                         self.stats.quota_violations.fetch_add(1, Ordering::Relaxed);
                         return Ok(false);
                     }
-                },
+                }
                 "storage_gb" => {
                     if quota.storage_used_gb + amount > tenant.settings.max_storage_gb {
                         self.stats.quota_violations.fetch_add(1, Ordering::Relaxed);
                         return Ok(false);
                     }
-                },
+                }
                 _ => return Err(anyhow!("不支持的资源类型: {}", resource_type)),
             }
         }
-        
+
         Ok(true)
     }
 
     /// 更新租户配额使用量
-    pub async fn update_quota_usage(&self, tenant_id: &str, resource_type: &str, amount: u64) -> Result<()> {
+    pub async fn update_quota_usage(
+        &self,
+        tenant_id: &str,
+        resource_type: &str,
+        amount: u64,
+    ) -> Result<()> {
         let mut quotas = self.tenant_quotas.write().await;
-        
+
         if let Some(quota) = quotas.get_mut(tenant_id) {
             match resource_type {
                 "requests_per_second" => {
                     quota.requests_per_second_used += amount;
-                },
+                }
                 "storage_gb" => {
                     quota.storage_used_gb += amount;
-                },
+                }
                 _ => return Err(anyhow!("不支持的资源类型: {}", resource_type)),
             }
         }
-        
+
         Ok(())
     }
 
@@ -265,12 +277,12 @@ impl DataGovernanceManager {
     pub async fn evaluate_policies(&self, data: &DataItem) -> Result<Vec<DataAction>> {
         let policies = self.policies.read().await;
         let mut actions = Vec::new();
-        
+
         for policy in policies.iter() {
             if !policy.is_active {
                 continue;
             }
-            
+
             for rule in &policy.rules {
                 if self.evaluate_condition(&rule.condition, data)? {
                     actions.push(rule.action.clone());
@@ -279,7 +291,7 @@ impl DataGovernanceManager {
                 self.stats.rules_evaluated.fetch_add(1, Ordering::Relaxed);
             }
         }
-        
+
         Ok(actions)
     }
 
@@ -289,20 +301,16 @@ impl DataGovernanceManager {
             DataCondition::ContainsPII => {
                 // 在实际实现中，这里应该使用PII检测算法
                 Ok(data.content.contains("email") || data.content.contains("phone"))
-            },
+            }
             DataCondition::ContainsSensitiveData => {
                 Ok(data.content.contains("password") || data.content.contains("token"))
-            },
+            }
             DataCondition::DataAge(max_age) => {
                 let age = SystemTime::now().duration_since(data.created_at)?;
                 Ok(age > *max_age)
-            },
-            DataCondition::DataSize(max_size) => {
-                Ok(data.content.len() as u64 > *max_size)
-            },
-            DataCondition::DataType(expected_type) => {
-                Ok(data.data_type == *expected_type)
-            },
+            }
+            DataCondition::DataSize(max_size) => Ok(data.content.len() as u64 > *max_size),
+            DataCondition::DataType(expected_type) => Ok(data.data_type == *expected_type),
         }
     }
 
@@ -450,14 +458,17 @@ impl ComplianceManager {
     pub async fn register_framework(&self, framework: ComplianceFramework) -> Result<()> {
         let mut frameworks = self.frameworks.write().await;
         frameworks.push(framework);
-        self.stats.frameworks_registered.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .frameworks_registered
+            .fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
 
     /// 进行合规评估
     pub async fn conduct_assessment(&self, framework_id: &str) -> Result<ComplianceAssessment> {
         let frameworks = self.frameworks.read().await;
-        let framework = frameworks.iter()
+        let framework = frameworks
+            .iter()
             .find(|f| f.id == framework_id)
             .ok_or_else(|| anyhow!("合规框架未找到: {}", framework_id))?;
 
@@ -466,12 +477,12 @@ impl ComplianceManager {
 
         for requirement in &framework.requirements {
             let mut requirement_met = true;
-            
+
             for control in &requirement.controls {
                 match control.implementation_status {
                     ImplementationStatus::FullyImplemented | ImplementationStatus::Verified => {
                         // 控制已实现
-                    },
+                    }
                     _ => {
                         requirement_met = false;
                         findings.push(ComplianceFinding {
@@ -484,16 +495,19 @@ impl ComplianceManager {
                     }
                 }
             }
-            
+
             if requirement_met {
                 requirements_met += 1;
             }
         }
 
         let overall_score = (requirements_met as f64 / framework.requirements.len() as f64) * 100.0;
-        
+
         let assessment = ComplianceAssessment {
-            id: format!("assessment_{}", SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs()),
+            id: format!(
+                "assessment_{}",
+                SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs()
+            ),
             framework_id: framework_id.to_string(),
             assessment_date: SystemTime::now(),
             overall_score,
@@ -505,9 +519,15 @@ impl ComplianceManager {
         let mut assessments = self.assessments.write().await;
         assessments.insert(assessment.id.clone(), assessment.clone());
 
-        self.stats.assessments_conducted.fetch_add(1, Ordering::Relaxed);
-        self.stats.requirements_met.fetch_add(requirements_met as u64, Ordering::Relaxed);
-        self.stats.findings_identified.fetch_add(assessment.findings.len() as u64, Ordering::Relaxed);
+        self.stats
+            .assessments_conducted
+            .fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .requirements_met
+            .fetch_add(requirements_met as u64, Ordering::Relaxed);
+        self.stats
+            .findings_identified
+            .fetch_add(assessment.findings.len() as u64, Ordering::Relaxed);
 
         Ok(assessment)
     }
@@ -622,25 +642,33 @@ impl HighAvailabilityManager {
     /// 更新节点状态
     pub async fn update_node_status(&self, node_id: &str, status: NodeStatus) -> Result<()> {
         let mut nodes = self.nodes.write().await;
-        
+
         if let Some(node) = nodes.get_mut(node_id) {
             let old_status = std::mem::replace(&mut node.status, status.clone());
             node.last_heartbeat = SystemTime::now();
-            
+
             // 更新统计信息
             match old_status {
-                NodeStatus::Healthy => { self.stats.healthy_nodes.fetch_sub(1, Ordering::Relaxed); },
-                NodeStatus::Unhealthy => { self.stats.unhealthy_nodes.fetch_sub(1, Ordering::Relaxed); },
+                NodeStatus::Healthy => {
+                    self.stats.healthy_nodes.fetch_sub(1, Ordering::Relaxed);
+                }
+                NodeStatus::Unhealthy => {
+                    self.stats.unhealthy_nodes.fetch_sub(1, Ordering::Relaxed);
+                }
                 _ => {}
             }
-            
+
             match status {
-                NodeStatus::Healthy => { self.stats.healthy_nodes.fetch_add(1, Ordering::Relaxed); },
-                NodeStatus::Unhealthy => { self.stats.unhealthy_nodes.fetch_add(1, Ordering::Relaxed); },
+                NodeStatus::Healthy => {
+                    self.stats.healthy_nodes.fetch_add(1, Ordering::Relaxed);
+                }
+                NodeStatus::Unhealthy => {
+                    self.stats.unhealthy_nodes.fetch_add(1, Ordering::Relaxed);
+                }
                 _ => {}
             }
         }
-        
+
         Ok(())
     }
 
@@ -648,20 +676,23 @@ impl HighAvailabilityManager {
     pub async fn check_failover_required(&self) -> Result<bool> {
         let nodes = self.nodes.read().await;
         let config = self.failover_config.read().await;
-        
+
         if !config.enabled {
             return Ok(false);
         }
-        
-        let unhealthy_count = nodes.values()
+
+        let unhealthy_count = nodes
+            .values()
             .filter(|node| matches!(node.status, NodeStatus::Unhealthy))
             .count();
-        
+
         if unhealthy_count >= config.failover_threshold as usize {
-            self.stats.failovers_triggered.fetch_add(1, Ordering::Relaxed);
+            self.stats
+                .failovers_triggered
+                .fetch_add(1, Ordering::Relaxed);
             return Ok(true);
         }
-        
+
         Ok(false)
     }
 
@@ -735,7 +766,9 @@ impl ComprehensiveEnterpriseManager {
                 custom_attributes: HashMap::new(),
             },
         };
-        self.multi_tenant_manager.create_tenant(default_tenant).await?;
+        self.multi_tenant_manager
+            .create_tenant(default_tenant)
+            .await?;
 
         // 添加默认数据策略
         let default_policy = DataPolicy {
@@ -762,34 +795,34 @@ impl ComprehensiveEnterpriseManager {
             created_at: SystemTime::now(),
             updated_at: SystemTime::now(),
         };
-        self.data_governance_manager.add_policy(default_policy).await?;
+        self.data_governance_manager
+            .add_policy(default_policy)
+            .await?;
 
         // 注册GDPR合规框架
         let gdpr_framework = ComplianceFramework {
             id: "gdpr".to_string(),
             name: "GDPR".to_string(),
             version: "1.0".to_string(),
-            requirements: vec![
-                ComplianceRequirement {
-                    id: "data_protection".to_string(),
-                    title: "数据保护".to_string(),
-                    description: "实施适当的技术和组织措施保护个人数据".to_string(),
-                    category: ComplianceCategory::DataProtection,
-                    severity: ComplianceSeverity::High,
-                    controls: vec![
-                        ComplianceControl {
-                            id: "encryption".to_string(),
-                            name: "数据加密".to_string(),
-                            description: "对个人数据进行加密".to_string(),
-                            implementation_status: ImplementationStatus::FullyImplemented,
-                            evidence: vec!["AES-256加密已实施".to_string()],
-                        },
-                    ],
-                },
-            ],
+            requirements: vec![ComplianceRequirement {
+                id: "data_protection".to_string(),
+                title: "数据保护".to_string(),
+                description: "实施适当的技术和组织措施保护个人数据".to_string(),
+                category: ComplianceCategory::DataProtection,
+                severity: ComplianceSeverity::High,
+                controls: vec![ComplianceControl {
+                    id: "encryption".to_string(),
+                    name: "数据加密".to_string(),
+                    description: "对个人数据进行加密".to_string(),
+                    implementation_status: ImplementationStatus::FullyImplemented,
+                    evidence: vec!["AES-256加密已实施".to_string()],
+                }],
+            }],
             is_active: true,
         };
-        self.compliance_manager.register_framework(gdpr_framework).await?;
+        self.compliance_manager
+            .register_framework(gdpr_framework)
+            .await?;
 
         // 添加默认节点
         let default_node = Node {
@@ -800,20 +833,31 @@ impl ComprehensiveEnterpriseManager {
             last_heartbeat: SystemTime::now(),
             capabilities: vec!["processing".to_string(), "storage".to_string()],
         };
-        self.high_availability_manager.add_node(default_node).await?;
+        self.high_availability_manager
+            .add_node(default_node)
+            .await?;
 
-        self.stats.enterprise_features_used.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .enterprise_features_used
+            .fetch_add(1, Ordering::Relaxed);
         println!("企业功能管理器初始化完成");
 
         Ok(())
     }
 
     /// 处理企业级请求
-    pub async fn process_enterprise_request(&self, request: EnterpriseRequest) -> Result<EnterpriseResponse> {
+    pub async fn process_enterprise_request(
+        &self,
+        request: EnterpriseRequest,
+    ) -> Result<EnterpriseResponse> {
         let start_time = SystemTime::now();
-        
+
         // 检查租户配额
-        if !self.multi_tenant_manager.check_quota(&request.tenant_id, "requests_per_second", 1).await? {
+        if !self
+            .multi_tenant_manager
+            .check_quota(&request.tenant_id, "requests_per_second", 1)
+            .await?
+        {
             return Ok(EnterpriseResponse {
                 success: false,
                 message: "租户配额不足".to_string(),
@@ -831,15 +875,22 @@ impl ComprehensiveEnterpriseManager {
             created_at: SystemTime::now(),
             classification: None,
         };
-        
-        let actions = self.data_governance_manager.evaluate_policies(&data_item).await?;
-        
+
+        let actions = self
+            .data_governance_manager
+            .evaluate_policies(&data_item)
+            .await?;
+
         // 更新配额使用量
-        self.multi_tenant_manager.update_quota_usage(&request.tenant_id, "requests_per_second", 1).await?;
-        
+        self.multi_tenant_manager
+            .update_quota_usage(&request.tenant_id, "requests_per_second", 1)
+            .await?;
+
         // 更新统计信息
         self.stats.tenant_operations.fetch_add(1, Ordering::Relaxed);
-        self.stats.governance_actions.fetch_add(actions.len() as u64, Ordering::Relaxed);
+        self.stats
+            .governance_actions
+            .fetch_add(actions.len() as u64, Ordering::Relaxed);
 
         Ok(EnterpriseResponse {
             success: true,
@@ -905,7 +956,7 @@ mod tests {
     #[tokio::test]
     async fn test_multi_tenant_manager() {
         let manager = MultiTenantManager::new();
-        
+
         let tenant = Tenant {
             id: "test_tenant".to_string(),
             name: "Test Tenant".to_string(),
@@ -921,38 +972,45 @@ mod tests {
                 custom_attributes: HashMap::new(),
             },
         };
-        
-        manager.create_tenant(tenant).await.expect("Failed to create tenant");
-        
+
+        manager
+            .create_tenant(tenant)
+            .await
+            .expect("Failed to create tenant");
+
         let retrieved_tenant = manager.get_tenant("test_tenant").await;
         assert!(retrieved_tenant.is_some());
-        assert_eq!(retrieved_tenant.expect("Tenant should exist").name, "Test Tenant");
+        assert_eq!(
+            retrieved_tenant.expect("Tenant should exist").name,
+            "Test Tenant"
+        );
     }
 
     #[tokio::test]
     async fn test_data_governance_manager() {
         let manager = DataGovernanceManager::new();
-        
+
         let policy = DataPolicy {
             id: "test_policy".to_string(),
             name: "Test Policy".to_string(),
             description: "测试策略".to_string(),
-            rules: vec![
-                DataRule {
-                    id: "test_rule".to_string(),
-                    name: "测试规则".to_string(),
-                    condition: DataCondition::ContainsPII,
-                    action: DataAction::Encrypt,
-                    priority: 1,
-                },
-            ],
+            rules: vec![DataRule {
+                id: "test_rule".to_string(),
+                name: "测试规则".to_string(),
+                condition: DataCondition::ContainsPII,
+                action: DataAction::Encrypt,
+                priority: 1,
+            }],
             is_active: true,
             created_at: SystemTime::now(),
             updated_at: SystemTime::now(),
         };
-        
-        manager.add_policy(policy).await.expect("Failed to add data governance policy");
-        
+
+        manager
+            .add_policy(policy)
+            .await
+            .expect("Failed to add data governance policy");
+
         let data_item = DataItem {
             id: "test_data".to_string(),
             content: "test email: user@example.com".to_string(),
@@ -960,8 +1018,11 @@ mod tests {
             created_at: SystemTime::now(),
             classification: None,
         };
-        
-        let actions = manager.evaluate_policies(&data_item).await.expect("Failed to evaluate policies");
+
+        let actions = manager
+            .evaluate_policies(&data_item)
+            .await
+            .expect("Failed to evaluate policies");
         assert!(!actions.is_empty());
         assert!(matches!(actions[0], DataAction::Encrypt));
     }
@@ -969,35 +1030,37 @@ mod tests {
     #[tokio::test]
     async fn test_compliance_manager() {
         let manager = ComplianceManager::new();
-        
+
         let framework = ComplianceFramework {
             id: "test_framework".to_string(),
             name: "Test Framework".to_string(),
             version: "1.0".to_string(),
-            requirements: vec![
-                ComplianceRequirement {
-                    id: "test_requirement".to_string(),
-                    title: "测试要求".to_string(),
-                    description: "测试合规要求".to_string(),
-                    category: ComplianceCategory::DataProtection,
-                    severity: ComplianceSeverity::High,
-                    controls: vec![
-                        ComplianceControl {
-                            id: "test_control".to_string(),
-                            name: "测试控制".to_string(),
-                            description: "测试合规控制".to_string(),
-                            implementation_status: ImplementationStatus::FullyImplemented,
-                            evidence: vec!["测试证据".to_string()],
-                        },
-                    ],
-                },
-            ],
+            requirements: vec![ComplianceRequirement {
+                id: "test_requirement".to_string(),
+                title: "测试要求".to_string(),
+                description: "测试合规要求".to_string(),
+                category: ComplianceCategory::DataProtection,
+                severity: ComplianceSeverity::High,
+                controls: vec![ComplianceControl {
+                    id: "test_control".to_string(),
+                    name: "测试控制".to_string(),
+                    description: "测试合规控制".to_string(),
+                    implementation_status: ImplementationStatus::FullyImplemented,
+                    evidence: vec!["测试证据".to_string()],
+                }],
+            }],
             is_active: true,
         };
-        
-        manager.register_framework(framework).await.expect("Failed to register framework");
-        
-        let assessment = manager.conduct_assessment("test_framework").await.expect("Failed to conduct assessment");
+
+        manager
+            .register_framework(framework)
+            .await
+            .expect("Failed to register framework");
+
+        let assessment = manager
+            .conduct_assessment("test_framework")
+            .await
+            .expect("Failed to conduct assessment");
         assert_eq!(assessment.overall_score, 100.0);
         assert_eq!(assessment.requirements_met, 1);
     }
@@ -1005,7 +1068,7 @@ mod tests {
     #[tokio::test]
     async fn test_high_availability_manager() {
         let manager = HighAvailabilityManager::new();
-        
+
         let node = Node {
             id: "test_node".to_string(),
             name: "Test Node".to_string(),
@@ -1014,14 +1077,18 @@ mod tests {
             last_heartbeat: SystemTime::now(),
             capabilities: vec!["processing".to_string()],
         };
-        
-        manager.add_node(node).await
+
+        manager
+            .add_node(node)
+            .await
             .expect("Failed to add failover node");
-        
-        let failover_required = manager.check_failover_required().await
+
+        let failover_required = manager
+            .check_failover_required()
+            .await
             .expect("Failed to check failover requirement");
         assert!(!failover_required);
-        
+
         let stats = manager.get_stats();
         assert_eq!(stats.total_nodes, 1);
         assert_eq!(stats.healthy_nodes, 1);
@@ -1030,10 +1097,12 @@ mod tests {
     #[tokio::test]
     async fn test_comprehensive_enterprise_manager() {
         let manager = ComprehensiveEnterpriseManager::new();
-        
-        manager.initialize().await
+
+        manager
+            .initialize()
+            .await
             .expect("Failed to initialize comprehensive enterprise manager");
-        
+
         let request = EnterpriseRequest {
             id: "test_request".to_string(),
             tenant_id: "default".to_string(),
@@ -1041,12 +1110,14 @@ mod tests {
             data_type: "text".to_string(),
             user_id: Some("user1".to_string()),
         };
-        
-        let response = manager.process_enterprise_request(request).await
+
+        let response = manager
+            .process_enterprise_request(request)
+            .await
             .expect("Failed to process enterprise request");
         assert!(response.success);
         assert_eq!(response.tenant_id, "default");
-        
+
         let stats = manager.get_comprehensive_stats();
         assert_eq!(stats.tenant_operations, 1);
     }

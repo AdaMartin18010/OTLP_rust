@@ -3,9 +3,9 @@
 //! 展示如何使用快速性能优化功能，包括批量发送、压缩和连接池
 
 use otlp::{
+    TelemetryData,
     data::{LogSeverity, MetricType, StatusCode},
     performance::{QuickOptimizationsConfig, QuickOptimizationsManager},
-    TelemetryData,
 };
 use std::time::Duration;
 use tokio::time::sleep;
@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 创建优化管理器
     let mut manager = QuickOptimizationsManager::new(config);
-    
+
     // 初始化
     println!("📋 初始化快速优化管理器...");
     manager.initialize().await?;
@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_status(StatusCode::Ok, Some("success".to_string()));
 
         manager.send_data(trace_data).await?;
-        
+
         if i % 5 == 0 {
             println!("  发送了 {} 条数据", i + 1);
         }
@@ -67,12 +67,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🗜️ 演示数据压缩...");
     let test_data = "这是一个测试数据，用于演示压缩功能。".repeat(100);
     let original_size = test_data.len();
-    
+
     let compressed = manager.compress_data(test_data.as_bytes()).await?;
     let compressed_size = compressed.len();
-    
+
     let compression_ratio = (1.0 - (compressed_size as f64 / original_size as f64)) * 100.0;
-    
+
     println!("  原始大小: {} 字节", original_size);
     println!("  压缩后大小: {} 字节", compressed_size);
     println!("  压缩率: {:.2}%", compression_ratio);
@@ -87,13 +87,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 演示混合数据类型
     println!("\n📊 演示混合数据类型发送...");
-    
+
     // 发送指标数据
     for i in 0..5 {
         let metric_data = TelemetryData::metric(format!("demo_metric_{}", i), MetricType::Counter)
             .with_attribute("environment", "demo")
             .with_numeric_attribute("value", (i * 10) as f64);
-        
+
         manager.send_data(metric_data).await?;
     }
 
@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let log_data = TelemetryData::log(format!("Demo log message {}", i), LogSeverity::Info)
             .with_attribute("logger", "demo")
             .with_attribute("thread", "main");
-        
+
         manager.send_data(log_data).await?;
     }
 

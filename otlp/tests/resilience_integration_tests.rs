@@ -2,16 +2,13 @@
 //!
 //! 测试断路器、重试、舱壁和超时模式的集成使用。
 
+use anyhow;
 use otlp::resilience::{
-    CircuitBreaker, CircuitBreakerConfig, CircuitState,
-    Retrier, RetryConfig, RetryStrategy,
-    Bulkhead, BulkheadConfig,
-    Timeout, TimeoutConfig,
-    ResilienceManager, ResilienceConfig,
+    Bulkhead, BulkheadConfig, CircuitBreaker, CircuitBreakerConfig, CircuitState, ResilienceConfig,
+    ResilienceManager, Retrier, RetryConfig, RetryStrategy, Timeout, TimeoutConfig,
 };
 use std::time::Duration;
 use tokio::time::sleep;
-use anyhow;
 
 #[tokio::test]
 async fn test_circuit_breaker_integration() {
@@ -63,7 +60,8 @@ async fn test_retry_integration() {
         .execute(move || {
             let attempt_count = attempt_count_clone.clone();
             Box::pin(async move {
-                let current_attempt = attempt_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                let current_attempt =
+                    attempt_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
                 if current_attempt < 3 {
                     Err("temporary error")
                 } else {
@@ -131,8 +129,18 @@ async fn test_timeout_integration() {
     assert!(result.is_err());
 
     let stats = timeout.stats();
-    assert!(stats.successful_completions.load(std::sync::atomic::Ordering::Acquire) > 0);
-    assert!(stats.total_timeouts.load(std::sync::atomic::Ordering::Acquire) > 0);
+    assert!(
+        stats
+            .successful_completions
+            .load(std::sync::atomic::Ordering::Acquire)
+            > 0
+    );
+    assert!(
+        stats
+            .total_timeouts
+            .load(std::sync::atomic::Ordering::Acquire)
+            > 0
+    );
 }
 
 #[tokio::test]
@@ -239,23 +247,23 @@ async fn test_combined_resilience_patterns() {
 
     // 测试组合使用 - 简化版本
     let _permit = bulkhead.acquire().await.unwrap();
-    
+
     // 分别测试各个组件
     let breaker_result: Result<i32, _> = breaker
         .execute::<_, i32, anyhow::Error>(async { Ok(42) })
         .await;
     assert!(breaker_result.is_ok());
-    
+
     let retry_result: Result<i32, _> = retrier
         .execute(|| Box::pin(async { Ok::<i32, &str>(42) }))
         .await;
     assert!(retry_result.is_ok());
-    
+
     let timeout_result: Result<i32, _> = timeout
         .execute::<_, i32, anyhow::Error>(async { Ok(42) })
         .await;
     assert!(timeout_result.is_ok());
-    
+
     let result: Result<i32, anyhow::Error> = Ok(42);
 
     assert!(result.is_ok());
@@ -305,21 +313,42 @@ async fn test_resilience_stats_collection() {
     let timeout = Timeout::new(TimeoutConfig::default());
 
     // 执行一些操作
-    let _: Result<i32, _> = breaker.execute::<_, i32, anyhow::Error>(async { Ok(42) }).await;
-    let _: Result<i32, _> = retrier.execute(|| Box::pin(async { Ok::<i32, &str>(42) })).await;
+    let _: Result<i32, _> = breaker
+        .execute::<_, i32, anyhow::Error>(async { Ok(42) })
+        .await;
+    let _: Result<i32, _> = retrier
+        .execute(|| Box::pin(async { Ok::<i32, &str>(42) }))
+        .await;
     let _ = bulkhead.acquire().await;
-    let _: Result<i32, _> = timeout.execute::<_, i32, anyhow::Error>(async { Ok(42) }).await;
+    let _: Result<i32, _> = timeout
+        .execute::<_, i32, anyhow::Error>(async { Ok(42) })
+        .await;
 
     // 检查统计信息
     let breaker_stats = breaker.stats();
-    assert!(breaker_stats.total_requests.load(std::sync::atomic::Ordering::Acquire) > 0);
+    assert!(
+        breaker_stats
+            .total_requests
+            .load(std::sync::atomic::Ordering::Acquire)
+            > 0
+    );
 
     let retry_stats = retrier.stats().await;
     assert!(retry_stats.total_retries > 0);
 
     let bulkhead_stats = bulkhead.stats();
-    assert!(bulkhead_stats.total_requests.load(std::sync::atomic::Ordering::Acquire) > 0);
+    assert!(
+        bulkhead_stats
+            .total_requests
+            .load(std::sync::atomic::Ordering::Acquire)
+            > 0
+    );
 
     let timeout_stats = timeout.stats();
-    assert!(timeout_stats.successful_completions.load(std::sync::atomic::Ordering::Acquire) > 0);
+    assert!(
+        timeout_stats
+            .successful_completions
+            .load(std::sync::atomic::Ordering::Acquire)
+            > 0
+    );
 }

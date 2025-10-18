@@ -8,7 +8,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tokio::time::interval;
 
 /// 告警严重程度
@@ -129,7 +129,7 @@ impl EnhancedAlertManager {
     /// 创建新的增强告警管理器
     pub fn new() -> Self {
         let (alert_sender, _) = broadcast::channel(1000);
-        
+
         Self {
             rules: Arc::new(RwLock::new(Vec::new())),
             active_alerts: Arc::new(RwLock::new(HashMap::new())),
@@ -144,7 +144,7 @@ impl EnhancedAlertManager {
     /// 启动告警管理器
     pub async fn start(&self) -> Result<()> {
         self.is_running.store(true, Ordering::Relaxed);
-        
+
         // 启动告警评估循环
         let rules = Arc::clone(&self.rules);
         let _active_alerts = Arc::clone(&self.active_alerts);
@@ -155,10 +155,10 @@ impl EnhancedAlertManager {
 
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(30));
-            
+
             while is_running.load(Ordering::Relaxed) {
                 interval.tick().await;
-                
+
                 // 评估所有告警规则
                 let rules_guard = rules.read().await;
                 for rule in rules_guard.iter() {
@@ -170,7 +170,13 @@ impl EnhancedAlertManager {
                             if cpu_usage > rule.condition.threshold {
                                 // 触发告警
                                 let alert = Alert {
-                                    id: format!("alert_{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
+                                    id: format!(
+                                        "alert_{}",
+                                        SystemTime::now()
+                                            .duration_since(UNIX_EPOCH)
+                                            .unwrap()
+                                            .as_secs()
+                                    ),
                                     rule_id: rule.id.clone(),
                                     name: rule.name.clone(),
                                     description: rule.description.clone(),
@@ -188,7 +194,7 @@ impl EnhancedAlertManager {
 
                                 // 发送告警
                                 let _ = alert_sender.send(alert.clone());
-                                
+
                                 // 更新统计
                                 stats.total_alerts.fetch_add(1, Ordering::Relaxed);
                                 stats.active_alerts.fetch_add(1, Ordering::Relaxed);
@@ -235,8 +241,10 @@ impl EnhancedAlertManager {
             alert.status = AlertStatus::Acknowledged;
             alert.acknowledged_at = Some(SystemTime::now());
             alert.acknowledged_by = Some(acknowledged_by);
-            
-            self.stats.acknowledged_alerts.fetch_add(1, Ordering::Relaxed);
+
+            self.stats
+                .acknowledged_alerts
+                .fetch_add(1, Ordering::Relaxed);
         }
         Ok(())
     }
@@ -248,16 +256,16 @@ impl EnhancedAlertManager {
             let mut resolved_alert = alert;
             resolved_alert.status = AlertStatus::Resolved;
             resolved_alert.resolved_at = Some(SystemTime::now());
-            
+
             // 添加到历史记录
             let mut history = self.alert_history.write().await;
             history.push_back(resolved_alert);
-            
+
             // 保持历史记录在合理范围内
             if history.len() > 1000 {
                 history.pop_front();
             }
-            
+
             self.stats.resolved_alerts.fetch_add(1, Ordering::Relaxed);
             self.stats.active_alerts.fetch_sub(1, Ordering::Relaxed);
         }
@@ -276,7 +284,11 @@ impl EnhancedAlertManager {
     }
 
     /// 添加通知渠道
-    pub async fn add_notification_channel(&self, name: String, channel: NotificationChannel) -> Result<()> {
+    pub async fn add_notification_channel(
+        &self,
+        name: String,
+        channel: NotificationChannel,
+    ) -> Result<()> {
         let mut channels = self.notification_channels.write().await;
         channels.insert(name, channel);
         Ok(())
@@ -287,10 +299,16 @@ impl EnhancedAlertManager {
         let channels = self.notification_channels.read().await;
         if let Some(channel) = channels.get(channel_name) {
             match channel {
-                NotificationChannel::Email { recipients, smtp_server: _ } => {
+                NotificationChannel::Email {
+                    recipients,
+                    smtp_server: _,
+                } => {
                     tracing::info!("发送邮件通知到: {:?}, 告警: {}", recipients, alert.name);
                 }
-                NotificationChannel::Slack { webhook_url: _, channel: slack_channel } => {
+                NotificationChannel::Slack {
+                    webhook_url: _,
+                    channel: slack_channel,
+                } => {
                     tracing::info!("发送Slack通知到: {}, 告警: {}", slack_channel, alert.name);
                 }
                 NotificationChannel::Webhook { url, headers: _ } => {
@@ -447,22 +465,28 @@ mod tests {
     #[tokio::test]
     async fn test_enhanced_alert_manager() {
         let manager = EnhancedAlertManager::new();
-        
+
         // 添加预定义规则
-        manager.add_rule(PredefinedAlertRules::high_cpu_usage()).await.unwrap();
-        manager.add_rule(PredefinedAlertRules::high_memory_usage()).await.unwrap();
-        
+        manager
+            .add_rule(PredefinedAlertRules::high_cpu_usage())
+            .await
+            .unwrap();
+        manager
+            .add_rule(PredefinedAlertRules::high_memory_usage())
+            .await
+            .unwrap();
+
         // 启动管理器
         manager.start().await.unwrap();
-        
+
         // 等待一段时间
         tokio::time::sleep(Duration::from_millis(100)).await;
-        
+
         // 获取统计
         let stats = manager.get_stats().await;
         // 验证统计数据存在（total_alerts 是 u64，总是 >= 0）
         assert!(stats.total_alerts < u64::MAX);
-        
+
         // 停止管理器
         manager.stop().await.unwrap();
     }
@@ -470,7 +494,7 @@ mod tests {
     #[tokio::test]
     async fn test_alert_acknowledgment() {
         let manager = EnhancedAlertManager::new();
-        
+
         // 创建测试告警
         let alert = Alert {
             id: "test_alert".to_string(),
@@ -488,17 +512,20 @@ mod tests {
             tags: HashMap::new(),
             annotations: HashMap::new(),
         };
-        
+
         // 添加告警
         let alert_id = alert.id.clone();
         {
             let mut alerts = manager.active_alerts.write().await;
             alerts.insert(alert_id.clone(), alert);
         }
-        
+
         // 确认告警
-        manager.acknowledge_alert(&alert_id, "test_user".to_string()).await.unwrap();
-        
+        manager
+            .acknowledge_alert(&alert_id, "test_user".to_string())
+            .await
+            .unwrap();
+
         // 验证确认状态
         let alerts = manager.get_active_alerts().await;
         let updated_alert = alerts.iter().find(|a| a.id == alert_id).unwrap();
@@ -509,15 +536,18 @@ mod tests {
     #[tokio::test]
     async fn test_notification_channels() {
         let manager = EnhancedAlertManager::new();
-        
+
         // 添加通知渠道
         let email_channel = NotificationChannel::Email {
             recipients: vec!["admin@example.com".to_string()],
             smtp_server: "smtp.example.com".to_string(),
         };
-        
-        manager.add_notification_channel("email".to_string(), email_channel).await.unwrap();
-        
+
+        manager
+            .add_notification_channel("email".to_string(), email_channel)
+            .await
+            .unwrap();
+
         // 创建测试告警
         let alert = Alert {
             id: "test_alert".to_string(),
@@ -535,7 +565,7 @@ mod tests {
             tags: HashMap::new(),
             annotations: HashMap::new(),
         };
-        
+
         // 发送通知
         manager.send_notification(&alert, "email").await.unwrap();
     }

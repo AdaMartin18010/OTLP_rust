@@ -374,8 +374,7 @@ mod tests {
             ..Default::default()
         };
 
-        let cb = OptimizedCircuitBreaker::new(config)
-            .expect("Failed to create circuit breaker");
+        let cb = OptimizedCircuitBreaker::new(config).expect("Failed to create circuit breaker");
 
         // 连续失败3次，应该触发熔断
         for _ in 0..3 {
@@ -402,8 +401,7 @@ mod tests {
             ..Default::default()
         };
 
-        let cb = OptimizedCircuitBreaker::new(config)
-            .expect("Failed to create circuit breaker");
+        let cb = OptimizedCircuitBreaker::new(config).expect("Failed to create circuit breaker");
 
         // 触发熔断
         for _ in 0..2 {
@@ -423,8 +421,7 @@ mod tests {
     #[tokio::test]
     async fn test_circuit_breaker_metrics() {
         let config = CircuitBreakerConfig::default();
-        let cb = OptimizedCircuitBreaker::new(config)
-            .expect("Failed to create circuit breaker");
+        let cb = OptimizedCircuitBreaker::new(config).expect("Failed to create circuit breaker");
 
         // 执行一些操作
         let _ = cb.call(|| async { Ok::<(), anyhow::Error>(()) }).await;
@@ -448,8 +445,7 @@ mod tests {
             ..Default::default()
         };
 
-        let cb = OptimizedCircuitBreaker::new(config)
-            .expect("Failed to create circuit breaker");
+        let cb = OptimizedCircuitBreaker::new(config).expect("Failed to create circuit breaker");
 
         // 触发熔断
         let _ = cb

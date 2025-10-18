@@ -2,9 +2,9 @@
 //!
 //! 提供简化的API接口，降低使用复杂度
 
+use anyhow::Result;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
-use anyhow::Result;
 
 /// 日志级别
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,42 +92,53 @@ impl SimpleOtlpClient {
         _error: Option<String>,
     ) -> Result<()> {
         self.request_count += 1;
-        
+
         if self.debug {
-            println!("发送追踪: {} ({}ms, {})", operation_name, duration_ms, if success { "成功" } else { "失败" });
+            println!(
+                "发送追踪: {} ({}ms, {})",
+                operation_name,
+                duration_ms,
+                if success { "成功" } else { "失败" }
+            );
         }
-        
+
         // 模拟网络请求
         sleep(Duration::from_millis(1)).await;
-        
+
         if success {
             self.success_count += 1;
         }
-        
+
         Ok(())
     }
 
     /// 发送指标数据
     pub async fn metric(&mut self, name: &str, value: f64, unit: Option<&str>) -> Result<()> {
         self.request_count += 1;
-        
+
         if self.debug {
             println!("发送指标: {} = {} {}", name, value, unit.unwrap_or(""));
         }
-        
+
         // 模拟网络请求
         sleep(Duration::from_millis(1)).await;
-        
+
         self.success_count += 1;
         Ok(())
     }
 
     /// 发送日志数据
-    pub async fn log(&mut self, message: &str, level: LogLevel, source: Option<&str>) -> Result<()> {
+    pub async fn log(
+        &mut self,
+        message: &str,
+        level: LogLevel,
+        source: Option<&str>,
+    ) -> Result<()> {
         self.request_count += 1;
-        
+
         if self.debug {
-            println!("发送日志 [{}]: {} (来源: {})", 
+            println!(
+                "发送日志 [{}]: {} (来源: {})",
                 match level {
                     LogLevel::Debug => "DEBUG",
                     LogLevel::Info => "INFO",
@@ -138,39 +149,47 @@ impl SimpleOtlpClient {
                 source.unwrap_or("unknown")
             );
         }
-        
+
         // 模拟网络请求
         sleep(Duration::from_millis(1)).await;
-        
+
         self.success_count += 1;
         Ok(())
     }
 
     /// 批量发送操作
-    pub async fn batch_send(&mut self, operations: Vec<SimpleOperation>) -> Result<BatchSendResult> {
+    pub async fn batch_send(
+        &mut self,
+        operations: Vec<SimpleOperation>,
+    ) -> Result<BatchSendResult> {
         let start_time = Instant::now();
         let mut success_count = 0;
         let mut failure_count = 0;
 
         for operation in operations {
             match operation {
-                SimpleOperation::Trace { name, duration_ms, success, error } => {
-                    match self.trace(&name, duration_ms, success, error).await {
-                        Ok(_) => success_count += 1,
-                        Err(_) => failure_count += 1,
-                    }
+                SimpleOperation::Trace {
+                    name,
+                    duration_ms,
+                    success,
+                    error,
+                } => match self.trace(&name, duration_ms, success, error).await {
+                    Ok(_) => success_count += 1,
+                    Err(_) => failure_count += 1,
                 },
                 SimpleOperation::Metric { name, value, unit } => {
                     match self.metric(&name, value, unit.as_deref()).await {
                         Ok(_) => success_count += 1,
                         Err(_) => failure_count += 1,
                     }
-                },
-                SimpleOperation::Log { message, level, source } => {
-                    match self.log(&message, level, source.as_deref()).await {
-                        Ok(_) => success_count += 1,
-                        Err(_) => failure_count += 1,
-                    }
+                }
+                SimpleOperation::Log {
+                    message,
+                    level,
+                    source,
+                } => match self.log(&message, level, source.as_deref()).await {
+                    Ok(_) => success_count += 1,
+                    Err(_) => failure_count += 1,
                 },
             }
         }
@@ -258,9 +277,11 @@ impl SimpleClientBuilder {
 
     /// 构建客户端
     pub async fn build(self) -> Result<SimpleOtlpClient> {
-        let endpoint = self.endpoint.unwrap_or_else(|| "http://localhost:4317".to_string());
+        let endpoint = self
+            .endpoint
+            .unwrap_or_else(|| "http://localhost:4317".to_string());
         let mut client = SimpleOtlpClient::new(&endpoint).await?;
-        
+
         if let Some(service_name) = self.service_name {
             client.service_name = service_name;
         }
@@ -290,7 +311,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_simple_client_creation() {
-        let client = SimpleOtlpClient::new("http://localhost:4317").await.unwrap();
+        let client = SimpleOtlpClient::new("http://localhost:4317")
+            .await
+            .unwrap();
         assert_eq!(client.endpoint, "http://localhost:4317");
     }
 
@@ -304,7 +327,7 @@ mod tests {
             .build()
             .await
             .unwrap();
-        
+
         assert_eq!(client.endpoint, "http://test:4317");
         assert_eq!(client.service_name, "test-service");
         assert_eq!(client.service_version, "2.0.0");
@@ -314,12 +337,17 @@ mod tests {
 
     #[tokio::test]
     async fn test_health_check() {
-        let mut client = SimpleOtlpClient::new("http://localhost:4317").await.unwrap();
-        
+        let mut client = SimpleOtlpClient::new("http://localhost:4317")
+            .await
+            .unwrap();
+
         // 发送一些请求
         client.trace("test", 100, true, None).await.unwrap();
-        client.metric("test_metric", 1.0, Some("count")).await.unwrap();
-        
+        client
+            .metric("test_metric", 1.0, Some("count"))
+            .await
+            .unwrap();
+
         let health = client.health_check().await;
         assert!(health.is_healthy);
         assert_eq!(health.total_requests, 2);

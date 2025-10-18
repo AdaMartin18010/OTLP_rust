@@ -2,7 +2,7 @@
 //!
 //! 本模块提供全面的性能基准测试，涵盖各种实际应用场景和压力测试。
 
-use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use otlp::{
     OtlpClient, OtlpConfig, TelemetryData,
     config::TransportProtocol,
@@ -179,13 +179,13 @@ fn benchmark_batch_processing(c: &mut Criterion) {
 
     for batch_size in [100, 500, 1000, 5000].iter() {
         group.throughput(Throughput::Elements(*batch_size as u64));
-        
+
         group.bench_with_input(
             BenchmarkId::new("batch_job", batch_size),
             batch_size,
             |b, &batch_size| {
                 let data = create_variable_size_trace_data(batch_size, 5);
-                
+
                 b.iter(|| {
                     rt.block_on(async {
                         let result = client.send_batch(black_box(data.clone())).await;
@@ -266,7 +266,7 @@ fn benchmark_sustained_load(c: &mut Criterion) {
                         .with_numeric_attribute("iteration", count as f64)
                         .finish()
                         .await;
-                    
+
                     count += 1;
                 }
 
@@ -287,7 +287,7 @@ fn benchmark_data_size_variations(c: &mut Criterion) {
     // 测试不同属性数量（模拟不同数据大小）
     for attr_count in [1, 5, 10, 20, 50].iter() {
         let data = create_variable_size_trace_data(100, *attr_count);
-        
+
         group.bench_with_input(
             BenchmarkId::new("attributes", attr_count),
             attr_count,
@@ -401,12 +401,12 @@ fn benchmark_memory_patterns(c: &mut Criterion) {
                 b.iter(|| {
                     // 创建大量临时对象测试内存性能
                     let data = create_variable_size_trace_data(count, 10);
-                    
+
                     rt.block_on(async {
                         let result = client.send_batch(black_box(data)).await;
                         black_box(result)
                     })
-                    
+
                     // 数据在此处被释放
                 })
             },
@@ -422,33 +422,30 @@ fn benchmark_cpu_intensive(c: &mut Criterion) {
 
     group.bench_function("data_serialization_cpu", |b| {
         let data = create_variable_size_trace_data(1000, 20);
-        
+
         b.iter(|| {
             // JSON 序列化（CPU 密集型）
             let serialized = serde_json::to_vec(&data).unwrap();
-            
+
             // JSON 反序列化（CPU 密集型）
-            let deserialized: Vec<TelemetryData> = 
-                serde_json::from_slice(&serialized).unwrap();
-            
+            let deserialized: Vec<TelemetryData> = serde_json::from_slice(&serialized).unwrap();
+
             black_box(deserialized)
         })
     });
 
     group.bench_function("data_compression_cpu", |b| {
         let data = vec![0u8; 10000]; // 10KB 数据
-        
+
         b.iter(|| {
             use std::io::Write;
-            
+
             // Gzip 压缩（CPU 密集型）
-            let mut encoder = flate2::write::GzEncoder::new(
-                Vec::new(),
-                flate2::Compression::default()
-            );
+            let mut encoder =
+                flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
             encoder.write_all(&data).unwrap();
             let compressed = encoder.finish().unwrap();
-            
+
             black_box(compressed)
         })
     });
@@ -465,7 +462,7 @@ fn benchmark_network_io(c: &mut Criterion) {
     group.bench_function("http_protocol_overhead", |b| {
         let client = create_test_client(TransportProtocol::Http);
         let data = create_variable_size_trace_data(10, 5);
-        
+
         b.iter(|| {
             rt.block_on(async {
                 let result = client.send_batch(black_box(data.clone())).await;
@@ -478,7 +475,7 @@ fn benchmark_network_io(c: &mut Criterion) {
     group.bench_function("grpc_protocol_overhead", |b| {
         let client = create_test_client(TransportProtocol::Grpc);
         let data = create_variable_size_trace_data(10, 5);
-        
+
         b.iter(|| {
             rt.block_on(async {
                 let result = client.send_batch(black_box(data.clone())).await;
@@ -571,4 +568,3 @@ criterion_group!(
 );
 
 criterion_main!(comprehensive_benches);
-

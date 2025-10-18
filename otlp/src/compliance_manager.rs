@@ -1,5 +1,5 @@
 //! 合规性管理模块
-//! 
+//!
 //! 本模块提供了完整的合规性管理功能，包括：
 //! - GDPR合规性
 //! - SOX合规性
@@ -9,8 +9,8 @@
 //! - 审计合规性
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
@@ -37,53 +37,66 @@ impl GDPRComplianceManager {
     /// 注册数据主体
     pub async fn register_data_subject(&self, _subject: DataSubject) -> Result<()> {
         let start_time = Instant::now();
-        
+
         // 注册数据主体
         // 注意：Arc<HashMap> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<HashMap>> 或 Arc<Mutex<HashMap>>
-        
+
         // 更新统计信息
-        self.stats.record_data_subject_registration(start_time.elapsed());
-        
+        self.stats
+            .record_data_subject_registration(start_time.elapsed());
+
         Ok(())
     }
 
     /// 记录数据处理活动
     pub async fn record_processing_activity(&self, _record: ProcessingRecord) -> Result<()> {
         let start_time = Instant::now();
-        
+
         // 记录数据处理活动
         // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
-        
+
         // 更新统计信息
         self.stats.record_processing_activity(start_time.elapsed());
-        
+
         Ok(())
     }
 
     /// 处理数据主体权利请求
-    pub async fn handle_data_subject_request(&self, request: DataSubjectRequest) -> Result<DataSubjectResponse> {
+    pub async fn handle_data_subject_request(
+        &self,
+        request: DataSubjectRequest,
+    ) -> Result<DataSubjectResponse> {
         let start_time = Instant::now();
-        
+
         // 处理数据主体权利请求
         let response = match request.request_type {
             DataSubjectRequestType::Access => self.handle_access_request(&request).await?,
-            DataSubjectRequestType::Rectification => self.handle_rectification_request(&request).await?,
+            DataSubjectRequestType::Rectification => {
+                self.handle_rectification_request(&request).await?
+            }
             DataSubjectRequestType::Erasure => self.handle_erasure_request(&request).await?,
-            DataSubjectRequestType::Portability => self.handle_portability_request(&request).await?,
-            DataSubjectRequestType::Restriction => self.handle_restriction_request(&request).await?,
+            DataSubjectRequestType::Portability => {
+                self.handle_portability_request(&request).await?
+            }
+            DataSubjectRequestType::Restriction => {
+                self.handle_restriction_request(&request).await?
+            }
             DataSubjectRequestType::Objection => self.handle_objection_request(&request).await?,
         };
-        
+
         // 更新统计信息
         self.stats.record_data_subject_request(start_time.elapsed());
-        
+
         Ok(response)
     }
 
     /// 处理访问请求
-    async fn handle_access_request(&self, request: &DataSubjectRequest) -> Result<DataSubjectResponse> {
+    async fn handle_access_request(
+        &self,
+        request: &DataSubjectRequest,
+    ) -> Result<DataSubjectResponse> {
         // 模拟访问请求处理
         Ok(DataSubjectResponse {
             request_id: request.request_id.clone(),
@@ -94,7 +107,10 @@ impl GDPRComplianceManager {
     }
 
     /// 处理更正请求
-    async fn handle_rectification_request(&self, request: &DataSubjectRequest) -> Result<DataSubjectResponse> {
+    async fn handle_rectification_request(
+        &self,
+        request: &DataSubjectRequest,
+    ) -> Result<DataSubjectResponse> {
         // 模拟更正请求处理
         Ok(DataSubjectResponse {
             request_id: request.request_id.clone(),
@@ -105,7 +121,10 @@ impl GDPRComplianceManager {
     }
 
     /// 处理删除请求
-    async fn handle_erasure_request(&self, request: &DataSubjectRequest) -> Result<DataSubjectResponse> {
+    async fn handle_erasure_request(
+        &self,
+        request: &DataSubjectRequest,
+    ) -> Result<DataSubjectResponse> {
         // 模拟删除请求处理
         Ok(DataSubjectResponse {
             request_id: request.request_id.clone(),
@@ -116,7 +135,10 @@ impl GDPRComplianceManager {
     }
 
     /// 处理可携带性请求
-    async fn handle_portability_request(&self, request: &DataSubjectRequest) -> Result<DataSubjectResponse> {
+    async fn handle_portability_request(
+        &self,
+        request: &DataSubjectRequest,
+    ) -> Result<DataSubjectResponse> {
         // 模拟可携带性请求处理
         Ok(DataSubjectResponse {
             request_id: request.request_id.clone(),
@@ -127,7 +149,10 @@ impl GDPRComplianceManager {
     }
 
     /// 处理限制请求
-    async fn handle_restriction_request(&self, request: &DataSubjectRequest) -> Result<DataSubjectResponse> {
+    async fn handle_restriction_request(
+        &self,
+        request: &DataSubjectRequest,
+    ) -> Result<DataSubjectResponse> {
         // 模拟限制请求处理
         Ok(DataSubjectResponse {
             request_id: request.request_id.clone(),
@@ -138,7 +163,10 @@ impl GDPRComplianceManager {
     }
 
     /// 处理反对请求
-    async fn handle_objection_request(&self, request: &DataSubjectRequest) -> Result<DataSubjectResponse> {
+    async fn handle_objection_request(
+        &self,
+        request: &DataSubjectRequest,
+    ) -> Result<DataSubjectResponse> {
         // 模拟反对请求处理
         Ok(DataSubjectResponse {
             request_id: request.request_id.clone(),
@@ -175,21 +203,21 @@ impl SOXComplianceManager {
     /// 记录财务记录
     pub async fn record_financial_data(&self, _record: FinancialRecord) -> Result<()> {
         let start_time = Instant::now();
-        
+
         // 记录财务数据
         // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
-        
+
         // 更新统计信息
         self.stats.record_financial_data(start_time.elapsed());
-        
+
         Ok(())
     }
 
     /// 执行控制测试
     pub async fn execute_control_test(&self, test: ControlTest) -> Result<ControlTestResult> {
         let start_time = Instant::now();
-        
+
         // 执行控制测试
         let result = ControlTestResult {
             test_id: test.test_id.clone(),
@@ -197,24 +225,27 @@ impl SOXComplianceManager {
             findings: Vec::new(),
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
         };
-        
+
         // 记录控制测试
         // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
-        
+
         // 更新统计信息
         self.stats.record_control_test(start_time.elapsed());
-        
+
         Ok(result)
     }
 
     /// 生成合规性报告
     pub async fn generate_compliance_report(&self) -> Result<SOXComplianceReport> {
         let start_time = Instant::now();
-        
+
         // 生成合规性报告
         let report = SOXComplianceReport {
-            report_id: format!("sox_report_{}", SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs()),
+            report_id: format!(
+                "sox_report_{}",
+                SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs()
+            ),
             period: "Q1 2025".to_string(),
             overall_status: "compliant".to_string(),
             financial_records_count: self.financial_records.len(),
@@ -222,10 +253,10 @@ impl SOXComplianceManager {
             findings: Vec::new(),
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
         };
-        
+
         // 更新统计信息
         self.stats.record_compliance_report(start_time.elapsed());
-        
+
         Ok(report)
     }
 
@@ -256,35 +287,38 @@ impl HIPAAComplianceManager {
     /// 记录PHI数据
     pub async fn record_phi_data(&self, _record: PHIRecord) -> Result<()> {
         let start_time = Instant::now();
-        
+
         // 记录PHI数据
         // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
-        
+
         // 更新统计信息
         self.stats.record_phi_data(start_time.elapsed());
-        
+
         Ok(())
     }
 
     /// 记录访问日志
     pub async fn log_access(&self, _log: AccessLog) -> Result<()> {
         let start_time = Instant::now();
-        
+
         // 记录访问日志
         // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
-        
+
         // 更新统计信息
         self.stats.record_access_log(start_time.elapsed());
-        
+
         Ok(())
     }
 
     /// 执行风险评估
-    pub async fn perform_risk_assessment(&self, assessment: RiskAssessment) -> Result<RiskAssessmentResult> {
+    pub async fn perform_risk_assessment(
+        &self,
+        assessment: RiskAssessment,
+    ) -> Result<RiskAssessmentResult> {
         let start_time = Instant::now();
-        
+
         // 执行风险评估
         let result = RiskAssessmentResult {
             assessment_id: assessment.assessment_id.clone(),
@@ -292,10 +326,10 @@ impl HIPAAComplianceManager {
             recommendations: vec!["maintain_current_controls".to_string()],
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
         };
-        
+
         // 更新统计信息
         self.stats.record_risk_assessment(start_time.elapsed());
-        
+
         Ok(result)
     }
 
@@ -326,21 +360,21 @@ impl PCIDSSComplianceManager {
     /// 处理卡数据
     pub async fn process_card_data(&self, _data: CardData) -> Result<()> {
         let start_time = Instant::now();
-        
+
         // 处理卡数据
         // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
-        
+
         // 更新统计信息
         self.stats.record_card_data_processing(start_time.elapsed());
-        
+
         Ok(())
     }
 
     /// 执行安全测试
     pub async fn execute_security_test(&self, test: SecurityTest) -> Result<SecurityTestResult> {
         let start_time = Instant::now();
-        
+
         // 执行安全测试
         let result = SecurityTestResult {
             test_id: test.test_id.clone(),
@@ -348,14 +382,14 @@ impl PCIDSSComplianceManager {
             vulnerabilities: Vec::new(),
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
         };
-        
+
         // 记录安全测试
         // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
-        
+
         // 更新统计信息
         self.stats.record_security_test(start_time.elapsed());
-        
+
         Ok(result)
     }
 
@@ -545,17 +579,22 @@ impl GDPRStats {
 
     pub fn record_data_subject_registration(&self, duration: Duration) {
         self.total_data_subjects.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_processing_activity(&self, duration: Duration) {
-        self.total_processing_records.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_processing_records
+            .fetch_add(1, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_data_subject_request(&self, duration: Duration) {
-        self.total_data_subject_requests.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_data_subject_requests
+            .fetch_add(1, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> GDPRStatsSnapshot {
@@ -599,17 +638,21 @@ impl SOXStats {
 
     pub fn record_financial_data(&self, duration: Duration) {
         self.total_financial_records.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_control_test(&self, duration: Duration) {
         self.total_control_tests.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_compliance_report(&self, duration: Duration) {
-        self.total_compliance_reports.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_compliance_reports
+            .fetch_add(1, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> SOXStatsSnapshot {
@@ -653,17 +696,20 @@ impl HIPAAStats {
 
     pub fn record_phi_data(&self, duration: Duration) {
         self.total_phi_records.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_access_log(&self, duration: Duration) {
         self.total_access_logs.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_risk_assessment(&self, duration: Duration) {
         self.total_risk_assessments.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> HIPAAStatsSnapshot {
@@ -704,13 +750,16 @@ impl PCIDSSStats {
     }
 
     pub fn record_card_data_processing(&self, duration: Duration) {
-        self.total_card_data_processing.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_card_data_processing
+            .fetch_add(1, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_security_test(&self, duration: Duration) {
         self.total_security_tests.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> PCIDSSStatsSnapshot {
@@ -744,9 +793,12 @@ mod tests {
             consent_given: true,
             consent_timestamp: 1234567890,
         };
-        
-        manager.register_data_subject(subject).await.expect("Failed to register data subject");
-        
+
+        manager
+            .register_data_subject(subject)
+            .await
+            .expect("Failed to register data subject");
+
         let request = DataSubjectRequest {
             request_id: "req1".to_string(),
             data_subject_id: "subject1".to_string(),
@@ -754,8 +806,11 @@ mod tests {
             description: "Access request".to_string(),
             timestamp: 1234567890,
         };
-        
-        let response = manager.handle_data_subject_request(request).await.expect("Failed to handle data subject request");
+
+        let response = manager
+            .handle_data_subject_request(request)
+            .await
+            .expect("Failed to handle data subject request");
         assert_eq!(response.status, "completed");
     }
 
@@ -769,10 +824,16 @@ mod tests {
             transaction_type: "debit".to_string(),
             timestamp: 1234567890,
         };
-        
-        manager.record_financial_data(record).await.expect("Failed to record financial data");
-        
-        let report = manager.generate_compliance_report().await.expect("Failed to generate compliance report");
+
+        manager
+            .record_financial_data(record)
+            .await
+            .expect("Failed to record financial data");
+
+        let report = manager
+            .generate_compliance_report()
+            .await
+            .expect("Failed to generate compliance report");
         assert_eq!(report.overall_status, "compliant");
     }
 
@@ -786,18 +847,22 @@ mod tests {
             sensitivity_level: "high".to_string(),
             timestamp: 1234567890,
         };
-        
-        manager.record_phi_data(record).await
+
+        manager
+            .record_phi_data(record)
+            .await
             .expect("Failed to record PHI data");
-        
+
         let assessment = RiskAssessment {
             assessment_id: "assess1".to_string(),
             scope: "system".to_string(),
             assessment_type: "annual".to_string(),
             timestamp: 1234567890,
         };
-        
-        let result = manager.perform_risk_assessment(assessment).await
+
+        let result = manager
+            .perform_risk_assessment(assessment)
+            .await
             .expect("Failed to perform risk assessment");
         assert_eq!(result.risk_level, "low");
     }
@@ -812,18 +877,22 @@ mod tests {
             cvv: "123".to_string(),
             timestamp: 1234567890,
         };
-        
-        manager.process_card_data(data).await
+
+        manager
+            .process_card_data(data)
+            .await
             .expect("Failed to process card data");
-        
+
         let test = SecurityTest {
             test_id: "test1".to_string(),
             test_type: "vulnerability_scan".to_string(),
             scope: "network".to_string(),
             timestamp: 1234567890,
         };
-        
-        let result = manager.execute_security_test(test).await
+
+        let result = manager
+            .execute_security_test(test)
+            .await
             .expect("Failed to execute security test");
         assert_eq!(result.status, "passed");
     }

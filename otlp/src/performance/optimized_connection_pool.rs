@@ -451,7 +451,7 @@ where
     F: Fn() -> Result<T, ConnectionPoolError> + Send + Sync + 'static,
 {
     /// 获取连接引用
-    /// 
+    ///
     /// # Panics
     /// 如果连接已被取出(在Drop时)则会panic
     pub fn get(&self) -> &T {
@@ -459,7 +459,7 @@ where
     }
 
     /// 获取连接可变引用
-    /// 
+    ///
     /// # Panics
     /// 如果连接已被取出(在Drop时)则会panic
     pub fn get_mut(&mut self) -> &mut T {
@@ -542,7 +542,10 @@ mod tests {
         assert!(conn1.get().starts_with("connection_"));
 
         // 获取第二个连接
-        let conn2 = pool.acquire().await.expect("Failed to acquire second connection");
+        let conn2 = pool
+            .acquire()
+            .await
+            .expect("Failed to acquire second connection");
         assert!(conn2.get().starts_with("connection_"));
 
         // 释放连接
@@ -574,9 +577,8 @@ mod tests {
             enable_connection_reuse: true,
         };
 
-        let pool =
-            OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config)
-                .expect("Failed to create connection pool");
+        let pool = OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config)
+            .expect("Failed to create connection pool");
 
         // 等待初始化完成
         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -609,32 +611,37 @@ mod tests {
             enable_connection_reuse: true,
         };
 
-        let pool =
-            OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config)
-                .expect("Failed to create connection pool");
+        let pool = OptimizedConnectionPool::new(|| Ok(String::from("test_connection")), config)
+            .expect("Failed to create connection pool");
 
         // 获取最大数量的连接
-        let _conn1 = pool.acquire().await.expect("Failed to acquire connection 1");
-        let _conn2 = pool.acquire().await.expect("Failed to acquire connection 2");
+        let _conn1 = pool
+            .acquire()
+            .await
+            .expect("Failed to acquire connection 1");
+        let _conn2 = pool
+            .acquire()
+            .await
+            .expect("Failed to acquire connection 2");
 
         // 尝试获取第三个连接应该超时（因为池满了会阻塞）
         // 使用一个新的作用域来确保前面的连接还在使用中
         {
-            let result = tokio::time::timeout(
-                Duration::from_millis(100),
-                pool.acquire()
-            ).await;
+            let result = tokio::time::timeout(Duration::from_millis(100), pool.acquire()).await;
             assert!(result.is_err(), "Expected timeout when pool is full");
         }
 
         // 释放一个连接
         drop(_conn1);
-        
+
         // 等待一小段时间让连接返回池中
         tokio::time::sleep(Duration::from_millis(50)).await;
 
         // 现在应该能够获取连接
-        let conn3 = pool.acquire().await.expect("Failed to acquire connection after release");
+        let conn3 = pool
+            .acquire()
+            .await
+            .expect("Failed to acquire connection after release");
         assert_eq!(conn3.get(), "test_connection");
     }
 
@@ -663,7 +670,9 @@ mod tests {
         for i in 0..20 {
             let pool_clone = pool.clone();
             let handle = tokio::spawn(async move {
-                let conn = pool_clone.acquire().await
+                let conn = pool_clone
+                    .acquire()
+                    .await
                     .expect("Failed to acquire connection in concurrent test");
                 // 模拟使用连接
                 tokio::time::sleep(Duration::from_millis(10)).await;
@@ -675,7 +684,8 @@ mod tests {
 
         // 等待所有任务完成
         for handle in handles {
-            handle.await
+            handle
+                .await
                 .expect("Concurrent task should complete successfully");
         }
 

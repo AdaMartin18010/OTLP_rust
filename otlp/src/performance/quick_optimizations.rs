@@ -154,7 +154,7 @@ impl BatchSender {
             let mut interval = interval(config.batch_timeout);
             loop {
                 interval.tick().await;
-                
+
                 // 检查是否还在运行
                 if !*is_running.read().await {
                     break;
@@ -163,14 +163,14 @@ impl BatchSender {
                 // 检查是否需要发送
                 let batch_len = batch.lock().await.len();
                 let time_since_last_send = last_send_time.read().await.elapsed();
-                
+
                 if batch_len > 0 && time_since_last_send >= config.batch_timeout {
                     // 发送批量数据
                     let mut batch_guard = batch.lock().await;
                     if !batch_guard.is_empty() {
                         let data: Vec<TelemetryData> = batch_guard.drain(..).collect();
                         drop(batch_guard);
-                        
+
                         tracing::info!("定时发送批量数据: {} 条", data.len());
                         *last_send_time.write().await = Instant::now();
                     }
@@ -217,11 +217,11 @@ impl Compressor {
     async fn compress_gzip(&self, data: &[u8]) -> Result<Vec<u8>> {
         use async_compression::tokio::write::GzipEncoder;
         use tokio::io::AsyncWriteExt;
-        
+
         let mut encoder = GzipEncoder::new(Vec::new());
         encoder.write_all(data).await?;
         encoder.shutdown().await?;
-        
+
         Ok(encoder.into_inner())
     }
 
@@ -229,11 +229,14 @@ impl Compressor {
     async fn compress_zstd(&self, data: &[u8]) -> Result<Vec<u8>> {
         use async_compression::tokio::write::ZstdEncoder;
         use tokio::io::AsyncWriteExt;
-        
-        let mut encoder = ZstdEncoder::with_quality(Vec::new(), async_compression::Level::Precise(self.config.level as i32));
+
+        let mut encoder = ZstdEncoder::with_quality(
+            Vec::new(),
+            async_compression::Level::Precise(self.config.level as i32),
+        );
         encoder.write_all(data).await?;
         encoder.shutdown().await?;
-        
+
         Ok(encoder.into_inner())
     }
 
@@ -241,11 +244,14 @@ impl Compressor {
     async fn compress_brotli(&self, data: &[u8]) -> Result<Vec<u8>> {
         use async_compression::tokio::write::BrotliEncoder;
         use tokio::io::AsyncWriteExt;
-        
-        let mut encoder = BrotliEncoder::with_quality(Vec::new(), async_compression::Level::Precise(self.config.level as i32));
+
+        let mut encoder = BrotliEncoder::with_quality(
+            Vec::new(),
+            async_compression::Level::Precise(self.config.level as i32),
+        );
         encoder.write_all(data).await?;
         encoder.shutdown().await?;
-        
+
         Ok(encoder.into_inner())
     }
 }
@@ -356,13 +362,13 @@ mod tests {
             let data = TelemetryData::trace(format!("test-{}", i))
                 .with_attribute("test", "value")
                 .with_status(StatusCode::Ok, None);
-            
+
             sender.add_data(data).await.unwrap();
         }
 
         // 等待批量发送
         tokio::time::sleep(Duration::from_millis(150)).await;
-        
+
         sender.stop().await.unwrap();
     }
 
@@ -377,7 +383,7 @@ mod tests {
 
         let compressor = Compressor::new(config);
         let data = b"Hello, World! This is a test string for compression.";
-        
+
         let compressed = compressor.compress(data).await.unwrap();
         assert!(compressed.len() < data.len());
     }
@@ -386,14 +392,14 @@ mod tests {
     async fn test_quick_optimizations_manager() {
         let config = QuickOptimizationsConfig::default();
         let mut manager = QuickOptimizationsManager::new(config);
-        
+
         manager.initialize().await.unwrap();
 
         let data = TelemetryData::metric("test_metric", MetricType::Counter)
             .with_attribute("test", "value");
 
         manager.send_data(data).await.unwrap();
-        
+
         manager.shutdown().await.unwrap();
     }
 }

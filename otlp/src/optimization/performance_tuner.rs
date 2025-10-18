@@ -1,12 +1,12 @@
 //! 性能调优模块
-//! 
+//!
 //! 提供自动化的性能调优和优化建议
 
+use anyhow::{Result, anyhow};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use std::sync::atomic::{AtomicUsize, AtomicU64, Ordering};
-use std::collections::HashMap;
-use anyhow::{Result, anyhow};
 
 /// 性能调优统计信息
 #[derive(Debug, Default)]
@@ -15,18 +15,24 @@ pub struct PerformanceTunerStats {
     pub successful_optimizations: AtomicUsize,
     pub failed_optimizations: AtomicUsize,
     pub performance_improvements: AtomicU64, // 百分比
-    pub average_improvement: AtomicU64, // 百分比
-    pub peak_improvement: AtomicU64, // 百分比
-    pub optimization_time: AtomicU64, // 微秒
+    pub average_improvement: AtomicU64,      // 百分比
+    pub peak_improvement: AtomicU64,         // 百分比
+    pub optimization_time: AtomicU64,        // 微秒
 }
 
 impl Clone for PerformanceTunerStats {
     fn clone(&self) -> Self {
         Self {
             total_optimizations: AtomicUsize::new(self.total_optimizations.load(Ordering::Relaxed)),
-            successful_optimizations: AtomicUsize::new(self.successful_optimizations.load(Ordering::Relaxed)),
-            failed_optimizations: AtomicUsize::new(self.failed_optimizations.load(Ordering::Relaxed)),
-            performance_improvements: AtomicU64::new(self.performance_improvements.load(Ordering::Relaxed)),
+            successful_optimizations: AtomicUsize::new(
+                self.successful_optimizations.load(Ordering::Relaxed),
+            ),
+            failed_optimizations: AtomicUsize::new(
+                self.failed_optimizations.load(Ordering::Relaxed),
+            ),
+            performance_improvements: AtomicU64::new(
+                self.performance_improvements.load(Ordering::Relaxed),
+            ),
             average_improvement: AtomicU64::new(self.average_improvement.load(Ordering::Relaxed)),
             peak_improvement: AtomicU64::new(self.peak_improvement.load(Ordering::Relaxed)),
             optimization_time: AtomicU64::new(self.optimization_time.load(Ordering::Relaxed)),
@@ -167,7 +173,7 @@ impl PerformanceTuner {
     /// 更新性能指标
     pub fn update_metrics(&self, metrics: PerformanceMetrics) -> Result<()> {
         let now = Instant::now();
-        
+
         // 更新当前指标
         {
             let mut current = self.current_metrics.lock().unwrap();
@@ -178,7 +184,7 @@ impl PerformanceTuner {
         {
             let mut historical = self.historical_metrics.lock().unwrap();
             historical.push((now, metrics));
-            
+
             // 保持历史记录在限制范围内
             if historical.len() > self.tuning_config.max_historical_entries {
                 historical.remove(0);
@@ -192,7 +198,7 @@ impl PerformanceTuner {
     pub async fn analyze_and_suggest(&self) -> Result<Vec<OptimizationSuggestion>> {
         let current_metrics = self.current_metrics.lock().unwrap().clone();
         let historical_metrics = self.historical_metrics.lock().unwrap().clone();
-        
+
         let mut suggestions = Vec::new();
 
         // 分析CPU使用率
@@ -221,7 +227,9 @@ impl PerformanceTuner {
         }
 
         // 分析缓存命中率
-        if current_metrics.cache_hit_rate < self.tuning_config.performance_targets.min_cache_hit_rate {
+        if current_metrics.cache_hit_rate
+            < self.tuning_config.performance_targets.min_cache_hit_rate
+        {
             suggestions.push(self.suggest_cache_optimization(&current_metrics)?);
         }
 
@@ -240,7 +248,10 @@ impl PerformanceTuner {
     }
 
     /// 建议CPU优化
-    fn suggest_cpu_optimization(&self, metrics: &PerformanceMetrics) -> Result<OptimizationSuggestion> {
+    fn suggest_cpu_optimization(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Result<OptimizationSuggestion> {
         let improvement = if metrics.cpu_usage > 95.0 {
             30.0
         } else if metrics.cpu_usage > 90.0 {
@@ -257,7 +268,10 @@ impl PerformanceTuner {
             } else {
                 OptimizationPriority::High
             },
-            description: format!("CPU使用率过高 ({}%), 建议启用SIMD优化和并发处理", metrics.cpu_usage),
+            description: format!(
+                "CPU使用率过高 ({}%), 建议启用SIMD优化和并发处理",
+                metrics.cpu_usage
+            ),
             expected_improvement: improvement,
             implementation_effort: ImplementationEffort::Medium,
             risk_level: RiskLevel::Low,
@@ -270,7 +284,10 @@ impl PerformanceTuner {
     }
 
     /// 建议内存优化
-    fn suggest_memory_optimization(&self, metrics: &PerformanceMetrics) -> Result<OptimizationSuggestion> {
+    fn suggest_memory_optimization(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Result<OptimizationSuggestion> {
         let improvement = if metrics.memory_usage > 95.0 {
             40.0
         } else if metrics.memory_usage > 90.0 {
@@ -287,7 +304,10 @@ impl PerformanceTuner {
             } else {
                 OptimizationPriority::High
             },
-            description: format!("内存使用率过高 ({}%), 建议启用内存池和对象池", metrics.memory_usage),
+            description: format!(
+                "内存使用率过高 ({}%), 建议启用内存池和对象池",
+                metrics.memory_usage
+            ),
             expected_improvement: improvement,
             implementation_effort: ImplementationEffort::Medium,
             risk_level: RiskLevel::Low,
@@ -300,14 +320,20 @@ impl PerformanceTuner {
     }
 
     /// 建议吞吐量优化
-    fn suggest_throughput_optimization(&self, metrics: &PerformanceMetrics) -> Result<OptimizationSuggestion> {
+    fn suggest_throughput_optimization(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Result<OptimizationSuggestion> {
         let improvement = 50.0;
 
         Ok(OptimizationSuggestion {
             id: format!("throughput_opt_{}", Instant::now().elapsed().as_millis()),
             category: OptimizationCategory::Concurrency,
             priority: OptimizationPriority::High,
-            description: format!("吞吐量过低 ({} ops/s), 建议启用批处理和并发优化", metrics.throughput),
+            description: format!(
+                "吞吐量过低 ({} ops/s), 建议启用批处理和并发优化",
+                metrics.throughput
+            ),
             expected_improvement: improvement,
             implementation_effort: ImplementationEffort::High,
             risk_level: RiskLevel::Medium,
@@ -320,14 +346,20 @@ impl PerformanceTuner {
     }
 
     /// 建议延迟优化
-    fn suggest_latency_optimization(&self, metrics: &PerformanceMetrics) -> Result<OptimizationSuggestion> {
+    fn suggest_latency_optimization(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Result<OptimizationSuggestion> {
         let improvement = 60.0;
 
         Ok(OptimizationSuggestion {
             id: format!("latency_opt_{}", Instant::now().elapsed().as_millis()),
             category: OptimizationCategory::Network,
             priority: OptimizationPriority::High,
-            description: format!("延迟过高 ({}ms), 建议启用零拷贝和连接池", metrics.latency.as_millis()),
+            description: format!(
+                "延迟过高 ({}ms), 建议启用零拷贝和连接池",
+                metrics.latency.as_millis()
+            ),
             expected_improvement: improvement,
             implementation_effort: ImplementationEffort::Medium,
             risk_level: RiskLevel::Low,
@@ -340,14 +372,20 @@ impl PerformanceTuner {
     }
 
     /// 建议错误率优化
-    fn suggest_error_rate_optimization(&self, metrics: &PerformanceMetrics) -> Result<OptimizationSuggestion> {
+    fn suggest_error_rate_optimization(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Result<OptimizationSuggestion> {
         let improvement = 80.0;
 
         Ok(OptimizationSuggestion {
             id: format!("error_opt_{}", Instant::now().elapsed().as_millis()),
             category: OptimizationCategory::Configuration,
             priority: OptimizationPriority::Critical,
-            description: format!("错误率过高 ({}%), 建议启用熔断器和重试机制", metrics.error_rate),
+            description: format!(
+                "错误率过高 ({}%), 建议启用熔断器和重试机制",
+                metrics.error_rate
+            ),
             expected_improvement: improvement,
             implementation_effort: ImplementationEffort::Low,
             risk_level: RiskLevel::Low,
@@ -360,14 +398,20 @@ impl PerformanceTuner {
     }
 
     /// 建议缓存优化
-    fn suggest_cache_optimization(&self, metrics: &PerformanceMetrics) -> Result<OptimizationSuggestion> {
+    fn suggest_cache_optimization(
+        &self,
+        metrics: &PerformanceMetrics,
+    ) -> Result<OptimizationSuggestion> {
         let improvement = 70.0;
 
         Ok(OptimizationSuggestion {
             id: format!("cache_opt_{}", Instant::now().elapsed().as_millis()),
             category: OptimizationCategory::Caching,
             priority: OptimizationPriority::Medium,
-            description: format!("缓存命中率过低 ({}%), 建议优化缓存策略", metrics.cache_hit_rate),
+            description: format!(
+                "缓存命中率过低 ({}%), 建议优化缓存策略",
+                metrics.cache_hit_rate
+            ),
             expected_improvement: improvement,
             implementation_effort: ImplementationEffort::Medium,
             risk_level: RiskLevel::Low,
@@ -380,12 +424,16 @@ impl PerformanceTuner {
     }
 
     /// 分析历史趋势
-    fn analyze_historical_trends(&self, historical: &[(Instant, PerformanceMetrics)]) -> Result<Vec<OptimizationSuggestion>> {
+    fn analyze_historical_trends(
+        &self,
+        historical: &[(Instant, PerformanceMetrics)],
+    ) -> Result<Vec<OptimizationSuggestion>> {
         let mut suggestions = Vec::new();
 
         // 分析CPU趋势
         if let Some(trend) = self.calculate_trend(historical, |m| m.cpu_usage) {
-            if trend > 5.0 { // CPU使用率上升趋势
+            if trend > 5.0 {
+                // CPU使用率上升趋势
                 suggestions.push(OptimizationSuggestion {
                     id: format!("cpu_trend_opt_{}", Instant::now().elapsed().as_millis()),
                     category: OptimizationCategory::Cpu,
@@ -401,7 +449,8 @@ impl PerformanceTuner {
 
         // 分析内存趋势
         if let Some(trend) = self.calculate_trend(historical, |m| m.memory_usage) {
-            if trend > 3.0 { // 内存使用率上升趋势
+            if trend > 3.0 {
+                // 内存使用率上升趋势
                 suggestions.push(OptimizationSuggestion {
                     id: format!("memory_trend_opt_{}", Instant::now().elapsed().as_millis()),
                     category: OptimizationCategory::Memory,
@@ -419,7 +468,11 @@ impl PerformanceTuner {
     }
 
     /// 计算趋势
-    fn calculate_trend<F>(&self, historical: &[(Instant, PerformanceMetrics)], extractor: F) -> Option<f64>
+    fn calculate_trend<F>(
+        &self,
+        historical: &[(Instant, PerformanceMetrics)],
+        extractor: F,
+    ) -> Option<f64>
     where
         F: Fn(&PerformanceMetrics) -> f64,
     {
@@ -430,14 +483,14 @@ impl PerformanceTuner {
         let recent = &historical[historical.len() - 5..];
         let first = extractor(&recent[0].1);
         let last = extractor(&recent[recent.len() - 1].1);
-        
+
         Some(last - first)
     }
 
     /// 应用优化建议
     pub async fn apply_optimization(&self, suggestion: &OptimizationSuggestion) -> Result<bool> {
         let start = Instant::now();
-        
+
         // 检查风险级别
         if suggestion.risk_level == RiskLevel::VeryHigh && !self.tuning_config.auto_apply_low_risk {
             return Err(anyhow!("高风险优化需要手动确认"));
@@ -448,22 +501,36 @@ impl PerformanceTuner {
             OptimizationCategory::Cpu => self.apply_cpu_optimization(suggestion).await?,
             OptimizationCategory::Memory => self.apply_memory_optimization(suggestion).await?,
             OptimizationCategory::Network => self.apply_network_optimization(suggestion).await?,
-            OptimizationCategory::Concurrency => self.apply_concurrency_optimization(suggestion).await?,
+            OptimizationCategory::Concurrency => {
+                self.apply_concurrency_optimization(suggestion).await?
+            }
             OptimizationCategory::Caching => self.apply_cache_optimization(suggestion).await?,
-            OptimizationCategory::Algorithm => self.apply_algorithm_optimization(suggestion).await?,
-            OptimizationCategory::Configuration => self.apply_configuration_optimization(suggestion).await?,
+            OptimizationCategory::Algorithm => {
+                self.apply_algorithm_optimization(suggestion).await?
+            }
+            OptimizationCategory::Configuration => {
+                self.apply_configuration_optimization(suggestion).await?
+            }
         };
 
         let duration = start.elapsed();
-        
+
         // 更新统计
-        self.stats.total_optimizations.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .total_optimizations
+            .fetch_add(1, Ordering::Relaxed);
         if success {
-            self.stats.successful_optimizations.fetch_add(1, Ordering::Relaxed);
+            self.stats
+                .successful_optimizations
+                .fetch_add(1, Ordering::Relaxed);
         } else {
-            self.stats.failed_optimizations.fetch_add(1, Ordering::Relaxed);
+            self.stats
+                .failed_optimizations
+                .fetch_add(1, Ordering::Relaxed);
         }
-        self.stats.optimization_time.fetch_add(duration.as_micros() as u64, Ordering::Relaxed);
+        self.stats
+            .optimization_time
+            .fetch_add(duration.as_micros() as u64, Ordering::Relaxed);
 
         Ok(success)
     }
@@ -486,7 +553,10 @@ impl PerformanceTuner {
 
     /// 应用网络优化
     #[allow(unused_variables)]
-    async fn apply_network_optimization(&self, suggestion: &OptimizationSuggestion) -> Result<bool> {
+    async fn apply_network_optimization(
+        &self,
+        suggestion: &OptimizationSuggestion,
+    ) -> Result<bool> {
         // 模拟网络优化应用
         tokio::time::sleep(Duration::from_millis(200)).await;
         Ok(true)
@@ -494,7 +564,10 @@ impl PerformanceTuner {
 
     /// 应用并发优化
     #[allow(unused_variables)]
-    async fn apply_concurrency_optimization(&self, suggestion: &OptimizationSuggestion) -> Result<bool> {
+    async fn apply_concurrency_optimization(
+        &self,
+        suggestion: &OptimizationSuggestion,
+    ) -> Result<bool> {
         // 模拟并发优化应用
         tokio::time::sleep(Duration::from_millis(300)).await;
         Ok(true)
@@ -510,7 +583,10 @@ impl PerformanceTuner {
 
     /// 应用算法优化
     #[allow(unused_variables)]
-    async fn apply_algorithm_optimization(&self, suggestion: &OptimizationSuggestion) -> Result<bool> {
+    async fn apply_algorithm_optimization(
+        &self,
+        suggestion: &OptimizationSuggestion,
+    ) -> Result<bool> {
         // 模拟算法优化应用
         tokio::time::sleep(Duration::from_millis(500)).await;
         Ok(true)
@@ -518,7 +594,10 @@ impl PerformanceTuner {
 
     /// 应用配置优化
     #[allow(unused_variables)]
-    async fn apply_configuration_optimization(&self, suggestion: &OptimizationSuggestion) -> Result<bool> {
+    async fn apply_configuration_optimization(
+        &self,
+        suggestion: &OptimizationSuggestion,
+    ) -> Result<bool> {
         // 模拟配置优化应用
         tokio::time::sleep(Duration::from_millis(50)).await;
         Ok(true)
@@ -556,7 +635,7 @@ mod tests {
     fn test_metrics_update() {
         let config = TuningConfig::default();
         let tuner = PerformanceTuner::new(config);
-        
+
         let metrics = PerformanceMetrics {
             cpu_usage: 50.0,
             memory_usage: 60.0,
@@ -567,7 +646,7 @@ mod tests {
             queue_depth: 10,
             cache_hit_rate: 95.0,
         };
-        
+
         assert!(tuner.update_metrics(metrics).is_ok());
     }
 
@@ -575,22 +654,26 @@ mod tests {
     async fn test_optimization_analysis() {
         let config = TuningConfig::default();
         let tuner = PerformanceTuner::new(config);
-        
+
         let metrics = PerformanceMetrics {
             cpu_usage: 95.0, // 高CPU使用率
             memory_usage: 60.0,
-            throughput: 500, // 低吞吐量
+            throughput: 500,                     // 低吞吐量
             latency: Duration::from_millis(200), // 高延迟
-            error_rate: 2.0, // 高错误率
+            error_rate: 2.0,                     // 高错误率
             connection_count: 100,
             queue_depth: 10,
             cache_hit_rate: 80.0, // 低缓存命中率
         };
-        
+
         tuner.update_metrics(metrics).unwrap();
         let suggestions = tuner.analyze_and_suggest().await.unwrap();
-        
+
         assert!(!suggestions.is_empty());
-        assert!(suggestions.iter().any(|s| s.category == OptimizationCategory::Cpu));
+        assert!(
+            suggestions
+                .iter()
+                .any(|s| s.category == OptimizationCategory::Cpu)
+        );
     }
 }

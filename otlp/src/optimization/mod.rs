@@ -1,5 +1,5 @@
 //! 优化模块
-//! 
+//!
 //! 提供智能化的性能优化和配置管理
 
 pub mod performance_tuner;
@@ -8,13 +8,13 @@ pub mod smart_config;
 // 重新导出主要类型
 pub use performance_tuner::{
     ImplementationEffort, OptimizationCategory, OptimizationPriority, OptimizationSuggestion,
-    PerformanceMetrics, PerformanceTuner, PerformanceTunerStats, RiskLevel, TuningConfig,
-    PerformanceTargets,
+    PerformanceMetrics, PerformanceTargets, PerformanceTuner, PerformanceTunerStats, RiskLevel,
+    TuningConfig,
 };
 pub use smart_config::{
-    ConfigCategory, ConfigConstraint, ConfigImpact, ConfigItem, ConfigOptimization, ConfigValue,
-    ConstraintType, PerformanceProfile, PerformanceSnapshot, RiskLevel as ConfigRiskLevel,
-    SmartConfigManager, SmartConfigStats, ConfigTemplate,
+    ConfigCategory, ConfigConstraint, ConfigImpact, ConfigItem, ConfigOptimization, ConfigTemplate,
+    ConfigValue, ConstraintType, PerformanceProfile, PerformanceSnapshot,
+    RiskLevel as ConfigRiskLevel, SmartConfigManager, SmartConfigStats,
 };
 
 /// 综合优化管理器
@@ -53,13 +53,19 @@ impl OptimizationManager {
     }
 
     /// 更新性能指标
-    pub fn update_performance_metrics(&self, metrics: PerformanceMetrics) -> Result<(), anyhow::Error> {
+    pub fn update_performance_metrics(
+        &self,
+        metrics: PerformanceMetrics,
+    ) -> Result<(), anyhow::Error> {
         self.performance_tuner.update_metrics(metrics)?;
         Ok(())
     }
 
     /// 记录性能快照
-    pub fn record_performance_snapshot(&self, snapshot: PerformanceSnapshot) -> Result<(), anyhow::Error> {
+    pub fn record_performance_snapshot(
+        &self,
+        snapshot: PerformanceSnapshot,
+    ) -> Result<(), anyhow::Error> {
         self.smart_config_manager.record_performance(snapshot)?;
         Ok(())
     }
@@ -68,15 +74,17 @@ impl OptimizationManager {
     pub async fn perform_optimization_analysis(&self) -> Result<OptimizationReport, anyhow::Error> {
         // 获取性能调优建议
         let performance_suggestions = self.performance_tuner.analyze_and_suggest().await?;
-        
+
         // 获取配置优化建议
         let config_optimizations = self.smart_config_manager.analyze_and_optimize().await?;
-        
+
         // 生成综合报告
         let total_suggestions = performance_suggestions.len() + config_optimizations.len();
-        let critical_issues = self.count_critical_issues(&performance_suggestions, &config_optimizations);
-        let estimated_improvement = self.calculate_estimated_improvement(&performance_suggestions, &config_optimizations);
-        
+        let critical_issues =
+            self.count_critical_issues(&performance_suggestions, &config_optimizations);
+        let estimated_improvement =
+            self.calculate_estimated_improvement(&performance_suggestions, &config_optimizations);
+
         let report = OptimizationReport {
             timestamp: std::time::Instant::now(),
             performance_suggestions,
@@ -90,7 +98,10 @@ impl OptimizationManager {
     }
 
     /// 应用优化建议
-    pub async fn apply_optimizations(&self, report: &OptimizationReport) -> Result<OptimizationResult, anyhow::Error> {
+    pub async fn apply_optimizations(
+        &self,
+        report: &OptimizationReport,
+    ) -> Result<OptimizationResult, anyhow::Error> {
         let mut applied_count = 0;
         let mut failed_count = 0;
         let mut total_improvement = 0.0;
@@ -112,7 +123,11 @@ impl OptimizationManager {
 
         // 应用配置优化建议
         for optimization in &report.config_optimizations {
-            match self.smart_config_manager.apply_optimization(optimization).await {
+            match self
+                .smart_config_manager
+                .apply_optimization(optimization)
+                .await
+            {
                 Ok(success) => {
                     if success {
                         applied_count += 1;
@@ -141,28 +156,40 @@ impl OptimizationManager {
     }
 
     /// 计算关键问题数量
-    fn count_critical_issues(&self, performance_suggestions: &[OptimizationSuggestion], config_optimizations: &[ConfigOptimization]) -> usize {
-        let critical_performance = performance_suggestions.iter()
+    fn count_critical_issues(
+        &self,
+        performance_suggestions: &[OptimizationSuggestion],
+        config_optimizations: &[ConfigOptimization],
+    ) -> usize {
+        let critical_performance = performance_suggestions
+            .iter()
             .filter(|s| s.priority == OptimizationPriority::Critical)
             .count();
-        
-        let critical_config = config_optimizations.iter()
+
+        let critical_config = config_optimizations
+            .iter()
             .filter(|c| c.risk_level == ConfigRiskLevel::VeryHigh)
             .count();
-        
+
         critical_performance + critical_config
     }
 
     /// 计算预估改进
-    fn calculate_estimated_improvement(&self, performance_suggestions: &[OptimizationSuggestion], config_optimizations: &[ConfigOptimization]) -> f64 {
-        let performance_improvement: f64 = performance_suggestions.iter()
+    fn calculate_estimated_improvement(
+        &self,
+        performance_suggestions: &[OptimizationSuggestion],
+        config_optimizations: &[ConfigOptimization],
+    ) -> f64 {
+        let performance_improvement: f64 = performance_suggestions
+            .iter()
             .map(|s| s.expected_improvement)
             .sum();
-        
-        let config_improvement: f64 = config_optimizations.iter()
+
+        let config_improvement: f64 = config_optimizations
+            .iter()
             .map(|c| c.expected_improvement)
             .sum();
-        
+
         performance_improvement + config_improvement
     }
 
@@ -205,53 +232,57 @@ pub struct OptimizationResult {
 
 /// 优化建议优先级排序
 pub fn sort_optimizations_by_priority(optimizations: &mut [OptimizationSuggestion]) {
-    optimizations.sort_by(|a, b| {
-        match (&a.priority, &b.priority) {
-            (OptimizationPriority::Critical, OptimizationPriority::Critical) => {
-                b.expected_improvement.partial_cmp(&a.expected_improvement).unwrap_or(std::cmp::Ordering::Equal)
-            }
-            (OptimizationPriority::Critical, _) => std::cmp::Ordering::Less,
-            (_, OptimizationPriority::Critical) => std::cmp::Ordering::Greater,
-            (OptimizationPriority::High, OptimizationPriority::High) => {
-                b.expected_improvement.partial_cmp(&a.expected_improvement).unwrap_or(std::cmp::Ordering::Equal)
-            }
-            (OptimizationPriority::High, _) => std::cmp::Ordering::Less,
-            (_, OptimizationPriority::High) => std::cmp::Ordering::Greater,
-            (OptimizationPriority::Medium, OptimizationPriority::Medium) => {
-                b.expected_improvement.partial_cmp(&a.expected_improvement).unwrap_or(std::cmp::Ordering::Equal)
-            }
-            (OptimizationPriority::Medium, _) => std::cmp::Ordering::Less,
-            (_, OptimizationPriority::Medium) => std::cmp::Ordering::Greater,
-            (OptimizationPriority::Low, OptimizationPriority::Low) => {
-                b.expected_improvement.partial_cmp(&a.expected_improvement).unwrap_or(std::cmp::Ordering::Equal)
-            }
-        }
+    optimizations.sort_by(|a, b| match (&a.priority, &b.priority) {
+        (OptimizationPriority::Critical, OptimizationPriority::Critical) => b
+            .expected_improvement
+            .partial_cmp(&a.expected_improvement)
+            .unwrap_or(std::cmp::Ordering::Equal),
+        (OptimizationPriority::Critical, _) => std::cmp::Ordering::Less,
+        (_, OptimizationPriority::Critical) => std::cmp::Ordering::Greater,
+        (OptimizationPriority::High, OptimizationPriority::High) => b
+            .expected_improvement
+            .partial_cmp(&a.expected_improvement)
+            .unwrap_or(std::cmp::Ordering::Equal),
+        (OptimizationPriority::High, _) => std::cmp::Ordering::Less,
+        (_, OptimizationPriority::High) => std::cmp::Ordering::Greater,
+        (OptimizationPriority::Medium, OptimizationPriority::Medium) => b
+            .expected_improvement
+            .partial_cmp(&a.expected_improvement)
+            .unwrap_or(std::cmp::Ordering::Equal),
+        (OptimizationPriority::Medium, _) => std::cmp::Ordering::Less,
+        (_, OptimizationPriority::Medium) => std::cmp::Ordering::Greater,
+        (OptimizationPriority::Low, OptimizationPriority::Low) => b
+            .expected_improvement
+            .partial_cmp(&a.expected_improvement)
+            .unwrap_or(std::cmp::Ordering::Equal),
     });
 }
 
 /// 配置优化优先级排序
 pub fn sort_config_optimizations_by_priority(optimizations: &mut [ConfigOptimization]) {
-    optimizations.sort_by(|a, b| {
-        match (&a.risk_level, &b.risk_level) {
-            (ConfigRiskLevel::Low, ConfigRiskLevel::Low) => {
-                b.expected_improvement.partial_cmp(&a.expected_improvement).unwrap_or(std::cmp::Ordering::Equal)
-            }
-            (ConfigRiskLevel::Low, _) => std::cmp::Ordering::Less,
-            (_, ConfigRiskLevel::Low) => std::cmp::Ordering::Greater,
-            (ConfigRiskLevel::Medium, ConfigRiskLevel::Medium) => {
-                b.expected_improvement.partial_cmp(&a.expected_improvement).unwrap_or(std::cmp::Ordering::Equal)
-            }
-            (ConfigRiskLevel::Medium, _) => std::cmp::Ordering::Less,
-            (_, ConfigRiskLevel::Medium) => std::cmp::Ordering::Greater,
-            (ConfigRiskLevel::High, ConfigRiskLevel::High) => {
-                b.expected_improvement.partial_cmp(&a.expected_improvement).unwrap_or(std::cmp::Ordering::Equal)
-            }
-            (ConfigRiskLevel::High, _) => std::cmp::Ordering::Less,
-            (_, ConfigRiskLevel::High) => std::cmp::Ordering::Greater,
-            (ConfigRiskLevel::VeryHigh, ConfigRiskLevel::VeryHigh) => {
-                b.expected_improvement.partial_cmp(&a.expected_improvement).unwrap_or(std::cmp::Ordering::Equal)
-            }
-        }
+    optimizations.sort_by(|a, b| match (&a.risk_level, &b.risk_level) {
+        (ConfigRiskLevel::Low, ConfigRiskLevel::Low) => b
+            .expected_improvement
+            .partial_cmp(&a.expected_improvement)
+            .unwrap_or(std::cmp::Ordering::Equal),
+        (ConfigRiskLevel::Low, _) => std::cmp::Ordering::Less,
+        (_, ConfigRiskLevel::Low) => std::cmp::Ordering::Greater,
+        (ConfigRiskLevel::Medium, ConfigRiskLevel::Medium) => b
+            .expected_improvement
+            .partial_cmp(&a.expected_improvement)
+            .unwrap_or(std::cmp::Ordering::Equal),
+        (ConfigRiskLevel::Medium, _) => std::cmp::Ordering::Less,
+        (_, ConfigRiskLevel::Medium) => std::cmp::Ordering::Greater,
+        (ConfigRiskLevel::High, ConfigRiskLevel::High) => b
+            .expected_improvement
+            .partial_cmp(&a.expected_improvement)
+            .unwrap_or(std::cmp::Ordering::Equal),
+        (ConfigRiskLevel::High, _) => std::cmp::Ordering::Less,
+        (_, ConfigRiskLevel::High) => std::cmp::Ordering::Greater,
+        (ConfigRiskLevel::VeryHigh, ConfigRiskLevel::VeryHigh) => b
+            .expected_improvement
+            .partial_cmp(&a.expected_improvement)
+            .unwrap_or(std::cmp::Ordering::Equal),
     });
 }
 
@@ -271,7 +302,7 @@ mod tests {
     async fn test_optimization_analysis() {
         let manager = OptimizationManager::new();
         manager.initialize().await.unwrap();
-        
+
         // 记录多次性能数据（至少10次）以便进行分析
         for i in 0..12 {
             let metrics = PerformanceMetrics {
@@ -284,10 +315,10 @@ mod tests {
                 queue_depth: 10,
                 cache_hit_rate: 80.0,
             };
-            
+
             // 更新性能指标（用于performance_tuner）
             manager.update_performance_metrics(metrics.clone()).unwrap();
-            
+
             // 记录性能快照（用于smart_config_manager）
             let snapshot = PerformanceSnapshot {
                 timestamp: std::time::Instant::now(),
@@ -299,11 +330,11 @@ mod tests {
                 config_hash: format!("test_config_{}", i),
             };
             manager.record_performance_snapshot(snapshot).unwrap();
-            
+
             // 小延迟以模拟实际场景
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
-        
+
         let report = manager.perform_optimization_analysis().await.unwrap();
         assert!(report.total_suggestions > 0);
     }
@@ -332,7 +363,7 @@ mod tests {
                 parameters: std::collections::HashMap::new(),
             },
         ];
-        
+
         sort_optimizations_by_priority(&mut optimizations);
         assert_eq!(optimizations[0].priority, OptimizationPriority::Critical);
     }

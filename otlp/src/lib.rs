@@ -282,48 +282,48 @@ pub use monitoring::{
     MonitoringConfig,
 };
 pub use monitoring_integration::{
-    Alert, AlertCondition as NewAlertCondition, AlertManager, AlertRule as NewAlertRule, AlertSeverity as NewAlertSeverity, AlertStatsSnapshot,
-    ComprehensiveMonitoringManager, ComprehensiveMonitoringStatsSnapshot, Dashboard, DataSource,
-    DataSourceAccess, DataSourceType, GrafanaDashboardManager, GrafanaStatsSnapshot,
-    MetricCollector, MetricUpdate, MetricValue, MonitoringStatsSnapshot, Panel, PanelOptions,
-    PanelPosition, PanelType, PerformanceMetricCollector, PrometheusCollector,
-    PrometheusStatsSnapshot, QueryTarget, RealtimeMonitoringSystem, SecurityMetricCollector,
+    Alert, AlertCondition as NewAlertCondition, AlertManager, AlertRule as NewAlertRule,
+    AlertSeverity as NewAlertSeverity, AlertStatsSnapshot, ComprehensiveMonitoringManager,
+    ComprehensiveMonitoringStatsSnapshot, Dashboard, DataSource, DataSourceAccess, DataSourceType,
+    GrafanaDashboardManager, GrafanaStatsSnapshot, MetricCollector, MetricUpdate, MetricValue,
+    MonitoringStatsSnapshot, Panel, PanelOptions, PanelPosition, PanelType,
+    PerformanceMetricCollector, PrometheusCollector, PrometheusStatsSnapshot, QueryTarget,
+    RealtimeMonitoringSystem, SecurityMetricCollector,
 };
 // 性能相关类型从统一的performance模块导出
-pub use performance::{
-    BatchItem, BatchProcessorConfig, BatchProcessorError, BatchProcessorStats, BatchResult,
-    CircuitBreakerConfig, CircuitBreakerError, CircuitBreakerState,
-    ConnectionPoolError, MemoryPoolConfig, MemoryPoolError, MemoryPoolStats,
-    OptimizedBatchProcessor, OptimizedCircuitBreaker, OptimizedConnectionPool, OptimizedMemoryPool,
-    PerformanceConfig, PerformanceManager, PooledObject,
-};
-pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
-pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};
 pub use network::{
-    AsyncConnection, AsyncIoConfig, AsyncIoManager, AsyncIoStats, BackendServer,
-    ConnectionPool, ConnectionPoolConfig, ConnectionPoolStats, HealthChecker,
-    LoadBalancer, LoadBalancerConfig, LoadBalancerStats, LoadBalancingStrategy,
-    NetworkConfig, NetworkManager, NetworkMonitor, NetworkStats, PooledConnection,
-    PooledConnectionInfo,
+    AsyncConnection, AsyncIoConfig, AsyncIoManager, AsyncIoStats, BackendServer, ConnectionPool,
+    ConnectionPoolConfig, ConnectionPoolStats, HealthChecker, LoadBalancer, LoadBalancerConfig,
+    LoadBalancerStats, LoadBalancingStrategy, NetworkConfig, NetworkManager, NetworkMonitor,
+    NetworkStats, PooledConnection, PooledConnectionInfo,
 };
 pub use optimization::{
     ConfigCategory, ConfigConstraint, ConfigImpact, ConfigItem, ConfigOptimization, ConfigValue,
     ConstraintType, ImplementationEffort, OptimizationCategory, OptimizationManager,
-    OptimizationPriority, OptimizationReport, OptimizationResult, OptimizationSuggestion,
-    OptimizationStats, PerformanceSnapshot, PerformanceTargets,
-    PerformanceTuner, PerformanceTunerStats, RiskLevel, SmartConfigManager, SmartConfigStats,
-    TuningConfig,
+    OptimizationPriority, OptimizationReport, OptimizationResult, OptimizationStats,
+    OptimizationSuggestion, PerformanceSnapshot, PerformanceTargets, PerformanceTuner,
+    PerformanceTunerStats, RiskLevel, SmartConfigManager, SmartConfigStats, TuningConfig,
 };
+pub use performance::{
+    BatchItem, BatchProcessorConfig, BatchProcessorError, BatchProcessorStats, BatchResult,
+    CircuitBreakerConfig, CircuitBreakerError, CircuitBreakerState, ConnectionPoolError,
+    MemoryPoolConfig, MemoryPoolError, MemoryPoolStats, OptimizedBatchProcessor,
+    OptimizedCircuitBreaker, OptimizedConnectionPool, OptimizedMemoryPool, PerformanceConfig,
+    PerformanceManager, PooledObject,
+};
+pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
+pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};
 pub use rust_1_90_optimizations::{
     AsyncBatchProcessor, AsyncClosureOptimizer, TupleCollectionOptimizer, ZeroCopyOptimizer,
 };
 // 安全相关类型从advanced_security模块导出 (简化版本)
 pub use advanced_security::{
-    AuditEntry, AuditEvent, AuditFilter, DifferentialPrivacyManager, DifferentialPrivacyStatsSnapshot,
-    HomomorphicEncryptionManager, HomomorphicEncryptionStatsSnapshot, PrivacyResult,
-    Proof, SecureMultiPartyComputationManager, SecureMultiPartyStatsSnapshot, SecurityAuditManager,
-    SecurityAuditStatsSnapshot, Threat, ThreatDetectionManager, ThreatDetectionStatsSnapshot,
-    ZeroKnowledgeProofManager, ZeroKnowledgeStatsSnapshot,
+    AuditEntry, AuditEvent, AuditFilter, DifferentialPrivacyManager,
+    DifferentialPrivacyStatsSnapshot, HomomorphicEncryptionManager,
+    HomomorphicEncryptionStatsSnapshot, PrivacyResult, Proof, SecureMultiPartyComputationManager,
+    SecureMultiPartyStatsSnapshot, SecurityAuditManager, SecurityAuditStatsSnapshot, Threat,
+    ThreatDetectionManager, ThreatDetectionStatsSnapshot, ZeroKnowledgeProofManager,
+    ZeroKnowledgeStatsSnapshot,
 };
 pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{
@@ -332,10 +332,10 @@ pub use utils::{
 
 // 重新导出新模块的主要类型
 pub use advanced_features::{
-    AdvancedFeaturesConfig, AdvancedFeaturesManager, AIAnomalyDetector, AnomalyConfig,
-    AnomalyResult as AdvancedAnomalyResult, CacheConfig, CacheStats, EvictionPolicy, IntelligentCache,
-    ProcessedResult, SamplingConfig, SamplingContext, SamplingMetrics, SystemStats,
-    TrainingDataPoint, ModelType as AnomalyModelType,
+    AIAnomalyDetector, AdvancedFeaturesConfig, AdvancedFeaturesManager, AnomalyConfig,
+    AnomalyResult as AdvancedAnomalyResult, CacheConfig, CacheStats, EvictionPolicy,
+    IntelligentCache, ModelType as AnomalyModelType, ProcessedResult, SamplingConfig,
+    SamplingContext, SamplingMetrics, SystemStats, TrainingDataPoint,
 };
 // 合规管理相关类型
 pub use compliance_manager::{
@@ -343,7 +343,7 @@ pub use compliance_manager::{
     DataSubjectRequestType, DataSubjectResponse, FinancialRecord, GDPRComplianceManager,
     GDPRStatsSnapshot, HIPAAComplianceManager, HIPAAStatsSnapshot, PCIDSSComplianceManager,
     PCIDSSStatsSnapshot, PHIRecord, ProcessingRecord, RiskAssessment, RiskAssessmentResult,
-    SecurityTest, SecurityTestResult, SOXComplianceManager, SOXComplianceReport, SOXStatsSnapshot,
+    SOXComplianceManager, SOXComplianceReport, SOXStatsSnapshot, SecurityTest, SecurityTestResult,
 };
 pub use enterprise_features::{
     ComplianceAssessment, ComplianceCategory, ComplianceControl, ComplianceFinding,
@@ -351,10 +351,9 @@ pub use enterprise_features::{
     ComplianceStatsSnapshot, ComprehensiveEnterpriseManager, ComprehensiveEnterpriseStats,
     DataAction, DataClassification, DataClassificationLevel, DataCondition, DataGovernanceManager,
     DataGovernanceStatsSnapshot, DataItem, DataPolicy, DataRule, EnterpriseRequest,
-    EnterpriseResponse, FindingStatus, HighAvailabilityManager, HighAvailabilityStatsSnapshot,
-    HealthCheck, HealthCheckType, ImplementationStatus, MultiTenantManager,
-    MultiTenantStatsSnapshot, Node, NodeStatus, Tenant, TenantQuota, TenantSettings,
-    TenantStatus,
+    EnterpriseResponse, FindingStatus, HealthCheck, HealthCheckType, HighAvailabilityManager,
+    HighAvailabilityStatsSnapshot, ImplementationStatus, MultiTenantManager,
+    MultiTenantStatsSnapshot, Node, NodeStatus, Tenant, TenantQuota, TenantSettings, TenantStatus,
 };
 
 // 重新导出微服务相关类型
@@ -398,13 +397,13 @@ pub use microservices::{
 
 // 重新导出简化客户端相关类型
 pub use simple_client::{
-    BatchSendResult, HealthStatus, LogLevel, SimpleClientBuilder, SimpleOtlpClient, SimpleOperation,
+    BatchSendResult, HealthStatus, LogLevel, SimpleClientBuilder, SimpleOperation, SimpleOtlpClient,
 };
 
 // 重新导出优化处理器相关类型
 pub use optimized_processor::{
-    OptimizedProcessorConfig, OtlpDataItem, PerformanceMetrics, PerformanceMonitor,
-    PerformanceReport, OptimizedOtlpProcessor,
+    OptimizedOtlpProcessor, OptimizedProcessorConfig, OtlpDataItem, PerformanceMetrics,
+    PerformanceMonitor, PerformanceReport,
 };
 
 // 重新导出高级性能优化相关类型

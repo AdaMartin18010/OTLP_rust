@@ -2,8 +2,8 @@
 //!
 //! 提供SIMD优化、缓存优化和内存池优化功能
 
-use std::time::{Duration, Instant};
 use anyhow::Result;
+use std::time::{Duration, Instant};
 
 /// SIMD操作类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -117,28 +117,40 @@ impl AdvancedSimdOptimizer {
                     SimdOperation::Abs => {
                         let mask = _mm256_set1_pd(-0.0);
                         _mm256_andnot_pd(mask, data_vec)
-                    },
+                    }
                     SimdOperation::Add => {
                         let addend = _mm256_set1_pd(1.0);
                         _mm256_add_pd(data_vec, addend)
-                    },
+                    }
                     SimdOperation::Multiply => {
                         let multiplier = _mm256_set1_pd(2.0);
                         _mm256_mul_pd(data_vec, multiplier)
-                    },
+                    }
                     SimdOperation::Sin => {
                         // 简化的正弦计算，实际应用中可能需要更复杂的实现
                         let pi = _mm256_set1_pd(std::f64::consts::PI);
-                        let normalized = _mm256_sub_pd(data_vec, _mm256_mul_pd(pi, _mm256_floor_pd(_mm256_div_pd(data_vec, pi))));
+                        let normalized = _mm256_sub_pd(
+                            data_vec,
+                            _mm256_mul_pd(pi, _mm256_floor_pd(_mm256_div_pd(data_vec, pi))),
+                        );
                         normalized // 简化实现
-                    },
+                    }
                     SimdOperation::Cos => {
                         // 简化的余弦计算
                         let pi = _mm256_set1_pd(std::f64::consts::PI);
                         let half_pi = _mm256_set1_pd(std::f64::consts::PI / 2.0);
-                        let normalized = _mm256_sub_pd(_mm256_add_pd(data_vec, half_pi), _mm256_mul_pd(pi, _mm256_floor_pd(_mm256_div_pd(_mm256_add_pd(data_vec, half_pi), pi))));
+                        let normalized = _mm256_sub_pd(
+                            _mm256_add_pd(data_vec, half_pi),
+                            _mm256_mul_pd(
+                                pi,
+                                _mm256_floor_pd(_mm256_div_pd(
+                                    _mm256_add_pd(data_vec, half_pi),
+                                    pi,
+                                )),
+                            ),
+                        );
                         normalized // 简化实现
-                    },
+                    }
                     _ => data_vec, // 其他操作暂时返回原值
                 };
                 _mm256_storeu_pd(output_chunk.as_mut_ptr(), result_vec);
@@ -185,15 +197,15 @@ impl AdvancedSimdOptimizer {
                     SimdIntOperation::Add(operand) => {
                         let operand_vec = _mm256_set1_epi32(operand);
                         _mm256_add_epi32(data_vec, operand_vec)
-                    },
+                    }
                     SimdIntOperation::Subtract(operand) => {
                         let operand_vec = _mm256_set1_epi32(operand);
                         _mm256_sub_epi32(data_vec, operand_vec)
-                    },
+                    }
                     SimdIntOperation::Multiply(operand) => {
                         let operand_vec = _mm256_set1_epi32(operand);
                         _mm256_mullo_epi32(data_vec, operand_vec)
-                    },
+                    }
                     SimdIntOperation::Divide(operand) => {
                         // 整数除法需要特殊处理，使用标量实现
                         let mut result = [0i32; 8];
@@ -201,7 +213,7 @@ impl AdvancedSimdOptimizer {
                             result[i] = input_chunk[i] / operand;
                         }
                         _mm256_loadu_si256(result.as_ptr() as *const __m256i)
-                    },
+                    }
                 };
                 _mm256_storeu_si256(output_chunk.as_mut_ptr() as *mut __m256i, result_vec);
             }
@@ -222,12 +234,7 @@ impl AdvancedSimdOptimizer {
     }
 
     /// 标量f64处理
-    fn process_f64_array_scalar(
-        &self,
-        data: &[f64],
-        result: &mut [f64],
-        operation: SimdOperation,
-    ) {
+    fn process_f64_array_scalar(&self, data: &[f64], result: &mut [f64], operation: SimdOperation) {
         for (i, &value) in data.iter().enumerate() {
             result[i] = match operation {
                 SimdOperation::Square => value * value,
@@ -298,11 +305,11 @@ impl CacheOptimizationManager {
 
     /// 分配对齐的内存
     pub fn allocate_aligned(&self, size: usize) -> Result<*mut u8> {
-        use std::alloc::{alloc, Layout};
-        
+        use std::alloc::{Layout, alloc};
+
         let layout = Layout::from_size_align(size, self.cache_alignment)
             .map_err(|e| anyhow::anyhow!("Invalid layout: {}", e))?;
-        
+
         unsafe {
             let ptr = alloc(layout);
             if ptr.is_null() {
@@ -314,8 +321,8 @@ impl CacheOptimizationManager {
 
     /// 释放对齐的内存
     pub unsafe fn deallocate_aligned(&self, ptr: *mut u8, size: usize) {
-        use std::alloc::{dealloc, Layout};
-        
+        use std::alloc::{Layout, dealloc};
+
         let layout = Layout::from_size_align(size, self.cache_alignment).unwrap();
         unsafe {
             dealloc(ptr, layout);
@@ -323,15 +330,9 @@ impl CacheOptimizationManager {
     }
 
     /// 缓存友好的矩阵乘法
-    pub fn matrix_multiply_cache_optimized(
-        &self,
-        a: &[f64],
-        b: &[f64],
-        c: &mut [f64],
-        n: usize,
-    ) {
+    pub fn matrix_multiply_cache_optimized(&self, a: &[f64], b: &[f64], c: &mut [f64], n: usize) {
         const BLOCK_SIZE: usize = 64;
-        
+
         for ii in (0..n).step_by(BLOCK_SIZE) {
             for jj in (0..n).step_by(BLOCK_SIZE) {
                 for kk in (0..n).step_by(BLOCK_SIZE) {
@@ -352,7 +353,7 @@ impl CacheOptimizationManager {
     /// 分析缓存性能
     pub fn analyze_cache_performance(&self, data: &[u8]) -> CachePerformanceMetrics {
         let data_size = data.len();
-        
+
         // 测试顺序访问
         let start = Instant::now();
         let mut _sum = 0u64;
@@ -360,7 +361,7 @@ impl CacheOptimizationManager {
             _sum += byte as u64;
         }
         let sequential_time = start.elapsed();
-        
+
         // 测试随机访问
         let start = Instant::now();
         let mut _sum2 = 0u64;
@@ -369,7 +370,7 @@ impl CacheOptimizationManager {
             _sum2 += data[idx] as u64;
         }
         let random_time = start.elapsed();
-        
+
         CachePerformanceMetrics {
             data_size,
             cache_hit_ratio: 0.8, // 模拟缓存命中率
@@ -441,7 +442,7 @@ impl AdvancedMemoryPoolOptimizer {
     /// 返回内存到池中
     pub fn return_memory(&mut self, size: usize, ptr: *mut u8) {
         let pool = self.pools.entry(size).or_insert_with(Vec::new);
-        
+
         if pool.len() < self.max_pool_size {
             pool.push(ptr);
             self.stats.total_pooled_objects += 1;
@@ -451,7 +452,7 @@ impl AdvancedMemoryPoolOptimizer {
                 self.deallocate_memory(ptr, size);
             }
         }
-        
+
         self.stats.total_freed += 1;
     }
 
@@ -474,21 +475,21 @@ impl AdvancedMemoryPoolOptimizer {
     /// 清理所有池
     pub fn cleanup(&mut self) {
         let mut pointers_to_dealloc = Vec::new();
-        
+
         // 收集所有需要释放的指针
         for (size, pool) in &self.pools {
             for &ptr in pool.iter() {
                 pointers_to_dealloc.push((ptr, *size));
             }
         }
-        
+
         // 释放所有指针
         for (ptr, size) in pointers_to_dealloc {
             unsafe {
                 self.deallocate_memory(ptr, size);
             }
         }
-        
+
         // 清空所有池
         self.pools.clear();
         self.stats.total_pooled_objects = 0;
@@ -496,11 +497,11 @@ impl AdvancedMemoryPoolOptimizer {
 
     /// 分配内存
     fn allocate_memory(&self, size: usize) -> Result<*mut u8> {
-        use std::alloc::{alloc, Layout};
-        
+        use std::alloc::{Layout, alloc};
+
         let layout = Layout::from_size_align(size, 64)
             .map_err(|e| anyhow::anyhow!("Invalid layout: {}", e))?;
-        
+
         unsafe {
             let ptr = alloc(layout);
             if ptr.is_null() {
@@ -512,8 +513,8 @@ impl AdvancedMemoryPoolOptimizer {
 
     /// 释放内存
     unsafe fn deallocate_memory(&self, ptr: *mut u8, size: usize) {
-        use std::alloc::{dealloc, Layout};
-        
+        use std::alloc::{Layout, dealloc};
+
         let layout = Layout::from_size_align(size, 64).unwrap();
         unsafe {
             dealloc(ptr, layout);
@@ -566,7 +567,8 @@ impl ComprehensivePerformanceOptimizer {
         // SIMD测试
         let simd_data = vec![1.0f64; 1000];
         let simd_result = unsafe {
-            self.simd_optimizer.process_f64_array_simd(&simd_data, SimdOperation::Square)?
+            self.simd_optimizer
+                .process_f64_array_simd(&simd_data, SimdOperation::Square)?
         };
 
         // 缓存测试
@@ -610,7 +612,9 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
 
         unsafe {
-            let result = optimizer.process_f64_array_simd(&data, SimdOperation::Square).unwrap();
+            let result = optimizer
+                .process_f64_array_simd(&data, SimdOperation::Square)
+                .unwrap();
             assert_eq!(result.len(), 4);
             assert_eq!(result[0], 1.0);
             assert_eq!(result[1], 4.0);
@@ -624,7 +628,7 @@ mod tests {
         let manager = CacheOptimizationManager::new();
         let ptr = manager.allocate_aligned(1024).unwrap();
         assert!(!ptr.is_null());
-        
+
         unsafe {
             manager.deallocate_aligned(ptr, 1024);
         }
@@ -635,7 +639,7 @@ mod tests {
         let mut pool = AdvancedMemoryPoolOptimizer::new();
         let ptr = pool.smart_allocate(1024).unwrap();
         assert!(!ptr.is_null());
-        
+
         pool.return_memory(1024, ptr);
         let stats = pool.get_stats();
         assert_eq!(stats.total_allocated, 1);

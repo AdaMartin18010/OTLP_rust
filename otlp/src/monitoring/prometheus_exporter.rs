@@ -514,8 +514,7 @@ mod tests {
     async fn test_prometheus_exporter_basic() {
         let collector_config = MetricsCollectorConfig::default();
         let collector = Arc::new(
-            MetricsCollector::new(collector_config)
-                .expect("Failed to create MetricsCollector")
+            MetricsCollector::new(collector_config).expect("Failed to create MetricsCollector"),
         );
 
         let exporter_config = PrometheusExporterConfig::default();
@@ -530,7 +529,9 @@ mod tests {
             labels: vec![],
         };
 
-        collector.register_metric(metric_def).await
+        collector
+            .register_metric(metric_def)
+            .await
             .expect("Failed to register metric");
 
         // 记录指标值
@@ -546,7 +547,10 @@ mod tests {
             .expect("Failed to record metric");
 
         // 手动导出
-        let exported_count = exporter.export_metrics().await.expect("Failed to export metrics");
+        let exported_count = exporter
+            .export_metrics()
+            .await
+            .expect("Failed to export metrics");
         assert_eq!(exported_count, 1);
 
         // 获取统计信息
@@ -561,10 +565,13 @@ mod tests {
     #[tokio::test]
     async fn test_prometheus_exporter_multiple_metrics() {
         let collector_config = MetricsCollectorConfig::default();
-        let collector = Arc::new(MetricsCollector::new(collector_config).expect("Failed to create metrics collector"));
+        let collector = Arc::new(
+            MetricsCollector::new(collector_config).expect("Failed to create metrics collector"),
+        );
 
         let exporter_config = PrometheusExporterConfig::default();
-        let exporter = PrometheusExporter::new(exporter_config, collector.clone()).expect("Failed to create Prometheus exporter");
+        let exporter = PrometheusExporter::new(exporter_config, collector.clone())
+            .expect("Failed to create Prometheus exporter");
 
         // 注册多个指标
         let counter_def = MetricDefinition {
@@ -581,8 +588,14 @@ mod tests {
             labels: vec![],
         };
 
-        collector.register_metric(counter_def).await.expect("Failed to register counter metric");
-        collector.register_metric(gauge_def).await.expect("Failed to register gauge metric");
+        collector
+            .register_metric(counter_def)
+            .await
+            .expect("Failed to register counter metric");
+        collector
+            .register_metric(gauge_def)
+            .await
+            .expect("Failed to register gauge metric");
 
         // 记录指标值
         collector
@@ -599,7 +612,9 @@ mod tests {
             .expect("Failed to record gauge metric");
 
         // 导出指标
-        let exported_count = exporter.export_metrics().await
+        let exported_count = exporter
+            .export_metrics()
+            .await
             .expect("Failed to export metrics");
         assert_eq!(exported_count, 2);
 
@@ -615,8 +630,10 @@ mod tests {
     #[tokio::test]
     async fn test_prometheus_exporter_config_update() {
         let collector_config = MetricsCollectorConfig::default();
-        let collector = Arc::new(MetricsCollector::new(collector_config)
-            .expect("Failed to create metrics collector for config update test"));
+        let collector = Arc::new(
+            MetricsCollector::new(collector_config)
+                .expect("Failed to create metrics collector for config update test"),
+        );
 
         let mut exporter_config = PrometheusExporterConfig::default();
         exporter_config.export_interval = Duration::from_secs(30);
@@ -632,7 +649,8 @@ mod tests {
             ..Default::default()
         };
 
-        exporter.update_config(new_config)
+        exporter
+            .update_config(new_config)
             .expect("Failed to update Prometheus exporter config");
 
         // 验证配置已更新

@@ -1,15 +1,15 @@
 //! 连接池模块
-//! 
+//!
 //! 提供高效的连接池管理，支持连接复用和负载均衡
 
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
-use std::sync::atomic::{AtomicUsize, AtomicU64, Ordering};
+use super::async_io::{AsyncConnection, AsyncIoConfig, AsyncIoManager};
+use anyhow::{Result, anyhow};
 use std::collections::{HashMap, VecDeque};
 use std::net::{SocketAddr, ToSocketAddrs};
-use tokio::sync::{Semaphore, RwLock};
-use anyhow::{Result, anyhow};
-use super::async_io::{AsyncConnection, AsyncIoManager, AsyncIoConfig};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+use tokio::sync::{RwLock, Semaphore};
 
 /// 连接池统计信息
 #[derive(Debug, Default)]
@@ -35,7 +35,9 @@ impl Clone for ConnectionPoolStats {
             connection_hits: AtomicUsize::new(self.connection_hits.load(Ordering::Relaxed)),
             connection_misses: AtomicUsize::new(self.connection_misses.load(Ordering::Relaxed)),
             connection_errors: AtomicUsize::new(self.connection_errors.load(Ordering::Relaxed)),
-            average_connection_time: AtomicU64::new(self.average_connection_time.load(Ordering::Relaxed)),
+            average_connection_time: AtomicU64::new(
+                self.average_connection_time.load(Ordering::Relaxed),
+            ),
             peak_connections: AtomicUsize::new(self.peak_connections.load(Ordering::Relaxed)),
         }
     }
@@ -148,7 +150,7 @@ impl ConnectionPool {
 
         let io_manager = AsyncIoManager::new(io_config);
         let connection_semaphore = Arc::new(Semaphore::new(config.max_connections));
-        
+
         let pool = Self {
             stats: Arc::new(ConnectionPoolStats::default()),
             connections: Arc::new(RwLock::new(HashMap::new())),
@@ -164,7 +166,7 @@ impl ConnectionPool {
 
         // 预创建最小连接数
         pool.initialize_min_connections().await?;
-        
+
         // 启动健康检查任务
         pool.start_health_check_task().await;
 
@@ -173,7 +175,9 @@ impl ConnectionPool {
 
     /// 获取连接
     pub async fn get_connection(&self) -> Result<PooledConnection> {
-        self.stats.connection_requests.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .connection_requests
+            .fetch_add(1, Ordering::Relaxed);
 
         // 尝试从可用连接中获取
         if let Some(connection_id) = self.get_available_connection().await {
@@ -194,12 +198,15 @@ impl ConnectionPool {
 
     /// 创建新连接
     async fn create_connection(&self) -> Result<PooledConnection> {
-        let _permit = self.connection_semaphore.acquire().await
+        let _permit = self
+            .connection_semaphore
+            .acquire()
+            .await
             .map_err(|_| anyhow!("Connection pool is full"))?;
 
         let addr = self.select_address();
         let start = Instant::now();
-        
+
         let _connection = self.io_manager.connect(addr).await?;
         let connection_time = start.elapsed();
 
@@ -221,18 +228,24 @@ impl ConnectionPool {
         }
 
         self.stats.total_connections.fetch_add(1, Ordering::Relaxed);
-        self.stats.active_connections.fetch_add(1, Ordering::Relaxed);
-        
+        self.stats
+            .active_connections
+            .fetch_add(1, Ordering::Relaxed);
+
         // 更新平均连接时间
         let current_avg = self.stats.average_connection_time.load(Ordering::Relaxed);
         let new_avg = (current_avg + connection_time.as_micros() as u64) / 2;
-        self.stats.average_connection_time.store(new_avg, Ordering::Relaxed);
+        self.stats
+            .average_connection_time
+            .store(new_avg, Ordering::Relaxed);
 
         // 更新峰值连接数
         let current_active = self.stats.active_connections.load(Ordering::Relaxed);
         let current_peak = self.stats.peak_connections.load(Ordering::Relaxed);
         if current_active > current_peak {
-            self.stats.peak_connections.store(current_active, Ordering::Relaxed);
+            self.stats
+                .peak_connections
+                .store(current_active, Ordering::Relaxed);
         }
 
         Ok(PooledConnection {
@@ -309,15 +322,18 @@ impl ConnectionPool {
         let idle_time = Instant::now().duration_since(*info.last_used.lock().unwrap());
         let max_idle = self.config.idle_timeout;
         let max_connections = self.config.max_idle_connections;
-        
-        idle_time < max_idle && self.stats.idle_connections.load(Ordering::Relaxed) < max_connections
+
+        idle_time < max_idle
+            && self.stats.idle_connections.load(Ordering::Relaxed) < max_connections
     }
 
     /// 移除连接
     async fn remove_connection(&self, connection_id: usize) {
         let mut connections = self.connections.write().await;
         if connections.remove(&connection_id).is_some() {
-            self.stats.active_connections.fetch_sub(1, Ordering::Relaxed);
+            self.stats
+                .active_connections
+                .fetch_sub(1, Ordering::Relaxed);
             self.stats.idle_connections.fetch_sub(1, Ordering::Relaxed);
         }
     }
@@ -371,7 +387,10 @@ impl ConnectionPool {
     /// 获取连接信息
     pub async fn get_connection_infos(&self) -> Vec<PooledConnectionInfo> {
         let connections = self.connections.read().await;
-        connections.values().map(|info| info.as_ref().clone()).collect()
+        connections
+            .values()
+            .map(|info| info.as_ref().clone())
+            .collect()
     }
 
     /// 关闭所有连接
@@ -416,7 +435,10 @@ impl PooledConnection {
 
     /// 获取连接信息
     pub async fn info(&self) -> Option<PooledConnectionInfo> {
-        self.pool.get_connection_by_id(self.id).await.map(|info| info.as_ref().clone())
+        self.pool
+            .get_connection_by_id(self.id)
+            .await
+            .map(|info| info.as_ref().clone())
     }
 
     /// 获取底层连接
@@ -446,7 +468,7 @@ mod tests {
         let config = ConnectionPoolConfig::default();
         let io_config = AsyncIoConfig::default();
         let addresses = vec!["127.0.0.1:8080".parse::<SocketAddr>().unwrap()];
-        
+
         let pool = ConnectionPool::new(config, io_config, addresses).await;
         assert!(pool.is_ok());
     }
@@ -460,8 +482,10 @@ mod tests {
         };
         let io_config = AsyncIoConfig::default();
         let addresses = vec!["127.0.0.1:8080".parse::<SocketAddr>().unwrap()];
-        
-        let pool = ConnectionPool::new(config, io_config, addresses).await.unwrap();
+
+        let pool = ConnectionPool::new(config, io_config, addresses)
+            .await
+            .unwrap();
         let stats = pool.stats().await;
         assert_eq!(stats.total_connections.load(Ordering::Relaxed), 5); // min_connections
     }

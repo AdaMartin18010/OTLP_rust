@@ -126,7 +126,9 @@ impl SimdOptimizer {
         }
 
         if self.cpu_features.avx2 && self.config.enable_avx2 {
-            unsafe { self.avx2_sort(data); }
+            unsafe {
+                self.avx2_sort(data);
+            }
         } else {
             data.sort_by(|a, b| a.partial_cmp(b).unwrap());
         }
@@ -364,7 +366,8 @@ impl SimdOptimizer {
     }
 
     fn scalar_find(&self, data: &[u8], pattern: &[u8]) -> Option<usize> {
-        data.windows(pattern.len()).position(|window| window == pattern)
+        data.windows(pattern.len())
+            .position(|window| window == pattern)
     }
 
     fn scalar_copy(&self, src: &[u8], dst: &mut [u8]) -> usize {
@@ -438,7 +441,7 @@ impl SimdMonitor {
     fn update_stats(&self, vectorized: bool, _duration: std::time::Duration) {
         let mut stats = self.stats.lock().unwrap();
         stats.total_operations += 1;
-        
+
         if vectorized {
             stats.vectorized_operations += 1;
         } else {
@@ -450,7 +453,7 @@ impl SimdMonitor {
         let total = stats.total_operations as f64;
         let current_avg = stats.average_speedup;
         stats.average_speedup = (current_avg * (total - 1.0) + speedup) / total;
-        
+
         if speedup > stats.max_speedup {
             stats.max_speedup = speedup;
         }
@@ -465,7 +468,7 @@ mod tests {
     fn test_simd_optimizer_creation() {
         let config = SimdConfig::default();
         let optimizer = SimdOptimizer::new(config);
-        
+
         let features = optimizer.cpu_features();
         assert!(features.sse42 || features.avx2); // 至少应该支持SSE4.2
     }
@@ -476,7 +479,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
         let result = optimizer.vectorized_sum(&data);
         let expected: f64 = data.iter().sum();
-        
+
         assert!((result - expected).abs() < 1e-10);
     }
 
@@ -487,7 +490,7 @@ mod tests {
         let b = vec![2.0, 3.0, 4.0, 5.0];
         let result = optimizer.vectorized_dot_product(&a, &b);
         let expected: f64 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
-        
+
         assert!((result - expected).abs() < 1e-10);
     }
 
@@ -497,7 +500,7 @@ mod tests {
         let data = b"hello world";
         let pattern = b"world";
         let result = optimizer.vectorized_find(data, pattern);
-        
+
         assert_eq!(result, Some(6));
     }
 
@@ -505,12 +508,12 @@ mod tests {
     fn test_simd_monitor() {
         let monitor = SimdMonitor::new(SimdConfig::default());
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
-        
+
         let result = monitor.monitored_sum(&data);
         let expected: f64 = data.iter().sum();
-        
+
         assert!((result - expected).abs() < 1e-10);
-        
+
         let stats = monitor.stats();
         assert!(stats.total_operations > 0);
     }
@@ -525,7 +528,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0];
         let result = optimizer.vectorized_sum(&data);
         let expected: f64 = data.iter().sum();
-        
+
         assert!((result - expected).abs() < 1e-10);
     }
 }
@@ -539,21 +542,24 @@ mod benchmarks {
     fn benchmark_simd_vs_scalar() {
         let optimizer = SimdOptimizer::default();
         let data: Vec<f64> = (0..1000).map(|i| i as f64).collect();
-        
+
         // 测试SIMD实现
         let start = Instant::now();
         let simd_result = optimizer.vectorized_sum(&data);
         let simd_duration = start.elapsed();
-        
+
         // 测试标量实现
         let start = Instant::now();
         let scalar_result: f64 = data.iter().sum();
         let scalar_duration = start.elapsed();
-        
+
         println!("SIMD duration: {:?}", simd_duration);
         println!("Scalar duration: {:?}", scalar_duration);
-        println!("Speedup: {:.2}x", scalar_duration.as_nanos() as f64 / simd_duration.as_nanos() as f64);
-        
+        println!(
+            "Speedup: {:.2}x",
+            scalar_duration.as_nanos() as f64 / simd_duration.as_nanos() as f64
+        );
+
         assert!((simd_result - scalar_result).abs() < 1e-10);
     }
 }

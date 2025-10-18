@@ -933,7 +933,10 @@ mod tests {
             },
         };
 
-        router.add_rule(rule).await.expect("Failed to add routing rule");
+        router
+            .add_rule(rule)
+            .await
+            .expect("Failed to add routing rule");
 
         // 创建测试请求
         let request = RouteRequest {

@@ -19,15 +19,15 @@ mod regression_tests {
         // 测试传输层性能不低于基准线
         let iterations = 1000;
         let start = Instant::now();
-        
+
         for _ in 0..iterations {
             // 模拟传输操作
             std::hint::black_box(());
         }
-        
+
         let elapsed = start.elapsed().as_nanos();
         let avg_per_op = elapsed / iterations;
-        
+
         assert!(
             avg_per_op < TRANSPORT_MAX_NS,
             "传输性能退化: {}ns > {}ns (基准线)",
@@ -41,15 +41,15 @@ mod regression_tests {
         // 测试OTTL转换性能
         let iterations = 1000;
         let start = Instant::now();
-        
+
         for _ in 0..iterations {
             // 模拟OTTL转换
             std::hint::black_box(());
         }
-        
+
         let elapsed = start.elapsed().as_nanos();
         let avg_per_op = elapsed / iterations;
-        
+
         assert!(
             avg_per_op < OTTL_TRANSFORM_MAX_NS,
             "OTTL转换性能退化: {}ns > {}ns (基准线)",
@@ -63,14 +63,14 @@ mod regression_tests {
         // 测试并发开销
         let iterations = 1000;
         let start = Instant::now();
-        
+
         for _ in 0..iterations {
             std::hint::black_box(());
         }
-        
+
         let elapsed = start.elapsed().as_nanos();
         let avg_per_op = elapsed / iterations;
-        
+
         assert!(
             avg_per_op < CONCURRENT_OVERHEAD_MAX_NS,
             "并发性能退化: {}ns > {}ns (基准线)",
@@ -84,14 +84,14 @@ mod regression_tests {
         // 测试内存分配性能
         let iterations = 100;
         let start = Instant::now();
-        
+
         for _ in 0..iterations {
             let v: Vec<u8> = Vec::with_capacity(1024);
             std::hint::black_box(v);
         }
-        
+
         let elapsed = start.elapsed();
-        
+
         // 内存分配应该很快 (<1ms for 100 allocations)
         assert!(
             elapsed < Duration::from_millis(1),
@@ -168,16 +168,27 @@ impl PerformanceMonitor {
         };
 
         let percentage = (actual_ns as f64 / threshold as f64) * 100.0;
-        
+
         if percentage < 80.0 {
-            println!("✅ {} 性能优秀: {}ns (基准线{}%, 提升{:.1}%)", 
-                operation, actual_ns, percentage as u32, 100.0 - percentage);
+            println!(
+                "✅ {} 性能优秀: {}ns (基准线{}%, 提升{:.1}%)",
+                operation,
+                actual_ns,
+                percentage as u32,
+                100.0 - percentage
+            );
         } else if percentage < 100.0 {
-            println!("✓ {} 性能良好: {}ns (基准线{}%)", 
-                operation, actual_ns, percentage as u32);
+            println!(
+                "✓ {} 性能良好: {}ns (基准线{}%)",
+                operation, actual_ns, percentage as u32
+            );
         } else {
-            println!("⚠ {} 性能退化: {}ns (超出基准线{:.1}%)", 
-                operation, actual_ns, percentage - 100.0);
+            println!(
+                "⚠ {} 性能退化: {}ns (超出基准线{:.1}%)",
+                operation,
+                actual_ns,
+                percentage - 100.0
+            );
         }
     }
 }
@@ -195,7 +206,7 @@ mod monitor_tests {
     #[test]
     fn test_no_regression_detection() {
         let monitor = PerformanceMonitor::new();
-        
+
         // 性能在基准线内
         let result = monitor.check_regression("transport", 200);
         assert!(result.is_ok());
@@ -204,11 +215,11 @@ mod monitor_tests {
     #[test]
     fn test_regression_detection() {
         let monitor = PerformanceMonitor::new();
-        
+
         // 性能超出基准线
         let result = monitor.check_regression("transport", 400);
         assert!(result.is_err());
-        
+
         if let Err(msg) = result {
             assert!(msg.contains("性能退化"));
         }
@@ -217,11 +228,10 @@ mod monitor_tests {
     #[test]
     fn test_performance_reporting() {
         let monitor = PerformanceMonitor::new();
-        
+
         // 测试不同性能级别的报告
         monitor.report_performance("transport", 150); // 优秀
         monitor.report_performance("transport", 250); // 良好
         monitor.report_performance("transport", 350); // 退化
     }
 }
-

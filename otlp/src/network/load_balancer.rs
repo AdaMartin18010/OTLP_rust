@@ -1,16 +1,16 @@
 //! 负载均衡模块
-//! 
+//!
 //! 提供多种负载均衡算法和健康检查机制
 
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
-use std::sync::atomic::{AtomicUsize, AtomicU64, Ordering};
+use super::async_io::AsyncIoConfig;
+use super::connection_pool::{ConnectionPool, ConnectionPoolConfig, LoadBalancingStrategy};
+use anyhow::{Result, anyhow};
 use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
-use tokio::time::{interval};
-use anyhow::{Result, anyhow};
-use super::connection_pool::{ConnectionPool, ConnectionPoolConfig, LoadBalancingStrategy};
-use super::async_io::{AsyncIoConfig};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+use tokio::time::interval;
 
 /// 负载均衡统计信息
 #[derive(Debug, Default)]
@@ -19,7 +19,7 @@ pub struct LoadBalancerStats {
     pub successful_requests: AtomicUsize,
     pub failed_requests: AtomicUsize,
     pub average_response_time: AtomicU64, // 微秒
-    pub peak_response_time: AtomicU64, // 微秒
+    pub peak_response_time: AtomicU64,    // 微秒
     pub active_backends: AtomicUsize,
     pub unhealthy_backends: AtomicUsize,
 }
@@ -30,7 +30,9 @@ impl Clone for LoadBalancerStats {
             total_requests: AtomicUsize::new(self.total_requests.load(Ordering::Relaxed)),
             successful_requests: AtomicUsize::new(self.successful_requests.load(Ordering::Relaxed)),
             failed_requests: AtomicUsize::new(self.failed_requests.load(Ordering::Relaxed)),
-            average_response_time: AtomicU64::new(self.average_response_time.load(Ordering::Relaxed)),
+            average_response_time: AtomicU64::new(
+                self.average_response_time.load(Ordering::Relaxed),
+            ),
             peak_response_time: AtomicU64::new(self.peak_response_time.load(Ordering::Relaxed)),
             active_backends: AtomicUsize::new(self.active_backends.load(Ordering::Relaxed)),
             unhealthy_backends: AtomicUsize::new(self.unhealthy_backends.load(Ordering::Relaxed)),
@@ -106,17 +108,16 @@ impl LoadBalancer {
     }
 
     /// 添加后端服务器
-    pub async fn add_backend<A: ToSocketAddrs>(
-        &self,
-        addr: A,
-        weight: u32,
-    ) -> Result<String> {
+    pub async fn add_backend<A: ToSocketAddrs>(&self, addr: A, weight: u32) -> Result<String> {
         let addrs: Vec<SocketAddr> = addr.to_socket_addrs()?.collect();
         if addrs.is_empty() {
             return Err(anyhow!("No valid addresses provided"));
         }
 
-        let backend_id = format!("backend_{}", self.next_backend_id.fetch_add(1, Ordering::Relaxed));
+        let backend_id = format!(
+            "backend_{}",
+            self.next_backend_id.fetch_add(1, Ordering::Relaxed)
+        );
         let backend = BackendServer {
             id: backend_id.clone(),
             addr: addrs[0],
@@ -152,7 +153,8 @@ impl LoadBalancer {
         self.stats.active_backends.fetch_add(1, Ordering::Relaxed);
 
         // 启动健康检查
-        self.start_health_check_for_backend(backend_id.clone()).await;
+        self.start_health_check_for_backend(backend_id.clone())
+            .await;
 
         Ok(backend_id)
     }
@@ -189,12 +191,10 @@ impl LoadBalancer {
                 let index = self.round_robin_index.fetch_add(1, Ordering::Relaxed);
                 &healthy_backends[index % healthy_backends.len()]
             }
-            LoadBalancingStrategy::LeastConnections => {
-                healthy_backends
-                    .iter()
-                    .min_by_key(|backend| backend.active_connections)
-                    .unwrap()
-            }
+            LoadBalancingStrategy::LeastConnections => healthy_backends
+                .iter()
+                .min_by_key(|backend| backend.active_connections)
+                .unwrap(),
             LoadBalancingStrategy::Random => {
                 use std::collections::hash_map::DefaultHasher;
                 use std::hash::{Hash, Hasher};
@@ -233,7 +233,8 @@ impl LoadBalancer {
             if delta > 0 {
                 backend.active_connections += delta as usize;
             } else {
-                backend.active_connections = backend.active_connections.saturating_sub((-delta) as usize);
+                backend.active_connections =
+                    backend.active_connections.saturating_sub((-delta) as usize);
             }
         }
     }
@@ -246,9 +247,11 @@ impl LoadBalancer {
         response_time: Duration,
     ) {
         self.stats.total_requests.fetch_add(1, Ordering::Relaxed);
-        
+
         if success {
-            self.stats.successful_requests.fetch_add(1, Ordering::Relaxed);
+            self.stats
+                .successful_requests
+                .fetch_add(1, Ordering::Relaxed);
         } else {
             self.stats.failed_requests.fetch_add(1, Ordering::Relaxed);
         }
@@ -256,12 +259,16 @@ impl LoadBalancer {
         // 更新平均响应时间
         let current_avg = self.stats.average_response_time.load(Ordering::Relaxed);
         let new_avg = (current_avg + response_time.as_micros() as u64) / 2;
-        self.stats.average_response_time.store(new_avg, Ordering::Relaxed);
+        self.stats
+            .average_response_time
+            .store(new_avg, Ordering::Relaxed);
 
         // 更新峰值响应时间
         let current_peak = self.stats.peak_response_time.load(Ordering::Relaxed);
         if response_time.as_micros() as u64 > current_peak {
-            self.stats.peak_response_time.store(response_time.as_micros() as u64, Ordering::Relaxed);
+            self.stats
+                .peak_response_time
+                .store(response_time.as_micros() as u64, Ordering::Relaxed);
         }
 
         // 更新后端统计
@@ -286,9 +293,9 @@ impl LoadBalancer {
             let mut interval = interval(config.health_check_interval);
             loop {
                 interval.tick().await;
-                
+
                 let is_healthy = Self::check_backend_health(&backend_id, &config).await;
-                
+
                 {
                     let mut backends = backends.lock().unwrap();
                     if let Some(backend) = backends.get_mut(&backend_id) {
@@ -371,12 +378,12 @@ impl HealthChecker {
     pub async fn check_all(&self) -> HashMap<String, bool> {
         let mut results = HashMap::new();
         let backends = self.backends.lock().unwrap();
-        
+
         for (id, _backend) in backends.iter() {
             let is_healthy = Self::check_single_backend(id, &self.config).await;
             results.insert(id.clone(), is_healthy);
         }
-        
+
         results
     }
 
@@ -406,10 +413,10 @@ mod tests {
         let config = LoadBalancerConfig::default();
         let lb = LoadBalancer::new(config);
         let addr = "127.0.0.1:8080".parse::<SocketAddr>().unwrap();
-        
+
         let result = lb.add_backend(addr, 1).await;
         assert!(result.is_ok());
-        
+
         let backends = lb.get_backends().await;
         assert_eq!(backends.len(), 1);
     }
@@ -419,9 +426,9 @@ mod tests {
         let config = LoadBalancerConfig::default();
         let lb = LoadBalancer::new(config);
         let addr = "127.0.0.1:8080".parse::<SocketAddr>().unwrap();
-        
+
         lb.add_backend(addr, 1).await.unwrap();
-        
+
         let backend_id = lb.select_backend(&LoadBalancingStrategy::RoundRobin).await;
         assert!(backend_id.is_ok());
     }
@@ -430,7 +437,7 @@ mod tests {
     async fn test_health_checker() {
         let config = LoadBalancerConfig::default();
         let checker = HealthChecker::new(config);
-        
+
         let backend = BackendServer {
             id: "test".to_string(),
             addr: "127.0.0.1:8080".parse().unwrap(),
@@ -442,7 +449,7 @@ mod tests {
             failure_count: 0,
             active_connections: 0,
         };
-        
+
         checker.add_backend(backend);
         let results = checker.check_all().await;
         assert_eq!(results.len(), 1);

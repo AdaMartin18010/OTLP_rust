@@ -48,7 +48,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 发送带错误信息的追踪
     client
-        .trace("error-operation", 200, false, Some("Connection timeout".to_string()))
+        .trace(
+            "error-operation",
+            200,
+            false,
+            Some("Connection timeout".to_string()),
+        )
         .await?;
     println!("✅ 错误追踪数据发送成功");
 

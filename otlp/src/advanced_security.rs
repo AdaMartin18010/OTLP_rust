@@ -1,5 +1,5 @@
 //! 高级安全模块
-//! 
+//!
 //! 本模块提供了高级安全功能，包括：
 //! - 零知识证明
 //! - 同态加密
@@ -9,8 +9,8 @@
 //! - 威胁检测
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
@@ -37,7 +37,7 @@ impl ZeroKnowledgeProofManager {
     /// 生成零知识证明
     pub async fn generate_proof(&self, statement: &str, witness: &str) -> Result<Proof> {
         let start_time = Instant::now();
-        
+
         // 模拟零知识证明生成
         let proof = Proof {
             statement: statement.to_string(),
@@ -45,27 +45,27 @@ impl ZeroKnowledgeProofManager {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
             verification_key: format!("vk_{}", statement),
         };
-        
+
         // 缓存证明
         // 注意：Arc<HashMap> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<HashMap>> 或 Arc<Mutex<HashMap>>
-        
+
         // 更新统计信息
         self.stats.record_proof_generation(start_time.elapsed());
-        
+
         Ok(proof)
     }
 
     /// 验证零知识证明
     pub async fn verify_proof(&self, proof: &Proof) -> Result<bool> {
         let start_time = Instant::now();
-        
+
         // 模拟零知识证明验证
         let is_valid = proof.proof_data.starts_with("proof_");
-        
+
         // 更新统计信息
         self.stats.record_proof_verification(start_time.elapsed());
-        
+
         Ok(is_valid)
     }
 
@@ -94,7 +94,7 @@ impl HomomorphicEncryptionManager {
     /// 同态加密数据
     pub async fn encrypt(&self, data: &[u8], key: &str) -> Result<EncryptedData> {
         let start_time = Instant::now();
-        
+
         // 模拟同态加密
         let encrypted_data = EncryptedData {
             data: data.to_vec(),
@@ -102,21 +102,25 @@ impl HomomorphicEncryptionManager {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
             encryption_type: "homomorphic".to_string(),
         };
-        
+
         // 缓存加密数据
         // 注意：Arc<HashMap> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<HashMap>> 或 Arc<Mutex<HashMap>>
-        
+
         // 更新统计信息
         self.stats.record_encryption(start_time.elapsed());
-        
+
         Ok(encrypted_data)
     }
 
     /// 同态计算
-    pub async fn homomorphic_compute(&self, encrypted_data: &[EncryptedData], _operation: &str) -> Result<EncryptedData> {
+    pub async fn homomorphic_compute(
+        &self,
+        encrypted_data: &[EncryptedData],
+        _operation: &str,
+    ) -> Result<EncryptedData> {
         let start_time = Instant::now();
-        
+
         // 模拟同态计算
         let result = EncryptedData {
             data: encrypted_data[0].data.clone(),
@@ -124,10 +128,11 @@ impl HomomorphicEncryptionManager {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
             encryption_type: "homomorphic_computed".to_string(),
         };
-        
+
         // 更新统计信息
-        self.stats.record_homomorphic_computation(start_time.elapsed());
-        
+        self.stats
+            .record_homomorphic_computation(start_time.elapsed());
+
         Ok(result)
     }
 
@@ -154,9 +159,13 @@ impl SecureMultiPartyComputationManager {
     }
 
     /// 执行安全多方计算
-    pub async fn execute_computation(&self, participants: &[String], computation: &str) -> Result<ComputationResult> {
+    pub async fn execute_computation(
+        &self,
+        participants: &[String],
+        computation: &str,
+    ) -> Result<ComputationResult> {
         let start_time = Instant::now();
-        
+
         // 模拟安全多方计算
         let result = ComputationResult {
             computation_id: format!("comp_{}", participants.len()),
@@ -165,27 +174,27 @@ impl SecureMultiPartyComputationManager {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
             verification_hash: format!("hash_{}", computation),
         };
-        
+
         // 缓存计算结果
         // 注意：Arc<HashMap> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<HashMap>> 或 Arc<Mutex<HashMap>>
-        
+
         // 更新统计信息
         self.stats.record_computation(start_time.elapsed());
-        
+
         Ok(result)
     }
 
     /// 验证计算结果
     pub async fn verify_result(&self, result: &ComputationResult) -> Result<bool> {
         let start_time = Instant::now();
-        
+
         // 模拟结果验证
         let is_valid = result.verification_hash.starts_with("hash_");
-        
+
         // 更新统计信息
         self.stats.record_verification(start_time.elapsed());
-        
+
         Ok(is_valid)
     }
 
@@ -214,7 +223,7 @@ impl DifferentialPrivacyManager {
     /// 应用差分隐私
     pub async fn apply_privacy(&self, data: &[u8], epsilon: f64) -> Result<PrivacyResult> {
         let start_time = Instant::now();
-        
+
         // 模拟差分隐私应用
         let privacy_result = PrivacyResult {
             original_data: data.to_vec(),
@@ -224,27 +233,27 @@ impl DifferentialPrivacyManager {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
             privacy_level: "high".to_string(),
         };
-        
+
         // 缓存隐私结果
         // 注意：Arc<HashMap> 不支持直接插入，这里仅作演示
         // 实际实现中应该使用 Arc<RwLock<HashMap>> 或 Arc<Mutex<HashMap>>
-        
+
         // 更新统计信息
         self.stats.record_privacy_application(start_time.elapsed());
-        
+
         Ok(privacy_result)
     }
 
     /// 验证隐私保护
     pub async fn verify_privacy(&self, result: &PrivacyResult) -> Result<bool> {
         let start_time = Instant::now();
-        
+
         // 模拟隐私验证
         let is_private = result.epsilon > 0.0;
-        
+
         // 更新统计信息
         self.stats.record_privacy_verification(start_time.elapsed());
-        
+
         Ok(is_private)
     }
 
@@ -273,7 +282,7 @@ impl SecurityAuditManager {
     /// 记录审计事件
     pub async fn log_event(&self, event: &AuditEvent) -> Result<()> {
         let start_time = Instant::now();
-        
+
         let audit_entry = AuditEntry {
             event_id: format!("event_{}", event.timestamp),
             event_type: event.event_type.clone(),
@@ -285,21 +294,21 @@ impl SecurityAuditManager {
             ip_address: event.ip_address.clone(),
             user_agent: event.user_agent.clone(),
         };
-        
+
         // 记录审计事件
         let mut log = self.audit_log.write().await;
         log.push(audit_entry);
-        
+
         // 更新统计信息
         self.stats.record_audit_event(start_time.elapsed());
-        
+
         Ok(())
     }
 
     /// 查询审计日志
     pub async fn query_audit_log(&self, filter: &AuditFilter) -> Result<Vec<AuditEntry>> {
         let start_time = Instant::now();
-        
+
         // 查询审计日志
         let log = self.audit_log.read().await;
         let mut results = Vec::new();
@@ -308,10 +317,10 @@ impl SecurityAuditManager {
                 results.push(entry.clone());
             }
         }
-        
+
         // 更新统计信息
         self.stats.record_audit_query(start_time.elapsed());
-        
+
         Ok(results)
     }
 
@@ -322,25 +331,25 @@ impl SecurityAuditManager {
                 return false;
             }
         }
-        
+
         if let Some(event_type) = &filter.event_type {
             if entry.event_type != *event_type {
                 return false;
             }
         }
-        
+
         if let Some(start_time) = filter.start_time {
             if entry.timestamp < start_time {
                 return false;
             }
         }
-        
+
         if let Some(end_time) = filter.end_time {
             if entry.timestamp > end_time {
                 return false;
             }
         }
-        
+
         true
     }
 
@@ -369,10 +378,10 @@ impl ThreatDetectionManager {
     /// 检测威胁
     pub async fn detect_threat(&self, data: &TelemetryData) -> Result<Vec<Threat>> {
         let start_time = Instant::now();
-        
+
         // 模拟威胁检测
         let mut threats = Vec::new();
-        
+
         // 检查异常数据
         if self.is_anomalous_data(data).await? {
             let threat = Threat {
@@ -386,7 +395,7 @@ impl ThreatDetectionManager {
             };
             threats.push(threat);
         }
-        
+
         // 检查恶意模式
         if self.is_malicious_pattern(data).await? {
             let threat = Threat {
@@ -400,10 +409,11 @@ impl ThreatDetectionManager {
             };
             threats.push(threat);
         }
-        
+
         // 更新统计信息
-        self.stats.record_threat_detection(start_time.elapsed(), threats.len());
-        
+        self.stats
+            .record_threat_detection(start_time.elapsed(), threats.len());
+
         Ok(threats)
     }
 
@@ -530,12 +540,14 @@ impl ZeroKnowledgeStats {
 
     pub fn record_proof_generation(&self, duration: Duration) {
         self.total_proofs_generated.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_proof_verification(&self, duration: Duration) {
         self.total_proofs_verified.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> ZeroKnowledgeStatsSnapshot {
@@ -573,12 +585,14 @@ impl HomomorphicEncryptionStats {
 
     pub fn record_encryption(&self, duration: Duration) {
         self.total_encryptions.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_homomorphic_computation(&self, duration: Duration) {
         self.total_computations.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> HomomorphicEncryptionStatsSnapshot {
@@ -616,12 +630,14 @@ impl SecureMultiPartyStats {
 
     pub fn record_computation(&self, duration: Duration) {
         self.total_computations.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_verification(&self, duration: Duration) {
         self.total_verifications.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> SecureMultiPartyStatsSnapshot {
@@ -658,13 +674,17 @@ impl DifferentialPrivacyStats {
     }
 
     pub fn record_privacy_application(&self, duration: Duration) {
-        self.total_privacy_applications.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_privacy_applications
+            .fetch_add(1, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_privacy_verification(&self, duration: Duration) {
-        self.total_privacy_verifications.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_privacy_verifications
+            .fetch_add(1, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> DifferentialPrivacyStatsSnapshot {
@@ -702,12 +722,14 @@ impl SecurityAuditStats {
 
     pub fn record_audit_event(&self, duration: Duration) {
         self.total_audit_events.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn record_audit_query(&self, duration: Duration) {
         self.total_audit_queries.fetch_add(1, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> SecurityAuditStatsSnapshot {
@@ -745,8 +767,10 @@ impl ThreatDetectionStats {
 
     pub fn record_threat_detection(&self, duration: Duration, threat_count: usize) {
         self.total_detections.fetch_add(1, Ordering::Relaxed);
-        self.total_threats_detected.fetch_add(threat_count, Ordering::Relaxed);
-        self.total_time.fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
+        self.total_threats_detected
+            .fetch_add(threat_count, Ordering::Relaxed);
+        self.total_time
+            .fetch_add(duration.as_nanos() as u64, Ordering::Relaxed);
     }
 
     pub fn get_snapshot(&self) -> ThreatDetectionStatsSnapshot {
@@ -772,10 +796,16 @@ mod tests {
     #[tokio::test]
     async fn test_zero_knowledge_proof() {
         let manager = ZeroKnowledgeProofManager::new();
-        let proof = manager.generate_proof("statement", "witness").await.expect("Failed to generate ZK proof");
+        let proof = manager
+            .generate_proof("statement", "witness")
+            .await
+            .expect("Failed to generate ZK proof");
         assert_eq!(proof.statement, "statement");
-        
-        let is_valid = manager.verify_proof(&proof).await.expect("Failed to verify ZK proof");
+
+        let is_valid = manager
+            .verify_proof(&proof)
+            .await
+            .expect("Failed to verify ZK proof");
         assert!(is_valid);
     }
 
@@ -783,10 +813,16 @@ mod tests {
     async fn test_homomorphic_encryption() {
         let manager = HomomorphicEncryptionManager::new();
         let data = b"test data";
-        let encrypted = manager.encrypt(data, "key").await.expect("Failed to encrypt data");
+        let encrypted = manager
+            .encrypt(data, "key")
+            .await
+            .expect("Failed to encrypt data");
         assert_eq!(encrypted.data, data);
-        
-        let computed = manager.homomorphic_compute(&[encrypted], "add").await.expect("Failed to compute homomorphic operation");
+
+        let computed = manager
+            .homomorphic_compute(&[encrypted], "add")
+            .await
+            .expect("Failed to compute homomorphic operation");
         assert_eq!(computed.encryption_type, "homomorphic_computed");
     }
 
@@ -794,11 +830,15 @@ mod tests {
     async fn test_secure_multi_party_computation() {
         let manager = SecureMultiPartyComputationManager::new();
         let participants = vec!["alice".to_string(), "bob".to_string()];
-        let result = manager.execute_computation(&participants, "sum").await
+        let result = manager
+            .execute_computation(&participants, "sum")
+            .await
             .expect("Failed to execute multi-party computation");
         assert_eq!(result.participants, participants);
-        
-        let is_valid = manager.verify_result(&result).await
+
+        let is_valid = manager
+            .verify_result(&result)
+            .await
             .expect("Failed to verify multi-party computation result");
         assert!(is_valid);
     }
@@ -807,11 +847,15 @@ mod tests {
     async fn test_differential_privacy() {
         let manager = DifferentialPrivacyManager::new();
         let data = b"private data";
-        let result = manager.apply_privacy(data, 1.0).await
+        let result = manager
+            .apply_privacy(data, 1.0)
+            .await
             .expect("Failed to apply differential privacy");
         assert_eq!(result.epsilon, 1.0);
-        
-        let is_private = manager.verify_privacy(&result).await
+
+        let is_private = manager
+            .verify_privacy(&result)
+            .await
             .expect("Failed to verify privacy");
         assert!(is_private);
     }
@@ -829,18 +873,22 @@ mod tests {
             ip_address: Some("192.168.1.1".to_string()),
             user_agent: Some("browser".to_string()),
         };
-        
-        manager.log_event(&event).await
+
+        manager
+            .log_event(&event)
+            .await
             .expect("Failed to log audit event");
-        
+
         let filter = AuditFilter {
             user_id: Some("user1".to_string()),
             event_type: None,
             start_time: None,
             end_time: None,
         };
-        
-        let results = manager.query_audit_log(&filter).await
+
+        let results = manager
+            .query_audit_log(&filter)
+            .await
             .expect("Failed to query audit log");
         assert_eq!(results.len(), 1);
     }
@@ -870,8 +918,10 @@ mod tests {
                 links: Vec::new(),
             }),
         };
-        
-        let threats = manager.detect_threat(&data).await
+
+        let threats = manager
+            .detect_threat(&data)
+            .await
             .expect("Failed to detect threats");
         assert_eq!(threats.len(), 1);
         assert_eq!(threats[0].threat_type, "anomaly");

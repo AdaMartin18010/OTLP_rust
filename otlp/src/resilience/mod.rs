@@ -3,19 +3,20 @@
 //! 基于理论文档中的容错设计模式，提供完整的容错和弹性机制。
 //! 参考: OTLP_Rust编程规范与实践指南.md 第3.1节
 
+pub mod bulkhead;
 pub mod circuit_breaker;
 pub mod retry;
-pub mod bulkhead;
 pub mod timeout;
 
 // 重新导出主要类型
+pub use bulkhead::{Bulkhead, BulkheadConfig, BulkheadError, BulkheadManager};
 pub use circuit_breaker::{
-    CircuitBreaker, CircuitBreakerConfig, CircuitBreakerManager, CircuitState, Error as CircuitBreakerError,
+    CircuitBreaker, CircuitBreakerConfig, CircuitBreakerManager, CircuitState,
+    Error as CircuitBreakerError,
 };
 pub use retry::{
     Retrier, RetrierBuilder, RetrierManager, RetryConfig, RetryError, RetryStats, RetryStrategy,
 };
-pub use bulkhead::{Bulkhead, BulkheadConfig, BulkheadError, BulkheadManager};
 pub use timeout::{Timeout, TimeoutConfig, TimeoutError};
 
 /// 弹性模块统一错误类型
@@ -75,11 +76,7 @@ impl ResilienceManager {
     }
 
     /// 获取或创建重试器
-    pub async fn get_or_create_retrier(
-        &self,
-        name: &str,
-        config: RetryConfig,
-    ) -> Arc<Retrier> {
+    pub async fn get_or_create_retrier(&self, name: &str, config: RetryConfig) -> Arc<Retrier> {
         let mut retriers = self.retriers.write().await;
         if let Some(retrier) = retriers.get(name) {
             return retrier.clone();
@@ -107,11 +104,7 @@ impl ResilienceManager {
     }
 
     /// 获取或创建超时器
-    pub async fn get_or_create_timeout(
-        &self,
-        name: &str,
-        config: TimeoutConfig,
-    ) -> Arc<Timeout> {
+    pub async fn get_or_create_timeout(&self, name: &str, config: TimeoutConfig) -> Arc<Timeout> {
         let mut timeouts = self.timeouts.write().await;
         if let Some(timeout) = timeouts.get(name) {
             return timeout.clone();
@@ -144,12 +137,15 @@ impl ResilienceManager {
                 let mut bulkhead_status = HashMap::new();
                 for (name, bulkhead) in bulkheads.iter() {
                     let status = bulkhead.status();
-                    bulkhead_status.insert(name.clone(), BulkheadStatus {
-                        active_requests: status.active_requests,
-                        max_concurrent_requests: status.max_concurrent_requests,
-                        queued_requests: status.queued_requests,
-                        max_queue_size: status.max_queue_size,
-                    });
+                    bulkhead_status.insert(
+                        name.clone(),
+                        BulkheadStatus {
+                            active_requests: status.active_requests,
+                            max_concurrent_requests: status.max_concurrent_requests,
+                            queued_requests: status.queued_requests,
+                            max_queue_size: status.max_queue_size,
+                        },
+                    );
                 }
                 bulkhead_status
             },
@@ -157,11 +153,14 @@ impl ResilienceManager {
                 let mut timeout_status = HashMap::new();
                 for (name, timeout) in timeouts.iter() {
                     let status = timeout.status().await;
-                    timeout_status.insert(name.clone(), TimeoutStatus {
-                        active_timeouts: status.active_timeouts,
-                        total_timeouts: status.total_timeouts,
-                        timeout_rate: status.timeout_rate,
-                    });
+                    timeout_status.insert(
+                        name.clone(),
+                        TimeoutStatus {
+                            active_timeouts: status.active_timeouts,
+                            total_timeouts: status.total_timeouts,
+                            timeout_rate: status.timeout_rate,
+                        },
+                    );
                 }
                 timeout_status
             },

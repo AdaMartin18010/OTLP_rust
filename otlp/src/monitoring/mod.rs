@@ -3,10 +3,10 @@
 //! 提供完整的监控、指标收集、日志聚合和分布式追踪功能
 //! 包括错误监控系统、实时仪表板、告警管理和趋势分析
 
+pub mod enhanced_alert_manager;
 pub mod error_monitoring_types;
 pub mod metrics_collector;
 pub mod prometheus_exporter;
-pub mod enhanced_alert_manager;
 
 // 重新导出主要类型
 pub use metrics_collector::{
@@ -41,10 +41,10 @@ pub use error_monitoring_types::{
 
 // 重新导出增强告警管理器
 pub use enhanced_alert_manager::{
-    Alert as EnhancedAlert, AlertCondition as EnhancedAlertCondition, 
-    AlertRule as EnhancedAlertRule, AlertSeverity as EnhancedAlertSeverity, 
+    Alert as EnhancedAlert, AlertCondition as EnhancedAlertCondition,
+    AlertRule as EnhancedAlertRule, AlertSeverity as EnhancedAlertSeverity,
     AlertStatsSnapshot as EnhancedAlertStatsSnapshot, AlertStatus as EnhancedAlertStatus,
-    ComparisonOperator, EnhancedAlertManager, NotificationChannel as EnhancedNotificationChannel, 
+    ComparisonOperator, EnhancedAlertManager, NotificationChannel as EnhancedNotificationChannel,
     PredefinedAlertRules,
 };
 
@@ -185,7 +185,9 @@ mod tests {
         let mut monitoring_system = MonitoringSystem::new(config);
 
         // 初始化监控系统
-        monitoring_system.initialize().expect("Failed to initialize monitoring system");
+        monitoring_system
+            .initialize()
+            .expect("Failed to initialize monitoring system");
 
         // 验证组件已初始化
         assert!(monitoring_system.get_metrics_collector().is_some());
@@ -203,7 +205,9 @@ mod tests {
         let mut monitoring_system = MonitoringSystem::new(config);
 
         // 初始化监控系统
-        monitoring_system.initialize().expect("Failed to initialize monitoring system");
+        monitoring_system
+            .initialize()
+            .expect("Failed to initialize monitoring system");
 
         // 验证组件未初始化
         assert!(monitoring_system.get_metrics_collector().is_none());

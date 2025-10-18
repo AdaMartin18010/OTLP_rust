@@ -3,12 +3,12 @@
 //! 基于理论文档中的性能优化模式，实现高性能的对象池。
 //! 参考: OTLP_Rust编程规范与实践指南.md 第3.2.1节
 
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-use tokio::sync::{Mutex};
 use std::collections::VecDeque;
 use std::fmt::Debug;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
 
 /// 对象池配置
 #[derive(Debug, Clone)]
@@ -74,12 +74,16 @@ pub struct PooledObject<T: Send + 'static> {
 impl<T: Send + 'static> PooledObject<T> {
     /// 获取对象的引用
     pub fn get(&self) -> &T {
-        self.object.as_ref().expect("Object already returned to pool")
+        self.object
+            .as_ref()
+            .expect("Object already returned to pool")
     }
 
     /// 获取对象的可变引用
     pub fn get_mut(&mut self) -> &mut T {
-        self.object.as_mut().expect("Object already returned to pool")
+        self.object
+            .as_mut()
+            .expect("Object already returned to pool")
     }
 
     /// 获取对象的拥有权（消耗包装器）
@@ -116,13 +120,13 @@ impl<T: Send + 'static> Drop for PooledObject<T> {
 pub trait ObjectFactory<T>: Send + Sync {
     /// 创建新对象
     fn create(&self) -> Result<T, ObjectPoolError>;
-    
+
     /// 验证对象是否有效
     fn validate(&self, object: &T) -> bool;
-    
+
     /// 重置对象状态
     fn reset(&self, object: &mut T);
-    
+
     /// 克隆工厂
     fn clone_box(&self) -> Box<dyn ObjectFactory<T>>;
 }
@@ -132,16 +136,16 @@ pub trait ObjectFactory<T>: Send + Sync {
 pub enum ObjectPoolError {
     #[error("池已满，无法创建新对象")]
     PoolFull,
-    
+
     #[error("对象创建失败: {0}")]
     CreationFailed(String),
-    
+
     #[error("获取对象超时: {timeout:?}")]
     AcquisitionTimeout { timeout: Duration },
-    
+
     #[error("对象验证失败")]
     ValidationFailed,
-    
+
     #[error("池已关闭")]
     PoolClosed,
 }
@@ -178,7 +182,7 @@ impl<T: Send + 'static> ObjectPool<T> {
         }
 
         let start_time = Instant::now();
-        
+
         // 尝试从可用对象中获取
         if let Some(object) = self.try_acquire_from_available().await {
             self.update_stats_on_acquire(start_time);
@@ -205,7 +209,9 @@ impl<T: Send + 'static> ObjectPool<T> {
                     });
                 }
                 Err(e) => {
-                    self.stats.creation_failed_count.fetch_add(1, Ordering::Relaxed);
+                    self.stats
+                        .creation_failed_count
+                        .fetch_add(1, Ordering::Relaxed);
                     return Err(e);
                 }
             }
@@ -248,7 +254,7 @@ impl<T: Send + 'static> ObjectPool<T> {
     /// 关闭对象池
     pub async fn close(&self) {
         self.is_closed.store(1, Ordering::Release);
-        
+
         // 清空可用对象
         let mut available = self.available.lock().await;
         available.clear();
@@ -292,7 +298,7 @@ impl<T: Send + 'static> ObjectPool<T> {
     async fn create_new_object(&self) -> Result<T, ObjectPoolError> {
         let factory = self.factory.clone_box();
         let result = tokio::task::spawn_blocking(move || factory.create()).await;
-        
+
         match result {
             Ok(Ok(object)) => {
                 self.stats.total_created.fetch_add(1, Ordering::Relaxed);
@@ -306,9 +312,11 @@ impl<T: Send + 'static> ObjectPool<T> {
     }
 
     /// 等待可用对象
-    async fn wait_for_available_object(self: &Arc<Self>) -> Result<PooledObject<T>, ObjectPoolError> {
+    async fn wait_for_available_object(
+        self: &Arc<Self>,
+    ) -> Result<PooledObject<T>, ObjectPoolError> {
         let start_time = Instant::now();
-        
+
         loop {
             if start_time.elapsed() >= self.config.acquisition_timeout {
                 return Err(ObjectPoolError::AcquisitionTimeout {
@@ -336,8 +344,10 @@ impl<T: Send + 'static> ObjectPool<T> {
     fn update_stats_on_acquire(&self, start_time: Instant) {
         let wait_time = start_time.elapsed().as_micros() as usize;
         self.stats.total_acquired.fetch_add(1, Ordering::Relaxed);
-        self.stats.total_wait_time.fetch_add(wait_time, Ordering::Relaxed);
-        
+        self.stats
+            .total_wait_time
+            .fetch_add(wait_time, Ordering::Relaxed);
+
         let current_max = self.stats.max_wait_time.load(Ordering::Acquire);
         if wait_time > current_max {
             self.stats.max_wait_time.store(wait_time, Ordering::Release);
@@ -401,9 +411,9 @@ impl<T: Send + 'static> ObjectPoolBuilder<T> {
 
     /// 构建对象池
     pub fn build(self) -> Result<Arc<ObjectPool<T>>, ObjectPoolError> {
-        let factory = self.factory.ok_or_else(|| {
-            ObjectPoolError::CreationFailed("Factory not set".to_string())
-        })?;
+        let factory = self
+            .factory
+            .ok_or_else(|| ObjectPoolError::CreationFailed("Factory not set".to_string()))?;
 
         Ok(ObjectPool::new(self.config, factory))
     }

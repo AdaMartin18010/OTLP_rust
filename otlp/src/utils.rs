@@ -269,7 +269,9 @@ impl StringUtils {
         }
 
         let mut chars = s.chars();
-        let first = chars.next().expect("String should not be empty at this point");
+        let first = chars
+            .next()
+            .expect("String should not be empty at this point");
 
         // 第一个字符必须是字母或下划线
         if !first.is_alphabetic() && first != '_' {

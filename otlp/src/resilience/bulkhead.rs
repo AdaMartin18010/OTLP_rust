@@ -4,8 +4,8 @@
 //! 参考: OTLP_Rust编程规范与实践指南.md 第3.1.2节
 
 use std::collections::{HashMap, VecDeque};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock, Semaphore};
 
@@ -65,7 +65,7 @@ pub struct Bulkhead {
 #[allow(dead_code)]
 struct QueuedRequest {
     id: u64,
-    created_at: Instant,  
+    created_at: Instant,
     callback: Box<dyn FnOnce() + Send>,
 }
 
@@ -102,13 +102,13 @@ impl Drop for BulkheadPermit {
 pub enum BulkheadError {
     #[error("舱壁已关闭")]
     BulkheadClosed,
-    
+
     #[error("队列已满")]
     QueueFull,
-    
+
     #[error("获取许可超时: {timeout:?}")]
     Timeout { timeout: Duration },
-    
+
     #[error("队列等待超时")]
     QueueTimeout,
 }
@@ -138,7 +138,7 @@ impl Bulkhead {
         if let Ok(permit) = self.semaphore.clone().try_acquire_owned() {
             let request_id = self.generate_request_id();
             let start_time = Instant::now();
-            
+
             Ok(BulkheadPermit {
                 _permit: permit,
                 bulkhead: Arc::new(self.clone()),
@@ -168,7 +168,7 @@ impl Bulkhead {
         if let Ok(permit) = self.semaphore.clone().try_acquire_owned() {
             let request_id = self.generate_request_id();
             let start_time = Instant::now();
-            
+
             return Ok(BulkheadPermit {
                 _permit: permit,
                 bulkhead: Arc::new(self.clone()),
@@ -207,7 +207,7 @@ impl Bulkhead {
         let available_permits = self.semaphore.available_permits();
         let max_permits = self.config.max_concurrent_requests;
         let active_requests = max_permits - available_permits;
-        
+
         BulkheadStatus {
             active_requests,
             max_concurrent_requests: max_permits,
@@ -219,7 +219,7 @@ impl Bulkhead {
     /// 关闭舱壁
     pub async fn close(&self) {
         self.is_closed.store(1, Ordering::Release);
-        
+
         // 清空队列
         let mut queue = self.queue.lock().await;
         queue.clear();
@@ -270,12 +270,14 @@ impl Bulkhead {
     /// 等待许可
     async fn wait_for_permit(&self) -> Result<BulkheadPermit, BulkheadError> {
         let start_time = Instant::now();
-        
+
         // 使用超时等待许可
         match tokio::time::timeout(
             self.config.queue_timeout,
             self.semaphore.clone().acquire_owned(),
-        ).await {
+        )
+        .await
+        {
             Ok(Ok(permit)) => {
                 let request_id = self.generate_request_id();
                 Ok(BulkheadPermit {
@@ -310,7 +312,9 @@ impl Bulkhead {
     /// 更新完成统计信息
     fn update_stats_on_completion(&self, wait_time: usize, success: bool) {
         if success {
-            self.stats.successful_requests.fetch_add(1, Ordering::Relaxed);
+            self.stats
+                .successful_requests
+                .fetch_add(1, Ordering::Relaxed);
         } else {
             self.stats.failed_requests.fetch_add(1, Ordering::Relaxed);
         }
@@ -319,7 +323,9 @@ impl Bulkhead {
         let total_requests = self.stats.total_requests.load(Ordering::Acquire);
         let current_avg = self.stats.average_wait_time.load(Ordering::Acquire);
         let new_avg = (current_avg * (total_requests - 1) + wait_time) / total_requests;
-        self.stats.average_wait_time.store(new_avg, Ordering::Release);
+        self.stats
+            .average_wait_time
+            .store(new_avg, Ordering::Release);
 
         // 更新最大等待时间
         let current_max = self.stats.max_wait_time.load(Ordering::Acquire);
@@ -510,15 +516,13 @@ mod tests {
         let bulkhead = Bulkhead::new(config);
 
         // 执行成功操作
-        let result: Result<i32, BulkheadError> = bulkhead
-            .execute::<_, i32, &str>(async { Ok(42) })
-            .await;
+        let result: Result<i32, BulkheadError> =
+            bulkhead.execute::<_, i32, &str>(async { Ok(42) }).await;
         assert_eq!(result, Ok(42));
 
         // 执行失败操作
-        let result: Result<i32, BulkheadError> = bulkhead
-            .execute(async { Err("test error") })
-            .await;
+        let result: Result<i32, BulkheadError> =
+            bulkhead.execute(async { Err("test error") }).await;
         assert!(matches!(result, Err(BulkheadError::Timeout { .. })));
     }
 

@@ -2,8 +2,8 @@
 //!
 //! 测试完整的OTLP数据流从采集到传输的全过程
 
-use std::time::Duration;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::time::sleep;
 
 // 模拟OTLP数据采集器
@@ -100,11 +100,16 @@ impl OtlpProcessor {
     async fn process_traces(&self, traces: &[TraceData]) -> Result<Vec<u8>, String> {
         // 模拟trace数据处理
         sleep(Duration::from_millis(5)).await;
-        
+
         let mut data = Vec::new();
         for trace in traces {
-            data.extend_from_slice(format!("trace:{}:{}:{}", 
-                trace.trace_id, trace.span_id, trace.operation_name).as_bytes());
+            data.extend_from_slice(
+                format!(
+                    "trace:{}:{}:{}",
+                    trace.trace_id, trace.span_id, trace.operation_name
+                )
+                .as_bytes(),
+            );
         }
         Ok(data)
     }
@@ -112,11 +117,10 @@ impl OtlpProcessor {
     async fn process_metrics(&self, metrics: &[MetricData]) -> Result<Vec<u8>, String> {
         // 模拟metrics数据处理
         sleep(Duration::from_millis(3)).await;
-        
+
         let mut data = Vec::new();
         for metric in metrics {
-            data.extend_from_slice(format!("metric:{}:{}", 
-                metric.name, metric.value).as_bytes());
+            data.extend_from_slice(format!("metric:{}:{}", metric.name, metric.value).as_bytes());
         }
         Ok(data)
     }
@@ -124,11 +128,10 @@ impl OtlpProcessor {
     async fn process_logs(&self, logs: &[LogData]) -> Result<Vec<u8>, String> {
         // 模拟logs数据处理
         sleep(Duration::from_millis(2)).await;
-        
+
         let mut data = Vec::new();
         for log in logs {
-            data.extend_from_slice(format!("log:{}:{}", 
-                log.level, log.message).as_bytes());
+            data.extend_from_slice(format!("log:{}:{}", log.level, log.message).as_bytes());
         }
         Ok(data)
     }
@@ -153,7 +156,7 @@ impl OtlpExporter {
     async fn export(&self, data: Vec<u8>) -> Result<(), String> {
         // 模拟数据导出
         sleep(Duration::from_millis(10)).await;
-        
+
         if data.is_empty() {
             return Err("Empty data".to_string());
         }
@@ -207,11 +210,17 @@ async fn test_otlp_complete_data_flow() {
     assert_eq!(collector.get_logs().len(), 1);
 
     // 2. 数据处理阶段
-    let trace_data = processor.process_traces(collector.get_traces()).await
+    let trace_data = processor
+        .process_traces(collector.get_traces())
+        .await
         .expect("Should process traces");
-    let metric_data = processor.process_metrics(collector.get_metrics()).await
+    let metric_data = processor
+        .process_metrics(collector.get_metrics())
+        .await
         .expect("Should process metrics");
-    let log_data = processor.process_logs(collector.get_logs()).await
+    let log_data = processor
+        .process_logs(collector.get_logs())
+        .await
         .expect("Should process logs");
 
     // 验证数据处理结果
@@ -220,8 +229,14 @@ async fn test_otlp_complete_data_flow() {
     assert!(!log_data.is_empty());
 
     // 3. 数据导出阶段
-    exporter.export(trace_data).await.expect("Should export traces");
-    exporter.export(metric_data).await.expect("Should export metrics");
+    exporter
+        .export(trace_data)
+        .await
+        .expect("Should export traces");
+    exporter
+        .export(metric_data)
+        .await
+        .expect("Should export metrics");
     exporter.export(log_data).await.expect("Should export logs");
 
     // 验证数据导出
@@ -251,11 +266,16 @@ async fn test_otlp_batch_processing() {
     // 批量处理
     let traces = collector.get_traces();
     let batch_size = processor.batch_size;
-    
+
     for chunk in traces.chunks(batch_size) {
-        let data = processor.process_traces(chunk).await
+        let data = processor
+            .process_traces(chunk)
+            .await
             .expect("Should process trace batch");
-        exporter.export(data).await.expect("Should export trace batch");
+        exporter
+            .export(data)
+            .await
+            .expect("Should export trace batch");
     }
 
     // 验证批量处理结果
@@ -272,7 +292,7 @@ async fn test_otlp_error_handling() {
     let empty_traces = &[];
     let result = processor.process_traces(empty_traces).await;
     assert!(result.is_ok());
-    
+
     let data = result.unwrap();
     assert!(data.is_empty());
 
@@ -305,11 +325,16 @@ async fn test_otlp_performance_under_load() {
 
     // 处理所有数据
     let traces = collector.get_traces();
-    let data = processor.process_traces(traces).await
+    let data = processor
+        .process_traces(traces)
+        .await
         .expect("Should process all traces");
-    
+
     // 导出数据
-    exporter.export(data).await.expect("Should export all traces");
+    exporter
+        .export(data)
+        .await
+        .expect("Should export all traces");
 
     let duration = start.elapsed();
 
@@ -343,11 +368,16 @@ async fn test_otlp_memory_efficiency() {
     // 分批处理以控制内存使用
     let traces = collector.get_traces();
     let batch_size = processor.batch_size;
-    
+
     for chunk in traces.chunks(batch_size) {
-        let data = processor.process_traces(chunk).await
+        let data = processor
+            .process_traces(chunk)
+            .await
             .expect("Should process trace batch");
-        exporter.export(data).await.expect("Should export trace batch");
+        exporter
+            .export(data)
+            .await
+            .expect("Should export trace batch");
     }
 
     // 验证内存效率
@@ -365,7 +395,7 @@ async fn test_otlp_concurrent_processing() {
     for i in 0..10 {
         let processor = Arc::clone(&processor);
         let exporter = Arc::clone(&exporter);
-        
+
         let handle = tokio::spawn(async move {
             let trace = TraceData {
                 trace_id: format!("trace-{}", i),
@@ -375,12 +405,14 @@ async fn test_otlp_concurrent_processing() {
                 duration: 1000 + i,
                 attributes: std::collections::HashMap::new(),
             };
-            
-            let data = processor.process_traces(&[trace]).await
+
+            let data = processor
+                .process_traces(&[trace])
+                .await
                 .expect("Should process trace");
             exporter.export(data).await.expect("Should export trace");
         });
-        
+
         handles.push(handle);
     }
 
@@ -426,7 +458,9 @@ async fn test_otlp_graceful_shutdown() {
 
     // 处理数据
     let traces = collector.get_traces();
-    let data = processor.process_traces(traces).await
+    let data = processor
+        .process_traces(traces)
+        .await
         .expect("Should process traces");
 
     // 导出数据

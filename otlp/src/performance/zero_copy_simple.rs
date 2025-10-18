@@ -3,7 +3,7 @@
 //! 基于理论文档中的性能优化模式，实现简化的零拷贝数据传输。
 
 use std::marker::PhantomData;
-use std::ptr::{NonNull};
+use std::ptr::NonNull;
 use std::sync::Arc;
 
 /// 零拷贝缓冲区
@@ -24,7 +24,7 @@ impl<T> ZeroCopyBuffer<T> {
     pub fn from_slice(slice: &[T]) -> Self {
         let ptr = slice.as_ptr();
         let len = slice.len();
-        
+
         Self {
             data: NonNull::new(ptr as *mut T).expect("Slice pointer should not be null"),
             len,
@@ -49,9 +49,7 @@ impl<T> ZeroCopyBuffer<T> {
 
     /// 转换为切片
     pub fn as_slice(&self) -> &[T] {
-        unsafe {
-            std::slice::from_raw_parts(self.data.as_ptr(), self.len)
-        }
+        unsafe { std::slice::from_raw_parts(self.data.as_ptr(), self.len) }
     }
 }
 
@@ -89,27 +87,27 @@ impl ZeroCopyTransporter {
     /// 传输数据（零拷贝）
     pub fn transmit<T>(&self, data: &[T]) -> Result<ZeroCopyBuffer<T>, TransmissionError> {
         let start = std::time::Instant::now();
-        
+
         let buffer = ZeroCopyBuffer::from_slice(data);
-        
+
         let duration = start.elapsed();
         self.update_stats(true, data.len(), duration);
-        
+
         Ok(buffer)
     }
 
     /// 传输数据（带拷贝）
-    pub fn transmit_with_copy<T>(&self, data: &[T]) -> Result<Vec<T>, TransmissionError> 
+    pub fn transmit_with_copy<T>(&self, data: &[T]) -> Result<Vec<T>, TransmissionError>
     where
         T: Clone,
     {
         let start = std::time::Instant::now();
-        
+
         let result = data.to_vec();
-        
+
         let duration = start.elapsed();
         self.update_stats(false, data.len(), duration);
-        
+
         Ok(result)
     }
 
@@ -128,17 +126,17 @@ impl ZeroCopyTransporter {
         let mut stats = self.stats.lock().unwrap();
         stats.total_transmissions += 1;
         stats.total_bytes += bytes as u64;
-        
+
         if zero_copy {
             stats.zero_copy_transmissions += 1;
             stats.zero_copy_bytes += bytes as u64;
         }
-        
+
         let latency = duration.as_nanos() as f64 / 1_000_000.0; // 转换为毫秒
         let total = stats.total_transmissions as f64;
         let current_avg = stats.average_latency;
         stats.average_latency = (current_avg * (total - 1.0) + latency) / total;
-        
+
         if latency > stats.max_latency {
             stats.max_latency = latency;
         }
@@ -166,7 +164,7 @@ mod tests {
     fn test_zero_copy_buffer_creation() {
         let data = vec![1, 2, 3, 4, 5];
         let buffer = ZeroCopyBuffer::from_slice(&data);
-        
+
         assert_eq!(buffer.len(), 5);
         assert!(!buffer.is_empty());
         assert_eq!(buffer.as_slice(), &[1, 2, 3, 4, 5]);
@@ -176,11 +174,11 @@ mod tests {
     fn test_zero_copy_transporter() {
         let transporter = ZeroCopyTransporter::new();
         let data = vec![1, 2, 3, 4, 5];
-        
+
         let result = transporter.transmit(&data).unwrap();
         assert_eq!(result.len(), 5);
         assert_eq!(result.as_slice(), &[1, 2, 3, 4, 5]);
-        
+
         let stats = transporter.stats();
         assert!(stats.total_transmissions > 0);
         assert!(stats.zero_copy_transmissions > 0);
@@ -190,21 +188,24 @@ mod tests {
     fn test_performance_comparison() {
         let transporter = ZeroCopyTransporter::new();
         let data: Vec<u8> = (0..1000).map(|i| (i % 256) as u8).collect();
-        
+
         // 测试零拷贝传输
         let start = std::time::Instant::now();
         let _zero_copy_result = transporter.transmit(&data).unwrap();
         let zero_copy_duration = start.elapsed();
-        
+
         // 测试带拷贝传输
         let start = std::time::Instant::now();
         let _copy_result = transporter.transmit_with_copy(&data).unwrap();
         let copy_duration = start.elapsed();
-        
+
         println!("Zero-copy duration: {:?}", zero_copy_duration);
         println!("Copy duration: {:?}", copy_duration);
-        println!("Speedup: {:.2}x", copy_duration.as_nanos() as f64 / zero_copy_duration.as_nanos() as f64);
-        
+        println!(
+            "Speedup: {:.2}x",
+            copy_duration.as_nanos() as f64 / zero_copy_duration.as_nanos() as f64
+        );
+
         // 零拷贝应该更快
         assert!(zero_copy_duration <= copy_duration);
     }

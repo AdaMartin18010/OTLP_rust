@@ -1,31 +1,31 @@
 //! 优化模块性能基准测试
 
-use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
+use criterion::{Criterion, criterion_group, criterion_main};
 use otlp::optimization::{
-    OptimizationCategory, OptimizationManager,
-    OptimizationPriority, PerformanceMetrics, PerformanceSnapshot,
+    OptimizationCategory, OptimizationManager, OptimizationPriority, PerformanceMetrics,
+    PerformanceSnapshot,
 };
-use std::time::Duration;
 use std::collections::HashMap;
+use std::hint::black_box;
 use std::sync::Arc;
+use std::time::Duration;
 
 fn bench_optimization_manager_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("optimization_manager_creation");
-    
+
     group.bench_function("create_manager", |b| {
         b.iter(|| {
             let manager = OptimizationManager::new();
             black_box(manager)
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_performance_metrics_update(c: &mut Criterion) {
     let mut group = c.benchmark_group("performance_metrics_update");
-    
+
     let manager = OptimizationManager::new();
     let metrics = PerformanceMetrics {
         cpu_usage: 50.0,
@@ -37,19 +37,19 @@ fn bench_performance_metrics_update(c: &mut Criterion) {
         queue_depth: 10,
         cache_hit_rate: 95.0,
     };
-    
+
     group.bench_function("update_metrics", |b| {
         b.iter(|| {
             let _ = manager.update_performance_metrics(black_box(metrics.clone()));
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_performance_snapshot_recording(c: &mut Criterion) {
     let mut group = c.benchmark_group("performance_snapshot_recording");
-    
+
     let manager = OptimizationManager::new();
     let snapshot = PerformanceSnapshot {
         timestamp: std::time::Instant::now(),
@@ -60,27 +60,27 @@ fn bench_performance_snapshot_recording(c: &mut Criterion) {
         error_rate: 0.1,
         config_hash: "test_hash".to_string(),
     };
-    
+
     group.bench_function("record_snapshot", |b| {
         b.iter(|| {
             let _ = manager.record_performance_snapshot(black_box(snapshot.clone()));
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_optimization_analysis(c: &mut Criterion) {
     let mut group = c.benchmark_group("optimization_analysis");
-    
+
     let manager = OptimizationManager::new();
     let rt = tokio::runtime::Runtime::new().unwrap();
-    
+
     // 初始化管理器
     rt.block_on(async {
         manager.initialize().await.unwrap();
     });
-    
+
     // 记录一些性能数据
     for i in 0..50 {
         let metrics = PerformanceMetrics {
@@ -93,7 +93,7 @@ fn bench_optimization_analysis(c: &mut Criterion) {
             queue_depth: 10 + i,
             cache_hit_rate: 80.0 + (i as f64 * 0.2),
         };
-        
+
         let snapshot = PerformanceSnapshot {
             timestamp: std::time::Instant::now(),
             cpu_usage: metrics.cpu_usage,
@@ -103,11 +103,11 @@ fn bench_optimization_analysis(c: &mut Criterion) {
             error_rate: metrics.error_rate,
             config_hash: format!("hash_{}", i),
         };
-        
+
         manager.update_performance_metrics(metrics).unwrap();
         manager.record_performance_snapshot(snapshot).unwrap();
     }
-    
+
     group.bench_function("analyze_optimizations", |b| {
         b.iter(|| {
             rt.block_on(async {
@@ -116,59 +116,63 @@ fn bench_optimization_analysis(c: &mut Criterion) {
             })
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_config_optimization(c: &mut Criterion) {
     let mut group = c.benchmark_group("config_optimization");
-    
+
     let manager = OptimizationManager::new();
     let rt = tokio::runtime::Runtime::new().unwrap();
-    
+
     // 初始化管理器
     rt.block_on(async {
         manager.initialize().await.unwrap();
     });
-    
+
     // 记录性能数据
     for i in 0..100 {
         let snapshot = PerformanceSnapshot {
             timestamp: std::time::Instant::now(),
-            cpu_usage: 95.0, // 高CPU使用率
-            memory_usage: 90.0, // 高内存使用率
-            throughput: 500, // 低吞吐量
+            cpu_usage: 95.0,                     // 高CPU使用率
+            memory_usage: 90.0,                  // 高内存使用率
+            throughput: 500,                     // 低吞吐量
             latency: Duration::from_millis(300), // 高延迟
-            error_rate: 2.0, // 高错误率
+            error_rate: 2.0,                     // 高错误率
             config_hash: format!("hash_{}", i),
         };
-        
+
         manager.record_performance_snapshot(snapshot).unwrap();
     }
-    
+
     group.bench_function("analyze_config_optimizations", |b| {
         b.iter(|| {
             rt.block_on(async {
-                let optimizations = manager.smart_config_manager().analyze_and_optimize().await.unwrap();
+                let optimizations = manager
+                    .smart_config_manager()
+                    .analyze_and_optimize()
+                    .await
+                    .unwrap();
                 black_box(optimizations)
             })
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_optimization_application(c: &mut Criterion) {
     let mut group = c.benchmark_group("optimization_application");
-    
+
     let manager = OptimizationManager::new();
     let rt = tokio::runtime::Runtime::new().unwrap();
-    
+
     // 初始化管理器
     rt.block_on(async {
         manager.initialize().await.unwrap();
     });
-    
+
     // 记录性能数据
     for i in 0..50 {
         let metrics = PerformanceMetrics {
@@ -181,7 +185,7 @@ fn bench_optimization_application(c: &mut Criterion) {
             queue_depth: 10,
             cache_hit_rate: 80.0,
         };
-        
+
         let snapshot = PerformanceSnapshot {
             timestamp: std::time::Instant::now(),
             cpu_usage: metrics.cpu_usage,
@@ -191,39 +195,40 @@ fn bench_optimization_application(c: &mut Criterion) {
             error_rate: metrics.error_rate,
             config_hash: format!("hash_{}", i),
         };
-        
+
         manager.update_performance_metrics(metrics).unwrap();
         manager.record_performance_snapshot(snapshot).unwrap();
     }
-    
+
     // 生成优化报告
-    let report = rt.block_on(async {
-        manager.perform_optimization_analysis().await.unwrap()
-    });
-    
+    let report = rt.block_on(async { manager.perform_optimization_analysis().await.unwrap() });
+
     group.bench_function("apply_optimizations", |b| {
         b.iter(|| {
             rt.block_on(async {
-                let result = manager.apply_optimizations(&black_box(report.clone())).await.unwrap();
+                let result = manager
+                    .apply_optimizations(&black_box(report.clone()))
+                    .await
+                    .unwrap();
                 black_box(result)
             })
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_concurrent_optimization(c: &mut Criterion) {
     let mut group = c.benchmark_group("concurrent_optimization");
-    
+
     let manager = Arc::new(OptimizationManager::new());
     let rt = tokio::runtime::Runtime::new().unwrap();
-    
+
     // 初始化管理器
     rt.block_on(async {
         manager.initialize().await.unwrap();
     });
-    
+
     group.bench_function("concurrent_analysis", |b| {
         b.iter(|| {
             rt.block_on(async {
@@ -241,40 +246,38 @@ fn bench_concurrent_optimization(c: &mut Criterion) {
                                 queue_depth: 10,
                                 cache_hit_rate: 85.0,
                             };
-                            
+
                             manager.update_performance_metrics(metrics).unwrap();
                             manager.perform_optimization_analysis().await.unwrap()
                         })
                     })
                     .collect();
-                
+
                 let results = futures::future::join_all(handles).await;
                 black_box(results)
             })
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_memory_usage(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_usage");
-    
+
     group.bench_function("create_multiple_managers", |b| {
         b.iter(|| {
-            let managers: Vec<_> = (0..100)
-                .map(|_| OptimizationManager::new())
-                .collect();
+            let managers: Vec<_> = (0..100).map(|_| OptimizationManager::new()).collect();
             black_box(managers)
         })
     });
-    
+
     group.finish();
 }
 
 fn bench_optimization_sorting(c: &mut Criterion) {
     let mut group = c.benchmark_group("optimization_sorting");
-    
+
     let optimizations = vec![
         otlp::optimization::OptimizationSuggestion {
             id: "1".to_string(),
@@ -307,7 +310,7 @@ fn bench_optimization_sorting(c: &mut Criterion) {
             parameters: HashMap::new(),
         },
     ];
-    
+
     group.bench_function("sort_optimizations", |b| {
         b.iter(|| {
             let mut opts = optimizations.clone();
@@ -315,7 +318,7 @@ fn bench_optimization_sorting(c: &mut Criterion) {
             black_box(opts)
         })
     });
-    
+
     group.finish();
 }
 

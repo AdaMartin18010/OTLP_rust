@@ -4,9 +4,7 @@
 
 use otlp::data::{SpanKind, SpanStatus, TelemetryData, TraceData};
 use otlp::error::{ExportError, ProcessingError, TransportError};
-use otlp::resilience::{
-    CircuitBreakerConfig, RetryConfig, TimeoutConfig,
-};
+use otlp::resilience::{CircuitBreakerConfig, RetryConfig, TimeoutConfig};
 use otlp::{OtlpClient, OtlpConfig, OtlpError, ResilienceConfig, ResilienceManager};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -56,7 +54,9 @@ async fn test_resilience_integration() {
     let manager = ResilienceManager::new();
 
     // 测试基本操作 - 使用断路器
-    let breaker = manager.get_or_create_circuit_breaker("test_operation", CircuitBreakerConfig::default()).await;
+    let breaker = manager
+        .get_or_create_circuit_breaker("test_operation", CircuitBreakerConfig::default())
+        .await;
     let result = breaker
         .execute::<_, String, anyhow::Error>(async { Ok("success".to_string()) })
         .await;
@@ -76,7 +76,9 @@ async fn test_circuit_breaker_integration() {
     };
 
     let manager = ResilienceManager::new();
-    let breaker = manager.get_or_create_circuit_breaker("failing_operation", config).await;
+    let breaker = manager
+        .get_or_create_circuit_breaker("failing_operation", config)
+        .await;
 
     // 模拟多次失败
     for i in 1..=5 {
@@ -226,7 +228,9 @@ async fn test_resilience_status() {
 
     // 执行一些操作来生成状态
     for _ in 0..5 {
-        let breaker = manager.get_or_create_circuit_breaker("metrics_test", CircuitBreakerConfig::default()).await;
+        let breaker = manager
+            .get_or_create_circuit_breaker("metrics_test", CircuitBreakerConfig::default())
+            .await;
         let _ = breaker
             .execute::<_, (), anyhow::Error>(async { Ok(()) })
             .await;

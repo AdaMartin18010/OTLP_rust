@@ -602,8 +602,10 @@ mod tests {
             non_identifying_attributes: vec![],
         };
 
-        let serialized = serde_json::to_string(&desc).expect("Failed to serialize AgentDescription");
-        let deserialized: AgentDescription = serde_json::from_str(&serialized).expect("Failed to deserialize AgentDescription");
+        let serialized =
+            serde_json::to_string(&desc).expect("Failed to serialize AgentDescription");
+        let deserialized: AgentDescription =
+            serde_json::from_str(&serialized).expect("Failed to deserialize AgentDescription");
 
         assert_eq!(
             desc.identifying_attributes.len(),

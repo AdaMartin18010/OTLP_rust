@@ -2,15 +2,15 @@
 //!
 //! 包含使用Rust 1.90新特性的高性能组件实现
 
+pub mod memory_pool;
+pub mod object_pool;
 pub mod optimized_batch_processor;
 pub mod optimized_circuit_breaker;
 pub mod optimized_connection_pool;
 pub mod optimized_memory_pool;
-pub mod object_pool;
+pub mod quick_optimizations;
 pub mod simd_optimizations;
 pub mod zero_copy_simple;
-pub mod memory_pool;
-pub mod quick_optimizations;
 
 // 重新导出主要类型
 pub use optimized_circuit_breaker::{
@@ -37,19 +37,19 @@ pub use quick_optimizations::{
 };
 
 pub use object_pool::{
-    ObjectPool, ObjectPoolConfig, ObjectPoolError, ObjectPoolStats, PooledObject as ObjectPooledObject,
+    ObjectPool, ObjectPoolConfig, ObjectPoolError, ObjectPoolStats,
+    PooledObject as ObjectPooledObject,
 };
 
-pub use simd_optimizations::{
-    CpuFeatures, SimdConfig, SimdMonitor, SimdOptimizer, SimdStats,
-};
+pub use simd_optimizations::{CpuFeatures, SimdConfig, SimdMonitor, SimdOptimizer, SimdStats};
 
 pub use zero_copy_simple::{
     TransmissionError, TransmissionStats, ZeroCopyBuffer, ZeroCopyTransporter,
 };
 
 pub use memory_pool::{
-    MemoryBlock, MemoryPool, MemoryPoolConfig as MemoryPoolConfigV2, MemoryPoolManager, MemoryPoolStats as MemoryPoolStatsV2,
+    MemoryBlock, MemoryPool, MemoryPoolConfig as MemoryPoolConfigV2, MemoryPoolManager,
+    MemoryPoolStats as MemoryPoolStatsV2,
 };
 
 /// 性能优化配置
@@ -310,10 +310,19 @@ mod tests {
         let mut manager = PerformanceManager::new(config);
 
         // 初始化组件
-        manager.init_circuit_breaker().expect("Failed to initialize circuit breaker");
-        manager.init_memory_pool().await.expect("Failed to initialize memory pool");
-        manager.init_batch_processor().expect("Failed to initialize batch processor");
-        manager.init_connection_pool().expect("Failed to initialize connection pool");
+        manager
+            .init_circuit_breaker()
+            .expect("Failed to initialize circuit breaker");
+        manager
+            .init_memory_pool()
+            .await
+            .expect("Failed to initialize memory pool");
+        manager
+            .init_batch_processor()
+            .expect("Failed to initialize batch processor");
+        manager
+            .init_connection_pool()
+            .expect("Failed to initialize connection pool");
 
         // 验证组件已初始化
         assert!(manager.get_circuit_breaker().is_some());

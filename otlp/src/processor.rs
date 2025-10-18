@@ -336,7 +336,9 @@ impl OtlpProcessor {
         if input_rx.is_none() {
             return Ok(());
         }
-        let mut input_rx = input_rx.take().expect("Input receiver should exist after None check");
+        let mut input_rx = input_rx
+            .take()
+            .expect("Input receiver should exist after None check");
         let output_tx = self.output_sender.clone();
 
         tokio::spawn(async move {

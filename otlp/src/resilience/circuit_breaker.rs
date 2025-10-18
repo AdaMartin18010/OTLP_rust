@@ -4,8 +4,8 @@
 //! 参考: OTLP_Rust编程规范与实践指南.md 第3.1.1节
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
@@ -118,7 +118,9 @@ impl CircuitBreaker {
     /// 记录成功请求
     pub fn record_success(&self) {
         self.stats.total_requests.fetch_add(1, Ordering::Relaxed);
-        self.stats.successful_requests.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .successful_requests
+            .fetch_add(1, Ordering::Relaxed);
 
         match self.state() {
             CircuitState::Closed => {
@@ -225,7 +227,9 @@ impl CircuitBreaker {
     /// 转换到打开状态
     fn transition_to_open(&self) {
         self.state.store(1, Ordering::Release); // Open
-        self.stats.circuit_opened_count.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .circuit_opened_count
+            .fetch_add(1, Ordering::Relaxed);
     }
 
     /// 转换到半开状态
@@ -364,9 +368,7 @@ mod tests {
         let breaker = CircuitBreaker::new(config);
 
         // 测试成功操作
-        let result: Result<i32, anyhow::Error> = breaker
-            .execute(async { Ok(42) })
-            .await;
+        let result: Result<i32, anyhow::Error> = breaker.execute(async { Ok(42) }).await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 42);
         assert_eq!(breaker.state(), CircuitState::Closed);

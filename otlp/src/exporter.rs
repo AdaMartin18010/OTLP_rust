@@ -287,7 +287,9 @@ impl OtlpExporter {
         if receiver_opt.is_none() {
             return;
         }
-        let mut rx = receiver_opt.take().expect("Receiver should exist after None check");
+        let mut rx = receiver_opt
+            .take()
+            .expect("Receiver should exist after None check");
 
         tokio::spawn(async move {
             loop {
@@ -334,7 +336,9 @@ impl OtlpExporter {
                     if !RetryUtils::should_retry(
                         attempt,
                         self.config.retry_config.max_retries,
-                        last_error.as_ref().expect("Error should exist when checking retry"),
+                        last_error
+                            .as_ref()
+                            .expect("Error should exist when checking retry"),
                     ) {
                         break;
                     }

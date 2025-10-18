@@ -561,7 +561,10 @@ mod tests {
         // 添加项
         for i in 0..15 {
             let item = BatchItem::normal_priority(format!("item_{}", i), 100);
-            processor.add_item(item).await.expect("Failed to add item to processor");
+            processor
+                .add_item(item)
+                .await
+                .expect("Failed to add item to processor");
         }
 
         // 等待处理完成
@@ -717,7 +720,9 @@ mod tests {
             let processor_clone = processor.clone();
             let handle = tokio::spawn(async move {
                 let item = BatchItem::normal_priority(format!("item_{}", i), 100);
-                processor_clone.add_item(item).await
+                processor_clone
+                    .add_item(item)
+                    .await
                     .expect("Failed to add item in concurrent stress test");
             });
             handles.push(handle);
@@ -725,7 +730,8 @@ mod tests {
 
         // 等待所有任务完成
         for handle in handles {
-            handle.await
+            handle
+                .await
                 .expect("Concurrent task should complete successfully in stress test");
         }
 

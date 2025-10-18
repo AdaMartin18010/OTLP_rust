@@ -645,8 +645,7 @@ mod tests {
     #[tokio::test]
     async fn test_simple_transform() {
         let config = TransformConfig::new();
-        let transformer = OtlpTransform::new(config)
-            .expect("Failed to create OTLP transformer");
+        let transformer = OtlpTransform::new(config).expect("Failed to create OTLP transformer");
 
         let trace_data = TraceData {
             trace_id: "12345678901234567890123456789012".to_string(),
@@ -673,7 +672,10 @@ mod tests {
             content: TelemetryContent::Trace(trace_data),
         };
 
-        let result = transformer.transform(vec![telemetry_data]).await.expect("Failed to transform telemetry data");
+        let result = transformer
+            .transform(vec![telemetry_data])
+            .await
+            .expect("Failed to transform telemetry data");
         assert_eq!(result.stats.processed_count, 1);
         assert_eq!(result.stats.transformed_count, 1);
     }
@@ -714,7 +716,9 @@ mod tests {
             content: TelemetryContent::Trace(trace_data),
         };
 
-        let result = transformer.transform(vec![telemetry_data]).await
+        let result = transformer
+            .transform(vec![telemetry_data])
+            .await
             .expect("Failed to transform telemetry data");
         assert_eq!(result.stats.processed_count, 1);
         assert_eq!(result.stats.filtered_count, 1);

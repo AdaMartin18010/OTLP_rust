@@ -4,9 +4,9 @@
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use otlp::{
-    client::{ OtlpClientBuilder},
+    client::OtlpClientBuilder,
     config::{OtlpConfig, TransportProtocol},
-    data::{TelemetryData, TraceData, SpanKind, SpanStatus, AttributeValue},
+    data::{AttributeValue, SpanKind, SpanStatus, TelemetryData, TraceData},
 };
 use std::collections::HashMap;
 use std::hint::black_box;
@@ -27,14 +27,20 @@ fn create_test_telemetry_data(count: usize) -> Vec<TelemetryData> {
                 status: SpanStatus::default(),
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("service.name".to_string(), AttributeValue::String("test-service".to_string()));
-                    attrs.insert("operation".to_string(), AttributeValue::String(format!("operation-{}", i)));
+                    attrs.insert(
+                        "service.name".to_string(),
+                        AttributeValue::String("test-service".to_string()),
+                    );
+                    attrs.insert(
+                        "operation".to_string(),
+                        AttributeValue::String(format!("operation-{}", i)),
+                    );
                     attrs
                 },
                 events: vec![],
                 links: vec![],
             };
-            
+
             TelemetryData::trace(format!("test-span-{}", i))
         })
         .collect()
@@ -44,17 +50,17 @@ fn create_test_telemetry_data(count: usize) -> Vec<TelemetryData> {
 #[allow(unused_variables)]
 fn bench_client_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("client_creation");
-    
+
     group.bench_function("create_client", |b| {
         b.iter(|| {
             let config = OtlpConfig::default()
                 .with_endpoint("http://localhost:4317")
                 .with_protocol(TransportProtocol::Http);
-            
+
             black_box(OtlpClientBuilder::new())
         });
     });
-    
+
     group.finish();
 }
 
@@ -62,26 +68,30 @@ fn bench_client_creation(c: &mut Criterion) {
 #[allow(unused_variables)]
 fn bench_data_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("data_serialization");
-    
+
     let test_data = create_test_telemetry_data(1000);
-    
-    group.bench_with_input(BenchmarkId::new("serialize", 1000), &test_data, |b, data| {
-        b.iter(|| {
-            for item in data {
-                black_box(serde_json::to_string(item).unwrap());
-            }
-        });
-    });
-    
+
+    group.bench_with_input(
+        BenchmarkId::new("serialize", 1000),
+        &test_data,
+        |b, data| {
+            b.iter(|| {
+                for item in data {
+                    black_box(serde_json::to_string(item).unwrap());
+                }
+            });
+        },
+    );
+
     group.finish();
 }
 
 /// 基准测试：数据处理性能
 fn bench_data_processing(c: &mut Criterion) {
     let mut group = c.benchmark_group("data_processing");
-    
+
     let test_data = create_test_telemetry_data(10000);
-    
+
     group.bench_with_input(BenchmarkId::new("process", 10000), &test_data, |b, data| {
         b.iter(|| {
             let mut processed = 0;
@@ -95,7 +105,7 @@ fn bench_data_processing(c: &mut Criterion) {
             black_box(processed);
         });
     });
-    
+
     group.finish();
 }
 

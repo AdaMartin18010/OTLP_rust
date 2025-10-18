@@ -2,8 +2,8 @@
 //!
 //! 测试OTLP组件的集成功能和端到端场景
 
-use std::time::Duration;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::time::sleep;
 
 // 模拟OTLP客户端
@@ -112,20 +112,32 @@ async fn test_otlp_client_server_integration() {
 
     // 测试trace发送
     let trace_data = b"test trace data";
-    client.send_trace(trace_data).await.expect("Should send trace");
-    
+    client
+        .send_trace(trace_data)
+        .await
+        .expect("Should send trace");
+
     // 验证服务器接收到数据
-    server.handle_trace(trace_data.to_vec()).await.expect("Should handle trace");
+    server
+        .handle_trace(trace_data.to_vec())
+        .await
+        .expect("Should handle trace");
     let received_traces = server.get_received_traces();
     assert_eq!(received_traces.len(), 1);
     assert_eq!(received_traces[0], trace_data);
 
     // 测试metrics发送
     let metrics_data = b"test metrics data";
-    client.send_metrics(metrics_data).await.expect("Should send metrics");
-    
+    client
+        .send_metrics(metrics_data)
+        .await
+        .expect("Should send metrics");
+
     // 验证服务器接收到数据
-    server.handle_metrics(metrics_data.to_vec()).await.expect("Should handle metrics");
+    server
+        .handle_metrics(metrics_data.to_vec())
+        .await
+        .expect("Should handle metrics");
     let received_metrics = server.get_received_metrics();
     assert_eq!(received_metrics.len(), 1);
     assert_eq!(received_metrics[0], metrics_data);
@@ -133,9 +145,12 @@ async fn test_otlp_client_server_integration() {
     // 测试logs发送
     let logs_data = b"test logs data";
     client.send_logs(logs_data).await.expect("Should send logs");
-    
+
     // 验证服务器接收到数据
-    server.handle_logs(logs_data.to_vec()).await.expect("Should handle logs");
+    server
+        .handle_logs(logs_data.to_vec())
+        .await
+        .expect("Should handle logs");
     let received_logs = server.get_received_logs();
     assert_eq!(received_logs.len(), 1);
     assert_eq!(received_logs[0], logs_data);
@@ -147,7 +162,7 @@ async fn test_otlp_error_handling() {
 
     // 测试空数据错误处理
     let empty_data = b"";
-    
+
     let trace_result = client.send_trace(empty_data).await;
     assert!(trace_result.is_err());
     assert_eq!(trace_result.unwrap_err(), "Empty trace data");
@@ -181,7 +196,10 @@ async fn test_otlp_concurrent_operations() {
 
     // 等待所有操作完成
     for handle in handles {
-        handle.await.expect("Task should complete").expect("Should send trace");
+        handle
+            .await
+            .expect("Task should complete")
+            .expect("Should send trace");
     }
 
     // 验证服务器接收到所有数据
@@ -207,7 +225,10 @@ async fn test_otlp_data_validation() {
 
     // 测试有效数据
     let valid_trace = b"valid trace data";
-    server.handle_trace(valid_trace.to_vec()).await.expect("Should handle valid trace");
+    server
+        .handle_trace(valid_trace.to_vec())
+        .await
+        .expect("Should handle valid trace");
 
     // 测试无效数据
     let invalid_trace = b"";
@@ -224,7 +245,7 @@ async fn test_otlp_performance_under_load() {
     let client = Arc::new(MockOtlpClient::new("http://localhost:8080".to_string()));
 
     let start = std::time::Instant::now();
-    
+
     // 发送大量数据
     let mut handles = Vec::new();
     for i in 0..100 {
@@ -238,14 +259,17 @@ async fn test_otlp_performance_under_load() {
 
     // 等待所有操作完成
     for handle in handles {
-        handle.await.expect("Task should complete").expect("Should send trace");
+        handle
+            .await
+            .expect("Task should complete")
+            .expect("Should send trace");
     }
 
     let duration = start.elapsed();
-    
+
     // 验证性能要求（100个请求应该在1秒内完成）
     assert!(duration < Duration::from_secs(1));
-    
+
     // 验证服务器接收到所有数据
     let received_traces = server.get_received_traces();
     assert_eq!(received_traces.len(), 100);
@@ -258,9 +282,12 @@ async fn test_otlp_memory_usage() {
 
     // 发送大量数据测试内存使用
     let large_data = vec![0u8; 1024 * 1024]; // 1MB数据
-    
+
     for _ in 0..10 {
-        server.handle_trace(large_data.clone()).await.expect("Should handle large trace");
+        server
+            .handle_trace(large_data.clone())
+            .await
+            .expect("Should handle large trace");
     }
 
     // 验证服务器正确处理了大量数据
@@ -281,7 +308,10 @@ async fn test_otlp_graceful_shutdown() {
     client.send_trace(data).await.expect("Should send trace");
 
     // 模拟优雅关闭
-    server.handle_trace(data.to_vec()).await.expect("Should handle trace");
+    server
+        .handle_trace(data.to_vec())
+        .await
+        .expect("Should handle trace");
 
     // 验证数据被正确处理
     let received_traces = server.get_received_traces();
@@ -324,5 +354,8 @@ async fn test_otlp_retry_mechanism() {
         }
     }
 
-    assert!(attempts < max_attempts, "Should succeed within max attempts");
+    assert!(
+        attempts < max_attempts,
+        "Should succeed within max attempts"
+    );
 }

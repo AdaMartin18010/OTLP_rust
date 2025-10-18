@@ -2,12 +2,10 @@
 //!
 //! 展示如何使用 OTLP Rust 的弹性机制来处理各种异常情况。
 
-use otlp::resilience::{
-    CircuitBreakerConfig, RetryConfig, RetryStrategy, TimeoutConfig,
-};
+use anyhow;
+use otlp::resilience::{CircuitBreakerConfig, RetryConfig, RetryStrategy, TimeoutConfig};
 use otlp::{ResilienceConfig, ResilienceManager, Result};
 use std::time::Duration;
-use anyhow;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -46,7 +44,9 @@ async fn basic_resilience_example() -> Result<()> {
     let manager = ResilienceManager::new();
 
     // 使用断路器直接执行操作
-    let breaker = manager.get_or_create_circuit_breaker("basic_operation", CircuitBreakerConfig::default()).await;
+    let breaker = manager
+        .get_or_create_circuit_breaker("basic_operation", CircuitBreakerConfig::default())
+        .await;
     let result = breaker
         .execute(async {
             println!("  执行基本操作...");
@@ -88,7 +88,9 @@ async fn custom_retry_example() -> Result<()> {
 
     // 模拟一个会失败几次的操作
     let attempt = 0;
-    let retrier = manager.get_or_create_retrier("retry_operation", RetryConfig::default()).await;
+    let retrier = manager
+        .get_or_create_retrier("retry_operation", RetryConfig::default())
+        .await;
     let result = retrier
         .execute(move || {
             let mut attempt = attempt;
@@ -136,7 +138,9 @@ async fn circuit_breaker_example() -> Result<()> {
         println!("  第 {} 次调用:", i);
 
         let i = i; // 复制变量
-        let breaker = manager.get_or_create_circuit_breaker("circuit_breaker", CircuitBreakerConfig::default()).await;
+        let breaker = manager
+            .get_or_create_circuit_breaker("circuit_breaker", CircuitBreakerConfig::default())
+            .await;
         let result = breaker
             .execute(async move {
                 if i <= 3 {
@@ -172,7 +176,9 @@ async fn graceful_degradation_example() -> Result<()> {
     let manager = ResilienceManager::new();
 
     // 模拟高延迟操作
-    let timeout = manager.get_or_create_timeout("timeout", TimeoutConfig::default()).await;
+    let timeout = manager
+        .get_or_create_timeout("timeout", TimeoutConfig::default())
+        .await;
     let result = timeout
         .execute::<_, String, anyhow::Error>(async {
             println!("  执行慢操作...");
@@ -208,7 +214,9 @@ async fn error_handling_example() -> Result<()> {
     for (name, error_type) in error_types {
         println!("  测试 {}:", name);
 
-        let breaker = manager.get_or_create_circuit_breaker("error_test", CircuitBreakerConfig::default()).await;
+        let breaker = manager
+            .get_or_create_circuit_breaker("error_test", CircuitBreakerConfig::default())
+            .await;
         let result = breaker
             .execute(async move {
                 let error_type = error_type.to_string();
@@ -242,7 +250,6 @@ fn create_timeout_config() -> TimeoutConfig {
         adaptive_factor: 1.5,
     }
 }
-
 
 #[cfg(test)]
 mod tests {
