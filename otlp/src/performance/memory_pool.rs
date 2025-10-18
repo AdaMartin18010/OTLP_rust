@@ -100,8 +100,12 @@ impl MemoryPool {
             blocks.push_back(MemoryBlock::new(1024)); // 默认1KB块
         }
 
+        let stats = MemoryPoolStats::default();
+        // 设置初始池大小
+        stats.current_pool_size.store(config.initial_size, Ordering::Relaxed);
+
         Self {
-            stats: Arc::new(MemoryPoolStats::default()),
+            stats: Arc::new(stats),
             blocks: Arc::new(Mutex::new(blocks)),
             last_cleanup: Arc::new(Mutex::new(Instant::now())),
             config,
