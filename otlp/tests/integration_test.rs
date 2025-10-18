@@ -18,7 +18,7 @@
 
 use otlp::core::EnhancedOtlpClient;
 use opentelemetry::{
-    trace::{Tracer, Status},
+    trace::{Tracer, Span, Status},
     KeyValue,
 };
 use std::time::Duration;
@@ -28,7 +28,7 @@ use std::time::Duration;
 #[ignore] // 默认跳过，需要手动运行
 async fn test_basic_span_export() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 测试: 基本 Span 导出");
-    println!("=" .repeat(50));
+    println!("{}", "=".repeat(50));
     
     // 创建客户端
     println!("📝 创建客户端...");
@@ -46,12 +46,12 @@ async fn test_basic_span_export() -> Result<(), Box<dyn std::error::Error>> {
     
     // 创建 span
     println!("📝 创建 Span...");
-    let span = tracer.start("test-operation");
+    let _span = tracer.start("test-operation");
     
     // 模拟工作
     tokio::time::sleep(Duration::from_millis(100)).await;
     
-    drop(span);
+    drop(_span);
     println!("✅ Span 已创建和结束");
     
     // 等待导出
@@ -64,6 +64,9 @@ async fn test_basic_span_export() -> Result<(), Box<dyn std::error::Error>> {
     println!("  - 导出的 spans: {}", stats.spans_exported);
     println!("  - 导出错误: {}", stats.export_errors);
     println!("  - 平均导出时间: {}ms", stats.avg_export_time_ms);
+    
+    // 释放 tracer 的借用
+    drop(tracer);
     
     // 关闭客户端
     println!("\n📝 关闭客户端...");
@@ -79,7 +82,7 @@ async fn test_basic_span_export() -> Result<(), Box<dyn std::error::Error>> {
 #[ignore]
 async fn test_nested_spans() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 测试: 嵌套 Spans");
-    println!("=" .repeat(50));
+    println!("{}", "=".repeat(50));
     
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
@@ -90,23 +93,26 @@ async fn test_nested_spans() -> Result<(), Box<dyn std::error::Error>> {
     let tracer = client.tracer("nested-tracer");
     
     println!("📝 创建父 Span...");
-    let parent = tracer.start("parent-operation");
+    let _parent = tracer.start("parent-operation");
     
     // 子 spans
     for i in 0..3 {
         println!("📝 创建子 Span {}...", i);
-        let child = tracer.start(format!("child-operation-{}", i));
+        let _child = tracer.start(format!("child-operation-{}", i));
         tokio::time::sleep(Duration::from_millis(50)).await;
-        drop(child);
+        drop(_child);
     }
     
-    drop(parent);
+    drop(_parent);
     println!("✅ 所有 Spans 创建完成");
     
     tokio::time::sleep(Duration::from_secs(2)).await;
     
     let stats = client.stats().await;
     println!("\n📊 导出的 spans: {}", stats.spans_exported);
+    
+    // 释放 tracer
+    drop(tracer);
     
     client.shutdown().await?;
     println!("✅ 测试完成\n");
@@ -119,7 +125,7 @@ async fn test_nested_spans() -> Result<(), Box<dyn std::error::Error>> {
 #[ignore]
 async fn test_span_attributes_and_events() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 测试: Span 属性和事件");
-    println!("=" .repeat(50));
+    println!("{}", "=".repeat(50));
     
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
@@ -158,6 +164,9 @@ async fn test_span_attributes_and_events() -> Result<(), Box<dyn std::error::Err
     
     tokio::time::sleep(Duration::from_secs(2)).await;
     
+    // 释放 tracer
+    drop(tracer);
+    
     client.shutdown().await?;
     println!("✅ 测试完成\n");
     
@@ -169,7 +178,7 @@ async fn test_span_attributes_and_events() -> Result<(), Box<dyn std::error::Err
 #[ignore]
 async fn test_concurrent_spans() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 测试: 并发 Spans (10个任务)");
-    println!("=" .repeat(50));
+    println!("{}", "=".repeat(50));
     
     use std::sync::Arc;
     
@@ -189,11 +198,13 @@ async fn test_concurrent_spans() -> Result<(), Box<dyn std::error::Error>> {
         let client_clone = Arc::clone(&client);
         let handle = tokio::spawn(async move {
             let tracer = client_clone.tracer(format!("worker-{}", i));
-            let span = tracer.start(format!("concurrent-task-{}", i));
+            {
+                let _span = tracer.start(format!("concurrent-task-{}", i));
+                // 在 await 之前 drop span
+                drop(_span);
+            }
             
             tokio::time::sleep(Duration::from_millis(100)).await;
-            
-            drop(span);
         });
         
         handles.push(handle);
@@ -212,7 +223,15 @@ async fn test_concurrent_spans() -> Result<(), Box<dyn std::error::Error>> {
     let stats = client.stats().await;
     println!("\n📊 总共导出 {} 个 spans", stats.spans_exported);
     
-    client.shutdown().await?;
+    // 从 Arc 中取出 client 进行 shutdown
+    match Arc::try_unwrap(client) {
+        Ok(client) => {
+            client.shutdown().await?;
+        }
+        Err(_) => {
+            println!("⚠️  无法获取 client 所有权，跳过 shutdown");
+        }
+    }
     println!("✅ 测试完成\n");
     
     Ok(())
@@ -223,7 +242,7 @@ async fn test_concurrent_spans() -> Result<(), Box<dyn std::error::Error>> {
 #[ignore]
 async fn test_error_handling() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 测试: 错误处理");
-    println!("=" .repeat(50));
+    println!("{}", "=".repeat(50));
     
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
@@ -245,6 +264,9 @@ async fn test_error_handling() -> Result<(), Box<dyn std::error::Error>> {
     
     tokio::time::sleep(Duration::from_secs(2)).await;
     
+    // 释放 tracer
+    drop(tracer);
+    
     client.shutdown().await?;
     println!("✅ 测试完成\n");
     
@@ -256,7 +278,7 @@ async fn test_error_handling() -> Result<(), Box<dyn std::error::Error>> {
 #[ignore]
 async fn test_high_volume_spans() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 测试: 高容量 Spans (1000个)");
-    println!("=" .repeat(50));
+    println!("{}", "=".repeat(50));
     
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
@@ -272,8 +294,8 @@ async fn test_high_volume_spans() -> Result<(), Box<dyn std::error::Error>> {
     // 创建 1000 个 spans
     println!("📝 创建 1000 个 Spans...");
     for i in 0..1000 {
-        let span = tracer.start(format!("span-{}", i));
-        drop(span);
+        let _span = tracer.start(format!("span-{}", i));
+        drop(_span);
         
         if (i + 1) % 100 == 0 {
             print!(".");
@@ -294,6 +316,9 @@ async fn test_high_volume_spans() -> Result<(), Box<dyn std::error::Error>> {
     println!("  - 导出错误: {}", stats.export_errors);
     println!("  - 平均导出时间: {}ms", stats.avg_export_time_ms);
     
+    // 释放 tracer
+    drop(tracer);
+    
     client.shutdown().await?;
     println!("✅ 测试完成\n");
     
@@ -305,14 +330,14 @@ async fn test_high_volume_spans() -> Result<(), Box<dyn std::error::Error>> {
 #[ignore]
 async fn test_client_configuration() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧪 测试: 客户端配置");
-    println!("=" .repeat(50));
+    println!("{}", "=".repeat(50));
     
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
         .with_service_name("integration-test-config")
         .with_timeout(Duration::from_secs(30))
         .with_performance_optimization(true)
-        .with_reliability_enhancement(true)
+        .with_resilience_enabled(true)
         .build()
         .await?;
     
