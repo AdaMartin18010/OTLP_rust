@@ -192,7 +192,7 @@
 ### 关键学习
 
 1. 异步Drop需要特殊处理
-2. Arc<T>和Arc<RwLock<T>>的使用场景
+2. `Arc<T>`和`Arc<RwLock<T>>`的使用场景
 3. LIFO vs FIFO在对象池中的性能影响
 4. 测试环境的重要性
 

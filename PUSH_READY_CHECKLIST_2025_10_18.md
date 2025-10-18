@@ -34,7 +34,7 @@
 
 ### 已完成的提交 (11个)
 
-```
+```text
 1. 41936a4 - docs: 添加最终完成报告 2025-10-18
 2. 7dea8c0 - style: 统一代码格式化 (cargo fmt)
 3. 09af8e2 - docs: 添加工作会话总结 2025-10-18
@@ -93,7 +93,7 @@ git push origin feature/test-fixes-quality-improvements
 
 ### 代码变更统计
 
-```
+```text
 修改的文件:      77个
 新增文件:        4个 (报告文档)
 删除文件:        0个
@@ -196,7 +196,7 @@ git log origin/main --oneline -10
 
 ### 推送成功标志
 
-```
+```text
 Enumerating objects: XX, done.
 Counting objects: 100% (XX/XX), done.
 Delta compression using up to N threads
