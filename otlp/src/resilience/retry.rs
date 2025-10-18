@@ -256,7 +256,7 @@ impl Retrier {
                 max_interval,
                 increment,
             } => {
-                let interval = *initial_interval + *increment * (attempt - 1) as u32;
+                let interval = *initial_interval + *increment * ((attempt - 1));
                 interval.min(*max_interval)
             }
 

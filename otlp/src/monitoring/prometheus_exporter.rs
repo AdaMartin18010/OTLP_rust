@@ -338,16 +338,16 @@ impl PrometheusExporter {
 
         // 添加样本数据
         for sample in &metric.samples {
-            output.push_str(&format!("{}", sample.name));
+            output.push_str(&sample.name.to_string());
 
             if !sample.labels.is_empty() {
-                output.push_str("{");
+                output.push('{');
                 let mut label_pairs = Vec::new();
                 for (key, value) in &sample.labels {
                     label_pairs.push(format!("{}=\"{}\"", key, value));
                 }
                 output.push_str(&label_pairs.join(","));
-                output.push_str("}");
+                output.push('}');
             }
 
             output.push_str(&format!(" {}", sample.value));
@@ -356,7 +356,7 @@ impl PrometheusExporter {
                 output.push_str(&format!(" {}", timestamp));
             }
 
-            output.push_str("\n");
+            output.push('\n');
         }
 
         // 这里应该将 output 发送到实际的导出目标

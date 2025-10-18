@@ -379,7 +379,7 @@ impl OtlpExporter {
         data: Vec<TelemetryData>,
     ) -> Result<ExportResult> {
         // 简化实现：模拟发送成功并返回计时
-        let (_unit_ignored, duration) = PerformanceUtils::measure_time(async { () }).await;
+        let (_unit_ignored, duration) = PerformanceUtils::measure_time(async {  }).await;
         Ok(ExportResult::success(data.len(), duration))
     }
 

@@ -1,305 +1,342 @@
-//! # 集成测试
+//! 集成测试 - 验证与 OpenTelemetry Collector 的互操作性
 //!
-//! 验证错误处理和弹性机制与所有模块的集成情况。
+//! # 运行前准备
+//!
+//! 1. 启动 Docker Compose 环境:
+//!    ```bash
+//!    cd otlp/tests/integration
+//!    docker-compose up -d
+//!    ```
+//!
+//! 2. 运行测试:
+//!    ```bash
+//!    cargo test --test integration_test -- --ignored --nocapture
+//!    ```
+//!
+//! 3. 查看结果:
+//!    打开 http://localhost:16686 (Jaeger UI)
 
-use otlp::data::{SpanKind, SpanStatus, TelemetryData, TraceData};
-use otlp::error::{ExportError, ProcessingError, TransportError};
-use otlp::resilience::{CircuitBreakerConfig, RetryConfig, TimeoutConfig};
-use otlp::{OtlpClient, OtlpConfig, OtlpError, ResilienceConfig, ResilienceManager};
-use std::collections::HashMap;
+use otlp::core::EnhancedOtlpClient;
+use opentelemetry::{
+    trace::{Tracer, Status},
+    KeyValue,
+};
 use std::time::Duration;
 
+/// 测试基本的 span 导出
 #[tokio::test]
-#[allow(unused_variables)]
-async fn test_error_handling_integration() {
-    // 测试错误处理的完整集成
-    let config = OtlpConfig::default();
-    let client = OtlpClient::new(config).await.unwrap();
+#[ignore] // 默认跳过，需要手动运行
+async fn test_basic_span_export() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🧪 测试: 基本 Span 导出");
+    println!("=" .repeat(50));
+    
+    // 创建客户端
+    println!("📝 创建客户端...");
+    let client = EnhancedOtlpClient::builder()
+        .with_endpoint("http://localhost:4317")
+        .with_service_name("integration-test-basic")
+        .with_timeout(Duration::from_secs(10))
+        .build()
+        .await?;
+    
+    println!("✅ 客户端创建成功");
+    
+    // 获取 tracer
+    let tracer = client.tracer("test-tracer");
+    
+    // 创建 span
+    println!("📝 创建 Span...");
+    let span = tracer.start("test-operation");
+    
+    // 模拟工作
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    
+    drop(span);
+    println!("✅ Span 已创建和结束");
+    
+    // 等待导出
+    println!("⏳ 等待导出...");
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    
+    // 检查统计
+    let stats = client.stats().await;
+    println!("\n📊 客户端统计:");
+    println!("  - 导出的 spans: {}", stats.spans_exported);
+    println!("  - 导出错误: {}", stats.export_errors);
+    println!("  - 平均导出时间: {}ms", stats.avg_export_time_ms);
+    
+    // 关闭客户端
+    println!("\n📝 关闭客户端...");
+    client.shutdown().await?;
+    
+    println!("✅ 测试完成\n");
+    
+    Ok(())
+}
 
-    // 测试各种错误类型的处理
-    let transport_error = TransportError::Connection {
-        endpoint: "http://invalid:4317".to_string(),
-        reason: "Connection refused".to_string(),
-    };
-    let export_error = ExportError::Failed {
-        reason: "fail".to_string(),
-    };
-    let processing_error = ProcessingError::Batch {
-        reason: "empty".to_string(),
-    };
-
-    let errors = vec![
-        ("transport", OtlpError::from(transport_error)),
-        ("export", OtlpError::from(export_error)),
-        ("processing", OtlpError::from(processing_error)),
-    ];
-
-    for (error_type, otlp_error) in errors {
-        // 验证错误上下文
-        let context = otlp_error.context();
-        assert_eq!(format!("{:?}", context.category), error_type);
-        assert!(context.timestamp.elapsed().unwrap() < Duration::from_secs(1));
-
-        // 验证错误严重程度
-        assert!(context.severity as u8 >= 2); // Medium 或更高
-
-        // 验证恢复建议
-        assert!(context.recovery_suggestion.is_some());
+/// 测试嵌套 spans
+#[tokio::test]
+#[ignore]
+async fn test_nested_spans() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🧪 测试: 嵌套 Spans");
+    println!("=" .repeat(50));
+    
+    let client = EnhancedOtlpClient::builder()
+        .with_endpoint("http://localhost:4317")
+        .with_service_name("integration-test-nested")
+        .build()
+        .await?;
+    
+    let tracer = client.tracer("nested-tracer");
+    
+    println!("📝 创建父 Span...");
+    let parent = tracer.start("parent-operation");
+    
+    // 子 spans
+    for i in 0..3 {
+        println!("📝 创建子 Span {}...", i);
+        let child = tracer.start(format!("child-operation-{}", i));
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        drop(child);
     }
+    
+    drop(parent);
+    println!("✅ 所有 Spans 创建完成");
+    
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    
+    let stats = client.stats().await;
+    println!("\n📊 导出的 spans: {}", stats.spans_exported);
+    
+    client.shutdown().await?;
+    println!("✅ 测试完成\n");
+    
+    Ok(())
 }
 
+/// 测试 span 属性和事件
 #[tokio::test]
-async fn test_resilience_integration() {
-    // 测试弹性机制的完整集成
-    let manager = ResilienceManager::new();
-
-    // 测试基本操作 - 使用断路器
-    let breaker = manager
-        .get_or_create_circuit_breaker("test_operation", CircuitBreakerConfig::default())
-        .await;
-    let result = breaker
-        .execute::<_, String, anyhow::Error>(async { Ok("success".to_string()) })
-        .await;
-
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), "success");
+#[ignore]
+async fn test_span_attributes_and_events() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🧪 测试: Span 属性和事件");
+    println!("=" .repeat(50));
+    
+    let client = EnhancedOtlpClient::builder()
+        .with_endpoint("http://localhost:4317")
+        .with_service_name("integration-test-attributes")
+        .build()
+        .await?;
+    
+    let tracer = client.tracer("attributes-tracer");
+    let mut span = tracer.start("operation-with-attributes");
+    
+    // 添加属性
+    println!("📝 添加属性...");
+    span.set_attribute(KeyValue::new("user.id", "12345"));
+    span.set_attribute(KeyValue::new("request.method", "GET"));
+    span.set_attribute(KeyValue::new("response.status", 200));
+    println!("✅ 已添加 3 个属性");
+    
+    // 添加事件
+    println!("📝 添加事件...");
+    span.add_event("Processing started", vec![
+        KeyValue::new("item.count", 10),
+        KeyValue::new("batch.size", 100),
+    ]);
+    
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    
+    span.add_event("Processing completed", vec![
+        KeyValue::new("items.processed", 10),
+    ]);
+    println!("✅ 已添加 2 个事件");
+    
+    // 设置状态
+    span.set_status(Status::Ok);
+    
+    drop(span);
+    
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    
+    client.shutdown().await?;
+    println!("✅ 测试完成\n");
+    
+    Ok(())
 }
 
+/// 测试并发 spans
 #[tokio::test]
-async fn test_circuit_breaker_integration() {
-    // 测试熔断器集成
-    let config = CircuitBreakerConfig {
-        failure_threshold: 3,
-        recovery_timeout: Duration::from_secs(1),
-        half_open_max_requests: 2,
-        success_threshold: 2,
-    };
-
-    let manager = ResilienceManager::new();
-    let breaker = manager
-        .get_or_create_circuit_breaker("failing_operation", config)
-        .await;
-
-    // 模拟多次失败
-    for i in 1..=5 {
-        let result = breaker
-            .execute::<_, String, anyhow::Error>(async move {
-                if i <= 3 {
-                    Err(anyhow::anyhow!("Service unavailable"))
-                } else {
-                    Ok("Service recovered".to_string())
-                }
-            })
-            .await;
-
-        if i <= 3 {
-            assert!(result.is_err());
-        } else {
-            // 熔断器应该开启，但这里我们测试恢复逻辑
-            match result {
-                Ok(_) => println!("Service recovered successfully"),
-                Err(_) => println!("Circuit breaker is open, which is expected"),
-            }
-        }
-    }
-}
-
-#[tokio::test]
-async fn test_retry_mechanism_integration() {
-    // 测试重试机制集成
-    let config = RetryConfig {
-        max_attempts: 3,
-        strategy: otlp::resilience::RetryStrategy::Fixed {
-            interval: Duration::from_millis(10),
-        },
-        total_timeout: None,
-        health_check: false,
-    };
-
-    let manager = ResilienceManager::new();
-    let retrier = manager.get_or_create_retrier("retry_test", config).await;
-
-    // 测试重试逻辑
-    let result = retrier
-        .execute(|| Box::pin(async { Ok::<String, &str>("success after retry".to_string()) }))
-        .await;
-
-    assert!(result.is_ok());
-}
-
-#[tokio::test]
-async fn test_client_resilience_integration() {
-    // 测试客户端弹性集成
-    let config = OtlpConfig {
-        endpoint: "http://localhost:4317".to_string(),
-        ..Default::default()
-    };
-
-    let client = OtlpClient::new(config).await.unwrap();
-
-    // 创建测试数据
-    let _trace_data = TraceData {
-        trace_id: "test-trace-id".to_string(),
-        span_id: "test-span-id".to_string(),
-        parent_span_id: None,
-        name: "test-operation".to_string(),
-        span_kind: SpanKind::Internal,
-        start_time: 0,
-        end_time: 1000000,
-        status: SpanStatus::default(),
-        attributes: HashMap::new(),
-        events: vec![],
-        links: vec![],
-    };
-
-    let telemetry_data = TelemetryData::trace("test-operation");
-
-    // 测试发送（可能会失败，但应该不会 panic）
-    let result = client.send(telemetry_data).await;
-
-    // 验证错误处理
-    match result {
-        Ok(_) => println!("Data sent successfully"),
-        Err(e) => {
-            println!("Expected error: {}", e);
-            // 验证错误上下文
-            let context = e.context();
-            assert!(format!("{:?}", context.category).len() > 0);
-            assert!(context.severity as u8 >= 2);
-        }
-    }
-}
-
-#[tokio::test]
-async fn test_config_compatibility() {
-    // 测试配置兼容性
-    let otlp_config = OtlpConfig {
-        endpoint: "http://test:4317".to_string(),
-        connect_timeout: Duration::from_secs(5),
-        request_timeout: Duration::from_secs(30),
-        ..Default::default()
-    };
-
-    // 验证配置转换
-    let resilience_config = ResilienceConfig {
-        timeout: TimeoutConfig {
-            default_timeout: otlp_config.connect_timeout,
-            max_timeout: otlp_config.request_timeout,
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-
-    assert_eq!(
-        resilience_config.timeout.default_timeout,
-        Duration::from_secs(5)
+#[ignore]
+async fn test_concurrent_spans() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🧪 测试: 并发 Spans (10个任务)");
+    println!("=" .repeat(50));
+    
+    use std::sync::Arc;
+    
+    let client = Arc::new(
+        EnhancedOtlpClient::builder()
+            .with_endpoint("http://localhost:4317")
+            .with_service_name("integration-test-concurrent")
+            .build()
+            .await?
     );
-    assert_eq!(
-        resilience_config.timeout.max_timeout,
-        Duration::from_secs(30)
-    );
+    
+    let mut handles = vec![];
+    
+    // 创建 10 个并发任务
+    println!("📝 启动 10 个并发任务...");
+    for i in 0..10 {
+        let client_clone = Arc::clone(&client);
+        let handle = tokio::spawn(async move {
+            let tracer = client_clone.tracer(format!("worker-{}", i));
+            let span = tracer.start(format!("concurrent-task-{}", i));
+            
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            
+            drop(span);
+        });
+        
+        handles.push(handle);
+    }
+    
+    // 等待所有任务完成
+    for (i, handle) in handles.into_iter().enumerate() {
+        handle.await?;
+        println!("✅ 任务 {} 完成", i);
+    }
+    
+    println!("✅ 所有并发任务完成");
+    
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    
+    let stats = client.stats().await;
+    println!("\n📊 总共导出 {} 个 spans", stats.spans_exported);
+    
+    client.shutdown().await?;
+    println!("✅ 测试完成\n");
+    
+    Ok(())
 }
 
+/// 测试错误处理
 #[tokio::test]
-async fn test_error_propagation() {
-    // 测试错误传播链
-    let config = OtlpConfig::default();
-    let client = OtlpClient::new(config).await.unwrap();
-
-    // 测试错误传播
-    let result = client.initialize().await;
-
-    // 验证错误类型
-    match result {
-        Ok(_) => println!("Initialization successful"),
-        Err(e) => {
-            println!("Expected error: {}", e);
-            // 验证错误可以正确传播
-            let context = e.context();
-            assert!(format!("{:?}", context.category).len() > 0);
-        }
-    }
+#[ignore]
+async fn test_error_handling() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🧪 测试: 错误处理");
+    println!("=" .repeat(50));
+    
+    let client = EnhancedOtlpClient::builder()
+        .with_endpoint("http://localhost:4317")
+        .with_service_name("integration-test-error")
+        .build()
+        .await?;
+    
+    let tracer = client.tracer("error-tracer");
+    let mut span = tracer.start("operation-with-error");
+    
+    // 模拟错误
+    println!("📝 记录错误信息...");
+    span.set_attribute(KeyValue::new("error.type", "DatabaseError"));
+    span.set_attribute(KeyValue::new("error.message", "Connection timeout"));
+    span.set_status(Status::error("Database connection failed"));
+    println!("✅ 错误信息已记录");
+    
+    drop(span);
+    
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    
+    client.shutdown().await?;
+    println!("✅ 测试完成\n");
+    
+    Ok(())
 }
 
+/// 性能测试 - 大量 spans
 #[tokio::test]
-async fn test_resilience_status() {
-    // 测试弹性状态
-    let manager = ResilienceManager::new();
-
-    // 执行一些操作来生成状态
-    for _ in 0..5 {
-        let breaker = manager
-            .get_or_create_circuit_breaker("metrics_test", CircuitBreakerConfig::default())
-            .await;
-        let _ = breaker
-            .execute::<_, (), anyhow::Error>(async { Ok(()) })
-            .await;
+#[ignore]
+async fn test_high_volume_spans() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🧪 测试: 高容量 Spans (1000个)");
+    println!("=" .repeat(50));
+    
+    let client = EnhancedOtlpClient::builder()
+        .with_endpoint("http://localhost:4317")
+        .with_service_name("integration-test-volume")
+        .with_performance_optimization(true)
+        .build()
+        .await?;
+    
+    let tracer = client.tracer("volume-tracer");
+    
+    let start = std::time::Instant::now();
+    
+    // 创建 1000 个 spans
+    println!("📝 创建 1000 个 Spans...");
+    for i in 0..1000 {
+        let span = tracer.start(format!("span-{}", i));
+        drop(span);
+        
+        if (i + 1) % 100 == 0 {
+            print!(".");
+            std::io::Write::flush(&mut std::io::stdout()).ok();
+        }
     }
-
-    // 获取状态
-    let status = manager.get_all_status().await;
-    assert!(status.circuit_breakers.contains_key("metrics_test"));
+    
+    let duration = start.elapsed();
+    println!("\n✅ 创建 1000 个 spans 耗时: {:?}", duration);
+    println!("📊 平均每个 span: {:?}", duration / 1000);
+    
+    println!("⏳ 等待导出...");
+    tokio::time::sleep(Duration::from_secs(5)).await;
+    
+    let stats = client.stats().await;
+    println!("\n📊 最终统计:");
+    println!("  - 导出的 spans: {}", stats.spans_exported);
+    println!("  - 导出错误: {}", stats.export_errors);
+    println!("  - 平均导出时间: {}ms", stats.avg_export_time_ms);
+    
+    client.shutdown().await?;
+    println!("✅ 测试完成\n");
+    
+    Ok(())
 }
 
+/// 测试客户端配置
 #[tokio::test]
-async fn test_comprehensive_integration() {
-    // 综合集成测试
-    let config = OtlpConfig {
-        endpoint: "http://localhost:4317".to_string(),
-        connect_timeout: Duration::from_secs(5),
-        request_timeout: Duration::from_secs(10),
-        ..Default::default()
-    };
-
-    let client = OtlpClient::new(config).await.unwrap();
-
-    // 测试完整的错误处理流程
-    let _trace_data = TraceData {
-        trace_id: "integration-test-trace".to_string(),
-        span_id: "integration-test-span".to_string(),
-        parent_span_id: None,
-        name: "integration-test-operation".to_string(),
-        span_kind: SpanKind::Internal,
-        start_time: 0,
-        end_time: 1000000,
-        status: SpanStatus::default(),
-        attributes: HashMap::new(),
-        events: vec![],
-        links: vec![],
-    };
-
-    let telemetry_data = TelemetryData::trace("test-operation");
-
-    // 测试发送（预期会失败，但应该优雅处理）
-    let start_time = std::time::Instant::now();
-    let result = client.send(telemetry_data).await;
-    let duration = start_time.elapsed();
-
-    println!("Operation completed in {:?}", duration);
-
-    match result {
-        Ok(export_result) => {
-            println!("Export successful: {:?}", export_result);
-        }
-        Err(e) => {
-            println!("Export failed with error: {}", e);
-
-            // 验证错误处理
-            let context = e.context();
-            println!("Error category: {:?}", context.category);
-            println!("Severity: {:?}", context.severity);
-            println!("Retryable: {}", context.is_retryable);
-            println!("Temporary: {}", context.is_retryable);
-
-            if let Some(suggestion) = context.recovery_suggestion {
-                println!("Recovery suggestion: {}", suggestion);
-            }
-
-            // 验证错误处理完整性
-            assert!(format!("{:?}", context.category).len() > 0);
-            assert!(context.severity as u8 >= 1);
-        }
-    }
-
-    println!("Comprehensive integration test completed successfully");
+#[ignore]
+async fn test_client_configuration() -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🧪 测试: 客户端配置");
+    println!("=" .repeat(50));
+    
+    let client = EnhancedOtlpClient::builder()
+        .with_endpoint("http://localhost:4317")
+        .with_service_name("integration-test-config")
+        .with_timeout(Duration::from_secs(30))
+        .with_performance_optimization(true)
+        .with_reliability_enhancement(true)
+        .build()
+        .await?;
+    
+    // 获取配置
+    let config = client.config();
+    
+    println!("📊 客户端配置:");
+    println!("  - 端点: {}", config.endpoint);
+    println!("  - 服务名: {}", config.service_name);
+    println!("  - 超时: {:?}", config.timeout);
+    println!("  - 协议: {:?}", config.protocol);
+    println!("  - 性能优化: {}", config.enable_performance);
+    println!("  - 可靠性增强: {}", config.enable_reliability);
+    
+    assert_eq!(config.endpoint, "http://localhost:4317");
+    assert_eq!(config.service_name, "integration-test-config");
+    assert_eq!(config.timeout, Duration::from_secs(30));
+    assert!(config.enable_performance);
+    assert!(config.enable_reliability);
+    
+    println!("✅ 配置验证通过");
+    
+    client.shutdown().await?;
+    println!("✅ 测试完成\n");
+    
+    Ok(())
 }

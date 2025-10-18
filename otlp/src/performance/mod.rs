@@ -54,6 +54,7 @@ pub use memory_pool::{
 
 /// 性能优化配置
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct PerformanceConfig {
     /// 熔断器配置
     pub circuit_breaker: CircuitBreakerConfig,
@@ -95,19 +96,6 @@ impl Default for ZeroCopyConfig {
     }
 }
 
-impl Default for PerformanceConfig {
-    fn default() -> Self {
-        Self {
-            circuit_breaker: CircuitBreakerConfig::default(),
-            memory_pool: MemoryPoolConfig::default(),
-            batch_processor: BatchProcessorConfig::default(),
-            connection_pool: ConnectionPoolConfig::default(),
-            object_pool: ObjectPoolConfig::default(),
-            simd: SimdConfig::default(),
-            zero_copy: ZeroCopyConfig::default(),
-        }
-    }
-}
 
 /// 性能优化管理器
 ///

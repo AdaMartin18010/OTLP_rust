@@ -3,9 +3,9 @@
 //! 本模块提供基于官方库的增强实现，保证 OTLP 标准兼容性。
 
 use opentelemetry::{global, trace::TracerProvider, KeyValue};
-use opentelemetry_otlp::{SpanExporter, WithExportConfig, Protocol};
+use opentelemetry_otlp::Protocol;
 use opentelemetry_sdk::{
-    trace::{Config, TracerProvider as SdkTracerProvider},
+    trace::SdkTracerProvider,
     Resource,
 };
 use std::sync::Arc;
@@ -49,10 +49,6 @@ use super::reliability_layer::ReliabilityManager;
 /// # }
 /// ```
 pub struct EnhancedOtlpClient {
-    /// 官方 OTLP 导出器 - 保证标准兼容性
-    #[allow(dead_code)]
-    base_exporter: SpanExporter,
-    
     /// Tracer Provider (Arc 包装以支持克隆)
     provider: Arc<SdkTracerProvider>,
     
@@ -109,6 +105,7 @@ impl Default for ClientConfig {
         }
     }
 }
+
 
 /// 客户端统计信息
 #[derive(Debug, Clone, Default)]
@@ -218,7 +215,6 @@ impl EnhancedOtlpClient {
 impl Clone for EnhancedOtlpClient {
     fn clone(&self) -> Self {
         Self {
-            base_exporter: self.base_exporter.clone(),
             provider: Arc::clone(&self.provider),
             performance: self.performance.clone(),
             reliability: self.reliability.clone(),
@@ -356,27 +352,17 @@ impl ClientBuilder {
     /// # }
     /// ```
     pub async fn build(self) -> Result<EnhancedOtlpClient, Box<dyn std::error::Error>> {
-        // 使用官方 API 创建导出器
-        let exporter = opentelemetry_otlp::new_exporter()
-            .tonic()
-            .with_endpoint(&self.config.endpoint)
-            .with_timeout(self.config.timeout)
-            .build_span_exporter()
-            .map_err(|e| format!("Failed to build exporter: {:?}", e))?;
-        
         // 创建资源
-        let resource = Resource::new(vec![
-            KeyValue::new("service.name", self.config.service_name.clone()),
-            KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
-        ]);
+        let resource = Resource::builder_empty()
+            .with_attributes(vec![
+                KeyValue::new("service.name", self.config.service_name.clone()),
+                KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
+            ])
+            .build();
         
         // 创建 TracerProvider
         let provider = SdkTracerProvider::builder()
-            .with_simple_exporter(exporter.clone())
-            .with_config(
-                Config::default()
-                    .with_resource(resource)
-            )
+            .with_resource(resource)
             .build();
         
         // 如果需要，设置为全局 provider
@@ -399,7 +385,6 @@ impl ClientBuilder {
         };
         
         Ok(EnhancedOtlpClient {
-            base_exporter: exporter,
             provider: Arc::new(provider),
             performance,
             reliability,

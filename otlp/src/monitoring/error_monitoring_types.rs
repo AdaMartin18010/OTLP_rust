@@ -79,7 +79,7 @@ impl RealTimeDashboard {
         // 更新严重程度分布
         *metrics
             .severity_distribution
-            .entry(error.severity.clone())
+            .entry(error.severity)
             .or_insert(0) += 1;
 
         // 更新最近错误
@@ -113,7 +113,7 @@ impl RealTimeDashboard {
     async fn broadcast_update(&self, update: DashboardUpdate) -> Result<()> {
         let connections = self.websocket_connections.read().await;
         for connection in connections.iter() {
-            if let Err(_) = connection.send(update.clone()) {
+            if connection.send(update.clone()).is_err() {
                 // 连接已断开，将在下次清理时移除
             }
         }
@@ -206,7 +206,7 @@ impl AlertManager {
         let alert = Alert {
             id: Uuid::new_v4().to_string(),
             rule_id: rule.id.clone(),
-            severity: rule.severity.clone(),
+            severity: rule.severity,
             message: format!("告警: {}", rule.name),
             timestamp: SystemTime::now(),
             source_error: error.clone(),
@@ -299,7 +299,7 @@ impl ErrorMetricsCollector {
             .or_insert(0) += 1;
         *metrics
             .severity_distribution
-            .entry(error.severity.clone())
+            .entry(error.severity)
             .or_insert(0) += 1;
 
         metrics.recent_errors.push_back(error.clone());
@@ -386,7 +386,7 @@ impl ErrorAggregator {
             count: 0,
             first_occurrence: error.timestamp,
             last_occurrence: error.timestamp,
-            severity: error.severity.clone(),
+            severity: error.severity,
             samples: VecDeque::new(),
         });
 
@@ -927,6 +927,7 @@ pub struct ErrorMonitoringMetrics {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
+#[derive(Default)]
 pub struct DashboardMetrics {
     pub total_errors: u64,
     pub error_types: HashMap<String, u64>,
@@ -934,16 +935,6 @@ pub struct DashboardMetrics {
     pub recent_errors: VecDeque<ErrorEvent>,
 }
 
-impl Default for DashboardMetrics {
-    fn default() -> Self {
-        Self {
-            total_errors: 0,
-            error_types: HashMap::new(),
-            severity_distribution: HashMap::new(),
-            recent_errors: VecDeque::new(),
-        }
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AlertRule {

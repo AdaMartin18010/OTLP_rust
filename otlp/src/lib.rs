@@ -197,7 +197,40 @@
 //! }
 //! ```
 
-// 核心模块
+// ============================================================================
+// 核心模块 - 基于 opentelemetry-otlp 0.31.0
+// ============================================================================
+
+/// 新的核心实现 - 基于 opentelemetry-otlp 的增强客户端
+/// 
+/// 这是推荐使用的核心实现，保证 OTLP 1.0.0 标准兼容性
+/// 
+/// # 快速开始
+/// 
+/// ```rust,no_run
+/// use otlp::core::EnhancedOtlpClient;
+/// 
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let client = EnhancedOtlpClient::builder()
+///     .with_endpoint("http://localhost:4317")
+///     .with_service_name("my-service")
+///     .build()
+///     .await?;
+/// 
+/// let tracer = client.tracer("my-component");
+/// let span = tracer.start("my-operation");
+/// // ... 业务逻辑
+/// drop(span);
+/// # Ok(())
+/// # }
+/// ```
+pub mod core;
+
+// ============================================================================
+// 原有模块 (逐步迁移中)
+// ============================================================================
+
+// 原有核心模块 (将逐步迁移到 core)
 pub mod client;
 pub mod config;
 pub mod data;
@@ -268,6 +301,32 @@ pub mod performance_optimization_advanced;
 // pub mod protobuf;              // 已备份到 backup_2025_01/duplicate_modules/
 
 // 重新导出主要类型
+// ============================================================================
+// 新核心 API - 推荐使用
+// ============================================================================
+
+/// 重新导出核心模块的主要类型
+/// 
+/// 这些类型基于 opentelemetry-otlp 0.31.0，保证 OTLP 1.0.0 标准兼容性
+pub use core::{
+    EnhancedOtlpClient, 
+    ClientBuilder, 
+    ClientConfig, 
+    ClientStats,
+    PerformanceOptimizer,
+    ReliabilityManager,
+};
+
+// 重新导出 OpenTelemetry 官方类型
+pub use opentelemetry::{
+    trace::{Tracer, TracerProvider},
+    KeyValue,
+};
+
+// ============================================================================
+// 原有 API (逐步迁移中)
+// ============================================================================
+
 pub use client::{LogBuilder, MetricBuilder, OtlpClient, OtlpClientBuilder, TraceBuilder};
 pub use config::{BatchConfig, Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol};
 pub use data::{

@@ -725,7 +725,7 @@ impl AdvancedFeaturesManager {
             if data
                 .resource_attributes
                 .get("status")
-                .map_or(false, |s| s == "OK")
+                .is_some_and(|s| s == "OK")
             {
                 0.0
             } else {

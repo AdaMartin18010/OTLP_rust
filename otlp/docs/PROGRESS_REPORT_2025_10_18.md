@@ -216,21 +216,21 @@ cargo check --workspace
 
 ### commit 06fcee8
 
-```
+```text
 文档体系全面扩展完成 - v2.0
 - 34 files changed, 16638 insertions(+), 646 deletions(-)
 ```
 
 ### commit dbb73e8
 
-```
+```text
 添加测试结果总结报告 - 2025-10-18
 - 1 file changed, 352 insertions(+)
 ```
 
 ### commit a2c3eda
 
-```
+```text
 修复P0优先级测试失败 - 弹性模块
 - 2 files changed, 9 insertions(+), 8 deletions(-)
 ```

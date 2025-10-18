@@ -78,8 +78,7 @@ impl AdvancedSimdOptimizer {
         data: &[i32],
         operation: SimdIntOperation,
     ) -> Result<Vec<i32>> {
-        let mut result = Vec::with_capacity(data.len());
-        result.resize(data.len(), 0);
+        let mut result = vec![0; data.len()];
 
         // 检查是否支持AVX2
         #[cfg(target_arch = "x86_64")]
@@ -129,17 +128,18 @@ impl AdvancedSimdOptimizer {
                     SimdOperation::Sin => {
                         // 简化的正弦计算，实际应用中可能需要更复杂的实现
                         let pi = _mm256_set1_pd(std::f64::consts::PI);
-                        let normalized = _mm256_sub_pd(
+                        
+                        _mm256_sub_pd(
                             data_vec,
                             _mm256_mul_pd(pi, _mm256_floor_pd(_mm256_div_pd(data_vec, pi))),
-                        );
-                        normalized // 简化实现
+                        ) // 简化实现
                     }
                     SimdOperation::Cos => {
                         // 简化的余弦计算
                         let pi = _mm256_set1_pd(std::f64::consts::PI);
                         let half_pi = _mm256_set1_pd(std::f64::consts::PI / 2.0);
-                        let normalized = _mm256_sub_pd(
+                        
+                        _mm256_sub_pd(
                             _mm256_add_pd(data_vec, half_pi),
                             _mm256_mul_pd(
                                 pi,
@@ -148,8 +148,7 @@ impl AdvancedSimdOptimizer {
                                     pi,
                                 )),
                             ),
-                        );
-                        normalized // 简化实现
+                        ) // 简化实现
                     }
                     _ => data_vec, // 其他操作暂时返回原值
                 };
@@ -441,7 +440,7 @@ impl AdvancedMemoryPoolOptimizer {
 
     /// 返回内存到池中
     pub fn return_memory(&mut self, size: usize, ptr: *mut u8) {
-        let pool = self.pools.entry(size).or_insert_with(Vec::new);
+        let pool = self.pools.entry(size).or_default();
 
         if pool.len() < self.max_pool_size {
             pool.push(ptr);

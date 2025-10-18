@@ -225,6 +225,7 @@ pub struct TimeoutStatus {
 
 /// 弹性配置
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct ResilienceConfig {
     pub circuit_breaker: CircuitBreakerConfig,
     pub retry: RetryConfig,
@@ -232,16 +233,6 @@ pub struct ResilienceConfig {
     pub timeout: TimeoutConfig,
 }
 
-impl Default for ResilienceConfig {
-    fn default() -> Self {
-        Self {
-            circuit_breaker: CircuitBreakerConfig::default(),
-            retry: RetryConfig::default(),
-            bulkhead: BulkheadConfig::default(),
-            timeout: TimeoutConfig::default(),
-        }
-    }
-}
 
 /// 弹性构建器
 pub struct ResilienceBuilder {
