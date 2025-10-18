@@ -1,8 +1,8 @@
 # OTLP语义模型与分析完整索引
 
-> **版本**: 1.0  
+> **版本**: 2.0  
 > **日期**: 2025年10月17日  
-> **状态**: ✅ 完整版
+> **状态**: ✅ 完整版 + 实用文档集
 
 ---
 
@@ -18,16 +18,32 @@
 | 04 | [语义约定完整覆盖](./04_SEMANTIC_CONVENTIONS_COMPLETE.md) | HTTP/DB/MQ/CI/CD/Gen-AI等 | ⭐⭐⭐⭐ |
 | 05 | [项目实施与验证指南](./05_IMPLEMENTATION_GUIDE_COMPLETE.md) | 完整实施路径 | ⭐⭐⭐⭐ |
 
-### 专题文档
+### 专题文档（6个大型指南）
 
-| 文档 | 说明 |
-|------|------|
-| [OTTL完整参考](./OTTL_COMPLETE_REFERENCE.md) | OTTL语法、函数、最佳实践 |
-| [OpAMP部署指南](./OPAMP_DEPLOYMENT_GUIDE.md) | OpAMP完整部署方案 |
-| [Profiles集成指南](./PROFILES_INTEGRATION_GUIDE.md) | Profiles完整集成方案 |
-| [eBPF实践指南](./EBPF_PRACTICE_GUIDE.md) | eBPF采集最佳实践 |
-| [性能优化手册](./PERFORMANCE_OPTIMIZATION_MANUAL.md) | 完整性能优化策略 |
-| [安全合规指南](./SECURITY_COMPLIANCE_GUIDE.md) | 安全与合规完整方案 |
+| 文档 | 说明 | 字数 |
+|------|------|------|
+| [OTTL完整参考](./OTTL_COMPLETE_REFERENCE.md) | OTTL语法、函数、最佳实践 | ~28,000 |
+| [OpAMP部署指南](./OPAMP_DEPLOYMENT_GUIDE.md) | OpAMP完整部署方案 | ~32,000 |
+| [Profiles集成指南](./PROFILES_INTEGRATION_GUIDE.md) | Profiles完整集成方案 | ~31,000 |
+| [eBPF实践指南](./EBPF_PRACTICE_GUIDE.md) | eBPF采集最佳实践 | ~34,000 |
+| [性能优化手册](./PERFORMANCE_OPTIMIZATION_MANUAL.md) | 完整性能优化策略 | ~22,000 |
+| [安全合规指南](./SECURITY_COMPLIANCE_GUIDE.md) | 安全与合规完整方案 | ~31,000 |
+
+### 实用文档（11个运维指南）
+
+| 文档 | 说明 | 优先级 |
+|------|------|--------|
+| [📊 告警与仪表板](./ALERTING_BASELINE.md) | Prometheus告警规则和Grafana仪表板 | ⭐⭐⭐⭐⭐ |
+| [🔧 运维手册](./RUNBOOK.md) | 故障排查流程和应急响应 | ⭐⭐⭐⭐⭐ |
+| [🔒 规则治理](./RULES_GOVERNANCE.md) | OTTL规则全生命周期治理 | ⭐⭐⭐⭐ |
+| [🚀 OpAMP发布策略](./OPAMP_ROLLOUT_STRATEGY.md) | 配置灰度发布和自动回滚 | ⭐⭐⭐⭐ |
+| [📈 性能测量指南](./MEASUREMENT_GUIDE.md) | PromQL查询和性能基准测试 | ⭐⭐⭐⭐ |
+| [🔥 Profiling集成](./PROFILING_INTEGRATION.md) | Profiling快速集成指南 | ⭐⭐⭐ |
+| [💡 OTTL示例集](./OTTL_EXAMPLES.md) | 18个生产级OTTL示例 | ⭐⭐⭐⭐ |
+| [⚖️ 伸缩策略](./SCALING_STRATEGY.md) | Kubernetes HPA自动伸缩 | ⭐⭐⭐⭐ |
+| [📋 测试报告模板](./RESULTS_REPORT_TEMPLATE.md) | 完整的性能测试报告模板 | ⭐⭐⭐ |
+| [✅ 验证计划](./EVIDENCE_PLAN.md) | 8周验证和基准计划 | ⭐⭐⭐ |
+| [📊 项目对标矩阵](./PROJECT_MAPPING_MATRIX.md) | 9个维度项目评估矩阵 | ⭐⭐⭐ |
 
 ---
 
@@ -201,7 +217,8 @@
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
-| 1.0 | 2025-10-17 | 初始完整版本 |
+| 2.0 | 2025-10-17 | 全面扩展：新增11个实用运维文档 |
+| 1.0 | 2025-10-17 | 初始完整版本：5个核心+6个专题文档 |
 
 ---
 

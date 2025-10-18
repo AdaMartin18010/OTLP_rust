@@ -85,10 +85,11 @@ opt-level = 2
 
 # 工作区级别的依赖版本统一 - 2025年10月最新稳定版本 (Rust 1.90 优化)
 # 所有依赖库版本已与系统时间同步，确保使用最新的成熟稳定版本
+# 最后更新: 2025年10月17日 - 同步 cargo update 结果
 [workspace.dependencies]
 
 # ========== 网络和 HTTP 相关依赖 ==========
-# 2025年10月16日最新稳定版本，支持Rust 1.90新特性
+# 2025年10月17日最新稳定版本，支持Rust 1.90新特性
 # reqwest: 高级HTTP客户端库，支持异步操作、TLS、压缩等特性
 reqwest = { version = "0.12.24", features = ["json", "rustls-tls", "stream", "gzip", "brotli", "deflate"] }
 # hyper: 底层HTTP库，提供高性能的HTTP/1.1和HTTP/2支持
@@ -154,7 +155,7 @@ async-stream = "0.3.7"          # 异步流处理
 # async-std 已移除，使用 tokio 替代 (async-std 已弃用)
 tokio-console = "0.1.14"        # Tokio控制台工具
 tokio-test = "0.4.4"            # Tokio测试工具
-mio = "0.8.12"                  # 底层I/O多路复用
+mio = "1.1.0"                   # 底层I/O多路复用 (更新: 2025-10-17)
 tungstenite = "0.28"            # WebSocket实现
 rcgen = "0.14.6"                # 证书生成器
 
@@ -182,9 +183,9 @@ prost-types = "0.14.1"          # 类型定义
 protobuf = "3.7.3"              # 修复递归崩溃漏洞，确保系统安全
 
 # ========== TLS 和加密 ==========
-# TLS 和加密 - 2025年10月16日最新稳定版本，确保通信安全
+# TLS 和加密 - 2025年10月17日最新稳定版本，确保通信安全
 # RustLS: 纯Rust实现的TLS库
-rustls = { version = "0.23.33", features = ["ring"] }  # TLS实现
+rustls = { version = "0.23.33", features = ["ring"] }  # TLS实现 (已是最新)
 rustls-webpki = "0.104.2"       # Web PKI支持
 rustls-pemfile = "2.2.1"        # PEM文件解析
 tokio-rustls = "0.26.5"         # Tokio集成
@@ -241,13 +242,13 @@ chrono = { version = "0.4.42", features = ["serde"] }   # 日期时间库
 time = { version = "0.3.44", features = ["serde", "macros"] }  # 现代时间库，支持Rust 1.90
 
 # ========== 常用工具库 ==========
-# 其他常用库 - 2025年10月16日最新稳定版本，提供基础功能支持
+# 其他常用库 - 2025年10月17日最新稳定版本，提供基础功能支持
 # 标识符和URL
 uuid = { version = "1.18.1", features = ["v4", "serde"] }  # UUID生成
 url = "2.5.7"                  # URL解析
 # 数据处理
 bytes = "1.10.1"               # 字节操作
-indexmap = "2.11.4"            # 有序哈希映射
+indexmap = "2.12.0"            # 有序哈希映射 (更新: 2025-10-17)
 # 系统信息
 once_cell = "1.21.3"           # 单次初始化单元格
 num_cpus = "1.17.0"            # CPU核心数检测
