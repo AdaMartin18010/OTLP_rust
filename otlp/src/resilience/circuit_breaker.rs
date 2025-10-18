@@ -344,9 +344,10 @@ mod tests {
         // 等待恢复超时
         sleep(Duration::from_millis(100)).await;
 
-        // 应该转换到半开状态
-        assert_eq!(breaker.state(), CircuitState::HalfOpen);
+        // can_execute会触发状态转换到HalfOpen
         assert!(breaker.can_execute().await);
+        // 现在应该是半开状态
+        assert_eq!(breaker.state(), CircuitState::HalfOpen);
 
         // 记录成功直到达到阈值
         for _ in 0..2 {

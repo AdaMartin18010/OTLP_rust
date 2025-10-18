@@ -131,11 +131,11 @@ impl Retrier {
                 Err(error) => {
                     last_error = Some(error.clone());
                     
-                    // 如果是最后一次尝试，直接返回错误
+                    // 如果是最后一次尝试，返回MaxAttemptsReached
                     if attempt >= self.config.max_attempts {
                         self.update_stats_on_failure(attempt).await;
-                        return Err(RetryError::OperationFailed {
-                            attempts: attempt,
+                        return Err(RetryError::MaxAttemptsReached {
+                            max_attempts: self.config.max_attempts,
                             last_error: Some(error),
                         });
                     }
@@ -201,11 +201,11 @@ impl Retrier {
                 Ok(Err(error)) => {
                     last_error = Some(error.clone());
                     
-                    // 如果是最后一次尝试，直接返回错误
+                    // 如果是最后一次尝试，返回MaxAttemptsReached
                     if attempt >= self.config.max_attempts {
                         self.update_stats_on_failure(attempt).await;
-                        return Err(RetryError::OperationFailed {
-                            attempts: attempt,
+                        return Err(RetryError::MaxAttemptsReached {
+                            max_attempts: self.config.max_attempts,
                             last_error: Some(error),
                         });
                     }
