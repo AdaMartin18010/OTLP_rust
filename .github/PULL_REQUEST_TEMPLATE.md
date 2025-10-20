@@ -1,39 +1,97 @@
-# 概述
+# Pull Request
 
-- 变更类型：
-  - [ ] 文档
-  - [ ] 代码
-  - [ ] 构建/CI
+## 📋 Description
 
-## 变更内容
+<!-- Provide a clear and concise description of your changes -->
 
-- 简述本 PR 的主要改动与影响范围。
+## 🔗 Related Issues
 
-## 质量门禁自检（必选）
+<!-- Link to related issues using: Fixes #123, Closes #456 -->
 
-- [ ] 导航与链接有效（无 404）
-- [ ] 示例可运行（如涉及代码/命令，已本地验证）
-- [ ] 与 `03_标准规范/OTLP_统一规范详解_2025.md` 术语一致
-- [ ] 附加 `otlp/src/*.rs` 源码映射（如涉及实现说明）
-- [ ] 通过 Markdown Lint & Link Check
-- [ ] 通过 `cargo check -p otlp --examples/--benches`
-- [ ] 可靠性：策略改动已自检（重试/熔断/超时/退避/幂等）
-- [ ] 可靠性：新增/修改对可观测性（tracing/metrics/logs/OTLP）有覆盖
-- [ ] 可靠性：基准对比未超阈（基线 vs 当前，默认 +10% 内）
-- [ ] 可靠性：SLO 校验通过（延迟P95/P99、错误率、可用性）
-- [ ] 可靠性：混沌/故障注入用例通过（网络/CPU/内存/依赖降级）
-- [ ] 运行环境：Windows/Linux、x86/Arm 关键用例已验证（如适用）
-- [ ] 发布与回滚：变更公告/回滚演练文档已更新（如适用）
+Fixes #
 
-## 验证步骤
+## 📝 Type of Change
 
-1.
-2.
+<!-- Mark the relevant option with an "x" -->
 
-## 回滚方案
+- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
+- [ ] ✨ New feature (non-breaking change which adds functionality)
+- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] 📚 Documentation update
+- [ ] 🎨 Code style update (formatting, renaming)
+- [ ] ♻️ Refactoring (no functional changes)
+- [ ] 🔧 Configuration change
+- [ ] ⚡ Performance improvement
+- [ ] ✅ Test update
+- [ ] 🏗️ Build/CI update
 
-- 如需回滚：说明影响面与回滚步骤。
+## 🧪 Testing
 
-## 关联问题/任务
+<!-- Describe the tests you've added or run -->
 
-- Closes #
+**Tests added**:
+
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] Manual testing
+
+**How to test**:
+
+```bash
+# Commands to test your changes
+cargo test
+cargo run --example <example_name>
+```
+
+## ✅ Checklist
+
+<!-- Mark completed items with an "x" -->
+
+- [ ] My code follows the project's style guidelines
+- [ ] I have run `cargo fmt` and `cargo clippy`
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have made corresponding changes to the documentation
+- [ ] My changes generate no new warnings
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] New and existing unit tests pass locally with my changes
+- [ ] Any dependent changes have been merged and published
+
+## 📸 Screenshots (if applicable)
+
+<!-- Add screenshots to help explain your changes -->
+
+## 🔍 Code Review Focus
+
+<!-- What should reviewers pay special attention to? -->
+
+## 📚 Documentation
+
+<!-- List documentation updates made -->
+
+- [ ] README updated
+- [ ] API docs updated
+- [ ] Examples added/updated
+- [ ] CHANGELOG.md updated
+
+## ⚡ Performance Impact
+
+<!-- Describe any performance implications -->
+
+- [ ] No performance impact
+- [ ] Performance improved
+- [ ] Performance regressed (explain why acceptable)
+
+**Benchmarks** (if applicable):
+
+```text
+Before: 
+After:
+```
+
+## 💥 Breaking Changes
+
+<!-- If this is a breaking change, describe the migration path -->
+
+## 🤔 Additional Context
+
+<!-- Add any other context about the PR here -->

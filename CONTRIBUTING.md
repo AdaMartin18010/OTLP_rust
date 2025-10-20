@@ -1,387 +1,503 @@
-# 🤝 OTLP Rust 贡献指南
+# 🤝 Contributing to OTLP Rust
 
-**欢迎贡献到 OTLP Rust 项目！**
-
----
-
-## 📋 贡献类型
-
-### 🐛 Bug修复
-
-- 修复已知问题
-- 改进错误处理
-- 提升稳定性
-
-### ✨ 新功能
-
-- 添加新特性
-- 扩展API
-- 增强功能
-
-### 📚 文档改进
-
-- 完善文档
-- 添加示例
-- 改进说明
-
-### 🧪 测试
-
-- 增加测试覆盖
-- 添加集成测试
-- 性能测试
-
-### ⚡ 性能优化
-
-- 算法优化
-- 内存优化
-- 并发优化
+Thank you for your interest in contributing to OTLP Rust! This document provides guidelines for contributing to the project.
 
 ---
 
-## 🚀 开发流程
+## 📋 Table of Contents
 
-### 1. 环境准备
+- [Code of Conduct](#code-of-conduct)
+- [Getting Started](#getting-started)
+- [Development Setup](#development-setup)
+- [How to Contribute](#how-to-contribute)
+- [Coding Guidelines](#coding-guidelines)
+- [Testing Guidelines](#testing-guidelines)
+- [Documentation Guidelines](#documentation-guidelines)
+- [Pull Request Process](#pull-request-process)
+- [Community](#community)
+
+---
+
+## 📜 Code of Conduct
+
+This project adheres to a code of conduct that we expect all contributors to follow. Please be respectful and constructive in your interactions.
+
+### Our Standards
+
+- ✅ Be welcoming and inclusive
+- ✅ Be respectful of differing viewpoints
+- ✅ Accept constructive criticism gracefully
+- ✅ Focus on what is best for the community
+- ✅ Show empathy towards other community members
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Rust 1.90.0 or later
+- Git
+- A GitHub account
+
+### First Steps
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/OTLP_rust.git
+   cd OTLP_rust
+   ```
+3. **Add upstream remote**:
+   ```bash
+   git remote add upstream https://github.com/ORIGINAL_OWNER/OTLP_rust.git
+   ```
+4. **Create a branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+---
+
+## 💻 Development Setup
+
+### Install Dependencies
 
 ```bash
-# 安装Rust 1.90+
-rustup install 1.90.0
-rustup default 1.90.0
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# 克隆项目
-git clone https://github.com/your-repo/otlp-rust.git
-cd otlp-rust
+# Update Rust to latest stable
+rustup update stable
 
-# 安装依赖
-cargo build
+# Install development tools
+rustup component add rustfmt clippy
 ```
 
-### 2. 创建分支
+### Build the Project
 
 ```bash
-# 创建特性分支
-git checkout -b feature/your-feature-name
+# Build all crates
+cargo build --workspace
 
-# 或修复分支
-git checkout -b fix/your-bug-fix
-```
+# Build with all features
+cargo build --all-features
 
-### 3. 开发规范
+# Run tests
+cargo test --workspace
 
-#### 代码风格
+# Check formatting
+cargo fmt --all -- --check
 
-```bash
-# 格式化代码
-cargo fmt
-
-# 检查代码质量
+# Run clippy
 cargo clippy --all-targets --all-features -- -D warnings
 ```
 
-#### 测试要求
+---
 
-```bash
-# 运行所有测试
-cargo test --all-features
+## 🎯 How to Contribute
 
-# 运行基准测试
-cargo bench
+### Types of Contributions
 
-# 检查测试覆盖率
-cargo tarpaulin --out Html
-```
+We welcome various types of contributions:
 
-#### 提交规范
+#### 🐛 Bug Fixes
+- Search existing issues first
+- Create a new issue if needed
+- Submit a PR with the fix
 
-```bash
-# 提交信息格式
-git commit -m "type(scope): description"
+#### ✨ New Features
+- Discuss in an issue first
+- Wait for approval before starting
+- Submit a PR when ready
 
-# 示例
-git commit -m "feat(client): add batch processing support"
-git commit -m "fix(network): resolve connection timeout issue"
-git commit -m "docs(api): update client documentation"
-```
+#### 📚 Documentation
+- Fix typos and unclear explanations
+- Add examples
+- Improve guides
 
-### 4. 提交PR
+#### 🧪 Tests
+- Add missing test coverage
+- Improve test quality
+- Add benchmark tests
 
-1. **推送分支**
-
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-2. **创建Pull Request**
-   - 填写PR标题和描述
-   - 关联相关Issue
-   - 添加测试结果
-
-3. **代码审查**
-   - 等待维护者审查
-   - 根据反馈修改
-   - 确保CI通过
+#### 🎨 Code Quality
+- Refactor existing code
+- Improve performance
+- Reduce technical debt
 
 ---
 
-## 📝 代码规范
+## 📏 Coding Guidelines
 
-### Rust代码风格
+### Rust Style
+
+Follow the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/):
 
 ```rust
-// 使用snake_case命名
-fn process_telemetry_data() -> Result<(), Error> {
-    // 使用有意义的变量名
-    let telemetry_items = vec![];
-    
-    // 使用Result进行错误处理
-    let result = process_items(telemetry_items)?;
-    
-    Ok(result)
+// ✅ Good: Clear, idiomatic Rust
+pub struct OtlpClient {
+    endpoint: String,
+    config: ClientConfig,
 }
 
-// 使用文档注释
-/// 处理遥测数据
-/// 
-/// # Arguments
-/// 
-/// * `data` - 遥测数据向量
-/// 
-/// # Returns
-/// 
-/// 处理结果或错误
-pub async fn process_telemetry_data(
-    data: Vec<TelemetryData>
-) -> Result<ProcessResult, ProcessError> {
-    // 实现
+impl OtlpClient {
+    /// Creates a new OTLP client.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use otlp::OtlpClient;
+    ///
+    /// let client = OtlpClient::new("http://localhost:4317");
+    /// ```
+    pub fn new(endpoint: &str) -> Self {
+        Self {
+            endpoint: endpoint.to_string(),
+            config: ClientConfig::default(),
+        }
+    }
 }
 ```
 
-### 错误处理
+### Code Organization
+
+- Keep modules focused and cohesive
+- Use meaningful names
+- Avoid deep nesting (max 3-4 levels)
+- Prefer composition over inheritance
+
+### Error Handling
 
 ```rust
-// 使用Result而不是unwrap()
-let config = load_config()
-    .context("Failed to load configuration")?;
+// ✅ Use custom error types
+use thiserror::Error;
 
-// 使用anyhow进行错误链
-use anyhow::{Context, Result};
+#[derive(Error, Debug)]
+pub enum OtlpError {
+    #[error("Connection failed: {0}")]
+    ConnectionError(String),
+    
+    #[error("Invalid configuration: {0}")]
+    ConfigError(String),
+}
 
-fn process_data() -> Result<()> {
-    let data = read_file("data.json")
-        .context("Failed to read data file")?;
-    
-    let parsed = serde_json::from_str(&data)
-        .context("Failed to parse JSON data")?;
-    
-    Ok(parsed)
+// ✅ Use Result for fallible operations
+pub fn connect(&self) -> Result<Connection, OtlpError> {
+    // Implementation
 }
 ```
 
-### 测试规范
+### Async Code
+
+```rust
+// ✅ Use async/await idiomatically
+pub async fn send_data(&self, data: &[u8]) -> Result<(), OtlpError> {
+    let response = self.client
+        .post(&self.endpoint)
+        .body(data)
+        .send()
+        .await?;
+    
+    Ok(())
+}
+```
+
+---
+
+## 🧪 Testing Guidelines
+
+### Test Organization
 
 ```rust
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    #[tokio::test]
-    async fn test_functionality() {
-        // 准备测试数据
-        let test_data = create_test_data();
-        
-        // 执行测试
-        let result = process_data(test_data).await;
-        
-        // 验证结果
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap().count, 10);
-    }
-    
+
     #[test]
-    fn test_edge_cases() {
-        // 测试边界情况
-        let empty_data = vec![];
-        let result = process_data(empty_data);
-        assert!(result.is_err());
+    fn test_client_creation() {
+        let client = OtlpClient::new("http://localhost:4317");
+        assert_eq!(client.endpoint, "http://localhost:4317");
+    }
+
+    #[tokio::test]
+    async fn test_async_operation() {
+        let client = OtlpClient::new("http://localhost:4317");
+        let result = client.connect().await;
+        assert!(result.is_ok());
     }
 }
 ```
 
----
+### Test Coverage
 
-## 🧪 测试指南
+- Aim for >80% code coverage
+- Test happy paths and error cases
+- Include integration tests
+- Add benchmark tests for critical paths
 
-### 测试类型
-
-1. **单元测试**
-
-   ```bash
-   cargo test --lib
-   ```
-
-2. **集成测试**
-
-   ```bash
-   cargo test --test integration
-   ```
-
-3. **基准测试**
-
-   ```bash
-   cargo bench
-   ```
-
-4. **性能测试**
-
-   ```bash
-   cargo bench --bench simple_benchmarks
-   ```
-
-### 测试覆盖率
+### Running Tests
 
 ```bash
-# 安装tarpaulin
-cargo install cargo-tarpaulin
+# Run all tests
+cargo test --workspace
 
-# 生成覆盖率报告
-cargo tarpaulin --out Html --output-dir coverage/
+# Run specific test
+cargo test test_client_creation
 
-# 查看覆盖率
-open coverage/tarpaulin-report.html
+# Run with output
+cargo test -- --nocapture
+
+# Run integration tests only
+cargo test --test integration_test
 ```
-
-**目标覆盖率**: 80%+
 
 ---
 
-## 📚 文档规范
+## 📚 Documentation Guidelines
 
-### 代码文档
+### Code Documentation
 
 ```rust
-/// 处理遥测数据的核心函数
-/// 
-/// 这个函数负责将输入的遥测数据转换为OTLP格式，
-/// 并进行必要的验证和处理。
-/// 
-/// # 参数
-/// 
-/// * `data` - 输入的遥测数据
-/// * `config` - 处理配置
-/// 
-/// # 返回值
-/// 
-/// 返回处理后的数据或错误信息
-/// 
-/// # 示例
-/// 
-/// ```rust
-/// use otlp::{process_telemetry_data, TelemetryData};
-/// 
-/// let data = vec![TelemetryData::trace("test")];
-/// let result = process_telemetry_data(data).await?;
+/// Brief description of the function.
+///
+/// More detailed explanation if needed. Can span
+/// multiple lines and include markdown.
+///
+/// # Arguments
+///
+/// * `endpoint` - The OTLP endpoint URL
+/// * `config` - Configuration options
+///
+/// # Returns
+///
+/// Returns a `Result` containing the client or an error.
+///
+/// # Examples
+///
 /// ```
-pub async fn process_telemetry_data(
-    data: Vec<TelemetryData>,
-    config: ProcessConfig,
-) -> Result<ProcessResult, ProcessError> {
-    // 实现
+/// use otlp::OtlpClient;
+///
+/// let client = OtlpClient::new("http://localhost:4317");
+/// ```
+///
+/// # Errors
+///
+/// Returns `OtlpError::ConnectionError` if connection fails.
+pub fn new(endpoint: &str, config: ClientConfig) -> Result<Self, OtlpError> {
+    // Implementation
 }
 ```
 
-### README更新
+### Documentation Files
 
-- 更新功能列表
-- 添加使用示例
-- 更新性能数据
-- 维护版本信息
+- Use clear, concise language
+- Include code examples
+- Add diagrams where helpful
+- Keep formatting consistent
 
----
+### Example Code
 
-## 🔍 代码审查
-
-### 审查清单
-
-- [ ] 代码风格符合规范
-- [ ] 测试覆盖率达标
-- [ ] 文档完整准确
-- [ ] 性能无回归
-- [ ] 安全性检查通过
-
-### 审查流程
-
-1. **自动检查**
-   - CI/CD流水线
-   - 代码格式检查
-   - 静态分析
-
-2. **人工审查**
-   - 代码逻辑检查
-   - 架构设计审查
-   - 性能影响评估
-
-3. **测试验证**
-   - 单元测试通过
-   - 集成测试通过
-   - 性能测试通过
+- All examples must compile and run
+- Include necessary imports
+- Show realistic use cases
+- Add comments explaining key points
 
 ---
 
-## 🎯 贡献奖励
+## 🔄 Pull Request Process
 
-### 贡献者认可
+### Before Submitting
 
-- 添加到贡献者列表
-- 特殊贡献者徽章
-- 项目维护者邀请
+1. **Update your branch**:
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
 
-### 贡献类型奖励
+2. **Run checks**:
+   ```bash
+   cargo fmt --all
+   cargo clippy --all-targets --all-features
+   cargo test --workspace
+   ```
 
-- **Bug修复**: 问题解决者徽章
-- **新功能**: 功能贡献者徽章
-- **文档**: 文档贡献者徽章
-- **测试**: 质量保证徽章
-- **性能**: 性能优化徽章
+3. **Update documentation**:
+   - Update relevant docs
+   - Add examples if needed
+   - Update CHANGELOG.md
+
+### Submitting the PR
+
+1. **Push to your fork**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+2. **Create Pull Request** on GitHub
+
+3. **Fill out PR template** completely
+
+4. **Link related issues** using keywords:
+   - `Fixes #123`
+   - `Closes #456`
+   - `Relates to #789`
+
+### PR Review Process
+
+1. **Automated checks** must pass
+2. **Code review** by maintainers
+3. **Address feedback** promptly
+4. **Approval** from at least one maintainer
+5. **Merge** by maintainer
+
+### After Merge
+
+- Your PR will be included in the next release
+- You'll be added to contributors list
+- Consider joining as a regular contributor!
 
 ---
 
-## 📞 获取帮助
+## 🎓 Development Tips
 
-### 联系方式
+### Useful Commands
 
-- **GitHub Issues**: 报告问题和功能请求
-- **GitHub Discussions**: 技术讨论和建议
-- **邮件**: 联系项目维护者
-- **社区**: 参与社区活动
+```bash
+# Format code
+cargo fmt --all
 
-### 常见问题
+# Check for common mistakes
+cargo clippy --all-targets --all-features
 
-1. **如何开始贡献？**
-   - 查看Good First Issues
-   - 阅读开发文档
-   - 加入社区讨论
+# Build documentation
+cargo doc --all-features --no-deps --open
 
-2. **代码审查需要多长时间？**
-   - 通常1-3个工作日
-   - 复杂功能可能需要更长时间
-   - 节假日可能延迟
+# Run benchmarks
+cargo bench
 
-3. **如何成为维护者？**
-   - 持续贡献高质量代码
-   - 积极参与社区讨论
-   - 帮助其他贡献者
+# Check for outdated dependencies
+cargo outdated
+```
 
----
+### IDE Setup
 
-## 📄 许可证
+**VS Code**:
+- Install rust-analyzer extension
+- Install CodeLLDB for debugging
+- Configure auto-format on save
 
-贡献的代码将采用与项目相同的许可证：
-
-- MIT License
-- Apache-2.0 License
+**IntelliJ IDEA**:
+- Install Rust plugin
+- Enable format on save
+- Configure clippy integration
 
 ---
 
-**感谢您的贡献！** 🙏
+## 🌐 Community
 
-**最后更新**: 2025年1月  
-**维护者**: OTLP Rust Team
+### Communication Channels
+
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: General questions and discussions
+- **Discord** (if available): Real-time chat
+- **Twitter/X**: Announcements and updates
+
+### Getting Help
+
+- Check existing [documentation](docs/)
+- Search [existing issues](https://github.com/OWNER/OTLP_rust/issues)
+- Ask in [GitHub Discussions](https://github.com/OWNER/OTLP_rust/discussions)
+- Join our Discord server (if available)
+
+### Recognition
+
+We recognize contributors in several ways:
+
+- Listed in CONTRIBUTORS.md
+- Mentioned in release notes
+- Showcased in project README
+- Invited to join core team (for regular contributors)
+
+---
+
+## 📝 Commit Message Guidelines
+
+### Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting)
+- `refactor`: Code refactoring
+- `test`: Test updates
+- `chore`: Build/tooling changes
+
+### Examples
+
+```
+feat(client): add retry mechanism
+
+Implement exponential backoff retry logic for failed requests.
+Configurable max attempts and initial delay.
+
+Closes #123
+```
+
+```
+fix(reliability): correct error context propagation
+
+Error context was not being properly propagated through
+the async call chain.
+
+Fixes #456
+```
+
+---
+
+## 🏆 Recognition
+
+### Hall of Fame
+
+Top contributors will be recognized in our README and annual reports.
+
+### Rewards
+
+- Recognition in release notes
+- Invitation to maintainer team
+- Direct influence on project direction
+- Community reputation
+
+---
+
+## 📋 Checklist for First-Time Contributors
+
+- [ ] Read this guide completely
+- [ ] Set up development environment
+- [ ] Build and test the project locally
+- [ ] Find a "good first issue"
+- [ ] Ask questions if unclear
+- [ ] Submit your first PR
+- [ ] Join our community channels
+
+---
+
+## 🙏 Thank You!
+
+Every contribution, no matter how small, is valuable. Thank you for making OTLP Rust better!
+
+**Happy Contributing! 🚀**
+
+---
+
+*Last Updated: 2025-10-20*

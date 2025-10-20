@@ -1,60 +1,45 @@
-# OTLP Rust 项目文档
-
-欢迎来到 OTLP Rust 项目的文档中心。本项目提供了基于 Rust 1.90+ 的 OpenTelemetry Protocol (OTLP) 完整实现，以及统一的可靠性框架。
+# 项目文档索引
 
 ## 📚 文档导航
 
-> 💡 **新手推荐**: 先阅读 [📖 文档导航指南](DOCUMENTATION_GUIDE.md)，快速找到适合您的学习路径！
-
 ### 🚀 快速开始
 
-- [项目概览](README.md) - 项目整体介绍和快速开始
-- [📖 文档导航指南](DOCUMENTATION_GUIDE.md) ⭐ - 根据角色和需求快速定位文档
-- [安装指南](guides/installation.md) ✅ - 环境配置和安装步骤
-- [快速入门](guides/quick-start.md) ✅ - 5分钟快速上手
+- [项目概览](../README.md) - 项目整体介绍和快速开始
+- [安装指南](installation.md) - 安装和配置指南
+- [快速示例](quick-start.md) - 5分钟快速上手
 
 ### 📖 用户指南
 
-- [OTLP 客户端使用](guides/otlp-client.md) ✅ - OTLP 客户端详细使用指南
-- [可靠性框架](guides/reliability-framework.md) ✅ - 错误处理和容错机制
-- [性能优化](guides/performance-optimization.md) ✅ - 性能调优最佳实践
-- [监控配置](guides/monitoring.md) ✅ - 监控和告警配置
-- [部署指南](guides/deployment.md) ✅ - 生产环境部署指南
-- [故障排除](guides/troubleshooting.md) ✅ - 常见问题和解决方案
+- [OTLP 客户端使用](otlp-client.md) - OTLP 客户端详细使用指南
+- [可靠性框架](reliability-framework.md) - 错误处理和容错机制
+- [性能优化](performance-optimization.md) - 性能调优最佳实践
+- [监控和可观测性](monitoring.md) - 监控配置和使用
 
 ### 🏗️ 架构设计
 
-- [系统架构](architecture/system-architecture.md) ✅ - 整体系统架构设计
-- [模块设计](architecture/module-design.md) ✅ - 各模块详细设计
-- 更多设计文档即将推出...
+- [系统架构](../architecture/system-architecture.md) - 整体系统架构设计
+- [模块设计](../architecture/module-design.md) - 各模块详细设计
+- [API 设计原则](../design/api-design.md) - API 设计理念和原则
+- [性能设计](../design/performance-design.md) - 性能优化设计思路
 
 ### 🔧 API 参考
 
-- [OTLP API](api/otlp.md) ✅ - OTLP 客户端完整 API 文档
-- [Reliability API](api/reliability.md) ✅ - 可靠性框架 API 文档
-- 更多 API 文档即将推出...
+- [OTLP API](../api/otlp.md) - OTLP 客户端完整 API 文档
+- [Reliability API](../api/reliability.md) - 可靠性框架 API 文档
+- [类型定义](../api/types.md) - 核心类型和数据结构
 
 ### 📝 示例和教程
 
-- [📦 示例代码索引](EXAMPLES_INDEX.md) ⭐ - 38+ 个可运行示例快速查找
-- [基础示例文档](examples/basic-examples.md) ✅ - Hello World 到完整应用的 7 个示例
-- [高级示例文档](examples/advanced-examples.md) ✅ - 微服务、分布式追踪等高级示例
-- [OTLP 示例代码](../crates/otlp/examples/) - 25 个 OTLP 实际代码示例
-- [可靠性示例代码](../crates/reliability/examples/) - 13 个可靠性框架代码示例
-
-### 🔬 理论框架
-
-- [理论框架总览](02_THEORETICAL_FRAMEWORK/README.md) - 完整的理论基础和形式化模型
-- [语义模型与流分析](02_THEORETICAL_FRAMEWORK/SEMANTIC_MODELS_AND_FLOW_ANALYSIS.md) - 2600+行核心理论
-- [自我修复架构](02_THEORETICAL_FRAMEWORK/SELF_HEALING_AUTO_ADJUSTMENT_ARCHITECTURE.md) - MAPE-K 循环实现
-- [快速参考指南](02_THEORETICAL_FRAMEWORK/QUICK_REFERENCE.md) - 核心概念速查
-- [分布式系统理论](02_THEORETICAL_FRAMEWORK/DISTRIBUTED_SYSTEMS_THEORY.md) - 分布式理论基础
+- [基础示例](basic-examples.md) - 基础使用示例
+- [高级示例](advanced-examples.md) - 高级功能和模式
+- [微服务集成](microservices.md) - 微服务架构集成示例
+- [性能基准](benchmarks.md) - 性能测试和基准
 
 ### 🔍 深入分析
 
-- 高级分析文档位于 `../analysis/` 目录
-- 包含语义模型、分布式架构、形式化验证等主题
-- 详见项目根目录的 analysis 文件夹
+- [语义模型分析](../../analysis/semantic-models.md) - 语义模型深度分析
+- [分布式架构](../../analysis/distributed-architecture.md) - 分布式系统设计
+- [Rust 1.90 特性](../../analysis/rust-190-features.md) - Rust 1.90 新特性应用
 
 ## 🏛️ 项目结构
 
@@ -71,7 +56,7 @@ OTLP_rust/
 │   └── design/                # 设计理念文档
 ├── analysis/                  # 深度分析文档
 ├── benchmarks/                # 性能基准测试
-└── scripts/                   # 构建和部署脚本
+└── scripts/                   # 构建脚本
 ```
 
 ## 🎯 核心特性

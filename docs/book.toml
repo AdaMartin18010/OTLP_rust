@@ -1,0 +1,70 @@
+# mdBook 配置文件
+# 用于生成文档站点
+
+[book]
+title = "OTLP Rust - 文档中心"
+description = "OpenTelemetry Protocol (OTLP) Rust 实现的完整文档"
+authors = ["OTLP Rust Team"]
+language = "zh-CN"
+multilingual = false
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = true
+
+[preprocessor.links]
+
+[preprocessor.index]
+
+[output.html]
+default-theme = "ayu"
+preferred-dark-theme = "ayu"
+git-repository-url = "https://github.com/your-org/otlp-rust"
+git-repository-icon = "fa-github"
+edit-url-template = "https://github.com/your-org/otlp-rust/edit/main/docs/{path}"
+site-url = "/otlp-rust/"
+cname = "otlp-rust.example.com"
+
+# 主题配置
+theme = "theme"
+curly-quotes = true
+mathjax-support = true
+copy-fonts = true
+
+# 附加 CSS
+additional-css = ["theme/custom.css"]
+
+# 附加 JavaScript
+additional-js = ["theme/custom.js"]
+
+[output.html.fold]
+enable = true
+level = 0
+
+[output.html.playground]
+editable = true
+copyable = true
+line-numbers = true
+runnable = true
+
+[output.html.search]
+enable = true
+limit-results = 30
+teaser-word-count = 30
+use-boolean-and = true
+boost-title = 2
+boost-hierarchy = 1
+boost-paragraph = 1
+expand = true
+heading-split-level = 2
+
+[output.html.print]
+enable = true
+
+[output.linkcheck]
+follow-web-links = false
+exclude = []
+
+[output.html.redirect]
+

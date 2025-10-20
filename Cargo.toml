@@ -2,8 +2,8 @@
 
 resolver = "3"
 
-members = [ "otlp",
-            "reliability",
+members = [ "crates/otlp",
+            "crates/reliability",
             ]
 
 [workspace.package]
