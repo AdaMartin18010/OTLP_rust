@@ -11,7 +11,7 @@ keywords = ["opentelemetry", "otlp", "observability", "telemetry", "async", "grp
 categories = ["development-tools::debugging", "network-programming", "asynchronous"]
 
 [dependencies]
-# OpenTelemetry核心依赖
+# OpenTelemetry核心依赖（统一使用 v0.31.0）
 opentelemetry = { workspace = true }
 opentelemetry_sdk = { workspace = true }
 opentelemetry-otlp = { workspace = true }
@@ -32,18 +32,18 @@ reqwest = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 prost-types = { workspace = true }
-bincode = "2.0.1"
+bincode = { workspace = true }  # 使用工作区版本
 
 # 并发和同步
 parking_lot = { workspace = true }
 crossbeam = { workspace = true }
-dashmap = "6.1"
+dashmap = { workspace = true }  # 使用工作区版本
 
-# 压缩算法
-flate2 = "1.1.4"
-brotli = "8.0.2"
-zstd = "0.13.3"
-lz4_flex = "0.11.5"
+# 压缩算法（使用稳定版本）
+flate2 = "1.1.4"               # gzip压缩
+brotli = "8.0.2"               # Brotli压缩
+zstd = "0.13.3"                # Zstandard压缩
+lz4_flex = "0.11.5"            # LZ4压缩
 
 # 异步trait
 async-trait = { workspace = true, optional = true }
@@ -55,7 +55,7 @@ num_cpus = { workspace = true }
 rand = { workspace = true }
 
 # 加密和哈希
-sha2 = "0.10.9"
+sha2 = { workspace = true }    # 使用工作区版本
 
 # 错误处理和日志
 anyhow = { workspace = true }
@@ -73,7 +73,7 @@ chrono = { workspace = true }
 uuid = { workspace = true }
 url = { workspace = true }
 bytes = { workspace = true }
-hex = "0.4.3"
+hex = { workspace = true }     # 使用工作区版本
 async-compression = { version = "0.4.32", features = ["tokio", "zstd", "gzip", "brotli"] }
 
 [dev-dependencies]

@@ -13,13 +13,13 @@ keywords = ["reliability", "error-handling", "fault-tolerance", "monitoring", "r
 categories = ["error-handling", "development-tools::testing"]
 
 [dependencies]
-# 错误处理
+# 错误处理（thiserror v2.x）
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-# OpenTelemetry 支持 - 2025年最新版本
+# OpenTelemetry 支持 - 2025年最新版本（统一使用 v0.31.0）
 opentelemetry = { workspace = true, optional = true }
 opentelemetry_sdk = { workspace = true, optional = true }
 opentelemetry-otlp = { workspace = true, optional = true }
@@ -65,16 +65,16 @@ url = { workspace = true }
 rand = { workspace = true }
 
 # 日志记录
-env_logger = { version = "0.11", optional = true }
+env_logger = { workspace = true, optional = true }  # 使用工作区版本
 
 # 属性测试
 proptest = { workspace = true, optional = true }
 
 # 系统信息
-sysinfo = { version = "0.37", optional = true }
+sysinfo = { version = "0.37", optional = true }  # 系统监控信息
 
 # 主机名获取
-hostname = { version = "0.4", optional = true }
+hostname = { version = "0.4", optional = true }  # 主机名检测
 
 # 内存管理 (Windows不支持jemalloc)
 # jemallocator = { version = "0.5", optional = true }
@@ -85,8 +85,8 @@ uuid = { workspace = true }
 # 时间处理增强
 time = { workspace = true }
 
-# OCI 规范（可选）
-oci-spec = { version = "0.8", optional = true }
+# OCI 规范（可选） - 容器运行时规范
+oci-spec = { version = "0.8", optional = true }  # 容器规范解析
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["async"] }

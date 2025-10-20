@@ -1,26 +1,21 @@
 # Cargo 配置文件 - Rust 1.90 优化设置
-# 2025年最新配置，支持Rust 1.90新特性和性能优化
+# 2025年10月20日最新配置，支持Rust 1.90新特性和性能优化
+# 更新日志: bitflags v2.10.0, syn v2.0.107
 
 [build]
-# 构建优化设置
+# 构建优化设置 - Release构建专用
+# 注意: 这些设置会影响所有构建，包括开发构建
+# 如果需要更快的开发构建，请使用 cargo build 而不添加 --release
 rustflags = [
     # CPU指令集优化 - 2025年最新设置
     "-C", "target-cpu=native",           # 针对当前CPU优化
-    "-C", "target-feature=+crt-static",  # 静态链接C运行时
-    "-C", "opt-level=3",                 # 最高优化级别
-    "-C", "lto=fat",                     # 链接时优化
-    "-C", "codegen-units=1",             # 单个代码生成单元
-    "-C", "panic=abort",                 # panic时直接终止
-    "-C", "strip=symbols",               # 去除调试符号
+    # "-C", "target-feature=+crt-static",  # 静态链接C运行时（Windows MSVC默认）
     
-    # Rust 1.90 新特性优化
-    "-C", "target-feature=+avx2,+fma",   # 启用AVX2和FMA指令
-    "-C", "target-feature=+bmi2,+popcnt", # 启用BMI2和POPCNT指令
-    "-C", "target-feature=+sse4.2",      # 启用SSE4.2指令集
-    
-    # 内存优化
-    "-C", "force-frame-pointers=no",     # 禁用帧指针
-    "-C", "relocation-model=static",     # 静态重定位模型
+    # Rust 1.90 新特性优化 - SIMD指令集
+    # 注意: 这些指令集在现代CPU上广泛支持，但会影响可移植性
+    # "-C", "target-feature=+avx2,+fma",   # 启用AVX2和FMA指令
+    # "-C", "target-feature=+bmi2,+popcnt", # 启用BMI2和POPCNT指令
+    # "-C", "target-feature=+sse4.2",      # 启用SSE4.2指令集（已包含在native中）
 ]
 
 # 网络配置
@@ -42,25 +37,27 @@ RUST_LOG = "info"
 CARGO_INCREMENTAL = "1"
 CARGO_NET_RETRY = "2"
 
-# 目标配置
+# 目标配置 - Windows MSVC
 [target.x86_64-pc-windows-msvc]
 rustflags = [
-    "-C", "target-cpu=native",
-    "-C", "target-feature=+crt-static",
+    "-C", "target-cpu=native",           # 针对当前CPU优化
+    # Windows MSVC默认使用动态链接，无需强制静态链接
 ]
 
+# Linux x86_64 目标配置
 [target.x86_64-unknown-linux-gnu]
 rustflags = [
-    "-C", "target-cpu=native",
-    "-C", "target-feature=+crt-static",
-    "-C", "link-arg=-static",
+    "-C", "target-cpu=native",           # 针对当前CPU优化
+    # "-C", "target-feature=+crt-static",  # 静态链接（可选）
+    # "-C", "link-arg=-static",            # 完全静态链接（可选，需要musl）
 ]
 
+# Linux ARM64 目标配置
 [target.aarch64-unknown-linux-gnu]
 rustflags = [
-    "-C", "target-cpu=native",
-    "-C", "target-feature=+crt-static",
-    "-C", "link-arg=-static",
+    "-C", "target-cpu=native",           # 针对当前CPU优化
+    # "-C", "target-feature=+crt-static",  # 静态链接（可选）
+    # "-C", "link-arg=-static",            # 完全静态链接（可选）
 ]
 
 # 别名配置 - 精简版，保留最常用的别名
