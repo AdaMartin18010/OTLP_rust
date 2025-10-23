@@ -53,13 +53,17 @@ pub struct MemoryProfiler {
 struct MemorySample {
     stack_trace: Vec<StackFrame>,
     size: usize,
+    #[allow(dead_code)]
     timestamp: SystemTime,
+    #[allow(dead_code)]
     thread_id: u64,
+    #[allow(dead_code)]
     allocation_type: AllocationType,
 }
 
 /// Type of memory allocation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 enum AllocationType {
     Allocation,
     Deallocation,

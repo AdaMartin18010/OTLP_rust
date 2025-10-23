@@ -453,6 +453,8 @@ mod tests {
         assert_eq!(profile.sample.len(), 0);
     }
 
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
     #[test]
     fn test_attribute_value_variants() {
         let str_val = AttributeValue::String("test".to_string());

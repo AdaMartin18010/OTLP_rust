@@ -182,6 +182,7 @@ impl StringTable {
     }
 
     /// Gets string by index
+    #[allow(dead_code)]
     fn get_string(&self, idx: u32) -> Option<&str> {
         self.reverse.get(idx as usize).map(|s| s.as_str())
     }
@@ -236,6 +237,7 @@ impl DeltaEncoder {
     }
 
     /// Decodes a delta timestamp
+    #[allow(dead_code)]
     fn decode_timestamp(&mut self, delta: i64) -> u64 {
         self.last_timestamp = (self.last_timestamp as i64 + delta) as u64;
         self.last_timestamp
@@ -311,6 +313,7 @@ impl SpanDeduplicator {
     }
 
     /// Returns the number of unique spans seen
+    #[allow(dead_code)]
     fn len(&self) -> usize {
         self.seen_hashes.len()
     }

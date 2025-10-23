@@ -3,7 +3,6 @@
 //! This example demonstrates the usage of database semantic conventions
 //! for various database systems (PostgreSQL, MySQL, MongoDB, Redis, etc.).
 
-use otlp::semantic_conventions::common::AttributeValue;
 use otlp::semantic_conventions::database::{
     DatabaseAttributesBuilder, DatabaseOperation, DatabaseSystem,
 };

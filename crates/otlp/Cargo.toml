@@ -76,6 +76,9 @@ bytes = { workspace = true }
 hex = { workspace = true }     # 使用工作区版本
 async-compression = { version = "0.4.32", features = ["tokio", "zstd", "gzip", "brotli"] }
 
+# Profiling依赖
+backtrace = { version = "0.3", optional = true }
+
 [dev-dependencies]
 tokio-test = { workspace = true }
 criterion = { workspace = true }
@@ -94,7 +97,7 @@ harness = false
 
 [features]
 default = ["async", "grpc", "http"]
-full = ["async", "grpc", "http", "monitoring"]
+full = ["async", "grpc", "http", "monitoring", "backtrace"]
 
 # 核心功能特性
 async = ["tokio/full", "async-trait"]
@@ -106,6 +109,9 @@ monitoring = []
 
 # 性能优化特性
 performance = []
+
+# Profiling特性
+backtrace = ["dep:backtrace"]
 
 [[example]]
 name = "quick_optimizations_demo"

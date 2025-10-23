@@ -82,16 +82,19 @@ pub struct HttpAttributesBuilder {
     
     // Request attributes
     request_body_size: Option<i64>,
+    #[allow(dead_code)]
     request_header_content_length: Option<i64>,
     
     // Response attributes
     response_body_size: Option<i64>,
+    #[allow(dead_code)]
     response_header_content_length: Option<i64>,
     
     // URL components
     url_scheme: Option<HttpScheme>,
     url_path: Option<String>,
     url_query: Option<String>,
+    #[allow(dead_code)]
     url_fragment: Option<String>,
     
     // Server attributes
@@ -101,7 +104,9 @@ pub struct HttpAttributesBuilder {
     // Network attributes
     network_protocol_name: Option<String>,
     network_protocol_version: Option<String>,
+    #[allow(dead_code)]
     network_peer_address: Option<String>,
+    #[allow(dead_code)]
     network_peer_port: Option<u16>,
     
     // User agent

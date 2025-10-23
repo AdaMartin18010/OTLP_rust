@@ -9,7 +9,6 @@ use otlp::profiling::{
     ProfileBuilder, ProfileExporter, ProfileExporterConfig, ProfileType,
     generate_profile_id, AttributeValue,
 };
-use otlp::profiling::pprof::StackFrame;
 use std::collections::HashMap;
 use std::time::Duration;
 

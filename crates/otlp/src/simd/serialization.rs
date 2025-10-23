@@ -289,8 +289,7 @@ mod tests {
         let stats = serializer.stats();
         assert_eq!(stats.batches_processed, 2);
         assert_eq!(stats.values_processed, 10);
-        // Time might be 0 for very fast operations
-        assert!(stats.total_time_us >= 0);
+        // Time might be 0 for very fast operations, but is always non-negative (u64)
     }
 
     #[test]

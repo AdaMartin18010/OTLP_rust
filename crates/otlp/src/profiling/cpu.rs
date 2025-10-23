@@ -47,7 +47,9 @@ pub struct CpuProfiler {
 #[derive(Debug, Clone)]
 struct CpuSample {
     stack_trace: Vec<StackFrame>,
+    #[allow(dead_code)]
     timestamp: SystemTime,
+    #[allow(dead_code)]
     thread_id: u64,
 }
 
