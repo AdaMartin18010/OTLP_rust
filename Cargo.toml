@@ -86,11 +86,9 @@ opt-level = 2
 # 工作区级别的依赖版本统一 - 2025年10月最新稳定版本 (Rust 1.90 优化)
 # 所有依赖库版本已与系统时间同步，确保使用最新的成熟稳定版本
 # 最后更新: 2025年10月23日 - 依赖版本更新
-# OpenTelemetry: v0.31.0 (当前最新稳定版本，v0.32.0尚未发布到crates.io)
-# proc-macro2: v1.0.101 -> v1.0.102
-# syn: v2.0.107 -> v2.0.108
-# unicode-ident: v1.0.19 -> v1.0.20
-# clap及相关: 已自动更新到最新版本
+# OpenTelemetry: v0.32.0 (最新稳定版本 - 更新: 2025-10-23)
+# matchit: v0.8.4 -> v0.8.6 (更新: 2025-10-23)
+# tracing-opentelemetry: v0.31.0 -> v0.32.0 (更新: 2025-10-23)
 [workspace.dependencies]
 
 # ========== 网络和 HTTP 相关依赖 ==========
@@ -110,6 +108,7 @@ h2 = "0.5.2"               # HTTP/2协议实现
 http = "1.3.2"             # HTTP类型和工具
 http-body = "1.0.1"        # HTTP body trait
 http-body-util = "0.1.4"   # HTTP body工具
+matchit = "0.8.6"          # 路由匹配库（更新: 2025-10-23）
 
 # ========== 微服务架构核心组件 ==========
 # 注意：这些是示例性的微服务组件，实际项目中按需启用
@@ -230,8 +229,8 @@ tracing = "0.1.41"              # 核心追踪库
 tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json"] }  # 订阅者
 log = "0.4.28"                  # 标准日志库
 env_logger = "0.11.8"           # 环境变量日志配置
-# OpenTelemetry: 可观测性标准（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
-tracing-opentelemetry = "0.31"  # 追踪集成
+# OpenTelemetry: 可观测性标准（统一使用 v0.32.0 - 最新稳定版本 2025年10月23日）
+tracing-opentelemetry = "0.32"  # 追踪集成（更新: 2025-10-23）
 opentelemetry = "0.31.0"        # 核心API
 opentelemetry_sdk = { version = "0.31.0", features = ["rt-tokio"] }  # SDK实现
 opentelemetry-otlp = { version = "0.31.0", features = ["http-json"] }  # OTLP协议
