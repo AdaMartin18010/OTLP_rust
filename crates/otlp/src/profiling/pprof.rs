@@ -211,20 +211,63 @@ impl StackFrame {
 pub struct PprofEncoder;
 
 impl PprofEncoder {
-    /// Encode a pprof profile to bytes
-    /// 
-    /// Note: This is a simplified version. In production, you would use
-    /// protobuf encoding (prost or similar) to serialize the profile.
-    pub fn encode(_profile: &PprofProfile) -> Result<Vec<u8>, String> {
-        // TODO: Implement actual protobuf encoding
-        // For now, return a placeholder
-        Err("Protobuf encoding not yet implemented. Use prost crate.".to_string())
+    /// Encode a pprof profile to JSON format (for debugging and compatibility)
+    ///
+    /// This is a simplified JSON encoding for development and debugging.
+    /// For production use with pprof tools, you should implement protobuf encoding
+    /// using the official pprof.proto definition from https://github.com/google/pprof
+    pub fn encode_json(profile: &PprofProfile) -> Result<Vec<u8>, String> {
+        serde_json::to_vec_pretty(profile)
+            .map_err(|e| format!("Failed to encode profile to JSON: {}", e))
     }
     
-    /// Decode a pprof profile from bytes
-    pub fn decode(_data: &[u8]) -> Result<PprofProfile, String> {
-        // TODO: Implement actual protobuf decoding
-        Err("Protobuf decoding not yet implemented. Use prost crate.".to_string())
+    /// Decode a pprof profile from JSON format
+    pub fn decode_json(data: &[u8]) -> Result<PprofProfile, String> {
+        serde_json::from_slice(data)
+            .map_err(|e| format!("Failed to decode profile from JSON: {}", e))
+    }
+    
+    /// Encode a pprof profile to protobuf bytes (production format)
+    /// 
+    /// TODO: Implement actual protobuf encoding using prost
+    /// 
+    /// To implement this properly:
+    /// 1. Add pprof.proto definition to proto/ directory
+    /// 2. Use prost-build in build.rs to generate Rust code
+    /// 3. Convert PprofProfile to generated protobuf types
+    /// 4. Use prost::Message::encode() to serialize
+    ///
+    /// Example build.rs:
+    /// ```rust,ignore
+    /// fn main() {
+    ///     prost_build::compile_protos(&["proto/pprof.proto"], &["proto/"]).unwrap();
+    /// }
+    /// ```
+    pub fn encode_protobuf(_profile: &PprofProfile) -> Result<Vec<u8>, String> {
+        Err("Protobuf encoding not yet implemented. Please implement using prost crate. \
+             For now, use encode_json() for development/debugging purposes.".to_string())
+    }
+    
+    /// Decode a pprof profile from protobuf bytes
+    ///
+    /// TODO: Implement actual protobuf decoding using prost
+    pub fn decode_protobuf(_data: &[u8]) -> Result<PprofProfile, String> {
+        Err("Protobuf decoding not yet implemented. Please implement using prost crate. \
+             For now, use decode_json() for development/debugging purposes.".to_string())
+    }
+    
+    /// Save profile to file (JSON format)
+    pub fn save_json(profile: &PprofProfile, path: &std::path::Path) -> Result<(), String> {
+        let data = Self::encode_json(profile)?;
+        std::fs::write(path, data)
+            .map_err(|e| format!("Failed to write profile to file: {}", e))
+    }
+    
+    /// Load profile from file (JSON format)
+    pub fn load_json(path: &std::path::Path) -> Result<PprofProfile, String> {
+        let data = std::fs::read(path)
+            .map_err(|e| format!("Failed to read profile from file: {}", e))?;
+        Self::decode_json(&data)
     }
 }
 
@@ -353,6 +396,49 @@ mod tests {
         
         let profile = builder.build();
         assert_eq!(profile.duration_nanos, 1_000_000_000);
+    }
+    
+    #[test]
+    fn test_json_encode_decode() {
+        let mut builder = PprofBuilder::new(ProfileType::Cpu);
+        builder.add_comment("Test profile");
+        builder.set_duration(1_000_000_000);
+        
+        let frames = vec![
+            StackFrame::new("main", "main.rs", 10, 0x1000),
+        ];
+        let sample = builder.create_sample_from_stack(&frames, 100);
+        builder.add_sample(sample);
+        
+        let profile = builder.build();
+        
+        // Encode to JSON
+        let encoded = PprofEncoder::encode_json(&profile).expect("Failed to encode");
+        assert!(!encoded.is_empty());
+        
+        // Decode from JSON
+        let decoded = PprofEncoder::decode_json(&encoded).expect("Failed to decode");
+        
+        // Verify key fields
+        assert_eq!(decoded.duration_nanos, profile.duration_nanos);
+        assert_eq!(decoded.sample.len(), profile.sample.len());
+        assert_eq!(decoded.comment.len(), profile.comment.len());
+    }
+    
+    #[test]
+    fn test_protobuf_not_implemented() {
+        let builder = PprofBuilder::new(ProfileType::Cpu);
+        let profile = builder.build();
+        
+        // Protobuf encoding should return error
+        let result = PprofEncoder::encode_protobuf(&profile);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not yet implemented"));
+        
+        // Protobuf decoding should return error
+        let result = PprofEncoder::decode_protobuf(&[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not yet implemented"));
     }
 }
 
