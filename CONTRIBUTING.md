@@ -6,15 +6,57 @@ Thank you for your interest in contributing to OTLP Rust! This document provides
 
 ## 📋 Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [How to Contribute](#how-to-contribute)
-- [Coding Guidelines](#coding-guidelines)
-- [Testing Guidelines](#testing-guidelines)
-- [Documentation Guidelines](#documentation-guidelines)
-- [Pull Request Process](#pull-request-process)
-- [Community](#community)
+- [🤝 Contributing to OTLP Rust](#-contributing-to-otlp-rust)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [📜 Code of Conduct](#-code-of-conduct)
+    - [Our Standards](#our-standards)
+  - [🚀 Getting Started](#-getting-started)
+    - [Prerequisites](#prerequisites)
+    - [First Steps](#first-steps)
+  - [💻 Development Setup](#-development-setup)
+    - [Install Dependencies](#install-dependencies)
+    - [Build the Project](#build-the-project)
+  - [🎯 How to Contribute](#-how-to-contribute)
+    - [Types of Contributions](#types-of-contributions)
+      - [🐛 Bug Fixes](#-bug-fixes)
+      - [✨ New Features](#-new-features)
+      - [📚 Documentation](#-documentation)
+      - [🧪 Tests](#-tests)
+      - [🎨 Code Quality](#-code-quality)
+  - [📏 Coding Guidelines](#-coding-guidelines)
+    - [Rust Style](#rust-style)
+    - [Code Organization](#code-organization)
+    - [Error Handling](#error-handling)
+    - [Async Code](#async-code)
+  - [🧪 Testing Guidelines](#-testing-guidelines)
+    - [Test Organization](#test-organization)
+    - [Test Coverage](#test-coverage)
+    - [Running Tests](#running-tests)
+  - [📚 Documentation Guidelines](#-documentation-guidelines)
+    - [Code Documentation](#code-documentation)
+    - [Documentation Files](#documentation-files)
+    - [Example Code](#example-code)
+  - [🔄 Pull Request Process](#-pull-request-process)
+    - [Before Submitting](#before-submitting)
+    - [Submitting the PR](#submitting-the-pr)
+    - [PR Review Process](#pr-review-process)
+    - [After Merge](#after-merge)
+  - [🎓 Development Tips](#-development-tips)
+    - [Useful Commands](#useful-commands)
+    - [IDE Setup](#ide-setup)
+  - [🌐 Community](#-community)
+    - [Communication Channels](#communication-channels)
+    - [Getting Help](#getting-help)
+    - [Recognition](#recognition)
+  - [📝 Commit Message Guidelines](#-commit-message-guidelines)
+    - [Format](#format)
+    - [Types](#types)
+    - [Examples](#examples)
+  - [🏆 Recognition](#-recognition)
+    - [Hall of Fame](#hall-of-fame)
+    - [Rewards](#rewards)
+  - [📋 Checklist for First-Time Contributors](#-checklist-for-first-time-contributors)
+  - [🙏 Thank You](#-thank-you)
 
 ---
 
@@ -44,15 +86,20 @@ This project adheres to a code of conduct that we expect all contributors to fol
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/OTLP_rust.git
    cd OTLP_rust
    ```
+
 3. **Add upstream remote**:
+
    ```bash
    git remote add upstream https://github.com/ORIGINAL_OWNER/OTLP_rust.git
    ```
+
 4. **Create a branch**:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -102,26 +149,31 @@ cargo clippy --all-targets --all-features -- -D warnings
 We welcome various types of contributions:
 
 #### 🐛 Bug Fixes
+
 - Search existing issues first
 - Create a new issue if needed
 - Submit a PR with the fix
 
 #### ✨ New Features
+
 - Discuss in an issue first
 - Wait for approval before starting
 - Submit a PR when ready
 
 #### 📚 Documentation
+
 - Fix typos and unclear explanations
 - Add examples
 - Improve guides
 
 #### 🧪 Tests
+
 - Add missing test coverage
 - Improve test quality
 - Add benchmark tests
 
 #### 🎨 Code Quality
+
 - Refactor existing code
 - Improve performance
 - Reduce technical debt
@@ -310,12 +362,14 @@ pub fn new(endpoint: &str, config: ClientConfig) -> Result<Self, OtlpError> {
 ### Before Submitting
 
 1. **Update your branch**:
+
    ```bash
    git fetch upstream
    git rebase upstream/main
    ```
 
 2. **Run checks**:
+
    ```bash
    cargo fmt --all
    cargo clippy --all-targets --all-features
@@ -330,6 +384,7 @@ pub fn new(endpoint: &str, config: ClientConfig) -> Result<Self, OtlpError> {
 ### Submitting the PR
 
 1. **Push to your fork**:
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -383,11 +438,13 @@ cargo outdated
 ### IDE Setup
 
 **VS Code**:
+
 - Install rust-analyzer extension
 - Install CodeLLDB for debugging
 - Configure auto-format on save
 
 **IntelliJ IDEA**:
+
 - Install Rust plugin
 - Enable format on save
 - Configure clippy integration
@@ -425,7 +482,7 @@ We recognize contributors in several ways:
 
 ### Format
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -445,7 +502,7 @@ We recognize contributors in several ways:
 
 ### Examples
 
-```
+```text
 feat(client): add retry mechanism
 
 Implement exponential backoff retry logic for failed requests.
@@ -454,7 +511,7 @@ Configurable max attempts and initial delay.
 Closes #123
 ```
 
-```
+```text
 fix(reliability): correct error context propagation
 
 Error context was not being properly propagated through
@@ -492,12 +549,12 @@ Top contributors will be recognized in our README and annual reports.
 
 ---
 
-## 🙏 Thank You!
+## 🙏 Thank You
 
 Every contribution, no matter how small, is valuable. Thank you for making OTLP Rust better!
 
-**Happy Contributing! 🚀**
+**Happy Contributing! 🚀**-
 
 ---
 
-*Last Updated: 2025-10-20*
+*Last Updated: 2025-10-20*-
