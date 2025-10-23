@@ -1,6 +1,70 @@
-//! # eBPF Profiling 支持模块
+//! # OpenTelemetry Profiling Module
 //!
-//! 提供基础的性能分析功能，为未来的 eBPF 集成做准备。
+//! This module provides comprehensive profiling support for OpenTelemetry,
+//! including CPU profiling, memory profiling, and various sampling strategies.
+//!
+//! ## Features
+//!
+//! - **CPU Profiling**: Sample call stacks to identify CPU hotspots
+//! - **Memory Profiling**: Track heap allocations and memory usage
+//! - **pprof Format**: Industry-standard profile format support
+//! - **OTLP Export**: Export profiles to OTLP collectors
+//! - **Sampling Strategies**: Multiple sampling strategies (always, probabilistic, rate-based, adaptive)
+//! - **Trace Correlation**: Link profiles to distributed traces
+//!
+//! ## Quick Start
+//!
+//! ```rust,ignore
+//! use otlp::profiling::{CpuProfiler, CpuProfilerConfig};
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let mut profiler = CpuProfiler::new(CpuProfilerConfig::default());
+//!     
+//!     profiler.start().await.unwrap();
+//!     
+//!     // Your code here
+//!     
+//!     profiler.stop().await.unwrap();
+//!     let profile = profiler.generate_profile().await.unwrap();
+//! }
+//! ```
+
+// Re-export main types and modules
+pub mod types;
+pub mod pprof;
+pub mod cpu;
+pub mod memory;
+pub mod exporter;
+pub mod sampling;
+
+// Re-export commonly used types
+pub use types::{
+    AttributeValue, Function, InstrumentationScope, Label, Line, Location, Mapping,
+    PprofProfile, Profile, ProfileContainer, ProfileType, Resource, Sample,
+    ScopeProfiles, ValueType,
+};
+
+pub use pprof::{PprofBuilder, PprofEncoder, StackTraceCollector};
+// Re-export StackFrame from pprof module
+pub use pprof::StackFrame as ProfilingStackFrame;
+
+pub use cpu::{CpuProfiler, CpuProfilerConfig, CpuProfilerStats, profile_async};
+
+pub use memory::{
+    MemoryProfiler, MemoryProfilerConfig, MemoryProfilerStats, 
+    SystemMemoryInfo, get_system_memory_info,
+};
+
+pub use exporter::{
+    ExportError, ProfileBuilder, ProfileExporter, ProfileExporterConfig,
+    generate_profile_id, link_profile_to_current_trace, profile_id_from_hex,
+};
+
+pub use sampling::{
+    AdaptiveSampler, AlwaysSample, NeverSample, ProbabilisticSampler, RateSampler,
+    SamplingStats, SamplingStrategy,
+};
 
 use crate::data::{TelemetryContent, TelemetryData, TelemetryDataType};
 use crate::error::{OtlpError, Result};

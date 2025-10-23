@@ -244,6 +244,18 @@ pub mod validation;
 // 性能优化模块 (合并后的统一模块)
 pub mod performance;
 
+// Profiling模块 (OpenTelemetry Profiling标准)
+pub mod profiling;
+
+// Semantic Conventions模块 (语义约定标准)
+pub mod semantic_conventions;
+
+// Compression模块 (Tracezip压缩)
+pub mod compression;
+
+// SIMD优化模块
+pub mod simd;
+
 // 网络和连接管理
 pub mod network;
 

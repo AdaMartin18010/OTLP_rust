@@ -11,7 +11,7 @@ keywords = ["opentelemetry", "otlp", "observability", "telemetry", "async", "grp
 categories = ["development-tools::debugging", "network-programming", "asynchronous"]
 
 [dependencies]
-# OpenTelemetry核心依赖（统一使用 v0.31.0）
+# OpenTelemetry核心依赖（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
 opentelemetry = { workspace = true }
 opentelemetry_sdk = { workspace = true }
 opentelemetry-otlp = { workspace = true }

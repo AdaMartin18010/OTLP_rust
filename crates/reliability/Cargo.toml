@@ -19,7 +19,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-# OpenTelemetry 支持 - 2025年最新版本（统一使用 v0.31.0）
+# OpenTelemetry 支持 - 2025年最新版本（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
 opentelemetry = { workspace = true, optional = true }
 opentelemetry_sdk = { workspace = true, optional = true }
 opentelemetry-otlp = { workspace = true, optional = true }
