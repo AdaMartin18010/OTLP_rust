@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.0-rc1] - 2025-10-23
 
+### Changed
+
+#### Dependency Updates 🔄
+
+- Updated `tracing-opentelemetry` from v0.31.0 to v0.32.0
+  - Enhanced OpenTelemetry integration
+  - Improved performance and stability
+  - Better compatibility with OpenTelemetry ecosystem
+- Updated `matchit` from v0.8.4 to v0.8.6
+  - Bug fixes and performance improvements
+  - Enhanced routing match capabilities
+- Security updates:
+  - `protobuf` v3.7.3 (fixes RUSTSEC-2024-0437)
+  - Replaced unmaintained dependencies with secure alternatives
+- All dependencies verified to be at latest stable versions compatible with Rust 1.90
+
 ### Added
 
 #### Profiling Support ⭐⭐⭐⭐⭐
