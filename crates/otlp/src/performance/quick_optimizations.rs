@@ -382,10 +382,12 @@ mod tests {
         };
 
         let compressor = Compressor::new(config);
-        let data = b"Hello, World! This is a test string for compression.";
+        // 使用更大的重复数据以确保压缩效果明显
+        let data = b"Hello, World! This is a test string for compression. ".repeat(100);
 
-        let compressed = compressor.compress(data).await.unwrap();
-        assert!(compressed.len() < data.len());
+        let compressed = compressor.compress(&data).await.unwrap();
+        // 压缩后的大小应该小于原始大小（因为数据是重复的）
+        assert!(compressed.len() < data.len(), "Expected compressed size {} to be less than original size {}", compressed.len(), data.len());
     }
 
     #[tokio::test]
