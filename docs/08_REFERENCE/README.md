@@ -12,6 +12,8 @@
     - [🏗️ 架构师](#️-架构师)
     - [🚀 运维工程师](#-运维工程师)
   - [📖 文档索引](#-文档索引)
+    - [🌟 OTLP 标准对齐 (NEW!)](#-otlp-标准对齐-new)
+    - [🚀 OTLP 2024-2025 特性 (NEW!)](#-otlp-2024-2025-特性-new)
     - [最佳实践指南](#最佳实践指南)
     - [术语表](#术语表)
     - [标准合规性](#标准合规性)
@@ -72,6 +74,8 @@
 
 ### 🏗️ 架构师
 
+- [OTLP 标准对齐](otlp_standards_alignment.md) ⭐ NEW
+- [OTLP 2024-2025 特性](otlp_2024_2025_features.md) ⭐ NEW
 - [架构设计](../04_ARCHITECTURE/README.md)
 - [理论框架](../02_THEORETICAL_FRAMEWORK/README.md)
 - [标准合规性](standards_compliance.md)
@@ -83,6 +87,40 @@
 - [故障排除](troubleshooting_guide.md)
 
 ## 📖 文档索引
+
+### 🌟 OTLP 标准对齐 (NEW!)
+
+**文件**: [otlp_standards_alignment.md](otlp_standards_alignment.md)
+
+**主要内容**:
+
+- OTLP 协议版本详解 (v0.x → v1.x)
+- 信号类型数据模型 (Trace/Metrics/Logs/Profile/Event)
+- Semantic Conventions v1.25+ (GenAI、云原生、消息系统)
+- 传输协议规范 (gRPC/HTTP/Arrow)
+- 完整的合规性检查清单
+
+**适用人群**: 架构师、开发工程师、标准合规人员
+
+**文档规模**: 1300+ 行，最全面的 OTLP 标准参考
+
+### 🚀 OTLP 2024-2025 特性 (NEW!)
+
+**文件**: [otlp_2024_2025_features.md](otlp_2024_2025_features.md)
+
+**主要内容**:
+
+- Profile 信号类型 (pprof 集成)
+- Event 信号类型 (独立事件模型)
+- 增强的 Log 模型 (结构化日志)
+- Semantic Conventions v1.25+ 新特性
+- OTLP/Arrow 高性能传输协议
+- 批处理和性能优化
+- 安全性增强 (mTLS/OAuth2)
+
+**适用人群**: 架构师、开发工程师、性能优化工程师
+
+**文档规模**: 800+ 行，涵盖最新 OTLP 发展趋势
 
 ### 最佳实践指南
 
@@ -343,8 +381,14 @@ pub struct PerformanceConfig {
 
 ---
 
-**参考资料版本**: 1.0.0  
-**最后更新**: 2025年1月  
+**参考资料版本**: 2.0.0  
+**最后更新**: 2025年10月24日  
 **维护者**: OTLP Rust 文档团队
+
+**🎉 版本 2.0.0 新增**:
+
+- ✅ OTLP 标准对齐完整参考 (1300+ 行)
+- ✅ OTLP 2024-2025 最新特性详解 (800+ 行)
+- ✅ 对齐 2025 年 10 月最新 OTLP 发展趋势
 
 🎯 **需要帮助？** 查看 [故障排除指南](troubleshooting_guide.md) 或 [联系我们](../../README.md#支持)。

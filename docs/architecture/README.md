@@ -2,7 +2,8 @@
 
 欢迎来到 OTLP Rust 的架构设计文档中心。这里详细介绍了项目的架构设计和实现细节。
 
-**最后更新**: 2025年10月24日
+**最后更新**: 2025年10月24日  
+**版本**: 2.0 (新增 OTLP 2024-2025 特性支持)
 
 ---
 
@@ -54,39 +55,48 @@
 - ✅ **零拷贝** - 最小化内存拷贝
 - ✅ **批处理** - 高效的批处理机制
 
+### 🚀 OTLP 2024-2025 新特性支持
+
+- 🆕 **Profile 信号类型** - CPU/内存性能分析（pprof 格式）
+- 🆕 **Event 信号类型** - 独立事件模型，超越日志的结构化事件
+- 🆕 **增强的 Log 模型** - 结构化日志，支持复杂嵌套数据
+- 🆕 **OTLP/Arrow** - 基于 Apache Arrow 的高性能传输协议
+- 🆕 **Semantic Conventions v1.25+** - GenAI、云原生、消息系统新属性
+
 ---
 
 ## 🏛️ 架构层次
 
 ```text
-┌─────────────────────────────────────────┐
-│          应用层 (Application)            │
-│  ┌───────────────────────────────────┐  │
-│  │   OTLP 客户端 API                 │  │
-│  │   可靠性框架 API                  │  │
-│  └───────────────────────────────────┘  │
-├─────────────────────────────────────────┤
-│          核心层 (Core)                  │
-│  ┌───────────────┬─────────────────┐   │
-│  │  追踪处理     │  指标收集       │   │
-│  │  Tracing      │  Metrics        │   │
-│  ├───────────────┼─────────────────┤   │
-│  │  日志记录     │  数据导出       │   │
-│  │  Logging      │  Export         │   │
-│  └───────────────┴─────────────────┘   │
-├─────────────────────────────────────────┤
-│          传输层 (Transport)             │
-│  ┌───────────────┬─────────────────┐   │
-│  │  gRPC         │  HTTP/JSON      │   │
-│  │  传输         │  传输           │   │
-│  └───────────────┴─────────────────┘   │
-├─────────────────────────────────────────┤
-│          基础层 (Foundation)            │
-│  ┌───────────────────────────────────┐  │
-│  │  错误处理  │  配置管理  │  工具  │  │
-│  │  批处理    │  连接池    │  监控  │  │
-│  └───────────────────────────────────┘  │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│          应用层 (Application)                    │
+│  ┌───────────────────────────────────────────┐  │
+│  │   OTLP 客户端 API                         │  │
+│  │   可靠性框架 API                          │  │
+│  └───────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────┤
+│          信号层 (Signals) - OTLP 2025           │
+│  ┌─────────┬─────────┬─────────┬─────────────┐ │
+│  │ 追踪    │ 指标    │ 日志    │ Profile🆕  │ │
+│  │ Trace   │ Metrics │ Logs    │ (pprof)     │ │
+│  ├─────────┴─────────┴─────────┼─────────────┤ │
+│  │      数据导出               │  Event🆕   │ │
+│  │      Export                 │  (独立事件) │ │
+│  └─────────────────────────────┴─────────────┘ │
+├─────────────────────────────────────────────────┤
+│          传输层 (Transport) - OTLP 2025         │
+│  ┌─────────┬───────────┬──────────────────┐    │
+│  │ gRPC    │ HTTP/JSON │ OTLP/Arrow🆕    │    │
+│  │ 传输    │ 传输      │ (高性能传输)     │    │
+│  └─────────┴───────────┴──────────────────┘    │
+├─────────────────────────────────────────────────┤
+│          基础层 (Foundation)                    │
+│  ┌───────────────────────────────────────────┐ │
+│  │ 错误处理 │ 配置管理 │ Semantic Conventions│ │
+│  │ 批处理   │ 连接池   │ v1.25+🆕          │ │
+│  │ 监控     │ 安全     │ (GenAI/云原生)    │ │
+│  └───────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -101,10 +111,18 @@ OTLP_rust/
 │   ├── otlp/                  # OTLP 核心实现
 │   │   ├── src/
 │   │   │   ├── client/        # 客户端
-│   │   │   ├── tracer/        # 追踪器
-│   │   │   ├── meter/         # 指标收集
-│   │   │   ├── logger/        # 日志记录
+│   │   │   ├── signals/       # 信号处理 (2025)
+│   │   │   │   ├── trace/     # 追踪信号
+│   │   │   │   ├── metrics/   # 指标信号
+│   │   │   │   ├── logs/      # 日志信号 (增强)
+│   │   │   │   ├── profile/   # Profile 信号 🆕
+│   │   │   │   └── event/     # Event 信号 🆕
 │   │   │   ├── export/        # 数据导出
+│   │   │   ├── transport/     # 传输层
+│   │   │   │   ├── grpc/      # gRPC 传输
+│   │   │   │   ├── http/      # HTTP 传输
+│   │   │   │   └── arrow/     # OTLP/Arrow 🆕
+│   │   │   ├── semconv/       # Semantic Conventions v1.25+ 🆕
 │   │   │   └── config/        # 配置管理
 │   │   └── examples/          # 示例代码
 │   │
@@ -171,6 +189,42 @@ reliability  │
   OTLP Collector
 ```
 
+### 🆕 Profile 数据流 (2025)
+
+```text
+应用代码
+    ↓
+  Profiler.start() (CPU/Memory)
+    ↓
+  ProfileData (pprof 格式)
+    ↓
+  ProfileProcessor (批处理)
+    ↓
+  Exporter (导出)
+    ↓
+  传输层 (gRPC/HTTP/Arrow)
+    ↓
+  OTLP Collector → Profiling Backend
+```
+
+### 🆕 Event 数据流 (2025)
+
+```text
+应用代码
+    ↓
+  EventEmitter.emit() (结构化事件)
+    ↓
+  EventData (独立于日志)
+    ↓
+  EventProcessor (批处理)
+    ↓
+  Exporter (导出)
+    ↓
+  传输层 (gRPC/HTTP/Arrow)
+    ↓
+  OTLP Collector → Event Processing
+```
+
 ---
 
 ## 🎓 学习路径
@@ -213,9 +267,16 @@ reliability  │
 - [自我修复架构](../02_THEORETICAL_FRAMEWORK/SELF_HEALING_AUTO_ADJUSTMENT_ARCHITECTURE.md)
 - [分布式系统理论](../02_THEORETICAL_FRAMEWORK/DISTRIBUTED_SYSTEMS_THEORY.md)
 
+### 🚀 OTLP 2024-2025 参考
+
+- [🌟 OTLP 标准对齐](../08_REFERENCE/otlp_standards_alignment.md) - 完整 OTLP 标准参考
+- [🚀 OTLP 2024-2025 特性](../08_REFERENCE/otlp_2024_2025_features.md) - Profile/Event/Arrow 等新特性
+
 ### 外部资源
 
 - [OpenTelemetry 架构](https://opentelemetry.io/docs/reference/specification/)
+- [OTLP 协议规范](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
+- [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/)
 - [Rust 异步编程](https://rust-lang.github.io/async-book/)
 - [Tokio 架构](https://tokio.rs/tokio/tutorial)
 
@@ -230,6 +291,14 @@ reliability  │
 3. **ADR-003: 错误处理** - 统一错误处理的设计
 4. **ADR-004: 批处理策略** - 批处理的实现方案
 5. **ADR-005: 传输协议** - gRPC vs HTTP 的选择
+
+### 🆕 2025 新架构决策
+
+6. **ADR-006: Profile 信号集成** - pprof 格式性能分析数据支持
+7. **ADR-007: Event 信号设计** - 独立事件模型 vs 日志模型
+8. **ADR-008: OTLP/Arrow 传输** - Apache Arrow 格式高性能传输
+9. **ADR-009: Semantic Conventions v1.25+** - GenAI/云原生属性集成
+10. **ADR-010: 增强日志模型** - 结构化日志复杂数据支持
 
 > 详细的 ADR 文档即将推出
 

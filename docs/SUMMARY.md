@@ -57,6 +57,9 @@
 
 ## 技术参考
 
+- [参考资料总览](08_REFERENCE/README.md)
+- [🌟 OTLP 标准对齐](08_REFERENCE/otlp_standards_alignment.md)
+- [🚀 OTLP 2024-2025 特性](08_REFERENCE/otlp_2024_2025_features.md)
 - [术语表](08_REFERENCE/glossary.md)
 - [最佳实践](08_REFERENCE/best_practices.md)
 - [标准合规性](08_REFERENCE/standards_compliance.md)

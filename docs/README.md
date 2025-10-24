@@ -50,6 +50,15 @@
 - [快速参考指南](02_THEORETICAL_FRAMEWORK/QUICK_REFERENCE.md) - 核心概念速查
 - [分布式系统理论](02_THEORETICAL_FRAMEWORK/DISTRIBUTED_SYSTEMS_THEORY.md) - 分布式理论基础
 
+### 📚 参考资料
+
+- [参考资料总览](08_REFERENCE/README.md) - 完整的参考资料索引
+- [🌟 OTLP 标准对齐](08_REFERENCE/otlp_standards_alignment.md) - 1300+ 行 OTLP 标准完整参考 ⭐ NEW
+- [🚀 OTLP 2024-2025 特性](08_REFERENCE/otlp_2024_2025_features.md) - 800+ 行最新特性详解 ⭐ NEW
+- [最佳实践指南](08_REFERENCE/best_practices.md) - 开发、性能、安全最佳实践
+- [术语表](08_REFERENCE/glossary.md) - OTLP 和 OpenTelemetry 术语
+- [故障排除指南](08_REFERENCE/troubleshooting_guide.md) - 常见问题解决方案
+
 ### 🔍 深入分析
 
 - 高级分析文档位于 `../analysis/` 目录
@@ -160,4 +169,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ---
 
-*最后更新: 2025年10月20日*-
+## 🎉 最近更新
+
+### 2025年10月24日
+
+- ✅ **OTLP 标准对齐文档** (1300+ 行) - 完整的 OTLP 协议版本、数据模型、Semantic Conventions 参考
+- ✅ **OTLP 2024-2025 特性文档** (800+ 行) - Profile/Event 信号、增强日志模型、OTLP/Arrow 等最新特性
+- ✅ **参考资料索引升级** - 新增 2000+ 行高质量参考文档
+
+---
+
+*最后更新: 2025年10月24日*

@@ -137,6 +137,20 @@
 
 ---
 
+## 📚 参考资料 (`08_REFERENCE/`)
+
+| 文档 | 说明 |
+|------|------|
+| [README.md](08_REFERENCE/README.md) | 参考资料总览 |
+| [otlp_standards_alignment.md](08_REFERENCE/otlp_standards_alignment.md) | 🌟 OTLP 标准对齐 (1300+ 行) - NEW! |
+| [otlp_2024_2025_features.md](08_REFERENCE/otlp_2024_2025_features.md) | 🚀 OTLP 2024-2025 特性 (800+ 行) - NEW! |
+| [best_practices.md](08_REFERENCE/best_practices.md) | 最佳实践指南 |
+| [glossary.md](08_REFERENCE/glossary.md) | 术语表 |
+| [standards_compliance.md](08_REFERENCE/standards_compliance.md) | 标准合规性 |
+| [troubleshooting_guide.md](08_REFERENCE/troubleshooting_guide.md) | 故障排除指南 |
+
+---
+
 ## 🔍 查找文档建议
 
 ### 按时间查找
