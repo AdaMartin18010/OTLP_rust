@@ -168,9 +168,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 我们欢迎社区贡献！请查看：
 
-- [贡献指南](CONTRIBUTING.md)
-- [代码规范](CODE_STYLE.md)
-- [测试指南](TESTING.md)
+- [贡献指南](guides/CONTRIBUTING.md) - 完整的贡献流程和规范
 
 ## 📄 许可证
 
