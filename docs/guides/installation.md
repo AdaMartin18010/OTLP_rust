@@ -15,7 +15,7 @@
     - [方法 2: 使用包管理器](#方法-2-使用包管理器)
       - [Ubuntu/Debian](#ubuntudebian)
       - [macOS](#macos)
-      - [Windows](#windows-1)
+      - [Windows1](#windows1)
     - [验证 Rust 安装](#验证-rust-安装)
   - [📥 项目安装](#-项目安装)
     - [方法 1: 从源码安装（推荐）](#方法-1-从源码安装推荐)
@@ -38,13 +38,13 @@
     - [3. 集成验证](#3-集成验证)
       - [创建测试项目](#创建测试项目)
       - [测试代码](#测试代码)
-      - [运行测试](#运行测试-1)
+      - [运行测试1](#运行测试1)
   - [❓ 常见问题](#-常见问题)
     - [Q1: Rust 版本不兼容](#q1-rust-版本不兼容)
     - [Q2: 依赖下载失败](#q2-依赖下载失败)
     - [Q3: 编译错误](#q3-编译错误)
-      - [Windows](#windows-2)
-      - [macOS](#macos-1)
+      - [Windows2](#windows2)
+      - [macOS1](#macos1)
       - [Linux](#linux)
     - [Q4: 内存不足](#q4-内存不足)
     - [Q5: 网络代理问题](#q5-网络代理问题)
@@ -141,7 +141,7 @@ brew install rust
 sudo port install rust
 ```
 
-#### Windows
+#### Windows1
 
 ```powershell
 # 使用 Chocolatey
@@ -166,7 +166,7 @@ rustup show
 
 **预期输出**:
 
-```
+```text
 rustc 1.90.0 (abc123def 2025-xx-xx)
 cargo 1.90.0 (abc123def 2025-xx-xx)
 ```
@@ -417,7 +417,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-#### 运行测试
+#### 运行测试1
 
 ```bash
 cargo run
@@ -475,7 +475,7 @@ registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
 
 **解决方案**:
 
-#### Windows
+#### Windows2
 
 ```powershell
 # 安装 Visual Studio Build Tools
@@ -485,7 +485,7 @@ winget install Microsoft.VisualStudio.2022.BuildTools
 winget install Microsoft.VisualStudio.2022.Community
 ```
 
-#### macOS
+#### macOS1
 
 ```bash
 # 安装 Xcode Command Line Tools

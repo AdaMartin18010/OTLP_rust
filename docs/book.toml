@@ -7,11 +7,12 @@ description = "OpenTelemetry Protocol (OTLP) Rust 实现的完整文档"
 authors = ["OTLP Rust Team"]
 language = "zh-CN"
 multilingual = false
-src = "src"
+src = "."
 
 [build]
 build-dir = "book"
 create-missing = true
+use-default-preprocessors = true
 
 [preprocessor.links]
 
@@ -64,7 +65,14 @@ enable = true
 
 [output.linkcheck]
 follow-web-links = false
-exclude = []
+exclude = [
+    "https://github.com/your-org/*"
+]
+warning-policy = "warn"
 
 [output.html.redirect]
+
+# 自定义配置
+[rust]
+edition = "2021"
 
