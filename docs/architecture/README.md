@@ -294,11 +294,11 @@ reliability  │
 
 ### 🆕 2025 新架构决策
 
-6. **ADR-006: Profile 信号集成** - pprof 格式性能分析数据支持
-7. **ADR-007: Event 信号设计** - 独立事件模型 vs 日志模型
-8. **ADR-008: OTLP/Arrow 传输** - Apache Arrow 格式高性能传输
-9. **ADR-009: Semantic Conventions v1.25+** - GenAI/云原生属性集成
-10. **ADR-010: 增强日志模型** - 结构化日志复杂数据支持
+1. **ADR-006: Profile 信号集成** - pprof 格式性能分析数据支持
+2. **ADR-007: Event 信号设计** - 独立事件模型 vs 日志模型
+3. **ADR-008: OTLP/Arrow 传输** - Apache Arrow 格式高性能传输
+4. **ADR-009: Semantic Conventions v1.25+** - GenAI/云原生属性集成
+5. **ADR-010: 增强日志模型** - 结构化日志复杂数据支持
 
 > 详细的 ADR 文档即将推出
 
