@@ -5,12 +5,14 @@
 > 📢 **文档迁移通知**  
 > 为了提供更完整、更系统化的架构文档，我们已将详细内容迁移到 **[04_ARCHITECTURE](../04_ARCHITECTURE/README.md)** 目录。  
 > 新目录包含：
+>
 > - ✅ 更详细的架构说明（653+ 行）
 > - ✅ 完整的微服务架构设计
 > - ✅ 性能优化、安全架构、部署架构
 > - ✅ OTLP 2024-2025 新特性架构支持
 >
 > 📖 **建议阅读顺序**:
+>
 > 1. 快速参考：继续阅读本页面
 > 2. 深入学习：访问 [04_ARCHITECTURE](../04_ARCHITECTURE/README.md)
 > 3. 理论基础：查看 [02_THEORETICAL_FRAMEWORK](../02_THEORETICAL_FRAMEWORK/README.md)
