@@ -10,7 +10,8 @@
 
 - [项目概览](README.md) - 项目整体介绍和快速开始
 - [📖 文档导航指南](DOCUMENTATION_GUIDE.md) ⭐ - 根据角色和需求快速定位文档
-- [安装指南](guides/installation.md) ✅ - 环境配置和安装步骤
+- [🎯 快速开始指南](01_GETTING_STARTED/README.md) ⭐ - 完整的入门教程（268 行）
+- [安装指南](guides/installation.md) ✅ - 环境配置快速参考
 - [快速入门](guides/quick-start.md) ✅ - 5分钟快速上手
 
 ### 📖 用户指南
@@ -21,18 +22,21 @@
 - [监控配置](guides/monitoring.md) ✅ - 监控和告警配置
 - [部署指南](guides/deployment.md) ✅ - 生产环境部署指南
 - [故障排除](guides/troubleshooting.md) ✅ - 常见问题和解决方案
+- [更多用户指南](guides/README.md) - 完整用户指南索引
 
 ### 🏗️ 架构设计
 
-- [系统架构](architecture/system-architecture.md) ✅ - 整体系统架构设计
-- [模块设计](architecture/module-design.md) ✅ - 各模块详细设计
-- 更多设计文档即将推出...
+- [🏛️ 完整架构文档](04_ARCHITECTURE/README.md) ⭐ - 微服务架构、性能优化、安全架构（653 行）
+- [系统架构](architecture/system-architecture.md) ✅ - 整体架构快速参考
+- [模块设计](architecture/module-design.md) ✅ - 模块设计快速参考
+- [架构索引](architecture/README.md) - 更多架构文档
 
 ### 🔧 API 参考
 
-- [OTLP API](api/otlp.md) ✅ - OTLP 客户端完整 API 文档
-- [Reliability API](api/reliability.md) ✅ - 可靠性框架 API 文档
-- 更多 API 文档即将推出...
+- [📚 完整 API 文档](03_API_REFERENCE/README.md) ⭐ - OtlpClient、配置选项、数据类型（578 行）
+- [OTLP API](api/otlp.md) ✅ - OTLP API 快速参考
+- [Reliability API](api/reliability.md) ✅ - 可靠性 API 快速参考
+- [API 索引](api/README.md) - 更多 API 文档
 
 ### 📝 示例和教程
 

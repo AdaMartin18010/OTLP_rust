@@ -12,14 +12,38 @@
 
 ## 🚀 快速开始
 
-- [快速开始指南](guides/quick-start.md) - **必读**，5分钟上手项目
+> 📖 **推荐**: 完整入门教程请访问 [01_GETTING_STARTED](01_GETTING_STARTED/README.md) (268 行完整指南)
+
+- [🎯 快速开始指南](01_GETTING_STARTED/README.md) - **完整版**，系统要求、安装、配置、验证
+- [快速开始](guides/quick-start.md) - **快速版**，5分钟上手项目
 - [安装指南](guides/installation.md) - 环境配置和安装步骤
 - [贡献指南](guides/CONTRIBUTING.md) - 如何贡献代码
 - [开发工作流](guides/DEVELOPMENT_WORKFLOW.md) - 开发规范和流程
 
 ---
 
-## 📖 指南文档 (`guides/`)
+## 📚 编号目录体系（主要文档结构）
+
+> 💡 **推荐阅读**: 编号目录（01-08）提供了最完整、最系统化的文档
+
+| 目录 | 说明 | 行数 |
+|------|------|------|
+| [01_GETTING_STARTED/](01_GETTING_STARTED/README.md) | 🎯 快速开始 - 完整入门教程 | 268+ |
+| [02_THEORETICAL_FRAMEWORK/](02_THEORETICAL_FRAMEWORK/README.md) | 🔬 理论框架 - 形式化模型与理论基础 | 17 文件 |
+| [03_API_REFERENCE/](03_API_REFERENCE/README.md) | 🔧 API 参考 - 完整 API 文档 | 578+ |
+| [04_ARCHITECTURE/](04_ARCHITECTURE/README.md) | 🏛️ 架构设计 - 微服务架构、性能优化 | 653+ |
+| [05_IMPLEMENTATION/](05_IMPLEMENTATION/README.md) | 🛠️ 实现指南 - Profile/Event/Arrow 实现 | 2462+ |
+| [06_DEPLOYMENT/](06_DEPLOYMENT/README.md) | 🚀 部署运维 - 生产部署、监控、调优 | 1213+ |
+| [07_INTEGRATION/](07_INTEGRATION/README.md) | 🔗 集成指南 - OTel、服务网格、云原生 | 1359+ |
+| [08_REFERENCE/](08_REFERENCE/README.md) | 📚 参考资料 - OTLP 标准、最佳实践 | 2100+ |
+
+**总计**: 8 大主题，8600+ 行高质量文档
+
+---
+
+## 📖 指南文档 (`guides/`) - 快速参考
+
+> 💡 **适用场景**: 快速查阅和实战操作
 
 | 文档 | 说明 |
 |------|------|
