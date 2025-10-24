@@ -1,11 +1,15 @@
 # 🛠️ 实现指南
 
-本文档提供了 OTLP Rust 项目的详细实现指南，包括 Rust 1.90 特性应用、异步编程模式、错误处理策略、测试方法和性能优化技巧。
+本文档提供了 OTLP Rust 项目的详细实现指南，包括 OTLP 2024-2025 新特性实现、Rust 1.90 特性应用、异步编程模式、错误处理策略、测试方法和性能优化技巧。
 
 ## 📋 目录
 
 - [🛠️ 实现指南](#️-实现指南)
   - [📋 目录](#-目录)
+  - [🚀 OTLP 2024-2025 新特性实现指南](#-otlp-2024-2025-新特性实现指南)
+    - [Profile 信号实现](#profile-信号实现)
+    - [Event 信号实现](#event-信号实现)
+    - [OTLP/Arrow 配置](#otlparrow-配置)
   - [🚀 Rust 1.90 特性应用](#-rust-190-特性应用)
     - [异步优先设计](#异步优先设计)
       - [现代异步编程](#现代异步编程)
@@ -56,6 +60,210 @@
     - [网络优化](#网络优化)
       - [连接复用](#连接复用)
   - [🔗 相关文档](#-相关文档)
+
+---
+
+## 🚀 OTLP 2024-2025 新特性实现指南
+
+### Profile 信号实现
+
+完整的 Profile 信号实现指南，涵盖从采集到导出的全流程。
+
+**文档**: [Profile 信号实现指南](./profile_signal_implementation_guide.md)
+
+**核心内容**:
+
+| 主题 | 说明 |
+|------|------|
+| **简介** | Profile 信号概念、pprof 格式介绍 |
+| **架构设计** | 采集层、处理层、导出层的完整架构 |
+| **核心实现** | ProfileCollector、ProfileProcessor、ProfileExporter |
+| **采集实现** | CPU Profiling、连续 Profiling 示例 |
+| **性能优化** | 采样率、批处理、压缩优化策略 |
+| **最佳实践** | 资源标识、Trace 关联、错误处理 |
+| **完整示例** | Web 服务 Profiling (100+ 行可运行代码) |
+| **故障排除** | 3个常见问题及解决方案 |
+
+**快速开始**:
+
+```rust
+use otlp::signals::profile::{ProfileCollector, ProfileCollectorConfig};
+
+// 创建 Profile 采集器
+let config = ProfileCollectorConfig {
+    sample_frequency: 99,
+    collection_interval: Duration::from_secs(60),
+    enable_cpu: true,
+    ..Default::default()
+};
+
+let collector = ProfileCollector::new(config);
+
+// 启动采集
+collector.start().await?;
+
+// 运行应用
+run_application().await;
+
+// 收集 Profile 数据
+let profile_data = collector.collect().await?;
+```
+
+**关键特性**:
+
+- 🔥 CPU、Memory、Lock Profiling 支持
+- 📊 与 Trace/Metrics/Logs 统一的 OTLP 协议
+- 🎯 连续性能监控
+- 🔗 Trace 关联能力
+
+---
+
+### Event 信号实现
+
+完整的 Event 信号实现指南，阐明 Event vs Logs 的差异。
+
+**文档**: [Event 信号实现指南](./event_signal_implementation_guide.md)
+
+**核心内容**:
+
+| 主题 | 说明 |
+|------|------|
+| **简介** | Event 信号概念、典型应用场景 |
+| **Event vs Logs** | 详细对比分析（目的、结构、语义、后端） |
+| **架构设计** | 发射层、处理层、导出层的完整架构 |
+| **核心实现** | EventEmitter、EventProcessor、EventExporter |
+| **事件发射** | 基本用法、流式 API、Trace 关联 |
+| **处理与导出** | 批处理配置、事件过滤器 |
+| **最佳实践** | 命名约定、类型分类、结构化负载 |
+| **完整示例** | 电商订单事件系统 (150+ 行可运行代码) |
+
+**快速开始**:
+
+```rust
+use otlp::signals::event::*;
+
+// 创建事件处理器和导出器
+let exporter = Arc::new(OtlpEventExporter::new(
+    "http://localhost:4317".to_string(),
+    resource,
+));
+
+let processor = EventProcessor::new(
+    EventProcessorConfig::default(),
+    exporter,
+);
+
+// 获取事件发射器
+let context = EventContext {
+    service_name: "my-service".to_string(),
+    environment: "production".to_string(),
+    default_attributes: HashMap::new(),
+};
+
+let emitter = processor.emitter(context);
+
+// 发射事件（流式 API）
+emitter.builder("user.login", EventType::UserAction)
+    .severity(SeverityNumber::Info)
+    .attribute("user_id", "12345")
+    .attribute("login_method", "oauth2")
+    .payload(EventPayload::Json(json!({
+        "ip_address": "192.168.1.1",
+        "success": true,
+    })))
+    .emit()
+    .await?;
+```
+
+**关键特性**:
+
+- 🎯 业务语义事件（用户行为、业务流程、系统状态）
+- 📊 完全结构化 + 类型化
+- 🔗 与 Trace 的天然关联
+- 📈 适合实时分析和聚合统计
+
+**Event vs Logs 对比**:
+
+| 维度 | Logs | Events |
+|------|------|--------|
+| 主要目的 | 调试、故障排查 | 业务监控、分析 |
+| 数据结构 | 自由文本 + 可选结构 | 强制结构化 + 类型化 |
+| 语义 | 面向开发者 | 面向业务/分析师 |
+| 典型后端 | ELK、Loki | Kafka、ClickHouse |
+
+---
+
+### OTLP/Arrow 配置
+
+高性能 OTLP/Arrow 传输协议的配置和优化指南。
+
+**文档**: [OTLP/Arrow 配置指南](./otlp_arrow_configuration_guide.md)
+
+**核心内容**:
+
+| 主题 | 说明 |
+|------|------|
+| **简介** | OTLP/Arrow 概念、性能对比 |
+| **架构设计** | Apache Arrow 列式存储架构 |
+| **系统要求** | Rust 依赖、Collector 要求 |
+| **配置指南** | 基础配置、Arrow 特定配置、Schema 定义 |
+| **性能优化** | 批处理、压缩算法、字典编码、内存管理 |
+| **示例配置** | Trace 数据导出、高性能配置 |
+| **故障排除** | 3个常见问题及解决方案 |
+
+**快速开始**:
+
+```rust
+use opentelemetry_otlp::arrow::{OtlpArrowExporter, ArrowConfig};
+
+// 配置 Arrow 导出器
+let arrow_config = ArrowConfig {
+    batch_size: 1000,
+    compression: CompressionCodec::Zstd,
+    compression_level: 3,
+    enable_dictionary: true,
+    ipc_format: IpcFormat::Stream,
+    max_message_size: 4 * 1024 * 1024,
+};
+
+// 创建导出器
+let exporter = OtlpArrowExporter::builder()
+    .with_endpoint("http://localhost:4317")
+    .with_timeout(Duration::from_secs(10))
+    .with_config(arrow_config)
+    .build()?;
+
+// 创建 TracerProvider
+let tracer_provider = TracerProvider::builder()
+    .with_batch_exporter(exporter, runtime::Tokio)
+    .build();
+```
+
+**性能对比**:
+
+| 指标 | gRPC/Protobuf | OTLP/Arrow | 改善 |
+|------|--------------|------------|------|
+| 序列化速度 | 100 MB/s | 1-5 GB/s | **10-50x** |
+| 反序列化速度 | 80 MB/s | 800 MB-4 GB/s | **10-50x** |
+| 网络带宽 | 100% | 30-70% | **30-70%** |
+| CPU 使用 | 100% | 20-40% | **60-80%** |
+
+**关键特性**:
+
+- ⚡ 10-50x 更快的序列化/反序列化
+- 💾 30-70% 更小的网络传输
+- 🚀 零拷贝数据传输
+- 📊 列式存储，更适合分析查询
+
+**压缩算法推荐**:
+
+| 场景 | 算法 | 配置 | 说明 |
+|------|------|------|------|
+| 生产环境 | Zstd(3) | `compression_level: 3` | 平衡速度和压缩比 ⭐ |
+| 低延迟 | LZ4 | `compression_level: 1` | 最快压缩 |
+| 高吞吐 | Zstd(6) | `compression_level: 6` | 更高压缩比 |
+
+---
 
 ## 🚀 Rust 1.90 特性应用
 

@@ -50,6 +50,18 @@
 - [快速参考指南](02_THEORETICAL_FRAMEWORK/QUICK_REFERENCE.md) - 核心概念速查
 - [分布式系统理论](02_THEORETICAL_FRAMEWORK/DISTRIBUTED_SYSTEMS_THEORY.md) - 分布式理论基础
 
+### 🛠️ 实现指南
+
+> 🆕 **OTLP 2024-2025 新特性实现**
+
+- [实现指南总览](05_IMPLEMENTATION/README.md) - 完整的实现指南索引
+- [🔥 Profile 信号实现指南](05_IMPLEMENTATION/profile_signal_implementation_guide.md) - 885 行性能分析实现详解 ⭐ NEW
+  - Profile 数据采集与导出 | CPU/内存/锁分析 | 持续性能分析
+- [⚡ Event 信号实现指南](05_IMPLEMENTATION/event_signal_implementation_guide.md) - 1011 行事件系统实现详解 ⭐ NEW
+  - Event vs Logs 对比 | 结构化事件处理 | 业务事件跟踪
+- [🚀 OTLP/Arrow 配置指南](05_IMPLEMENTATION/otlp_arrow_configuration_guide.md) - 430 行高性能传输配置 ⭐ NEW
+  - Apache Arrow 集成 | 列式内存格式 | 零拷贝优化
+
 ### 📚 参考资料
 
 - [参考资料总览](08_REFERENCE/README.md) - 完整的参考资料索引
@@ -173,6 +185,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### 2025年10月24日
 
+- ✅ **OTLP 2024-2025 实现指南** (2462+ 行) - Profile/Event 信号、OTLP/Arrow 完整实现指南
+  - Profile 信号性能分析实现 (885 行)
+  - Event 信号事件系统实现 (1011 行)
+  - OTLP/Arrow 高性能传输配置 (430 行)
 - ✅ **OTLP 标准对齐文档** (1300+ 行) - 完整的 OTLP 协议版本、数据模型、Semantic Conventions 参考
 - ✅ **OTLP 2024-2025 特性文档** (800+ 行) - Profile/Event 信号、增强日志模型、OTLP/Arrow 等最新特性
 - ✅ **参考资料索引升级** - 新增 2000+ 行高质量参考文档

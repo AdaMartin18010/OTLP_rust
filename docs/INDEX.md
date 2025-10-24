@@ -1,6 +1,6 @@
 # 文档索引
 
-**最后更新**: 2025年10月20日
+**最后更新**: 2025年10月24日
 
 ---
 
@@ -148,6 +148,24 @@
 | [glossary.md](08_REFERENCE/glossary.md) | 术语表 |
 | [standards_compliance.md](08_REFERENCE/standards_compliance.md) | 标准合规性 |
 | [troubleshooting_guide.md](08_REFERENCE/troubleshooting_guide.md) | 故障排除指南 |
+
+---
+
+## 🛠️ 实现指南 (`05_IMPLEMENTATION/`)
+
+> 🆕 **OTLP 2024-2025 新特性实现**
+
+| 文档 | 说明 |
+|------|------|
+| [README.md](05_IMPLEMENTATION/README.md) | 实现指南总览 |
+| [profile_signal_implementation_guide.md](05_IMPLEMENTATION/profile_signal_implementation_guide.md) | 🔥 Profile 信号实现指南 (885 行) - NEW! |
+| [event_signal_implementation_guide.md](05_IMPLEMENTATION/event_signal_implementation_guide.md) | ⚡ Event 信号实现指南 (1011 行) - NEW! |
+| [otlp_arrow_configuration_guide.md](05_IMPLEMENTATION/otlp_arrow_configuration_guide.md) | 🚀 OTLP/Arrow 配置指南 (430 行) - NEW! |
+
+**核心内容**:
+- Profile 数据采集与导出 | CPU/内存/锁分析 | 持续性能分析
+- Event vs Logs 对比 | 结构化事件处理 | 业务事件跟踪
+- Apache Arrow 集成 | 列式内存格式 | 零拷贝优化
 
 ---
 
