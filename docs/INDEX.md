@@ -12,7 +12,8 @@
 
 ## 🚀 快速开始
 
-- [快速开始指南](guides/QUICK_START.md) - **必读**，5分钟上手项目
+- [快速开始指南](guides/quick-start.md) - **必读**，5分钟上手项目
+- [安装指南](guides/installation.md) - 环境配置和安装步骤
 - [贡献指南](guides/CONTRIBUTING.md) - 如何贡献代码
 - [开发工作流](guides/DEVELOPMENT_WORKFLOW.md) - 开发规范和流程
 
@@ -22,7 +23,14 @@
 
 | 文档 | 说明 |
 |------|------|
-| [QUICK_START.md](guides/QUICK_START.md) | 快速开始指南 |
+| [quick-start.md](guides/quick-start.md) | 快速开始指南 |
+| [installation.md](guides/installation.md) | 安装指南 |
+| [otlp-client.md](guides/otlp-client.md) | OTLP 客户端使用指南 |
+| [reliability-framework.md](guides/reliability-framework.md) | 可靠性框架使用指南 |
+| [performance-optimization.md](guides/performance-optimization.md) | 性能优化指南 |
+| [monitoring.md](guides/monitoring.md) | 监控配置指南 |
+| [deployment.md](guides/deployment.md) | 部署指南 |
+| [troubleshooting.md](guides/troubleshooting.md) | 故障排除指南 |
 | [CONTRIBUTING.md](guides/CONTRIBUTING.md) | 贡献指南 |
 | [DEVELOPMENT_WORKFLOW.md](guides/DEVELOPMENT_WORKFLOW.md) | 开发工作流 |
 | [COMMUNITY_GUIDE.md](guides/COMMUNITY_GUIDE.md) | 社区指南 |
