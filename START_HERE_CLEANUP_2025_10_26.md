@@ -23,20 +23,20 @@
 
 ### 对于需要详细信息的用户
 
-4. **完整审计报告** → [COMPREHENSIVE_DOCUMENTATION_AUDIT_REPORT_2025_10_26.md](COMPREHENSIVE_DOCUMENTATION_AUDIT_REPORT_2025_10_26.md)
+1. **完整审计报告** → [COMPREHENSIVE_DOCUMENTATION_AUDIT_REPORT_2025_10_26.md](COMPREHENSIVE_DOCUMENTATION_AUDIT_REPORT_2025_10_26.md)
    - 42,000+字详细分析
 
-5. **决策记录** → [DOCUMENTATION_CLEANUP_DECISIONS_2025_10_26.md](DOCUMENTATION_CLEANUP_DECISIONS_2025_10_26.md)
+2. **决策记录** → [DOCUMENTATION_CLEANUP_DECISIONS_2025_10_26.md](DOCUMENTATION_CLEANUP_DECISIONS_2025_10_26.md)
    - 用户确认的所有决策
 
-6. **执行总结** → [CLEANUP_EXECUTION_SUMMARY_2025_10_26.md](CLEANUP_EXECUTION_SUMMARY_2025_10_26.md)
+3. **执行总结** → [CLEANUP_EXECUTION_SUMMARY_2025_10_26.md](CLEANUP_EXECUTION_SUMMARY_2025_10_26.md)
    - 执行过程和结果
 
 ---
 
 ### 对于想查看进度的用户
 
-7. **清理进度** → [DOCUMENTATION_CLEANUP_PROGRESS_2025_10_26.md](DOCUMENTATION_CLEANUP_PROGRESS_2025_10_26.md)
+1. **清理进度** → [DOCUMENTATION_CLEANUP_PROGRESS_2025_10_26.md](DOCUMENTATION_CLEANUP_PROGRESS_2025_10_26.md)
    - 实时进度追踪
 
 ---
@@ -124,7 +124,7 @@ Phase 4: ░░░░░░░░░░░░░░░░░░░░   0%
 
 ### Analysis主题归档
 
-```
+```text
 analysis/archives/historical_analysis/
 ├── 21_rust_otlp_semantic_models/ (41 files)
 └── 22_rust_1.90_otlp_comprehensive_analysis/ (32 files)
@@ -132,7 +132,7 @@ analysis/archives/historical_analysis/
 
 ### 临时报告归档
 
-```
+```text
 crates/
 ├── otlp/docs/archives/reports/2025-10/ (18 files)
 ├── libraries/docs/reports/phases/2025-10/ (8 files)
