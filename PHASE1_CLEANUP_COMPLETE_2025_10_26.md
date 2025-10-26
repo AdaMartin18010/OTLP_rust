@@ -59,14 +59,14 @@ Phase 1 紧急清理已成功完成！已归档 **37个临时报告文档** 和 
 
 已成功归档2个Rust+OTLP分析主题：
 
-**Theme 21: Rust OTLP Semantic Models**
+**Theme 21: Rust OTLP Semantic Models**-
 
 - 📁 原路径: `analysis/21_rust_otlp_semantic_models/`
 - 📁 新位置: `analysis/archives/historical_analysis/21_rust_otlp_semantic_models/`
 - 📄 文件数: 41个 (31 markdown + 9 Rust + 1 Cargo.toml)
 - 🎯 特点: 语义模型分析 + 代码原型
 
-**Theme 22: Rust 1.90 OTLP Comprehensive Analysis**
+**Theme 22: Rust 1.90 OTLP Comprehensive Analysis**-
 
 - 📁 原路径: `analysis/22_rust_1.90_otlp_comprehensive_analysis/`
 - 📁 新位置: `analysis/archives/historical_analysis/22_rust_1.90_otlp_comprehensive_analysis/`
@@ -98,7 +98,7 @@ Phase 1 紧急清理已成功完成！已归档 **37个临时报告文档** 和 
 
 **新建归档目录**:
 
-```
+```text
 ✅ analysis/archives/historical_analysis/
 ✅ crates/otlp/docs/archives/reports/2025-10/
 ✅ crates/libraries/docs/reports/phases/2025-10/
@@ -108,7 +108,7 @@ Phase 1 紧急清理已成功完成！已归档 **37个临时报告文档** 和 
 
 **创建归档说明**:
 
-```
+```text
 ✅ analysis/archives/README.md (归档策略和访问指南)
 ```
 
@@ -128,7 +128,7 @@ Phase 1 紧急清理已成功完成！已归档 **37个临时报告文档** 和 
 
 ### 结构清晰度
 
-```
+```text
 之前: ❌❌❌ 混乱
 ├─ 大量临时报告散落根目录
 ├─ Analysis主题重复
@@ -231,7 +231,7 @@ Phase 1 紧急清理已成功完成！已归档 **37个临时报告文档** 和 
 
 ## 📊 总体进度
 
-```
+```text
 清理工作总进度:
 Phase 1: ████████████████████░ 100% ✅
 Phase 2: ░░░░░░░░░░░░░░░░░░░░   0%

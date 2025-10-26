@@ -225,19 +225,19 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 
 ### By Experience Level
 
-**Beginner**
+**Beginner**-
 
 1. README.md → Get overview
 2. FAQ.md → Common questions
 3. Essential guides → Learn fundamentals
 
-**Intermediate**
+**Intermediate**-
 
 1. Classification guide → Understand options
 2. Examples → See patterns
 3. Maturity matrix → Make informed choices
 
-**Advanced**
+**Advanced**-
 
 1. Analysis directory → Deep technical insights
 2. Comprehensive mindmap → System view

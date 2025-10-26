@@ -19,7 +19,7 @@
 
 **执行方案**:
 
-```
+```text
 analysis/
 ├── archives/
 │   ├── 21_rust_otlp_semantic_models/  (保留原内容)
@@ -41,7 +41,7 @@ analysis/
 
 **执行方案**:
 
-```
+```text
 analysis/
 ├── 23_quantum_inspired_observability/  (保留)
 ├── 24_neuromorphic_monitoring/  (保留)
@@ -72,7 +72,7 @@ analysis/
 
 **目录命名**:
 
-```
+```text
 ✅ 01_getting_started/
 ✅ tier_01_foundations/
 ✅ analysis/rust_otlp_models/
@@ -80,7 +80,7 @@ analysis/
 
 **文件命名**:
 
-```
+```text
 ✅ quick-start.md
 ✅ installation-guide.md
 ✅ api-reference.md
@@ -96,7 +96,7 @@ analysis/
 
 **执行方案**:
 
-```
+```text
 crates/model/docs/archives/
 ├── legacy_summary.md  (压缩所有legacy_*的总结)
 └── legacy_backup/  (完整备份，可选)
@@ -183,4 +183,3 @@ mv analysis/22_rust_1.90_otlp_comprehensive_analysis analysis/archives/historica
 **记录人**: AI Assistant  
 **执行开始**: 2025年10月26日  
 **预计完成**: 2025年10月27日
-
