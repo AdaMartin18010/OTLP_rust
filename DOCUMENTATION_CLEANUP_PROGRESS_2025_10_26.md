@@ -24,6 +24,7 @@
 ### 2. Analysis主题归档 ✅
 
 **已归档**:
+
 - ✅ `21_rust_otlp_semantic_models/` → `archives/historical_analysis/`
 - ✅ `22_rust_1.90_otlp_comprehensive_analysis/` → `archives/historical_analysis/`
 
@@ -34,6 +35,7 @@
 ### 3. OTLP报告归档 ✅
 
 已移动的报告类型：
+
 - ✅ *完成报告*.md
 - ✅ *COMPLETION*.md
 - ✅ *推进*.md
@@ -47,6 +49,7 @@
 **已归档文件数**: 20+ 个报告文档
 
 **示例已归档文件**:
+
 - OTLP_RUST_190_微服务架构升级完成报告.md
 - OTLP_RUST_Bug修复完成报告.md
 - OTLP_RUST_全面推进完成报告_2025.md
@@ -91,6 +94,7 @@
 - ✅ `27_resilience_engineering/` - 标记为 🧪 实验性/研究阶段
 
 **每个README包含**:
+
 - 明确的实验性状态标识
 - 研究状态表格
 - 未来方向说明
@@ -112,7 +116,7 @@
 
 ### 清理效果
 
-```
+```text
 Phase 1 清理成果:
 ├─ 归档报告: ~50+ 个文件
 ├─ 归档Analysis主题: 2个 (73个文件)
@@ -139,22 +143,26 @@ Phase 1 清理成果:
 ### Phase 2: 结构统一（明天开始）
 
 **OTLP任务**:
+
 1. [ ] 合并重复的API文档（保留API_REFERENCE.md）
 2. [ ] 合并重复的用户指南（保留USER_GUIDE.md）
 3. [ ] 删除getting-started/目录（与01_快速开始/重复）
 4. [ ] 创建00_主索引.md
 
 **Libraries任务**:
+
 1. [ ] 删除1.*.md数字命名文档
 2. [ ] 合并guides/到tier_02_guides/
 3. [ ] 更新00_MASTER_INDEX.md
 
 **Model任务**:
+
 1. [ ] 评估并压缩legacy_*目录
 2. [ ] 创建legacy_summary.md
 3. [ ] 更新00_MASTER_INDEX.md
 
 **Reliability任务**:
+
 1. [ ] 简化archives/legacy_*结构
 2. [ ] 更新00_MASTER_INDEX.md
 
@@ -207,4 +215,3 @@ Phase 1 清理成果:
 **报告生成时间**: 2025年10月26日 13:30  
 **下次更新**: Phase 1完成后  
 **维护者**: Cleanup Team
-
