@@ -2,12 +2,12 @@
 //!
 //! 提供各种故障注入功能，包括网络故障、服务故障、资源故障等。
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
 use tracing::{error, info};
 
-use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 
 /// 故障注入配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -141,31 +141,22 @@ impl FaultInjector {
                 "故障注入未启用",
                 ErrorSeverity::Medium,
                 "fault_injection",
-                ErrorContext::new(
-                    "fault_injection",
-                    "start",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::Medium,
-                    "fault_injection",
-                ),
+                ErrorContext::new("fault_injection", "start", file!(), line!(), ErrorSeverity::Medium, "fault_injection")
             ));
         }
 
-        self.is_running
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.is_running.store(true, std::sync::atomic::Ordering::Relaxed);
         info!("故障注入器启动");
         Ok(())
     }
 
     /// 停止故障注入
     pub async fn stop(&self) -> Result<(), UnifiedError> {
-        self.is_running
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
+        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
+        
         // 清理所有活动故障
         self.clear_all_faults().await;
-
+        
         info!("故障注入器停止");
         Ok(())
     }
@@ -184,7 +175,7 @@ impl FaultInjector {
         if self.should_inject_fault() {
             for fault_type in &self.config.fault_types {
                 total_tests += 1;
-
+                
                 match self.inject_single_fault(fault_type.clone()).await {
                     Ok(fault_detail) => {
                         successful_tests += 1;
@@ -235,28 +226,18 @@ impl FaultInjector {
             recovery_rate,
         };
 
-        info!(
-            "故障注入测试完成，成功率: {:.2}%，恢复率: {:.2}%",
-            success_rate * 100.0,
-            recovery_rate * 100.0
-        );
+        info!("故障注入测试完成，成功率: {:.2}%，恢复率: {:.2}%", 
+              success_rate * 100.0, recovery_rate * 100.0);
 
         Ok(result)
     }
 
     /// 注入单个故障
-    async fn inject_single_fault(
-        &self,
-        fault_type: FaultType,
-    ) -> Result<FaultDetail, UnifiedError> {
+    async fn inject_single_fault(&self, fault_type: FaultType) -> Result<FaultDetail, UnifiedError> {
         let fault_id = self.generate_fault_id();
         let injection_time = chrono::Utc::now();
-
-        info!(
-            "注入故障: {} (ID: {})",
-            self.fault_type_to_string(&fault_type),
-            fault_id
-        );
+        
+        info!("注入故障: {} (ID: {})", self.fault_type_to_string(&fault_type), fault_id);
 
         // 创建故障详情
         let mut fault_detail = FaultDetail {
@@ -271,31 +252,23 @@ impl FaultInjector {
         };
 
         // 执行故障注入
-        match self
-            .execute_fault_injection(&fault_type, &mut fault_detail)
-            .await
-        {
+        match self.execute_fault_injection(&fault_type, &mut fault_detail).await {
             Ok(()) => {
                 // 等待故障持续时间
                 tokio::time::sleep(self.config.fault_duration).await;
-
+                
                 // 尝试恢复
-                let recovery_result = self
-                    .recover_from_fault(&fault_type, &mut fault_detail)
-                    .await;
+                let recovery_result = self.recover_from_fault(&fault_type, &mut fault_detail).await;
                 fault_detail.recovery_successful = recovery_result.is_ok();
-
+                
                 if let Ok(recovery_time) = recovery_result {
                     fault_detail.recovery_time = Some(recovery_time);
-                    fault_detail.duration = recovery_time
-                        .signed_duration_since(injection_time)
-                        .to_std()
-                        .unwrap_or(Duration::ZERO);
+                    fault_detail.duration = recovery_time.signed_duration_since(injection_time).to_std().unwrap_or(Duration::ZERO);
                 }
-
+                
                 // 添加到历史记录
                 self.add_to_history(fault_detail.clone());
-
+                
                 Ok(fault_detail)
             }
             Err(error) => {
@@ -306,214 +279,171 @@ impl FaultInjector {
     }
 
     /// 执行故障注入
-    async fn execute_fault_injection(
-        &self,
-        fault_type: &FaultType,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
+    async fn execute_fault_injection(&self, fault_type: &FaultType, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
         match fault_type {
-            FaultType::NetworkLatency => self.inject_network_latency(fault_detail).await,
-            FaultType::NetworkPacketLoss => self.inject_network_packet_loss(fault_detail).await,
-            FaultType::ServiceUnavailable => self.inject_service_unavailable(fault_detail).await,
-            FaultType::ServiceSlowResponse => self.inject_service_slow_response(fault_detail).await,
-            FaultType::ResourceExhaustion => self.inject_resource_exhaustion(fault_detail).await,
-            FaultType::MemoryLeak => self.inject_memory_leak(fault_detail).await,
-            FaultType::HighCpuUsage => self.inject_high_cpu_usage(fault_detail).await,
-            FaultType::DiskSpaceExhaustion => self.inject_disk_space_exhaustion(fault_detail).await,
+            FaultType::NetworkLatency => {
+                self.inject_network_latency(fault_detail).await
+            }
+            FaultType::NetworkPacketLoss => {
+                self.inject_network_packet_loss(fault_detail).await
+            }
+            FaultType::ServiceUnavailable => {
+                self.inject_service_unavailable(fault_detail).await
+            }
+            FaultType::ServiceSlowResponse => {
+                self.inject_service_slow_response(fault_detail).await
+            }
+            FaultType::ResourceExhaustion => {
+                self.inject_resource_exhaustion(fault_detail).await
+            }
+            FaultType::MemoryLeak => {
+                self.inject_memory_leak(fault_detail).await
+            }
+            FaultType::HighCpuUsage => {
+                self.inject_high_cpu_usage(fault_detail).await
+            }
+            FaultType::DiskSpaceExhaustion => {
+                self.inject_disk_space_exhaustion(fault_detail).await
+            }
             FaultType::DatabaseConnectionFailure => {
                 self.inject_database_connection_failure(fault_detail).await
             }
             FaultType::Custom { name, parameters } => {
-                self.inject_custom_fault(name, parameters, fault_detail)
-                    .await
+                self.inject_custom_fault(name, parameters, fault_detail).await
             }
         }
     }
 
     /// 注入网络延迟故障
-    async fn inject_network_latency(
-        &self,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("latency_ms".to_string(), "1000".to_string());
+    async fn inject_network_latency(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
+        fault_detail.parameters.insert("latency_ms".to_string(), "1000".to_string());
         fault_detail.impact_scope.push("network".to_string());
-
+        
         // 模拟网络延迟
         tokio::time::sleep(Duration::from_millis(100)).await;
-
+        
         info!("网络延迟故障注入完成");
         Ok(())
     }
 
     /// 注入网络丢包故障
-    async fn inject_network_packet_loss(
-        &self,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("packet_loss_rate".to_string(), "0.1".to_string());
+    async fn inject_network_packet_loss(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
+        fault_detail.parameters.insert("packet_loss_rate".to_string(), "0.1".to_string());
         fault_detail.impact_scope.push("network".to_string());
-
+        
         // 模拟网络丢包
         tokio::time::sleep(Duration::from_millis(50)).await;
-
+        
         info!("网络丢包故障注入完成");
         Ok(())
     }
 
     /// 注入服务不可用故障
-    async fn inject_service_unavailable(
-        &self,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("service_name".to_string(), "test_service".to_string());
+    async fn inject_service_unavailable(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
+        fault_detail.parameters.insert("service_name".to_string(), "test_service".to_string());
         fault_detail.impact_scope.push("service".to_string());
-
+        
         // 模拟服务不可用
         tokio::time::sleep(Duration::from_millis(200)).await;
-
+        
         info!("服务不可用故障注入完成");
         Ok(())
     }
 
     /// 注入服务响应慢故障
-    async fn inject_service_slow_response(
-        &self,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("response_delay_ms".to_string(), "5000".to_string());
+    async fn inject_service_slow_response(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
+        fault_detail.parameters.insert("response_delay_ms".to_string(), "5000".to_string());
         fault_detail.impact_scope.push("service".to_string());
-
+        
         // 模拟服务响应慢
         tokio::time::sleep(Duration::from_millis(150)).await;
-
+        
         info!("服务响应慢故障注入完成");
         Ok(())
     }
 
     /// 注入资源耗尽故障
-    async fn inject_resource_exhaustion(
-        &self,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("resource_type".to_string(), "memory".to_string());
+    async fn inject_resource_exhaustion(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
+        fault_detail.parameters.insert("resource_type".to_string(), "memory".to_string());
         fault_detail.impact_scope.push("resource".to_string());
-
+        
         // 模拟资源耗尽
         tokio::time::sleep(Duration::from_millis(100)).await;
-
+        
         info!("资源耗尽故障注入完成");
         Ok(())
     }
 
     /// 注入内存泄漏故障
     async fn inject_memory_leak(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("leak_rate_mb_per_sec".to_string(), "10".to_string());
+        fault_detail.parameters.insert("leak_rate_mb_per_sec".to_string(), "10".to_string());
         fault_detail.impact_scope.push("memory".to_string());
-
+        
         // 模拟内存泄漏
         tokio::time::sleep(Duration::from_millis(80)).await;
-
+        
         info!("内存泄漏故障注入完成");
         Ok(())
     }
 
     /// 注入CPU占用高故障
-    async fn inject_high_cpu_usage(
-        &self,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("cpu_usage_percent".to_string(), "90".to_string());
+    async fn inject_high_cpu_usage(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
+        fault_detail.parameters.insert("cpu_usage_percent".to_string(), "90".to_string());
         fault_detail.impact_scope.push("cpu".to_string());
-
+        
         // 模拟CPU占用高
         tokio::time::sleep(Duration::from_millis(120)).await;
-
+        
         info!("CPU占用高故障注入完成");
         Ok(())
     }
 
     /// 注入磁盘空间不足故障
-    async fn inject_disk_space_exhaustion(
-        &self,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("disk_usage_percent".to_string(), "95".to_string());
+    async fn inject_disk_space_exhaustion(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
+        fault_detail.parameters.insert("disk_usage_percent".to_string(), "95".to_string());
         fault_detail.impact_scope.push("disk".to_string());
-
+        
         // 模拟磁盘空间不足
         tokio::time::sleep(Duration::from_millis(90)).await;
-
+        
         info!("磁盘空间不足故障注入完成");
         Ok(())
     }
 
     /// 注入数据库连接失败故障
-    async fn inject_database_connection_failure(
-        &self,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
-        fault_detail
-            .parameters
-            .insert("connection_pool_size".to_string(), "0".to_string());
+    async fn inject_database_connection_failure(&self, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
+        fault_detail.parameters.insert("connection_pool_size".to_string(), "0".to_string());
         fault_detail.impact_scope.push("database".to_string());
-
+        
         // 模拟数据库连接失败
         tokio::time::sleep(Duration::from_millis(110)).await;
-
+        
         info!("数据库连接失败故障注入完成");
         Ok(())
     }
 
     /// 注入自定义故障
-    async fn inject_custom_fault(
-        &self,
-        name: &str,
-        parameters: &HashMap<String, String>,
-        fault_detail: &mut FaultDetail,
-    ) -> Result<(), UnifiedError> {
+    async fn inject_custom_fault(&self, name: &str, parameters: &HashMap<String, String>, fault_detail: &mut FaultDetail) -> Result<(), UnifiedError> {
         fault_detail.parameters = parameters.clone();
         fault_detail.impact_scope.push("custom".to_string());
-
+        
         // 模拟自定义故障
         tokio::time::sleep(Duration::from_millis(100)).await;
-
+        
         info!("自定义故障注入完成: {}", name);
         Ok(())
     }
 
     /// 从故障中恢复
-    async fn recover_from_fault(
-        &self,
-        fault_type: &FaultType,
-        _fault_detail: &mut FaultDetail,
-    ) -> Result<chrono::DateTime<chrono::Utc>, UnifiedError> {
-        info!(
-            "开始从故障中恢复: {}",
-            self.fault_type_to_string(fault_type)
-        );
-
+    async fn recover_from_fault(&self, fault_type: &FaultType, _fault_detail: &mut FaultDetail) -> Result<chrono::DateTime<chrono::Utc>, UnifiedError> {
+        info!("开始从故障中恢复: {}", self.fault_type_to_string(fault_type));
+        
         // 模拟恢复过程
         tokio::time::sleep(Duration::from_millis(200)).await;
-
+        
         let recovery_time = chrono::Utc::now();
         info!("故障恢复完成");
-
+        
         Ok(recovery_time)
     }
 
@@ -558,7 +488,7 @@ impl FaultInjector {
     fn add_to_history(&self, fault_detail: FaultDetail) {
         let mut history = self.fault_history.lock().unwrap();
         history.push(fault_detail);
-
+        
         // 保持最近1000个故障记录
         if history.len() > 1000 {
             let len = history.len();
@@ -573,12 +503,7 @@ impl FaultInjector {
 
     /// 获取活动故障
     pub fn get_active_faults(&self) -> Vec<FaultDetail> {
-        self.active_faults
-            .lock()
-            .unwrap()
-            .values()
-            .cloned()
-            .collect()
+        self.active_faults.lock().unwrap().values().cloned().collect()
     }
 
     /// 获取配置
@@ -625,7 +550,7 @@ mod tests {
             parameters: HashMap::new(),
             impact_scope: Vec::new(),
         };
-
+        
         assert_eq!(fault_detail.fault_id, "test_fault");
         assert!(!fault_detail.recovery_successful);
     }
@@ -634,7 +559,7 @@ mod tests {
     fn test_fault_injector_creation() {
         let config = FaultInjectionConfig::default();
         let injector = FaultInjector::new(config);
-
+        
         assert!(injector.get_fault_history().is_empty());
         assert!(injector.get_active_faults().is_empty());
     }
@@ -652,7 +577,7 @@ mod tests {
             success_rate: 0.8,
             recovery_rate: 0.875,
         };
-
+        
         assert_eq!(result.total_tests, 10);
         assert_eq!(result.successful_tests, 8);
         assert_eq!(result.failed_tests, 2);

@@ -24,6 +24,53 @@
 
 ---
 
+## 🏗️ 项目架构 (2025-10-26 重组)
+
+本项目采用四个 crate 分层架构，职责清晰，边界明确：
+
+### 1. **libraries** - 成熟库集成 📚
+> Rust生态成熟的常用开源库的介绍、封装和示例
+
+- 数据库: PostgreSQL, MySQL, SQLite, Redis, MongoDB
+- 缓存: Redis, Moka, DashMap
+- 消息队列: Kafka, NATS, MQTT, RabbitMQ
+- HTTP: Axum, Actix-web, Reqwest
+- 运行时: Tokio, async-std, Glommio
+
+### 2. **model** - 设计模型体系 🎨
+> Rust各领域的设计模型、形式模型、架构模型、软件模型
+
+- 形式化模型: 操作语义, 指称语义, 时序逻辑
+- 架构模型: 分层架构, 六边形架构, 微服务架构
+- 设计模式: Builder, Factory, Observer, Strategy
+- 并发模型: Actor, CSP, STM, Fork-Join
+- 分布式模型: Raft, Paxos, 一致性哈希, 分布式事务
+
+### 3. **reliability** - 运行时基础设施 ⚡
+> Rust的运行、执行流、环境OS感知、度量的封装和组织
+
+- 执行流感知: 调用链追踪, 执行图, 性能分析
+- 运行时环境: OS环境, 容器, K8s, 嵌入式, Wasm
+- 性能度量: CPU, 内存, I/O, 网络度量
+- 自适应优化: 资源预测, 自动调优, 拓扑发现
+- 容错机制: 熔断器, 重试, 超时, 限流
+
+### 4. **otlp** - 可观测性协议 📊
+> Rust的OTLP全面梳理、通用封装和惯用法
+
+- OTLP信号: Trace, Metric, Log, Profile, Event
+- 传输协议: gRPC, HTTP/JSON, HTTP/Protobuf
+- 性能优化: SIMD, 内存池, 连接池, 零拷贝
+- 语义约定: HTTP, Database, Messaging, Kubernetes
+- 高级特性: Profiling API, Tracezip压缩, OpAMP
+
+📖 **详细文档**: 
+- [架构重组计划](docs/CRATES_ARCHITECTURE_REORG_2025_10_26.md)
+- [知识图谱](docs/CRATES_KNOWLEDGE_GRAPH_2025_10_26.md)
+- [矩阵对比](docs/CRATES_MATRIX_COMPARISON_2025_10_26.md)
+
+---
+
 ## 项目简介
 
 OTLP Rust 是一个基于 Rust 1.90+ 的 OpenTelemetry Protocol (OTLP) 完整实现，提供高性能、类型安全的遥测数据收集、处理和传输功能。项目采用现代化的架构设计，集成了统一的可靠性框架，支持企业级应用的可观测性需求。

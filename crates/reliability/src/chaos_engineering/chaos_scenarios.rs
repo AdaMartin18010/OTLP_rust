@@ -2,12 +2,12 @@
 //!
 //! 提供各种混沌工程场景，包括系统级故障、网络分区、服务降级等。
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
 use tracing::{error, info};
 
-use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 
 /// 混沌场景配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -165,31 +165,22 @@ impl ChaosScenarios {
                 "混沌场景未启用",
                 ErrorSeverity::Medium,
                 "chaos_scenarios",
-                ErrorContext::new(
-                    "chaos_scenarios",
-                    "start",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::Medium,
-                    "chaos_scenarios",
-                ),
+                ErrorContext::new("chaos_scenarios", "start", file!(), line!(), ErrorSeverity::Medium, "chaos_scenarios")
             ));
         }
 
-        self.is_running
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.is_running.store(true, std::sync::atomic::Ordering::Relaxed);
         info!("混沌场景执行器启动");
         Ok(())
     }
 
     /// 停止混沌场景
     pub async fn stop(&self) -> Result<(), UnifiedError> {
-        self.is_running
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
+        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
+        
         // 清理所有活动场景
         self.clear_all_scenarios().await;
-
+        
         info!("混沌场景执行器停止");
         Ok(())
     }
@@ -208,7 +199,7 @@ impl ChaosScenarios {
         if self.should_execute_scenario() {
             for scenario_type in &self.config.scenario_types {
                 total_scenarios += 1;
-
+                
                 match self.execute_single_scenario(scenario_type.clone()).await {
                     Ok(scenario_detail) => {
                         successful_scenarios += 1;
@@ -259,28 +250,18 @@ impl ChaosScenarios {
             recovery_rate,
         };
 
-        info!(
-            "混沌场景测试完成，成功率: {:.2}%，恢复率: {:.2}%",
-            success_rate * 100.0,
-            recovery_rate * 100.0
-        );
+        info!("混沌场景测试完成，成功率: {:.2}%，恢复率: {:.2}%", 
+              success_rate * 100.0, recovery_rate * 100.0);
 
         Ok(result)
     }
 
     /// 执行单个场景
-    async fn execute_single_scenario(
-        &self,
-        scenario_type: ChaosScenarioType,
-    ) -> Result<ChaosScenarioDetail, UnifiedError> {
+    async fn execute_single_scenario(&self, scenario_type: ChaosScenarioType) -> Result<ChaosScenarioDetail, UnifiedError> {
         let scenario_id = self.generate_scenario_id();
         let start_time = chrono::Utc::now();
-
-        info!(
-            "执行混沌场景: {} (ID: {})",
-            self.scenario_type_to_string(&scenario_type),
-            scenario_id
-        );
+        
+        info!("执行混沌场景: {} (ID: {})", self.scenario_type_to_string(&scenario_type), scenario_id);
 
         // 创建场景详情
         let mut scenario_detail = ChaosScenarioDetail {
@@ -296,31 +277,23 @@ impl ChaosScenarios {
         };
 
         // 执行场景
-        match self
-            .execute_scenario(&scenario_type, &mut scenario_detail)
-            .await
-        {
+        match self.execute_scenario(&scenario_type, &mut scenario_detail).await {
             Ok(()) => {
                 // 等待场景持续时间
                 tokio::time::sleep(self.config.scenario_duration).await;
-
+                
                 // 尝试恢复
-                let recovery_result = self
-                    .recover_from_scenario(&scenario_type, &mut scenario_detail)
-                    .await;
+                let recovery_result = self.recover_from_scenario(&scenario_type, &mut scenario_detail).await;
                 scenario_detail.recovery_successful = recovery_result.is_ok();
-
+                
                 if let Ok(end_time) = recovery_result {
                     scenario_detail.end_time = Some(end_time);
-                    scenario_detail.duration = end_time
-                        .signed_duration_since(start_time)
-                        .to_std()
-                        .unwrap_or(Duration::ZERO);
+                    scenario_detail.duration = end_time.signed_duration_since(start_time).to_std().unwrap_or(Duration::ZERO);
                 }
-
+                
                 // 添加到历史记录
                 self.add_to_history(scenario_detail.clone());
-
+                
                 Ok(scenario_detail)
             }
             Err(error) => {
@@ -331,11 +304,7 @@ impl ChaosScenarios {
     }
 
     /// 执行场景
-    async fn execute_scenario(
-        &self,
-        scenario_type: &ChaosScenarioType,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
+    async fn execute_scenario(&self, scenario_type: &ChaosScenarioType, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
         match scenario_type {
             ChaosScenarioType::NetworkPartition => {
                 self.execute_network_partition(scenario_detail).await
@@ -352,211 +321,147 @@ impl ChaosScenarios {
             ChaosScenarioType::DataCorruption => {
                 self.execute_data_corruption(scenario_detail).await
             }
-            ChaosScenarioType::ClockSkew => self.execute_clock_skew(scenario_detail).await,
+            ChaosScenarioType::ClockSkew => {
+                self.execute_clock_skew(scenario_detail).await
+            }
             ChaosScenarioType::DependencyFailure => {
                 self.execute_dependency_failure(scenario_detail).await
             }
             ChaosScenarioType::Custom { name, parameters } => {
-                self.execute_custom_scenario(name, parameters, scenario_detail)
-                    .await
+                self.execute_custom_scenario(name, parameters, scenario_detail).await
             }
         }
     }
 
     /// 执行网络分区场景
-    async fn execute_network_partition(
-        &self,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
-        scenario_detail
-            .parameters
-            .insert("partition_type".to_string(), "network".to_string());
-        scenario_detail
-            .parameters
-            .insert("partition_duration".to_string(), "120".to_string());
+    async fn execute_network_partition(&self, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
+        scenario_detail.parameters.insert("partition_type".to_string(), "network".to_string());
+        scenario_detail.parameters.insert("partition_duration".to_string(), "120".to_string());
         scenario_detail.impact_scope.push("network".to_string());
-        scenario_detail
-            .impact_scope
-            .push("communication".to_string());
+        scenario_detail.impact_scope.push("communication".to_string());
         scenario_detail.impact_severity = ImpactSeverity::High;
-
+        
         // 模拟网络分区
         tokio::time::sleep(Duration::from_millis(200)).await;
-
+        
         info!("网络分区场景执行完成");
         Ok(())
     }
 
     /// 执行服务降级场景
-    async fn execute_service_degradation(
-        &self,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
-        scenario_detail
-            .parameters
-            .insert("degradation_level".to_string(), "50".to_string());
-        scenario_detail
-            .parameters
-            .insert("affected_services".to_string(), "3".to_string());
+    async fn execute_service_degradation(&self, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
+        scenario_detail.parameters.insert("degradation_level".to_string(), "50".to_string());
+        scenario_detail.parameters.insert("affected_services".to_string(), "3".to_string());
         scenario_detail.impact_scope.push("service".to_string());
         scenario_detail.impact_scope.push("performance".to_string());
         scenario_detail.impact_severity = ImpactSeverity::Medium;
-
+        
         // 模拟服务降级
         tokio::time::sleep(Duration::from_millis(150)).await;
-
+        
         info!("服务降级场景执行完成");
         Ok(())
     }
 
     /// 执行资源耗尽场景
-    async fn execute_resource_exhaustion(
-        &self,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
-        scenario_detail
-            .parameters
-            .insert("resource_type".to_string(), "memory".to_string());
-        scenario_detail
-            .parameters
-            .insert("exhaustion_rate".to_string(), "0.8".to_string());
+    async fn execute_resource_exhaustion(&self, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
+        scenario_detail.parameters.insert("resource_type".to_string(), "memory".to_string());
+        scenario_detail.parameters.insert("exhaustion_rate".to_string(), "0.8".to_string());
         scenario_detail.impact_scope.push("resource".to_string());
         scenario_detail.impact_scope.push("performance".to_string());
         scenario_detail.impact_severity = ImpactSeverity::Critical;
-
+        
         // 模拟资源耗尽
         tokio::time::sleep(Duration::from_millis(180)).await;
-
+        
         info!("资源耗尽场景执行完成");
         Ok(())
     }
 
     /// 执行级联故障场景
-    async fn execute_cascading_failure(
-        &self,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
-        scenario_detail
-            .parameters
-            .insert("failure_chain_length".to_string(), "5".to_string());
-        scenario_detail
-            .parameters
-            .insert("failure_propagation_delay".to_string(), "1000".to_string());
+    async fn execute_cascading_failure(&self, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
+        scenario_detail.parameters.insert("failure_chain_length".to_string(), "5".to_string());
+        scenario_detail.parameters.insert("failure_propagation_delay".to_string(), "1000".to_string());
         scenario_detail.impact_scope.push("service".to_string());
         scenario_detail.impact_scope.push("system".to_string());
         scenario_detail.impact_severity = ImpactSeverity::Critical;
-
+        
         // 模拟级联故障
         tokio::time::sleep(Duration::from_millis(250)).await;
-
+        
         info!("级联故障场景执行完成");
         Ok(())
     }
 
     /// 执行数据损坏场景
-    async fn execute_data_corruption(
-        &self,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
-        scenario_detail
-            .parameters
-            .insert("corruption_type".to_string(), "bit_flip".to_string());
-        scenario_detail
-            .parameters
-            .insert("corruption_rate".to_string(), "0.01".to_string());
+    async fn execute_data_corruption(&self, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
+        scenario_detail.parameters.insert("corruption_type".to_string(), "bit_flip".to_string());
+        scenario_detail.parameters.insert("corruption_rate".to_string(), "0.01".to_string());
         scenario_detail.impact_scope.push("data".to_string());
         scenario_detail.impact_scope.push("integrity".to_string());
         scenario_detail.impact_severity = ImpactSeverity::High;
-
+        
         // 模拟数据损坏
         tokio::time::sleep(Duration::from_millis(120)).await;
-
+        
         info!("数据损坏场景执行完成");
         Ok(())
     }
 
     /// 执行时钟漂移场景
-    async fn execute_clock_skew(
-        &self,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
-        scenario_detail
-            .parameters
-            .insert("skew_amount_seconds".to_string(), "300".to_string());
-        scenario_detail
-            .parameters
-            .insert("skew_direction".to_string(), "forward".to_string());
+    async fn execute_clock_skew(&self, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
+        scenario_detail.parameters.insert("skew_amount_seconds".to_string(), "300".to_string());
+        scenario_detail.parameters.insert("skew_direction".to_string(), "forward".to_string());
         scenario_detail.impact_scope.push("time".to_string());
-        scenario_detail
-            .impact_scope
-            .push("synchronization".to_string());
+        scenario_detail.impact_scope.push("synchronization".to_string());
         scenario_detail.impact_severity = ImpactSeverity::Medium;
-
+        
         // 模拟时钟漂移
         tokio::time::sleep(Duration::from_millis(100)).await;
-
+        
         info!("时钟漂移场景执行完成");
         Ok(())
     }
 
     /// 执行依赖服务故障场景
-    async fn execute_dependency_failure(
-        &self,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
-        scenario_detail
-            .parameters
-            .insert("dependency_name".to_string(), "database".to_string());
-        scenario_detail
-            .parameters
-            .insert("failure_type".to_string(), "timeout".to_string());
+    async fn execute_dependency_failure(&self, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
+        scenario_detail.parameters.insert("dependency_name".to_string(), "database".to_string());
+        scenario_detail.parameters.insert("failure_type".to_string(), "timeout".to_string());
         scenario_detail.impact_scope.push("dependency".to_string());
         scenario_detail.impact_scope.push("service".to_string());
         scenario_detail.impact_severity = ImpactSeverity::High;
-
+        
         // 模拟依赖服务故障
         tokio::time::sleep(Duration::from_millis(160)).await;
-
+        
         info!("依赖服务故障场景执行完成");
         Ok(())
     }
 
     /// 执行自定义场景
-    async fn execute_custom_scenario(
-        &self,
-        name: &str,
-        parameters: &HashMap<String, String>,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<(), UnifiedError> {
+    async fn execute_custom_scenario(&self, name: &str, parameters: &HashMap<String, String>, scenario_detail: &mut ChaosScenarioDetail) -> Result<(), UnifiedError> {
         scenario_detail.parameters = parameters.clone();
         scenario_detail.impact_scope.push("custom".to_string());
         scenario_detail.impact_severity = ImpactSeverity::Medium;
-
+        
         // 模拟自定义场景
         tokio::time::sleep(Duration::from_millis(140)).await;
-
+        
         info!("自定义场景执行完成: {}", name);
         Ok(())
     }
 
     /// 从场景中恢复
     #[allow(unused_variables)]
-    async fn recover_from_scenario(
-        &self,
-        scenario_type: &ChaosScenarioType,
-        scenario_detail: &mut ChaosScenarioDetail,
-    ) -> Result<chrono::DateTime<chrono::Utc>, UnifiedError> {
-        info!(
-            "开始从混沌场景中恢复: {}",
-            self.scenario_type_to_string(scenario_type)
-        );
-
+    async fn recover_from_scenario(&self, scenario_type: &ChaosScenarioType, scenario_detail: &mut ChaosScenarioDetail) -> Result<chrono::DateTime<chrono::Utc>, UnifiedError> {
+        info!("开始从混沌场景中恢复: {}", self.scenario_type_to_string(scenario_type));
+        
         // 模拟恢复过程
         tokio::time::sleep(Duration::from_millis(300)).await;
-
+        
         let end_time = chrono::Utc::now();
         info!("混沌场景恢复完成");
-
+        
         Ok(end_time)
     }
 
@@ -599,7 +504,7 @@ impl ChaosScenarios {
     fn add_to_history(&self, scenario_detail: ChaosScenarioDetail) {
         let mut history = self.scenario_history.lock().unwrap();
         history.push(scenario_detail);
-
+        
         // 保持最近1000个场景记录
         let len = history.len();
         if len > 1000 {
@@ -614,12 +519,7 @@ impl ChaosScenarios {
 
     /// 获取活动场景
     pub fn get_active_scenarios(&self) -> Vec<ChaosScenarioDetail> {
-        self.active_scenarios
-            .lock()
-            .unwrap()
-            .values()
-            .cloned()
-            .collect()
+        self.active_scenarios.lock().unwrap().values().cloned().collect()
     }
 
     /// 获取配置
@@ -675,7 +575,7 @@ mod tests {
             impact_scope: Vec::new(),
             impact_severity: ImpactSeverity::Medium,
         };
-
+        
         assert_eq!(scenario_detail.scenario_id, "test_scenario");
         assert!(!scenario_detail.recovery_successful);
         assert_eq!(scenario_detail.impact_severity.as_numeric(), 2);
@@ -685,7 +585,7 @@ mod tests {
     fn test_chaos_scenarios_creation() {
         let config = ChaosScenariosConfig::default();
         let scenarios = ChaosScenarios::new(config);
-
+        
         assert!(scenarios.get_scenario_history().is_empty());
         assert!(scenarios.get_active_scenarios().is_empty());
     }
@@ -703,7 +603,7 @@ mod tests {
             success_rate: 0.8,
             recovery_rate: 0.75,
         };
-
+        
         assert_eq!(result.total_scenarios, 5);
         assert_eq!(result.successful_scenarios, 4);
         assert_eq!(result.failed_scenarios, 1);

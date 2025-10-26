@@ -2,15 +2,12 @@
 //!
 //! 提供操作超时控制功能，防止长时间阻塞。
 
-use serde::{Deserialize, Serialize};
-use std::sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
-};
 use std::time::Duration;
+use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
+use serde::{Serialize, Deserialize};
 use tracing::warn;
 
-use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 
 /// 超时配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -118,38 +115,33 @@ impl Timeout {
     /// 记录成功请求
     fn record_success(&self, execution_time: Duration) {
         self.successful_requests.fetch_add(1, Ordering::Relaxed);
-        self.total_execution_time
-            .fetch_add(execution_time.as_millis() as u64, Ordering::Relaxed);
-
+        self.total_execution_time.fetch_add(execution_time.as_millis() as u64, Ordering::Relaxed);
+        
         // 更新最大执行时间
         let current_max = self.max_execution_time.load(Ordering::Relaxed);
         let new_max = execution_time.as_millis() as u64;
         if new_max > current_max {
             self.max_execution_time.store(new_max, Ordering::Relaxed);
         }
-
+        
         self.update_stats();
     }
 
     /// 记录超时请求
     fn record_timeout(&self, execution_time: Duration) {
         self.timed_out_requests.fetch_add(1, Ordering::Relaxed);
-        self.total_execution_time
-            .fetch_add(execution_time.as_millis() as u64, Ordering::Relaxed);
-
+        self.total_execution_time.fetch_add(execution_time.as_millis() as u64, Ordering::Relaxed);
+        
         // 更新最大执行时间
         let current_max = self.max_execution_time.load(Ordering::Relaxed);
         let new_max = execution_time.as_millis() as u64;
         if new_max > current_max {
             self.max_execution_time.store(new_max, Ordering::Relaxed);
         }
-
+        
         self.update_stats();
-
-        warn!(
-            "操作超时: {}，执行时间: {:?}",
-            self.config.name, execution_time
-        );
+        
+        warn!("操作超时: {}，执行时间: {:?}", self.config.name, execution_time);
     }
 
     /// 创建超时错误
@@ -160,19 +152,15 @@ impl Timeout {
             file!(),
             line!(),
             ErrorSeverity::High,
-            "timeout",
+            "timeout"
         );
 
         UnifiedError::new(
-            &format!(
-                "操作 {} 超时，超时时间: {:?}",
-                self.config.name, self.config.duration
-            ),
+            &format!("操作 {} 超时，超时时间: {:?}", self.config.name, self.config.duration),
             ErrorSeverity::High,
             "timeout",
-            context,
-        )
-        .with_code("TO_001")
+            context
+        ).with_code("TO_001")
         .with_suggestion("增加超时时间或优化操作性能")
     }
 
@@ -182,17 +170,15 @@ impl Timeout {
         stats.total_requests = self.total_requests.load(Ordering::Relaxed);
         stats.timed_out_requests = self.timed_out_requests.load(Ordering::Relaxed);
         stats.successful_requests = self.successful_requests.load(Ordering::Relaxed);
-        stats.max_execution_time =
-            Duration::from_millis(self.max_execution_time.load(Ordering::Relaxed));
-
+        stats.max_execution_time = Duration::from_millis(self.max_execution_time.load(Ordering::Relaxed));
+        
         if stats.total_requests > 0 {
             let total_time_ms = self.total_execution_time.load(Ordering::Relaxed);
-            stats.average_execution_time =
-                Duration::from_millis(total_time_ms / stats.total_requests);
+            stats.average_execution_time = Duration::from_millis(total_time_ms / stats.total_requests);
         } else {
             stats.average_execution_time = Duration::ZERO;
         }
-
+        
         stats.last_updated = chrono::Utc::now();
     }
 
@@ -208,7 +194,7 @@ impl Timeout {
         self.successful_requests.store(0, Ordering::Relaxed);
         self.total_execution_time.store(0, Ordering::Relaxed);
         self.max_execution_time.store(0, Ordering::Relaxed);
-
+        
         let mut stats = self.stats.lock().unwrap();
         *stats = TimeoutStats::default();
     }
@@ -317,7 +303,7 @@ impl TimeoutMonitor {
     /// 获取全局统计信息
     pub fn get_global_stats(&self) -> TimeoutStats {
         let mut global_stats = self.global_stats.lock().unwrap().clone();
-
+        
         // 聚合所有超时处理器的统计信息
         let timeouts = self.timeouts.lock().unwrap();
         for timeout in timeouts.values() {
@@ -325,25 +311,20 @@ impl TimeoutMonitor {
             global_stats.total_requests += stats.total_requests;
             global_stats.timed_out_requests += stats.timed_out_requests;
             global_stats.successful_requests += stats.successful_requests;
-
+            
             if stats.max_execution_time > global_stats.max_execution_time {
                 global_stats.max_execution_time = stats.max_execution_time;
             }
         }
-
+        
         // 重新计算平均执行时间
         if global_stats.total_requests > 0 {
-            let total_time = timeouts
-                .values()
-                .map(|t| {
-                    t.get_stats().average_execution_time.as_millis() as u64
-                        * t.get_stats().total_requests
-                })
+            let total_time = timeouts.values()
+                .map(|t| t.get_stats().average_execution_time.as_millis() as u64 * t.get_stats().total_requests)
                 .sum::<u64>();
-            global_stats.average_execution_time =
-                Duration::from_millis(total_time / global_stats.total_requests);
+            global_stats.average_execution_time = Duration::from_millis(total_time / global_stats.total_requests);
         }
-
+        
         global_stats
     }
 
@@ -356,18 +337,14 @@ impl TimeoutMonitor {
         report.push_str(&format!("总请求数: {}\n", stats.total_requests));
         report.push_str(&format!("超时请求数: {}\n", stats.timed_out_requests));
         report.push_str(&format!("成功请求数: {}\n", stats.successful_requests));
-        report.push_str(&format!(
-            "超时率: {:.2}%\n",
+        report.push_str(&format!("超时率: {:.2}%\n", 
             if stats.total_requests > 0 {
                 stats.timed_out_requests as f64 / stats.total_requests as f64 * 100.0
             } else {
                 0.0
             }
         ));
-        report.push_str(&format!(
-            "平均执行时间: {:?}\n",
-            stats.average_execution_time
-        ));
+        report.push_str(&format!("平均执行时间: {:?}\n", stats.average_execution_time));
         report.push_str(&format!("最大执行时间: {:?}\n", stats.max_execution_time));
 
         report
@@ -411,14 +388,14 @@ mod tests {
     #[tokio::test]
     async fn test_timeout_success() {
         let timeout = Timeout::new(TimeoutConfig::default());
-
-        let result = timeout
-            .execute(|| async { Ok::<String, UnifiedError>("成功".to_string()) })
-            .await;
+        
+        let result = timeout.execute(|| async {
+            Ok::<String, UnifiedError>("成功".to_string())
+        }).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "成功");
-
+        
         let stats = timeout.get_stats();
         assert_eq!(stats.total_requests, 1);
         assert_eq!(stats.successful_requests, 1);
@@ -432,18 +409,16 @@ mod tests {
             ..Default::default()
         };
         let timeout = Timeout::new(config);
-
-        let result = timeout
-            .execute(|| async {
-                tokio::time::sleep(Duration::from_millis(200)).await;
-                Ok::<String, UnifiedError>("成功".to_string())
-            })
-            .await;
+        
+        let result = timeout.execute(|| async {
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            Ok::<String, UnifiedError>("成功".to_string())
+        }).await;
 
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert!(error.message().contains("超时"));
-
+        
         let stats = timeout.get_stats();
         assert_eq!(stats.total_requests, 1);
         assert_eq!(stats.successful_requests, 0);
@@ -457,13 +432,11 @@ mod tests {
             ..Default::default()
         };
         let timeout = Timeout::new(config);
-
-        let result = timeout
-            .execute(|| async {
-                tokio::time::sleep(Duration::from_millis(100)).await;
-                Ok::<String, UnifiedError>("成功".to_string())
-            })
-            .await;
+        
+        let result = timeout.execute(|| async {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            Ok::<String, UnifiedError>("成功".to_string())
+        }).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "成功");
@@ -473,7 +446,7 @@ mod tests {
     fn test_timeout_stats() {
         let timeout = Timeout::new(TimeoutConfig::default());
         let stats = timeout.get_stats();
-
+        
         assert_eq!(stats.total_requests, 0);
         assert_eq!(stats.timed_out_requests, 0);
         assert_eq!(stats.successful_requests, 0);
@@ -484,10 +457,10 @@ mod tests {
     #[test]
     fn test_timeout_reset() {
         let timeout = Timeout::new(TimeoutConfig::default());
-
+        
         // 重置统计
         timeout.reset_stats();
-
+        
         let stats = timeout.get_stats();
         assert_eq!(stats.total_requests, 0);
         assert_eq!(stats.timed_out_requests, 0);
@@ -498,7 +471,7 @@ mod tests {
     fn test_timeout_monitor() {
         let monitor = TimeoutMonitor::new();
         let stats = monitor.get_global_stats();
-
+        
         assert_eq!(stats.total_requests, 0);
         assert_eq!(stats.timed_out_requests, 0);
         assert_eq!(stats.successful_requests, 0);
@@ -508,7 +481,7 @@ mod tests {
     fn test_timeout_set_timeout() {
         let mut timeout = Timeout::new(TimeoutConfig::default());
         timeout.set_timeout(Duration::from_secs(10));
-
+        
         assert_eq!(timeout.get_timeout(), Duration::from_secs(10));
     }
 
@@ -516,7 +489,7 @@ mod tests {
     fn test_timeout_set_enabled() {
         let mut timeout = Timeout::new(TimeoutConfig::default());
         timeout.set_enabled(false);
-
+        
         assert!(!timeout.is_enabled());
     }
 }

@@ -2,21 +2,21 @@
 //!
 //! 提供混沌工程测试功能，包括故障注入、弹性测试和恢复验证。
 
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use serde::{Serialize, Deserialize};
 use tracing::info;
 
-use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 
-pub mod chaos_scenarios;
 pub mod fault_injection;
-pub mod recovery_testing;
+pub mod chaos_scenarios;
 pub mod resilience_testing;
+pub mod recovery_testing;
 
-pub use chaos_scenarios::*;
 pub use fault_injection::*;
-pub use recovery_testing::*;
+pub use chaos_scenarios::*;
 pub use resilience_testing::*;
+pub use recovery_testing::*;
 
 /// 混沌工程配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,6 +44,7 @@ impl Default for ChaosEngineeringConfig {
         }
     }
 }
+
 
 /// 混沌工程状态
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -134,14 +135,7 @@ impl ChaosEngineeringManager {
                 "混沌工程未启用",
                 ErrorSeverity::Medium,
                 "chaos_engineering",
-                ErrorContext::new(
-                    "chaos_engineering",
-                    "start",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::Medium,
-                    "chaos_engineering",
-                ),
+                ErrorContext::new("chaos_engineering", "start", file!(), line!(), ErrorSeverity::Medium, "chaos_engineering")
             ));
         }
 
@@ -181,14 +175,7 @@ impl ChaosEngineeringManager {
                 "混沌工程测试未在运行状态",
                 ErrorSeverity::Medium,
                 "chaos_engineering",
-                ErrorContext::new(
-                    "chaos_engineering",
-                    "run_tests",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::Medium,
-                    "chaos_engineering",
-                ),
+                ErrorContext::new("chaos_engineering", "run_tests", file!(), line!(), ErrorSeverity::Medium, "chaos_engineering")
             ));
         }
 
@@ -227,10 +214,7 @@ impl ChaosEngineeringManager {
         // 保存结果
         *self.last_result.lock().unwrap() = Some(result.clone());
 
-        info!(
-            "混沌工程测试完成，总体评分: {:.2}",
-            result.overall_assessment.overall_score
-        );
+        info!("混沌工程测试完成，总体评分: {:.2}", result.overall_assessment.overall_score);
         Ok(result)
     }
 
@@ -243,19 +227,28 @@ impl ChaosEngineeringManager {
         recovery_testing: &RecoveryTestingResult,
     ) -> OverallAssessment {
         // 计算弹性评分
-        let resilience_score =
-            self.calculate_resilience_score(fault_injection, chaos_scenarios, resilience_testing);
+        let resilience_score = self.calculate_resilience_score(
+            fault_injection,
+            chaos_scenarios,
+            resilience_testing,
+        );
 
         // 计算恢复评分
-        let recovery_score =
-            self.calculate_recovery_score(fault_injection, chaos_scenarios, recovery_testing);
+        let recovery_score = self.calculate_recovery_score(
+            fault_injection,
+            chaos_scenarios,
+            recovery_testing,
+        );
 
         // 计算整体评分
         let overall_score = (resilience_score + recovery_score) / 2.0;
 
         // 生成建议
-        let recommendations =
-            self.generate_recommendations(resilience_score, recovery_score, overall_score);
+        let recommendations = self.generate_recommendations(
+            resilience_score,
+            recovery_score,
+            overall_score,
+        );
 
         OverallAssessment {
             resilience_score,
@@ -277,29 +270,30 @@ impl ChaosEngineeringManager {
 
         // 故障注入测试权重
         if fault_injection.total_tests > 0 {
-            let fault_score =
-                fault_injection.successful_tests as f64 / fault_injection.total_tests as f64;
+            let fault_score = fault_injection.successful_tests as f64 / fault_injection.total_tests as f64;
             score += fault_score * 0.3;
             weight += 0.3;
         }
 
         // 混沌场景测试权重
         if chaos_scenarios.total_scenarios > 0 {
-            let scenario_score = chaos_scenarios.successful_scenarios as f64
-                / chaos_scenarios.total_scenarios as f64;
+            let scenario_score = chaos_scenarios.successful_scenarios as f64 / chaos_scenarios.total_scenarios as f64;
             score += scenario_score * 0.4;
             weight += 0.4;
         }
 
         // 弹性测试权重
         if resilience_testing.total_tests > 0 {
-            let resilience_score =
-                resilience_testing.successful_tests as f64 / resilience_testing.total_tests as f64;
+            let resilience_score = resilience_testing.successful_tests as f64 / resilience_testing.total_tests as f64;
             score += resilience_score * 0.3;
             weight += 0.3;
         }
 
-        if weight > 0.0 { score / weight } else { 0.0 }
+        if weight > 0.0 {
+            score / weight
+        } else {
+            0.0
+        }
     }
 
     /// 计算恢复评分
@@ -314,29 +308,30 @@ impl ChaosEngineeringManager {
 
         // 故障注入恢复权重
         if fault_injection.total_tests > 0 {
-            let recovery_score =
-                fault_injection.recovery_tests as f64 / fault_injection.total_tests as f64;
+            let recovery_score = fault_injection.recovery_tests as f64 / fault_injection.total_tests as f64;
             score += recovery_score * 0.4;
             weight += 0.4;
         }
 
         // 混沌场景恢复权重
         if chaos_scenarios.total_scenarios > 0 {
-            let scenario_recovery_score =
-                chaos_scenarios.recovery_scenarios as f64 / chaos_scenarios.total_scenarios as f64;
+            let scenario_recovery_score = chaos_scenarios.recovery_scenarios as f64 / chaos_scenarios.total_scenarios as f64;
             score += scenario_recovery_score * 0.3;
             weight += 0.3;
         }
 
         // 恢复测试权重
         if recovery_testing.total_tests > 0 {
-            let recovery_test_score =
-                recovery_testing.successful_tests as f64 / recovery_testing.total_tests as f64;
+            let recovery_test_score = recovery_testing.successful_tests as f64 / recovery_testing.total_tests as f64;
             score += recovery_test_score * 0.3;
             weight += 0.3;
         }
 
-        if weight > 0.0 { score / weight } else { 0.0 }
+        if weight > 0.0 {
+            score / weight
+        } else {
+            0.0
+        }
     }
 
     /// 生成建议
@@ -401,9 +396,7 @@ impl GlobalChaosEngineeringManager {
     /// 创建全局混沌工程管理器
     pub fn new() -> Self {
         Self {
-            manager: Arc::new(ChaosEngineeringManager::new(
-                ChaosEngineeringConfig::default(),
-            )),
+            manager: Arc::new(ChaosEngineeringManager::new(ChaosEngineeringConfig::default())),
         }
     }
 
@@ -441,22 +434,10 @@ mod tests {
     fn test_chaos_engineering_config_default() {
         let config = ChaosEngineeringConfig::default();
         assert!(!config.enabled); // 默认禁用
-        assert!(matches!(
-            config.fault_injection,
-            FaultInjectionConfig { .. }
-        ));
-        assert!(matches!(
-            config.chaos_scenarios,
-            ChaosScenariosConfig { .. }
-        ));
-        assert!(matches!(
-            config.resilience_testing,
-            ResilienceTestingConfig { .. }
-        ));
-        assert!(matches!(
-            config.recovery_testing,
-            RecoveryTestingConfig { .. }
-        ));
+        assert!(matches!(config.fault_injection, FaultInjectionConfig { .. }));
+        assert!(matches!(config.chaos_scenarios, ChaosScenariosConfig { .. }));
+        assert!(matches!(config.resilience_testing, ResilienceTestingConfig { .. }));
+        assert!(matches!(config.recovery_testing, RecoveryTestingConfig { .. }));
     }
 
     #[test]
@@ -471,7 +452,7 @@ mod tests {
     fn test_chaos_engineering_manager_creation() {
         let config = ChaosEngineeringConfig::default();
         let manager = ChaosEngineeringManager::new(config);
-
+        
         assert_eq!(manager.get_state(), ChaosEngineeringState::Stopped);
         assert!(manager.get_last_result().is_none());
     }
@@ -484,7 +465,7 @@ mod tests {
             overall_score: 0.75,
             recommendations: vec!["建议1".to_string(), "建议2".to_string()],
         };
-
+        
         assert_eq!(assessment.resilience_score, 0.8);
         assert_eq!(assessment.recovery_score, 0.7);
         assert_eq!(assessment.overall_score, 0.75);
@@ -495,7 +476,7 @@ mod tests {
     fn test_global_chaos_engineering_manager() {
         let global_manager = GlobalChaosEngineeringManager::new();
         let state = global_manager.get_state();
-
+        
         assert_eq!(state, ChaosEngineeringState::Stopped);
     }
 }

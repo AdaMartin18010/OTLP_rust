@@ -2,13 +2,13 @@
 //!
 //! 提供各种重试策略，包括固定延迟、指数退避、抖动等。
 
-use rand::Rng;
-use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
+use std::sync::atomic::{AtomicU64, Ordering};
+use serde::{Serialize, Deserialize};
 use tracing::debug;
+use rand::Rng;
 
-use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 
 /// 重试策略类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,8 +52,6 @@ pub struct RetryConfig {
     pub retry_conditions: Vec<String>,
     /// 不重试的条件
     pub no_retry_conditions: Vec<String>,
-    /// 总重试时间窗口（超过该时长则停止重试）。None 表示不限制
-    pub total_timeout: Option<Duration>,
 }
 
 impl Default for RetryConfig {
@@ -68,7 +66,6 @@ impl Default for RetryConfig {
             enabled: true,
             retry_conditions: Vec::new(),
             no_retry_conditions: vec!["permission".to_string(), "validation".to_string()],
-            total_timeout: Some(Duration::from_secs(10)),
         }
     }
 }
@@ -138,7 +135,6 @@ impl RetryPolicy {
 
         let mut last_error = None;
         let mut attempt = 0;
-        let start_time = std::time::Instant::now();
 
         while attempt < self.config.max_attempts {
             attempt += 1;
@@ -159,14 +155,6 @@ impl RetryPolicy {
                         break;
                     }
 
-                    // 检查是否超过总重试窗口
-                    if let Some(total) = self.config.total_timeout {
-                        if start_time.elapsed() >= total {
-                            debug!("超过总重试时间窗口 {:?}", total);
-                            break;
-                        }
-                    }
-
                     // 计算延迟时间
                     let delay = self.calculate_delay(attempt);
                     if delay > Duration::ZERO {
@@ -175,11 +163,6 @@ impl RetryPolicy {
                     }
 
                     self.retry_count.fetch_add(1, Ordering::Relaxed);
-
-                    #[cfg(feature = "monitoring")]
-                    {
-                        debug!("retry_attempt_metric += 1");
-                    }
                 }
             }
         }
@@ -190,14 +173,7 @@ impl RetryPolicy {
                 "重试次数耗尽",
                 ErrorSeverity::High,
                 "retry_exhausted",
-                ErrorContext::new(
-                    "retry_policy",
-                    "execute",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::High,
-                    "retry",
-                ),
+                ErrorContext::new("retry_policy", "execute", file!(), line!(), ErrorSeverity::High, "retry")
             )
         }))
     }
@@ -219,10 +195,7 @@ impl RetryPolicy {
 
         // 检查重试条件
         if !self.config.retry_conditions.is_empty() {
-            let should_retry = self
-                .config
-                .retry_conditions
-                .iter()
+            let should_retry = self.config.retry_conditions.iter()
                 .any(|condition| error.category().contains(condition));
             if !should_retry {
                 debug!("错误类型 {} 不满足重试条件", error.category());
@@ -248,8 +221,7 @@ impl RetryPolicy {
                 multiplier,
                 max_delay,
             } => {
-                let delay_ms =
-                    (initial_delay.as_millis() as f64 * multiplier.powi(attempt as i32 - 1)) as u64;
+                let delay_ms = (initial_delay.as_millis() as f64 * multiplier.powi(attempt as i32 - 1)) as u64;
                 Duration::from_millis(delay_ms).min(*max_delay)
             }
             RetryStrategy::LinearBackoff {
@@ -290,13 +262,13 @@ impl RetryPolicy {
         stats.successful_attempts = self.successful_attempts.load(Ordering::Relaxed);
         stats.failed_attempts = self.failed_attempts.load(Ordering::Relaxed);
         stats.retry_count = self.retry_count.load(Ordering::Relaxed);
-
+        
         if stats.total_attempts > 0 {
             stats.average_retries = stats.retry_count as f64 / stats.total_attempts as f64;
         } else {
             stats.average_retries = 0.0;
         }
-
+        
         stats.last_updated = chrono::Utc::now();
     }
 
@@ -311,7 +283,7 @@ impl RetryPolicy {
         self.successful_attempts.store(0, Ordering::Relaxed);
         self.failed_attempts.store(0, Ordering::Relaxed);
         self.retry_count.store(0, Ordering::Relaxed);
-
+        
         let mut stats = self.stats.lock().unwrap();
         *stats = RetryStats::default();
     }
@@ -353,12 +325,7 @@ impl RetryPolicyBuilder {
     }
 
     /// 设置指数退避策略
-    pub fn exponential_backoff(
-        mut self,
-        initial_delay: Duration,
-        multiplier: f64,
-        max_delay: Duration,
-    ) -> Self {
+    pub fn exponential_backoff(mut self, initial_delay: Duration, multiplier: f64, max_delay: Duration) -> Self {
         self.config.strategy = RetryStrategy::ExponentialBackoff {
             initial_delay,
             multiplier,
@@ -368,12 +335,7 @@ impl RetryPolicyBuilder {
     }
 
     /// 设置线性退避策略
-    pub fn linear_backoff(
-        mut self,
-        initial_delay: Duration,
-        increment: Duration,
-        max_delay: Duration,
-    ) -> Self {
+    pub fn linear_backoff(mut self, initial_delay: Duration, increment: Duration, max_delay: Duration) -> Self {
         self.config.strategy = RetryStrategy::LinearBackoff {
             initial_delay,
             increment,
@@ -458,14 +420,14 @@ mod tests {
     #[tokio::test]
     async fn test_retry_policy_success() {
         let policy = RetryPolicy::new(RetryConfig::default());
-
-        let result: Result<String, _> = policy
-            .execute(|| async { Ok::<String, UnifiedError>("成功".to_string()) })
-            .await;
+        
+        let result: Result<String, _> = policy.execute(|| async {
+            Ok::<String, UnifiedError>("成功".to_string())
+        }).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "成功");
-
+        
         let stats = policy.get_stats();
         assert_eq!(stats.total_attempts, 1);
         assert_eq!(stats.successful_attempts, 1);
@@ -480,20 +442,18 @@ mod tests {
             ..Default::default()
         };
         let policy = RetryPolicy::new(config);
-
-        let result: Result<String, _> = policy
-            .execute(|| async {
-                Err(UnifiedError::new(
-                    "测试错误",
-                    ErrorSeverity::Medium,
-                    "test",
-                    ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::Medium, "test"),
-                ))
-            })
-            .await;
+        
+        let result: Result<String, _> = policy.execute(|| async {
+            Err(UnifiedError::new(
+                "测试错误",
+                ErrorSeverity::Medium,
+                "test",
+                ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::Medium, "test")
+            ))
+        }).await;
 
         assert!(result.is_err());
-
+        
         let stats = policy.get_stats();
         assert_eq!(stats.total_attempts, 3);
         assert_eq!(stats.successful_attempts, 0);
@@ -510,27 +470,18 @@ mod tests {
             ..Default::default()
         };
         let policy = RetryPolicy::new(config);
-
-        let result: Result<String, _> = policy
-            .execute(|| async {
-                Err(UnifiedError::new(
-                    "权限错误",
-                    ErrorSeverity::High,
-                    "permission",
-                    ErrorContext::new(
-                        "test",
-                        "test",
-                        "test.rs",
-                        1,
-                        ErrorSeverity::High,
-                        "permission",
-                    ),
-                ))
-            })
-            .await;
+        
+        let result: Result<String, _> = policy.execute(|| async {
+            Err(UnifiedError::new(
+                "权限错误",
+                ErrorSeverity::High,
+                "permission",
+                ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::High, "permission")
+            ))
+        }).await;
 
         assert!(result.is_err());
-
+        
         let stats = policy.get_stats();
         assert_eq!(stats.total_attempts, 1); // 只尝试1次
         assert_eq!(stats.retry_count, 0); // 没有重试
@@ -548,7 +499,7 @@ mod tests {
             ..Default::default()
         };
         let policy = RetryPolicy::new(config);
-
+        
         // 测试延迟计算（这里需要访问私有方法，所以使用反射或其他方式）
         // 在实际测试中，可以通过公共接口测试延迟行为
         assert!(policy.get_config().max_attempts == 3);
@@ -558,7 +509,7 @@ mod tests {
     fn test_retry_stats() {
         let policy = RetryPolicy::new(RetryConfig::default());
         let stats = policy.get_stats();
-
+        
         assert_eq!(stats.total_attempts, 0);
         assert_eq!(stats.successful_attempts, 0);
         assert_eq!(stats.failed_attempts, 0);
@@ -569,10 +520,10 @@ mod tests {
     #[test]
     fn test_retry_policy_reset() {
         let policy = RetryPolicy::new(RetryConfig::default());
-
+        
         // 重置统计
         policy.reset_stats();
-
+        
         let stats = policy.get_stats();
         assert_eq!(stats.total_attempts, 0);
         assert_eq!(stats.successful_attempts, 0);
@@ -592,64 +543,51 @@ impl Retrier {
     pub fn new(config: RetryConfig) -> Self {
         Self { config }
     }
-
+    
     /// 使用重试策略执行操作
     pub async fn execute<F, T, E>(&self, operation: F) -> Result<T, E>
     where
-        F: Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>>
-            + Send
-            + Sync,
+        F: Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>> + Send>> + Send + Sync,
         E: Clone + Send + Sync,
     {
         let mut attempt = 0;
         let mut last_error = None;
-
+        
         while attempt < self.config.max_attempts {
             match operation().await {
                 Ok(result) => return Ok(result),
                 Err(error) => {
                     last_error = Some(error.clone());
                     attempt += 1;
-
+                    
                     if attempt >= self.config.max_attempts {
                         break;
                     }
-
+                    
                     // 计算延迟时间
                     let delay = self.calculate_delay(attempt);
                     tokio::time::sleep(delay).await;
                 }
             }
         }
-
+        
         Err(last_error.unwrap())
     }
-
+    
     /// 计算延迟时间
     fn calculate_delay(&self, attempt: u32) -> Duration {
         match &self.config.strategy {
             RetryStrategy::FixedDelay(delay) => *delay,
-            RetryStrategy::ExponentialBackoff {
-                initial_delay,
-                multiplier,
-                max_delay,
-            } => {
+            RetryStrategy::ExponentialBackoff { initial_delay, multiplier, max_delay } => {
                 let delay_ms = initial_delay.as_millis() as f64 * multiplier.powi(attempt as i32);
                 let delay = Duration::from_millis(delay_ms as u64);
                 delay.min(*max_delay)
             }
-            RetryStrategy::LinearBackoff {
-                initial_delay,
-                increment,
-                max_delay,
-            } => {
+            RetryStrategy::LinearBackoff { initial_delay, increment, max_delay } => {
                 let delay = *initial_delay + *increment * attempt;
                 delay.min(*max_delay)
             }
-            RetryStrategy::Jittered {
-                base_delay,
-                jitter_range,
-            } => {
+            RetryStrategy::Jittered { base_delay, jitter_range } => {
                 let jitter = rand::rng().random_range(-*jitter_range..=*jitter_range);
                 let delay_ms = (base_delay.as_millis() as f64 * (1.0 + jitter)) as u64;
                 Duration::from_millis(delay_ms)

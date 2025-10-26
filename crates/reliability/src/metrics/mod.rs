@@ -2,13 +2,14 @@
 //!
 //! 提供可靠性框架的指标收集、存储和分析功能。
 
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
+use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+use serde::{Serialize, Deserialize};
 use tracing::{error, info};
 
 use crate::error_handling::UnifiedError;
+
 
 /// 可靠性指标
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -248,23 +249,21 @@ impl MetricsCollector {
 
     /// 启动指标收集
     pub async fn start(&self) -> Result<(), UnifiedError> {
-        self.is_running
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-
+        self.is_running.store(true, std::sync::atomic::Ordering::Relaxed);
+        
         // 启动指标收集循环
         let collector = Arc::new(self.clone());
         tokio::spawn(async move {
             collector.run_collection_loop().await;
         });
-
+        
         info!("指标收集器启动");
         Ok(())
     }
 
     /// 停止指标收集
     pub async fn stop(&self) -> Result<(), UnifiedError> {
-        self.is_running
-            .store(false, std::sync::atomic::Ordering::Relaxed);
+        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
         info!("指标收集器停止");
         Ok(())
     }
@@ -272,25 +271,25 @@ impl MetricsCollector {
     /// 收集指标
     pub async fn collect_metrics(&self) -> Result<ReliabilityMetrics, UnifiedError> {
         let timestamp = SystemTime::now();
-
+        
         // 收集错误指标
         let error_metrics = self.collect_error_metrics().await;
-
+        
         // 收集容错指标
         let fault_tolerance_metrics = self.collect_fault_tolerance_metrics().await;
-
+        
         // 收集性能指标
         let performance_metrics = self.collect_performance_metrics().await;
-
+        
         // 收集资源指标
         let resource_metrics = self.collect_resource_metrics().await;
-
+        
         // 收集健康指标
         let health_metrics = self.collect_health_metrics().await;
-
+        
         // 获取自定义指标
         let custom_metrics = self.custom_metrics.lock().unwrap().clone();
-
+        
         let metrics = ReliabilityMetrics {
             timestamp,
             error_metrics,
@@ -300,13 +299,13 @@ impl MetricsCollector {
             health_metrics,
             custom_metrics,
         };
-
+        
         // 更新当前指标
         *self.metrics.lock().unwrap() = metrics.clone();
-
+        
         // 添加到历史记录
         self.add_to_history(metrics.clone());
-
+        
         Ok(metrics)
     }
 
@@ -317,13 +316,13 @@ impl MetricsCollector {
         errors_by_type.insert("network".to_string(), 5);
         errors_by_type.insert("database".to_string(), 3);
         errors_by_type.insert("service".to_string(), 2);
-
+        
         let mut errors_by_severity = HashMap::new();
         errors_by_severity.insert("low".to_string(), 3);
         errors_by_severity.insert("medium".to_string(), 4);
         errors_by_severity.insert("high".to_string(), 2);
         errors_by_severity.insert("critical".to_string(), 1);
-
+        
         let mut error_trend = Vec::new();
         for i in 0..10 {
             let timestamp = SystemTime::now() - Duration::from_secs(i * 60);
@@ -333,7 +332,7 @@ impl MetricsCollector {
                 error_rate: (10 - i) as f64 / 100.0,
             });
         }
-
+        
         ErrorMetrics {
             total_errors: 10,
             error_rate: 0.05,
@@ -351,22 +350,22 @@ impl MetricsCollector {
         circuit_breaker_states.insert("service_a".to_string(), "closed".to_string());
         circuit_breaker_states.insert("service_b".to_string(), "open".to_string());
         circuit_breaker_states.insert("service_c".to_string(), "half_open".to_string());
-
+        
         let mut retry_counts = HashMap::new();
         retry_counts.insert("service_a".to_string(), 5);
         retry_counts.insert("service_b".to_string(), 10);
         retry_counts.insert("service_c".to_string(), 3);
-
+        
         let mut timeout_counts = HashMap::new();
         timeout_counts.insert("service_a".to_string(), 2);
         timeout_counts.insert("service_b".to_string(), 8);
         timeout_counts.insert("service_c".to_string(), 1);
-
+        
         let mut fallback_counts = HashMap::new();
         fallback_counts.insert("service_a".to_string(), 1);
         fallback_counts.insert("service_b".to_string(), 5);
         fallback_counts.insert("service_c".to_string(), 0);
-
+        
         FaultToleranceMetrics {
             circuit_breaker_states,
             retry_counts,
@@ -385,7 +384,7 @@ impl MetricsCollector {
         latency_distribution.insert("100-500ms".to_string(), 500);
         latency_distribution.insert("500ms-1s".to_string(), 100);
         latency_distribution.insert("1s+".to_string(), 50);
-
+        
         PerformanceMetrics {
             total_requests: 10000,
             successful_requests: 9500,
@@ -413,7 +412,7 @@ impl MetricsCollector {
                 network_usage: 30.0 + (i as f64 * 1.0),
             });
         }
-
+        
         ResourceMetrics {
             cpu_usage: 70.0,
             memory_usage: 75.0,
@@ -432,21 +431,17 @@ impl MetricsCollector {
         health_checks.insert("database".to_string(), "healthy".to_string());
         health_checks.insert("cache".to_string(), "healthy".to_string());
         health_checks.insert("external_service".to_string(), "degraded".to_string());
-
+        
         let mut health_trend = Vec::new();
         for i in 0..10 {
             let timestamp = SystemTime::now() - Duration::from_secs(i * 60);
             health_trend.push(HealthTrendPoint {
                 timestamp,
-                health_status: if i < 5 {
-                    "healthy".to_string()
-                } else {
-                    "degraded".to_string()
-                },
+                health_status: if i < 5 { "healthy".to_string() } else { "degraded".to_string() },
                 health_score: 0.9 - (i as f64 * 0.02),
             });
         }
-
+        
         HealthMetrics {
             overall_health: "healthy".to_string(),
             health_checks,
@@ -459,10 +454,10 @@ impl MetricsCollector {
     /// 运行指标收集循环
     async fn run_collection_loop(&self) {
         let mut interval = tokio::time::interval(self.collection_interval);
-
+        
         while self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
             interval.tick().await;
-
+            
             if let Err(error) = self.collect_metrics().await {
                 error!("指标收集失败: {}", error);
             }
@@ -473,7 +468,7 @@ impl MetricsCollector {
     fn add_to_history(&self, metrics: ReliabilityMetrics) {
         let mut history = self.metrics_history.lock().unwrap();
         history.push(metrics);
-
+        
         // 保持最近1000个指标记录
         if history.len() > 1000 {
             let len = history.len();
@@ -729,19 +724,19 @@ mod tests {
         let int_value = MetricValue::Integer(42);
         assert_eq!(int_value.as_integer(), Some(42));
         assert_eq!(int_value.as_float(), Some(42.0));
-
+        
         let float_value = MetricValue::Float(3.14);
         assert_eq!(float_value.as_float(), Some(3.14));
-
+        
         let string_value = MetricValue::String("test".to_string());
         assert_eq!(string_value.as_string(), Some(&"test".to_string()));
-
+        
         let bool_value = MetricValue::Boolean(true);
         assert_eq!(bool_value.as_boolean(), Some(true));
-
+        
         let duration_value = MetricValue::Duration(Duration::from_secs(5));
         assert_eq!(duration_value.as_duration(), Some(Duration::from_secs(5)));
-
+        
         let timestamp_value = MetricValue::Timestamp(SystemTime::now());
         assert!(timestamp_value.as_timestamp().is_some());
     }
@@ -763,36 +758,15 @@ mod tests {
     #[test]
     fn test_custom_metrics() {
         let collector = MetricsCollector::new(Duration::from_secs(60));
-
+        
         collector.set_custom_metric("test_int".to_string(), MetricValue::Integer(42));
         collector.set_custom_metric("test_float".to_string(), MetricValue::Float(3.14));
-        collector.set_custom_metric(
-            "test_string".to_string(),
-            MetricValue::String("test".to_string()),
-        );
-
-        assert_eq!(
-            collector
-                .get_custom_metric("test_int")
-                .unwrap()
-                .as_integer(),
-            Some(42)
-        );
-        assert_eq!(
-            collector
-                .get_custom_metric("test_float")
-                .unwrap()
-                .as_float(),
-            Some(3.14)
-        );
-        assert_eq!(
-            collector
-                .get_custom_metric("test_string")
-                .unwrap()
-                .as_string(),
-            Some(&"test".to_string())
-        );
-
+        collector.set_custom_metric("test_string".to_string(), MetricValue::String("test".to_string()));
+        
+        assert_eq!(collector.get_custom_metric("test_int").unwrap().as_integer(), Some(42));
+        assert_eq!(collector.get_custom_metric("test_float").unwrap().as_float(), Some(3.14));
+        assert_eq!(collector.get_custom_metric("test_string").unwrap().as_string(), Some(&"test".to_string()));
+        
         let all_metrics = collector.get_all_custom_metrics();
         assert_eq!(all_metrics.len(), 3);
     }

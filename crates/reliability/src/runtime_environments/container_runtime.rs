@@ -1,7 +1,7 @@
 //! Cloud Native: 容器运行时抽象（CNCF/OCI 对齐）
-use crate::error_handling::UnifiedError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use crate::error_handling::UnifiedError;
 use std::str::FromStr;
 
 /// 容器镜像引用（兼容 OCI image ref 基本形式）
@@ -15,12 +15,7 @@ pub struct ImageReference {
 
 impl ImageReference {
     pub fn new(repository: impl Into<String>) -> Self {
-        Self {
-            registry: None,
-            repository: repository.into(),
-            tag: None,
-            digest: None,
-        }
+        Self { registry: None, repository: repository.into(), tag: None, digest: None }
     }
 
     pub fn with_tag(mut self, tag: impl Into<String>) -> Self {
@@ -55,39 +50,23 @@ impl FromStr for ImageReference {
         };
 
         let (registry, repository) = match name_part.split_once('/') {
-            Some((first, rest))
-                if first.contains('.') || first.contains(':') || first == "localhost" =>
-            {
+            Some((first, rest)) if first.contains('.') || first.contains(':') || first == "localhost" => {
                 (Some(first.to_string()), format!("{rest}"))
             }
             _ => (None, name_part.to_string()),
         };
 
-        Ok(ImageReference {
-            registry,
-            repository,
-            tag: tag_part,
-            digest: digest_part,
-        })
+        Ok(ImageReference { registry, repository, tag: tag_part, digest: digest_part })
     }
 }
 
 impl ToString for ImageReference {
     fn to_string(&self) -> String {
         let mut s = String::new();
-        if let Some(reg) = &self.registry {
-            s.push_str(reg);
-            s.push('/');
-        }
+        if let Some(reg) = &self.registry { s.push_str(reg); s.push('/'); }
         s.push_str(&self.repository);
-        if let Some(tag) = &self.tag {
-            s.push(':');
-            s.push_str(tag);
-        }
-        if let Some(d) = &self.digest {
-            s.push('@');
-            s.push_str(d);
-        }
+        if let Some(tag) = &self.tag { s.push(':'); s.push_str(tag); }
+        if let Some(d) = &self.digest { s.push('@'); s.push_str(d); }
         s
     }
 }
@@ -157,9 +136,7 @@ pub mod docker_local {
     pub struct DockerRuntime;
 
     impl DockerRuntime {
-        pub fn new() -> Self {
-            Self
-        }
+        pub fn new() -> Self { Self }
     }
 
     #[async_trait]
@@ -170,11 +147,11 @@ pub mod docker_local {
         async fn run(&self, _cfg: &ContainerRunConfig) -> Result<ContainerId, UnifiedError> {
             Ok("container-123".to_string())
         }
-        async fn stop(&self, _id: &ContainerId) -> Result<(), UnifiedError> {
-            Ok(())
-        }
+        async fn stop(&self, _id: &ContainerId) -> Result<(), UnifiedError> { Ok(()) }
         async fn inspect(&self, _id: &ContainerId) -> Result<ContainerState, UnifiedError> {
             Ok(ContainerState::Running)
         }
     }
 }
+
+

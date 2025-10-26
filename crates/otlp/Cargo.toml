@@ -39,8 +39,8 @@ parking_lot = { workspace = true }
 crossbeam = { workspace = true }
 dashmap = { workspace = true }  # 使用工作区版本
 
-# 压缩算法（使用稳定版本）
-flate2 = "1.1.4"               # gzip压缩
+# 压缩算法（使用稳定版本 - 2025-10-26更新）
+flate2 = "1.1.5"               # gzip压缩 (更新: 1.1.4 -> 1.1.5)
 brotli = "8.0.2"               # Brotli压缩
 zstd = "0.13.3"                # Zstandard压缩
 lz4_flex = "0.11.5"            # LZ4压缩

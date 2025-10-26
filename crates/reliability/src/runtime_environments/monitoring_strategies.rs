@@ -6,35 +6,35 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 //use crate::error_handling::UnifiedError;
-use super::{EnvironmentCapabilities, RuntimeEnvironment};
+use super::{RuntimeEnvironment, EnvironmentCapabilities};
 
 /// 监控策略接口
 #[async_trait]
 pub trait MonitoringStrategy: Send + Sync {
     /// 获取策略名称
     fn name(&self) -> &str;
-
+    
     /// 获取监控间隔
     fn monitoring_interval(&self) -> Duration;
-
+    
     /// 获取健康检查间隔
     fn health_check_interval(&self) -> Duration;
-
+    
     /// 获取指标收集间隔
     fn metrics_collection_interval(&self) -> Duration;
-
+    
     /// 是否启用详细监控
     fn enable_detailed_monitoring(&self) -> bool;
-
+    
     /// 是否启用性能监控
     fn enable_performance_monitoring(&self) -> bool;
-
+    
     /// 是否启用资源监控
     fn enable_resource_monitoring(&self) -> bool;
-
+    
     /// 是否启用混沌工程
     fn enable_chaos_engineering(&self) -> bool;
-
+    
     /// 获取监控配置
     fn get_monitoring_config(&self) -> MonitoringConfig;
 }
@@ -129,7 +129,7 @@ impl MonitoringStrategy for OperatingSystemMonitoringStrategy {
     fn enable_resource_monitoring(&self) -> bool {
         self.config.enable_resource_monitoring
     }
-
+    
     fn enable_chaos_engineering(&self) -> bool {
         self.config.enable_chaos_engineering
     }
@@ -196,7 +196,7 @@ impl MonitoringStrategy for EmbeddedBareMetalMonitoringStrategy {
     fn enable_resource_monitoring(&self) -> bool {
         self.config.enable_resource_monitoring
     }
-
+    
     fn enable_chaos_engineering(&self) -> bool {
         self.config.enable_chaos_engineering
     }
@@ -263,7 +263,7 @@ impl MonitoringStrategy for ContainerMonitoringStrategy {
     fn enable_resource_monitoring(&self) -> bool {
         self.config.enable_resource_monitoring
     }
-
+    
     fn enable_chaos_engineering(&self) -> bool {
         self.config.enable_chaos_engineering
     }
@@ -330,7 +330,7 @@ impl MonitoringStrategy for WebAssemblyMonitoringStrategy {
     fn enable_resource_monitoring(&self) -> bool {
         self.config.enable_resource_monitoring
     }
-
+    
     fn enable_chaos_engineering(&self) -> bool {
         self.config.enable_chaos_engineering
     }
@@ -397,7 +397,7 @@ impl MonitoringStrategy for FaaSMonitoringStrategy {
     fn enable_resource_monitoring(&self) -> bool {
         self.config.enable_resource_monitoring
     }
-
+    
     fn enable_chaos_engineering(&self) -> bool {
         self.config.enable_chaos_engineering
     }
@@ -416,24 +416,28 @@ impl MonitoringStrategyFactory {
         match environment {
             RuntimeEnvironment::OperatingSystem => {
                 Box::new(OperatingSystemMonitoringStrategy::new())
-            }
+            },
             RuntimeEnvironment::EmbeddedBareMetal => {
                 Box::new(EmbeddedBareMetalMonitoringStrategy::new())
-            }
-            RuntimeEnvironment::Container => Box::new(ContainerMonitoringStrategy::new()),
-            RuntimeEnvironment::WebAssembly => Box::new(WebAssemblyMonitoringStrategy::new()),
-            RuntimeEnvironment::FunctionAsAService => Box::new(FaaSMonitoringStrategy::new()),
+            },
+            RuntimeEnvironment::Container => {
+                Box::new(ContainerMonitoringStrategy::new())
+            },
+            RuntimeEnvironment::WebAssembly => {
+                Box::new(WebAssemblyMonitoringStrategy::new())
+            },
+            RuntimeEnvironment::FunctionAsAService => {
+                Box::new(FaaSMonitoringStrategy::new())
+            },
             _ => {
                 // 默认使用操作系统策略
                 Box::new(OperatingSystemMonitoringStrategy::new())
-            }
+            },
         }
     }
 
     /// 根据环境能力创建自定义监控策略
-    pub fn create_custom_strategy(
-        capabilities: &EnvironmentCapabilities,
-    ) -> Box<dyn MonitoringStrategy> {
+    pub fn create_custom_strategy(capabilities: &EnvironmentCapabilities) -> Box<dyn MonitoringStrategy> {
         // 根据环境能力调整监控策略
         if !capabilities.supports_multiprocessing && !capabilities.supports_network {
             // 嵌入式环境
@@ -457,8 +461,7 @@ mod tests {
 
     #[test]
     fn test_monitoring_strategy_factory() {
-        let strategy =
-            MonitoringStrategyFactory::create_strategy(RuntimeEnvironment::OperatingSystem);
+        let strategy = MonitoringStrategyFactory::create_strategy(RuntimeEnvironment::OperatingSystem);
         assert_eq!(strategy.name(), "OperatingSystem");
         assert_eq!(strategy.monitoring_interval(), Duration::from_secs(5));
     }

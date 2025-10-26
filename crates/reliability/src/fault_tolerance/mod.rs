@@ -3,27 +3,42 @@
 //! 提供企业级的容错模式，包括断路器、重试、超时、降级等。
 
 //use std::time::Duration;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
 //use tracing::{debug, warn, error, info};
 
-use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
-use crate::otlp_integration::convert as otlp_convert;
+use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 
-pub mod bulkhead;
 pub mod circuit_breaker;
-pub mod config;
-pub mod fallback;
 pub mod retry_policies;
+pub mod bulkhead;
 pub mod timeout;
+pub mod fallback;
+pub mod config;
+pub mod rate_limiting;
+pub mod bulkhead_enhanced;
+pub mod circuit_breaker_enhanced;
 
-pub use bulkhead::*;
 pub use circuit_breaker::*;
-pub use config::*;
-pub use fallback::*;
 pub use retry_policies::*;
+pub use bulkhead::*;
 pub use timeout::*;
+pub use fallback::*;
+pub use config::*;
+pub use rate_limiting::*;
+
+// Re-export enhanced versions with specific names to avoid ambiguity
+pub use bulkhead_enhanced::{
+    EnhancedBulkhead, EnhancedBulkheadConfig, BulkheadStrategy, 
+    OverflowStrategy, TaskPriority, BulkheadState as EnhancedBulkheadState,
+    BulkheadStats as EnhancedBulkheadStats,
+};
+pub use circuit_breaker_enhanced::{
+    EnhancedCircuitBreaker, EnhancedCircuitBreakerConfig,
+    CircuitState, CircuitBreakerPolicy, CallResult,
+    CircuitBreakerStats as EnhancedCircuitBreakerStats,
+};
 
 /// 容错配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -131,7 +146,7 @@ impl FaultToleranceExecutor {
     }
 
     /// 执行带容错的操作
-    pub async fn execute<T, F, Fut>(&self, operation: F) -> otlp::error::Result<T>
+    pub async fn execute<T, F, Fut>(&self, operation: F) -> Result<T, UnifiedError>
     where
         F: Fn() -> Fut + Clone,
         Fut: std::future::Future<Output = Result<T, UnifiedError>>,
@@ -139,62 +154,33 @@ impl FaultToleranceExecutor {
     {
         // 1. 检查断路器状态
         if !self.circuit_breaker.can_execute() {
-            return Err(otlp_convert::to_otlp_error(
-                &self.create_circuit_open_error(),
-            ));
+            return Err(self.create_circuit_open_error());
         }
 
         // 2. 获取舱壁资源
-        let _permit = self
-            .bulkhead
-            .acquire()
-            .await
-            .map_err(|e| otlp_convert::to_otlp_error(&e))?;
+        let _permit = self.bulkhead.acquire().await?;
 
         // 3. 执行带超时的操作
-        #[cfg(feature = "monitoring")]
-        let __ft_exec_start = std::time::Instant::now();
-
-        let result = self
-            .timeout
-            .execute(|| self.retry_policy.execute(|| operation()))
-            .await;
+        let result = self.timeout.execute(|| {
+            self.retry_policy.execute(|| {
+                operation()
+            })
+        }).await;
 
         // 4. 处理结果
         match result {
             Ok(value) => {
                 self.circuit_breaker.record_success();
-                #[cfg(feature = "monitoring")]
-                {
-                    // 仅使用 tracing 作为占位，后续可替换为 metrics 宏
-                    tracing::debug!(
-                        target: "reliability::fault_tolerance",
-                        elapsed_ms = __ft_exec_start.elapsed().as_millis() as u64,
-                        "ft_execute_success"
-                    );
-                }
                 Ok(value)
             }
             Err(error) => {
                 self.circuit_breaker.record_failure();
-                #[cfg(feature = "monitoring")]
-                {
-                    tracing::debug!(
-                        target: "reliability::fault_tolerance",
-                        elapsed_ms = __ft_exec_start.elapsed().as_millis() as u64,
-                        error_category = %error.category(),
-                        "ft_execute_error"
-                    );
-                }
-
+                
                 // 尝试降级
                 if self.config.fallback.enabled {
-                    self.fallback
-                        .execute(|| async { Err(error.clone()) })
-                        .await
-                        .map_err(|e| otlp_convert::to_otlp_error(&e))
+                    self.fallback.execute(|| async { Err(error.clone()) }).await
                 } else {
-                    Err(otlp_convert::to_otlp_error(&error))
+                    Err(error)
                 }
             }
         }
@@ -208,16 +194,15 @@ impl FaultToleranceExecutor {
             file!(),
             line!(),
             ErrorSeverity::High,
-            "circuit_breaker",
+            "circuit_breaker"
         );
 
         UnifiedError::new(
             "断路器已开启，操作被拒绝",
             ErrorSeverity::High,
             "circuit_breaker_open",
-            context,
-        )
-        .with_code("CB_001")
+            context
+        ).with_code("CB_001")
         .with_suggestion("等待断路器恢复或检查服务状态")
     }
 
@@ -303,14 +288,13 @@ impl FaultToleranceMonitor {
     /// 获取全局统计信息
     pub fn get_global_stats(&self) -> FaultToleranceStats {
         let mut global_stats = self.global_stats.lock().unwrap().clone();
-
+        
         // 聚合所有执行器的统计信息
         let executors = self.executors.lock().unwrap();
         for executor in executors.values() {
             let stats = executor.get_stats();
             global_stats.circuit_breaker.total_requests += stats.circuit_breaker.total_requests;
-            global_stats.circuit_breaker.successful_requests +=
-                stats.circuit_breaker.successful_requests;
+            global_stats.circuit_breaker.successful_requests += stats.circuit_breaker.successful_requests;
             global_stats.circuit_breaker.failed_requests += stats.circuit_breaker.failed_requests;
             global_stats.retry.total_attempts += stats.retry.total_attempts;
             global_stats.retry.successful_attempts += stats.retry.successful_attempts;
@@ -323,7 +307,7 @@ impl FaultToleranceMonitor {
             global_stats.fallback.total_requests += stats.fallback.total_requests;
             global_stats.fallback.fallback_used += stats.fallback.fallback_used;
         }
-
+        
         global_stats
     }
 
@@ -336,24 +320,12 @@ impl FaultToleranceMonitor {
 
         // 断路器报告
         report.push_str("断路器状态:\n");
-        report.push_str(&format!(
-            "  总请求数: {}\n",
-            stats.circuit_breaker.total_requests
-        ));
-        report.push_str(&format!(
-            "  成功请求数: {}\n",
-            stats.circuit_breaker.successful_requests
-        ));
-        report.push_str(&format!(
-            "  失败请求数: {}\n",
-            stats.circuit_breaker.failed_requests
-        ));
-        report.push_str(&format!(
-            "  成功率: {:.2}%\n",
+        report.push_str(&format!("  总请求数: {}\n", stats.circuit_breaker.total_requests));
+        report.push_str(&format!("  成功请求数: {}\n", stats.circuit_breaker.successful_requests));
+        report.push_str(&format!("  失败请求数: {}\n", stats.circuit_breaker.failed_requests));
+        report.push_str(&format!("  成功率: {:.2}%\n", 
             if stats.circuit_breaker.total_requests > 0 {
-                stats.circuit_breaker.successful_requests as f64
-                    / stats.circuit_breaker.total_requests as f64
-                    * 100.0
+                stats.circuit_breaker.successful_requests as f64 / stats.circuit_breaker.total_requests as f64 * 100.0
             } else {
                 0.0
             }
@@ -362,31 +334,19 @@ impl FaultToleranceMonitor {
         // 重试报告
         report.push_str("\n重试状态:\n");
         report.push_str(&format!("  总尝试数: {}\n", stats.retry.total_attempts));
-        report.push_str(&format!(
-            "  成功尝试数: {}\n",
-            stats.retry.successful_attempts
-        ));
+        report.push_str(&format!("  成功尝试数: {}\n", stats.retry.successful_attempts));
         report.push_str(&format!("  失败尝试数: {}\n", stats.retry.failed_attempts));
 
         // 舱壁报告
         report.push_str("\n舱壁状态:\n");
         report.push_str(&format!("  总请求数: {}\n", stats.bulkhead.total_requests));
-        report.push_str(&format!(
-            "  接受请求数: {}\n",
-            stats.bulkhead.accepted_requests
-        ));
-        report.push_str(&format!(
-            "  拒绝请求数: {}\n",
-            stats.bulkhead.rejected_requests
-        ));
+        report.push_str(&format!("  接受请求数: {}\n", stats.bulkhead.accepted_requests));
+        report.push_str(&format!("  拒绝请求数: {}\n", stats.bulkhead.rejected_requests));
 
         // 超时报告
         report.push_str("\n超时状态:\n");
         report.push_str(&format!("  总请求数: {}\n", stats.timeout.total_requests));
-        report.push_str(&format!(
-            "  超时请求数: {}\n",
-            stats.timeout.timed_out_requests
-        ));
+        report.push_str(&format!("  超时请求数: {}\n", stats.timeout.timed_out_requests));
 
         // 降级报告
         report.push_str("\n降级状态:\n");
@@ -468,9 +428,9 @@ mod tests {
         let config = FaultToleranceConfig::default();
         let executor = FaultToleranceExecutor::new(config);
 
-        let result = executor
-            .execute(|| async { Ok::<String, UnifiedError>("成功".to_string()) })
-            .await;
+        let result = executor.execute(|| async {
+            Ok::<String, UnifiedError>("成功".to_string())
+        }).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "成功");
@@ -480,7 +440,7 @@ mod tests {
     fn test_fault_tolerance_monitor() {
         let monitor = FaultToleranceMonitor::new();
         let stats = monitor.get_global_stats();
-
+        
         assert_eq!(stats.circuit_breaker.total_requests, 0);
         assert_eq!(stats.retry.total_attempts, 0);
         assert_eq!(stats.bulkhead.total_requests, 0);
@@ -490,7 +450,7 @@ mod tests {
     fn test_global_fault_tolerance_monitor() {
         let global_monitor = GlobalFaultToleranceMonitor::new();
         let stats = global_monitor.get_global_stats();
-
+        
         assert_eq!(stats.circuit_breaker.total_requests, 0);
         assert_eq!(stats.retry.total_attempts, 0);
     }

@@ -1,6 +1,6 @@
 # 📚 OTLP Rust 文档导航指南
 
-> 快速找到您需要的文档 | 最后更新: 2025年10月20日
+> 快速找到您需要的文档 | 最后更新: 2025年10月26日
 
 ---
 
@@ -25,11 +25,15 @@
 
 1. **系统概览**: [系统架构](architecture/system-architecture.md) - 30分钟
 2. **模块设计**: [模块设计](architecture/module-design.md) - 30分钟
-3. **理论基础**: [理论框架总览](02_THEORETICAL_FRAMEWORK/README.md) - 1小时
-4. **性能考量**: [性能优化指南](guides/performance-optimization.md) - 45分钟
-5. **部署方案**: [部署指南](guides/deployment.md) - 45分钟
+3. **🌟 OTLP 标准对齐**: [OTLP 标准对齐](08_REFERENCE/otlp_standards_alignment.md) ⭐ **NEW!** - 2小时
+   - 完整的 OTLP 协议版本、数据模型、语义约定对照
+4. **🚀 最新特性**: [OTLP 2024-2025 特性](08_REFERENCE/otlp_2024_2025_features.md) ⭐ **NEW!** - 1小时
+   - Profile/Event 信号、OTLP/Arrow 高性能传输
+5. **理论基础**: [理论框架总览](02_THEORETICAL_FRAMEWORK/README.md) - 1小时
+6. **性能考量**: [性能优化指南](guides/performance-optimization.md) - 45分钟
+7. **部署方案**: [部署指南](guides/deployment.md) - 45分钟
 
-**预计时间**: 3-4小时全面掌握
+**预计时间**: 6-7小时全面掌握（含最新标准）
 
 ---
 
@@ -37,12 +41,16 @@
 
 **目标**: 深入理解理论基础和创新点
 
-1. **核心理论**: [语义模型与流分析](02_THEORETICAL_FRAMEWORK/SEMANTIC_MODELS_AND_FLOW_ANALYSIS.md) - 4-6小时
-2. **自适应系统**: [自我修复架构](02_THEORETICAL_FRAMEWORK/SELF_HEALING_AUTO_ADJUSTMENT_ARCHITECTURE.md) - 2-3小时
-3. **分布式理论**: [分布式系统理论](02_THEORETICAL_FRAMEWORK/DISTRIBUTED_SYSTEMS_THEORY.md) - 2小时
-4. **形式化方法**: 查看 `../analysis/` 目录的高级分析文档
+1. **🌟 OTLP 标准**: [OTLP 标准对齐](08_REFERENCE/otlp_standards_alignment.md) ⭐ **NEW!** - 3-4小时
+   - 完整的 OTLP 协议规范对照和数据模型分析
+2. **🚀 最新发展**: [OTLP 2024-2025 特性](08_REFERENCE/otlp_2024_2025_features.md) ⭐ **NEW!** - 2小时
+   - Profile/Event 信号、OTLP/Arrow 等前沿技术
+3. **核心理论**: [语义模型与流分析](02_THEORETICAL_FRAMEWORK/SEMANTIC_MODELS_AND_FLOW_ANALYSIS.md) - 4-6小时
+4. **自适应系统**: [自我修复架构](02_THEORETICAL_FRAMEWORK/SELF_HEALING_AUTO_ADJUSTMENT_ARCHITECTURE.md) - 2-3小时
+5. **分布式理论**: [分布式系统理论](02_THEORETICAL_FRAMEWORK/DISTRIBUTED_SYSTEMS_THEORY.md) - 2小时
+6. **形式化方法**: 查看 `../analysis/` 目录的高级分析文档
 
-**预计时间**: 1-2周深度研究
+**预计时间**: 2-3周深度研究（含最新标准）
 
 ---
 
@@ -119,6 +127,41 @@
 - ✅ [模块设计](architecture/module-design.md) - 模块详细设计
 - [理论框架](02_THEORETICAL_FRAMEWORK/README.md) - 理论基础
 
+### OTLP 标准与参考 🆕
+
+> 📖 **2024-2025 最新**: 完整的 OTLP 标准对照和新特性实现指南
+
+- ✅ [🌟 OTLP 标准对齐](08_REFERENCE/otlp_standards_alignment.md) ⭐ **NEW!** - 1300+ 行完整参考
+  - OTLP 协议版本详解 (v0.x → v1.x)
+  - 信号类型数据模型 (Trace/Metrics/Logs/Profile/Event)
+  - Semantic Conventions v1.25+ (GenAI、云原生、消息系统)
+  - 传输协议规范 (gRPC/HTTP/Arrow)
+  
+- ✅ [🚀 OTLP 2024-2025 特性](08_REFERENCE/otlp_2024_2025_features.md) ⭐ **NEW!** - 800+ 行最新特性
+  - Profile 信号类型 (pprof 集成)
+  - Event 信号类型 (独立事件模型)
+  - 增强的 Log 模型 (结构化日志)
+  - OTLP/Arrow 高性能传输协议
+
+- ✅ [🦀 Rust 1.90 技术栈对齐](08_REFERENCE/rust_1.90_otlp_tech_stack_alignment.md) ⭐ **NEW!** - 3000+ 行完整技术栈
+  - 36+ 核心库详细对比（Tokio, Tonic, Prost 等）
+  - 技术选型决策依据
+  - 使用方式与最佳实践
+  - 成熟案例与性能基准
+
+### OTLP 2024-2025 实现指南 🆕
+
+> 🛠️ **实战指南**: Profile/Event/Arrow 信号的完整实现
+
+- ✅ [🔥 Profile 信号实现](05_IMPLEMENTATION/profile_signal_implementation_guide.md) ⭐ **NEW!** - 885 行
+  - Profile 数据采集与导出 | CPU/内存/锁分析 | 持续性能分析
+  
+- ✅ [⚡ Event 信号实现](05_IMPLEMENTATION/event_signal_implementation_guide.md) ⭐ **NEW!** - 1011 行
+  - Event vs Logs 对比 | 结构化事件处理 | 业务事件跟踪
+  
+- ✅ [🚀 OTLP/Arrow 配置](05_IMPLEMENTATION/otlp_arrow_configuration_guide.md) ⭐ **NEW!** - 430 行
+  - Apache Arrow 集成 | 列式内存格式 | 零拷贝优化
+
 ### 高级主题
 
 - [语义模型](02_THEORETICAL_FRAMEWORK/SEMANTIC_MODELS_AND_FLOW_ANALYSIS.md) - 形式化语义
@@ -146,6 +189,10 @@
 | 排查问题 | [故障排除指南](guides/troubleshooting.md) | 按问题类型查找 |
 | 实现微服务追踪 | [高级示例](examples/advanced-examples.md) | 微服务架构示例 |
 | 自定义导出器 | [高级示例](examples/advanced-examples.md) | 自定义导出器 |
+| 了解 OTLP 标准对齐 ⭐ | [OTLP 标准对齐](08_REFERENCE/otlp_standards_alignment.md) | 协议版本、数据模型、语义约定 |
+| 使用 Profile 信号 ⭐ | [Profile 信号实现](05_IMPLEMENTATION/profile_signal_implementation_guide.md) | CPU/内存性能分析 |
+| 使用 Event 信号 ⭐ | [Event 信号实现](05_IMPLEMENTATION/event_signal_implementation_guide.md) | 业务事件跟踪 |
+| 配置 OTLP/Arrow ⭐ | [OTLP/Arrow 配置](05_IMPLEMENTATION/otlp_arrow_configuration_guide.md) | 高性能列式传输 |
 
 ### "我遇到了问题..."
 

@@ -1,6 +1,34 @@
 # 文档索引
 
-**最后更新**: 2025年10月24日
+**最后更新**: 2025年10月26日
+
+---
+
+## 🏗️ Crate 架构文档 (2025-10-26 新增)
+
+**项目重组**: 四个crate的架构重新定位和完整知识体系
+
+### 🚀 快速开始
+
+| Crate | 使用指南 ⭐ NEW | 完整文档 |
+|-------|----------------|----------|
+| **libraries** 📚 | [使用指南](09_CRATES/libraries_guide.md) | [完整文档](../crates/libraries/docs/README.md) |
+| **model** 🎨 | [使用指南](09_CRATES/model_guide.md) | [完整文档](../crates/model/docs/README.md) |
+| **reliability** ⚡ | [使用指南](09_CRATES/reliability_guide.md) | [完整文档](../crates/reliability/docs/README.md) |
+| **otlp** 📊 | [使用指南](09_CRATES/otlp_guide.md) | [完整文档](../crates/otlp/docs/README.md) |
+
+📖 **Crates 总览**: [09_CRATES/README.md](09_CRATES/README.md) ⭐ NEW
+
+### 📚 架构理论文档
+
+| 文档 | 说明 | 规模 |
+|------|------|------|
+| [架构重组计划](CRATES_ARCHITECTURE_REORG_2025_10_26.md) | 四crate定位、代码组织、实施计划 | 10,000+ 字 |
+| [知识图谱](CRATES_KNOWLEDGE_GRAPH_2025_10_26.md) | 概念定义、属性、关系、扩展路径 | 15,000+ 字 |
+| [矩阵对比](CRATES_MATRIX_COMPARISON_2025_10_26.md) | 10维度对比、学习路径、决策支持 | 12,000+ 字 |
+| [工作总结](CRATES_REORGANIZATION_SUMMARY_2025_10_26.md) | 重组工作完成情况和下一步计划 | 5,000+ 字 |
+
+**总计**: 8个核心文档（含4个使用指南），60,000+ 字，137+ 概念定义，23+ 图表
 
 ---
 
@@ -30,7 +58,12 @@
 |------|------|------|
 | [01_GETTING_STARTED/](01_GETTING_STARTED/README.md) | 🎯 快速开始 - 完整入门教程 | 268+ |
 | [02_THEORETICAL_FRAMEWORK/](02_THEORETICAL_FRAMEWORK/README.md) | 🔬 理论框架 - 形式化模型与理论基础 | 17 文件 |
-| [03_API_REFERENCE/](03_API_REFERENCE/README.md) | 🔧 API 参考 - 完整 API 文档 | 578+ |
+| [03_API_REFERENCE/](03_API_REFERENCE/README.md) | 🔧 API 参考 - 完整 API 文档 | 3000+ |
+|   | ┣━ [API快速参考](03_API_REFERENCE/API_QUICK_REFERENCE.md) ⭐ NEW | 速查卡片 |
+|   | ┣━ [Profiling API](03_API_REFERENCE/profiling_api.md) ⭐ NEW | 500+ 行 |
+|   | ┣━ [SIMD API](03_API_REFERENCE/simd_api.md) ⭐ NEW | 650+ 行 |
+|   | ┣━ [Compression API](03_API_REFERENCE/compression_api.md) ⭐ NEW | 600+ 行 |
+|   | ┗━ [Semantic Conventions](03_API_REFERENCE/semantic_conventions_api.md) ⭐ NEW | 700+ 行 |
 | [04_ARCHITECTURE/](04_ARCHITECTURE/README.md) | 🏛️ 架构设计 - 微服务架构、性能优化 | 653+ |
 | [05_IMPLEMENTATION/](05_IMPLEMENTATION/README.md) | 🛠️ 实现指南 - Profile/Event/Arrow 实现 | 2462+ |
 | [06_DEPLOYMENT/](06_DEPLOYMENT/README.md) | 🚀 部署运维 - 生产部署、监控、调优 | 1213+ |
@@ -168,6 +201,7 @@
 | [README.md](08_REFERENCE/README.md) | 参考资料总览 |
 | [otlp_standards_alignment.md](08_REFERENCE/otlp_standards_alignment.md) | 🌟 OTLP 标准对齐 (1300+ 行) - NEW! |
 | [otlp_2024_2025_features.md](08_REFERENCE/otlp_2024_2025_features.md) | 🚀 OTLP 2024-2025 特性 (800+ 行) - NEW! |
+| [rust_1.90_otlp_tech_stack_alignment.md](08_REFERENCE/rust_1.90_otlp_tech_stack_alignment.md) | 🦀 Rust 1.90 技术栈对齐 (3000+ 行) - NEW! |
 | [best_practices.md](08_REFERENCE/best_practices.md) | 最佳实践指南 |
 | [glossary.md](08_REFERENCE/glossary.md) | 术语表 |
 | [standards_compliance.md](08_REFERENCE/standards_compliance.md) | 标准合规性 |

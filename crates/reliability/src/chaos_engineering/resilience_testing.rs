@@ -2,12 +2,12 @@
 //!
 //! 提供系统弹性测试功能，包括负载测试、压力测试、恢复测试等。
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
 use tracing::{error, info};
 
-use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 
 /// 弹性测试配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,7 +38,11 @@ impl Default for ResilienceTestingConfig {
                 ResilienceTestType::RecoveryTest,
                 ResilienceTestType::EnduranceTest,
             ],
-            load_levels: vec![LoadLevel::Normal, LoadLevel::High, LoadLevel::Extreme],
+            load_levels: vec![
+                LoadLevel::Normal,
+                LoadLevel::High,
+                LoadLevel::Extreme,
+            ],
             max_concurrent_tests: 5,
         }
     }
@@ -76,7 +80,10 @@ pub enum LoadLevel {
     /// 极限负载
     Extreme,
     /// 自定义负载
-    Custom { level: u32, description: String },
+    Custom {
+        level: u32,
+        description: String,
+    },
 }
 
 impl LoadLevel {
@@ -169,31 +176,22 @@ impl ResilienceTester {
                 "弹性测试未启用",
                 ErrorSeverity::Medium,
                 "resilience_testing",
-                ErrorContext::new(
-                    "resilience_testing",
-                    "start",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::Medium,
-                    "resilience_testing",
-                ),
+                ErrorContext::new("resilience_testing", "start", file!(), line!(), ErrorSeverity::Medium, "resilience_testing")
             ));
         }
 
-        self.is_running
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.is_running.store(true, std::sync::atomic::Ordering::Relaxed);
         info!("弹性测试器启动");
         Ok(())
     }
 
     /// 停止弹性测试
     pub async fn stop(&self) -> Result<(), UnifiedError> {
-        self.is_running
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
+        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
+        
         // 清理所有活动测试
         self.clear_all_tests().await;
-
+        
         info!("弹性测试器停止");
         Ok(())
     }
@@ -215,18 +213,15 @@ impl ResilienceTester {
         for test_type in &self.config.test_types {
             for load_level in &self.config.load_levels {
                 total_tests += 1;
-
-                match self
-                    .execute_single_test(test_type.clone(), load_level.clone())
-                    .await
-                {
+                
+                match self.execute_single_test(test_type.clone(), load_level.clone()).await {
                     Ok(test_detail) => {
                         if test_detail.success {
                             successful_tests += 1;
                         } else {
                             failed_tests += 1;
                         }
-
+                        
                         // 更新响应时间统计
                         total_response_time += test_detail.response_time;
                         if test_detail.response_time > max_response_time {
@@ -235,7 +230,7 @@ impl ResilienceTester {
                         if test_detail.response_time < min_response_time {
                             min_response_time = test_detail.response_time;
                         }
-
+                        
                         // 更新请求和错误统计
                         if let Some(requests) = test_detail.metrics.get("total_requests") {
                             total_requests += *requests as u64;
@@ -243,7 +238,7 @@ impl ResilienceTester {
                         if let Some(errors) = test_detail.metrics.get("total_errors") {
                             total_errors += *errors as u64;
                         }
-
+                        
                         test_details.push(test_detail);
                     }
                     Err(error) => {
@@ -296,31 +291,21 @@ impl ResilienceTester {
             error_rate,
         };
 
-        info!(
-            "弹性测试完成，成功率: {:.2}%，吞吐量: {:.2} req/s，错误率: {:.2}%",
-            success_rate * 100.0,
-            throughput,
-            error_rate * 100.0
-        );
+        info!("弹性测试完成，成功率: {:.2}%，吞吐量: {:.2} req/s，错误率: {:.2}%", 
+              success_rate * 100.0, throughput, error_rate * 100.0);
 
         Ok(result)
     }
 
     /// 执行单个测试
-    async fn execute_single_test(
-        &self,
-        test_type: ResilienceTestType,
-        load_level: LoadLevel,
-    ) -> Result<ResilienceTestDetail, UnifiedError> {
+    async fn execute_single_test(&self, test_type: ResilienceTestType, load_level: LoadLevel) -> Result<ResilienceTestDetail, UnifiedError> {
         let test_id = self.generate_test_id();
         let start_time = chrono::Utc::now();
-
-        info!(
-            "执行弹性测试: {} (负载级别: {}) (ID: {})",
-            self.test_type_to_string(&test_type),
-            self.load_level_to_string(&load_level),
-            test_id
-        );
+        
+        info!("执行弹性测试: {} (负载级别: {}) (ID: {})", 
+              self.test_type_to_string(&test_type), 
+              self.load_level_to_string(&load_level), 
+              test_id);
 
         // 创建测试详情
         let mut test_detail = ResilienceTestDetail {
@@ -337,22 +322,16 @@ impl ResilienceTester {
         };
 
         // 执行测试
-        match self
-            .execute_test(&test_type, &load_level, &mut test_detail)
-            .await
-        {
+        match self.execute_test(&test_type, &load_level, &mut test_detail).await {
             Ok(()) => {
                 let end_time = chrono::Utc::now();
                 test_detail.end_time = Some(end_time);
-                test_detail.duration = end_time
-                    .signed_duration_since(start_time)
-                    .to_std()
-                    .unwrap_or(Duration::ZERO);
+                test_detail.duration = end_time.signed_duration_since(start_time).to_std().unwrap_or(Duration::ZERO);
                 test_detail.success = true;
-
+                
                 // 添加到历史记录
                 self.add_to_history(test_detail.clone());
-
+                
                 Ok(test_detail)
             }
             Err(error) => {
@@ -363,14 +342,11 @@ impl ResilienceTester {
     }
 
     /// 执行测试
-    async fn execute_test(
-        &self,
-        test_type: &ResilienceTestType,
-        load_level: &LoadLevel,
-        test_detail: &mut ResilienceTestDetail,
-    ) -> Result<(), UnifiedError> {
+    async fn execute_test(&self, test_type: &ResilienceTestType, load_level: &LoadLevel, test_detail: &mut ResilienceTestDetail) -> Result<(), UnifiedError> {
         match test_type {
-            ResilienceTestType::LoadTest => self.execute_load_test(load_level, test_detail).await,
+            ResilienceTestType::LoadTest => {
+                self.execute_load_test(load_level, test_detail).await
+            }
             ResilienceTestType::StressTest => {
                 self.execute_stress_test(load_level, test_detail).await
             }
@@ -380,377 +356,195 @@ impl ResilienceTester {
             ResilienceTestType::EnduranceTest => {
                 self.execute_endurance_test(load_level, test_detail).await
             }
-            ResilienceTestType::SpikeTest => self.execute_spike_test(load_level, test_detail).await,
+            ResilienceTestType::SpikeTest => {
+                self.execute_spike_test(load_level, test_detail).await
+            }
             ResilienceTestType::CapacityTest => {
                 self.execute_capacity_test(load_level, test_detail).await
             }
             ResilienceTestType::Custom { name, parameters } => {
-                self.execute_custom_test(name, parameters, load_level, test_detail)
-                    .await
+                self.execute_custom_test(name, parameters, load_level, test_detail).await
             }
         }
     }
 
     /// 执行负载测试
-    async fn execute_load_test(
-        &self,
-        load_level: &LoadLevel,
-        test_detail: &mut ResilienceTestDetail,
-    ) -> Result<(), UnifiedError> {
-        test_detail
-            .parameters
-            .insert("test_type".to_string(), "load_test".to_string());
-        test_detail.parameters.insert(
-            "load_level".to_string(),
-            self.load_level_to_string(load_level),
-        );
-
+    async fn execute_load_test(&self, load_level: &LoadLevel, test_detail: &mut ResilienceTestDetail) -> Result<(), UnifiedError> {
+        test_detail.parameters.insert("test_type".to_string(), "load_test".to_string());
+        test_detail.parameters.insert("load_level".to_string(), self.load_level_to_string(load_level));
+        
         let load_multiplier = load_level.as_numeric() as f64;
         let concurrent_users = (100.0 * load_multiplier) as u32;
         let requests_per_second = (50.0 * load_multiplier) as u32;
-
-        test_detail
-            .parameters
-            .insert("concurrent_users".to_string(), concurrent_users.to_string());
-        test_detail.parameters.insert(
-            "requests_per_second".to_string(),
-            requests_per_second.to_string(),
-        );
-
+        
+        test_detail.parameters.insert("concurrent_users".to_string(), concurrent_users.to_string());
+        test_detail.parameters.insert("requests_per_second".to_string(), requests_per_second.to_string());
+        
         // 模拟负载测试
         let start_time = std::time::Instant::now();
-        self.simulate_load(concurrent_users, requests_per_second)
-            .await;
+        self.simulate_load(concurrent_users, requests_per_second).await;
         test_detail.response_time = start_time.elapsed();
-
+        
         // 设置测试指标
-        test_detail
-            .metrics
-            .insert("concurrent_users".to_string(), concurrent_users as f64);
-        test_detail.metrics.insert(
-            "requests_per_second".to_string(),
-            requests_per_second as f64,
-        );
-        test_detail.metrics.insert(
-            "total_requests".to_string(),
-            requests_per_second as f64 * 10.0,
-        );
-        test_detail.metrics.insert(
-            "total_errors".to_string(),
-            requests_per_second as f64 * 0.01,
-        );
-
-        info!(
-            "负载测试完成，并发用户: {}，每秒请求: {}",
-            concurrent_users, requests_per_second
-        );
+        test_detail.metrics.insert("concurrent_users".to_string(), concurrent_users as f64);
+        test_detail.metrics.insert("requests_per_second".to_string(), requests_per_second as f64);
+        test_detail.metrics.insert("total_requests".to_string(), requests_per_second as f64 * 10.0);
+        test_detail.metrics.insert("total_errors".to_string(), requests_per_second as f64 * 0.01);
+        
+        info!("负载测试完成，并发用户: {}，每秒请求: {}", concurrent_users, requests_per_second);
         Ok(())
     }
 
     /// 执行压力测试
-    async fn execute_stress_test(
-        &self,
-        load_level: &LoadLevel,
-        test_detail: &mut ResilienceTestDetail,
-    ) -> Result<(), UnifiedError> {
-        test_detail
-            .parameters
-            .insert("test_type".to_string(), "stress_test".to_string());
-        test_detail.parameters.insert(
-            "load_level".to_string(),
-            self.load_level_to_string(load_level),
-        );
-
+    async fn execute_stress_test(&self, load_level: &LoadLevel, test_detail: &mut ResilienceTestDetail) -> Result<(), UnifiedError> {
+        test_detail.parameters.insert("test_type".to_string(), "stress_test".to_string());
+        test_detail.parameters.insert("load_level".to_string(), self.load_level_to_string(load_level));
+        
         let stress_multiplier = load_level.as_numeric() as f64 * 2.0; // 压力测试使用更高的负载
         let concurrent_users = (200.0 * stress_multiplier) as u32;
         let requests_per_second = (100.0 * stress_multiplier) as u32;
-
-        test_detail
-            .parameters
-            .insert("concurrent_users".to_string(), concurrent_users.to_string());
-        test_detail.parameters.insert(
-            "requests_per_second".to_string(),
-            requests_per_second.to_string(),
-        );
-
+        
+        test_detail.parameters.insert("concurrent_users".to_string(), concurrent_users.to_string());
+        test_detail.parameters.insert("requests_per_second".to_string(), requests_per_second.to_string());
+        
         // 模拟压力测试
         let start_time = std::time::Instant::now();
-        self.simulate_stress(concurrent_users, requests_per_second)
-            .await;
+        self.simulate_stress(concurrent_users, requests_per_second).await;
         test_detail.response_time = start_time.elapsed();
-
+        
         // 设置测试指标
-        test_detail
-            .metrics
-            .insert("concurrent_users".to_string(), concurrent_users as f64);
-        test_detail.metrics.insert(
-            "requests_per_second".to_string(),
-            requests_per_second as f64,
-        );
-        test_detail.metrics.insert(
-            "total_requests".to_string(),
-            requests_per_second as f64 * 15.0,
-        );
-        test_detail.metrics.insert(
-            "total_errors".to_string(),
-            requests_per_second as f64 * 0.05,
-        );
-
-        info!(
-            "压力测试完成，并发用户: {}，每秒请求: {}",
-            concurrent_users, requests_per_second
-        );
+        test_detail.metrics.insert("concurrent_users".to_string(), concurrent_users as f64);
+        test_detail.metrics.insert("requests_per_second".to_string(), requests_per_second as f64);
+        test_detail.metrics.insert("total_requests".to_string(), requests_per_second as f64 * 15.0);
+        test_detail.metrics.insert("total_errors".to_string(), requests_per_second as f64 * 0.05);
+        
+        info!("压力测试完成，并发用户: {}，每秒请求: {}", concurrent_users, requests_per_second);
         Ok(())
     }
 
     /// 执行恢复测试
-    async fn execute_recovery_test(
-        &self,
-        load_level: &LoadLevel,
-        test_detail: &mut ResilienceTestDetail,
-    ) -> Result<(), UnifiedError> {
-        test_detail
-            .parameters
-            .insert("test_type".to_string(), "recovery_test".to_string());
-        test_detail.parameters.insert(
-            "load_level".to_string(),
-            self.load_level_to_string(load_level),
-        );
-
+    async fn execute_recovery_test(&self, load_level: &LoadLevel, test_detail: &mut ResilienceTestDetail) -> Result<(), UnifiedError> {
+        test_detail.parameters.insert("test_type".to_string(), "recovery_test".to_string());
+        test_detail.parameters.insert("load_level".to_string(), self.load_level_to_string(load_level));
+        
         let recovery_multiplier = load_level.as_numeric() as f64;
         let failure_duration = Duration::from_secs((10.0 * recovery_multiplier) as u64);
         let recovery_time = Duration::from_secs((5.0 * recovery_multiplier) as u64);
-
-        test_detail.parameters.insert(
-            "failure_duration".to_string(),
-            failure_duration.as_secs().to_string(),
-        );
-        test_detail.parameters.insert(
-            "recovery_time".to_string(),
-            recovery_time.as_secs().to_string(),
-        );
-
+        
+        test_detail.parameters.insert("failure_duration".to_string(), failure_duration.as_secs().to_string());
+        test_detail.parameters.insert("recovery_time".to_string(), recovery_time.as_secs().to_string());
+        
         // 模拟恢复测试
         let start_time = std::time::Instant::now();
-        self.simulate_recovery(failure_duration, recovery_time)
-            .await;
+        self.simulate_recovery(failure_duration, recovery_time).await;
         test_detail.response_time = start_time.elapsed();
-
+        
         // 设置测试指标
-        test_detail.metrics.insert(
-            "failure_duration".to_string(),
-            failure_duration.as_secs() as f64,
-        );
-        test_detail
-            .metrics
-            .insert("recovery_time".to_string(), recovery_time.as_secs() as f64);
-        test_detail
-            .metrics
-            .insert("recovery_success_rate".to_string(), 0.95);
-
-        info!(
-            "恢复测试完成，故障持续时间: {:?}，恢复时间: {:?}",
-            failure_duration, recovery_time
-        );
+        test_detail.metrics.insert("failure_duration".to_string(), failure_duration.as_secs() as f64);
+        test_detail.metrics.insert("recovery_time".to_string(), recovery_time.as_secs() as f64);
+        test_detail.metrics.insert("recovery_success_rate".to_string(), 0.95);
+        
+        info!("恢复测试完成，故障持续时间: {:?}，恢复时间: {:?}", failure_duration, recovery_time);
         Ok(())
     }
 
     /// 执行耐力测试
-    async fn execute_endurance_test(
-        &self,
-        load_level: &LoadLevel,
-        test_detail: &mut ResilienceTestDetail,
-    ) -> Result<(), UnifiedError> {
-        test_detail
-            .parameters
-            .insert("test_type".to_string(), "endurance_test".to_string());
-        test_detail.parameters.insert(
-            "load_level".to_string(),
-            self.load_level_to_string(load_level),
-        );
-
+    async fn execute_endurance_test(&self, load_level: &LoadLevel, test_detail: &mut ResilienceTestDetail) -> Result<(), UnifiedError> {
+        test_detail.parameters.insert("test_type".to_string(), "endurance_test".to_string());
+        test_detail.parameters.insert("load_level".to_string(), self.load_level_to_string(load_level));
+        
         let endurance_multiplier = load_level.as_numeric() as f64;
         let test_duration = Duration::from_secs((300.0 * endurance_multiplier) as u64);
         let concurrent_users = (50.0 * endurance_multiplier) as u32;
-
-        test_detail.parameters.insert(
-            "test_duration".to_string(),
-            test_duration.as_secs().to_string(),
-        );
-        test_detail
-            .parameters
-            .insert("concurrent_users".to_string(), concurrent_users.to_string());
-
+        
+        test_detail.parameters.insert("test_duration".to_string(), test_duration.as_secs().to_string());
+        test_detail.parameters.insert("concurrent_users".to_string(), concurrent_users.to_string());
+        
         // 模拟耐力测试
         let start_time = std::time::Instant::now();
-        self.simulate_endurance(test_duration, concurrent_users)
-            .await;
+        self.simulate_endurance(test_duration, concurrent_users).await;
         test_detail.response_time = start_time.elapsed();
-
+        
         // 设置测试指标
-        test_detail
-            .metrics
-            .insert("test_duration".to_string(), test_duration.as_secs() as f64);
-        test_detail
-            .metrics
-            .insert("concurrent_users".to_string(), concurrent_users as f64);
-        test_detail.metrics.insert(
-            "total_requests".to_string(),
-            concurrent_users as f64 * 100.0,
-        );
-        test_detail
-            .metrics
-            .insert("total_errors".to_string(), concurrent_users as f64 * 0.02);
-
-        info!(
-            "耐力测试完成，测试持续时间: {:?}，并发用户: {}",
-            test_duration, concurrent_users
-        );
+        test_detail.metrics.insert("test_duration".to_string(), test_duration.as_secs() as f64);
+        test_detail.metrics.insert("concurrent_users".to_string(), concurrent_users as f64);
+        test_detail.metrics.insert("total_requests".to_string(), concurrent_users as f64 * 100.0);
+        test_detail.metrics.insert("total_errors".to_string(), concurrent_users as f64 * 0.02);
+        
+        info!("耐力测试完成，测试持续时间: {:?}，并发用户: {}", test_duration, concurrent_users);
         Ok(())
     }
 
     /// 执行峰值测试
-    async fn execute_spike_test(
-        &self,
-        load_level: &LoadLevel,
-        test_detail: &mut ResilienceTestDetail,
-    ) -> Result<(), UnifiedError> {
-        test_detail
-            .parameters
-            .insert("test_type".to_string(), "spike_test".to_string());
-        test_detail.parameters.insert(
-            "load_level".to_string(),
-            self.load_level_to_string(load_level),
-        );
-
+    async fn execute_spike_test(&self, load_level: &LoadLevel, test_detail: &mut ResilienceTestDetail) -> Result<(), UnifiedError> {
+        test_detail.parameters.insert("test_type".to_string(), "spike_test".to_string());
+        test_detail.parameters.insert("load_level".to_string(), self.load_level_to_string(load_level));
+        
         let spike_multiplier = load_level.as_numeric() as f64 * 3.0; // 峰值测试使用更高的负载
         let spike_duration = Duration::from_secs(30);
         let concurrent_users = (300.0 * spike_multiplier) as u32;
-
-        test_detail.parameters.insert(
-            "spike_duration".to_string(),
-            spike_duration.as_secs().to_string(),
-        );
-        test_detail
-            .parameters
-            .insert("concurrent_users".to_string(), concurrent_users.to_string());
-
+        
+        test_detail.parameters.insert("spike_duration".to_string(), spike_duration.as_secs().to_string());
+        test_detail.parameters.insert("concurrent_users".to_string(), concurrent_users.to_string());
+        
         // 模拟峰值测试
         let start_time = std::time::Instant::now();
         self.simulate_spike(spike_duration, concurrent_users).await;
         test_detail.response_time = start_time.elapsed();
-
+        
         // 设置测试指标
-        test_detail.metrics.insert(
-            "spike_duration".to_string(),
-            spike_duration.as_secs() as f64,
-        );
-        test_detail
-            .metrics
-            .insert("concurrent_users".to_string(), concurrent_users as f64);
-        test_detail
-            .metrics
-            .insert("total_requests".to_string(), concurrent_users as f64 * 5.0);
-        test_detail
-            .metrics
-            .insert("total_errors".to_string(), concurrent_users as f64 * 0.1);
-
-        info!(
-            "峰值测试完成，峰值持续时间: {:?}，并发用户: {}",
-            spike_duration, concurrent_users
-        );
+        test_detail.metrics.insert("spike_duration".to_string(), spike_duration.as_secs() as f64);
+        test_detail.metrics.insert("concurrent_users".to_string(), concurrent_users as f64);
+        test_detail.metrics.insert("total_requests".to_string(), concurrent_users as f64 * 5.0);
+        test_detail.metrics.insert("total_errors".to_string(), concurrent_users as f64 * 0.1);
+        
+        info!("峰值测试完成，峰值持续时间: {:?}，并发用户: {}", spike_duration, concurrent_users);
         Ok(())
     }
 
     /// 执行容量测试
-    async fn execute_capacity_test(
-        &self,
-        load_level: &LoadLevel,
-        test_detail: &mut ResilienceTestDetail,
-    ) -> Result<(), UnifiedError> {
-        test_detail
-            .parameters
-            .insert("test_type".to_string(), "capacity_test".to_string());
-        test_detail.parameters.insert(
-            "load_level".to_string(),
-            self.load_level_to_string(load_level),
-        );
-
+    async fn execute_capacity_test(&self, load_level: &LoadLevel, test_detail: &mut ResilienceTestDetail) -> Result<(), UnifiedError> {
+        test_detail.parameters.insert("test_type".to_string(), "capacity_test".to_string());
+        test_detail.parameters.insert("load_level".to_string(), self.load_level_to_string(load_level));
+        
         let capacity_multiplier = load_level.as_numeric() as f64;
         let max_concurrent_users = (500.0 * capacity_multiplier) as u32;
         let max_requests_per_second = (200.0 * capacity_multiplier) as u32;
-
-        test_detail.parameters.insert(
-            "max_concurrent_users".to_string(),
-            max_concurrent_users.to_string(),
-        );
-        test_detail.parameters.insert(
-            "max_requests_per_second".to_string(),
-            max_requests_per_second.to_string(),
-        );
-
+        
+        test_detail.parameters.insert("max_concurrent_users".to_string(), max_concurrent_users.to_string());
+        test_detail.parameters.insert("max_requests_per_second".to_string(), max_requests_per_second.to_string());
+        
         // 模拟容量测试
         let start_time = std::time::Instant::now();
-        self.simulate_capacity(max_concurrent_users, max_requests_per_second)
-            .await;
+        self.simulate_capacity(max_concurrent_users, max_requests_per_second).await;
         test_detail.response_time = start_time.elapsed();
-
+        
         // 设置测试指标
-        test_detail.metrics.insert(
-            "max_concurrent_users".to_string(),
-            max_concurrent_users as f64,
-        );
-        test_detail.metrics.insert(
-            "max_requests_per_second".to_string(),
-            max_requests_per_second as f64,
-        );
-        test_detail.metrics.insert(
-            "total_requests".to_string(),
-            max_requests_per_second as f64 * 20.0,
-        );
-        test_detail.metrics.insert(
-            "total_errors".to_string(),
-            max_requests_per_second as f64 * 0.03,
-        );
-
-        info!(
-            "容量测试完成，最大并发用户: {}，最大每秒请求: {}",
-            max_concurrent_users, max_requests_per_second
-        );
+        test_detail.metrics.insert("max_concurrent_users".to_string(), max_concurrent_users as f64);
+        test_detail.metrics.insert("max_requests_per_second".to_string(), max_requests_per_second as f64);
+        test_detail.metrics.insert("total_requests".to_string(), max_requests_per_second as f64 * 20.0);
+        test_detail.metrics.insert("total_errors".to_string(), max_requests_per_second as f64 * 0.03);
+        
+        info!("容量测试完成，最大并发用户: {}，最大每秒请求: {}", max_concurrent_users, max_requests_per_second);
         Ok(())
     }
 
     /// 执行自定义测试
-    async fn execute_custom_test(
-        &self,
-        name: &str,
-        parameters: &HashMap<String, String>,
-        load_level: &LoadLevel,
-        test_detail: &mut ResilienceTestDetail,
-    ) -> Result<(), UnifiedError> {
-        test_detail
-            .parameters
-            .insert("test_type".to_string(), format!("custom_test: {}", name));
-        test_detail.parameters.insert(
-            "load_level".to_string(),
-            self.load_level_to_string(load_level),
-        );
+    async fn execute_custom_test(&self, name: &str, parameters: &HashMap<String, String>, load_level: &LoadLevel, test_detail: &mut ResilienceTestDetail) -> Result<(), UnifiedError> {
+        test_detail.parameters.insert("test_type".to_string(), format!("custom_test: {}", name));
+        test_detail.parameters.insert("load_level".to_string(), self.load_level_to_string(load_level));
         test_detail.parameters.extend(parameters.clone());
-
+        
         // 模拟自定义测试
         let start_time = std::time::Instant::now();
         self.simulate_custom_test(name, parameters).await;
         test_detail.response_time = start_time.elapsed();
-
+        
         // 设置测试指标
-        test_detail
-            .metrics
-            .insert("custom_test_name".to_string(), name.len() as f64);
-        test_detail
-            .metrics
-            .insert("total_requests".to_string(), 100.0);
+        test_detail.metrics.insert("custom_test_name".to_string(), name.len() as f64);
+        test_detail.metrics.insert("total_requests".to_string(), 100.0);
         test_detail.metrics.insert("total_errors".to_string(), 2.0);
-
+        
         info!("自定义测试完成: {}", name);
         Ok(())
     }
@@ -758,7 +552,7 @@ impl ResilienceTester {
     /// 模拟负载
     async fn simulate_load(&self, concurrent_users: u32, requests_per_second: u32) {
         let mut handles = Vec::new();
-
+        
         for _ in 0..concurrent_users {
             let handle = tokio::spawn(async move {
                 for _ in 0..requests_per_second {
@@ -768,7 +562,7 @@ impl ResilienceTester {
             });
             handles.push(handle);
         }
-
+        
         // 等待所有任务完成
         for handle in handles {
             let _ = handle.await;
@@ -778,7 +572,7 @@ impl ResilienceTester {
     /// 模拟压力
     async fn simulate_stress(&self, concurrent_users: u32, requests_per_second: u32) {
         let mut handles = Vec::new();
-
+        
         for _ in 0..concurrent_users {
             let handle = tokio::spawn(async move {
                 for _ in 0..requests_per_second {
@@ -788,7 +582,7 @@ impl ResilienceTester {
             });
             handles.push(handle);
         }
-
+        
         // 等待所有任务完成
         for handle in handles {
             let _ = handle.await;
@@ -799,7 +593,7 @@ impl ResilienceTester {
     async fn simulate_recovery(&self, failure_duration: Duration, recovery_time: Duration) {
         // 模拟故障
         tokio::time::sleep(failure_duration).await;
-
+        
         // 模拟恢复
         tokio::time::sleep(recovery_time).await;
     }
@@ -807,10 +601,10 @@ impl ResilienceTester {
     /// 模拟耐力
     async fn simulate_endurance(&self, test_duration: Duration, concurrent_users: u32) {
         let start_time = std::time::Instant::now();
-
+        
         while start_time.elapsed() < test_duration {
             let mut handles = Vec::new();
-
+            
             for _ in 0..concurrent_users {
                 let handle = tokio::spawn(async move {
                     // 模拟持续请求
@@ -818,7 +612,7 @@ impl ResilienceTester {
                 });
                 handles.push(handle);
             }
-
+            
             // 等待所有任务完成
             for handle in handles {
                 let _ = handle.await;
@@ -829,10 +623,10 @@ impl ResilienceTester {
     /// 模拟峰值
     async fn simulate_spike(&self, spike_duration: Duration, concurrent_users: u32) {
         let start_time = std::time::Instant::now();
-
+        
         while start_time.elapsed() < spike_duration {
             let mut handles = Vec::new();
-
+            
             for _ in 0..concurrent_users {
                 let handle = tokio::spawn(async move {
                     // 模拟峰值请求
@@ -840,7 +634,7 @@ impl ResilienceTester {
                 });
                 handles.push(handle);
             }
-
+            
             // 等待所有任务完成
             for handle in handles {
                 let _ = handle.await;
@@ -851,7 +645,7 @@ impl ResilienceTester {
     /// 模拟容量
     async fn simulate_capacity(&self, max_concurrent_users: u32, max_requests_per_second: u32) {
         let mut handles = Vec::new();
-
+        
         for _ in 0..max_concurrent_users {
             let handle = tokio::spawn(async move {
                 for _ in 0..max_requests_per_second {
@@ -861,7 +655,7 @@ impl ResilienceTester {
             });
             handles.push(handle);
         }
-
+        
         // 等待所有任务完成
         for handle in handles {
             let _ = handle.await;
@@ -872,7 +666,7 @@ impl ResilienceTester {
     async fn simulate_custom_test(&self, _name: &str, parameters: &HashMap<String, String>) {
         // 模拟自定义测试逻辑
         tokio::time::sleep(Duration::from_millis(100)).await;
-
+        
         // 根据参数调整测试行为
         if let Some(duration) = parameters.get("duration") {
             if let Ok(duration_ms) = duration.parse::<u64>() {
@@ -922,7 +716,7 @@ impl ResilienceTester {
     fn add_to_history(&self, test_detail: ResilienceTestDetail) {
         let mut history = self.test_history.lock().unwrap();
         history.push(test_detail);
-
+        
         // 保持最近1000个测试记录
         if history.len() > 1000 {
             let len = history.len();
@@ -937,12 +731,7 @@ impl ResilienceTester {
 
     /// 获取活动测试
     pub fn get_active_tests(&self) -> Vec<ResilienceTestDetail> {
-        self.active_tests
-            .lock()
-            .unwrap()
-            .values()
-            .cloned()
-            .collect()
+        self.active_tests.lock().unwrap().values().cloned().collect()
     }
 
     /// 获取配置
@@ -982,11 +771,8 @@ mod tests {
         assert_eq!(LoadLevel::Normal.as_numeric(), 1);
         assert_eq!(LoadLevel::High.as_numeric(), 2);
         assert_eq!(LoadLevel::Extreme.as_numeric(), 3);
-
-        let custom_level = LoadLevel::Custom {
-            level: 5,
-            description: "test".to_string(),
-        };
+        
+        let custom_level = LoadLevel::Custom { level: 5, description: "test".to_string() };
         assert_eq!(custom_level.as_numeric(), 5);
     }
 
@@ -1004,7 +790,7 @@ mod tests {
             parameters: HashMap::new(),
             metrics: HashMap::new(),
         };
-
+        
         assert_eq!(test_detail.test_id, "test_123");
         assert!(!test_detail.success);
     }
@@ -1013,7 +799,7 @@ mod tests {
     fn test_resilience_tester_creation() {
         let config = ResilienceTestingConfig::default();
         let tester = ResilienceTester::new(config);
-
+        
         assert!(tester.get_test_history().is_empty());
         assert!(tester.get_active_tests().is_empty());
     }
@@ -1033,7 +819,7 @@ mod tests {
             throughput: 100.0,
             error_rate: 0.02,
         };
-
+        
         assert_eq!(result.total_tests, 10);
         assert_eq!(result.successful_tests, 8);
         assert_eq!(result.failed_tests, 2);

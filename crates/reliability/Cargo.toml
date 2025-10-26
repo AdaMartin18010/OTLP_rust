@@ -1,6 +1,6 @@
 [package]
 name = "reliability"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 resolver = "3"
@@ -12,23 +12,28 @@ repository = "https://github.com/rust-lang/reliability"
 keywords = ["reliability", "error-handling", "fault-tolerance", "monitoring", "resilience"]
 categories = ["error-handling", "development-tools::testing"]
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
 [dependencies]
-# 错误处理（thiserror v2.x）
+# 形式化验证工具依赖（可选）
+# prusti-contracts = { version = "0.2", optional = true }
+# creusot-contracts = { version = "0.2", optional = true }
+
+
+# 错误处理
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-# OpenTelemetry 支持 - 2025年最新版本（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
+# OpenTelemetry 支持 - 2025年最新版本
 opentelemetry = { workspace = true, optional = true }
 opentelemetry_sdk = { workspace = true, optional = true }
 opentelemetry-otlp = { workspace = true, optional = true }
 opentelemetry-stdout = { workspace = true, optional = true }
 opentelemetry-proto = { workspace = true, optional = true }
 tracing-opentelemetry = { workspace = true, optional = true }
-
-# 以 OTLP 语义为主：引入本工作区 otlp crate 作为一等语义源
-otlp = { path = "../otlp" }
 
 # 异步支持
 tokio = { workspace = true, optional = true }
@@ -64,20 +69,20 @@ url = { workspace = true }
 # 随机数生成
 rand = { workspace = true }
 
-# 日志记录
-env_logger = { workspace = true, optional = true }  # 使用工作区版本
+# 日志记录 - 2025年9月27日最新版本
+env_logger = { version = "0.11.8", optional = true }
 
 # 属性测试
 proptest = { workspace = true, optional = true }
 
-# 系统信息
-sysinfo = { version = "0.37", optional = true }  # 系统监控信息
+# 系统信息 - 2025年9月27日最新版本
+sysinfo = { version = "0.37.2", optional = true }
 
-# 主机名获取
-hostname = { version = "0.4", optional = true }  # 主机名检测
+# 主机名获取 - 2025年9月27日最新版本
+hostname = { version = "0.4.1", optional = true }
 
-# 内存管理 (Windows不支持jemalloc)
-# jemallocator = { version = "0.5", optional = true }
+# 内存管理 - 2025年9月27日最新版本
+jemallocator = { version = "0.5.4", optional = true }
 
 # UUID 支持
 uuid = { workspace = true }
@@ -85,39 +90,45 @@ uuid = { workspace = true }
 # 时间处理增强
 time = { workspace = true }
 
-# OCI 规范（可选） - 容器运行时规范
-oci-spec = { version = "0.8", optional = true }  # 容器规范解析
+# OCI 规范（可选）
+oci-spec = { version = "0.8", optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["async"] }
 tokio-test = { workspace = true }
 
 [features]
-# 默认以 OTLP 语义为主：启用核心异步、监控、容错与 OTLP 集成
 default = ["std", "async", "monitoring", "fault-tolerance", "otlp", "logging", "os-environment"]
 std = []
 async = ["tokio", "futures", "async-trait"]
 monitoring = ["metrics", "metrics-exporter-prometheus", "sysinfo", "prometheus"]
 fault-tolerance = ["parking_lot", "dashmap", "crossbeam"]
 chaos-engineering = ["proptest"]
-# jemalloc = ["jemallocator"]  # Windows不支持
+jemalloc = ["jemallocator"]
 otlp = ["opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp", "tracing-opentelemetry"]
 otlp-stdout = ["opentelemetry-stdout"]
 otlp-proto = ["opentelemetry-proto"]
 logging = ["env_logger"]
+
+# 形式化验证特性标志
+verification = []
+prusti = ["verification"]
+creusot = ["verification"]
 
 # 运行时环境支持
 os-environment = ["sysinfo", "hostname"]
 embedded-environment = []
 container-environment = []
 
-# 云原生/CNCF 对齐能力（保持语义单一，不与 OTLP 语义重复）
-# - containers 聚合至 container-environment，不额外重复导出新术语
+# 云原生/CNCF 对齐能力（可选启用）
 containers = ["container-environment"]
 virtualization = []
-kubernetes = []          # 按需开启（与OTLP无直接术语冲突）
-docker-runtime = []      # 按需开启（演示/本地）
-oci = ["oci-spec"]      # 解析能力（与监控/错误语义无直接耦合）
+# 仅在需要对接 Kubernetes 时启用。保持默认关闭避免增加构建体积。
+kubernetes = []
+# 可选本地 Docker 运行时适配（不默认启用）
+docker-runtime = []
+# 启用 OCI 规范解析
+oci = ["oci-spec"]
 
 [[bench]]
 name = "reliability_benchmarks"

@@ -1,10 +1,10 @@
 //! 可靠性框架性能基准测试
 
-use criterion::{Bencher, Criterion, criterion_group, criterion_main};
-use reliability::fault_tolerance::{CircuitBreakerConfig, RetryConfig};
-use reliability::prelude::*;
-use reliability::runtime_monitoring::HealthCheckConfig;
+use criterion::{criterion_group, criterion_main, Criterion, Bencher};
 use std::hint::black_box;
+use reliability::prelude::*;
+use reliability::fault_tolerance::{CircuitBreakerConfig, RetryConfig};
+use reliability::runtime_monitoring::HealthCheckConfig;
 
 fn bench_circuit_breaker(c: &mut Criterion) {
     c.bench_function("circuit_breaker_execution", |b: &mut Bencher| {
@@ -33,14 +33,7 @@ fn bench_error_handling(c: &mut Criterion) {
                 "benchmark error",
                 ErrorSeverity::Low,
                 "benchmark",
-                ErrorContext::new(
-                    "benchmark",
-                    "test",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::Low,
-                    "benchmark",
-                ),
+                ErrorContext::new("benchmark", "test", file!(), line!(), ErrorSeverity::Low, "benchmark")
             ))
         })
     });

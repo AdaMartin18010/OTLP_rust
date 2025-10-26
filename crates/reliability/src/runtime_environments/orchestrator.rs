@@ -1,12 +1,12 @@
 //! 统一编排抽象：可在本地容器运行时与 Kubernetes 之间切换
-use crate::error_handling::UnifiedError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use crate::error_handling::UnifiedError;
 
 #[cfg(feature = "containers")]
-use super::container_runtime::{ContainerId, ContainerRunConfig, ContainerRuntime, ContainerState};
+use super::container_runtime::{ContainerRunConfig, ContainerRuntime, ContainerState, ContainerId};
 #[cfg(feature = "kubernetes")]
-use super::kubernetes::{KubernetesClientPlaceholder, PodSpecMini};
+use super::kubernetes::{PodSpecMini, KubernetesClientPlaceholder};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WorkloadStatus {
@@ -34,11 +34,7 @@ pub struct LocalContainerOrchestrator<R: ContainerRuntime> {
 #[cfg(feature = "containers")]
 impl<R: ContainerRuntime> LocalContainerOrchestrator<R> {
     pub fn new(runtime: R, config: ContainerRunConfig) -> Self {
-        Self {
-            runtime,
-            config,
-            last_id: std::sync::Mutex::new(None),
-        }
+        Self { runtime, config, last_id: std::sync::Mutex::new(None) }
     }
 }
 
@@ -53,29 +49,19 @@ impl<R: ContainerRuntime + Send + Sync> Orchestrator for LocalContainerOrchestra
     }
 
     async fn terminate(&self, _name: &str) -> Result<(), UnifiedError> {
-        let id = {
-            let guard = self.last_id.lock().unwrap();
-            guard.clone()
-        };
-        if let Some(id) = id {
+        if let Some(id) = self.last_id.lock().unwrap().clone() {
             self.runtime.stop(&id).await?;
         }
         Ok(())
     }
 
     async fn status(&self, _name: &str) -> Result<WorkloadStatus, UnifiedError> {
-        let id = {
-            let guard = self.last_id.lock().unwrap();
-            guard.clone()
-        };
-        if let Some(id) = id {
+        if let Some(id) = self.last_id.lock().unwrap().clone() {
             match self.runtime.inspect(&id).await? {
                 ContainerState::Created => Ok(WorkloadStatus::Pending),
                 ContainerState::Running => Ok(WorkloadStatus::Running),
                 ContainerState::Exited(code) if code == 0 => Ok(WorkloadStatus::Succeeded),
-                ContainerState::Exited(code) => {
-                    Ok(WorkloadStatus::Failed(format!("exit code {code}")))
-                }
+                ContainerState::Exited(code) => Ok(WorkloadStatus::Failed(format!("exit code {code}"))),
                 ContainerState::Failed(e) => Ok(WorkloadStatus::Failed(e)),
             }
         } else {
@@ -95,11 +81,7 @@ pub struct KubernetesOrchestrator {
 #[cfg(feature = "kubernetes")]
 impl KubernetesOrchestrator {
     pub fn new(namespace: impl Into<String>, pod: PodSpecMini) -> Self {
-        Self {
-            client: KubernetesClientPlaceholder::new(),
-            namespace: namespace.into(),
-            pod,
-        }
+        Self { client: KubernetesClientPlaceholder::new(), namespace: namespace.into(), pod }
     }
 }
 
@@ -107,45 +89,21 @@ impl KubernetesOrchestrator {
 #[async_trait]
 impl Orchestrator for KubernetesOrchestrator {
     async fn deploy(&self, _name: &str) -> Result<(), UnifiedError> {
-        self.client
-            .apply_pod(&self.namespace, &self.pod)
-            .await
-            .map_err(|e| {
-                UnifiedError::new(
-                    &format!("k8s apply failed: {e}"),
-                    crate::error_handling::ErrorSeverity::High,
-                    "kubernetes",
-                    crate::error_handling::ErrorContext::new(
-                        "kubernetes",
-                        "apply_pod",
-                        file!(),
-                        line!(),
-                        crate::error_handling::ErrorSeverity::High,
-                        "kubernetes",
-                    ),
-                )
-            })
+        self.client.apply_pod(&self.namespace, &self.pod).await.map_err(|e| UnifiedError::new(
+            &format!("k8s apply failed: {e}"),
+            crate::error_handling::ErrorSeverity::High,
+            "kubernetes",
+            crate::error_handling::ErrorContext::new("kubernetes","apply_pod", file!(), line!(), crate::error_handling::ErrorSeverity::High, "kubernetes")
+        ))
     }
 
     async fn terminate(&self, _name: &str) -> Result<(), UnifiedError> {
-        self.client
-            .delete_pod(&self.namespace, &self.pod.name)
-            .await
-            .map_err(|e| {
-                UnifiedError::new(
-                    &format!("k8s delete failed: {e}"),
-                    crate::error_handling::ErrorSeverity::High,
-                    "kubernetes",
-                    crate::error_handling::ErrorContext::new(
-                        "kubernetes",
-                        "delete_pod",
-                        file!(),
-                        line!(),
-                        crate::error_handling::ErrorSeverity::High,
-                        "kubernetes",
-                    ),
-                )
-            })
+        self.client.delete_pod(&self.namespace, &self.pod.name).await.map_err(|e| UnifiedError::new(
+            &format!("k8s delete failed: {e}"),
+            crate::error_handling::ErrorSeverity::High,
+            "kubernetes",
+            crate::error_handling::ErrorContext::new("kubernetes","delete_pod", file!(), line!(), crate::error_handling::ErrorSeverity::High, "kubernetes")
+        ))
     }
 
     async fn status(&self, _name: &str) -> Result<WorkloadStatus, UnifiedError> {
@@ -153,3 +111,5 @@ impl Orchestrator for KubernetesOrchestrator {
         Ok(WorkloadStatus::Running)
     }
 }
+
+

@@ -2,14 +2,14 @@
 //!
 //! 提供系统异常检测功能，包括统计异常检测、机器学习异常检测等。
 
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
+use std::collections::HashMap;
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
 use tracing::{debug, error, info};
 
-use super::MonitoringState;
 use crate::error_handling::UnifiedError;
+use super::MonitoringState;
 
 /// 异常检测配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,13 +123,13 @@ pub struct AnomalyAlertThresholds {
 impl Default for AnomalyAlertThresholds {
     fn default() -> Self {
         Self {
-            statistical_threshold: 3.0,       // 3个标准差
+            statistical_threshold: 3.0, // 3个标准差
             threshold_anomaly_threshold: 0.8, // 80%
-            ml_anomaly_threshold: 0.7,        // 70%
-            time_series_threshold: 0.75,      // 75%
-            pattern_matching_threshold: 0.6,  // 60%
-            network_traffic_threshold: 0.85,  // 85%
-            resource_usage_threshold: 0.9,    // 90%
+            ml_anomaly_threshold: 0.7, // 70%
+            time_series_threshold: 0.75, // 75%
+            pattern_matching_threshold: 0.6, // 60%
+            network_traffic_threshold: 0.85, // 85%
+            resource_usage_threshold: 0.9, // 90%
         }
     }
 }
@@ -175,8 +175,7 @@ pub struct AnomalyDetector {
     config: AnomalyDetectionConfig,
     is_running: std::sync::atomic::AtomicBool,
     last_result: std::sync::Mutex<Option<AnomalyDetectionResult>>,
-    detector_handlers:
-        std::sync::Mutex<HashMap<String, Box<dyn AnomalyDetectorHandler + Send + Sync>>>,
+    detector_handlers: std::sync::Mutex<HashMap<String, Box<dyn AnomalyDetectorHandler + Send + Sync>>>,
     _historical_data: std::sync::Mutex<HashMap<String, Vec<f64>>>,
 }
 
@@ -193,7 +192,7 @@ impl AnomalyDetector {
     }
 
     /// 启动异常检测
-    pub async fn start(&self) -> otlp::error::Result<()> {
+    pub async fn start(&self) -> Result<(), UnifiedError> {
         if self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
             return Ok(());
         }
@@ -203,9 +202,8 @@ impl AnomalyDetector {
             return Ok(());
         }
 
-        self.is_running
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-
+        self.is_running.store(true, std::sync::atomic::Ordering::Relaxed);
+        
         // 注册默认检测处理器
         self.register_default_handlers();
 
@@ -220,15 +218,14 @@ impl AnomalyDetector {
     }
 
     /// 停止异常检测
-    pub async fn stop(&self) -> otlp::error::Result<()> {
-        self.is_running
-            .store(false, std::sync::atomic::Ordering::Relaxed);
+    pub async fn stop(&self) -> Result<(), UnifiedError> {
+        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
         info!("异常检测器停止完成");
         Ok(())
     }
 
     /// 检测异常
-    pub async fn detect_anomalies(&self) -> otlp::error::Result<AnomalyDetectionResult> {
+    pub async fn detect_anomalies(&self) -> Result<AnomalyDetectionResult, UnifiedError> {
         let mut items = Vec::new();
         let mut total_detectors = 0;
         let mut normal_detectors = 0;
@@ -242,14 +239,14 @@ impl AnomalyDetector {
 
             total_detectors += 1;
             let item_result = self.detect_item(detector_item).await;
-
+            
             if item_result.anomaly_detected {
                 anomaly_detectors += 1;
                 anomalies_detected += 1;
             } else {
                 normal_detectors += 1;
             }
-
+            
             items.push(item_result);
         }
 
@@ -287,7 +284,7 @@ impl AnomalyDetector {
                 anomaly_score: 0.0,
                 anomaly_detected: false,
                 anomaly_details: HashMap::new(),
-            }),
+            })
         };
 
         match result {
@@ -299,7 +296,7 @@ impl AnomalyDetector {
                 anomaly_score: 0.0,
                 anomaly_detected: false,
                 anomaly_details: HashMap::new(),
-            },
+            }
         }
     }
 
@@ -311,7 +308,7 @@ impl AnomalyDetector {
 
         let anomaly_count = items.iter().filter(|item| item.anomaly_detected).count();
         let total_count = items.len();
-
+        
         if anomaly_count == 0 {
             MonitoringState::Healthy
         } else if anomaly_count <= total_count / 2 {
@@ -324,39 +321,17 @@ impl AnomalyDetector {
     /// 注册默认检测处理器
     fn register_default_handlers(&self) {
         let mut handlers = self.detector_handlers.lock().unwrap();
-
-        handlers.insert(
-            "statistical".to_string(),
-            Box::new(StatisticalAnomalyDetectorHandler),
-        );
-        handlers.insert(
-            "threshold".to_string(),
-            Box::new(ThresholdAnomalyDetectorHandler),
-        );
-        handlers.insert(
-            "time_series".to_string(),
-            Box::new(TimeSeriesAnomalyDetectorHandler),
-        );
-        handlers.insert(
-            "pattern_matching".to_string(),
-            Box::new(PatternMatchingAnomalyDetectorHandler),
-        );
-        handlers.insert(
-            "network_traffic".to_string(),
-            Box::new(NetworkTrafficAnomalyDetectorHandler),
-        );
-        handlers.insert(
-            "resource_usage".to_string(),
-            Box::new(ResourceUsageAnomalyDetectorHandler),
-        );
+        
+        handlers.insert("statistical".to_string(), Box::new(StatisticalAnomalyDetectorHandler));
+        handlers.insert("threshold".to_string(), Box::new(ThresholdAnomalyDetectorHandler));
+        handlers.insert("time_series".to_string(), Box::new(TimeSeriesAnomalyDetectorHandler));
+        handlers.insert("pattern_matching".to_string(), Box::new(PatternMatchingAnomalyDetectorHandler));
+        handlers.insert("network_traffic".to_string(), Box::new(NetworkTrafficAnomalyDetectorHandler));
+        handlers.insert("resource_usage".to_string(), Box::new(ResourceUsageAnomalyDetectorHandler));
     }
 
     /// 注册自定义检测处理器
-    pub fn register_handler(
-        &self,
-        name: String,
-        handler: Box<dyn AnomalyDetectorHandler + Send + Sync>,
-    ) {
+    pub fn register_handler(&self, name: String, handler: Box<dyn AnomalyDetectorHandler + Send + Sync>) {
         let mut handlers = self.detector_handlers.lock().unwrap();
         handlers.insert(name, handler);
     }
@@ -364,10 +339,10 @@ impl AnomalyDetector {
     /// 运行检测循环
     async fn run_detection_loop(&self) {
         let mut interval = tokio::time::interval(self.config.detection_interval);
-
+        
         while self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
             interval.tick().await;
-
+            
             if let Err(error) = self.detect_anomalies().await {
                 error!("异常检测失败: {}", error);
             }
@@ -394,9 +369,7 @@ impl Clone for AnomalyDetector {
     fn clone(&self) -> Self {
         Self {
             config: self.config.clone(),
-            is_running: std::sync::atomic::AtomicBool::new(
-                self.is_running.load(std::sync::atomic::Ordering::Relaxed),
-            ),
+            is_running: std::sync::atomic::AtomicBool::new(self.is_running.load(std::sync::atomic::Ordering::Relaxed)),
             last_result: std::sync::Mutex::new(self.last_result.lock().unwrap().clone()),
             detector_handlers: std::sync::Mutex::new(HashMap::new()),
             _historical_data: std::sync::Mutex::new(HashMap::new()),
@@ -407,28 +380,14 @@ impl Clone for AnomalyDetector {
 /// 异常检测处理器trait
 pub trait AnomalyDetectorHandler: Send + Sync {
     /// 执行异常检测
-    fn detect(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>>
-                + Send,
-        >,
-    >;
+    fn detect(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>> + Send>>;
 }
 
 /// 统计异常检测处理器
 pub struct StatisticalAnomalyDetectorHandler;
 
 impl AnomalyDetectorHandler for StatisticalAnomalyDetectorHandler {
-    fn detect(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn detect(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
@@ -439,27 +398,24 @@ impl AnomalyDetectorHandler for StatisticalAnomalyDetectorHandler {
             use rand::Rng;
             let mut rng = rand::rng();
             let current_value = rng.random_range(0.0..10.0);
-
+            
             // 计算统计指标
             let mean = 5.0; // 假设的均值
             let std_dev = 1.0; // 假设的标准差
             let z_score: f64 = (current_value - mean) / std_dev;
-
+            
             details.insert("current_value".to_string(), format!("{:.2}", current_value));
             details.insert("mean".to_string(), format!("{:.2}", mean));
             details.insert("std_dev".to_string(), format!("{:.2}", std_dev));
             details.insert("z_score".to_string(), format!("{:.2}", z_score));
-
+            
             anomaly_score = z_score.abs();
-
+            
             // 判断是否为异常（3个标准差规则）
             if z_score.abs() > 3.0 {
                 anomaly_detected = true;
                 state = MonitoringState::Error;
-                details.insert(
-                    "anomaly_type".to_string(),
-                    "statistical_outlier".to_string(),
-                );
+                details.insert("anomaly_type".to_string(), "statistical_outlier".to_string());
             }
 
             Ok(AnomalyDetectorItemResult {
@@ -478,14 +434,7 @@ impl AnomalyDetectorHandler for StatisticalAnomalyDetectorHandler {
 pub struct ThresholdAnomalyDetectorHandler;
 
 impl AnomalyDetectorHandler for ThresholdAnomalyDetectorHandler {
-    fn detect(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn detect(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
@@ -496,12 +445,12 @@ impl AnomalyDetectorHandler for ThresholdAnomalyDetectorHandler {
             use rand::Rng;
             let mut rng = rand::rng();
             let current_value = rng.random_range(0.0..1.0);
-
+            
             details.insert("current_value".to_string(), format!("{:.2}", current_value));
             details.insert("threshold".to_string(), "0.8".to_string());
-
+            
             anomaly_score = current_value;
-
+            
             // 判断是否超过阈值
             if current_value > 0.8 {
                 anomaly_detected = true;
@@ -544,17 +493,17 @@ impl GlobalAnomalyDetector {
     }
 
     /// 启动全局异常检测
-    pub async fn start(&self) -> otlp::error::Result<()> {
+    pub async fn start(&self) -> Result<(), UnifiedError> {
         self.detector.start().await
     }
 
     /// 停止全局异常检测
-    pub async fn stop(&self) -> otlp::error::Result<()> {
+    pub async fn stop(&self) -> Result<(), UnifiedError> {
         self.detector.stop().await
     }
 
     /// 获取全局异常检测状态
-    pub async fn detect_anomalies(&self) -> otlp::error::Result<AnomalyDetectionResult> {
+    pub async fn detect_anomalies(&self) -> Result<AnomalyDetectionResult, UnifiedError> {
         self.detector.detect_anomalies().await
     }
 }
@@ -580,7 +529,7 @@ mod tests {
             detector_type: AnomalyDetectorType::Statistical,
             enabled: true,
         };
-
+        
         assert_eq!(item.name, "test");
         assert!(item.enabled);
     }
@@ -597,7 +546,7 @@ mod tests {
     fn test_anomaly_detector_creation() {
         let config = AnomalyDetectionConfig::default();
         let detector = AnomalyDetector::new(config);
-
+        
         assert!(detector.get_last_result().is_none());
     }
 
@@ -605,10 +554,10 @@ mod tests {
     async fn test_anomaly_detector_detect() {
         let config = AnomalyDetectionConfig::default();
         let detector = AnomalyDetector::new(config);
-
+        
         let result = detector.detect_anomalies().await;
         assert!(result.is_ok());
-
+        
         let result = result.unwrap();
         assert!(result.total_detectors > 0);
         //assert!(result.normal_detectors >= 0);
@@ -626,7 +575,7 @@ mod tests {
             anomaly_detectors: 0,
             anomalies_detected: 0,
         };
-
+        
         assert_eq!(result.state, MonitoringState::Healthy);
         assert_eq!(result.total_detectors, 0);
     }
@@ -641,7 +590,7 @@ mod tests {
             anomaly_detected: false,
             anomaly_details: HashMap::new(),
         };
-
+        
         assert_eq!(result.name, "test");
         assert_eq!(result.state, MonitoringState::Healthy);
         assert!(!result.anomaly_detected);
@@ -651,7 +600,7 @@ mod tests {
     fn test_global_anomaly_detector() {
         let global_detector = GlobalAnomalyDetector::new();
         let detector = global_detector.get_detector();
-
+        
         assert!(detector.get_last_result().is_none());
     }
 
@@ -659,12 +608,9 @@ mod tests {
     async fn test_time_series_anomaly_detector() {
         let handler = TimeSeriesAnomalyDetectorHandler;
         let result = handler.detect().await.unwrap();
-
+        
         assert_eq!(result.name, "time_series");
-        assert!(matches!(
-            result.detector_type,
-            AnomalyDetectorType::TimeSeries
-        ));
+        assert!(matches!(result.detector_type, AnomalyDetectorType::TimeSeries));
         assert!(result.anomaly_score >= 0.0 && result.anomaly_score <= 1.0);
     }
 
@@ -672,12 +618,9 @@ mod tests {
     async fn test_pattern_matching_anomaly_detector() {
         let handler = PatternMatchingAnomalyDetectorHandler;
         let result = handler.detect().await.unwrap();
-
+        
         assert_eq!(result.name, "pattern_matching");
-        assert!(matches!(
-            result.detector_type,
-            AnomalyDetectorType::PatternMatching
-        ));
+        assert!(matches!(result.detector_type, AnomalyDetectorType::PatternMatching));
         assert!(result.anomaly_score >= 0.0 && result.anomaly_score <= 1.0);
         assert!(result.anomaly_details.contains_key("confidence"));
     }
@@ -686,12 +629,9 @@ mod tests {
     async fn test_network_traffic_anomaly_detector() {
         let handler = NetworkTrafficAnomalyDetectorHandler;
         let result = handler.detect().await.unwrap();
-
+        
         assert_eq!(result.name, "network_traffic");
-        assert!(matches!(
-            result.detector_type,
-            AnomalyDetectorType::NetworkTraffic
-        ));
+        assert!(matches!(result.detector_type, AnomalyDetectorType::NetworkTraffic));
         assert!(result.anomaly_score >= 0.0 && result.anomaly_score <= 1.0);
         assert!(result.anomaly_details.contains_key("bandwidth_usage"));
         assert!(result.anomaly_details.contains_key("packet_loss"));
@@ -701,12 +641,9 @@ mod tests {
     async fn test_resource_usage_anomaly_detector() {
         let handler = ResourceUsageAnomalyDetectorHandler;
         let result = handler.detect().await.unwrap();
-
+        
         assert_eq!(result.name, "resource_usage");
-        assert!(matches!(
-            result.detector_type,
-            AnomalyDetectorType::ResourceUsage
-        ));
+        assert!(matches!(result.detector_type, AnomalyDetectorType::ResourceUsage));
         assert!(result.anomaly_score >= 0.0 && result.anomaly_score <= 1.0);
         assert!(result.anomaly_details.contains_key("cpu_usage"));
         assert!(result.anomaly_details.contains_key("memory_usage"));
@@ -716,7 +653,7 @@ mod tests {
     #[test]
     fn test_anomaly_alert_thresholds_default() {
         let thresholds = AnomalyAlertThresholds::default();
-
+        
         assert_eq!(thresholds.statistical_threshold, 3.0);
         assert_eq!(thresholds.threshold_anomaly_threshold, 0.8);
         assert_eq!(thresholds.ml_anomaly_threshold, 0.7);
@@ -745,10 +682,7 @@ mod tests {
         for detector_type in types {
             let serialized = serde_json::to_string(&detector_type).unwrap();
             let deserialized: AnomalyDetectorType = serde_json::from_str(&serialized).unwrap();
-            assert_eq!(
-                format!("{:?}", detector_type),
-                format!("{:?}", deserialized)
-            );
+            assert_eq!(format!("{:?}", detector_type), format!("{:?}", deserialized));
         }
     }
 }
@@ -757,14 +691,7 @@ mod tests {
 pub struct TimeSeriesAnomalyDetectorHandler;
 
 impl AnomalyDetectorHandler for TimeSeriesAnomalyDetectorHandler {
-    fn detect(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn detect(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
@@ -776,26 +703,12 @@ impl AnomalyDetectorHandler for TimeSeriesAnomalyDetectorHandler {
             let mut rng = rand::rng();
             let trend_value = rng.random_range(0.0..1.0);
             let seasonality_value = rng.random_range(0.0..1.0);
-
-            details.insert(
-                "trend".to_string(),
-                if trend_value > 0.5 {
-                    "increasing".to_string()
-                } else {
-                    "decreasing".to_string()
-                },
-            );
-            details.insert(
-                "seasonality".to_string(),
-                if seasonality_value > 0.3 {
-                    "detected".to_string()
-                } else {
-                    "none".to_string()
-                },
-            );
-
+            
+            details.insert("trend".to_string(), if trend_value > 0.5 { "increasing".to_string() } else { "decreasing".to_string() });
+            details.insert("seasonality".to_string(), if seasonality_value > 0.3 { "detected".to_string() } else { "none".to_string() });
+            
             anomaly_score = (trend_value + seasonality_value) / 2.0;
-
+            
             // 判断是否检测到异常
             if anomaly_score > 0.75 {
                 anomaly_detected = true;
@@ -804,10 +717,7 @@ impl AnomalyDetectorHandler for TimeSeriesAnomalyDetectorHandler {
                 } else {
                     MonitoringState::Warning
                 };
-                details.insert(
-                    "anomaly_type".to_string(),
-                    "time_series_anomaly".to_string(),
-                );
+                details.insert("anomaly_type".to_string(), "time_series_anomaly".to_string());
             }
 
             Ok(AnomalyDetectorItemResult {
@@ -826,14 +736,7 @@ impl AnomalyDetectorHandler for TimeSeriesAnomalyDetectorHandler {
 pub struct PatternMatchingAnomalyDetectorHandler;
 
 impl AnomalyDetectorHandler for PatternMatchingAnomalyDetectorHandler {
-    fn detect(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn detect(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
@@ -845,21 +748,15 @@ impl AnomalyDetectorHandler for PatternMatchingAnomalyDetectorHandler {
             let mut rng = rand::rng();
             let pattern_score = rng.random_range(0.0..1.0);
             let confidence = rng.random_range(0.0..1.0);
-
-            details.insert(
-                "pattern_type".to_string(),
-                if pattern_score > 0.7 {
-                    "spike".to_string()
-                } else if pattern_score > 0.4 {
-                    "trend".to_string()
-                } else {
-                    "normal".to_string()
-                },
-            );
+            
+            details.insert("pattern_type".to_string(), 
+                if pattern_score > 0.7 { "spike".to_string() } 
+                else if pattern_score > 0.4 { "trend".to_string() } 
+                else { "normal".to_string() });
             details.insert("confidence".to_string(), format!("{:.2}", confidence));
-
+            
             anomaly_score = (pattern_score + confidence) / 2.0;
-
+            
             // 判断是否检测到异常模式
             if anomaly_score > 0.6 {
                 anomaly_detected = true;
@@ -887,14 +784,7 @@ impl AnomalyDetectorHandler for PatternMatchingAnomalyDetectorHandler {
 pub struct NetworkTrafficAnomalyDetectorHandler;
 
 impl AnomalyDetectorHandler for NetworkTrafficAnomalyDetectorHandler {
-    fn detect(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn detect(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
@@ -906,25 +796,16 @@ impl AnomalyDetectorHandler for NetworkTrafficAnomalyDetectorHandler {
             let mut rng = rand::rng();
             let bandwidth_usage = rng.random_range(0.0..1.0);
             let packet_loss = rng.random_range(0.0..0.1);
-
-            details.insert(
-                "bandwidth_usage".to_string(),
-                if bandwidth_usage > 0.8 {
-                    "high".to_string()
-                } else if bandwidth_usage > 0.5 {
-                    "medium".to_string()
-                } else {
-                    "low".to_string()
-                },
-            );
-            details.insert(
-                "packet_loss".to_string(),
-                format!("{:.1}%", packet_loss * 100.0),
-            );
-
+            
+            details.insert("bandwidth_usage".to_string(), 
+                if bandwidth_usage > 0.8 { "high".to_string() } 
+                else if bandwidth_usage > 0.5 { "medium".to_string() } 
+                else { "low".to_string() });
+            details.insert("packet_loss".to_string(), format!("{:.1}%", packet_loss * 100.0));
+            
             let raw_score = bandwidth_usage + packet_loss * 10.0;
             anomaly_score = if raw_score > 1.0 { 1.0 } else { raw_score };
-
+            
             // 判断是否检测到网络异常
             if anomaly_score > 0.85 {
                 anomaly_detected = true;
@@ -952,14 +833,7 @@ impl AnomalyDetectorHandler for NetworkTrafficAnomalyDetectorHandler {
 pub struct ResourceUsageAnomalyDetectorHandler;
 
 impl AnomalyDetectorHandler for ResourceUsageAnomalyDetectorHandler {
-    fn detect(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn detect(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<AnomalyDetectorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
@@ -972,22 +846,13 @@ impl AnomalyDetectorHandler for ResourceUsageAnomalyDetectorHandler {
             let cpu_usage = rng.random_range(0.0..1.0);
             let memory_usage = rng.random_range(0.0..1.0);
             let disk_usage = rng.random_range(0.0..1.0);
-
-            details.insert(
-                "cpu_usage".to_string(),
-                format!("{:.0}%", cpu_usage * 100.0),
-            );
-            details.insert(
-                "memory_usage".to_string(),
-                format!("{:.0}%", memory_usage * 100.0),
-            );
-            details.insert(
-                "disk_usage".to_string(),
-                format!("{:.0}%", disk_usage * 100.0),
-            );
-
+            
+            details.insert("cpu_usage".to_string(), format!("{:.0}%", cpu_usage * 100.0));
+            details.insert("memory_usage".to_string(), format!("{:.0}%", memory_usage * 100.0));
+            details.insert("disk_usage".to_string(), format!("{:.0}%", disk_usage * 100.0));
+            
             anomaly_score = (cpu_usage + memory_usage + disk_usage) / 3.0;
-
+            
             // 判断是否检测到资源异常
             if anomaly_score > 0.9 {
                 anomaly_detected = true;

@@ -1,17 +1,10 @@
 #[cfg(all(feature = "containers"))]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    #[cfg(feature = "docker-runtime")]
-    use c13_reliability::runtime_environments::container_runtime::docker_local::DockerRuntime;
-    use c13_reliability::runtime_environments::container_runtime::{
-        ContainerRunConfig, ImageReference, RestartPolicy,
-    };
-    use c13_reliability::runtime_environments::orchestrator::{
-        LocalContainerOrchestrator, Orchestrator,
-    };
-    use c13_reliability::runtime_environments::orchestrator_supervisor::{
-        BackoffPolicy, OrchestratorSupervisor,
-    };
+    use reliability::runtime_environments::container_runtime::{ImageReference, ContainerRunConfig, RestartPolicy};
+    use reliability::runtime_environments::orchestrator::{LocalContainerOrchestrator, Orchestrator};
+    use reliability::runtime_environments::orchestrator_supervisor::{OrchestratorSupervisor, BackoffPolicy};
+    #[cfg(feature = "docker-runtime")] use reliability::runtime_environments::container_runtime::docker_local::DockerRuntime;
 
     let img: ImageReference = "docker.io/library/nginx:latest".parse().unwrap();
     let cfg = ContainerRunConfig {
@@ -27,10 +20,7 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "docker-runtime")]
     let orch = LocalContainerOrchestrator::new(DockerRuntime::new(), cfg);
     #[cfg(not(feature = "docker-runtime"))]
-    {
-        println!("Enable --features docker-runtime for runnable supervisor example.");
-        return Ok(());
-    }
+    { println!("Enable --features docker-runtime for runnable supervisor example."); return Ok(()); }
 
     let sup = OrchestratorSupervisor::new(orch, BackoffPolicy::default());
     sup.ensure_running("nginx").await?;
@@ -38,6 +28,6 @@ async fn main() -> anyhow::Result<()> {
 }
 
 #[cfg(not(all(feature = "containers")))]
-fn main() {
-    println!("Enable --features containers to run this example.");
-}
+fn main() { println!("Enable --features containers to run this example."); }
+
+

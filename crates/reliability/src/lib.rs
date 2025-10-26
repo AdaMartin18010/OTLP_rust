@@ -84,13 +84,11 @@
 
 // 核心模块
 pub mod error_handling;
-// OTLP 首选语义：集中重导出 otlp 错误/配置/监控核心类型
+pub mod fault_tolerance;
+pub mod runtime_monitoring;
 pub mod chaos_engineering;
 pub mod config;
-pub mod fault_tolerance;
 pub mod metrics;
-pub mod otlp_integration;
-pub mod runtime_monitoring;
 pub mod utils;
 
 // 运行时环境支持
@@ -99,50 +97,65 @@ pub mod runtime_environments;
 // Rust 1.90+ 新特性支持
 pub mod rust_190_features;
 
+// 分布式系统模块
+pub mod distributed_systems;
+
+// 并发模型模块
+pub mod concurrency_models;
+
+// 微服务架构模块
+pub mod microservices;
+
+// 执行流感知系统
+pub mod execution_flow;
+
+// 系统自我感知
+pub mod self_awareness;
+
+// 设计模式库
+pub mod design_patterns;
+
+// 高级可观测性
+pub mod observability;
+
+// 性能基准测试
+pub mod benchmarking;
+
 // 重新导出常用类型和函数
 pub mod prelude {
-    // 以 OTLP 语义为主导：优先从 otlp 重导出错误与监控语义
-    pub use otlp::{
-        ErrorContext as OtlpErrorContext, ErrorSeverity as OtlpErrorSeverity,
-        MonitoringConfig as OtlpMonitoringConfig, OtlpError as OtlpUnifiedError,
-        Result as OtlpResult,
-    };
-    // 同时保留本框架原有类型，提供平滑迁移期
     pub use crate::error_handling::{
-        ErrorContext, ErrorMonitor, ErrorRecovery, ErrorSeverity, GlobalErrorMonitor, ResultExt,
-        UnifiedError,
+        UnifiedError, ErrorContext, ErrorSeverity, ResultExt, 
+        ErrorRecovery, ErrorMonitor, GlobalErrorMonitor
     };
-    // 导出转换辅助
-    pub use crate::chaos_engineering::{
-        ChaosScenarios, FaultInjector, RecoveryTester, ResilienceTester,
-    };
-    pub use crate::config::ReliabilityConfig;
     pub use crate::fault_tolerance::{
-        Bulkhead, CircuitBreaker, Fallback, FaultToleranceConfig, ResilienceBuilder, RetryPolicy,
-        Timeout,
-    };
-    pub use crate::metrics::ReliabilityMetrics;
-    pub use crate::otlp_integration::convert as otlp_convert;
-    pub use crate::runtime_environments::{
-        ContainerEnvironmentAdapter, EmbeddedEnvironmentAdapter, EnvironmentCapabilities,
-        HealthLevel, HealthStatus, OSEnvironmentAdapter, RecoveryType, ResourceUsage,
-        RuntimeEnvironment, RuntimeEnvironmentAdapter, RuntimeEnvironmentManager, SystemInfo,
+        CircuitBreaker, RetryPolicy, Bulkhead, Timeout, Fallback,
+        FaultToleranceConfig, ResilienceBuilder
     };
     pub use crate::runtime_monitoring::{
-        AnomalyDetector, AutoRecovery, HealthChecker, MonitoringConfig, MonitoringDashboard,
-        PerformanceMonitor, ResourceMonitor,
+        HealthChecker, ResourceMonitor, PerformanceMonitor, 
+        AnomalyDetector, AutoRecovery, MonitoringDashboard, MonitoringConfig
+    };
+    pub use crate::chaos_engineering::{
+        FaultInjector, ChaosScenarios, ResilienceTester, RecoveryTester
+    };
+    pub use crate::config::ReliabilityConfig;
+    pub use crate::metrics::ReliabilityMetrics;
+    pub use crate::utils::{DurationExt, ResultExt as UtilsResultExt};
+    pub use crate::runtime_environments::{
+        RuntimeEnvironment, RuntimeEnvironmentManager, RuntimeEnvironmentAdapter,
+        EnvironmentCapabilities, SystemInfo, ResourceUsage, HealthStatus, HealthLevel,
+        RecoveryType, OSEnvironmentAdapter, EmbeddedEnvironmentAdapter, ContainerEnvironmentAdapter
     };
     pub use crate::rust_190_features::{
-        AdvancedAsyncCombinator, AsyncClosureExample, GenericAssociatedTypeExample,
-        OperationMetadata, OperationResult, ReliabilityService, Rust190FeatureDemo,
+        Rust190FeatureDemo, AsyncClosureExample, GenericAssociatedTypeExample,
+        AdvancedAsyncCombinator, ReliabilityService, OperationResult, OperationMetadata
     };
-    pub use crate::utils::{DurationExt, ResultExt as UtilsResultExt};
-
+    
     // 常用标准库类型
-    pub use anyhow::Result;
-    pub use std::sync::Arc;
     pub use std::time::Duration;
-    pub use tracing::{debug, error, info, trace, warn};
+    pub use std::sync::Arc;
+    pub use anyhow::Result;
+    pub use tracing::{info, warn, error, debug, trace};
 }
 
 // 版本信息
@@ -160,41 +173,37 @@ pub fn name() -> &'static str {
 }
 
 /// 初始化可靠性框架
-///
+/// 
 /// 这个函数会初始化全局错误监控、指标收集和健康检查系统
-pub async fn init() -> Result<(), otlp::error::OtlpError> {
+pub async fn init() -> Result<(), crate::error_handling::UnifiedError> {
     // 初始化全局错误监控
-    crate::error_handling::GlobalErrorMonitor::init()
-        .await
-        .map_err(|e| crate::otlp_integration::convert::to_otlp_error(&e))?;
-
+    crate::error_handling::GlobalErrorMonitor::init().await?;
+    
     // 初始化指标收集
     // crate::metrics::ReliabilityMetrics::init().await?;
-
+    
     // 初始化健康检查
     crate::runtime_monitoring::GlobalHealthChecker::init_global().await?;
-
+    
     tracing::info!("可靠性框架初始化完成");
     Ok(())
 }
 
 /// 优雅关闭可靠性框架
-///
+/// 
 /// 这个函数会清理资源、保存指标数据并关闭监控系统
-pub async fn shutdown() -> Result<(), otlp::error::OtlpError> {
+pub async fn shutdown() -> Result<(), crate::error_handling::UnifiedError> {
     tracing::info!("开始关闭可靠性框架");
-
+    
     // 保存指标数据
     // crate::metrics::ReliabilityMetrics::shutdown().await?;
-
+    
     // 关闭健康检查
     crate::runtime_monitoring::GlobalHealthChecker::shutdown_global().await?;
-
+    
     // 关闭全局错误监控
-    crate::error_handling::GlobalErrorMonitor::shutdown()
-        .await
-        .map_err(|e| crate::otlp_integration::convert::to_otlp_error(&e))?;
-
+    crate::error_handling::GlobalErrorMonitor::shutdown().await?;
+    
     tracing::info!("可靠性框架关闭完成");
     Ok(())
 }

@@ -33,7 +33,12 @@
 
 ### 🔧 API 参考
 
-- [📚 完整 API 文档](03_API_REFERENCE/README.md) ⭐ - OtlpClient、配置选项、数据类型（578 行）
+- [📚 完整 API 文档](03_API_REFERENCE/README.md) ⭐ - OtlpClient、配置选项、数据类型（3000+ 行）
+- [🚀 API快速参考](03_API_REFERENCE/API_QUICK_REFERENCE.md) ⭐ NEW - 常用代码片段速查
+- [🔬 Profiling API](03_API_REFERENCE/profiling_api.md) ⭐ NEW - CPU/Memory性能分析（500+行）
+- [⚡ SIMD API](03_API_REFERENCE/simd_api.md) ⭐ NEW - SIMD优化加速（650+行）
+- [🗜️ Compression API](03_API_REFERENCE/compression_api.md) ⭐ NEW - Tracezip压缩（600+行）
+- [🏷️ Semantic Conventions API](03_API_REFERENCE/semantic_conventions_api.md) ⭐ NEW - 语义约定（700+行）
 - [OTLP API](api/otlp.md) ✅ - OTLP API 快速参考
 - [Reliability API](api/reliability.md) ✅ - 可靠性 API 快速参考
 - [API 索引](api/README.md) - 更多 API 文档
@@ -71,6 +76,8 @@
 - [参考资料总览](08_REFERENCE/README.md) - 完整的参考资料索引
 - [🌟 OTLP 标准对齐](08_REFERENCE/otlp_standards_alignment.md) - 1300+ 行 OTLP 标准完整参考 ⭐ NEW
 - [🚀 OTLP 2024-2025 特性](08_REFERENCE/otlp_2024_2025_features.md) - 800+ 行最新特性详解 ⭐ NEW
+- [🦀 Rust 1.90 技术栈对齐](08_REFERENCE/rust_1.90_otlp_tech_stack_alignment.md) - 3000+ 行完整技术栈 ⭐ NEW
+  - 36+ 核心库详细对比 | 技术选型决策 | 最佳实践 | 性能基准
 - [最佳实践指南](08_REFERENCE/best_practices.md) - 开发、性能、安全最佳实践
 - [术语表](08_REFERENCE/glossary.md) - OTLP 和 OpenTelemetry 术语
 - [故障排除指南](08_REFERENCE/troubleshooting_guide.md) - 常见问题解决方案

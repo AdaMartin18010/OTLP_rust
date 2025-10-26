@@ -2,18 +2,15 @@
 //!
 //! 提供实时监控数据的可视化和分析功能。
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
+use serde::{Serialize, Deserialize};
 use tokio::sync::RwLock;
 use tracing::info;
 
-use super::{
-    AnomalyDetector, HealthCheckResult, HealthChecker, MonitoringState, PerformanceMonitor,
-    ResourceMonitor,
-};
 use crate::error_handling::UnifiedError;
+use super::{MonitoringState, HealthChecker, HealthCheckResult, ResourceMonitor, PerformanceMonitor, AnomalyDetector};
 
 /// 监控仪表板配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,7 +32,7 @@ impl Default for DashboardConfig {
         Self {
             refresh_interval: Duration::from_secs(5),
             history_retention: Duration::from_secs(3600), // 1小时
-            max_history_points: 720,                      // 5秒间隔，1小时数据
+            max_history_points: 720, // 5秒间隔，1小时数据
             real_time_enabled: true,
             alert_thresholds: DashboardAlertThresholds::default(),
         }
@@ -183,7 +180,7 @@ impl MonitoringDashboard {
     ) -> Self {
         let start_time = Instant::now();
         let is_running = Arc::new(std::sync::atomic::AtomicBool::new(false));
-
+        
         let current_status = Arc::new(RwLock::new(DashboardStatus {
             current_state: MonitoringState::Healthy,
             last_updated: SystemTime::now(),
@@ -224,9 +221,8 @@ impl MonitoringDashboard {
             ));
         }
 
-        self.is_running
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-
+        self.is_running.store(true, std::sync::atomic::Ordering::Relaxed);
+        
         // 更新状态
         {
             let mut status = self.current_status.write().await;
@@ -240,9 +236,8 @@ impl MonitoringDashboard {
 
     /// 停止监控仪表板
     pub async fn stop(&self) -> Result<(), UnifiedError> {
-        self.is_running
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
+        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
+        
         // 更新状态
         {
             let mut status = self.current_status.write().await;
@@ -257,11 +252,8 @@ impl MonitoringDashboard {
     /// 收集当前监控数据
     pub async fn collect_data(&self) -> Result<MonitoringDataPoint, UnifiedError> {
         // 收集健康状态
-        let health_check_result = self
-            .health_checker
-            .check_health()
-            .await
-            .unwrap_or_else(|_| HealthCheckResult {
+        let health_check_result = self.health_checker.check_health().await.unwrap_or_else(|_| {
+            HealthCheckResult {
                 timestamp: chrono::Utc::now(),
                 state: MonitoringState::Error,
                 items: Vec::new(),
@@ -269,7 +261,8 @@ impl MonitoringDashboard {
                 successful_checks: 0,
                 failed_checks: 0,
                 warning_checks: 0,
-            });
+            }
+        });
         let health_status = health_check_result.state;
 
         // 收集资源使用情况
@@ -334,15 +327,10 @@ impl MonitoringDashboard {
                 anomalies_detected: result.anomalies_detected > 0,
                 anomaly_count: result.anomalies_detected as u32,
                 total_detectors: result.total_detectors as u32,
-                anomaly_score: result
-                    .items
-                    .iter()
+                anomaly_score: result.items.iter()
                     .map(|item| item.anomaly_score)
-                    .sum::<f64>()
-                    / result.items.len() as f64,
-                anomaly_details: result
-                    .items
-                    .iter()
+                    .sum::<f64>() / result.items.len() as f64,
+                anomaly_details: result.items.iter()
                     .filter(|item| item.anomaly_detected)
                     .flat_map(|item| item.anomaly_details.clone())
                     .collect(),
@@ -360,14 +348,14 @@ impl MonitoringDashboard {
     /// 添加数据点到历史记录
     async fn add_to_history(&self, data_point: MonitoringDataPoint) {
         let mut history = self.history_data.write().await;
-
+        
         // 添加新数据点
         history.push(data_point);
-
+        
         // 清理过期数据
         let cutoff_time = SystemTime::now() - self.config.history_retention;
         history.retain(|point| point.timestamp > cutoff_time);
-
+        
         // 限制数据点数量
         if history.len() > self.config.max_history_points {
             let excess = history.len() - self.config.max_history_points;
@@ -378,12 +366,12 @@ impl MonitoringDashboard {
     /// 更新当前状态
     async fn update_current_status(&self, data_point: &MonitoringDataPoint) {
         let mut status = self.current_status.write().await;
-
+        
         status.current_state = data_point.health_status.clone();
         status.last_updated = data_point.timestamp;
         status.data_points_count = self.history_data.read().await.len();
         status.uptime = self.start_time.elapsed();
-
+        
         // 计算告警数量
         status.alert_count = self.calculate_alert_count(data_point);
     }
@@ -391,38 +379,28 @@ impl MonitoringDashboard {
     /// 计算告警数量
     fn calculate_alert_count(&self, data_point: &MonitoringDataPoint) -> u32 {
         let mut alert_count = 0;
-
+        
         // 检查资源使用告警
-        if data_point.resource_usage.cpu_usage_percent
-            > self.config.alert_thresholds.cpu_alert_threshold
-        {
+        if data_point.resource_usage.cpu_usage_percent > self.config.alert_thresholds.cpu_alert_threshold {
             alert_count += 1;
         }
-        if data_point.resource_usage.memory_usage_percent
-            > self.config.alert_thresholds.memory_alert_threshold
-        {
+        if data_point.resource_usage.memory_usage_percent > self.config.alert_thresholds.memory_alert_threshold {
             alert_count += 1;
         }
-
+        
         // 检查性能告警
-        if data_point.performance_metrics.average_response_time
-            > self.config.alert_thresholds.response_time_alert_threshold
-        {
+        if data_point.performance_metrics.average_response_time > self.config.alert_thresholds.response_time_alert_threshold {
             alert_count += 1;
         }
-        if data_point.performance_metrics.error_rate
-            > self.config.alert_thresholds.error_rate_alert_threshold
-        {
+        if data_point.performance_metrics.error_rate > self.config.alert_thresholds.error_rate_alert_threshold {
             alert_count += 1;
         }
-
+        
         // 检查异常告警
-        if data_point.anomaly_results.anomaly_score
-            > self.config.alert_thresholds.anomaly_alert_threshold
-        {
+        if data_point.anomaly_results.anomaly_score > self.config.alert_thresholds.anomaly_alert_threshold {
             alert_count += 1;
         }
-
+        
         alert_count
     }
 
@@ -437,14 +415,9 @@ impl MonitoringDashboard {
     }
 
     /// 获取指定时间范围的数据
-    pub async fn get_data_in_range(
-        &self,
-        start: SystemTime,
-        end: SystemTime,
-    ) -> Vec<MonitoringDataPoint> {
+    pub async fn get_data_in_range(&self, start: SystemTime, end: SystemTime) -> Vec<MonitoringDataPoint> {
         let history = self.history_data.read().await;
-        history
-            .iter()
+        history.iter()
             .filter(|point| point.timestamp >= start && point.timestamp <= end)
             .cloned()
             .collect()
@@ -453,7 +426,7 @@ impl MonitoringDashboard {
     /// 获取统计摘要
     pub async fn get_statistics_summary(&self) -> DashboardStatisticsSummary {
         let history = self.history_data.read().await;
-
+        
         if history.is_empty() {
             return DashboardStatisticsSummary::default();
         }
@@ -475,20 +448,18 @@ impl MonitoringDashboard {
         }
 
         let count = history.len() as f64;
-
+        
         DashboardStatisticsSummary {
             data_points_count: history.len(),
             average_cpu_usage: cpu_usage_sum / count,
             average_memory_usage: memory_usage_sum / count,
             average_response_time: Duration::from_nanos(
-                (response_time_sum.as_nanos() as f64 / count) as u64,
+                (response_time_sum.as_nanos() as f64 / count) as u64
             ),
             average_error_rate: error_rate_sum / count,
             anomaly_detection_rate: anomaly_count as f64 / count,
             time_range: if let (Some(first), Some(last)) = (history.first(), history.last()) {
-                last.timestamp
-                    .duration_since(first.timestamp)
-                    .unwrap_or_default()
+                last.timestamp.duration_since(first.timestamp).unwrap_or_default()
             } else {
                 Duration::from_secs(0)
             },
@@ -531,19 +502,16 @@ impl Default for DashboardStatisticsSummary {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{
-        AnomalyDetectionConfig, HealthCheckConfig, PerformanceMonitorConfig, ResourceMonitorConfig,
-    };
     use super::*;
     use std::time::Duration;
+    use super::super::{AnomalyDetectionConfig, HealthCheckConfig, ResourceMonitorConfig, PerformanceMonitorConfig};
 
     #[tokio::test]
     async fn test_dashboard_creation() {
         let config = DashboardConfig::default();
         let health_checker = Arc::new(HealthChecker::new(HealthCheckConfig::default()));
         let resource_monitor = Arc::new(ResourceMonitor::new(ResourceMonitorConfig::default()));
-        let performance_monitor =
-            Arc::new(PerformanceMonitor::new(PerformanceMonitorConfig::default()));
+        let performance_monitor = Arc::new(PerformanceMonitor::new(PerformanceMonitorConfig::default()));
         let anomaly_detector = Arc::new(AnomalyDetector::new(AnomalyDetectionConfig::default()));
 
         let dashboard = MonitoringDashboard::new(
@@ -554,11 +522,7 @@ mod tests {
             anomaly_detector,
         );
 
-        assert!(
-            !dashboard
-                .is_running
-                .load(std::sync::atomic::Ordering::Relaxed)
-        );
+        assert!(!dashboard.is_running.load(std::sync::atomic::Ordering::Relaxed));
     }
 
     #[tokio::test]
@@ -566,8 +530,7 @@ mod tests {
         let config = DashboardConfig::default();
         let health_checker = Arc::new(HealthChecker::new(HealthCheckConfig::default()));
         let resource_monitor = Arc::new(ResourceMonitor::new(ResourceMonitorConfig::default()));
-        let performance_monitor =
-            Arc::new(PerformanceMonitor::new(PerformanceMonitorConfig::default()));
+        let performance_monitor = Arc::new(PerformanceMonitor::new(PerformanceMonitorConfig::default()));
         let anomaly_detector = Arc::new(AnomalyDetector::new(AnomalyDetectionConfig::default()));
 
         let dashboard = MonitoringDashboard::new(
@@ -580,19 +543,11 @@ mod tests {
 
         // 启动仪表板
         assert!(dashboard.start().await.is_ok());
-        assert!(
-            dashboard
-                .is_running
-                .load(std::sync::atomic::Ordering::Relaxed)
-        );
+        assert!(dashboard.is_running.load(std::sync::atomic::Ordering::Relaxed));
 
         // 停止仪表板
         assert!(dashboard.stop().await.is_ok());
-        assert!(
-            !dashboard
-                .is_running
-                .load(std::sync::atomic::Ordering::Relaxed)
-        );
+        assert!(!dashboard.is_running.load(std::sync::atomic::Ordering::Relaxed));
     }
 
     #[tokio::test]
@@ -600,8 +555,7 @@ mod tests {
         let config = DashboardConfig::default();
         let health_checker = Arc::new(HealthChecker::new(HealthCheckConfig::default()));
         let resource_monitor = Arc::new(ResourceMonitor::new(ResourceMonitorConfig::default()));
-        let performance_monitor =
-            Arc::new(PerformanceMonitor::new(PerformanceMonitorConfig::default()));
+        let performance_monitor = Arc::new(PerformanceMonitor::new(PerformanceMonitorConfig::default()));
         let anomaly_detector = Arc::new(AnomalyDetector::new(AnomalyDetectionConfig::default()));
 
         let dashboard = MonitoringDashboard::new(
@@ -614,7 +568,7 @@ mod tests {
 
         // 收集数据
         let data_point = dashboard.collect_data().await.unwrap();
-
+        
         assert!(data_point.timestamp <= SystemTime::now());
         assert!(data_point.resource_usage.cpu_usage_percent >= 0.0);
         assert!(data_point.resource_usage.cpu_usage_percent <= 100.0);
@@ -634,10 +588,7 @@ mod tests {
         let thresholds = DashboardAlertThresholds::default();
         assert_eq!(thresholds.cpu_alert_threshold, 80.0);
         assert_eq!(thresholds.memory_alert_threshold, 85.0);
-        assert_eq!(
-            thresholds.response_time_alert_threshold,
-            Duration::from_millis(1000)
-        );
+        assert_eq!(thresholds.response_time_alert_threshold, Duration::from_millis(1000));
         assert_eq!(thresholds.error_rate_alert_threshold, 0.05);
         assert_eq!(thresholds.anomaly_alert_threshold, 0.7);
     }

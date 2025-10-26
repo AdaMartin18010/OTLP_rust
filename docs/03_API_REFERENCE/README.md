@@ -35,6 +35,15 @@
     - [高级配置](#高级配置)
     - [错误处理](#错误处理)
   - [🔗 相关文档](#-相关文档)
+  - [📖 核心模块API](#-核心模块api)
+    - [Profiling API ⭐ NEW](#profiling-api--new)
+    - [SIMD Optimization API ⭐ NEW](#simd-optimization-api--new)
+    - [Compression API ⭐ NEW](#compression-api--new)
+    - [Semantic Conventions API ⭐ NEW](#semantic-conventions-api--new)
+  - [🎯 快速参考](#-快速参考)
+    - [按功能查找API](#按功能查找api)
+    - [按场景查找API](#按场景查找api)
+  - [📊 API文档统计](#-api文档统计)
 
 ## 🚀 客户端 API
 
@@ -572,6 +581,98 @@ match client.send_trace("operation").await {
 
 ---
 
-**API 版本**: 0.1.0  
-**最后更新**: 2025年1月  
+---
+
+## 📖 核心模块API
+
+### [Profiling API](profiling_api.md) ⭐ NEW
+
+完整的性能分析API参考（500+ 行）:
+
+- **CPU Profiling** - 调用栈采样和热点识别
+- **Memory Profiling** - 堆分配追踪和内存分析
+- **采样策略** - Always/Probabilistic/Rate/Adaptive
+- **pprof格式** - 行业标准profile格式
+- **OTLP导出** - 导出到OpenTelemetry collector
+- **完整示例** - 端到端profiling工作流
+
+### [SIMD Optimization API](simd_api.md) ⭐ NEW
+
+SIMD优化API参考（650+ 行）:
+
+- **CPU特性检测** - 自动检测SSE2/AVX2/AVX-512
+- **批量序列化** - 矢量化span/metric序列化
+- **聚合优化** - SIMD加速的数据聚合
+- **字符串操作** - 矢量化字符串处理
+- **性能基准** - 详细的性能数据和对比
+- **编译配置** - Feature flags和优化选项
+
+### [Compression API](compression_api.md) ⭐ NEW
+
+Tracezip压缩API参考（600+ 行）:
+
+- **Span去重** - 消除重复数据
+- **Delta编码** - 时间戳和ID增量编码
+- **字符串表** - 重复字符串优化
+- **压缩统计** - 详细的压缩指标
+- **性能优化** - 批次大小和配置调优
+- **完整示例** - 压缩/解压工作流
+
+### [Semantic Conventions API](semantic_conventions_api.md) ⭐ NEW
+
+语义约定API参考（700+ 行）:
+
+- **HTTP约定** - HTTP请求/响应属性
+- **数据库约定** - 数据库操作属性
+- **消息队列约定** - Kafka/RabbitMQ等属性
+- **Kubernetes约定** - K8s资源属性
+- **类型安全** - 编译时验证
+- **标准对齐** - OpenTelemetry v1.29.0
+
+---
+
+## 🎯 快速参考
+
+### 按功能查找API
+
+| 功能 | 模块 | 文档链接 |
+|------|------|---------|
+| **性能分析** | `profiling` | [Profiling API](profiling_api.md) |
+| **SIMD优化** | `simd` | [SIMD API](simd_api.md) |
+| **数据压缩** | `compression` | [Compression API](compression_api.md) |
+| **语义约定** | `semantic_conventions` | [Semantic Conventions API](semantic_conventions_api.md) |
+| **客户端基础** | `client` | [本文档](#-客户端-api) |
+| **配置管理** | `config` | [本文档](#️-配置选项) |
+| **数据模型** | `data` | [本文档](#-数据类型) |
+| **错误处理** | `error` | [本文档](#-错误处理) |
+
+### 按场景查找API
+
+| 场景 | 推荐模块 | 说明 |
+|------|---------|------|
+| **追踪HTTP请求** | `semantic_conventions::http` | 标准HTTP属性 |
+| **数据库操作** | `semantic_conventions::database` | 标准数据库属性 |
+| **性能瓶颈分析** | `profiling::cpu` | CPU profiling |
+| **内存泄漏排查** | `profiling::memory` | Memory profiling |
+| **减少传输大小** | `compression` | Tracezip压缩 |
+| **提升处理性能** | `simd` | SIMD优化 |
+| **K8s环境监控** | `semantic_conventions::k8s` | K8s资源属性 |
+
+---
+
+## 📊 API文档统计
+
+| 文档 | 规模 | 状态 | 最后更新 |
+|------|------|------|---------|
+| **核心API** | 578行 | ✅ 稳定 | 2025-01 |
+| **Profiling API** | 500+行 | ✅ 生产级 | 2025-10-26 |
+| **SIMD API** | 650+行 | ✅ 生产级 | 2025-10-26 |
+| **Compression API** | 600+行 | ✅ 生产级 | 2025-10-26 |
+| **Semantic Conventions** | 700+行 | ✅ 生产级 | 2025-10-26 |
+| **总计** | 3000+行 | - | - |
+
+---
+
+**API 版本**: 0.5.0  
+**最后更新**: 2025年10月26日  
 **维护者**: OTLP Rust 团队

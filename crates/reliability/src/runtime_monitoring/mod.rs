@@ -2,25 +2,25 @@
 //!
 //! 提供系统运行时监控、健康检查、性能监控和自动恢复功能。
 
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use serde::{Serialize, Deserialize};
 use tracing::info;
 
-use crate::error_handling::ErrorSeverity;
+use crate::error_handling::{UnifiedError, ErrorSeverity};
 
+pub mod health_check;
+pub mod resource_monitor;
+pub mod performance_monitor;
 pub mod anomaly_detection;
 pub mod auto_recovery;
 pub mod dashboard;
-pub mod health_check;
-pub mod performance_monitor;
-pub mod resource_monitor;
 
+pub use health_check::*;
+pub use resource_monitor::*;
+pub use performance_monitor::*;
 pub use anomaly_detection::*;
 pub use auto_recovery::*;
 pub use dashboard::*;
-pub use health_check::*;
-pub use performance_monitor::*;
-pub use resource_monitor::*;
 
 /// 监控配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,6 +36,7 @@ pub struct MonitoringConfig {
     /// 自动恢复配置
     pub auto_recovery: AutoRecoveryConfig,
 }
+
 
 impl Default for MonitoringConfig {
     fn default() -> Self {
@@ -123,9 +124,7 @@ impl MonitoringManager {
         Self {
             health_checker: Arc::new(HealthChecker::new(config.health_check.clone())),
             resource_monitor: Arc::new(ResourceMonitor::new(config.resource_monitor.clone())),
-            performance_monitor: Arc::new(PerformanceMonitor::new(
-                config.performance_monitor.clone(),
-            )),
+            performance_monitor: Arc::new(PerformanceMonitor::new(config.performance_monitor.clone())),
             anomaly_detector: Arc::new(AnomalyDetector::new(config.anomaly_detection.clone())),
             auto_recovery: Arc::new(AutoRecovery::new(config.auto_recovery.clone())),
             config,
@@ -135,7 +134,7 @@ impl MonitoringManager {
     }
 
     /// 启动监控
-    pub async fn start(&self) -> otlp::error::Result<()> {
+    pub async fn start(&self) -> Result<(), UnifiedError> {
         info!("启动监控管理器");
 
         // 启动健康检查
@@ -158,7 +157,7 @@ impl MonitoringManager {
     }
 
     /// 停止监控
-    pub async fn stop(&self) -> otlp::error::Result<()> {
+    pub async fn stop(&self) -> Result<(), UnifiedError> {
         info!("停止监控管理器");
 
         // 停止健康检查
@@ -181,7 +180,7 @@ impl MonitoringManager {
     }
 
     /// 生成监控报告
-    pub async fn generate_report(&self) -> otlp::error::Result<MonitoringReport> {
+    pub async fn generate_report(&self) -> Result<MonitoringReport, UnifiedError> {
         let timestamp = chrono::Utc::now();
 
         // 获取健康检查结果
@@ -343,17 +342,17 @@ impl GlobalMonitoringManager {
     }
 
     /// 启动全局监控
-    pub async fn start(&self) -> otlp::error::Result<()> {
+    pub async fn start(&self) -> Result<(), UnifiedError> {
         self.manager.start().await
     }
 
     /// 停止全局监控
-    pub async fn stop(&self) -> otlp::error::Result<()> {
+    pub async fn stop(&self) -> Result<(), UnifiedError> {
         self.manager.stop().await
     }
 
     /// 生成全局监控报告
-    pub async fn generate_report(&self) -> otlp::error::Result<MonitoringReport> {
+    pub async fn generate_report(&self) -> Result<MonitoringReport, UnifiedError> {
         self.manager.generate_report().await
     }
 
@@ -371,18 +370,9 @@ mod tests {
     fn test_monitoring_config_default() {
         let config = MonitoringConfig::default();
         assert!(matches!(config.health_check, HealthCheckConfig { .. }));
-        assert!(matches!(
-            config.resource_monitor,
-            ResourceMonitorConfig { .. }
-        ));
-        assert!(matches!(
-            config.performance_monitor,
-            PerformanceMonitorConfig { .. }
-        ));
-        assert!(matches!(
-            config.anomaly_detection,
-            AnomalyDetectionConfig { .. }
-        ));
+        assert!(matches!(config.resource_monitor, ResourceMonitorConfig { .. }));
+        assert!(matches!(config.performance_monitor, PerformanceMonitorConfig { .. }));
+        assert!(matches!(config.anomaly_detection, AnomalyDetectionConfig { .. }));
         assert!(matches!(config.auto_recovery, AutoRecoveryConfig { .. }));
     }
 
@@ -396,17 +386,14 @@ mod tests {
         assert_eq!(MonitoringState::Healthy.severity(), ErrorSeverity::Low);
         assert_eq!(MonitoringState::Warning.severity(), ErrorSeverity::Medium);
         assert_eq!(MonitoringState::Error.severity(), ErrorSeverity::High);
-        assert_eq!(
-            MonitoringState::Critical.severity(),
-            ErrorSeverity::Critical
-        );
+        assert_eq!(MonitoringState::Critical.severity(), ErrorSeverity::Critical);
     }
 
     #[test]
     fn test_monitoring_manager_creation() {
         let config = MonitoringConfig::default();
         let manager = MonitoringManager::new(config);
-
+        
         assert_eq!(manager.get_state(), MonitoringState::Healthy);
         assert!(manager.get_last_report().is_none());
     }
@@ -415,7 +402,7 @@ mod tests {
     fn test_global_monitoring_manager() {
         let global_manager = GlobalMonitoringManager::new();
         let state = global_manager.get_state();
-
+        
         assert_eq!(state, MonitoringState::Healthy);
     }
 }

@@ -2,14 +2,14 @@
 //!
 //! 提供系统资源监控功能，包括CPU、内存、磁盘、网络等资源的使用情况。
 
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
+use std::collections::HashMap;
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
 use tracing::{debug, error, info};
 
-use super::MonitoringState;
 use crate::error_handling::UnifiedError;
+use super::MonitoringState;
 
 /// 资源使用情况
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -161,8 +161,7 @@ pub struct ResourceMonitor {
     config: ResourceMonitorConfig,
     is_running: std::sync::atomic::AtomicBool,
     last_result: std::sync::Mutex<Option<ResourceMonitorResult>>,
-    monitor_handlers:
-        std::sync::Mutex<HashMap<String, Box<dyn ResourceMonitorHandler + Send + Sync>>>,
+    monitor_handlers: std::sync::Mutex<HashMap<String, Box<dyn ResourceMonitorHandler + Send + Sync>>>,
 }
 
 impl ResourceMonitor {
@@ -177,7 +176,7 @@ impl ResourceMonitor {
     }
 
     /// 启动资源监控
-    pub async fn start(&self) -> otlp::error::Result<()> {
+    pub async fn start(&self) -> Result<(), UnifiedError> {
         if self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
             return Ok(());
         }
@@ -187,9 +186,8 @@ impl ResourceMonitor {
             return Ok(());
         }
 
-        self.is_running
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-
+        self.is_running.store(true, std::sync::atomic::Ordering::Relaxed);
+        
         // 注册默认监控处理器
         self.register_default_handlers();
 
@@ -204,15 +202,14 @@ impl ResourceMonitor {
     }
 
     /// 停止资源监控
-    pub async fn stop(&self) -> otlp::error::Result<()> {
-        self.is_running
-            .store(false, std::sync::atomic::Ordering::Relaxed);
+    pub async fn stop(&self) -> Result<(), UnifiedError> {
+        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
         info!("资源监控器停止完成");
         Ok(())
     }
 
     /// 获取资源状态
-    pub async fn get_status(&self) -> otlp::error::Result<ResourceMonitorResult> {
+    pub async fn get_status(&self) -> Result<ResourceMonitorResult, UnifiedError> {
         let mut items = Vec::new();
         let mut total_monitors = 0;
         let mut healthy_monitors = 0;
@@ -226,13 +223,13 @@ impl ResourceMonitor {
 
             total_monitors += 1;
             let item_result = self.monitor_item(monitor_item).await;
-
+            
             match item_result.state {
                 MonitoringState::Healthy => healthy_monitors += 1,
                 MonitoringState::Warning => warning_monitors += 1,
                 MonitoringState::Error | MonitoringState::Critical => error_monitors += 1,
             }
-
+            
             items.push(item_result);
         }
 
@@ -257,53 +254,41 @@ impl ResourceMonitor {
     async fn monitor_item(&self, item: &ResourceMonitorItem) -> ResourceMonitorItemResult {
         // 直接执行监控，避免复杂的生命周期问题
         match item.name.as_str() {
-            "cpu" => CpuResourceMonitorHandler
-                .monitor()
-                .await
-                .unwrap_or_else(|_| ResourceMonitorItemResult {
-                    name: item.name.clone(),
-                    monitor_type: item.monitor_type.clone(),
-                    state: MonitoringState::Error,
-                    usage_percent: 0.0,
-                    details: std::collections::HashMap::new(),
-                }),
-            "memory" => MemoryResourceMonitorHandler
-                .monitor()
-                .await
-                .unwrap_or_else(|_| ResourceMonitorItemResult {
-                    name: item.name.clone(),
-                    monitor_type: item.monitor_type.clone(),
-                    state: MonitoringState::Error,
-                    usage_percent: 0.0,
-                    details: std::collections::HashMap::new(),
-                }),
-            "disk" => DiskResourceMonitorHandler
-                .monitor()
-                .await
-                .unwrap_or_else(|_| ResourceMonitorItemResult {
-                    name: item.name.clone(),
-                    monitor_type: item.monitor_type.clone(),
-                    state: MonitoringState::Error,
-                    usage_percent: 0.0,
-                    details: std::collections::HashMap::new(),
-                }),
-            "network" => NetworkResourceMonitorHandler
-                .monitor()
-                .await
-                .unwrap_or_else(|_| ResourceMonitorItemResult {
-                    name: item.name.clone(),
-                    monitor_type: item.monitor_type.clone(),
-                    state: MonitoringState::Error,
-                    usage_percent: 0.0,
-                    details: std::collections::HashMap::new(),
-                }),
+            "cpu" => CpuResourceMonitorHandler.monitor().await.unwrap_or_else(|_| ResourceMonitorItemResult {
+                name: item.name.clone(),
+                monitor_type: item.monitor_type.clone(),
+                state: MonitoringState::Error,
+                usage_percent: 0.0,
+                details: std::collections::HashMap::new(),
+            }),
+            "memory" => MemoryResourceMonitorHandler.monitor().await.unwrap_or_else(|_| ResourceMonitorItemResult {
+                name: item.name.clone(),
+                monitor_type: item.monitor_type.clone(),
+                state: MonitoringState::Error,
+                usage_percent: 0.0,
+                details: std::collections::HashMap::new(),
+            }),
+            "disk" => DiskResourceMonitorHandler.monitor().await.unwrap_or_else(|_| ResourceMonitorItemResult {
+                name: item.name.clone(),
+                monitor_type: item.monitor_type.clone(),
+                state: MonitoringState::Error,
+                usage_percent: 0.0,
+                details: std::collections::HashMap::new(),
+            }),
+            "network" => NetworkResourceMonitorHandler.monitor().await.unwrap_or_else(|_| ResourceMonitorItemResult {
+                name: item.name.clone(),
+                monitor_type: item.monitor_type.clone(),
+                state: MonitoringState::Error,
+                usage_percent: 0.0,
+                details: std::collections::HashMap::new(),
+            }),
             _ => ResourceMonitorItemResult {
                 name: item.name.clone(),
                 monitor_type: item.monitor_type.clone(),
                 state: MonitoringState::Error,
                 usage_percent: 0.0,
                 details: std::collections::HashMap::new(),
-            },
+            }
         }
     }
 
@@ -314,7 +299,7 @@ impl ResourceMonitor {
         }
 
         let states = items.iter().map(|item| &item.state).collect::<Vec<_>>();
-
+        
         // 返回最严重的状态
         if states.contains(&&MonitoringState::Critical) {
             MonitoringState::Critical
@@ -330,22 +315,15 @@ impl ResourceMonitor {
     /// 注册默认监控处理器
     fn register_default_handlers(&self) {
         let mut handlers = self.monitor_handlers.lock().unwrap();
-
+        
         handlers.insert("cpu".to_string(), Box::new(CpuResourceMonitorHandler));
         handlers.insert("memory".to_string(), Box::new(MemoryResourceMonitorHandler));
         handlers.insert("disk".to_string(), Box::new(DiskResourceMonitorHandler));
-        handlers.insert(
-            "network".to_string(),
-            Box::new(NetworkResourceMonitorHandler),
-        );
+        handlers.insert("network".to_string(), Box::new(NetworkResourceMonitorHandler));
     }
 
     /// 注册自定义监控处理器
-    pub fn register_handler(
-        &self,
-        name: String,
-        handler: Box<dyn ResourceMonitorHandler + Send + Sync>,
-    ) {
+    pub fn register_handler(&self, name: String, handler: Box<dyn ResourceMonitorHandler + Send + Sync>) {
         let mut handlers = self.monitor_handlers.lock().unwrap();
         handlers.insert(name, handler);
     }
@@ -353,10 +331,10 @@ impl ResourceMonitor {
     /// 运行监控循环
     async fn run_monitor_loop(&self) {
         let mut interval = tokio::time::interval(self.config.monitor_interval);
-
+        
         while self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
             interval.tick().await;
-
+            
             if let Err(error) = self.get_status().await {
                 error!("资源监控失败: {}", error);
             }
@@ -383,9 +361,7 @@ impl Clone for ResourceMonitor {
     fn clone(&self) -> Self {
         Self {
             config: self.config.clone(),
-            is_running: std::sync::atomic::AtomicBool::new(
-                self.is_running.load(std::sync::atomic::Ordering::Relaxed),
-            ),
+            is_running: std::sync::atomic::AtomicBool::new(self.is_running.load(std::sync::atomic::Ordering::Relaxed)),
             last_result: std::sync::Mutex::new(self.last_result.lock().unwrap().clone()),
             monitor_handlers: std::sync::Mutex::new(HashMap::new()),
         }
@@ -395,14 +371,7 @@ impl Clone for ResourceMonitor {
 /// 资源监控处理器trait
 pub trait ResourceMonitorHandler: Send + Sync {
     /// 执行资源监控
-    fn monitor(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>>
-                + Send,
-        >,
-    >;
+    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>> + Send>>;
 }
 
 /// CPU资源监控处理器
@@ -410,47 +379,37 @@ pub trait ResourceMonitorHandler: Send + Sync {
 pub struct CpuResourceMonitorHandler;
 
 impl ResourceMonitorHandler for CpuResourceMonitorHandler {
-    fn monitor(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
-            let mut details = HashMap::new();
-            let mut state = MonitoringState::Healthy;
-            let usage_percent;
+        let mut details = HashMap::new();
+        let mut state = MonitoringState::Healthy;
+        let usage_percent;
 
-            // 检查CPU使用情况
-            let mut sys = sysinfo::System::new_all();
-            sys.refresh_cpu_all();
-            let cpu = sys.global_cpu_usage();
-            usage_percent = cpu as f64;
-            details.insert(
-                "cpu_usage_percent".to_string(),
-                format!("{:.2}", usage_percent),
-            );
+        // 检查CPU使用情况
+        let mut sys = sysinfo::System::new_all();
+        sys.refresh_cpu_all();
+        let cpu = sys.global_cpu_usage();
+        usage_percent = cpu as f64;
+        details.insert("cpu_usage_percent".to_string(), format!("{:.2}", usage_percent));
+        
+        if usage_percent > 80.0 {
+            state = MonitoringState::Warning;
+        }
+        if usage_percent > 95.0 {
+            state = MonitoringState::Error;
+        }
 
-            if usage_percent > 80.0 {
-                state = MonitoringState::Warning;
-            }
-            if usage_percent > 95.0 {
-                state = MonitoringState::Error;
-            }
+        // 检查CPU核心数
+        let cores = sysinfo::System::new_all().cpus().len();
+        details.insert("cpu_cores".to_string(), cores.to_string());
 
-            // 检查CPU核心数
-            let cores = sysinfo::System::new_all().cpus().len();
-            details.insert("cpu_cores".to_string(), cores.to_string());
-
-            Ok(ResourceMonitorItemResult {
-                name: "cpu".to_string(),
-                monitor_type: ResourceMonitorType::Cpu,
-                state,
-                usage_percent,
-                details,
-            })
+        Ok(ResourceMonitorItemResult {
+            name: "cpu".to_string(),
+            monitor_type: ResourceMonitorType::Cpu,
+            state,
+            usage_percent,
+            details,
+        })
         })
     }
 }
@@ -460,46 +419,39 @@ impl ResourceMonitorHandler for CpuResourceMonitorHandler {
 pub struct MemoryResourceMonitorHandler;
 
 impl ResourceMonitorHandler for MemoryResourceMonitorHandler {
-    fn monitor(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
-            let mut details = HashMap::new();
-            let mut state = MonitoringState::Healthy;
-            let usage_percent;
+        let mut details = HashMap::new();
+        let mut state = MonitoringState::Healthy;
+        let usage_percent;
 
-            // 检查内存使用情况
-            let mut sys = sysinfo::System::new_all();
-            sys.refresh_memory();
-            let total = sys.total_memory();
-            let used = sys.used_memory();
-            let free = sys.free_memory();
-            usage_percent = (used as f64 / total as f64) * 100.0;
+        // 检查内存使用情况
+        let mut sys = sysinfo::System::new_all();
+        sys.refresh_memory();
+        let total = sys.total_memory();
+        let used = sys.used_memory();
+        let free = sys.free_memory();
+        usage_percent = (used as f64 / total as f64) * 100.0;
 
-            details.insert("total_memory".to_string(), total.to_string());
-            details.insert("used_memory".to_string(), used.to_string());
-            details.insert("free_memory".to_string(), free.to_string());
-            details.insert("usage_percent".to_string(), format!("{:.2}", usage_percent));
+        details.insert("total_memory".to_string(), total.to_string());
+        details.insert("used_memory".to_string(), used.to_string());
+        details.insert("free_memory".to_string(), free.to_string());
+        details.insert("usage_percent".to_string(), format!("{:.2}", usage_percent));
 
-            if usage_percent > 80.0 {
-                state = MonitoringState::Warning;
-            }
-            if usage_percent > 95.0 {
-                state = MonitoringState::Error;
-            }
+        if usage_percent > 80.0 {
+            state = MonitoringState::Warning;
+        }
+        if usage_percent > 95.0 {
+            state = MonitoringState::Error;
+        }
 
-            Ok(ResourceMonitorItemResult {
-                name: "memory".to_string(),
-                monitor_type: ResourceMonitorType::Memory,
-                state,
-                usage_percent,
-                details,
-            })
+        Ok(ResourceMonitorItemResult {
+            name: "memory".to_string(),
+            monitor_type: ResourceMonitorType::Memory,
+            state,
+            usage_percent,
+            details,
+        })
         })
     }
 }
@@ -509,29 +461,22 @@ impl ResourceMonitorHandler for MemoryResourceMonitorHandler {
 pub struct DiskResourceMonitorHandler;
 
 impl ResourceMonitorHandler for DiskResourceMonitorHandler {
-    fn monitor(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
             let mut details = HashMap::new();
             let state = MonitoringState::Healthy;
             let usage_percent;
 
-            // 检查磁盘使用情况 - 暂时使用模拟数据（sysinfo 0.30 API变化）
-            let total_space = 500u64 * 1024 * 1024 * 1024; // 假设500GB
-            let used_space = 200u64 * 1024 * 1024 * 1024; // 假设200GB
-            let disk_count = 2;
-            usage_percent = (used_space as f64 / total_space as f64) * 100.0;
-
-            details.insert("total_space".to_string(), total_space.to_string());
-            details.insert("used_space".to_string(), used_space.to_string());
-            details.insert("disk_count".to_string(), disk_count.to_string());
-            details.insert("status".to_string(), "simulated".to_string());
+        // 检查磁盘使用情况 - 暂时使用模拟数据（sysinfo 0.30 API变化）
+        let total_space = 500u64 * 1024 * 1024 * 1024; // 假设500GB
+        let used_space = 200u64 * 1024 * 1024 * 1024;  // 假设200GB
+        let disk_count = 2;
+        usage_percent = (used_space as f64 / total_space as f64) * 100.0;
+        
+        details.insert("total_space".to_string(), total_space.to_string());
+        details.insert("used_space".to_string(), used_space.to_string());
+        details.insert("disk_count".to_string(), disk_count.to_string());
+        details.insert("status".to_string(), "simulated".to_string());
 
             Ok(ResourceMonitorItemResult {
                 name: "disk".to_string(),
@@ -549,58 +494,45 @@ impl ResourceMonitorHandler for DiskResourceMonitorHandler {
 pub struct NetworkResourceMonitorHandler;
 
 impl ResourceMonitorHandler for NetworkResourceMonitorHandler {
-    fn monitor(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>>
-                + Send,
-        >,
-    > {
+    fn monitor(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<ResourceMonitorItemResult, UnifiedError>> + Send>> {
         Box::pin(async move {
-            let mut details = HashMap::new();
-            let mut state = MonitoringState::Healthy;
-            let usage_percent;
+        let mut details = HashMap::new();
+        let mut state = MonitoringState::Healthy;
+        let usage_percent;
 
-            // 检查网络使用情况 - 暂时使用模拟数据（sysinfo 0.30 API变化）
-            let total_received = 1024 * 1024 * 1024; // 1GB
-            let total_transmitted = 512 * 1024 * 1024; // 512MB
-            let interface_count = 2;
-            let total_network_usage = total_received + total_transmitted;
-
-            details.insert("total_received".to_string(), total_received.to_string());
-            details.insert(
-                "total_transmitted".to_string(),
-                total_transmitted.to_string(),
-            );
-            details.insert(
-                "total_network_usage".to_string(),
-                total_network_usage.to_string(),
-            );
-            details.insert("interface_count".to_string(), interface_count.to_string());
-            details.insert("status".to_string(), "simulated".to_string());
-
-            // 计算网络使用率（这里使用简化的计算方式）
-            if total_network_usage > 0 {
-                usage_percent = (total_network_usage as f64 / 1000000000.0) * 100.0; // 假设1GB为100%
-
-                if usage_percent > 90.0 {
-                    state = MonitoringState::Warning;
-                }
-                if usage_percent > 95.0 {
-                    state = MonitoringState::Error;
-                }
-            } else {
-                usage_percent = 0.0;
+        // 检查网络使用情况 - 暂时使用模拟数据（sysinfo 0.30 API变化）
+        let total_received = 1024 * 1024 * 1024; // 1GB
+        let total_transmitted = 512 * 1024 * 1024; // 512MB
+        let interface_count = 2;
+        let total_network_usage = total_received + total_transmitted;
+        
+        details.insert("total_received".to_string(), total_received.to_string());
+        details.insert("total_transmitted".to_string(), total_transmitted.to_string());
+        details.insert("total_network_usage".to_string(), total_network_usage.to_string());
+        details.insert("interface_count".to_string(), interface_count.to_string());
+        details.insert("status".to_string(), "simulated".to_string());
+        
+        // 计算网络使用率（这里使用简化的计算方式）
+        if total_network_usage > 0 {
+            usage_percent = (total_network_usage as f64 / 1000000000.0) * 100.0; // 假设1GB为100%
+            
+            if usage_percent > 90.0 {
+                state = MonitoringState::Warning;
             }
+            if usage_percent > 95.0 {
+                state = MonitoringState::Error;
+            }
+        } else {
+            usage_percent = 0.0;
+        }
 
-            Ok(ResourceMonitorItemResult {
-                name: "network".to_string(),
-                monitor_type: ResourceMonitorType::Network,
-                state,
-                usage_percent,
-                details,
-            })
+        Ok(ResourceMonitorItemResult {
+            name: "network".to_string(),
+            monitor_type: ResourceMonitorType::Network,
+            state,
+            usage_percent,
+            details,
+        })
         })
     }
 }
@@ -624,17 +556,17 @@ impl GlobalResourceMonitor {
     }
 
     /// 启动全局资源监控
-    pub async fn start(&self) -> otlp::error::Result<()> {
+    pub async fn start(&self) -> Result<(), UnifiedError> {
         self.monitor.start().await
     }
 
     /// 停止全局资源监控
-    pub async fn stop(&self) -> otlp::error::Result<()> {
+    pub async fn stop(&self) -> Result<(), UnifiedError> {
         self.monitor.stop().await
     }
 
     /// 获取全局资源状态
-    pub async fn get_status(&self) -> otlp::error::Result<ResourceMonitorResult> {
+    pub async fn get_status(&self) -> Result<ResourceMonitorResult, UnifiedError> {
         self.monitor.get_status().await
     }
 }
@@ -660,7 +592,7 @@ mod tests {
             monitor_type: ResourceMonitorType::Cpu,
             enabled: true,
         };
-
+        
         assert_eq!(item.name, "test");
         assert!(item.enabled);
     }
@@ -678,7 +610,7 @@ mod tests {
     fn test_resource_monitor_creation() {
         let config = ResourceMonitorConfig::default();
         let monitor = ResourceMonitor::new(config);
-
+        
         assert!(monitor.get_last_result().is_none());
     }
 
@@ -686,10 +618,10 @@ mod tests {
     async fn test_resource_monitor_get_status() {
         let config = ResourceMonitorConfig::default();
         let monitor = ResourceMonitor::new(config);
-
+        
         let result = monitor.get_status().await;
         assert!(result.is_ok());
-
+        
         let result = result.unwrap();
         assert!(result.total_monitors > 0);
         //assert!(result.healthy_monitors >= 0);
@@ -708,7 +640,7 @@ mod tests {
             warning_monitors: 0,
             error_monitors: 0,
         };
-
+        
         assert_eq!(result.state, MonitoringState::Healthy);
         assert_eq!(result.total_monitors, 0);
     }
@@ -722,7 +654,7 @@ mod tests {
             usage_percent: 0.0,
             details: HashMap::new(),
         };
-
+        
         assert_eq!(result.name, "test");
         assert_eq!(result.state, MonitoringState::Healthy);
         assert_eq!(result.usage_percent, 0.0);
@@ -732,7 +664,7 @@ mod tests {
     fn test_global_resource_monitor() {
         let global_monitor = GlobalResourceMonitor::new();
         let monitor = global_monitor.get_monitor();
-
+        
         assert!(monitor.get_last_result().is_none());
     }
 }

@@ -2,15 +2,15 @@
 //!
 //! 本模块提供了对函数即服务(FaaS)环境的支持，包括AWS Lambda、Azure Functions、Google Cloud Functions等。
 
-use super::{
-    EnvironmentCapabilities, HealthLevel, HealthStatus, RecoveryType, ResourceUsage,
-    RuntimeEnvironment, RuntimeEnvironmentAdapter, SystemInfo,
-};
-use crate::error_handling::UnifiedError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::time::{/*UNIX_EPOCH,*/ Duration, SystemTime};
+use std::time::{SystemTime, /*UNIX_EPOCH,*/ Duration};
+use crate::error_handling::UnifiedError;
+use super::{
+    RuntimeEnvironment, RuntimeEnvironmentAdapter, EnvironmentCapabilities,
+    SystemInfo, ResourceUsage, HealthStatus, HealthLevel, RecoveryType
+};
 
 /// 函数即服务环境适配器
 pub struct FaaSEnvironmentAdapter {
@@ -86,27 +86,27 @@ impl FaaSEnvironmentAdapter {
         if std::env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok() {
             return FaaSPlatform::AWSLambda;
         }
-
+        
         if std::env::var("AZURE_FUNCTIONS_ENVIRONMENT").is_ok() {
             return FaaSPlatform::AzureFunctions;
         }
-
+        
         if std::env::var("FUNCTION_NAME").is_ok() {
             return FaaSPlatform::GoogleCloudFunctions;
         }
-
+        
         if std::env::var("VERCEL").is_ok() {
             return FaaSPlatform::Vercel;
         }
-
+        
         if std::env::var("NETLIFY").is_ok() {
             return FaaSPlatform::Netlify;
         }
-
+        
         if std::env::var("CLOUDFLARE_WORKERS").is_ok() {
             return FaaSPlatform::CloudflareWorkers;
         }
-
+        
         FaaSPlatform::Unknown
     }
 
@@ -115,15 +115,15 @@ impl FaaSEnvironmentAdapter {
         if let Ok(name) = std::env::var("AWS_LAMBDA_FUNCTION_NAME") {
             return name;
         }
-
+        
         if let Ok(name) = std::env::var("FUNCTION_NAME") {
             return name;
         }
-
+        
         if let Ok(name) = std::env::var("AZURE_FUNCTION_NAME") {
             return name;
         }
-
+        
         "unknown_function".to_string()
     }
 
@@ -132,11 +132,11 @@ impl FaaSEnvironmentAdapter {
         if let Ok(version) = std::env::var("AWS_LAMBDA_FUNCTION_VERSION") {
             return version;
         }
-
+        
         if let Ok(version) = std::env::var("FUNCTION_VERSION") {
             return version;
         }
-
+        
         "1.0.0".to_string()
     }
 
@@ -147,13 +147,13 @@ impl FaaSEnvironmentAdapter {
                 return Duration::from_secs(timeout_secs);
             }
         }
-
+        
         if let Ok(timeout_str) = std::env::var("FUNCTION_TIMEOUT") {
             if let Ok(timeout_secs) = timeout_str.parse::<u64>() {
                 return Duration::from_secs(timeout_secs);
             }
         }
-
+        
         Duration::from_secs(30) // 默认30秒超时
     }
 
@@ -164,34 +164,33 @@ impl FaaSEnvironmentAdapter {
                 return memory_mb * 1024 * 1024; // 转换为字节
             }
         }
-
+        
         if let Ok(memory_str) = std::env::var("FUNCTION_MEMORY") {
             if let Ok(memory_mb) = memory_str.parse::<u64>() {
                 return memory_mb * 1024 * 1024; // 转换为字节
             }
         }
-
+        
         1024 * 1024 * 1024 // 默认1GB
     }
 
     /// 记录函数执行
     pub fn record_execution(&mut self, execution_time: f64, success: bool, is_cold_start: bool) {
         self.execution_count += 1;
-
+        
         if is_cold_start {
             self.cold_start_count += 1;
             self.cold_start_time = Some(Duration::from_millis(execution_time as u64));
         }
-
+        
         if !success {
             self.error_count += 1;
         }
-
+        
         // 更新平均执行时间
-        self.average_execution_time =
-            (self.average_execution_time * (self.execution_count - 1) as f64 + execution_time)
-                / self.execution_count as f64;
-
+        self.average_execution_time = 
+            (self.average_execution_time * (self.execution_count - 1) as f64 + execution_time) / self.execution_count as f64;
+        
         // 更新最大执行时间
         if execution_time > self.max_execution_time {
             self.max_execution_time = execution_time;
@@ -208,14 +207,13 @@ impl FaaSEnvironmentAdapter {
 
     /// 检查FaaS环境健康状态
     async fn check_faas_health(&self) -> Result<HealthLevel, UnifiedError> {
-        let memory_usage_percent =
-            (self.current_memory_usage as f64 / self.memory_limit as f64) * 100.0;
+        let memory_usage_percent = (self.current_memory_usage as f64 / self.memory_limit as f64) * 100.0;
         let error_rate = if self.execution_count > 0 {
             (self.error_count as f64 / self.execution_count as f64) * 100.0
         } else {
             0.0
         };
-
+        
         let cold_start_rate = if self.execution_count > 0 {
             (self.cold_start_count as f64 / self.execution_count as f64) * 100.0
         } else {
@@ -237,64 +235,34 @@ impl FaaSEnvironmentAdapter {
     /// 获取FaaS特定指标
     fn get_faas_metrics(&self) -> HashMap<String, String> {
         let mut metrics = HashMap::new();
-        metrics.insert(
-            "execution_count".to_string(),
-            self.execution_count.to_string(),
-        );
-        metrics.insert(
-            "cold_start_count".to_string(),
-            self.cold_start_count.to_string(),
-        );
+        metrics.insert("execution_count".to_string(), self.execution_count.to_string());
+        metrics.insert("cold_start_count".to_string(), self.cold_start_count.to_string());
         metrics.insert("error_count".to_string(), self.error_count.to_string());
-        metrics.insert(
-            "error_rate".to_string(),
+        metrics.insert("error_rate".to_string(), 
             if self.execution_count > 0 {
-                format!(
-                    "{:.2}%",
-                    (self.error_count as f64 / self.execution_count as f64) * 100.0
-                )
+                format!("{:.2}%", (self.error_count as f64 / self.execution_count as f64) * 100.0)
             } else {
                 "0.00%".to_string()
-            },
+            }
         );
-        metrics.insert(
-            "cold_start_rate".to_string(),
+        metrics.insert("cold_start_rate".to_string(),
             if self.execution_count > 0 {
-                format!(
-                    "{:.2}%",
-                    (self.cold_start_count as f64 / self.execution_count as f64) * 100.0
-                )
+                format!("{:.2}%", (self.cold_start_count as f64 / self.execution_count as f64) * 100.0)
             } else {
                 "0.00%".to_string()
-            },
+            }
         );
-        metrics.insert(
-            "average_execution_time".to_string(),
-            format!("{:.2}ms", self.average_execution_time),
+        metrics.insert("average_execution_time".to_string(), format!("{:.2}ms", self.average_execution_time));
+        metrics.insert("max_execution_time".to_string(), format!("{:.2}ms", self.max_execution_time));
+        metrics.insert("timeout".to_string(), format!("{}ms", self.timeout.as_millis()));
+        metrics.insert("memory_usage_percent".to_string(), 
+            format!("{:.2}%", (self.current_memory_usage as f64 / self.memory_limit as f64) * 100.0)
         );
-        metrics.insert(
-            "max_execution_time".to_string(),
-            format!("{:.2}ms", self.max_execution_time),
-        );
-        metrics.insert(
-            "timeout".to_string(),
-            format!("{}ms", self.timeout.as_millis()),
-        );
-        metrics.insert(
-            "memory_usage_percent".to_string(),
-            format!(
-                "{:.2}%",
-                (self.current_memory_usage as f64 / self.memory_limit as f64) * 100.0
-            ),
-        );
-
+        
         if let Some(cold_start_time) = self.cold_start_time {
-            metrics.insert(
-                "last_cold_start_time".to_string(),
-                format!("{}ms", cold_start_time.as_millis()),
-            );
+            metrics.insert("last_cold_start_time".to_string(), format!("{}ms", cold_start_time.as_millis()));
         }
-
+        
         metrics
     }
 }
@@ -325,16 +293,10 @@ impl RuntimeEnvironmentAdapter for FaaSEnvironmentAdapter {
         let mut extra_info = HashMap::new();
         extra_info.insert("platform".to_string(), format!("{:?}", self.platform));
         extra_info.insert("function_name".to_string(), self.function_name.clone());
-        extra_info.insert(
-            "function_version".to_string(),
-            self.function_version.clone(),
-        );
+        extra_info.insert("function_version".to_string(), self.function_version.clone());
         extra_info.insert("timeout".to_string(), self.timeout.as_millis().to_string());
         extra_info.insert("memory_limit".to_string(), self.memory_limit.to_string());
-        extra_info.insert(
-            "execution_count".to_string(),
-            self.execution_count.to_string(),
-        );
+        extra_info.insert("execution_count".to_string(), self.execution_count.to_string());
 
         Ok(SystemInfo {
             environment: RuntimeEnvironment::FunctionAsAService,
@@ -342,11 +304,9 @@ impl RuntimeEnvironmentAdapter for FaaSEnvironmentAdapter {
             system_version: self.function_version.clone(),
             architecture: std::env::consts::ARCH.to_string(),
             total_memory: self.memory_limit,
-            total_cpu_cores: 1,                  // FaaS通常是单线程
+            total_cpu_cores: 1, // FaaS通常是单线程
             total_disk_space: 512 * 1024 * 1024, // 512MB 默认
-            uptime: SystemTime::now()
-                .duration_since(self.start_time)
-                .unwrap_or_default(),
+            uptime: SystemTime::now().duration_since(self.start_time).unwrap_or_default(),
             extra_info,
         })
     }
@@ -355,8 +315,7 @@ impl RuntimeEnvironmentAdapter for FaaSEnvironmentAdapter {
         Ok(ResourceUsage {
             cpu_usage_percent: 0.0, // FaaS环境通常不直接暴露CPU使用率
             memory_usage_bytes: self.current_memory_usage,
-            memory_usage_percent: (self.current_memory_usage as f64 / self.memory_limit as f64)
-                * 100.0,
+            memory_usage_percent: (self.current_memory_usage as f64 / self.memory_limit as f64) * 100.0,
             disk_usage_bytes: 0, // FaaS环境通常没有持久化存储
             disk_usage_percent: 0.0,
             network_rx_bytes: 0, // 网络使用情况需要特殊处理
@@ -369,31 +328,28 @@ impl RuntimeEnvironmentAdapter for FaaSEnvironmentAdapter {
 
     async fn check_health(&self) -> Result<HealthStatus, UnifiedError> {
         let overall_health = self.check_faas_health().await?;
-
+        
         let mut details = HashMap::new();
-        details.insert(
-            "memory_usage".to_string(),
+        details.insert("memory_usage".to_string(), 
             if self.current_memory_usage > self.memory_limit * 9 / 10 {
                 HealthLevel::Warning
             } else {
                 HealthLevel::Healthy
-            },
+            }
         );
-        details.insert(
-            "execution_health".to_string(),
+        details.insert("execution_health".to_string(),
             if self.error_count > self.execution_count / 10 {
                 HealthLevel::Warning
             } else {
                 HealthLevel::Healthy
-            },
+            }
         );
-        details.insert(
-            "performance_health".to_string(),
+        details.insert("performance_health".to_string(),
             if self.average_execution_time > (self.timeout.as_millis() as f64 * 0.8) {
                 HealthLevel::Warning
             } else {
                 HealthLevel::Healthy
-            },
+            }
         );
 
         Ok(HealthStatus {
@@ -410,32 +366,32 @@ impl RuntimeEnvironmentAdapter for FaaSEnvironmentAdapter {
                 // 执行内存清理
                 println!("执行FaaS内存清理...");
                 Ok(())
-            }
+            },
             RecoveryType::ConnectionReset => {
                 // 重置网络连接
                 println!("重置FaaS网络连接...");
                 Ok(())
-            }
+            },
             RecoveryType::ProcessRestart => {
                 // 重启函数实例
                 println!("重启FaaS函数实例...");
                 Ok(())
-            }
+            },
             RecoveryType::ServiceRestart => {
                 // 重启FaaS服务
                 println!("重启FaaS服务...");
                 Ok(())
-            }
+            },
             RecoveryType::SystemRestart => {
                 // 重启FaaS系统
                 println!("重启FaaS系统...");
                 Ok(())
-            }
+            },
             RecoveryType::Custom(action) => {
                 // 执行自定义恢复操作
                 println!("执行FaaS自定义恢复操作: {}", action);
                 Ok(())
-            }
+            },
         }
     }
 }
@@ -447,22 +403,16 @@ mod tests {
     #[tokio::test]
     async fn test_faas_adapter_creation() {
         let adapter = FaaSEnvironmentAdapter::new();
-        assert_eq!(
-            adapter.environment_type(),
-            RuntimeEnvironment::FunctionAsAService
-        );
+        assert_eq!(adapter.environment_type(), RuntimeEnvironment::FunctionAsAService);
     }
 
     #[tokio::test]
     async fn test_faas_system_info() {
         let mut adapter = FaaSEnvironmentAdapter::new();
         adapter.initialize().await.unwrap();
-
+        
         let system_info = adapter.get_system_info().await.unwrap();
-        assert_eq!(
-            system_info.environment,
-            RuntimeEnvironment::FunctionAsAService
-        );
+        assert_eq!(system_info.environment, RuntimeEnvironment::FunctionAsAService);
         assert!(system_info.system_name.starts_with("FaaS:"));
     }
 
@@ -470,23 +420,20 @@ mod tests {
     async fn test_faas_health_check() {
         let mut adapter = FaaSEnvironmentAdapter::new();
         adapter.initialize().await.unwrap();
-
+        
         let health = adapter.check_health().await.unwrap();
-        assert!(matches!(
-            health.overall_health,
-            HealthLevel::Healthy | HealthLevel::Warning
-        ));
+        assert!(matches!(health.overall_health, HealthLevel::Healthy | HealthLevel::Warning));
     }
 
     #[tokio::test]
     async fn test_faas_execution_recording() {
         let mut adapter = FaaSEnvironmentAdapter::new();
-
+        
         // 记录一些执行
         adapter.record_execution(100.0, true, true); // 冷启动
         adapter.record_execution(50.0, true, false); // 正常执行
         adapter.record_execution(200.0, false, false); // 错误执行
-
+        
         assert_eq!(adapter.execution_count, 3);
         assert_eq!(adapter.cold_start_count, 1);
         assert_eq!(adapter.error_count, 1);

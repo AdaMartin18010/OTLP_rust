@@ -2,16 +2,16 @@
 //!
 //! 提供可靠性框架的配置管理功能。
 
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
+use std::collections::HashMap;
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
 use tracing::{
-    //debug, warn, error,
+    //debug, warn, error, 
     info,
 };
 
-use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 
 /// 可靠性配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -593,41 +593,25 @@ impl ConfigManager {
 
     /// 从文件加载配置
     pub async fn load_from_file(&mut self, path: &str) -> Result<(), UnifiedError> {
-        let content = tokio::fs::read_to_string(path).await.map_err(|e| {
-            UnifiedError::new(
+        let content = tokio::fs::read_to_string(path).await
+            .map_err(|e| UnifiedError::new(
                 &format!("无法读取配置文件: {}", e),
                 ErrorSeverity::High,
                 "config",
-                ErrorContext::new(
-                    "config",
-                    "load_from_file",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::High,
-                    "config",
-                ),
-            )
-        })?;
+                ErrorContext::new("config", "load_from_file", file!(), line!(), ErrorSeverity::High, "config")
+            ))?;
 
-        let config: ReliabilityConfig = toml::from_str(&content).map_err(|e| {
-            UnifiedError::new(
+        let config: ReliabilityConfig = toml::from_str(&content)
+            .map_err(|e| UnifiedError::new(
                 &format!("无法解析配置文件: {}", e),
                 ErrorSeverity::High,
                 "config",
-                ErrorContext::new(
-                    "config",
-                    "load_from_file",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::High,
-                    "config",
-                ),
-            )
-        })?;
+                ErrorContext::new("config", "load_from_file", file!(), line!(), ErrorSeverity::High, "config")
+            ))?;
 
         self.config = Arc::new(config);
         self.config_path = Some(path.to_string());
-
+        
         // 记录文件修改时间
         if let Ok(metadata) = tokio::fs::metadata(path).await {
             if let Ok(modified) = metadata.modified() {
@@ -641,37 +625,21 @@ impl ConfigManager {
 
     /// 保存配置到文件
     pub async fn save_to_file(&self, path: &str) -> Result<(), UnifiedError> {
-        let content = toml::to_string_pretty(&*self.config).map_err(|e| {
-            UnifiedError::new(
+        let content = toml::to_string_pretty(&*self.config)
+            .map_err(|e| UnifiedError::new(
                 &format!("无法序列化配置: {}", e),
                 ErrorSeverity::High,
                 "config",
-                ErrorContext::new(
-                    "config",
-                    "save_to_file",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::High,
-                    "config",
-                ),
-            )
-        })?;
+                ErrorContext::new("config", "save_to_file", file!(), line!(), ErrorSeverity::High, "config")
+            ))?;
 
-        tokio::fs::write(path, content).await.map_err(|e| {
-            UnifiedError::new(
+        tokio::fs::write(path, content).await
+            .map_err(|e| UnifiedError::new(
                 &format!("无法保存配置文件: {}", e),
                 ErrorSeverity::High,
                 "config",
-                ErrorContext::new(
-                    "config",
-                    "save_to_file",
-                    file!(),
-                    line!(),
-                    ErrorSeverity::High,
-                    "config",
-                ),
-            )
-        })?;
+                ErrorContext::new("config", "save_to_file", file!(), line!(), ErrorSeverity::High, "config")
+            ))?;
 
         info!("配置文件保存成功: {}", path);
         Ok(())
@@ -814,10 +782,7 @@ mod tests {
         assert!(config.enabled);
         assert!(config.health_check.enable_global);
         assert_eq!(config.resource_monitor.cpu_threshold, 80.0);
-        assert_eq!(
-            config.performance_monitor.response_time_threshold,
-            Duration::from_millis(1000)
-        );
+        assert_eq!(config.performance_monitor.response_time_threshold, Duration::from_millis(1000));
         assert!(config.anomaly_detection.enabled);
         assert!(config.auto_recovery.enabled);
     }
