@@ -47,43 +47,43 @@
 
 ### Classification & Analysis
 
-4. **[RUST_CRATES_CLASSIFICATION_2025.md](RUST_CRATES_CLASSIFICATION_2025.md)**
+1. **[RUST_CRATES_CLASSIFICATION_2025.md](RUST_CRATES_CLASSIFICATION_2025.md)**
    - Functional classification
    - Use case mapping
    - Selection criteria
 
-5. **[RUST_CRATES_MATURITY_MATRIX_2025.md](RUST_CRATES_MATURITY_MATRIX_2025.md)**
+2. **[RUST_CRATES_MATURITY_MATRIX_2025.md](RUST_CRATES_MATURITY_MATRIX_2025.md)**
    - Maturity scoring
    - Production readiness
    - Risk assessment
 
 ### Reference Materials
 
-6. **[FAQ.md](FAQ.md)**
+1. **[FAQ.md](FAQ.md)**
    - Common questions
    - Troubleshooting
    - Tips and tricks
 
-7. **[Glossary.md](Glossary.md)**
+2. **[Glossary.md](Glossary.md)**
    - Technical terms
    - Rust concepts
    - Crate terminology
 
 ### Practical Examples
 
-8. **[RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md](RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md)**
+1. **[RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md](RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md)**
    - Middleware patterns
    - Integration examples
    - Real-world use cases
 
-9. **[RUST_190_COMPREHENSIVE_MINDMAP.md](RUST_190_COMPREHENSIVE_MINDMAP.md)**
+2. **[RUST_190_COMPREHENSIVE_MINDMAP.md](RUST_190_COMPREHENSIVE_MINDMAP.md)**
    - Visual overview
    - Concept relationships
    - Learning paths
 
 ### Comprehensive Index
 
-10. **[COMPREHENSIVE_DOCUMENTATION_INDEX.md](COMPREHENSIVE_DOCUMENTATION_INDEX.md)**
+1. **[COMPREHENSIVE_DOCUMENTATION_INDEX.md](COMPREHENSIVE_DOCUMENTATION_INDEX.md)**
     - Detailed documentation index
     - Cross-references
     - Topic mapping

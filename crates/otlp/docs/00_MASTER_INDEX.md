@@ -121,11 +121,10 @@
 
 #### For End Users
 
-- **[USER_GUIDE.md](USER_GUIDE.md)** - Complete user manual
+- **[USER_GUIDE.md](USER_GUIDE.md)** - Complete and comprehensive user manual
 - **[profiling_user_guide.md](profiling_user_guide.md)** - Profiling features guide
-- **[COMPREHENSIVE_USER_GUIDE.md](COMPREHENSIVE_USER_GUIDE.md)** - In-depth user documentation
 
-#### For Developers
+#### For Developers1
 
 - **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** - Development workflow
 - **[DOCUMENTATION_STANDARDS.md](DOCUMENTATION_STANDARDS.md)** - Documentation guidelines
@@ -196,21 +195,21 @@ Document and code templates for contributors
 
 ### By Experience Level
 
-**Beginner**
+**Beginner**-
 
 1. README.md → Overview
 2. QUICK_START_GUIDE.md → Setup
 3. 02_核心概念/ → Learn basics
 4. 08_示例和教程/ → Try examples
 
-**Intermediate**
+**Intermediate**-
 
 1. DEVELOPER_GUIDE.md → Development workflow
 2. API_REFERENCE.md → API details
 3. 06_高级特性/ → Advanced usage
 4. 05_开发指南/ → Best practices
 
-**Advanced**
+**Advanced**-
 
 1. ARCHITECTURE_DESIGN.md → System design
 2. FORMAL_VERIFICATION_ANALYSIS.md → Theory

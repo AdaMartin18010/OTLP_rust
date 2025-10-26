@@ -50,7 +50,7 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
 
 #### 保留的核心文档
 
-```
+```text
 ✅ API_REFERENCE.md
 ✅ ARCHITECTURE_DESIGN.md
 ✅ COMMUNITY_GUIDE.md
@@ -80,7 +80,7 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
 **清理后**: 10个核心文件  
 **减少**: **~70个文件 (-88%)**
 
-#### 完成的工作
+#### 完成的工作1
 
 1. ✅ **删除数字命名文档** (4个)
    - `1.0_项目概览.md`
@@ -100,9 +100,9 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
    - 用途导向的组织
    - 完整的资源链接
 
-#### 保留的核心文档
+#### 保留的核心文档1
 
-```
+```text
 ✅ 00_MASTER_INDEX.md (新)
 ✅ COMPREHENSIVE_DOCUMENTATION_INDEX.md
 ✅ FAQ.md
@@ -123,7 +123,7 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
 **状态**: 已有完善主索引  
 **工作**: 归档中文报告，验证索引完整性
 
-#### 完成的工作
+#### 完成的工作2
 
 1. ✅ 归档中文报告
 2. ✅ 验证00_MASTER_INDEX.md完整性
@@ -131,7 +131,7 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
 
 #### 核心文档
 
-```
+```text
 ✅ 00_MASTER_INDEX.md (已存在，395行)
 ✅ FAQ.md
 ✅ Glossary.md
@@ -149,15 +149,15 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
 **状态**: 已有完善主索引  
 **工作**: 归档中文报告，验证索引完整性
 
-#### 完成的工作
+#### 完成的工作3
 
 1. ✅ 归档所有中文进度报告
 2. ✅ 验证00_MASTER_INDEX.md完整性
 3. ✅ 确认文档结构清晰
 
-#### 核心文档
+#### 核心文档3
 
-```
+```text
 ✅ 00_MASTER_INDEX.md (已存在，345行)
 ✅ FAULT_TOLERANCE_ENHANCEMENT_REPORT.md
 ✅ FORMAL_VERIFICATION_EXAMPLES_FIXES.md
@@ -254,7 +254,7 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
 
 ### OTLP Crate
 
-```
+```text
 之前: ❌❌❌ 极度混乱
 ├─ 110个文件在根目录
 ├─ 大量临时报告
@@ -270,7 +270,7 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
 
 ### Libraries Crate
 
-```
+```text
 之前: ❌❌ 较混乱
 ├─ ~80个文件
 ├─ 数字命名文档
@@ -299,7 +299,7 @@ Phase 2 结构统一已全面完成！成功清理和重组**约161个文件**�
 
 ### Phase 1 + Phase 2 总计
 
-```
+```text
 Phase 1: 110个文件归档
 Phase 2: 161个文件清理
 ──────────────────────
@@ -343,7 +343,7 @@ Phase 2: 161个文件清理
 
 ### 清理工作进度
 
-```
+```text
 Phase 1: ████████████████████ 100% ✅
 Phase 2: ████████████████████ 100% ✅
 Phase 3: ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
@@ -399,14 +399,14 @@ Phase 4: ░░░░░░░░░░░░░░░░░░░░   0% ⏸�
 
 ### 进度跟踪
 
-4. [Phase 1完成](PHASE1_CLEANUP_COMPLETE_2025_10_26.md)
-5. [Phase 2进展](PHASE2_CLEANUP_PROGRESS_2025_10_26.md)
-6. [Phase 2完成](PHASE2_CLEANUP_COMPLETE_2025_10_26.md) (本文档)
+1. [Phase 1完成](PHASE1_CLEANUP_COMPLETE_2025_10_26.md)
+2. [Phase 2进展](PHASE2_CLEANUP_PROGRESS_2025_10_26.md)
+3. [Phase 2完成](PHASE2_CLEANUP_COMPLETE_2025_10_26.md) (本文档)
 
 ### 执行和总结
 
-7. [执行总结](CLEANUP_EXECUTION_SUMMARY_2025_10_26.md)
-8. [入口指南](START_HERE_CLEANUP_2025_10_26.md)
+1. [执行总结](CLEANUP_EXECUTION_SUMMARY_2025_10_26.md)
+2. [入口指南](START_HERE_CLEANUP_2025_10_26.md)
 
 ---
 
@@ -422,7 +422,7 @@ Phase 4: ░░░░░░░░░░░░░░░░░░░░   0% ⏸�
 
 ### 成果展示
 
-```
+```text
 清理前文档树（示例）:
 crates/otlp/docs/
 ├── 110个.md文件（混乱）
