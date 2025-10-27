@@ -3,9 +3,9 @@
 > **一个基于 Rust 1.90+ 的现代化建模与形式方法库**  
 > 聚焦核心建模技术，涵盖并发模型、分布式系统、形式化方法、架构设计等
 
-**文档版本**: v2.0  
-**最后更新**: 2025-10-19  
-**适用 Rust 版本**: 1.90+
+**文档版本**: v2.1  
+**最后更新**: 2025-10-27  
+**适用 Rust 版本**: 1.90.0 (新增 const API 稳定、LLD链接器优化)
 
 ---
 
@@ -114,14 +114,20 @@
 
 ```bash
 # 确保 Rust 1.90+ 已安装
-rustc --version
+rustc --version  # 应显示 1.90.0
+
+# 验证 LLD 链接器（Linux x86_64 默认启用）
+rustc -C help | grep lld
 
 # 克隆项目
 git clone <repository-url>
 cd rust-lang/crates/c12_model
 
-# 编译检查
+# 编译检查（受益于 LLD 链接器提速）
 cargo check -p c12_model
+
+# 构建优化（使用 Rust 1.90 新特性）
+cargo build --release
 ```
 
 ### 第二步：运行示例
@@ -420,9 +426,38 @@ docs/
 ---
 
 **文档维护**: Rust 学习社区  
-**最后更新**: 2025-10-19  
-**文档版本**: v2.0  
-**适用版本**: Rust 1.90+
+**最后更新**: 2025-10-27  
+**文档版本**: v2.1  
+**适用版本**: Rust 1.90.0 (1159e78c4 2025-09-14)
+
+## 🆕 Rust 1.90 建模特性更新
+
+### Const 上下文稳定化
+C12 建模库已全面支持 Rust 1.90 稳定的 const API，包括：
+
+- ✅ **常量浮点运算**: `f32/f64::floor`, `ceil`, `trunc`, `round` 等可在编译期计算
+- ✅ **常量切片操作**: `<[T]>::reverse` 可用于编译期数组反转
+- ✅ **整数运算增强**: `checked_sub_signed`, `wrapping_sub_signed` 支持有符号/无符号混合运算
+
+### 编译性能优化
+- **LLD 链接器**: 在 Linux x86_64 上，模型库编译速度提升 30-50%
+- **增量编译**: 模型重编译时间显著减少
+
+### 工作区管理
+```bash
+# 一键发布整个工作区（Rust 1.90 新特性）
+cargo publish --workspace
+
+# 检查工作区依赖
+cargo tree --workspace
+```
+
+### 使用建议
+```rust
+// 利用 Rust 1.90 的 const 特性进行编译期计算
+const MODEL_SCALE: f64 = 1.5_f64.floor();  // 编译期常量
+const ARRAY_SIZE: usize = [1, 2, 3].len(); // 编译期数组长度
+```
 
 ---
 

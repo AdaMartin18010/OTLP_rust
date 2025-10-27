@@ -1,7 +1,8 @@
 # OTLP Rust Implementation - Master Index
 
-**Version**: 0.5.0  
-**Last Updated**: 2025-10-26  
+**Version**: 0.6.0  
+**Last Updated**: 2025-10-27  
+**Rust Version**: 1.90.0 (LLD链接器、const API、workspace发布)  
 **Status**: 🟢 Active Development
 
 ---

@@ -1,7 +1,8 @@
 # Rust Essential Crates Library - Master Index
 
-**Version**: 1.0.0  
-**Last Updated**: 2025-10-26  
+**Version**: 1.1.0  
+**Last Updated**: 2025-10-27  
+**Rust Version**: 1.90.0 (LLD链接器、Workspace发布支持)  
 **Status**: 🟢 Production Ready
 
 ---

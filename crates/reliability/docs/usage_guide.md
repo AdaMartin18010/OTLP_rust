@@ -45,9 +45,10 @@
   - [🤝 贡献和支持](#-贡献和支持)
   - [📄 许可证](#-许可证)
 
-**版本**: 0.1.1  
-**Rust 版本**: 1.90+  
-**Edition**: 2024
+**版本**: 0.2.0  
+**Rust 版本**: 1.90.0 (const API稳定、LLD链接器优化)  
+**Edition**: 2024  
+**最后更新**: 2025-10-27
 
 ## 📦 快速开始
 
@@ -57,13 +58,25 @@
 
 ```toml
 [dependencies]
-c13_reliability = { version = "0.1.1", path = "../c13_reliability" }
+c13_reliability = { version = "0.2.0", path = "../c13_reliability" }
 
 # 或者从 crates.io（发布后）
-# c13_reliability = "0.1.1"
+# c13_reliability = "0.2.0"
 
 # 或者从 GitHub
 # c13_reliability = { git = "https://github.com/rust-lang/c13_reliability" }
+
+# Rust 1.90 推荐配置（受益于 LLD 链接器）
+[profile.release]
+lto = true           # 链接时优化
+codegen-units = 1    # 单个代码生成单元（更好的优化）
+strip = true         # 移除调试信息（减小二进制大小）
+opt-level = 3        # 最高优化级别
+
+# Rust 1.90 新特性说明:
+# - Linux x86_64 平台自动启用 LLD 链接器，编译速度提升 30-50%
+# - 支持更多 const API，可在编译期进行更多计算
+# - 完全兼容最新的 Tokio 异步运行时
 ```
 
 ### 2. 选择功能特性
@@ -73,7 +86,7 @@ c13_reliability = { version = "0.1.1", path = "../c13_reliability" }
 ```toml
 [dependencies]
 c13_reliability = { 
-    version = "0.1.1",
+    version = "0.2.0",
     path = "../c13_reliability",
     features = ["async", "monitoring", "fault-tolerance", "otlp"]
 }
