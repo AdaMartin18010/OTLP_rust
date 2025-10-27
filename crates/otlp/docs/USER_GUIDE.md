@@ -1,12 +1,59 @@
 # OTLP Rust 综合用户指南
 
-## 📖 概述
+**版本**: 2.1  
+**最后更新**: 2025年10月27日  
+**Rust 版本**: 1.90.0 (LLD链接器、const API)  
+**状态**: 🟢 活跃维护
+
+> **简介**: OTLP Rust 项目的完整用户指南，涵盖安装、配置、数据收集、高级功能、性能优化、安全性和最佳实践等全方位内容。
+
+---
+
+## 📋 目录
+
+- [OTLP Rust 综合用户指南](#otlp-rust-综合用户指南)
+  - [📋 目录](#-目录)
+  - [1. 概述](#1-概述)
+  - [2. 快速开始](#2-快速开始)
+    - [2.1 安装](#21-安装)
+    - [2.2 基本使用](#22-基本使用)
+  - [3. 配置](#3-配置)
+    - [3.1 基本配置](#31-基本配置)
+    - [3.2 高级配置](#32-高级配置)
+  - [4. 数据收集](#4-数据收集)
+    - [4.1 追踪数据](#41-追踪数据)
+    - [4.2 指标数据](#42-指标数据)
+    - [4.3 日志数据](#43-日志数据)
+  - [5. 高级功能](#5-高级功能)
+    - [5.1 批量处理](#51-批量处理)
+    - [5.2 异步处理](#52-异步处理)
+    - [5.3 错误处理](#53-错误处理)
+  - [6. 性能优化](#6-性能优化)
+    - [6.1 批量大小调优](#61-批量大小调优)
+    - [6.2 连接池优化](#62-连接池优化)
+    - [6.3 内存管理](#63-内存管理)
+  - [7. 安全性](#7-安全性)
+    - [7.1 TLS/SSL](#71-tlsssl)
+    - [7.2 认证授权](#72-认证授权)
+    - [7.3 数据加密](#73-数据加密)
+  - [8. 监控和调试](#8-监控和调试)
+    - [8.1 内置监控](#81-内置监控)
+    - [8.2 日志记录](#82-日志记录)
+    - [8.3 故障排查](#83-故障排查)
+  - [9. 最佳实践](#9-最佳实践)
+  - [10. 常见问题](#10-常见问题)
+
+---
+
+## 1. 概述
 
 本指南提供了OTLP Rust项目的完整使用说明，包括安装、配置、使用和最佳实践。
 
-## 🚀 快速开始
+---
 
-### 安装
+## 2. 快速开始
+
+### 2.1 安装
 
 ```bash
 # 克隆项目
@@ -23,7 +70,7 @@ cargo test
 cargo bench
 ```
 
-### 基本使用
+### 2.2 基本使用
 
 ```rust
 use otlp::{OtlpClient, TelemetryData, TelemetryDataType};
@@ -59,9 +106,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## 🔧 配置
+---
 
-### 基本配置
+## 3. 配置
+
+### 3.1 基本配置
 
 ```rust
 use otlp::{OtlpConfig, TransportProtocol, Compression};
@@ -75,7 +124,7 @@ let config = OtlpConfig::new()
     .build()?;
 ```
 
-### 高级配置
+### 3.2 高级配置
 
 ```rust
 use otlp::{OtlpConfig, BatchConfig};
@@ -97,9 +146,11 @@ let config = OtlpConfig::new()
     .build()?;
 ```
 
-## 📊 数据收集
+---
 
-### 追踪数据
+## 4. 数据收集
+
+### 4.1 追踪数据
 
 ```rust
 use otlp::{TraceData, SpanKind, SpanStatus};
@@ -121,7 +172,7 @@ let trace_data = TraceData {
 };
 ```
 
-### 指标数据
+### 4.2 指标数据
 
 ```rust
 use otlp::{MetricData, MetricType, DataPoint};
@@ -143,7 +194,7 @@ let metric_data = MetricData {
 };
 ```
 
-### 日志数据
+### 4.3 日志数据
 
 ```rust
 use otlp::{LogData, LogSeverity};
@@ -158,11 +209,13 @@ let log_data = LogData {
 };
 ```
 
-## 🔄 OTTL 数据转换
+---
+
+## 5. OTTL 数据转换
 
 OTTL (OpenTelemetry Transformation Language) 允许您在发送数据前进行转换和过滤。
 
-### 基本转换
+### 5.1 基本转换
 
 ```rust
 use otlp::ottl::{OtlpTransform, TransformConfig, Statement, Expression, Path, Literal};
@@ -184,9 +237,9 @@ let transformer = OtlpTransform::new(config)?;
 let result = transformer.transform(telemetry_data).await?;
 ```
 
-### 支持的 OTTL 语句
+### 5.2 支持的 OTTL 语句
 
-#### Set 语句
+#### 5.2.1 Set 语句
 
 设置属性值：
 
@@ -218,9 +271,11 @@ Statement::KeepKeys {
 }
 ```
 
-## 🚀 高级功能
+---
 
-### 性能优化
+## 6. 高级功能
+
+### 6.1 性能优化
 
 ```rust
 use otlp::{ZeroCopyProcessor, LockFreeDataManager, CacheOptimizer};
@@ -238,7 +293,7 @@ let optimizer = CacheOptimizer::new(1000, 10000);
 optimizer.insert("key".to_string(), telemetry_data).await?;
 ```
 
-### 安全功能
+### 6.2 安全功能
 
 ```rust
 use otlp::{ZeroKnowledgeProofManager, HomomorphicEncryptionManager, SecurityAuditManager};
@@ -257,7 +312,7 @@ let audit_manager = SecurityAuditManager::new();
 audit_manager.log_event(&audit_event).await?;
 ```
 
-### 企业级功能
+### 6.3 企业级功能
 
 ```rust
 use otlp::{GDPRComplianceManager, MultiTenantManager, DataGovernanceManager};
@@ -295,9 +350,11 @@ let tenant = Tenant {
 tenant_manager.create_tenant(tenant).await?;
 ```
 
-## 🔍 监控和可观测性
+---
 
-### 性能监控
+## 7. 监控和可观测性
+
+### 7.1 性能监控
 
 ```rust
 use otlp::{ComprehensiveMonitoringManager, PrometheusCollector};
@@ -336,9 +393,11 @@ let result = health_check.execute().await?;
 println!("Health check result: {:?}", result);
 ```
 
-## 🛡️ 安全最佳实践
+---
 
-### 数据加密
+## 8. 安全最佳实践
+
+### 8.1 数据加密
 
 ```rust
 use otlp::{EncryptionManager, EncryptionAlgorithm};
@@ -385,9 +444,11 @@ let audit_log = AuditLog {
 audit_logger.log(audit_log).await?;
 ```
 
-## 📈 性能优化
+---
 
-### 批量处理
+## 9. 性能优化
+
+### 9.1 批量处理
 
 ```rust
 use otlp::{BatchProcessor, BatchConfig};
@@ -434,9 +495,11 @@ let sampler = AdaptiveSampler::new(sampling_config);
 let should_sample = sampler.should_sample(&sampling_context).await?;
 ```
 
-## 🔧 故障排除
+---
 
-### 常见问题
+## 10. 故障排除
+
+### 10.1 常见问题
 
 1. **连接超时**
 
@@ -484,9 +547,11 @@ let config = OtlpConfig::new()
     .build()?;
 ```
 
-## 📚 API参考
+---
 
-### 主要类型
+## 11. API参考
+
+### 11.1 主要类型
 
 - `OtlpClient`: OTLP客户端
 - `TelemetryData`: 遥测数据
@@ -505,9 +570,11 @@ let config = OtlpConfig::new()
 - `HomomorphicEncryptionManager`: 同态加密管理器
 - `GDPRComplianceManager`: GDPR合规性管理器
 
-## 🎯 最佳实践
+---
 
-### 1. 数据收集
+## 12. 最佳实践
+
+### 12.1 数据收集
 
 - 使用适当的采样率
 - 设置合理的批量大小
@@ -537,24 +604,44 @@ let config = OtlpConfig::new()
 - 设置数据保留策略
 - 实现数据主体权利
 
-## 🔗 相关资源
+---
+
+## 13. 相关资源
 
 - [OpenTelemetry规范](https://opentelemetry.io/docs/)
 - [Rust文档](https://doc.rust-lang.org/)
 - [Tokio文档](https://tokio.rs/)
 - [项目GitHub](https://github.com/your-org/otlp-rust)
-
-## 📞 支持
-
-如果您在使用过程中遇到问题，请：
-
-1. 查看本指南的故障排除部分
-2. 检查项目的GitHub Issues
-3. 提交新的Issue
-4. 联系项目维护者
+- [快速开始指南](QUICK_START_GUIDE.md)
+- [API参考](API_REFERENCE.md)
+- [架构设计](ARCHITECTURE_DESIGN.md)
 
 ---
 
-**版本**: 1.0.0  
-**最后更新**: 2025年9月18日  
-**维护者**: OTLP Rust Team
+## 14. 支持
+
+如果您在使用过程中遇到问题，请：
+
+1. **查看文档**: 阅读[故障排除](#101-常见问题)部分
+2. **检查 Issues**: 访问 [GitHub Issues](https://github.com/your-org/otlp-rust/issues)
+3. **提交问题**: 创建新的 Issue 并提供详细信息
+4. **联系团队**: 通过项目渠道联系维护者
+
+**获取帮助**:
+- 📧 Email: otlp-rust@example.com
+- 💬 Discord: [OTLP Rust Community](https://discord.gg/otlp-rust)
+- 📝 GitHub: [Issue Tracker](https://github.com/your-org/otlp-rust/issues)
+
+---
+
+**文档版本**: 2.1  
+**Rust 版本**: 1.90.0 (LLD链接器、const API)  
+**最后更新**: 2025年10月27日  
+**维护者**: OTLP Rust Team  
+**反馈**: [提交 Issue](https://github.com/your-org/otlp-rust/issues)
+
+---
+
+> **提示**: 本文档是完整的用户指南。如需快速入门，请参考 [QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)。如需了解全部文档，请访问 [00_MASTER_INDEX.md](00_MASTER_INDEX.md)。
+
+**📚 感谢使用 OTLP Rust！** 🚀

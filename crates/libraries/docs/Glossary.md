@@ -1,52 +1,35 @@
 ﻿# C11 开发库: 术语表 (Glossary)
 
-> **文档定位**: 开发库核心术语快速参考  
-> **使用方式**: 通过术语索引快速查找定义，理解中间件核心概念  
-> **相关文档**: [主索引](./00_MASTER_INDEX.md) | [README](./README.md) | [FAQ](./FAQ.md)
+**版本**: 1.2.0  
+**最后更新**: 2025年10月27日  
+**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)  
+**状态**: 🟢 活跃维护
 
-## 📊 目录
-
-- [C11 开发库: 术语表 (Glossary)](#c11-开发库-术语表-glossary)
-  - [📊 目录](#-目录)
-  - [📋 术语索引](#-术语索引)
-  - [数据库相关](#数据库相关)
-    - [SQL](#sql)
-    - [ORM](#orm)
-    - [连接池 (Connection Pool)](#连接池-connection-pool)
-  - [缓存相关](#缓存相关)
-    - [Redis](#redis)
-    - [Pipeline](#pipeline)
-    - [Pub/Sub](#pubsub)
-  - [消息队列相关](#消息队列相关)
-    - [Kafka](#kafka)
-    - [MQTT](#mqtt)
-    - [NATS](#nats)
-  - [HTTP中间件](#http中间件)
-    - [Pingora](#pingora)
-    - [反向代理 (Reverse Proxy)](#反向代理-reverse-proxy)
-  - [性能与可观测](#性能与可观测)
-    - [连接复用](#连接复用)
-    - [Tracing](#tracing)
-  - [Rust特性](#rust特性)
-    - [async fn in trait](#async-fn-in-trait)
-    - [RPITIT](#rpitit)
-  - [📚 延伸阅读](#-延伸阅读)
-
-**最后更新**: 2025-10-19  
-**适用版本**: Rust 1.90+  
-**文档类型**: 📚 参考资料
+> **简介**: C11开发库核心术语快速参考，帮助您理解中间件核心概念和Rust 1.90+特性。
 
 ---
 
-## 📋 术语索引
+## 📋 目录
+
+- [1. 数据库相关](#1-数据库相关)
+- [2. 缓存相关](#2-缓存相关)
+- [3. 消息队列相关](#3-消息队列相关)
+- [4. HTTP中间件](#4-http中间件)
+- [5. 性能与可观测](#5-性能与可观测)
+- [6. Rust特性](#6-rust特性)
+- [7. 相关资源](#7-相关资源)
+
+---
+
+## 术语索引
 
 [C](#连接池-connection-pool) | [K](#kafka) | [M](#mqtt) | [O](#orm) | [P](#pipeline) | [R](#redis) | [S](#sql)
 
 ---
 
-## 数据库相关
+## 1. 数据库相关
 
-### SQL
+### 1.1 SQL
 
 **定义**: Structured Query Language，结构化查询语言，用于管理关系数据库。
 
@@ -60,7 +43,7 @@
 
 ---
 
-### ORM
+### 1.2 ORM
 
 **定义**: Object-Relational Mapping，对象关系映射，将数据库表映射为对象。
 
@@ -74,7 +57,7 @@
 
 ---
 
-### 连接池 (Connection Pool)
+### 1.3 连接池 (Connection Pool)
 
 **定义**: 预先创建并维护一组数据库连接，避免频繁建立连接的开销。
 
@@ -96,9 +79,9 @@ Pool::builder(manager)
 
 ---
 
-## 缓存相关
+## 2. 缓存相关
 
-### Redis
+### 2.1 Redis
 
 **定义**: Remote Dictionary Server，开源的内存数据结构存储，用作数据库、缓存和消息代理。
 
@@ -116,7 +99,7 @@ Pool::builder(manager)
 
 ---
 
-### Pipeline
+### 2.2 Pipeline
 
 **定义**: Redis批量操作模式，一次性发送多个命令，减少网络往返。
 
@@ -138,7 +121,7 @@ let results: Vec<String> = pipe.query_async(conn).await?;
 
 ---
 
-### Pub/Sub
+### 2.3 Pub/Sub
 
 **定义**: 发布/订阅模式，消息生产者发布到频道，订阅者接收消息。
 
@@ -158,9 +141,9 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-## 消息队列相关
+## 3. 消息队列相关
 
-### Kafka
+### 3.1 Kafka
 
 **定义**: 分布式流处理平台，高吞吐量、持久化的消息队列。
 
@@ -178,7 +161,7 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-### MQTT
+### 3.2 MQTT
 
 **定义**: Message Queuing Telemetry Transport，轻量级消息传输协议，适用于IoT。
 
@@ -194,7 +177,7 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-### NATS
+### 3.3 NATS
 
 **定义**: 高性能云原生消息系统，低延迟、简单易用。
 
@@ -211,9 +194,9 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-## HTTP中间件
+## 4. HTTP中间件
 
-### Pingora
+### 4.1 Pingora
 
 **定义**: Cloudflare开源的HTTP代理框架，Rust实现。
 
@@ -228,7 +211,7 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-### 反向代理 (Reverse Proxy)
+### 4.2 反向代理 (Reverse Proxy)
 
 **定义**: 代理服务器接收客户端请求，转发给后端服务器。
 
@@ -243,9 +226,9 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-## 性能与可观测
+## 5. 性能与可观测
 
-### 连接复用
+### 5.1 连接复用
 
 **定义**: 复用已建立的连接，避免重复建立连接的开销。
 
@@ -255,7 +238,7 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-### Tracing
+### 5.2 Tracing
 
 **定义**: 分布式追踪，记录请求在系统中的流转路径。
 
@@ -275,9 +258,9 @@ async fn query_database(id: i32) -> Result<User> {
 
 ---
 
-## Rust特性
+## 6. Rust特性
 
-### async fn in trait
+### 6.1 async fn in trait
 
 **定义**: Rust 1.90+ 特性，允许trait方法为async fn。
 
@@ -293,7 +276,7 @@ trait AsyncDatabase {
 
 ---
 
-### RPITIT
+### 6.2 RPITIT
 
 **定义**: Return Position Impl Trait in Trait，trait方法返回 `impl Trait`。
 
@@ -309,20 +292,39 @@ trait Config {
 
 ---
 
-## 📚 延伸阅读
+## 7. 相关资源
 
-- [主索引](./00_MASTER_INDEX.md) - 完整文档导航
-- [FAQ](./FAQ.md) - 常见问题解答
-- [README](./README.md) - 项目概述
-- [sql.md](./sql.md) - SQL数据库
-- [redis.md](./redis.md) - Redis缓存
-- [mq.md](./mq.md) - 消息队列
-- [pingora.md](./pingora.md) - HTTP代理
+### 7.1 核心文档
+
+- [00_MASTER_INDEX.md](./00_MASTER_INDEX.md) - 完整文档导航
+- [README.md](./README.md) - 项目概述
+- [FAQ.md](./FAQ.md) - 常见问题解答
+
+### 7.2 专题指南
+
+- [guides/sql.md](./guides/sql.md) - SQL数据库详细指南
+- [guides/redis.md](./guides/redis.md) - Redis缓存详细指南
+- [guides/mq.md](./guides/mq.md) - 消息队列详细指南
+- [guides/pingora.md](./guides/pingora.md) - HTTP代理详细指南
+
+### 7.3 Rust 1.90特性
+
+- [references/RUST_190_FEATURES_GUIDE.md](./references/RUST_190_FEATURES_GUIDE.md) - Rust 1.90 特性完整指南
+
+### 7.4 实践资源
+
+- [examples/](../examples/) - 示例代码
+- [tests/](../tests/) - 测试用例
+- [src/](../src/) - 源码实现
 
 ---
 
-**需要更多帮助？**
+**版本**: 1.2.0  
+**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)  
+**最后更新**: 2025年10月27日  
+**维护者**: C11 Libraries Team  
+**反馈**: [提交 Issue](https://github.com/your-org/your-repo/issues)
 
-- 查看 [示例代码](../examples/)
-- 运行 [测试用例](../tests/)
-- 阅读 [源码实现](../src/)
+---
+
+> **提示**: 本术语表持续更新中，新术语和概念会不断添加！🦀✨

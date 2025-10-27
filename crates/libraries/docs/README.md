@@ -1,12 +1,33 @@
 ﻿# C11 开发库 - 文档中心
 
-> 欢迎来到 C11 开发库项目文档中心！本文档是您探索项目的起点。
+**文档版本**: v2.1  
+**最后更新**: 2025年10月27日  
+**Rust 版本**: 1.90.0 (LLD链接器、const API稳定、workspace发布)  
+**状态**: 🟢 活跃维护
+
+> **简介**: 欢迎来到 C11 开发库项目文档中心！本文档是您探索项目的起点，提供统一的 Rust 接口集成各类主流中间件。
 
 [![Rust](https://img.shields.io/badge/rust-1.90+-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](.)
 
-## 🎯 项目简介
+---
+
+## 📋 目录
+
+- [1. 项目简介](#1-项目简介)
+- [2. 快速开始](#2-快速开始)
+- [3. 文档导航](#3-文档导航)
+- [4. 核心特性](#4-核心特性)
+- [5. 支持的中间件](#5-支持的中间件)
+- [6. Rust 1.90 新特性集成](#6-rust-190-新特性集成)
+- [7. 学习路径](#7-学习路径)
+- [8. 贡献指南](#8-贡献指南)
+- [9. 许可证](#9-许可证)
+
+---
+
+## 1. 项目简介
 
 C11 开发库项目提供了一个统一的 Rust 接口来集成各类主流中间件，包括：
 
@@ -25,9 +46,11 @@ C11 开发库项目提供了一个统一的 Rust 接口来集成各类主流中�
 - ✅ 完整的可观测性
 - ✅ 编译性能优化（受益于LLD链接器）
 
-## 🚀 快速开始
+---
 
-### 5 分钟快速体验
+## 2. 快速开始
+
+### 2.1 五分钟快速体验
 
 ```rust
 use c11_libraries::prelude::*;
@@ -49,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### 运行示例
+### 2.2 运行示例
 
 ```bash
 # 基础使用示例
@@ -62,9 +85,11 @@ cargo run --example message_queue --features mq-nats,mq-mqtt,tokio
 cargo run --example rust190_features_demo --features kv-redis,tokio
 ```
 
-## 📚 文档导航
+---
 
-### 🗺️ 主要入口
+## 3. 文档导航
+
+### 3.1 主要入口
 
 | 文档 | 说明 | 适合人群 |
 |------|------|---------|
@@ -73,9 +98,9 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 | [FAQ.md](FAQ.md) | 常见问题解答 | 遇到问题时 |
 | [Glossary.md](Glossary.md) | 术语表 | 查询概念定义 |
 
-### 📖 按主题浏览
+### 3.2 按主题浏览
 
-#### 🔧 使用指南
+#### 3.2.1 使用指南
 
 > 详见 [guides/README.md](guides/README.md)
 
@@ -87,7 +112,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 | [guides/kafka_pingora.md](guides/kafka_pingora.md) | Kafka 与 Pingora |
 | [guides/pingora.md](guides/pingora.md) | Pingora HTTP 代理 |
 
-#### 📘 参考文档
+#### 3.2.2 参考文档
 
 > 详见 [references/README.md](references/README.md)
 
@@ -96,7 +121,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 | [references/RUST_190_FEATURES_GUIDE.md](references/RUST_190_FEATURES_GUIDE.md) | Rust 1.90 特性指南 |
 | API 文档 | 使用 `cargo doc --open` 查看 |
 
-#### 📖 教程学习
+#### 3.2.3 教程学习
 
 > 详见 [tutorials/README.md](tutorials/README.md)
 
@@ -106,7 +131,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 - 🎓 进阶教程系列
 - 💼 实战案例系列
 
-#### 🎓 高级主题
+#### 3.2.4 高级主题
 
 > 详见 [advanced/README.md](advanced/README.md)
 
@@ -118,7 +143,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 - 🔒 安全实践
 - 📊 监控运维
 
-#### 🔬 技术分析
+#### 3.2.5 技术分析
 
 > 详见 [analysis/README.md](analysis/README.md)
 
@@ -131,7 +156,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 - 安全综合分析
 - 生态成熟度评估
 
-#### 📊 项目报告
+#### 3.2.6 项目报告
 
 > 详见 [reports/README.md](reports/README.md)
 
@@ -141,9 +166,84 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 - 🔬 技术报告（5份）
 - 🛠️ 修复总结（4份）
 
-## 🎯 按场景查找
+---
 
-### Web 应用开发
+## 4. 核心特性
+
+**C11 开发库**提供：
+
+### 4.1 统一接口设计
+- 一致的API风格
+- 类型安全保证
+- 错误处理标准化
+
+### 4.2 Rust 1.90+ 特性支持
+- LLD链接器加速编译
+- const API 稳定化
+- workspace 一键发布
+
+### 4.3 异步非阻塞
+- 基于 Tokio 最新稳定版
+- 高性能异步运行时
+- 完整的异步生态支持
+
+### 4.4 连接池管理
+- 自动连接池
+- 负载均衡
+- 健康检查
+
+---
+
+## 5. 支持的中间件
+
+### 5.1 数据库
+- PostgreSQL
+- MySQL
+- SQLite
+
+### 5.2 缓存
+- Redis (完整支持)
+
+### 5.3 消息队列
+- Kafka
+- NATS
+- MQTT
+
+### 5.4 HTTP代理
+- Pingora
+
+---
+
+## 6. Rust 1.90 新特性集成
+
+### 6.1 编译性能提升
+- **LLD 链接器**: x86_64-unknown-linux-gnu 默认使用 LLD，大幅提升链接速度
+- **工作区发布**: 支持 `cargo publish --workspace` 一键发布所有 crate
+
+### 6.2 API 稳定性增强
+- **常量上下文稳定**: 更多 API 可在 const 环境使用
+- **整数运算增强**: `checked_sub_signed`、`wrapping_sub_signed` 等新 API
+- **字符串比较**: `CStr`、`CString` 的 `PartialEq` 实现
+
+### 6.3 使用建议
+```bash
+# 更新到 Rust 1.90
+rustup update stable
+
+# 验证版本
+rustc --version  # 应显示 1.90.0
+
+# 使用新的工作区发布功能
+cargo publish --workspace
+```
+
+---
+
+## 7. 学习路径
+
+### 7.1 按场景查找
+
+#### 7.1.1 Web 应用开发
 
 **需求**: 构建 Web 应用，需要数据库和缓存
 
@@ -153,7 +253,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 2. 阅读 [guides/redis.md](guides/redis.md) - Redis 缓存
 3. 运行 `examples/middleware_comprehensive_demo.rs`
 
-### 微服务架构
+#### 7.1.2 微服务架构
 
 **需求**: 构建微服务，需要消息队列
 
@@ -163,7 +263,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 2. 阅读 [guides/kafka_pingora.md](guides/kafka_pingora.md) - Kafka
 3. 运行 `examples/message_queue.rs`
 
-### IoT 平台
+#### 7.1.3 IoT 平台
 
 **需求**: IoT 设备数据采集和处理
 
@@ -173,7 +273,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 2. 阅读 [guides/redis.md](guides/redis.md) - Redis 缓存
 3. 参考 IoT 相关示例
 
-### 实时数据处理
+#### 7.1.4 实时数据处理
 
 **需求**: 处理大量实时数据流
 
@@ -183,9 +283,9 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 2. 阅读 [guides/redis.md](guides/redis.md) - Redis
 3. 查看性能优化文档
 
-## 👥 按角色导航
+### 7.2 按角色导航
 
-### 新手用户
+#### 7.2.1 新手用户
 
 **您是 Rust 初学者或刚接触本项目？**
 
@@ -201,7 +301,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 - [FAQ.md](FAQ.md) - 常见问题
 - [examples/](../examples/) - 示例代码
 
-### 开发者
+#### 7.2.2 开发者
 
 **您有 Rust 经验，想使用项目开发应用？**
 
@@ -217,7 +317,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 - [references/](references/) - API 和配置参考
 - [advanced/](advanced/) - 高级主题
 
-### 架构师
+#### 7.2.3 架构师
 
 **您负责技术选型和架构设计？**
 
@@ -233,7 +333,7 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 - [reports/](reports/) - 技术报告
 - [advanced/](advanced/) - 架构设计主题
 
-### 研究者
+#### 7.2.4 研究者
 
 **您对技术深度和理论感兴趣？**
 
@@ -249,7 +349,9 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 - [analysis/rust190_ecosystem/02_cross_industry_analysis/](analysis/rust190_ecosystem/02_cross_industry_analysis/) - 跨行业分析
 - [analysis/rust190_ecosystem/03_performance_benchmarks/](analysis/rust190_ecosystem/03_performance_benchmarks/) - 性能分析
 
-## 📊 文档统计
+---
+
+## 8. 文档统计
 
 ### 文档数量
 
@@ -356,37 +458,26 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 
 ---
 
-**文档版本**: v2.1  
-**最后更新**: 2025-10-27  
-**Rust 版本**: 1.90.0 (1159e78c4 2025-09-14)  
-**Cargo 版本**: 1.90.0 (840b83a10 2025-07-30)  
-**维护团队**: Rust 学习社区
+---
 
-## 🆕 Rust 1.90 新特性集成
+## 9. 贡献指南
 
-### 编译性能提升
-- **LLD 链接器**: x86_64-unknown-linux-gnu 默认使用 LLD，大幅提升链接速度
-- **工作区发布**: 支持 `cargo publish --workspace` 一键发布所有 crate
-
-### API 稳定性增强
-- **常量上下文稳定**: 更多 API 可在 const 环境使用
-- **整数运算增强**: `checked_sub_signed`、`wrapping_sub_signed` 等新 API
-- **字符串比较**: `CStr`、`CString` 的 `PartialEq` 实现
-
-### 使用建议
-```bash
-# 更新到 Rust 1.90
-rustup update stable
-
-# 验证版本
-rustc --version  # 应显示 1.90.0
-
-# 使用新的工作区发布功能
-cargo publish --workspace
-```
+欢迎贡献！请查看 [CONTRIBUTING.md](../../CONTRIBUTING.md) 了解详情。
 
 ---
 
-**让 Rust 开发库更简单！** 🦀✨
+## 10. 许可证
 
-**开始探索**: 从 [00_MASTER_INDEX.md](00_MASTER_INDEX.md) 开始您的旅程！
+本项目采用 MIT 许可证。详见 [LICENSE](../../LICENSE)。
+
+---
+
+**文档版本**: v2.1  
+**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)  
+**最后更新**: 2025年10月27日  
+**维护者**: C11 Libraries Team  
+**反馈**: [提交 Issue](https://github.com/rust-lang/rust-lang/issues)
+
+---
+
+> **提示**: 让 Rust 开发库更简单！从 [00_MASTER_INDEX.md](00_MASTER_INDEX.md) 开始您的旅程！🦀✨

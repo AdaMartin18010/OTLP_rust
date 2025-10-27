@@ -1,62 +1,55 @@
 # OTLP Rust API 参考文档
 
-## 目录
+**版本**: 2.1  
+**最后更新**: 2025年10月27日  
+**Rust 版本**: 1.90.0 (LLD链接器、const API)  
+**状态**: 🟢 活跃维护
+
+> **简介**: OTLP Rust 库的完整 API 参考文档，涵盖所有核心模块、类型、函数和使用示例。
+
+---
+
+## 📋 目录
 
 - [OTLP Rust API 参考文档](#otlp-rust-api-参考文档)
-  - [目录](#目录)
-  - [📚 概述](#-概述)
-  - [🏗️ 核心模块](#️-核心模块)
-    - [1. 客户端模块 (Client)](#1-客户端模块-client)
-      - [OtlpClient](#otlpclient)
-      - [配置选项](#配置选项)
-    - [2. 数据模型 (Data)](#2-数据模型-data)
-      - [TelemetryData](#telemetrydata)
-      - [属性管理](#属性管理)
-    - [3. 性能优化器 (Performance Optimizer)](#3-性能优化器-performance-optimizer)
-      - [ComprehensivePerformanceOptimizer](#comprehensiveperformanceoptimizer)
-      - [内存池管理](#内存池管理)
-      - [SIMD优化](#simd优化)
-    - [4. 安全增强器 (Security Enhancer)](#4-安全增强器-security-enhancer)
-      - [ComprehensiveSecurityManager](#comprehensivesecuritymanager)
-      - [加密管理](#加密管理)
-      - [认证管理](#认证管理)
-    - [5. 监控集成 (Monitoring Integration)](#5-监控集成-monitoring-integration)
-      - [ComprehensiveMonitoringManager](#comprehensivemonitoringmanager)
-      - [Grafana仪表板](#grafana仪表板)
-    - [6. 企业级功能 (Enterprise Features)](#6-企业级功能-enterprise-features)
-      - [ComprehensiveEnterpriseManager](#comprehensiveenterprisemanager)
-      - [多租户管理](#多租户管理)
-      - [数据治理](#数据治理)
-  - [🔧 高级功能](#-高级功能)
-    - [1. 高级特性 (Advanced Features)](#1-高级特性-advanced-features)
-      - [智能缓存](#智能缓存)
-      - [自适应采样](#自适应采样)
-      - [AI异常检测](#ai异常检测)
-    - [2. 错误处理](#2-错误处理)
-      - [错误类型](#错误类型)
-      - [错误上下文](#错误上下文)
-  - [📊 性能优化建议](#-性能优化建议)
-    - [1. 内存优化](#1-内存优化)
-    - [2. 并发优化](#2-并发优化)
-    - [3. 缓存优化](#3-缓存优化)
-  - [🔒 安全最佳实践](#-安全最佳实践)
-    - [1. 数据加密](#1-数据加密)
-    - [2. 访问控制](#2-访问控制)
-    - [3. 审计日志](#3-审计日志)
-  - [🚀 部署和运维](#-部署和运维)
-    - [1. 配置管理](#1-配置管理)
-    - [2. 健康检查](#2-健康检查)
-    - [3. 监控和告警](#3-监控和告警)
-  - [📝 示例项目](#-示例项目)
-    - [完整的微服务示例](#完整的微服务示例)
+  - [📋 目录](#-目录)
+  - [1. 概述](#1-概述)
+  - [2. 核心模块](#2-核心模块)
+    - [2.1 客户端模块](#21-客户端模块)
+    - [2.2 数据模型模块](#22-数据模型模块)
+    - [2.3 性能优化器模块](#23-性能优化器模块)
+    - [2.4 安全增强器模块](#24-安全增强器模块)
+    - [2.5 监控集成模块](#25-监控集成模块)
+    - [2.6 企业级功能模块](#26-企业级功能模块)
+  - [3. 高级功能](#3-高级功能)
+    - [3.1 高级特性](#31-高级特性)
+    - [3.2 错误处理](#32-错误处理)
+  - [4. 性能优化](#4-性能优化)
+    - [4.1 内存优化](#41-内存优化)
+    - [4.2 并发优化](#42-并发优化)
+    - [4.3 缓存优化](#43-缓存优化)
+  - [5. 安全最佳实践](#5-安全最佳实践)
+    - [5.1 数据加密](#51-数据加密)
+    - [5.2 访问控制](#52-访问控制)
+    - [5.3 审计日志](#53-审计日志)
+  - [6. 部署和运维](#6-部署和运维)
+    - [6.1 配置管理](#61-配置管理)
+    - [6.2 健康检查](#62-健康检查)
+    - [6.3 监控和告警](#63-监控和告警)
+  - [7. 示例项目](#7-示例项目)
+  - [8. 相关资源](#8-相关资源)
 
-## 📚 概述
+---
+
+## 1. 概述
 
 本文档提供了OTLP Rust库的完整API参考，包括所有模块、结构体、枚举和函数的详细说明。
 
-## 🏗️ 核心模块
+---
 
-### 1. 客户端模块 (Client)
+## 2. 核心模块
+
+### 2.1 客户端模块
 
 #### OtlpClient
 
@@ -100,9 +93,9 @@ let config = OtlpConfigBuilder::new()
     .build();
 ```
 
-### 2. 数据模型 (Data)
+### 2.2 数据模型模块
 
-#### TelemetryData
+#### 2.2.1 TelemetryData
 
 遥测数据的基础结构。
 
@@ -138,9 +131,9 @@ data.add_attribute("request.duration", AttributeValue::Int64(150));
 data.add_attribute("error.occurred", AttributeValue::Bool(false));
 ```
 
-### 3. 性能优化器 (Performance Optimizer)
+### 2.3 性能优化器模块
 
-#### ComprehensivePerformanceOptimizer
+#### 2.3.1 ComprehensivePerformanceOptimizer
 
 综合性能优化器，提供内存池、SIMD优化、并发优化等功能。
 
@@ -199,9 +192,9 @@ let results = optimizer.process_batch(test_data, |data| {
 }).await?;
 ```
 
-### 4. 安全增强器 (Security Enhancer)
+### 2.4 安全增强器模块
 
-#### ComprehensiveSecurityManager
+#### 2.4.1 ComprehensiveSecurityManager
 
 综合安全管理器，提供加密、认证、审计等功能。
 
@@ -269,9 +262,9 @@ if login_result.success {
 }
 ```
 
-### 5. 监控集成 (Monitoring Integration)
+### 2.5 监控集成模块
 
-#### ComprehensiveMonitoringManager
+#### 2.5.1 ComprehensiveMonitoringManager
 
 综合监控管理器，提供Prometheus集成、Grafana仪表板、实时监控等功能。
 
@@ -317,9 +310,9 @@ let security_dashboard_id = grafana_manager.create_security_dashboard().await?;
 println!("创建安全仪表板: {}", security_dashboard_id);
 ```
 
-### 6. 企业级功能 (Enterprise Features)
+### 2.6 企业级功能模块
 
-#### ComprehensiveEnterpriseManager
+#### 2.6.1 ComprehensiveEnterpriseManager
 
 综合企业功能管理器，提供多租户、数据治理、合规性、高可用性等功能。
 
@@ -427,9 +420,11 @@ for action in actions {
 }
 ```
 
-## 🔧 高级功能
+---
 
-### 1. 高级特性 (Advanced Features)
+## 3. 高级功能
+
+### 3.1 高级特性
 
 #### 智能缓存
 
@@ -524,9 +519,9 @@ if anomaly_result.is_anomaly {
 }
 ```
 
-### 2. 错误处理
+### 3.2 错误处理
 
-#### 错误类型
+#### 3.2.1 错误类型
 
 ```rust
 use otlp::{OtlpError, ErrorCategory, ErrorSeverity};
@@ -575,9 +570,11 @@ let error = OtlpError::NetworkError {
 };
 ```
 
-## 📊 性能优化建议
+---
 
-### 1. 内存优化
+## 4. 性能优化
+
+### 4.1 内存优化
 
 ```rust
 // 使用内存池减少分配
@@ -591,7 +588,7 @@ for chunk in data.chunks(batch_size) {
 }
 ```
 
-### 2. 并发优化
+### 4.2 并发优化
 
 ```rust
 // 使用并发优化器
@@ -611,7 +608,7 @@ for handle in handles {
 }
 ```
 
-### 3. 缓存优化
+### 4.3 缓存优化
 
 ```rust
 // 配置智能缓存
@@ -633,9 +630,11 @@ cache.put(cache_key, result.clone()).await?;
 Ok(result)
 ```
 
-## 🔒 安全最佳实践
+---
 
-### 1. 数据加密
+## 5. 安全最佳实践
+
+### 5.1 数据加密
 
 ```rust
 // 使用强加密算法
@@ -649,7 +648,7 @@ let encrypted = encryption_manager.encrypt(sensitive_data, "aes256gcm").await?;
 store_encrypted_data(&encrypted).await?;
 ```
 
-### 2. 访问控制
+### 5.2 访问控制
 
 ```rust
 // 实施基于角色的访问控制
@@ -670,7 +669,7 @@ if !has_permission {
 }
 ```
 
-### 3. 审计日志
+### 5.3 审计日志
 
 ```rust
 // 记录所有敏感操作
@@ -691,9 +690,11 @@ let audit_log = AuditLog {
 audit_logger.log(audit_log).await?;
 ```
 
-## 🚀 部署和运维
+---
 
-### 1. 配置管理
+## 6. 部署和运维
+
+### 6.1 配置管理
 
 ```rust
 // 环境特定配置
@@ -717,7 +718,7 @@ let config = match env::var("ENVIRONMENT") {
 };
 ```
 
-### 2. 健康检查
+### 6.2 健康检查
 
 ```rust
 // 实现健康检查端点
@@ -735,7 +736,7 @@ async fn health_check() -> Result<HealthStatus> {
 }
 ```
 
-### 3. 监控和告警
+### 6.3 监控和告警
 
 ```rust
 // 设置监控和告警
@@ -758,9 +759,11 @@ let alert_rule = AlertRule {
 monitoring_manager.get_alert_manager().add_rule(alert_rule).await?;
 ```
 
-## 📝 示例项目
+---
 
-### 完整的微服务示例
+## 7. 示例项目
+
+### 7.1 完整的微服务示例
 
 ```rust
 use otlp::{
@@ -829,4 +832,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-这个API参考文档提供了OTLP Rust库的完整使用指南，包括所有主要功能、最佳实践和实际示例。开发者可以根据这个文档快速上手并构建高性能、安全、可观测的OTLP应用程序。
+---
+
+## 8. 相关资源
+
+### 8.1 官方文档
+
+- **[OTLP规范](https://opentelemetry.io/docs/specs/otlp/)** - OpenTelemetry协议规范
+- **[OpenTelemetry文档](https://opentelemetry.io/docs/)** - 完整的OpenTelemetry文档
+- **[Rust OpenTelemetry](https://github.com/open-telemetry/opentelemetry-rust)** - Rust实现
+
+### 8.2 项目文档
+
+- **[快速开始](QUICK_START_GUIDE.md)** - 5分钟快速入门
+- **[用户指南](USER_GUIDE.md)** - 完整用户指南
+- **[架构设计](ARCHITECTURE_DESIGN.md)** - 系统架构
+- **[主索引](00_MASTER_INDEX.md)** - 文档导航
+
+### 8.3 社区资源
+
+- **[GitHub仓库](https://github.com/your-org/otlp-rust)** - 源代码和Issues
+- **[示例项目](https://github.com/your-org/otlp-rust/tree/main/examples)** - 完整示例
+- **[贡献指南](../../CONTRIBUTING.md)** - 如何贡献
+
+---
+
+**文档版本**: 2.1  
+**Rust 版本**: 1.90.0 (LLD链接器、const API)  
+**最后更新**: 2025年10月27日  
+**维护者**: OTLP Rust Team  
+**反馈**: [提交 Issue](https://github.com/your-org/otlp-rust/issues)
+
+---
+
+> **提示**: 本文档提供了完整的API参考。开发者可以根据这个文档快速上手并构建高性能、安全、可观测的OTLP应用程序。更多信息请参考 [用户指南](USER_GUIDE.md) 和 [快速开始](QUICK_START_GUIDE.md)。
+
+**📚 感谢使用 OTLP Rust API！** 🚀
