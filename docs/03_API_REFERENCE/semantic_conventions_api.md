@@ -1,9 +1,39 @@
 # 🏷️ Semantic Conventions API 参考
 
 **模块**: `otlp::semantic_conventions`  
+**版本**: 1.0  
 **状态**: ✅ 生产就绪  
 **标准版本**: OpenTelemetry v1.29.0  
 **最后更新**: 2025年10月26日
+
+> **简介**: 类型安全的 OpenTelemetry 语义约定实现 - 确保所有遥测信号使用一致的属性命名和值。
+
+---
+
+## 📋 目录
+
+- [🏷️ Semantic Conventions API 参考](#️-semantic-conventions-api-参考)
+  - [📋 目录](#-目录)
+  - [📋 概述](#-概述)
+    - [核心特性](#核心特性)
+  - [🚀 快速开始](#-快速开始)
+  - [📚 HTTP约定](#-http约定)
+    - [HttpAttributesBuilder](#httpattributesbuilder)
+    - [HttpMethod](#httpmethod)
+    - [HttpAttributes](#httpattributes)
+  - [🗄️ Database约定](#️-database约定)
+    - [DatabaseAttributesBuilder](#databaseattributesbuilder)
+    - [DatabaseSystem](#databasesystem)
+  - [📮 Messaging约定](#-messaging约定)
+    - [MessagingAttributesBuilder](#messagingattributesbuilder)
+    - [MessagingSystem](#messagingsystem)
+  - [☸️ Kubernetes约定](#️-kubernetes约定)
+    - [K8sAttributesBuilder](#k8sattributesbuilder)
+    - [K8sResourceType](#k8sresourcetype)
+  - [🌐 通用资源约定](#-通用资源约定)
+  - [💡 使用示例](#-使用示例)
+  - [🔧 类型安全保证](#-类型安全保证)
+  - [📚 参考资源](#-参考资源)
 
 ---
 

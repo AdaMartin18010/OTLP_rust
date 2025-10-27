@@ -1,8 +1,35 @@
 # ⚡ SIMD Optimization API 参考
 
 **模块**: `otlp::simd`  
+**版本**: 1.0  
 **状态**: ✅ 生产就绪  
 **最后更新**: 2025年10月26日
+
+> **简介**: SIMD 矢量化优化 - 提供性能关键操作的 SIMD 实现，自动检测 CPU 能力并优雅降级。
+
+---
+
+## 📋 目录
+
+- [⚡ SIMD Optimization API 参考](#-simd-optimization-api-参考)
+  - [📋 目录](#-目录)
+  - [📋 概述](#-概述)
+    - [核心特性](#核心特性)
+    - [性能目标](#性能目标)
+  - [🚀 快速开始](#-快速开始)
+  - [📚 核心类型](#-核心类型)
+    - [CpuFeatures](#cpufeatures)
+    - [Aggregator](#aggregator)
+    - [BatchSerializer](#batchserializer)
+    - [SimdString](#simdstring)
+  - [🔧 CPU特性检测](#-cpu特性检测)
+  - [📊 SIMD聚合](#-simd聚合)
+  - [📦 批量序列化](#-批量序列化)
+  - [💡 使用示例](#-使用示例)
+  - [⚡ 性能优化指南](#-性能优化指南)
+  - [🔬 性能基准](#-性能基准)
+  - [🐛 错误处理](#-错误处理)
+  - [📚 参考资源](#-参考资源)
 
 ---
 

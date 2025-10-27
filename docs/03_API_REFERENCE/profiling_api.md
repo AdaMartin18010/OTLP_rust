@@ -1,8 +1,37 @@
 # 🔬 Profiling API 参考
 
 **模块**: `otlp::profiling`  
+**版本**: 1.0  
 **状态**: ✅ 生产就绪  
 **最后更新**: 2025年10月26日
+
+> **简介**: 完整的性能分析支持 - CPU profiling、内存profiling和多种采样策略，完全兼容 OpenTelemetry Profiling规范。
+
+---
+
+## 📋 目录
+
+- [🔬 Profiling API 参考](#-profiling-api-参考)
+  - [📋 目录](#-目录)
+  - [📋 概述](#-概述)
+    - [核心特性](#核心特性)
+  - [🚀 快速开始](#-快速开始)
+  - [📚 核心类型](#-核心类型)
+    - [CpuProfiler](#cpuprofiler)
+    - [MemoryProfiler](#memoryprofiler)
+    - [ProfileExporter](#profileexporter)
+  - [🔧 配置选项](#-配置选项)
+  - [💡 使用示例](#-使用示例)
+    - [CPU Profiling](#cpu-profiling)
+    - [Memory Profiling](#memory-profiling)
+    - [Trace关联](#trace关联)
+    - [采样策略](#采样策略)
+  - [📊 采样策略详解](#-采样策略详解)
+  - [🔗 Trace关联](#-trace关联)
+  - [📤 导出Profile](#-导出profile)
+  - [⚡ 性能考虑](#-性能考虑)
+  - [🐛 错误处理](#-错误处理)
+  - [📚 参考资源](#-参考资源)
 
 ---
 

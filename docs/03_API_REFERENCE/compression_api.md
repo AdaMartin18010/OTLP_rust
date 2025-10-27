@@ -1,8 +1,38 @@
 # 🗜️ Compression API 参考
 
 **模块**: `otlp::compression`  
+**版本**: 1.0  
 **状态**: ✅ 生产就绪  
 **最后更新**: 2025年10月26日
+
+> **简介**: Tracezip算法实现 - 通过span去重、delta编码和字符串表优化实现高效trace数据压缩。
+
+---
+
+## 📋 目录
+
+- [🗜️ Compression API 参考](#️-compression-api-参考)
+  - [📋 目录](#-目录)
+  - [📋 概述](#-概述)
+    - [核心特性](#核心特性)
+    - [性能目标](#性能目标)
+  - [🚀 快速开始](#-快速开始)
+  - [📚 核心类型](#-核心类型)
+    - [TraceCompressor](#tracecompressor)
+    - [CompressorConfig](#compressorconfig)
+    - [CompressionStats](#compressionstats)
+    - [CompressedData](#compresseddata)
+  - [🔧 配置选项](#-配置选项)
+  - [💡 使用示例](#-使用示例)
+    - [基础压缩](#基础压缩)
+    - [批量压缩](#批量压缩)
+    - [自定义配置](#自定义配置)
+    - [性能监控](#性能监控)
+  - [⚡ 性能优化](#-性能优化)
+  - [🐛 错误处理](#-错误处理)
+  - [📊 压缩统计](#-压缩统计)
+  - [🔬 算法详解](#-算法详解)
+  - [📚 参考资源](#-参考资源)
 
 ---
 

@@ -1,9 +1,32 @@
 # 📚 Documentation Index & Navigation
 
-Welcome to the OTLP Rust documentation index! This directory contains all navigation aids and documentation guides.
-
+**版本**: 2.0  
 **最后更新**: 2025年10月26日  
-**文档版本**: 2.0 (重组后)
+**状态**: 🟢 活跃维护
+
+> **简介**: OTLP Rust 文档导航中心 - 包含所有文档索引、导航指南和学习路径。
+
+---
+
+## 📋 目录
+
+- [📚 Documentation Index & Navigation](#-documentation-index--navigation)
+  - [📋 目录](#-目录)
+  - [📖 Index Documents (索引文档)](#-index-documents-索引文档)
+    - [MAIN\_INDEX.md](#main_indexmd)
+    - [SUMMARY.md](#summarymd)
+    - [DOCUMENTATION\_GUIDE.md](#documentation_guidemd)
+    - [MAINTENANCE\_GUIDE.md](#maintenance_guidemd)
+    - [KNOWLEDGE\_GRAPH.md](#knowledge_graphmd)
+    - [VISUALIZATION\_INDEX.md](#visualization_indexmd)
+  - [🎯 Quick Start (快速开始)](#-quick-start-快速开始)
+    - [For New Users (新用户)](#for-new-users-新用户)
+    - [For Developers (开发者)](#for-developers-开发者)
+    - [For Operators (运维人员)](#for-operators-运维人员)
+    - [For Researchers (研究人员)](#for-researchers-研究人员)
+  - [📊 Documentation Structure (文档结构)](#-documentation-structure-文档结构)
+  - [🗺️ Learning Paths (学习路径)](#️-learning-paths-学习路径)
+  - [🔗 Related Resources (相关资源)](#-related-resources-相关资源)
 
 ---
 
