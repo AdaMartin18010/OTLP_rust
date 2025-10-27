@@ -1,9 +1,12 @@
 # 🎯 Profile 信号实现指南
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025年10月24日  
+**版本**: 1.0  
+**最后更新**: 2025年10月26日  
 **适用于**: OTLP Rust v2.0+  
-**OTLP 版本**: 1.3.0+ (Profile Signal Type)
+**OTLP 版本**: 1.3.0+ (Profile Signal Type)  
+**状态**: 🟢 活跃维护
+
+> **简介**: Profile 信号完整实现指南 - CPU/Memory Profiling、pprof格式、性能分析和最佳实践。
 
 ---
 
