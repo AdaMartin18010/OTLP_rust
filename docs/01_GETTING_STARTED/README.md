@@ -1,6 +1,12 @@
 # 🚀 快速开始指南
 
-欢迎使用 OTLP Rust！本指南将帮助您快速上手这个基于 Rust 1.90 的 OpenTelemetry Protocol 实现。
+**版本**: 1.0  
+**最后更新**: 2025年10月26日  
+**状态**: 🟢 活跃维护
+
+> **简介**: OTLP Rust 快速开始指南 - 从零到一，5分钟上手 OpenTelemetry Protocol 实现。
+
+---
 
 ## 📋 目录
 
