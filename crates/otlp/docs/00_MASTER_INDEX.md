@@ -195,192 +195,167 @@
 - 配置参考
 - 外部资源
 
-### 09. Reference / 参考资料
-
-**Directory**: [09_参考资料/](09_参考资料/)
-
-- API references
-- Configuration references
-- Glossary
+**推荐文档**:
+- [README.md](09_参考资料/README.md)
+- [核心API使用指南.md](09_参考资料/核心API使用指南.md)
+- [OTLP_RUST_API_使用指南.md](OTLP_RUST_API_使用指南.md)
 
 ---
 
-## 🎯 Key Documents
+## 3. 按角色导航
 
-### Essential Reading
+### 3.1 初学者
 
-1. **[README.md](README.md)** - Project overview and introduction
-2. **[QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)** - Get up and running quickly
-3. **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation
-4. **[ARCHITECTURE_DESIGN.md](ARCHITECTURE_DESIGN.md)** - Understanding the system
+**推荐学习路径**:
 
-### Guides by Role
+1. **第1天**: [Quick Start Guide](QUICK_START_GUIDE.md) - 5分钟快速开始
+2. **第2-3天**: [核心概念](02_核心概念/README.md) - 理解OTLP基础 ✅
+3. **第4天**: [示例教程](08_示例和教程/README.md) - 动手实践
+4. **第5-7天**: [用户指南](USER_GUIDE.md) - 深入学习
 
-#### For End Users
+**预计时间**: 1周
 
-- **[USER_GUIDE.md](USER_GUIDE.md)** - Complete and comprehensive user manual
-- **[profiling_user_guide.md](profiling_user_guide.md)** - Profiling features guide
+### 3.2 应用开发者
 
-#### For Developers1
+**关键文档**:
 
-- **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** - Development workflow
-- **[DOCUMENTATION_STANDARDS.md](DOCUMENTATION_STANDARDS.md)** - Documentation guidelines
-- **[FORMAL_VERIFICATION_ANALYSIS.md](FORMAL_VERIFICATION_ANALYSIS.md)** - Formal methods
+- [API Reference](API_REFERENCE.md) - 完整API文档
+- [User Guide](USER_GUIDE.md) - 使用模式
+- [示例代码](08_示例和教程/README.md) - 代码示例
+- [最佳实践](08_示例和教程/README.md) - 推荐方法
 
-#### For DevOps/SRE
+**开发流程**:
+1. 阅读 API 参考
+2. 查看代码示例
+3. 集成到应用
+4. 参考最佳实践
 
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Deployment procedures
-- **[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md)** - Production readiness
-- **[OTLP_K8S_ISTIO_ENVOY_GUIDE.md](OTLP_K8S_ISTIO_ENVOY_GUIDE.md)** - Cloud-native integration
+### 3.3 库贡献者
 
-#### For Integration
+**必读文档**:
 
-- **[COMPREHENSIVE_INTEGRATION_OVERVIEW.md](COMPREHENSIVE_INTEGRATION_OVERVIEW.md)** - Integration patterns
-- **[OTLP_ALIGNMENT_GUIDE.md](OTLP_ALIGNMENT_GUIDE.md)** - OTLP alignment guide
+- [Developer Guide](DEVELOPER_GUIDE.md) - 开发环境设置
+- [Architecture Design](ARCHITECTURE_DESIGN.md) - 系统设计
+- [贡献指南](../../CONTRIBUTING.md) - 贡献流程
+- [测试指南](08_示例和教程/OTLP_RUST_测试指南和最佳实践.md)
 
-### Analysis and Research
+**贡献流程**:
+1. 阅读开发指南
+2. 理解架构设计
+3. 编写测试用例
+4. 提交Pull Request
 
-- **[FORMAL_VERIFICATION_ANALYSIS.md](FORMAL_VERIFICATION_ANALYSIS.md)** - Formal verification
-- **[OTLP_RUST_INDUSTRY_COMPARISON_ANALYSIS.md](OTLP_RUST_INDUSTRY_COMPARISON_ANALYSIS.md)** - Industry comparison
-- **[OTLP_RUST_性能基准测试报告.md](OTLP_RUST_性能基准测试报告.md)** - Performance benchmarks
+### 3.4 运维工程师
 
----
+**关键文档**:
 
-## 🗂️ Special Directories
+- [Deployment Guide](DEPLOYMENT_GUIDE.md) - 生产部署
+- [Production Checklist](PRODUCTION_CHECKLIST.md) - 部署前检查
+- [K8s/Istio/Envoy Integration](OTLP_K8S_ISTIO_ENVOY_GUIDE.md) - 云原生部署
+- [故障排查指南](07_部署运维/OTLP_RUST_故障排查和性能调优指南.md)
 
-### Analysis/
-
-Advanced analysis and research documents
-
-- Formal methods
-- Distributed systems theory
-- Performance analysis
-
-### archives/
-
-Historical documents and deprecated content
-
-- **[archives/reports/2025-10/](archives/reports/2025-10/)** - Archived reports (2025 October)
-
-### templates/
-
-Document and code templates for contributors
+**部署流程**:
+1. 阅读部署指南
+2. 完成检查清单
+3. 配置K8s环境
+4. 监控和调优
 
 ---
 
-## 🔍 Finding Information
+## 4. 按主题导航
 
-### By Topic
+### 4.1 协议和标准
 
-**Getting Started**
-→ [01_快速开始/](01_快速开始/) or [QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)
+- [OTLP 规范](03_标准规范/OTLP_统一规范详解_2025.md) - 完整规范 ✅
+- [OpenTelemetry 标准](03_标准规范/README.md)
+- [语义约定](03_标准规范/)
+- [协议对齐指南](OTLP_ALIGNMENT_GUIDE.md)
 
-**API Usage**
-→ [API_REFERENCE.md](API_REFERENCE.md) or [09_参考资料/](09_参考资料/)
+### 4.2 性能优化
 
-**Architecture Understanding**
-→ [ARCHITECTURE_DESIGN.md](ARCHITECTURE_DESIGN.md) or [04_架构设计/](04_架构设计/)
+- [性能优化指南](06_高级特性/性能优化.md)
+- [性能基准测试](OTLP_RUST_性能基准测试报告.md)
+- [调优指南](07_部署运维/OTLP_RUST_故障排查和性能调优指南.md)
 
-**Deployment**
-→ [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) or [07_部署运维/](07_部署运维/)
+### 4.3 云原生部署
 
-**Examples**
-→ [08_示例和教程/](08_示例和教程/)
+- [Kubernetes 集成](OTLP_K8S_ISTIO_ENVOY_GUIDE.md)
+- [Istio 集成](OTLP_K8S_ISTIO_ENVOY_GUIDE.md)
+- [Envoy 集成](OTLP_K8S_ISTIO_ENVOY_GUIDE.md)
+- [部署策略](DEPLOYMENT_GUIDE.md)
 
-**Standards**
-→ [03_标准规范/](03_标准规范/)
+### 4.4 安全性
 
-### By Experience Level
-
-**Beginner**-
-
-1. README.md → Overview
-2. QUICK_START_GUIDE.md → Setup
-3. 02_核心概念/ → Learn basics
-4. 08_示例和教程/ → Try examples
-
-**Intermediate**-
-
-1. DEVELOPER_GUIDE.md → Development workflow
-2. API_REFERENCE.md → API details
-3. 06_高级特性/ → Advanced usage
-4. 05_开发指南/ → Best practices
-
-**Advanced**-
-
-1. ARCHITECTURE_DESIGN.md → System design
-2. FORMAL_VERIFICATION_ANALYSIS.md → Theory
-3. Analysis/ → Research papers
-4. 04_架构设计/ → Deep dive
+- [安全配置](OTLP_RUST_安全配置和最佳实践指南.md)
+- [最佳实践](OTLP_RUST_安全配置和最佳实践指南.md)
+- [TLS 配置](OTLP_RUST_安全配置和最佳实践指南.md)
 
 ---
 
-## 🌍 Language Support
+## 5. 关键文档
 
-### English Documentation
+### 5.1 入门文档
 
-- All core guides available in English
-- Naming: *_GUIDE.md,*_REFERENCE.md
+1. **[README.md](README.md)** - 项目概览 ✅
+2. **[QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)** - 5分钟指南
+3. **[01_快速开始/README.md](01_快速开始/README.md)** - 快速开始目录 ✅
 
-### Chinese Documentation / 中文文档
+### 5.2 核心文档
 
-- Core guides translated to Chinese
-- Naming: *_指南.md,*_文档.md
-- Index: [OTLP_RUST_文档索引.md](OTLP_RUST_文档索引.md)
+1. **[USER_GUIDE.md](USER_GUIDE.md)** - 完整用户指南
+2. **[API_REFERENCE.md](API_REFERENCE.md)** - API 文档
+3. **[ARCHITECTURE_DESIGN.md](ARCHITECTURE_DESIGN.md)** - 架构指南
+4. **[02_核心概念/README.md](02_核心概念/README.md)** - 核心概念 ✅
+5. **[03_标准规范/OTLP_统一规范详解_2025.md](03_标准规范/OTLP_统一规范详解_2025.md)** - 规范详解 ✅
 
----
+### 5.3 实施文档
 
-## 📊 Documentation Status
-
-| Category | Status | Completeness |
-|----------|--------|--------------|
-| Quick Start | ✅ Complete | 100% |
-| User Guides | ✅ Complete | 95% |
-| API Reference | ✅ Complete | 90% |
-| Architecture | ✅ Complete | 90% |
-| Deployment | ✅ Complete | 85% |
-| Examples | 🟡 In Progress | 75% |
-| Advanced Topics | 🟡 In Progress | 70% |
+1. **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** - 开发指南
+2. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - 部署指南
+3. **[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md)** - 生产检查清单
+4. **[OTLP_K8S_ISTIO_ENVOY_GUIDE.md](OTLP_K8S_ISTIO_ENVOY_GUIDE.md)** - 云原生指南
 
 ---
 
-## 🤝 Contributing
+## 6. 文档统计
 
-Want to improve documentation?
+| 指标 | 数量 |
+|------|------|
+| **总文档数** | ~190 |
+| **核心指南** | 15+ |
+| **代码示例** | 30+ |
+| **已标准化** | 5 (✅ 目录+序号) |
+| **API 文档** | 完整 |
+| **语言** | 中文 + English |
+| **最后更新** | 2025年10月27日 |
 
-1. Read **[DOCUMENTATION_STANDARDS.md](DOCUMENTATION_STANDARDS.md)**
-2. Check **[COMMUNITY_GUIDE.md](COMMUNITY_GUIDE.md)**
-3. Submit Pull Requests to relevant sections
-
----
-
-## 📝 Maintenance
-
-**Documentation Maintainers**: OTLP Rust Team  
-**Last Major Review**: 2025-10-26  
-**Next Review**: 2025-11-26
-
-For documentation issues or suggestions:
-
-- Open an issue in the repository
-- Contact the documentation team
-- Refer to COMMUNITY_GUIDE.md
+**标准化进度**:
+```
+总进度: ████░░░░░░░░░░░░░░░░ 2.6% (5/190)
+P0核心: ████████░░░░░░░░░░░░ 62.5% (5/8)
+```
 
 ---
 
-## 🔗 Related Resources
+## 7. 贡献指南
 
-- **OpenTelemetry Official**: <https://opentelemetry.io/>
-- **OTLP Specification**: <https://opentelemetry.io/docs/specs/otlp/>
-- **Rust OpenTelemetry**: <https://github.com/open-telemetry/opentelemetry-rust>
+如何贡献文档：
+
+1. **阅读标准**: [文档格式标准](../../DOCUMENTATION_FORMAT_STANDARD_2025_10_27.md)
+2. **查看示例**: 参考已标准化的文档（标记为 ✅）
+3. **提交更改**: 遵循 [CONTRIBUTING.md](../../CONTRIBUTING.md)
+4. **质量检查**: 确保目录和序号完整
 
 ---
 
-**Navigation Tips**:
+**文档版本**: 0.6.0  
+**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)  
+**维护者**: OTLP Rust 文档团队  
+**最后更新**: 2025年10月27日  
+**反馈**: [提交 Issue](https://github.com/your-org/otlp-rust/issues)
 
-- Use Ctrl+F / Cmd+F to search this index
-- Bookmark frequently used sections
-- Start with Quick Start if you're new
-- Refer to API Reference for code details
+---
 
-**Happy coding with OTLP Rust!** 🦀✨
+> **提示**: 本索引文档持续更新中。标记为 ✅ 的文档已完成格式标准化（包含完整目录和序号系统）。
+
+**🎉 欢迎使用 OTLP Rust！通过此索引快速找到所需文档！** 🚀
