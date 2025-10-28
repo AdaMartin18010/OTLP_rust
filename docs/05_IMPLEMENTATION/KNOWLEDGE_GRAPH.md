@@ -1,6 +1,6 @@
-# [标题] 知识图谱
+# 实施指南知识图谱
 
-**版本**: 1.0  
+**版本**: 2.0  
 **日期**: 2025年10月28日  
 **状态**: ✅ 完整
 
@@ -8,61 +8,73 @@
 
 ## 📋 目录
 
-1. [概念网络](#1-概念网络)
-2. [概念关系矩阵](#2-概念关系矩阵)
-3. [层次结构](#3-层次结构)
-4. [属性维度](#4-属性维度)
+1. [实施流程全景](#1-实施流程全景)
+2. [组件关系图](#2-组件关系图)
 
 ---
 
-## 1. 概念网络
+## 1. 实施流程全景
 
-### 1.1 核心概念图
+### 1.1 完整实施步骤
 
-\`\`\`mermaid
-graph TB
-    A[概念A] --> B[概念B]
-    A --> C[概念C]
-    B --> D[概念D]
-\`\`\`
-
----
-
-## 2. 概念关系矩阵
-
-| 概念A | 关系 | 概念B | 说明 |
-|-------|------|-------|------|
-| XXX | 依赖 | YYY | ... |
-
----
-
-## 3. 层次结构
-
-\`\`\`
-主题
-├── 1. 基础层
-│   ├── 1.1 概念A
-│   └── 1.2 概念B
-└── 2. 应用层
-    └── 2.1 实现C
-\`\`\`
+```mermaid
+graph TD
+    START([开始实施])
+    
+    START --> BATCH[配置BatchProcessor]
+    BATCH --> EXP[选择Exporter类型]
+    
+    EXP --> GRPC[gRPC Exporter]
+    EXP --> HTTP[HTTP Exporter]
+    EXP --> CON[Console Exporter]
+    EXP --> DB[Database Exporter]
+    
+    GRPC --> TOKIO[配置Tokio运行时]
+    HTTP --> TOKIO
+    CON --> TOKIO
+    DB --> TOKIO
+    
+    TOKIO --> POOL[配置ObjectPool]
+    POOL --> TEST[测试验证]
+    TEST --> PROD[生产部署]
+    
+    style START fill:#f9f
+    style PROD fill:#6f9
+```
 
 ---
 
-## 4. 属性维度
+## 2. 组件关系图
 
-[待补充]
+```
+实施组件层次:
+
+应用层
+├─ BatchSpanProcessor (批处理)
+└─ ObjectPool (对象池)
+
+传输层
+├─ GrpcExporter (gRPC)
+├─ HttpExporter (HTTP)
+├─ ConsoleExporter (控制台)
+└─ DatabaseExporter (数据库)
+
+运行时层
+└─ Tokio Runtime (异步运行时)
+```
 
 ---
 
 ## 🔗 相关资源
 
-- [对比矩阵](./COMPARISON_MATRIX.md)
-- [概念定义](./CONCEPTS.md)
-- [README](./README.md)
+- [核心概念](./CONCEPTS.md) - 实施详解
+- [对比矩阵](./COMPARISON_MATRIX.md) - 方案对比
 
 ---
 
-**版本**: 1.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28
+**版本**: 2.0  
+**创建日期**: 2025-10-28
+
+---
+
+> **💡 提示**: 按照流程图逐步实施，从BatchProcessor开始。

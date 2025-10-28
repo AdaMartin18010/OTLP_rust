@@ -85,8 +85,17 @@ opt-level = 2
 
 # 工作区级别的依赖版本统一 - 2025年10月最新稳定版本 (Rust 1.90 优化)
 # 所有依赖库版本已与系统时间同步，确保使用最新的成熟稳定版本
-# 最后更新: 2025年10月27日 - 依赖版本更新
+# 最后更新: 2025年10月28日 - 依赖版本更新
 # OpenTelemetry: v0.31.0 (当前最新稳定版本，v0.32.0需要Rust > 1.90)
+# 2025-10-28更新:
+#   - js-sys: v0.3.81 -> v0.3.82 (WebAssembly JS绑定更新)
+#   - rustls-pki-types: v1.12.0 -> v1.13.0 (PKI类型更新)
+#   - wasm-bindgen: v0.2.104 -> v0.2.105 (WebAssembly绑定更新)
+#   - wasm-bindgen-futures: v0.4.54 -> v0.4.55 (异步绑定更新)
+#   - wasm-bindgen-macro: v0.2.104 -> v0.2.105 (宏更新)
+#   - wasm-bindgen-macro-support: v0.2.104 -> v0.2.105 (宏支持更新)
+#   - wasm-bindgen-shared: v0.2.104 -> v0.2.105 (共享组件更新)
+#   - web-sys: v0.3.81 -> v0.3.82 (Web API绑定更新)
 # 2025-10-27更新:
 #   - proptest: v1.8.0 -> v1.9.0 (属性测试框架更新)
 #   - 所有依赖已确认为最新稳定版本
@@ -354,7 +363,7 @@ ahash = "0.8.12"               # 替代 fxhash (未维护) - 高性能哈希
 quote = "1.0.41"               # 替代 paste (未维护) - 代码生成
 proc-macro-error2 = "2.0.1"    # 替代 proc-macro-error (未维护) - 宏错误处理
 is-terminal = "0.2.0"          # 替代 atty (有安全漏洞) - 终端检测
-wasm-bindgen = "0.2.104"       # 最新稳定版本，支持WebAssembly 2.0
+wasm-bindgen = "0.2.105"       # 最新稳定版本，支持WebAssembly 2.0
 nix = "0.28.0"                 # 系统调用安全封装
 # pingora 已移除，存在安全漏洞 (RUSTSEC-2025-0037, RUSTSEC-2025-0070)
 
