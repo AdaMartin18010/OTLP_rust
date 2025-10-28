@@ -1,7 +1,7 @@
 ﻿# C12 模型与架构：主索引
 
-**版本**: 1.2  
-**最后更新**: 2025年10月27日  
+**版本**: 1.2.0  
+**最后更新**: 2025年10月28日  
 **Rust 版本**: 1.90.0 (const API稳定、LLD链接器优化)  
 **状态**: 🟢 活跃维护
 
@@ -80,315 +80,248 @@
 
 ## 2. 文档结构
 
-### 2.1 核心文档层
-
 ```text
 docs/
-├── 00_MASTER_INDEX.md          # 本文档 - 主导航索引
-├── README.md                    # 文档中心首页
+├── 00_MASTER_INDEX.md          # 主导航索引
+├── README.md                    # 文档中心
 ├── OVERVIEW.md                  # 项目概述
-├── FAQ.md                       # 常见问题
-├── Glossary.md                  # 术语表
-└── SUMMARY.md                   # 文档结构总览
+├── FAQ.md / Glossary.md         # 参考资料
+│
+├── core/                        # 核心概念
+├── concurrency/                 # 并发模型
+├── distributed/                 # 分布式系统
+├── architecture/                # 架构设计
+├── formal/                      # 形式化方法
+│
+├── guides/                      # 使用指南
+├── tutorials/                   # 教程
+├── api/                        # API参考
+├── examples/                   # 示例
+│
+└── advanced/                   # 高级主题
 ```
 
-### 2.2 内容文档层
+---
 
-#### 2.2.1 核心概念
+## 3. 核心模型文档
 
-基础理论和概念，建模入门必读
+### 3.1 并发模型
 
-| 文档 | 说明 |
-|------|------|
-| [modeling-overview.md](./core/modeling-overview.md) | 建模概述 |
-| [algorithm-models.md](./core/algorithm-models.md) | 算法模型基础 |
+**目录**: [concurrency/](./concurrency/)
 
-**适合人群**: 初学者、需要理论基础的开发者
+**核心文档**:
+- [并发模型总览](./concurrency/README.md) - 入门必读
+- [并发模型分类](./concurrency/models.md) - 完整分类
+- [深度分析](./concurrency/concurrency-models-deep-dive.md) - 深入理解
 
-#### 2.2.2 并发模型
+**专题文档**:
+- 异步同步分类 | 异步递归模型 | 背压控制 | 工程实践
 
-并发、异步、背压控制等并发编程模型
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./concurrency/README.md) | 并发模型总览 |
-| [models.md](./concurrency/models.md) | 并发模型分类 |
-| [async-sync-classification.md](./concurrency/async-sync-classification.md) | 异步同步分类 |
-| [async-recursion.md](./concurrency/async-recursion.md) | 异步递归模型 |
-| [backpressure-models.md](./concurrency/backpressure-models.md) | 背压控制模型 |
-| [concurrency-models-deep-dive.md](./concurrency/concurrency-models-deep-dive.md) | 并发模型深度分析 |
-| [engineering.md](./concurrency/engineering.md) | 并发工程实践 |
-| [rust189.md](./concurrency/rust189.md) | Rust 1.89 并发特性 |
-
-**适合人群**: 中高级开发者、并发系统设计者
-
-#### 2.2.3 分布式系统
-
-分布式共识、快照、一致性模型
-
-| 文档 | 说明 |
-|------|------|
-| [raft-consensus-comprehensive.md](./distributed/raft-consensus-comprehensive.md) | Raft共识算法完整实现 |
-| [distributed-snapshot-comprehensive.md](./distributed/distributed-snapshot-comprehensive.md) | 分布式快照算法 |
-
-**适合人群**: 分布式系统开发者、架构师
-
-#### 2.2.4 架构设计
-
-软件架构模式、微服务设计
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./architecture/README.md) | 架构设计总览 |
-| [design-models.md](./architecture/design-models.md) | 设计模型 |
-| [distributed-design.md](./architecture/distributed-design.md) | 分布式架构设计 |
-| [software-design-models-comprehensive.md](./architecture/software-design-models-comprehensive.md) | 软件设计模型综合 |
-| [microservices-mechanisms.md](./architecture/microservices-mechanisms.md) | 微服务机制 |
-
-**适合人群**: 架构师、系统设计者
-
-#### 2.2.5 形式化方法
-
-语义模型、形式化验证
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./formal/README.md) | 形式化方法总览 |
-| [language-semantics.md](./formal/language-semantics.md) | 语言语义学 |
-| [semantic-models-comprehensive.md](./formal/semantic-models-comprehensive.md) | 语义模型综合 |
-
-**适合人群**: 研究者、编译器开发者、形式化验证工程师
-
-#### 2.2.6 使用指南
-
-实践指南和最佳实践
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./guides/README.md) | 指南总览 |
-| [comprehensive-usage-guide.md](./guides/comprehensive-usage-guide.md) | 综合使用指南 |
-| [system-modeling.md](./guides/system-modeling.md) | 系统建模指南 |
-| [machine-learning.md](./guides/machine-learning.md) | 机器学习集成 |
-| [ml-preprocess-eval.md](./guides/ml-preprocess-eval.md) | ML预处理与评估 |
-| [fsm-to-protocol.md](./guides/fsm-to-protocol.md) | 从状态机到协议 |
-
-**适合人群**: 所有开发者
-
-#### 2.2.7 教程
-
-分步教程和快速入门
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./tutorials/README.md) | 教程总览 |
-| [installation.md](./tutorials/installation.md) | 安装配置 |
-| [quick-start.md](./tutorials/quick-start.md) | 快速开始 |
-
-**适合人群**: 初学者
-
-#### 2.2.8 API 参考
-
-API 文档和接口说明
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./api/README.md) | API 总览 |
-| [formal-models.md](./api/formal-models.md) | 形式化模型 API |
-| [ml-models.md](./api/ml-models.md) | 机器学习模型 API |
-| [queueing-models.md](./api/queueing-models.md) | 排队论模型 API |
-
-**适合人群**: API 使用者
-
-#### 2.2.9 示例
-
-代码示例和演示
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./examples/README.md) | 示例总览 |
-
-**适合人群**: 所有开发者
-
-#### 2.2.10 设计模式
-
-设计模式和最佳实践
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./patterns/README.md) | 模式总览 |
-
-**适合人群**: 中高级开发者
-
-#### 2.2.11 领域应用
-
-特定领域的应用
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./domain/README.md) | 领域应用总览 |
-
-**适合人群**: 特定领域开发者
-
-#### 2.2.12 开发指南
-
-贡献指南和开发规范
-
-| 文档 | 说明 |
-|------|------|
-| [README.md](./development/README.md) | 开发指南总览 |
-| [contributing.md](./development/contributing.md) | 贡献指南 |
-
-**适合人群**: 贡献者
-
-#### 2.2.13 高级主题
-
-高级理论和深度分析
-
-| 文档 | 说明 |
-|------|------|
-| [MODEL_COMPREHENSIVE_TAXONOMY.md](./advanced/MODEL_COMPREHENSIVE_TAXONOMY.md) | 模型分类体系 |
-| [MODEL_RELATIONSHIPS_COMPREHENSIVE.md](./advanced/MODEL_RELATIONSHIPS_COMPREHENSIVE.md) | 模型关系综合分析 |
-| [MODEL_RELATIONSHIPS_AND_SEMANTICS.md](./advanced/MODEL_RELATIONSHIPS_AND_SEMANTICS.md) | 模型关系与语义 |
-| [MODEL_ARCHITECTURE_DESIGN.md](./advanced/MODEL_ARCHITECTURE_DESIGN.md) | 模型架构设计 |
-
-**适合人群**: 高级开发者、研究者
-
-#### 2.2.14 归档文档
-
-历史文档和报告
-
-包含项目开发过程中的各类报告、总结和历史文档，供参考使用。
+**适合**: 中高级开发者、并发系统设计者
 
 ---
 
-## 📚 学习路径
+### 3.2 分布式系统
 
-### 3.1 初学者路径
+**目录**: [distributed/](./distributed/)
 
-**目标**: 理解基本概念，能够使用基础模型  
-**时间**: 1-2周
+**核心文档**:
+- [Raft共识算法](./distributed/raft-consensus-comprehensive.md) - 完整实现
+- [分布式快照](./distributed/distributed-snapshot-comprehensive.md) - Chandy-Lamport
 
-1. **入门** → [README](./README.md) + [OVERVIEW](./OVERVIEW.md)
-2. **教程** → [快速开始](./tutorials/quick-start.md) + [安装配置](./tutorials/installation.md)
-3. **核心** → [建模概述](./core/modeling-overview.md)
-4. **实践** → [示例代码](./examples/)
-
-### 3.2 中级路径
-
-**目标**: 掌握核心模型，能够设计并发和分布式系统  
-**时间**: 3-6周
-
-1. **并发** → [并发模型](./concurrency/)
-2. **分布式** → [分布式系统](./distributed/)
-3. **架构** → [架构设计](./architecture/)
-4. **指南** → [使用指南](./guides/)
-
-### 3.3 高级路径
-
-**目标**: 精通形式化方法，能够进行理论研究和高级系统设计  
-**时间**: 7-12周
-
-1. **形式化** → [形式化方法](./formal/)
-2. **深入** → [高级主题](./advanced/)
-3. **模式** → [设计模式](./patterns/)
-4. **领域** → [领域应用](./domain/)
+**适合**: 分布式系统开发者、架构师
 
 ---
 
-## 4. 使用场景
+### 3.3 架构设计
 
-### 4.1 高并发系统开发
+**目录**: [architecture/](./architecture/)
 
-| 需求 | 推荐文档 | 路径 |
-|------|---------|------|
-| 并发模型 | [并发模型分类](./concurrency/models.md) | concurrency/ |
-| 背压控制 | [背压模型](./concurrency/backpressure-models.md) | concurrency/ |
-| 异步编程 | [异步同步分类](./concurrency/async-sync-classification.md) | concurrency/ |
+**核心文档**:
+- [架构设计总览](./architecture/README.md)
+- [设计模型](./architecture/design-models.md)
+- [分布式架构设计](./architecture/distributed-design.md)
+- [软件设计模型综合](./architecture/software-design-models-comprehensive.md)
+- [微服务机制](./architecture/microservices-mechanisms.md)
 
-### 4.2 分布式系统设计
+**适合**: 架构师、系统设计者
 
-| 需求 | 推荐文档 | 路径 |
-|------|---------|------|
-| 共识算法 | [Raft共识](./distributed/raft-consensus-comprehensive.md) | distributed/ |
-| 快照机制 | [分布式快照](./distributed/distributed-snapshot-comprehensive.md) | distributed/ |
-| 架构设计 | [分布式架构](./architecture/distributed-design.md) | architecture/ |
+---
 
-### 4.3 微服务架构
+### 3.4 形式化方法
 
-| 需求 | 推荐文档 | 路径 |
-|------|---------|------|
-| 架构模式 | [架构设计](./architecture/design-models.md) | architecture/ |
-| 微服务机制 | [微服务机制](./architecture/microservices-mechanisms.md) | architecture/ |
-| 系统建模 | [系统建模指南](./guides/system-modeling.md) | guides/ |
+**目录**: [formal/](./formal/)
 
-### 4.4 形式化验证
+**核心文档**:
+- [形式化方法总览](./formal/README.md)
+- [语言语义学](./formal/language-semantics.md)
+- [语义模型综合](./formal/semantic-models-comprehensive.md)
 
-| 需求 | 推荐文档 | 路径 |
-|------|---------|------|
-| 语义模型 | [语义模型](./formal/semantic-models-comprehensive.md) | formal/ |
-| 语言语义 | [语言语义学](./formal/language-semantics.md) | formal/ |
-| 状态机 | [状态机到协议](./guides/fsm-to-protocol.md) | guides/ |
+**适合**: 研究者、编译器开发者、形式化验证工程师
+
+---
+
+## 4. 实践文档
+
+### 4.1 使用指南
+
+**目录**: [guides/](./guides/)
+
+**综合指南**:
+- [综合使用指南](./guides/comprehensive-usage-guide.md) - 完整指南
+- [系统建模指南](./guides/system-modeling.md) - 系统建模
+- [机器学习集成](./guides/machine-learning.md) - ML模型
+- [状态机到协议](./guides/fsm-to-protocol.md) - FSM设计
+
+**适合**: 所有开发者
+
+---
+
+### 4.2 教程
+
+**目录**: [tutorials/](./tutorials/)
+
+**入门教程**:
+- [安装配置](./tutorials/installation.md)
+- [快速开始](./tutorials/quick-start.md)
+
+**适合**: 初学者
+
+---
+
+### 4.3 API 参考
+
+**目录**: [api/](./api/)
+
+**API 文档**:
+- [形式化模型 API](./api/formal-models.md)
+- [机器学习模型 API](./api/ml-models.md)
+- [排队论模型 API](./api/queueing-models.md)
+
+**适合**: API 使用者
+
+---
+
+### 4.4 示例与模式
+
+- **示例代码**: [examples/](./examples/)
+- **设计模式**: [patterns/](./patterns/)
+- **领域应用**: [domain/](./domain/)
+
+---
+
+## 5. 高级主题
+
+**目录**: [advanced/](./advanced/)
+
+**深度分析**:
+- [模型分类体系](./advanced/MODEL_COMPREHENSIVE_TAXONOMY.md) - 完整分类
+- [模型关系分析](./advanced/MODEL_RELATIONSHIPS_COMPREHENSIVE.md) - 关系网络
+- [模型架构设计](./advanced/MODEL_ARCHITECTURE_DESIGN.md) - 架构模式
+
+**适合**: 高级开发者、研究者
+
+---
+
+## 6. 学习路径
+
+### 6.1 初学者路径（1-2周）
+
+理解基本概念，使用基础模型
+
+**路径**: README → 快速开始 → 建模概述 → 示例代码
+
+**推荐文档**: [OVERVIEW](./OVERVIEW.md) | [快速开始](./tutorials/quick-start.md) | [建模概述](./core/modeling-overview.md)
+
+---
+
+### 6.2 中级路径（3-6周）
+
+掌握核心模型，设计并发和分布式系统
+
+**路径**: 并发模型 → 分布式系统 → 架构设计 → 使用指南
+
+**推荐文档**: [并发](./concurrency/) | [分布式](./distributed/) | [架构](./architecture/)
+
+---
+
+### 6.3 高级路径（7-12周）
+
+精通形式化方法，理论研究和高级设计
+
+**路径**: 形式化方法 → 高级主题 → 设计模式 → 领域应用
+
+**推荐文档**: [形式化](./formal/) | [高级主题](./advanced/) | [模式](./patterns/)
+
+---
+
+## 7. 使用场景
+
+### 7.1 高并发系统开发
+
+**推荐**: [并发模型分类](./concurrency/models.md) | [背压控制](./concurrency/backpressure-models.md) | [异步编程](./concurrency/async-sync-classification.md)
+
+---
+
+### 7.2 分布式系统设计
+
+**推荐**: [Raft共识](./distributed/raft-consensus-comprehensive.md) | [分布式快照](./distributed/distributed-snapshot-comprehensive.md) | [分布式架构](./architecture/distributed-design.md)
+
+---
+
+### 7.3 微服务架构
+
+**推荐**: [架构设计](./architecture/design-models.md) | [微服务机制](./architecture/microservices-mechanisms.md) | [系统建模](./guides/system-modeling.md)
+
+---
+
+### 7.4 形式化验证
+
+**推荐**: [语义模型](./formal/semantic-models-comprehensive.md) | [语言语义学](./formal/language-semantics.md) | [状态机到协议](./guides/fsm-to-protocol.md)
 
 ---
 
 ---
 
-## 5. 相关资源
+## 8. 项目资源
 
-### 5.1 项目文档
+**项目文档**: [README](../README.md) | [路线图](../ROADMAP.md) | [更新日志](../CHANGELOG.md)
 
-- [项目 README](../README.md) - 项目总览
-- [路线图](../ROADMAP.md) - 开发路线图
-- [里程碑](../MILESTONES.md) - 项目里程碑
-- [更新日志](../CHANGELOG.md) - 版本更新记录
+**代码资源**: [源码](../src/) | [示例](../examples/) | [测试](../tests/) | [基准](../benches/)
 
-### 5.2 源码与示例
-
-- [源码实现](../src/) - 核心实现代码
-- [示例程序](../examples/) - 完整示例代码
-- [测试用例](../tests/) - 测试代码
-- [基准测试](../benches/) - 性能基准
-
-### 5.3 配置文件
-
-- [Cargo.toml](../Cargo.toml) - 项目配置
-- [book.toml](./book.toml) - mdBook 配置
+**配置文件**: [Cargo.toml](../Cargo.toml) | [book.toml](./book.toml)
 
 ---
 
-## 6. 文档统计
+## 9. 项目统计
 
-| 类别 | 数量 |
-|------|------|
-| **文档总数** | 50+ |
-| **核心文档** | 6个类别 |
-| **教程文档** | 3篇 |
-| **API 文档** | 4篇 |
-| **示例代码** | 15+ |
-
----
-
-## 7. 使用建议
-
-1. **首次使用**: 从 [README](./README.md) 和 [OVERVIEW](./OVERVIEW.md) 开始
-2. **快速入门**: 直接查看 [快速开始](./tutorials/quick-start.md)
-3. **深入学习**: 按照学习路径逐步推进
-4. **问题解决**: 查看 [FAQ](./FAQ.md) 或搜索相关文档
-5. **术语查询**: 使用 [术语表](./Glossary.md)
+| 指标 | 数值 | 说明 |
+|------|------|------|
+| 文档总数 | 50+ | 包含所有.md文件 |
+| 核心模型 | 4类 | 并发/分布式/架构/形式化 |
+| API文档 | 3篇 | 完整API参考 |
+| 示例代码 | 15+ | 实践示例 |
+| 更新频率 | 月度 | 持续维护 |
 
 ---
 
-## 8. 支持与反馈
+## 10. 使用建议
 
-### 8.1 问题反馈
+**首次使用**: [README](./README.md) + [OVERVIEW](./OVERVIEW.md) → 了解全貌
 
-- **GitHub Issues**: [提交问题](https://github.com/rust-lang/rust-lang/issues)
-- **GitHub Discussions**: [参与讨论](https://github.com/rust-lang/rust-lang/discussions)
+**快速入门**: [快速开始](./tutorials/quick-start.md) → 10分钟上手
 
-### 8.2 贡献指南
+**深入学习**: 按学习路径(6.1-6.3) → 系统掌握
 
-- **贡献指南**: [CONTRIBUTING.md](./development/contributing.md)
-- **开发文档**: [development/](./development/)
+**问题解决**: [FAQ](./FAQ.md) | [术语表](./Glossary.md) → 快速查询
+
+---
+
+## 11. 支持与贡献
+
+**问题反馈**: [GitHub Issues](https://github.com/rust-lang/rust-lang/issues) | [Discussions](https://github.com/rust-lang/rust-lang/discussions)
+
+**参与贡献**: [贡献指南](./development/contributing.md) | [开发文档](./development/)
 
 ---
 
