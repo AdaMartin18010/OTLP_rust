@@ -1,4 +1,4 @@
-# 部署核心概念
+﻿# 部署核心概念
 
 **版本**: 2.0  
 **日期**: 2025年10月28日  
@@ -15,7 +15,7 @@
 
 ---
 
-## 1. 容器化部署
+## 📖 容器化部署
 
 ### 1.1 Docker多阶段构建
 
@@ -198,7 +198,7 @@ docker run -d \
 
 ---
 
-## 2. Kubernetes部署
+## 🔍 Kubernetes部署
 
 ### 2.1 Deployment资源
 
@@ -540,7 +540,7 @@ kubectl scale deployment/otlp-receiver --replicas=5 -n observability
 
 ---
 
-## 3. 服务发现
+## 💡 服务发现
 
 ### 3.1 Consul服务注册
 
@@ -757,7 +757,7 @@ pub async fn create_client_with_discovery() -> Result<OtlpClient> {
 
 ---
 
-## 4. 配置管理
+## ⚙️ 配置管理
 
 ### 4.1 12-Factor配置
 

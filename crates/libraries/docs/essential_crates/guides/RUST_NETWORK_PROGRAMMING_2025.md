@@ -96,7 +96,7 @@
 
 ---
 
-## 1. 网络编程基础1
+## 📖 网络编程基础1
 
 ### 1.1 TCP vs UDP1
 
@@ -154,7 +154,7 @@ let addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
 
 ---
 
-## 2. TCP 编程1
+## 📝 TCP 编程1
 
 ### 2.1 TCP 服务器1
 
@@ -283,7 +283,7 @@ fn handle_chat_client(stream: TcpStream, clients: ClientList) {
 
 ---
 
-## 3. UDP 编程1
+## 🔍 UDP 编程1
 
 ### 3.1 UDP 服务器1
 
@@ -372,7 +372,7 @@ fn multicast_receiver() -> std::io::Result<()> {
 
 ---
 
-## 4. 异步网络编程1
+## 🔧 异步网络编程1
 
 ### 4.1 Tokio TCP1
 
@@ -472,7 +472,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ---
 
-## 5. HTTP 服务开发1
+## 📊 HTTP 服务开发1
 
 ### 5.1 Axum Web 框架1
 
@@ -626,7 +626,7 @@ async fn main() {
 
 ---
 
-## 6. WebSocket1
+## 🌟 WebSocket1
 
 ### 6.1 WebSocket 服务器1
 
@@ -788,7 +788,7 @@ async fn main() {
 
 ---
 
-## 7. 协议实现1
+## 🔬 协议实现1
 
 ### 7.1 自定义二进制协议1
 
@@ -925,7 +925,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ---
 
-## 8. 性能优化1
+## 💻 性能优化1
 
 ### 8.1 零拷贝 IO1
 
@@ -1027,7 +1027,7 @@ async fn main() {
 
 ---
 
-## 9. 常见陷阱1
+## 📚 常见陷阱1
 
 1. **未正确处理连接关闭**
    - 检查 `read()` 返回 0 表示连接关闭
@@ -1051,7 +1051,7 @@ async fn main() {
 
 ---
 
-## 10. 最佳实践1
+## ✅ 最佳实践1
 
 1. **使用异步 IO**
    - 生产环境优先使用 Tokio
@@ -1076,7 +1076,7 @@ async fn main() {
 
 ---
 
-## 11. 参考资源1
+## 🌈 参考资源1
 
 ### 官方文档
 

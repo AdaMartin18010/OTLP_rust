@@ -74,5 +74,5 @@ warning-policy = "warn"
 
 # 自定义配置
 [rust]
-edition = "2021"
+edition = "2024"
 

@@ -273,7 +273,7 @@ let mut fsm = FiniteStateMachine::new("idle");
 - 不变式（Invariant）：在所有可达状态上都成立的性质。
 - 反例（Counterexample）：违背性质的执行路径示例。
 
-## 1. 形式化方法模型 API 参考
+## 📖 形式化方法模型 API 参考
 
 ## 1.1 目录
 

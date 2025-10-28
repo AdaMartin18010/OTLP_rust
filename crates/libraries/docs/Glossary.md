@@ -27,7 +27,7 @@
 
 ---
 
-## 1. 数据库相关
+## 📖 数据库相关
 
 ### 1.1 SQL
 
@@ -79,7 +79,7 @@ Pool::builder(manager)
 
 ---
 
-## 2. 缓存相关
+## 📝 缓存相关
 
 ### 2.1 Redis
 
@@ -141,7 +141,7 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-## 3. 消息队列相关
+## 🔍 消息队列相关
 
 ### 3.1 Kafka
 
@@ -194,7 +194,7 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-## 4. HTTP中间件
+## 🔧 HTTP中间件
 
 ### 4.1 Pingora
 
@@ -226,7 +226,7 @@ while let Some(msg) = pubsub.on_message().next().await {
 
 ---
 
-## 5. 性能与可观测
+## ⚡ 性能与可观测
 
 ### 5.1 连接复用
 
@@ -258,7 +258,7 @@ async fn query_database(id: i32) -> Result<User> {
 
 ---
 
-## 6. Rust特性
+## 🌟 Rust特性
 
 ### 6.1 async fn in trait
 
@@ -292,7 +292,7 @@ trait Config {
 
 ---
 
-## 7. 相关资源
+## 🔬 相关资源
 
 ### 7.1 核心文档
 

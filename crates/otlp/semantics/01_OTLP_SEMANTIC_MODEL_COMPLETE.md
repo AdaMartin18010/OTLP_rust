@@ -1,4 +1,4 @@
-# OTLP语义模型完整定义
+﻿# OTLP语义模型完整定义
 
 > **版本**: 1.0  
 > **日期**: 2025年10月17日  
@@ -83,7 +83,7 @@
 
 ---
 
-## 1. 概述
+## 🎯 概述
 
 ### 1.1 OTLP四支柱架构
 
@@ -227,7 +227,7 @@ OpenTelemetry定义了可观测性的四个支柱：
 
 ---
 
-## 2. Resource语义模型
+## 📝 Resource语义模型
 
 ### 2.1 Resource定义与作用
 
@@ -457,7 +457,7 @@ let logger = LoggerProvider::builder()
 
 ---
 
-## 3. Context语义模型
+## 💡 Context语义模型
 
 ### 3.1 TraceContext
 
@@ -561,7 +561,7 @@ tracestate: congo=t61rcWkgMzE,rojo=00f067aa0ba902b7
 
 ---
 
-## 4. Traces语义模型
+## 🔧 Traces语义模型
 
 ### 4.1 Span完整定义
 
@@ -756,7 +756,7 @@ Request Span ──link──> Batch Process Span
 
 ---
 
-## 5. Metrics语义模型
+## 📊 Metrics语义模型
 
 ### 5.1 Metric类型详解
 
@@ -949,7 +949,7 @@ histogram.record(
 
 ---
 
-## 6. Logs语义模型
+## 🚀 Logs语义模型
 
 ### 6.1 LogRecord结构
 
@@ -1005,7 +1005,7 @@ log::error!(
 
 ---
 
-## 7. Profiles语义模型
+## 🔍 Profiles语义模型
 
 ### 7.1 Profile数据结构
 
@@ -1057,7 +1057,7 @@ span.id: "00f067aa0ba902b7"
 
 ---
 
-## 8. 语义一致性保证
+## 💻 语义一致性保证
 
 ### 8.1 命名规范
 
@@ -1095,7 +1095,7 @@ http.status_code: 200
 
 ---
 
-## 9. 参考文献
+## 📚 参考文献
 
 1. [OpenTelemetry Specification](https://opentelemetry.io/docs/specs/)
 2. [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/)

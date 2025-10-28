@@ -1,4 +1,4 @@
-# 2025年OTLP标准与趋势完整对标
+﻿# 2025年OTLP标准与趋势完整对标
 
 > **版本**: 1.0  
 > **日期**: 2025年10月17日  
@@ -75,7 +75,7 @@
 
 ---
 
-## 1. OTLP协议标准
+## 🎯 OTLP协议标准
 
 ### 1.1 OTLP 1.x规范概述
 
@@ -213,7 +213,7 @@ Jaeger Datadog  NewRelic Custom
 
 ---
 
-## 2. OTTL转换语言
+## 📝 OTTL转换语言
 
 ### 2.1 OTTL语法规范
 
@@ -378,7 +378,7 @@ processors:
 
 ---
 
-## 3. OpAMP控制面
+## 💡 OpAMP控制面
 
 ### 3.1 OpAMP规范
 
@@ -563,7 +563,7 @@ opamp_agent_restart_count: 0
 
 ---
 
-## 4. Profiles第四支柱
+## 🔧 Profiles第四支柱
 
 ### 4.1 Profiles规范
 
@@ -731,7 +731,7 @@ profile_attributes:
 
 ---
 
-## 5. 语义约定演进
+## 📊 语义约定演进
 
 ### 5.1 稳定的语义约定
 
@@ -869,7 +869,7 @@ http.custom_field: "value"  # 不要使用标准前缀
 
 ---
 
-## 6. eBPF与零代码仪表化
+## 🚀 eBPF与零代码仪表化
 
 ### 6.1 eBPF采集
 
@@ -968,7 +968,7 @@ spec:
 
 ---
 
-## 7. 云原生集成
+## 🔍 云原生集成
 
 ### 7.1 Kubernetes集成
 
@@ -1103,7 +1103,7 @@ service:
 
 ---
 
-## 8. 安全与合规
+## 💻 安全与合规
 
 ### 8.1 数据脱敏
 
@@ -1205,7 +1205,7 @@ storage:
 
 ---
 
-## 9. 性能优化趋势
+## 📚 性能优化趋势
 
 ### 9.1 批处理优化
 
@@ -1254,7 +1254,7 @@ processors:
 
 ---
 
-## 10. 行业应用趋势
+## ✅ 行业应用趋势
 
 ### 10.1 金融行业
 
@@ -1349,7 +1349,7 @@ processors:
 
 ---
 
-## 11. 参考文献
+## 🌟 参考文献
 
 1. [OpenTelemetry Specification](https://opentelemetry.io/docs/specs/)
 2. [OTLP Specification](https://opentelemetry.io/docs/specs/otlp/)

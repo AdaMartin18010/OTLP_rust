@@ -1,4 +1,4 @@
-# OTLP Rust 快速开始指南
+﻿# OTLP Rust 快速开始指南
 
 **版本**: 1.1  
 **最后更新**: 2025年10月27日  
@@ -38,13 +38,13 @@
 
 ---
 
-## 1. 快速开始
+## 🎯 快速开始
 
 本指南将帮助您在几分钟内开始使用OTLP Rust库。
 
 ---
 
-## 2. 前置要求
+## 📝 前置要求
 
 - Rust 1.90 或更高版本
 - 基本的Rust编程知识
@@ -52,7 +52,7 @@
 
 ---
 
-## 3. 安装
+## 💡 安装
 
 ### 3.1 添加依赖
 
@@ -74,7 +74,7 @@ cd my-otlp-app
 
 ---
 
-## 4. 基础使用
+## 🔧 基础使用
 
 ### 4.1 最简单的示例
 
@@ -116,7 +116,7 @@ cargo run
 
 ---
 
-## 5. 发送不同类型的数据
+## 📊 发送不同类型的数据
 
 ### 5.1 发送追踪数据
 
@@ -176,7 +176,7 @@ async fn send_log_data(client: &OtlpClient) -> Result<()> {
 
 ---
 
-## 6. 配置选项
+## 🚀 配置选项
 
 ### 6.1 基本配置
 
@@ -226,7 +226,7 @@ let config = OtlpConfigBuilder::new()
 
 ---
 
-## 7. 常见场景
+## 🔍 常见场景
 
 ### 7.1 Web 服务集成
 
@@ -289,7 +289,7 @@ async fn trace_microservice_call(client: &OtlpClient) -> Result<()> {
 
 ---
 
-## 8. 故障排查
+## 💻 故障排查
 
 **常见问题及解决方案**:
 
@@ -310,7 +310,7 @@ async fn trace_microservice_call(client: &OtlpClient) -> Result<()> {
 
 ---
 
-## 9. 下一步
+## 📚 下一步
 
 现在您已经掌握了OTLP Rust库的基础用法，可以：
 

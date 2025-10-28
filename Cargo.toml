@@ -85,9 +85,28 @@ opt-level = 2
 
 # 工作区级别的依赖版本统一 - 2025年10月最新稳定版本 (Rust 1.90 优化)
 # 所有依赖库版本已与系统时间同步，确保使用最新的成熟稳定版本
-# 最后更新: 2025年10月28日 - 依赖版本更新
+# 最后更新: 2025年10月28日 - 依赖版本更新 (Cargo.lock同步)
 # OpenTelemetry: v0.31.0 (当前最新稳定版本，v0.32.0需要Rust > 1.90)
-# 2025-10-28更新:
+# 2025-10-28更新 (第二轮 - ICU国际化组件更新):
+#   - icu_collections: v2.0.0 -> v2.1.1 (ICU集合库)
+#   - icu_locale_core: v2.0.0 -> v2.1.1 (ICU本地化核心)
+#   - icu_normalizer: v2.0.0 -> v2.1.1 (ICU规范化器)
+#   - icu_normalizer_data: v2.0.0 -> v2.1.1 (ICU规范化器数据)
+#   - icu_properties: v2.0.1 -> v2.1.1 (ICU属性)
+#   - icu_properties_data: v2.0.1 -> v2.1.1 (ICU属性数据)
+#   - icu_provider: v2.0.0 -> v2.1.1 (ICU提供程序)
+#   - litemap: v0.8.0 -> v0.8.1 (轻量映射表)
+#   - potential_utf: v0.1.3 -> v0.1.4 (UTF编码检测)
+#   - rustls-webpki: v0.103.7 -> v0.103.8 (TLS Web PKI - 传递依赖更新)
+#   - tinystr: v0.8.1 -> v0.8.2 (微型字符串)
+#   - writeable: v0.6.1 -> v0.6.2 (可写trait)
+#   - yoke: v0.8.0 -> v0.8.1 (零拷贝反序列化)
+#   - yoke-derive: v0.8.0 -> v0.8.1 (Yoke派生宏)
+#   - zerotrie: v0.2.2 -> v0.2.3 (零拷贝trie)
+#   - zerovec: v0.11.4 -> v0.11.5 (零拷贝向量)
+#   - zerovec-derive: v0.11.1 -> v0.11.2 (Zerovec派生宏)
+#   注: 这些是传递依赖，由regex、idna等库自动更新
+# 2025-10-28更新 (第一轮):
 #   - js-sys: v0.3.81 -> v0.3.82 (WebAssembly JS绑定更新)
 #   - rustls-pki-types: v1.12.0 -> v1.13.0 (PKI类型更新)
 #   - wasm-bindgen: v0.2.104 -> v0.2.105 (WebAssembly绑定更新)
@@ -288,6 +307,28 @@ regex-syntax = "0.8.8"         # 正则表达式语法
 regex-automata = "0.4.13"      # 正则表达式自动机
 # 集合和迭代
 itertools = "0.14.0"           # 迭代器工具（统一到最新版本）
+
+# ========== 国际化组件 (ICU) ==========
+# ICU - 2025年10月28日最新稳定版本，Unicode和国际化支持
+# 注: 这些主要是传递依赖，由regex、idna等库使用
+# 明确声明版本以确保一致性和安全更新
+icu_collections = "2.1.1"      # ICU集合库
+icu_locale_core = "2.1.1"      # ICU本地化核心
+icu_normalizer = "2.1.1"       # ICU Unicode规范化器
+icu_normalizer_data = "2.1.1"  # ICU规范化器数据
+icu_properties = "2.1.1"       # ICU Unicode属性
+icu_properties_data = "2.1.1"  # ICU属性数据
+icu_provider = "2.1.1"         # ICU数据提供程序
+# ICU相关工具库
+litemap = "0.8.1"              # 轻量级映射表（ICU依赖）
+tinystr = "0.8.2"              # 微型字符串（ICU依赖）
+writeable = "0.6.2"            # 可写trait（ICU依赖）
+yoke = "0.8.1"                 # 零拷贝反序列化（ICU依赖）
+yoke-derive = "0.8.1"          # Yoke派生宏
+zerotrie = "0.2.3"             # 零拷贝trie结构（ICU依赖）
+zerovec = "0.11.5"             # 零拷贝向量（ICU依赖）
+zerovec-derive = "0.11.2"      # Zerovec派生宏
+potential_utf = "0.1.4"        # UTF编码潜在检测
 
 # ========== 数据库和存储 ==========
 # 数据库和存储 - 2025年10月最新稳定版本，支持多种数据库

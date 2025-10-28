@@ -1,4 +1,4 @@
-# 模型API完整参考
+﻿# 模型API完整参考
 
 > **文档版本**: v1.0.0  
 > **最后更新**: 2025-10-23  
@@ -48,7 +48,7 @@
 
 ---
 
-## 1. 概述
+## 🎯 概述
 
 本文档提供 c12_model 所有公共 API 的完整参考，包括类型定义、函数签名、使用示例和注意事项。
 
@@ -103,7 +103,7 @@ c12_model::
 
 ---
 
-## 2. 形式化建模API
+## 📝 形式化建模API
 
 ### 2.1 Expression 类型
 
@@ -301,7 +301,7 @@ impl AxiomaticSemantics {
 
 ---
 
-## 3. 分布式系统API
+## 💡 分布式系统API
 
 ### 3.1 RaftProtocol
 
@@ -474,7 +474,7 @@ impl VectorClock {
 
 ---
 
-## 4. 并发模型API
+## 🔧 并发模型API
 
 ### 4.1 CSPModel
 
@@ -593,7 +593,7 @@ impl WorkStealingScheduler {
 
 ---
 
-## 5. 软件设计API
+## 📊 软件设计API
 
 ### 5.1 LayeredArchitecture
 
@@ -703,7 +703,7 @@ impl DataflowGraph {
 
 ---
 
-## 6. 算法模型API
+## 🚀 算法模型API
 
 ### 6.1 DijkstraAlgorithm
 
@@ -788,7 +788,7 @@ impl GCDAlgorithm {
 
 ---
 
-## 7. 排队论API
+## 🔍 排队论API
 
 ### 7.1 MM1Model
 
@@ -867,7 +867,7 @@ impl MMcModel {
 
 ---
 
-## 8. 机器学习API
+## 💻 机器学习API
 
 ### 8.1 LinearRegression
 
@@ -931,7 +931,7 @@ println!("预测: {:?}", predictions);
 
 ---
 
-## 9. 数学建模API
+## 📚 数学建模API
 
 ### 9.1 LinearProgramming
 
@@ -1000,7 +1000,7 @@ impl LinearProgramming {
 
 ---
 
-## 10. 错误处理
+## ✅ 错误处理
 
 ### ModelError 类型
 
@@ -1051,7 +1051,7 @@ match my_function() {
 
 ---
 
-## 11. 配置选项
+## 🌟 配置选项
 
 ### ModelConfig
 
@@ -1125,7 +1125,7 @@ let config = ModelConfig::new()
 
 ---
 
-## 12. 总结
+## 🎓 总结
 
 c12_model 提供了完整的 API 覆盖8大建模领域：
 

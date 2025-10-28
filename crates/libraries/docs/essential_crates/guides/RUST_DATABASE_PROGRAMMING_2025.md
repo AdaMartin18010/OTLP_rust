@@ -92,7 +92,7 @@
 
 ---
 
-## 1. 数据库生态概览
+## 📖 数据库生态概览
 
 **Rust 数据库库对比:**
 
@@ -114,7 +114,7 @@
 
 ---
 
-## 2. SQLx 深入
+## 📝 SQLx 深入
 
 ### 2.1 基础设置
 
@@ -242,7 +242,7 @@ async fn insert_many_users(
 
 ---
 
-## 3. Diesel ORM
+## 🔍 Diesel ORM
 
 ### 3.1 设置和迁移
 
@@ -417,7 +417,7 @@ fn get_published_posts_with_authors(conn: &mut PgConnection) -> QueryResult<Vec<
 
 ---
 
-## 4. SeaORM 现代化 ORM
+## 🔧 SeaORM 现代化 ORM
 
 ### 4.1 实体定义
 
@@ -545,7 +545,7 @@ async fn find_posts_with_author(db: &DatabaseConnection) -> Result<Vec<(post::Mo
 
 ---
 
-## 5. 连接池管理
+## 📊 连接池管理
 
 ### 5.1 连接池配置
 
@@ -580,7 +580,7 @@ async fn print_pool_stats(pool: &PgPool) {
 
 ---
 
-## 6. 事务处理
+## 🌟 事务处理
 
 ### 6.1 SQLx 事务
 
@@ -686,7 +686,7 @@ async fn transfer_money_seaorm(
 
 ---
 
-## 7. 迁移管理
+## 🔬 迁移管理
 
 ### 7.1 SQLx 迁移
 
@@ -773,7 +773,7 @@ DROP TABLE users;
 
 ---
 
-## 8. 查询优化
+## 💻 查询优化
 
 ### 8.1 索引优化
 
@@ -842,7 +842,7 @@ user::Entity::insert_many(users)
 
 ---
 
-## 9. NoSQL 数据库
+## 📚 NoSQL 数据库
 
 ### 9.1 MongoDB
 
@@ -951,7 +951,7 @@ async fn main() -> redis::RedisResult<()> {
 
 ---
 
-## 10. 实战案例
+## ✅ 实战案例
 
 ### 10.1 用户认证系统
 
@@ -1030,7 +1030,7 @@ async fn login_user(
 
 ---
 
-## 11. 最佳实践
+## 🌈 最佳实践
 
 1. **使用连接池**
 2. **编译时验证** (SQLx 的 `query!` 宏)
@@ -1045,7 +1045,7 @@ async fn login_user(
 
 ---
 
-## 12. 常见陷阱
+## 🎓 常见陷阱
 
 1. **忘记使用连接池**
 2. **N+1 查询问题**
@@ -1058,7 +1058,7 @@ async fn login_user(
 
 ---
 
-## 13. 参考资源
+## 🔗 参考资源
 
 - **SQLx**: [https://github.com/launchbadge/sqlx](https://github.com/launchbadge/sqlx)
 - **Diesel**: [https://diesel.rs/](https://diesel.rs/)

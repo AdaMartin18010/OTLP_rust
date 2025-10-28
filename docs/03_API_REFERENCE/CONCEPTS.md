@@ -1,4 +1,4 @@
-# API核心概念
+﻿# API核心概念
 
 **版本**: 2.0  
 **日期**: 2025年10月28日  
@@ -15,7 +15,7 @@
 
 ---
 
-## 1. OTLP协议概念
+## 📖 OTLP协议概念
 
 ### 1.1 Span (跨度)
 
@@ -287,7 +287,7 @@ pub fn init_tracer() -> TracerProvider {
 
 ---
 
-## 2. 数据模型概念
+## 🔍 数据模型概念
 
 ### 2.1 批处理 (Batching)
 
@@ -452,7 +452,7 @@ impl<T> AdaptiveBatchProcessor<T> {
 
 ---
 
-## 3. 传输机制概念
+## 💡 传输机制概念
 
 ### 3.1 gRPC流式传输 (gRPC Streaming)
 
@@ -602,7 +602,7 @@ pub fn create_grpc_server() -> Result<Server> {
 
 ---
 
-## 4. 性能优化概念
+## ⚙️ 性能优化概念
 
 ### 4.1 Zero-Copy (零拷贝)
 

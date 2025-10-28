@@ -82,7 +82,7 @@
 
 ---
 
-## 1. WebAssembly 基础
+## 📖 WebAssembly 基础
 
 ### 1.1 为什么选择 WebAssembly?
 
@@ -216,7 +216,7 @@ wasm-pack build --target web
 
 ---
 
-## 2. wasm-bindgen 深入
+## 📝 wasm-bindgen 深入
 
 ### 2.1 类型转换
 
@@ -348,7 +348,7 @@ pub async fn fetch_data(url: String) -> Result<String, JsValue> {
 
 ---
 
-## 3. Yew 框架 (React-like)
+## 🔍 Yew 框架 (React-like)
 
 ### 3.1 项目设置
 
@@ -503,7 +503,7 @@ fn user_list() -> Html {
 
 ---
 
-## 4. Leptos 框架 (Next-gen)
+## 🔧 Leptos 框架 (Next-gen)
 
 ### 4.1 项目设置
 
@@ -582,7 +582,7 @@ fn main() {
 
 ---
 
-## 5. Tauri 桌面应用
+## 📊 Tauri 桌面应用
 
 ### 5.1 项目创建
 
@@ -638,7 +638,7 @@ console.log(data) // "Data from Rust"
 
 ---
 
-## 6. 与 JavaScript 互操作
+## 🌟 与 JavaScript 互操作
 
 ### 6.1 传递复杂数据
 
@@ -697,7 +697,7 @@ pub fn register_click_handler(element_id: &str) -> Result<(), JsValue> {
 
 ---
 
-## 7. 性能优化
+## 🔬 性能优化
 
 ### 7.1 减少二进制大小
 
@@ -765,7 +765,7 @@ pub fn start_worker() -> Result<(), JsValue> {
 
 ---
 
-## 8. 实战案例
+## 💻 实战案例
 
 ### 8.1 图像处理
 
@@ -832,7 +832,7 @@ pub fn draw_chart(canvas: HtmlCanvasElement, data: Vec<f64>) -> Result<(), JsVal
 
 ---
 
-## 9. 最佳实践
+## 📚 最佳实践
 
 1. **最小化 wasm 文件大小** (LTO, opt-level='z', wasm-opt)
 2. **使用 Web Workers** (CPU 密集型任务)
@@ -847,7 +847,7 @@ pub fn draw_chart(canvas: HtmlCanvasElement, data: Vec<f64>) -> Result<(), JsVal
 
 ---
 
-## 10. 常见陷阱
+## ✅ 常见陷阱
 
 1. **忘记调用 init()** (WASM 模块初始化)
 2. **内存泄漏** (Closure::forget 滥用)
@@ -860,7 +860,7 @@ pub fn draw_chart(canvas: HtmlCanvasElement, data: Vec<f64>) -> Result<(), JsVal
 
 ---
 
-## 11. 参考资源
+## 🌈 参考资源
 
 - **wasm-bindgen**: [https://rustwasm.github.io/wasm-bindgen/](https://rustwasm.github.io/wasm-bindgen/)
 - **Yew**: [https://yew.rs/](https://yew.rs/)

@@ -1,4 +1,4 @@
-# 架构设计核心概念
+﻿# 架构设计核心概念
 
 **版本**: 2.0  
 **日期**: 2025年10月28日  
@@ -16,7 +16,7 @@
 
 ---
 
-## 1. 微服务架构概念
+## 📖 微服务架构概念
 
 ### 1.1 服务边界 (Service Boundary)
 
@@ -210,7 +210,7 @@ async fn proxy_to_trace_service(
 
 ---
 
-## 2. 分布式系统概念
+## 🔍 分布式系统概念
 
 ### 2.1 CAP定理 (CAP Theorem)
 
@@ -323,7 +323,7 @@ impl EventuallyConsistentCache {
 
 ---
 
-## 3. 可扩展性概念
+## 💡 可扩展性概念
 
 ### 3.1 水平扩展 (Horizontal Scaling)
 
@@ -451,7 +451,7 @@ spec:
 
 ---
 
-## 4. 可观测性概念
+## ⚙️ 可观测性概念
 
 ### 4.1 三大支柱 (Three Pillars)
 
@@ -577,7 +577,7 @@ impl ObservableService {
 
 ---
 
-## 5. 服务网格概念
+## 📊 服务网格概念
 
 ### 5.1 Sidecar模式 (Sidecar Pattern)
 
