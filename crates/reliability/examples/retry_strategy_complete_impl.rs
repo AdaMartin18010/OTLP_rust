@@ -197,7 +197,7 @@ impl RetryStrategy for JitteredBackoffStrategy {
             let base_ms = base_delay.as_millis() as f64;
             let jitter_range = base_ms * self.jitter_factor;
             
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let jitter: f64 = rng.gen_range(-jitter_range..=jitter_range);
             
             let final_ms = (base_ms + jitter).max(0.0);
