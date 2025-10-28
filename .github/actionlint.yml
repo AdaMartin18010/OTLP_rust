@@ -1,0 +1,8 @@
+# actionlint configuration
+# https://github.com/rhysd/actionlint/blob/main/docs/config.md
+
+# Ignore specific warnings
+ignore:
+  # Allow CODECOV_TOKEN secret - it's optional and won't fail the workflow if missing
+  - 'Context access might be invalid: CODECOV_TOKEN'
+

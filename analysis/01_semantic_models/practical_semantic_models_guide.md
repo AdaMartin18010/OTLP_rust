@@ -1,8 +1,82 @@
 # 实用语义模型指南
 
+## ⚡ 5分钟快速入门
+
+### 第一步：创建项目 (1分钟)
+
+```bash
+cargo new otlp_demo
+cd otlp_demo
+```
+
+### 第二步：添加依赖 (30秒)
+
+```toml
+[dependencies]
+opentelemetry = "0.31.0"
+opentelemetry_sdk = "0.31.0"
+opentelemetry-otlp = "0.31.0"
+tokio = { version = "1.43", features = ["full"] }
+```
+
+### 第三步：编写代码 (2分钟)
+
+```rust
+// src/main.rs
+use opentelemetry::KeyValue;
+use opentelemetry_sdk::Resource;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 创建资源语义模型
+    let resource = Resource::new(vec![
+        KeyValue::new("service.name", "demo-service"),
+        KeyValue::new("service.version", "1.0.0"),
+        KeyValue::new("deployment.environment", "dev"),
+    ]);
+    
+    println!("✅ 创建了语义模型资源：");
+    println!("   服务名: demo-service");
+    println!("   版本: 1.0.0");
+    println!("   环境: dev");
+    
+    Ok(())
+}
+```
+
+### 第四步：运行 (30秒)
+
+```bash
+cargo run
+```
+
+### 预期输出
+
+```text
+✅ 创建了语义模型资源：
+   服务名: demo-service
+   版本: 1.0.0
+   环境: dev
+```
+
+### 下一步
+
+- 📖 [深入理解语义模型](#1-什么是语义模型) - 完整教程
+- 💡 [实际应用场景](#5-实际应用场景) - 真实案例
+- 🎯 [最佳实践](#6-最佳实践) - 生产环境指南
+
+---
+
 ## 📋 目录
 
 - [实用语义模型指南](#实用语义模型指南)
+  - [⚡ 5分钟快速入门](#-5分钟快速入门)
+    - [第一步：创建项目 (1分钟)](#第一步创建项目-1分钟)
+    - [第二步：添加依赖 (30秒)](#第二步添加依赖-30秒)
+    - [第三步：编写代码 (2分钟)](#第三步编写代码-2分钟)
+    - [第四步：运行 (30秒)](#第四步运行-30秒)
+    - [预期输出](#预期输出)
+    - [下一步](#下一步)
   - [📋 目录](#-目录)
   - [概述](#概述)
   - [1. 什么是语义模型？](#1-什么是语义模型)

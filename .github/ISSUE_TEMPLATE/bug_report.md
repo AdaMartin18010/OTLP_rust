@@ -1,69 +1,101 @@
 ---
-name: Bug Report
-about: Report a bug to help us improve
+name: 🐛 Bug报告
+about: 报告一个bug帮助我们改进
 title: '[BUG] '
-labels: bug
+labels: 'bug'
 assignees: ''
 ---
 
-## 🐛 Bug Description
+## 🐛 Bug描述
 
-A clear and concise description of what the bug is.
+<!-- 清晰简洁地描述bug是什么 -->
 
-## 📋 To Reproduce
+## 📋 复现步骤
 
-Steps to reproduce the behavior:
+<!-- 详细描述如何复现这个bug -->
 
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+1. 执行 '...'
+2. 调用 '...'
+3. 查看 '...'
+4. 发现错误 '...'
 
-## ✅ Expected Behavior
+### 最小复现示例
 
-A clear and concise description of what you expected to happen.
-
-## 📸 Screenshots
-
-If applicable, add screenshots to help explain your problem.
-
-## 🖥️ Environment
-
-**System Information**:
-
-- OS: [e.g. Windows 10, macOS 14, Ubuntu 22.04]
-- Rust Version: [e.g. 1.90.0]
-- OTLP Rust Version: [e.g. 0.1.0]
-
-**Dependency Versions**:
-
-```toml
-# Paste relevant dependencies from Cargo.toml
-```
-
-## 📝 Code Sample
+<!-- 如果可能，提供最小的可复现代码 -->
 
 ```rust
-// Minimal code to reproduce the issue
+// 你的代码
 ```
 
-## 📄 Error Output
+## ✅ 预期行为
 
-```text
-Paste the error message here
+<!-- 描述你期望发生什么 -->
+
+## ❌ 实际行为
+
+<!-- 描述实际发生了什么 -->
+
+## 🖼️ 截图/日志
+
+<!-- 如果适用，添加截图或错误日志 -->
+
+```
+错误日志粘贴在这里
 ```
 
-## 🔍 Additional Context
+## 🔧 环境信息
 
-Add any other context about the problem here.
+### 系统信息
 
-## ☑️ Checklist
+- **操作系统**: [例如: Ubuntu 22.04, Windows 11, macOS 14]
+- **Rust版本**: [运行 `rustc --version`]
+- **Cargo版本**: [运行 `cargo --version`]
+- **项目版本**: [例如: v0.5.0-rc1]
 
-- [ ] I have searched existing issues to ensure this is not a duplicate
-- [ ] I have included a minimal reproducible example
-- [ ] I have included error messages/logs
-- [ ] I have specified my environment details
+### 相关配置
 
-## 💡 Possible Solution
+```toml
+# 相关的Cargo.toml配置
+```
 
-If you have ideas on how to fix this, please share them here.
+## 📊 影响范围
+
+<!-- 请选择 -->
+
+- [ ] 影响核心功能
+- [ ] 影响性能
+- [ ] 影响文档
+- [ ] 其他：___________
+
+### 严重程度
+
+<!-- 请选择一个 -->
+
+- [ ] 🔴 严重 - 阻塞性问题，无法继续使用
+- [ ] 🟡 中等 - 影响功能，但有临时解决方案
+- [ ] 🟢 轻微 - 不影响核心功能
+
+## 🔍 额外上下文
+
+<!-- 添加任何其他有助于理解问题的信息 -->
+
+### 可能的原因
+
+<!-- 如果你有想法，请分享 -->
+
+### 临时解决方案
+
+<!-- 如果你找到了临时解决方案，请分享 -->
+
+## 📋 相关Issue
+
+<!-- 如果有相关的Issue，请链接 -->
+
+- 相关Issue: #___
+
+---
+
+💡 **提示**: 
+- 提交前请先搜索是否已有类似Issue
+- 运行 `./scripts/check_project_health.sh` 可能会提供有用信息
+- 查看[完整评估报告](../../analysis/CRITICAL_EVALUATION_REPORT_2025_10_29.md)了解已知问题

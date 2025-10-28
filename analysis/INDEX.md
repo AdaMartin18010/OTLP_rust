@@ -12,16 +12,37 @@
 
 ---
 
+## 🆕 新增资源 (2025年10月29日)
+
+### 实践指南（强烈推荐）
+
+| 文档 | 说明 | 适合人群 |
+|------|------|----------|
+| [快速入门指南](QUICK_START_GUIDE.md) | 5分钟快速上手 | 所有人 |
+| [故障排查指南](TROUBLESHOOTING.md) | 常见问题解决 | 开发者 |
+| [可运行示例集](01_semantic_models/RUNNABLE_EXAMPLES.md) | 7个完整代码示例 | 开发者 |
+| [端到端示例](09_implementation_guides/END_TO_END_EXAMPLES.md) | 从开发到部署 | 架构师 |
+| [生产环境案例](02_distributed_architecture/PRODUCTION_CASES.md) | 4个真实案例 | SRE/架构师 |
+
+### 文档更新
+
+✅ **为以下文档添加了5分钟快速入门**:
+- `01_semantic_models/otlp_semantic_foundations.md`
+- `01_semantic_models/practical_semantic_models_guide.md`
+- `09_implementation_guides/rust_implementation.md`
+
+---
+
 ## 🎯 快速导航
 
 ### 按难度级别
 
-| 级别 | 主题编号 | 建议阅读顺序 |
-|------|---------|-------------|
-| 🟢 入门 | 01, 09 | 语义模型基础 → 实现指南 |
-| 🟡 进阶 | 02, 03, 05 | 分布式架构 → 微服务集成 |
-| 🔴 高级 | 07, 21, 22 | 形式化验证 → Rust深度分析 |
-| 🟣 前沿 | 23-27 | 量子计算 → 神经形态 |
+| 级别 | 主题编号 | 建议阅读顺序 | 新增资源 |
+|------|---------|-------------|----------|
+| 🟢 入门 | 01, 09 | 语义模型基础 → 实现指南 | ⭐ [快速入门](QUICK_START_GUIDE.md) |
+| 🟡 进阶 | 02, 03, 05 | 分布式架构 → 微服务集成 | ⭐ [端到端示例](09_implementation_guides/END_TO_END_EXAMPLES.md) |
+| 🔴 高级 | 07, 21, 22 | 形式化验证 → Rust深度分析 | ⭐ [生产案例](02_distributed_architecture/PRODUCTION_CASES.md) |
+| 🟣 前沿 | 23-27 | 量子计算 → 神经形态 | - |
 
 ### 按应用场景
 
@@ -417,10 +438,40 @@
 
 ## 🎯 学习路径推荐
 
+### 零基础快速入门 (1周)
+
+```text
+Day 1: 快速入门指南 (QUICK_START_GUIDE.md)
+  └── 5分钟上手 + 运行第一个示例
+
+Day 2-3: 可运行示例 (RUNNABLE_EXAMPLES.md)
+  ├── HTTP语义约定示例
+  ├── 数据库追踪示例
+  └── 微服务追踪示例
+
+Day 4-5: 端到端示例 (END_TO_END_EXAMPLES.md)
+  └── 完整Web API项目
+
+Day 6-7: 故障排查和优化 (TROUBLESHOOTING.md)
+  └── 解决常见问题
+```
+
 ### 初学者路径 (2-4周)
 
 ```text
-01 语义模型 → 09 实现指南 → 05 微服务架构 → 11 高级应用
+Week 1: 基础入门
+  ├── QUICK_START_GUIDE.md - 快速入门
+  ├── 01 语义模型 - 理论基础
+  └── RUNNABLE_EXAMPLES.md - 实践练习
+
+Week 2-3: 深入实践
+  ├── 09 实现指南 - Rust实现
+  ├── END_TO_END_EXAMPLES.md - 完整项目
+  └── 05 微服务架构 - 架构设计
+
+Week 4: 高级应用
+  ├── 11 高级应用 - 性能优化
+  └── PRODUCTION_CASES.md - 生产案例
 ```
 
 ### 架构师路径 (4-6周)

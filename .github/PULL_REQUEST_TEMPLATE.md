@@ -1,97 +1,125 @@
-# Pull Request
+## 📋 PR类型
 
-## 📋 Description
+<!-- 请选择一个或多个 -->
 
-<!-- Provide a clear and concise description of your changes -->
+- [ ] 🐛 Bug修复
+- [ ] ✨ 新功能
+- [ ] 📝 文档更新
+- [ ] ♻️ 代码重构
+- [ ] ⚡ 性能优化
+- [ ] ✅ 测试相关
+- [ ] 🔧 配置/构建相关
+- [ ] 🎨 代码风格/格式化
 
-## 🔗 Related Issues
+## 🎯 变更描述
 
-<!-- Link to related issues using: Fixes #123, Closes #456 -->
+<!-- 简要描述这个PR做了什么 -->
 
-Fixes #
+### 背景/动机
 
-## 📝 Type of Change
+<!-- 为什么需要这个变更？解决了什么问题？ -->
 
-<!-- Mark the relevant option with an "x" -->
+### 变更内容
 
-- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
-- [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] 📚 Documentation update
-- [ ] 🎨 Code style update (formatting, renaming)
-- [ ] ♻️ Refactoring (no functional changes)
-- [ ] 🔧 Configuration change
-- [ ] ⚡ Performance improvement
-- [ ] ✅ Test update
-- [ ] 🏗️ Build/CI update
+<!-- 详细描述你的变更 -->
 
-## 🧪 Testing
+### 相关Issue
 
-<!-- Describe the tests you've added or run -->
+<!-- 如果有相关Issue，请链接：Closes #123 或 Relates to #456 -->
 
-**Tests added**:
+## ✅ 测试
 
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] Manual testing
+### 测试类型
 
-**How to test**:
+- [ ] 单元测试
+- [ ] 集成测试
+- [ ] 手动测试
+- [ ] 未添加测试（请说明原因）
+
+### 测试步骤
+
+<!-- 描述如何测试这个变更 -->
 
 ```bash
-# Commands to test your changes
-cargo test
-cargo run --example <example_name>
+# 测试命令示例
+cargo test --package <package-name>
 ```
 
-## ✅ Checklist
+### 测试覆盖率
 
-<!-- Mark completed items with an "x" -->
+- [ ] 保持或提升了测试覆盖率
+- [ ] 覆盖率有所下降（请说明原因）
 
-- [ ] My code follows the project's style guidelines
-- [ ] I have run `cargo fmt` and `cargo clippy`
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published
+## 📊 影响范围
 
-## 📸 Screenshots (if applicable)
+### 受影响的模块
 
-<!-- Add screenshots to help explain your changes -->
+<!-- 列出受影响的crates或模块 -->
 
-## 🔍 Code Review Focus
+- [ ] crates/otlp
+- [ ] crates/reliability
+- [ ] crates/model
+- [ ] crates/libraries
+- [ ] 文档
+- [ ] CI/CD
+- [ ] 其他：___________
 
-<!-- What should reviewers pay special attention to? -->
+### Breaking Changes
 
-## 📚 Documentation
+- [ ] 这是一个破坏性变更
+- [ ] 向后兼容
 
-<!-- List documentation updates made -->
+<!-- 如果是破坏性变更，请详细说明迁移指南 -->
 
-- [ ] README updated
-- [ ] API docs updated
-- [ ] Examples added/updated
-- [ ] CHANGELOG.md updated
+## 🔍 代码质量检查
 
-## ⚡ Performance Impact
+### 自查清单
 
-<!-- Describe any performance implications -->
+- [ ] 代码遵循项目代码规范
+- [ ] 运行了 `cargo fmt --all`
+- [ ] 运行了 `cargo clippy --workspace -- -D warnings`
+- [ ] 所有测试通过 `cargo test --workspace`
+- [ ] 更新了相关文档
+- [ ] 添加了必要的注释
+- [ ] 更新了CHANGELOG（如果适用）
 
-- [ ] No performance impact
-- [ ] Performance improved
-- [ ] Performance regressed (explain why acceptable)
+### 性能影响
 
-**Benchmarks** (if applicable):
+- [ ] 无性能影响
+- [ ] 性能有提升（请提供benchmark数据）
+- [ ] 性能可能下降（请说明原因和权衡）
 
-```text
-Before: 
-After:
+## 📸 截图/日志
+
+<!-- 如果适用，添加截图或日志输出 -->
+
+```
+# 输出示例
 ```
 
-## 💥 Breaking Changes
+## 🔗 相关链接
 
-<!-- If this is a breaking change, describe the migration path -->
+<!-- 相关的设计文档、讨论或参考资料 -->
 
-## 🤔 Additional Context
+- 设计文档：
+- 相关讨论：
+- 参考资料：
 
-<!-- Add any other context about the PR here -->
+## 📝 额外说明
+
+<!-- 任何需要审查者特别注意的地方 -->
+
+## 📋 审查者检查清单
+
+<!-- 供审查者使用 -->
+
+- [ ] 代码逻辑正确
+- [ ] 测试充分
+- [ ] 文档完整
+- [ ] 性能影响可接受
+- [ ] 安全性考虑充分
+- [ ] 与项目改进计划一致
+
+---
+
+💡 **提示**: 提交PR前，请参考[改进行动计划](../IMPROVEMENT_ACTION_PLAN_2025_10_29.md)确保变更符合项目方向。

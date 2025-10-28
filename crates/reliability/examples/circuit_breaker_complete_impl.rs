@@ -21,7 +21,7 @@
 //! - 监控和告警
 //! - 分布式熔断
 
-use std::sync::{Arc, atomic::{AtomicU64, AtomicU32, Ordering}};
+use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
 use std::time::{Duration, Instant};
 use tokio::sync::{RwLock, Semaphore};
 use tokio::time::{sleep, timeout};
@@ -213,11 +213,14 @@ pub struct CircuitBreaker {
 
 impl CircuitBreaker {
     pub fn new(config: CircuitBreakerConfig) -> Self {
+        let sliding_window_size = config.sliding_window_size;
+        let permitted_requests = config.permitted_requests_in_half_open as usize;
+        
         Self {
-            half_open_semaphore: Arc::new(Semaphore::new(config.permitted_requests_in_half_open as usize)),
+            half_open_semaphore: Arc::new(Semaphore::new(permitted_requests)),
+            sliding_window: Arc::new(SlidingWindow::new(sliding_window_size)),
             config,
             state: Arc::new(RwLock::new(CircuitState::Closed)),
-            sliding_window: Arc::new(SlidingWindow::new(config.sliding_window_size)),
             state_changed_at: Arc::new(RwLock::new(Instant::now())),
             state_transitions: Arc::new(AtomicU64::new(0)),
         }

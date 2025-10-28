@@ -1,0 +1,120 @@
+name: Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每周一早上8点运行
+    - cron: '0 8 * * 1'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 安装cargo-tarpaulin
+        run: |
+          cargo install cargo-tarpaulin || true
+
+      - name: 生成覆盖率报告
+        run: |
+          cargo tarpaulin \
+            --workspace \
+            --out Xml \
+            --out Html \
+            --out Lcov \
+            --output-dir coverage/ \
+            --exclude-files "*/tests/*" "*/benches/*" "*/examples/*" \
+            --timeout 300 \
+            --verbose
+
+      # Upload coverage to Codecov using tokenless upload
+      # For public repos, no token is required (GitHub OIDC is used automatically)
+      # For private repos, add CODECOV_TOKEN to repository secrets and uncomment the env section below
+      - name: 上传覆盖率到Codecov
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
+        with:
+          files: ./coverage/cobertura.xml
+          fail_ci_if_error: false
+          flags: unittests
+          name: codecov-umbrella
+          verbose: true
+        # Uncomment below for private repos with CODECOV_TOKEN secret:
+        # env:
+        #   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: 上传HTML报告为artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: 覆盖率摘要
+        run: |
+          echo "## 📊 测试覆盖率报告" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "coverage/tarpaulin-report.json" ]; then
+            COVERAGE=$(grep -oP '"coverage":\s*\K[0-9.]+' coverage/tarpaulin-report.json | head -1)
+            COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc | cut -d. -f1)
+            echo "**总体覆盖率**: ${COVERAGE_PERCENT}%" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ $COVERAGE_PERCENT -ge 80 ]; then
+              echo "✨ **状态**: 优秀" >> $GITHUB_STEP_SUMMARY
+            elif [ $COVERAGE_PERCENT -ge 70 ]; then
+              echo "✅ **状态**: 良好" >> $GITHUB_STEP_SUMMARY
+            elif [ $COVERAGE_PERCENT -ge 60 ]; then
+              echo "⚠️ **状态**: 及格" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **状态**: 需要改进" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ 无法生成覆盖率摘要" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "查看详细报告: 下载 coverage-report artifact" >> $GITHUB_STEP_SUMMARY
+
+      - name: 评论PR (如果是PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('coverage/tarpaulin-report.json')) {
+              const report = JSON.parse(fs.readFileSync('coverage/tarpaulin-report.json'));
+              const coverage = (report.coverage * 100).toFixed(2);
+              
+              const status = coverage >= 80 ? '✨ 优秀' : 
+                             coverage >= 70 ? '✅ 良好' : 
+                             coverage >= 60 ? '⚠️ 及格' : '❌ 需要改进';
+              
+              const comment = '## 📊 测试覆盖率报告\n\n' +
+                              '**总体覆盖率**: ' + coverage + '%\n\n' +
+                              status + '\n\n' +
+                              '详细报告请查看 CI artifacts。';
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }

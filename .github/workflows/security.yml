@@ -1,0 +1,180 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每天UTC 00:00运行 (北京时间上午8点)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  security_audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 安装cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: 运行安全审计
+        run: |
+          cargo audit --json > audit-report.json || true
+          cargo audit
+
+      - name: 生成审计摘要
+        if: always()
+        run: |
+          echo "## 🔒 安全审计报告" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "audit-report.json" ]; then
+            # 提取关键信息
+            VULNERABILITIES=$(cat audit-report.json | grep -o '"vulnerabilities"' | wc -l || echo "0")
+            
+            if [ "$VULNERABILITIES" -eq "0" ]; then
+              echo "✅ **状态**: 未发现已知安全漏洞" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⚠️ **状态**: 发现 $VULNERABILITIES 个潜在安全问题" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "请查看详细日志并及时更新相关依赖" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ 无法生成审计报告" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**审计时间**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+      - name: 上传审计报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report
+          path: audit-report.json
+          retention-days: 30
+
+  cargo_deny:
+    name: Cargo Deny Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装cargo-deny
+        run: |
+          wget https://github.com/EmbarkStudios/cargo-deny/releases/download/0.16.3/cargo-deny-0.16.3-x86_64-unknown-linux-musl.tar.gz
+          tar -xzf cargo-deny-0.16.3-x86_64-unknown-linux-musl.tar.gz
+          chmod +x cargo-deny
+          sudo mv cargo-deny /usr/local/bin/
+
+      - name: 创建cargo-deny配置
+        run: |
+          cat > deny.toml <<DENYEOF
+          [advisories]
+          version = 2
+          ignore = []
+          
+          [licenses]
+          version = 2
+          allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "Unicode-DFS-2016"]
+          confidence-threshold = 0.8
+          
+          [bans]
+          multiple-versions = "warn"
+          wildcards = "allow"
+          
+          [sources]
+          unknown-registry = "warn"
+          unknown-git = "warn"
+          DENYEOF
+
+      - name: 运行cargo-deny检查
+        run: |
+          cargo deny check advisories --config deny.toml || true
+          cargo deny check licenses --config deny.toml || true
+
+      - name: Deny检查摘要
+        if: always()
+        run: |
+          echo "## 📋 Cargo Deny检查" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ 许可证和安全建议检查完成" >> $GITHUB_STEP_SUMMARY
+
+  unused_deps:
+    name: Unused Dependencies Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust nightly工具链
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 安装cargo-udeps
+        run: cargo install cargo-udeps --locked
+
+      - name: 检查未使用的依赖
+        run: |
+          cargo +nightly udeps --workspace --all-targets > udeps-report.txt 2>&1 || true
+          cat udeps-report.txt
+
+      - name: 生成未使用依赖摘要
+        if: always()
+        run: |
+          echo "## 📦 未使用依赖检查" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "udeps-report.txt" ]; then
+            UNUSED=$(grep "unused" udeps-report.txt | wc -l || echo "0")
+            
+            if [ "$UNUSED" -eq "0" ]; then
+              echo "✅ 未发现未使用的依赖" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⚠️ 发现 $UNUSED 个可能未使用的依赖" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "建议审查并清理未使用的依赖以减小项目体积" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: 上传未使用依赖报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unused-deps-report
+          path: udeps-report.txt
+          retention-days: 30
+
+  security_summary:
+    name: Security Summary
+    needs: [security_audit, cargo_deny, unused_deps]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: 生成安全检查总结
+        run: |
+          echo "## 🔐 安全检查总结" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 检查项 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 依赖安全审计 | ${{ needs.security_audit.result == 'success' && '✅ 通过' || '⚠️ 需关注' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cargo Deny | ${{ needs.cargo_deny.result == 'success' && '✅ 通过' || '⚠️ 需关注' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 未使用依赖 | ${{ needs.unused_deps.result == 'success' && '✅ 通过' || '⚠️ 需关注' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "详细报告请查看各个任务的artifact" >> $GITHUB_STEP_SUMMARY

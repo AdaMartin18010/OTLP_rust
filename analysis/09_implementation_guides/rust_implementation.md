@@ -1,8 +1,116 @@
 # Rust实现指南
 
+## ⚡ 5分钟快速入门
+
+### 完整的OTLP客户端示例
+
+```bash
+# 第一步：创建项目
+cargo new otlp-client-demo
+cd otlp-client-demo
+```
+
+```toml
+# 第二步：添加依赖到 Cargo.toml
+[dependencies]
+opentelemetry = "0.31.0"
+opentelemetry_sdk = "0.31.0"
+opentelemetry-otlp = "0.31.0"
+tokio = { version = "1.43", features = ["full"] }
+tonic = "0.12"
+```
+
+```rust
+// 第三步：创建 src/main.rs
+use opentelemetry::{
+    trace::{Tracer, TracerProvider as _},
+    KeyValue,
+};
+use opentelemetry_sdk::{
+    trace::{TracerProvider, Config},
+    Resource,
+};
+use opentelemetry_otlp::WithExportConfig;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. 配置资源
+    let resource = Resource::new(vec![
+        KeyValue::new("service.name", "rust-otlp-demo"),
+        KeyValue::new("service.version", "1.0.0"),
+    ]);
+    
+    // 2. 创建OTLP导出器
+    let exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint("http://localhost:4317")
+        .build_span_exporter()?;
+    
+    // 3. 创建TracerProvider
+    let provider = TracerProvider::builder()
+        .with_config(Config::default().with_resource(resource))
+        .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
+        .build();
+    
+    // 4. 获取Tracer并创建Span
+    let tracer = provider.tracer("demo-tracer");
+    
+    tracer.in_span("main_operation", |_cx| {
+        println!("✅ 正在执行操作...");
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        println!("✅ 操作完成！Span已发送到OTLP收集器");
+    });
+    
+    // 5. 优雅关闭
+    opentelemetry::global::shutdown_tracer_provider();
+    
+    Ok(())
+}
+```
+
+### 运行示例
+
+```bash
+# 第四步：启动OTLP收集器（使用Docker）
+docker run -p 4317:4317 -p 4318:4318 \
+  otel/opentelemetry-collector:latest
+
+# 第五步：运行程序
+cargo run
+```
+
+### 预期输出
+
+```text
+✅ 正在执行操作...
+✅ 操作完成！Span已发送到OTLP收集器
+```
+
+### 故障排查
+
+| 问题 | 解决方案 |
+|------|----------|
+| 连接被拒绝 | 确保OTLP收集器运行在4317端口 |
+| 编译错误 | 检查Rust版本 >= 1.75 |
+| 依赖冲突 | 清理缓存：`cargo clean` |
+
+### 下一步
+
+- 📖 [完整架构设计](#架构设计) - 深入理解
+- 🚀 [性能优化](#性能优化) - 生产环境优化
+- 🧪 [测试策略](#测试策略) - 质量保证
+
+---
+
 ## 📋 目录
 
 - [Rust实现指南](#rust实现指南)
+  - [⚡ 5分钟快速入门](#-5分钟快速入门)
+    - [完整的OTLP客户端示例](#完整的otlp客户端示例)
+    - [运行示例](#运行示例)
+    - [预期输出](#预期输出)
+    - [故障排查](#故障排查)
+    - [下一步](#下一步)
   - [📋 目录](#-目录)
   - [概述](#概述)
   - [架构设计](#架构设计)

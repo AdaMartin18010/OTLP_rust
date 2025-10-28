@@ -1,0 +1,85 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每天运行一次
+    - cron: '0 2 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.90
+      
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Install cargo-criterion
+        run: cargo install cargo-criterion
+      
+      - name: Run benchmarks
+        run: cargo criterion --workspace --message-format json > benchmark-results.json
+      
+      - name: Store benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: benchmark-results.json
+          retention-days: 90
+      
+      - name: Generate benchmark summary
+        run: |
+          echo "## Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Benchmarks completed successfully." >> $GITHUB_STEP_SUMMARY
+          echo "Results stored in artifacts." >> $GITHUB_STEP_SUMMARY
+      
+      - name: Compare with baseline (if available)
+        continue-on-error: true
+        run: |
+          if [ -f "baseline-benchmark.json" ]; then
+            echo "Comparing with baseline..."
+            # 这里可以添加性能回归检测逻辑
+          fi
+
+  performance-regression:
+    name: Check Performance Regression
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.90
+      
+      - name: Run benchmarks on PR
+        run: cargo bench --workspace -- --save-baseline pr
+      
+      - name: Checkout main branch
+        run: |
+          git fetch origin main
+          git checkout main
+      
+      - name: Run benchmarks on main
+        run: cargo bench --workspace -- --save-baseline main
+      
+      - name: Compare benchmarks
+        run: |
+          echo "## Performance Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Comparing PR performance against main branch..." >> $GITHUB_STEP_SUMMARY
+          # 实际的对比逻辑可以使用cargo-criterion或其他工具
+

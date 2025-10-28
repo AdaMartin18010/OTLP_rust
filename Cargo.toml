@@ -267,7 +267,7 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json"] }  
 log = "0.4.28"                  # 标准日志库
 env_logger = "0.11.8"           # 环境变量日志配置
 # OpenTelemetry: 可观测性标准（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
-tracing-opentelemetry = "0.31"  # 追踪集成
+tracing-opentelemetry = "0.32"  # 追踪集成 (更新到0.32以匹配opentelemetry 0.31)
 opentelemetry = "0.31.0"        # 核心API
 opentelemetry_sdk = { version = "0.31.0", features = ["rt-tokio"] }  # SDK实现
 opentelemetry-otlp = { version = "0.31.0", features = ["http-json"] }  # OTLP协议
@@ -423,56 +423,32 @@ nix = "0.28.0"                 # 系统调用安全封装
 # ========== 版本管理策略 ==========
 # 依赖版本约束 - 在工作区依赖中统一版本 end
 
+# ========== 云原生和微服务生态集成 ==========
+# 以下依赖在 [workspace.dependencies] 部分定义
+
+# Service Mesh支持（可选 - 按需启用）
+consul = "0.4.2"               # 服务发现和配置（实际可用）
+
+# 监控和可观测性增强（已有 OpenTelemetry，以下为可选）
+prometheus = "0.14.0"          # Prometheus指标收集（实际可用）
+
+# 安全框架（可选 - 按需启用）
+oauth2 = "4.4.2"               # OAuth2认证（实际可用）
+jwt = "0.16.0"                 # JWT令牌（实际可用）
+
 # ========== 特性标志配置 ==========
 # 工作区特性标志配置 - 优化编译时间和依赖管理
 # 注意: 工作区依赖不能设为可选，特性标志在各crate中配置
 
 # ========== 安全补丁策略 ==========
 # 安全补丁 - 强制使用安全版本的依赖
-# 注意：通过工作区依赖统一管理版本，避免使用patch
+
+# ========== 版本冲突修复方案 ==========
+# 问题: tracing-opentelemetry 0.31.0 依赖 opentelemetry 0.30.0
+# 解决: 使用 tracing-opentelemetry 0.32.0 (如果可用) 或接受版本共存
+# 注: Cargo 可以处理同一crate的多个版本，虽不理想但可工作
+# [patch.crates-io] 不能用于替换同源包版本
 
 # ========== Rust 1.90特性支持 ==========
 # 2025年最新Rust 1.90特性支持依赖 (已在上面定义，避免重复)
-
-# ========== 云原生和微服务生态集成 ==========
-# 注意：以下是示例性依赖，实际使用时请根据需求选择性启用
-# 这些依赖可能不是所有项目都需要，且部分可能不在 crates.io 或已弃用
-
-# Service Mesh支持（可选 - 按需启用）
-# istio-client = "0.2.0"         # Istio服务网格
-# linkerd2-proxy = "0.2.0"       # Linkerd2代理
-# envoy-proxy = "0.2.0"          # Envoy代理
-consul = "0.4.2"               # 服务发现和配置（实际可用）
-# etcd-rs = "0.14.0"             # 分布式键值存储
-
-# 云原生技术栈（可选 - 按需启用）
-# kubernetes-client = "0.21.0"   # Kubernetes客户端
-# docker-api = "0.14.0"          # Docker API
-# helm = "0.2.0"                 # Helm包管理
-# argo-cd = "0.2.0"              # ArgoCD GitOps
-# kustomize = "0.1.0"            # Kustomize配置管理
-
-# 监控和可观测性增强（已有 OpenTelemetry，以下为可选）
-# datadog-agent = "0.2.0"        # Datadog代理
-# newrelic = "0.2.2"             # New Relic集成
-# splunk-hec = "0.2.0"           # Splunk HEC
-# elastic-apm = "0.2.0"          # Elastic APM
-# grafana-agent = "0.3.0"        # Grafana Agent
-prometheus = "0.14.0"          # Prometheus指标收集（实际可用）
-
-# 安全框架（可选 - 按需启用）
-# vault-client = "0.2.0"         # HashiCorp Vault
-oauth2 = "4.4.2"               # OAuth2认证（实际可用）
-jwt = "0.16.0"                 # JWT令牌（实际可用）
-# rbac = "0.2.0"                 # 基于角色的访问控制
-# mTLS = "0.1.0"                 # 双向TLS认证
-# secrets-manager = "0.1.0"      # 密钥管理
-
-# 微服务组件（可选 - 按需启用）
-# async-service-discovery = "0.3.0"  # 异步服务发现
-# circuit-breaker = "0.4.0"          # 熔断器模式
-# load-balancer = "0.3.4"            # 负载均衡器
-# rate-limiter = "0.3.0"             # 限流器
-# distributed-cache = "0.2.0"        # 分布式缓存
-# event-sourcing = "0.2.0"           # 事件溯源
-# cqrs = "0.2.1"                     # CQRS模式
+# 所有云原生和微服务依赖已移至 [workspace.dependencies] 部分

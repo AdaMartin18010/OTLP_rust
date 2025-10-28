@@ -1,85 +1,145 @@
 ---
-name: Feature Request
-about: Suggest an idea for this project
+name: ✨ 功能请求
+about: 建议一个新功能或改进
 title: '[FEATURE] '
-labels: enhancement
+labels: 'enhancement'
 assignees: ''
 ---
 
-## 🚀 Feature Request
+## ✨ 功能描述
 
-A clear and concise description of the feature you'd like to see.
+<!-- 清晰简洁地描述你想要的功能 -->
 
-## 💡 Motivation
+## 🎯 动机和用例
 
-**Is your feature request related to a problem? Please describe.**
+### 问题/需求
 
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+<!-- 这个功能要解决什么问题？ -->
 
-**Why is this feature important?**
+### 用例场景
 
-Explain the use case and value this feature would provide.
+<!-- 描述实际的使用场景 -->
 
-## 📝 Proposed Solution
+1. 场景1：
+2. 场景2：
 
-**Describe the solution you'd like**-
+## 💡 建议的实现方案
 
-A clear and concise description of what you want to happen.
+<!-- 如果你有想法，描述你希望如何实现这个功能 -->
 
-**Example Usage**-
+### 设计概述
+
+<!-- 高层次的设计思路 -->
+
+### API设计 (如果适用)
 
 ```rust
-// Show how you'd like to use this feature
-use otlp::*;
-
-// Example code here
+// 建议的API示例
+pub fn new_feature() -> Result<(), Error> {
+    // ...
+}
 ```
 
-## 🔄 Alternatives Considered
+### 配置示例 (如果适用)
 
-**Describe alternatives you've considered**-
+```toml
+[feature]
+option = "value"
+```
 
-A clear and concise description of any alternative solutions or features you've considered.
+## 🔄 替代方案
 
-## 📊 Impact
+<!-- 描述你考虑过的其他替代方案 -->
 
-**Who will benefit from this feature?**
+### 方案1
 
-- [ ] New users
-- [ ] Advanced users
-- [ ] Library developers
-- [ ] Production deployments
-- [ ] Other: _____
+优点：
+- 
 
-**Estimated impact**:
+缺点：
+- 
 
-- [ ] High - Critical functionality
-- [ ] Medium - Nice to have
-- [ ] Low - Optional enhancement
+### 方案2
 
-## 🎯 Acceptance Criteria
+优点：
+- 
 
-What needs to be done for this feature to be considered complete?
+缺点：
+- 
 
-- [ ] Criterion 1
-- [ ] Criterion 2
-- [ ] Documentation updated
-- [ ] Examples added
-- [ ] Tests added
+## 📊 影响分析
 
-## 📚 Additional Context
+### 受影响的模块
 
-Add any other context, mockups, diagrams, or screenshots about the feature request here.
+<!-- 这个功能会影响哪些模块？ -->
 
-## 🤝 Contribution
+- [ ] crates/otlp
+- [ ] crates/reliability
+- [ ] crates/model
+- [ ] crates/libraries
+- [ ] 文档
+- [ ] CI/CD
+- [ ] 其他：___________
 
-**Would you be willing to contribute this feature?**
+### Breaking Changes
 
-- [ ] Yes, I can submit a PR
-- [ ] I can help with testing
-- [ ] I can help with documentation
-- [ ] I need help implementing this
+- [ ] 这将是一个破坏性变更
+- [ ] 向后兼容
+- [ ] 不确定
 
-## 🔗 Related Issues/PRs
+### 性能影响
 
-Link to related issues or pull requests here.
+<!-- 这个功能可能对性能有什么影响？ -->
+
+- [ ] 无性能影响
+- [ ] 可能提升性能
+- [ ] 可能影响性能（需要权衡）
+
+## ✅ 验收标准
+
+<!-- 什么样的实现才算完成？ -->
+
+- [ ] 功能按预期工作
+- [ ] 添加了单元测试
+- [ ] 添加了集成测试
+- [ ] 更新了文档
+- [ ] 添加了示例代码
+- [ ] 性能满足要求
+
+## 📚 参考资料
+
+<!-- 相关的文档、讨论或参考资料 -->
+
+- 相关文档：
+- 相关讨论：
+- 参考实现：
+
+## 🗺️ 与项目路线图的关系
+
+<!-- 请参考改进行动计划 -->
+
+- [ ] 与Phase 1计划一致
+- [ ] 与Phase 2计划一致
+- [ ] 与Phase 3计划一致
+- [ ] 与Phase 4计划一致
+- [ ] 不在当前路线图中（新提议）
+
+## 📝 额外说明
+
+<!-- 任何其他想说的 -->
+
+## 🤝 愿意贡献
+
+<!-- 你是否愿意帮助实现这个功能？ -->
+
+- [ ] 我愿意提交PR实现这个功能
+- [ ] 我可以帮助review相关PR
+- [ ] 我可以提供测试支持
+- [ ] 我可以帮助编写文档
+
+---
+
+💡 **提示**: 
+- 提交前请查看[改进行动计划](../../analysis/IMPROVEMENT_ACTION_PLAN_2025_10_29.md)了解项目方向
+- 大型功能建议先在Discussions中讨论设计
+- 参考[架构文档](../../docs/04_ARCHITECTURE/CONCEPTS.md)了解系统设计

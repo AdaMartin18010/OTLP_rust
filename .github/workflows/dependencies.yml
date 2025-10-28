@@ -1,0 +1,231 @@
+name: Dependencies Check
+
+on:
+  schedule:
+    # 每周一UTC 00:00运行 (北京时间上午8点)
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  outdated:
+    name: Check Outdated Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 安装cargo-outdated
+        run: cargo install cargo-outdated --locked
+
+      - name: 检查过时的依赖
+        run: |
+          cargo outdated --workspace --format json > outdated-report.json || true
+          cargo outdated --workspace
+
+      - name: 生成过时依赖摘要
+        if: always()
+        run: |
+          echo "## 📦 依赖更新检查" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "outdated-report.json" ]; then
+            echo "**检查时间**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "详细的过时依赖列表请查看上方日志输出" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ 无法生成依赖报告" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 上传过时依赖报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-deps-report
+          path: outdated-report.json
+          retention-days: 30
+
+  dependency_tree:
+    name: Analyze Dependency Tree
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 生成依赖树
+        run: |
+          echo "## 核心依赖树分析" > dep-tree-report.txt
+          echo "" >> dep-tree-report.txt
+          
+          # 分析关键依赖
+          echo "### OpenTelemetry依赖" >> dep-tree-report.txt
+          cargo tree -i opentelemetry >> dep-tree-report.txt 2>&1 || true
+          echo "" >> dep-tree-report.txt
+          
+          echo "### Tokio依赖" >> dep-tree-report.txt
+          cargo tree -i tokio >> dep-tree-report.txt 2>&1 || true
+          echo "" >> dep-tree-report.txt
+          
+          echo "### Tonic依赖" >> dep-tree-report.txt
+          cargo tree -i tonic >> dep-tree-report.txt 2>&1 || true
+          
+          cat dep-tree-report.txt
+
+      - name: 检查重复依赖
+        run: |
+          echo "## 🔍 重复依赖检查" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cargo tree --workspace --duplicates >> $GITHUB_STEP_SUMMARY 2>&1 || echo "无重复依赖" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: 上传依赖树报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-tree-report
+          path: dep-tree-report.txt
+          retention-days: 30
+
+  dependency_stats:
+    name: Dependency Statistics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 统计依赖信息
+        run: |
+          echo "## 📊 依赖统计信息" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 统计工作区依赖数量
+          WORKSPACE_DEPS=$(grep -c "^[a-z_-]* = " Cargo.toml || echo "0")
+          echo "**工作区声明依赖**: $WORKSPACE_DEPS 个" >> $GITHUB_STEP_SUMMARY
+          
+          # 统计总依赖数（包括传递依赖）
+          TOTAL_DEPS=$(cargo tree --workspace --depth 0 | wc -l || echo "0")
+          echo "**总依赖数(含传递)**: $TOTAL_DEPS 个" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 按类别统计
+          echo "### 依赖分类统计" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 类别 | 数量 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          
+          ASYNC_DEPS=$(grep -E "tokio|async|futures" Cargo.toml | grep -c "=" || echo "0")
+          echo "| 异步运行时 | $ASYNC_DEPS |" >> $GITHUB_STEP_SUMMARY
+          
+          WEB_DEPS=$(grep -E "axum|actix|hyper|reqwest" Cargo.toml | grep -c "=" || echo "0")
+          echo "| Web框架 | $WEB_DEPS |" >> $GITHUB_STEP_SUMMARY
+          
+          DB_DEPS=$(grep -E "sqlx|sea-orm|redis|rusqlite" Cargo.toml | grep -c "=" || echo "0")
+          echo "| 数据库 | $DB_DEPS |" >> $GITHUB_STEP_SUMMARY
+          
+          OTEL_DEPS=$(grep -E "opentelemetry|tracing" Cargo.toml | grep -c "=" || echo "0")
+          echo "| 可观测性 | $OTEL_DEPS |" >> $GITHUB_STEP_SUMMARY
+
+      - name: 检查Cargo.lock变化
+        if: github.event_name == 'pull_request'
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "Cargo.lock"; then
+            echo "## ⚠️ Cargo.lock 已更改" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "此PR包含依赖变更，请确保:" >> $GITHUB_STEP_SUMMARY
+            echo "- 变更是必要的" >> $GITHUB_STEP_SUMMARY
+            echo "- 已运行完整测试" >> $GITHUB_STEP_SUMMARY
+            echo "- 更新了CHANGELOG" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  license_check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 安装cargo-license
+        run: cargo install cargo-license --locked
+
+      - name: 生成许可证报告
+        run: |
+          cargo license --workspace --json > license-report.json || true
+          cargo license --workspace --tsv > license-report.tsv || true
+          cargo license --workspace
+
+      - name: 许可证合规性摘要
+        if: always()
+        run: |
+          echo "## ⚖️ 许可证合规性检查" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "license-report.json" ]; then
+            MIT_COUNT=$(grep -c "\"MIT\"" license-report.json || echo "0")
+            APACHE_COUNT=$(grep -c "\"Apache-2.0\"" license-report.json || echo "0")
+            
+            echo "| 许可证类型 | 数量 |" >> $GITHUB_STEP_SUMMARY
+            echo "|------------|------|" >> $GITHUB_STEP_SUMMARY
+            echo "| MIT | $MIT_COUNT |" >> $GITHUB_STEP_SUMMARY
+            echo "| Apache-2.0 | $APACHE_COUNT |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ 所有依赖许可证均已检查" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 上传许可证报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: |
+            license-report.json
+            license-report.tsv
+          retention-days: 90
+
+  dependencies_summary:
+    name: Dependencies Summary
+    needs: [outdated, dependency_tree, dependency_stats, license_check]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: 生成依赖检查总结
+        run: |
+          echo "## 📦 依赖检查总结" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 检查项 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 过时依赖检查 | ${{ needs.outdated.result == 'success' && '✅ 通过' || '⚠️ 需关注' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 依赖树分析 | ${{ needs.dependency_tree.result == 'success' && '✅ 通过' || '⚠️ 需关注' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 依赖统计 | ${{ needs.dependency_stats.result == 'success' && '✅ 通过' || '⚠️ 需关注' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 许可证检查 | ${{ needs.license_check.result == 'success' && '✅ 通过' || '⚠️ 需关注' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "详细报告请查看各个任务的artifact" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**建议**: 定期更新依赖以获取安全修复和性能改进" >> $GITHUB_STEP_SUMMARY

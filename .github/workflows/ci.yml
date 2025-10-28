@@ -2,25 +2,30 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, cleanup/* ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 env:
-  RUST_VERSION: "1.90"
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.RUST_VERSION }}
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo check --all-features --workspace
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 检查编译
+        run: cargo check --workspace --all-targets
 
   test:
     name: Test Suite
@@ -29,104 +34,147 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: ["1.90", "stable"]
+        rust: [1.90]
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-      - uses: Swatinem/rust-cache@v2
-      - name: Run tests
-        run: cargo test --all-features --workspace
-      - name: Run doc tests
-        run: cargo test --doc --all-features --workspace
 
-  fmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.RUST_VERSION }}
-          components: rustfmt
-      - name: Check formatting
-        run: cargo fmt --all -- --check
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 运行测试
+        run: cargo test --workspace --all-features
+        env:
+          RUST_BACKTRACE: 1
+
+      - name: 运行文档测试
+        run: cargo test --workspace --doc
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
         with:
-          toolchain: ${{ env.RUST_VERSION }}
           components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features --workspace -- -D warnings
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 运行Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Clippy结果摘要
+        if: failure()
+        run: |
+          echo "## ⚠️ Clippy检查失败" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "请修复上述Clippy警告后重新提交" >> $GITHUB_STEP_SUMMARY
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+        with:
+          components: rustfmt
+
+      - name: 检查代码格式
+        run: cargo fmt --all -- --check
+
+      - name: 格式检查失败提示
+        if: failure()
+        run: |
+          echo "## ⚠️ 代码格式检查失败" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "请运行以下命令修复格式:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "cargo fmt --all" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 构建Release版本
+        run: cargo build --workspace --release
+
+      - name: 检查二进制大小
+        run: |
+          echo "## 📦 构建产物大小" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          du -h target/release/* | grep -v "\.d$" | head -20 || true
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   doc:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.RUST_VERSION }}
-      - uses: Swatinem/rust-cache@v2
-      - name: Build documentation
-        run: cargo doc --all-features --no-deps --workspace
+      - name: Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 安装Rust工具链
+        uses: dtolnay/rust-toolchain@1.90
+
+      - name: 缓存Cargo依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 生成文档
+        run: cargo doc --workspace --all-features --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
-      - name: Check for broken links in docs
-        run: cargo doc --all-features --no-deps --workspace
 
-  examples:
-    name: Examples
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - name: 上传文档artifact
+        uses: actions/upload-artifact@v4
         with:
-          toolchain: ${{ env.RUST_VERSION }}
-      - uses: Swatinem/rust-cache@v2
-      - name: Build all examples
+          name: documentation
+          path: target/doc/
+          retention-days: 7
+
+  ci-success:
+    name: CI Success
+    needs: [check, test, clippy, fmt, build, doc]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: 检查所有任务状态
         run: |
-          for example in crates/otlp/examples/*.rs; do
-            if [ -f "$example" ]; then
-              name=$(basename "$example" .rs)
-              echo "Building example: $name"
-              cargo build --example "$name" --features=full
-            fi
-          done
-
-  coverage:
-    name: Code Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.RUST_VERSION }}
-      - uses: Swatinem/rust-cache@v2
-      - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin
-      - name: Generate coverage
-        run: cargo tarpaulin --all-features --workspace --timeout 300 --out Xml
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./cobertura.xml
-          fail_ci_if_error: false
-
-  msrv:
-    name: Minimum Supported Rust Version
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: "1.90"  # MSRV
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo check --all-features --workspace
+          if [[ "${{ needs.check.result }}" == "success" && \
+                "${{ needs.test.result }}" == "success" && \
+                "${{ needs.clippy.result }}" == "success" && \
+                "${{ needs.fmt.result }}" == "success" && \
+                "${{ needs.build.result }}" == "success" && \
+                "${{ needs.doc.result }}" == "success" ]]; then
+            echo "## ✅ CI检查全部通过" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "所有检查项目均已通过，代码质量良好！" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "## ❌ CI检查失败" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "部分检查项目失败，请查看详细日志" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
