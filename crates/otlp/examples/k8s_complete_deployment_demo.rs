@@ -25,19 +25,18 @@
 
 use k8s_openapi::api::{
     core::v1::{
-        ConfigMap, Container, ContainerPort, EnvVar, PersistentVolumeClaim,
-        Pod, PodSpec, Secret, Service, ServiceAccount, ServicePort, ServiceSpec, Volume, VolumeMount,
+        ConfigMap, Container, ContainerPort, EnvVar,
+        PodSpec, Service, ServiceAccount, ServicePort, ServiceSpec, Volume, VolumeMount,
     },
     apps::v1::{DaemonSet, DaemonSetSpec, Deployment, DeploymentSpec},
-    rbac::v1::{ClusterRole, ClusterRoleBinding, Role, RoleBinding},
+    rbac::v1::{ClusterRole, ClusterRoleBinding},
 };
 use kube::{
-    api::{Api, ListParams, PostParams},
-    Client, Config,
+    api::{Api, PostParams},
+    Client,
 };
-use serde_json::json;
 use std::collections::BTreeMap;
-use tracing::{info, error, instrument};
+use tracing::{info, instrument};
 
 // ============================================================================
 // Configuration Constants
@@ -365,7 +364,7 @@ fn create_collector_pod_spec(is_daemonset: bool) -> PodSpec {
     };
     use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
 
-    let mut env = vec![
+    let env = vec![
         EnvVar {
             name: "KUBE_NODE_NAME".to_string(),
             value_from: Some(EnvVarSource {
@@ -490,7 +489,7 @@ fn create_collector_pod_spec(is_daemonset: bool) -> PodSpec {
         volumes: Some(vec![Volume {
             name: "config".to_string(),
             config_map: Some(k8s_openapi::api::core::v1::ConfigMapVolumeSource {
-                name: Some(format!("{}-config", OTLP_COLLECTOR_NAME)),
+                name: format!("{}-config", OTLP_COLLECTOR_NAME),
                 ..Default::default()
             }),
             ..Default::default()
@@ -550,7 +549,7 @@ pub fn create_service() -> Service {
 // Part 7: Deployment Functions
 // ============================================================================
 
-#[instrument]
+#[instrument(skip(client))]
 pub async fn deploy_full_stack(client: Client) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting full OTLP deployment to Kubernetes");
 
@@ -661,7 +660,7 @@ async fn deploy_gateway(client: &Client) -> Result<(), Box<dyn std::error::Error
 // Part 8: Health Check and Status
 // ============================================================================
 
-#[instrument]
+#[instrument(skip(client))]
 pub async fn check_deployment_status(client: Client) -> Result<(), Box<dyn std::error::Error>> {
     info!("Checking deployment status...");
 

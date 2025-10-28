@@ -25,8 +25,8 @@
 use std::time::{Duration, Instant};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicU32, Ordering};
+use std::sync::Mutex;
 use tokio::time::sleep;
-use tokio::sync::RwLock;
 use tracing::{info, warn, error, instrument};
 use thiserror::Error;
 use rand::Rng;
@@ -198,7 +198,7 @@ impl RetryStrategy for JitteredBackoffStrategy {
             let jitter_range = base_ms * self.jitter_factor;
             
             let mut rng = rand::rng();
-            let jitter: f64 = rng.gen_range(-jitter_range..=jitter_range);
+            let jitter: f64 = rng.random_range(-jitter_range..=jitter_range);
             
             let final_ms = (base_ms + jitter).max(0.0);
             Duration::from_millis(final_ms as u64)
@@ -218,7 +218,7 @@ impl RetryStrategy for JitteredBackoffStrategy {
 pub struct BudgetBasedStrategy {
     inner_strategy: Box<dyn RetryStrategy>,
     max_total_duration: Duration,
-    start_time: Arc<RwLock<Option<Instant>>>,
+    start_time: Mutex<Option<Instant>>,
 }
 
 impl BudgetBasedStrategy {
@@ -226,31 +226,45 @@ impl BudgetBasedStrategy {
         Self {
             inner_strategy,
             max_total_duration,
-            start_time: Arc::new(RwLock::new(None)),
+            start_time: Mutex::new(None),
         }
     }
 
-    async fn elapsed(&self) -> Duration {
-        let start = self.start_time.read().await;
+    fn elapsed(&self) -> Duration {
+        let start = self.start_time.lock().unwrap();
         start.map(|t| t.elapsed()).unwrap_or_default()
     }
 
-    async fn initialize_if_needed(&self) {
-        let mut start = self.start_time.write().await;
+    fn initialize_if_needed(&self) {
+        let mut start = self.start_time.lock().unwrap();
         if start.is_none() {
             *start = Some(Instant::now());
         }
+    }
+    
+    fn budget_exhausted(&self) -> bool {
+        self.elapsed() >= self.max_total_duration
     }
 }
 
 impl RetryStrategy for BudgetBasedStrategy {
     fn next_delay(&self, attempt: u32) -> Option<Duration> {
+        self.initialize_if_needed();
+        
+        if self.budget_exhausted() {
+            return None;
+        }
+        
         self.inner_strategy.next_delay(attempt)
     }
 
     fn should_retry(&self, attempt: u32, error: &OperationError) -> bool {
-        // Note: This is synchronous, but we need async for elapsed check
-        // In real implementation, would handle this differently
+        self.initialize_if_needed();
+        
+        if self.budget_exhausted() {
+            return false;
+        }
+        
         self.inner_strategy.should_retry(attempt, error)
     }
 }

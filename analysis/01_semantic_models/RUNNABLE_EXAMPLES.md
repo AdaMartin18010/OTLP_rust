@@ -8,19 +8,17 @@
 
 ## 📋 示例索引
 
-1. [语义模型可运行示例集合](#示例1-基础语义属性)
+1. [基础语义属性](#示例1-基础语义属性)
 2. [HTTP语义约定](#示例2-http语义约定)
 3. [数据库语义约定](#示例3-数据库语义约定)
 4. [微服务追踪](#示例4-微服务追踪)
 5. [分布式追踪](#示例5-分布式追踪)
-6. [自定义语义扩展](#示例6-自定义语义扩展)
-7. [完整电商系统示例](#示例7-完整电商系统示例)
 
 ---
 
 ## 示例1: 基础语义属性
 
-### 代码
+### 示例1代码
 
 创建文件 `examples/basic_semantic_attributes.rs`:
 
@@ -74,7 +72,7 @@ fn main() {
 }
 ```
 
-### 运行
+### 示例1运行
 
 ```bash
 # 添加到 Cargo.toml
@@ -84,7 +82,7 @@ fn main() {
 cargo run --example basic_semantic_attributes
 ```
 
-### 预期输出
+### 示例1输出
 
 ```text
 === 基础语义属性示例 ===
@@ -111,7 +109,7 @@ cargo run --example basic_semantic_attributes
 
 ## 示例2: HTTP语义约定
 
-### 代码
+### 示例2代码
 
 创建文件 `examples/http_semantic_conventions.rs`:
 
@@ -191,14 +189,14 @@ async fn simulate_http_request(
 }
 ```
 
-### 运行
+### 示例2运行
 
 ```bash
 cargo add tokio --features full
 cargo run --example http_semantic_conventions
 ```
 
-### 预期输出
+### 示例2输出
 
 ```text
 📊 HTTP请求: GET /api/users/123 -> 200
@@ -210,7 +208,7 @@ cargo run --example http_semantic_conventions
 
 ## 示例3: 数据库语义约定
 
-### 代码
+### 示例3代码
 
 创建文件 `examples/database_semantic_conventions.rs`:
 
@@ -333,13 +331,13 @@ async fn simulate_mongodb_operation(tracer: &impl Tracer) {
 }
 ```
 
-### 运行
+### 示例3运行
 
 ```bash
 cargo run --example database_semantic_conventions
 ```
 
-### 预期输出
+### 示例3输出
 
 ```text
 🗄️  SQL查询: SELECT * FROM users WHERE id = $1
@@ -351,7 +349,7 @@ cargo run --example database_semantic_conventions
 
 ## 示例4: 微服务追踪
 
-### 代码
+### 示例4代码
 
 创建文件 `examples/microservice_tracing.rs`:
 
@@ -505,13 +503,13 @@ async fn call_notification_service(parent_cx: &Context) {
 }
 ```
 
-### 运行
+### 示例4运行
 
 ```bash
 cargo run --example microservice_tracing
 ```
 
-### 预期输出
+### 示例4输出
 
 ```text
 🌐 API Gateway: 收到订单请求
@@ -526,7 +524,7 @@ cargo run --example microservice_tracing
 
 ## 示例5: 分布式追踪
 
-### 代码
+### 示例5代码
 
 创建文件 `examples/distributed_tracing.rs`:
 
@@ -673,13 +671,13 @@ impl<'a> Extractor for HeaderExtractor<'a> {
 }
 ```
 
-### 运行
+### 示例5运行
 
 ```bash
 cargo run --example distributed_tracing
 ```
 
-### 预期输出
+### 示例5输出
 
 ```text
 === 分布式追踪演示 ===
