@@ -162,6 +162,32 @@ A:
 
 ## 🔗 相关资源
 
+### 官方文档
+
 - [Docker 官方文档](https://docs.docker.com/)
 - [Rust Docker 最佳实践](https://docs.docker.com/language/rust/)
 - [项目主文档](../README.md)
+
+### 项目内部文档 🆕
+
+**完整的 Docker 可观测性指南**:
+
+- 📖 **[Docker 容器可观测性](../analysis/28_web_observability/docker_container_observability.md)** - 深入的 Docker + OTLP 集成指南
+  - 完整的 Docker Compose 可观测性栈
+  - 多阶段构建最佳实践
+  - Kubernetes 生产部署配置
+  - 容器元数据自动注入
+  - 镜像优化和安全加固
+
+**相关技术**:
+
+- 🚀 **[WasmEdge 可观测性](../analysis/28_web_observability/wasmedge_observability.md)** - WebAssembly 边缘计算
+- 📊 **[虚拟化技术对比](../analysis/28_web_observability/virtualization_comparison.md)** - Docker vs VM vs Wasm
+
+**快速开始**:
+
+- 🎯 **[Web 可观测性主页](../analysis/28_web_observability/README.md)** - 完整的 Web 服务监控方案
+
+---
+
+**💡 提示**: 查看上述文档获取生产级的 Docker 部署和可观测性配置示例！

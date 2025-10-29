@@ -7,7 +7,7 @@
 
 ## 📂 Directory Structure
 
-```
+```text
 archives/
 └── historical_analysis/
     ├── 21_rust_otlp_semantic_models/
@@ -25,12 +25,14 @@ archives/
 **Reason**: Content overlap with theme 22, but contains unique semantic analysis and code prototypes
 
 **Contents**:
+
 - 17 markdown documents
 - Code prototype with benchmarks
 - Comprehensive semantic model analysis
 - Multiple summary and progress reports
 
 **Key Documents**:
+
 - Rust sync/async core analysis
 - OTLP semantic mapping
 - Distributed system design
@@ -47,6 +49,7 @@ archives/
 **Reason**: Content overlap with theme 21, but contains unique comprehensive analysis and performance benchmarks
 
 **Contents**:
+
 - 32 markdown documents organized in 7 subdirectories
 - Comprehensive Rust 1.90 feature analysis
 - OTLP protocol analysis
@@ -54,6 +57,7 @@ archives/
 - Multiple completion and progress reports
 
 **Key Documents**:
+
 - Sync/async semantic models
 - Distributed tracing models
 - OpAMP control plane analysis
@@ -128,4 +132,3 @@ For questions about archived content:
 **Archive Maintainer**: Documentation Team  
 **Last Updated**: 2025-10-26  
 **Archive Version**: 1.0
-

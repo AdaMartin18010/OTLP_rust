@@ -20,7 +20,9 @@
 
 ## 概述
 
-本文档基于语义分析理论，深入探讨OpenTelemetry Transformation Language (OTTL)与OpenTelemetry Agent Management Protocol (OPAMP)的语义化集成，包括语义化数据转换、语义化配置管理、语义化协议通信等关键概念。
+本文档基于语义分析理论，
+深入探讨OpenTelemetry Transformation Language (OTTL)与OpenTelemetry Agent Management Protocol (OPAMP)的语义化集成，
+包括语义化数据转换、语义化配置管理、语义化协议通信等关键概念。
 
 ## 1. 语义化OTTL语言
 

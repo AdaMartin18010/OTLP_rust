@@ -23,6 +23,7 @@
 ### 问题1：编译失败 - "未找到crate"
 
 **症状**：
+
 ```text
 error[E0432]: unresolved import `opentelemetry`
   --> src/main.rs:1:5
@@ -45,6 +46,7 @@ cat Cargo.toml | grep opentelemetry
 ```
 
 **验证**：
+
 ```bash
 cargo tree | grep opentelemetry
 ```
@@ -54,6 +56,7 @@ cargo tree | grep opentelemetry
 ### 问题2：Rust版本过低
 
 **症状**：
+
 ```text
 error: package `opentelemetry v0.31.0` cannot be built because it requires rustc 1.75 or newer
 ```
@@ -81,6 +84,7 @@ rustc --version  # 应该显示 >= 1.75
 ### 问题3：增量编译错误
 
 **症状**：
+
 ```text
 error: internal compiler error: ...
 thread 'rustc' panicked at compiler/...
@@ -109,6 +113,7 @@ CARGO_INCREMENTAL=0 cargo build
 ### 问题4：OpenTelemetry版本冲突
 
 **症状**：
+
 ```text
 error: failed to select a version for `opentelemetry`
   multiple packages depend on `opentelemetry`:
@@ -146,6 +151,7 @@ cargo build --workspace
 ```
 
 **验证**：
+
 ```bash
 cargo tree -i opentelemetry | grep "opentelemetry v"
 # 应该只显示一个版本
@@ -193,6 +199,7 @@ export RUSTC_WRAPPER=sccache
 ### 问题6：Panic - "已经初始化了全局TracerProvider"
 
 **症状**：
+
 ```text
 thread 'main' panicked at 'Cannot set global tracer provider: already initialized'
 ```
@@ -275,6 +282,7 @@ let batch_config = BatchConfig::default()
 ### 问题8：异步运行时冲突
 
 **症状**：
+
 ```text
 error: Cannot start a runtime from within a runtime
 ```
@@ -311,6 +319,7 @@ fn main() {
 ### 问题9：无法连接到OTLP收集器
 
 **症状**：
+
 ```text
 Error: Transport error: Connection refused (os error 111)
 ```
@@ -360,6 +369,7 @@ sudo iptables -A INPUT -p tcp --dport 4317 -j ACCEPT
 ### 问题10：TLS/SSL证书验证失败
 
 **症状**：
+
 ```text
 Error: tls handshake failed: certificate verify failed
 ```
@@ -396,6 +406,7 @@ let exporter = opentelemetry_otlp::new_exporter()
 ### 问题11：超时错误
 
 **症状**：
+
 ```text
 Error: Timeout: operation timed out after 10s
 ```
@@ -664,4 +675,3 @@ cargo bloat --release
 
 **最后更新**: 2025年10月29日  
 **维护者**: OTLP_rust Team
-

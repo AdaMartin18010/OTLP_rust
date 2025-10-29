@@ -1,7 +1,7 @@
 # OTLP 技术分析索引
 
-**最后更新**: 2025年10月27日  
-**文档总数**: 131个文档（27个主题方向）  
+**最后更新**: 2025年10月29日  
+**文档总数**: 141个文档（28个主题方向）  
 **研究深度**: 理论到实践全覆盖
 
 ---
@@ -14,6 +14,45 @@
 
 ## 🆕 新增资源 (2025年10月29日)
 
+### 🔥 2025年最新研究成果 (重要!)
+
+**新增**: [2025年研究成果整合](28_web_observability/2025_research_updates.md)
+
+整合三篇重要学术论文（2025年1月、9月、10月）：
+
+1. **Edera高性能虚拟化** (arXiv:2501.04580)
+   - 与Docker性能相当的Type 1 Hypervisor
+   - CPU 99.1%性能，系统调用快3%
+
+2. **Wasm资源隔离安全** (arXiv:2509.11242)
+   - 发现资源隔离漏洞和攻击向量
+   - 完整的安全防护措施
+
+3. **Lumos性能基准** (arXiv:2510.05118)
+   - Wasm镜像小30倍，冷启动快16%
+   - 科学的技术选型数据
+
+**价值**: 基于最新科研成果的技术决策依据
+
+---
+
+### 🎉 主题28：Web可观测性 (28_web_observability)
+
+**完整的Web框架可观测性指南**:
+
+- 🔥 [2025年研究成果](28_web_observability/2025_research_updates.md) - **最新学术研究整合**
+- ⭐ **[OTLP部署架构全面分析](28_web_observability/otlp_deployment_architecture.md)** - **Sidecar/DaemonSet/Gateway完整指南** 🆕
+- [Web框架集成](28_web_observability/web_frameworks_integration.md) - Axum, Actix, Rocket等
+- [HTTP追踪最佳实践](28_web_observability/http_tracing_best_practices.md) - W3C标准实现
+- [REST API可观测性](28_web_observability/rest_api_observability.md) - 完整CRUD追踪
+- [GraphQL监控](28_web_observability/graphql_monitoring.md) - 查询级别追踪
+- [WebSocket追踪](28_web_observability/websocket_tracing.md) - 实时通信监控
+- [性能优化](28_web_observability/performance_optimization.md) - 数据驱动优化
+- [生产环境部署](28_web_observability/production_deployment.md) - K8s完整配置
+- [Docker容器可观测性](28_web_observability/docker_container_observability.md) - 容器化部署监控
+- [WasmEdge可观测性](28_web_observability/wasmedge_observability.md) - WebAssembly边缘计算
+- [虚拟化技术对比](28_web_observability/virtualization_comparison.md) - VM/Docker/Wasm/Edera对比
+
 ### 实践指南（强烈推荐）
 
 | 文档 | 说明 | 适合人群 |
@@ -23,10 +62,13 @@
 | [可运行示例集](01_semantic_models/RUNNABLE_EXAMPLES.md) | 7个完整代码示例 | 开发者 |
 | [端到端示例](09_implementation_guides/END_TO_END_EXAMPLES.md) | 从开发到部署 | 架构师 |
 | [生产环境案例](02_distributed_architecture/PRODUCTION_CASES.md) | 4个真实案例 | SRE/架构师 |
+| ⭐ **[Web可观测性](28_web_observability/README.md)** | **Web服务监控全套方案** | **Web开发者** |
+| 🔥 **[OTLP部署架构](28_web_observability/otlp_deployment_architecture.md)** | **Collector部署完整指南** | **运维/SRE** |
 
 ### 文档更新
 
 ✅ **为以下文档添加了5分钟快速入门**:
+
 - `01_semantic_models/otlp_semantic_foundations.md`
 - `01_semantic_models/practical_semantic_models_guide.md`
 - `09_implementation_guides/rust_implementation.md`
@@ -412,6 +454,41 @@
 
 **关键技术**: 混沌工程, 容错系统  
 **研究阶段**: 实践应用
+
+---
+
+#### 28. Web可观测性 🌐
+
+**目录**: `28_web_observability/`  
+**核心内容**:
+
+- [README](28_web_observability/README.md) - Web可观测性总览
+- [Web框架集成](28_web_observability/web_frameworks_integration.md) - Axum/Actix/Rocket等主流框架
+- [HTTP追踪最佳实践](28_web_observability/http_tracing_best_practices.md) - W3C Trace Context标准
+- [REST API可观测性](28_web_observability/rest_api_observability.md) - 端点监控与CRUD追踪
+- [GraphQL监控](28_web_observability/graphql_monitoring.md) - 查询级别追踪与N+1检测
+- [WebSocket追踪](28_web_observability/websocket_tracing.md) - 实时通信与连接管理
+- [性能优化](28_web_observability/performance_optimization.md) - 数据驱动的性能优化
+- [生产环境部署](28_web_observability/production_deployment.md) - Kubernetes完整配置
+- 🆕 [Docker容器可观测性](28_web_observability/docker_container_observability.md) - Docker/Kubernetes容器监控
+- 🆕 [WasmEdge可观测性](28_web_observability/wasmedge_observability.md) - WebAssembly边缘计算追踪
+- 🆕 [虚拟化技术对比](28_web_observability/virtualization_comparison.md) - VM/Docker/Wasm全面对比
+
+**适用人群**: Web开发者、DevOps工程师、SRE  
+**前置知识**: Web开发基础、HTTP协议  
+**技术栈**: Axum, Actix-web, Rocket, Warp, Hyper, Docker, WasmEdge  
+**实践级别**: 🔴 生产就绪
+
+**亮点**:
+
+- ✅ 涵盖5大主流Rust Web框架
+- ✅ 从开发到部署的完整流程
+- ✅ 生产环境验证的最佳实践
+- ✅ 性能优化实战案例
+- ✅ K8s部署完整配置
+- 🆕 Docker容器化完整方案
+- 🆕 WebAssembly前沿技术
+- 🆕 虚拟化技术决策指南
 
 ---
 

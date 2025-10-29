@@ -5,11 +5,13 @@
 ### 📊 项目健康度: **82/100** (良好)
 
 **快速导航**:
+
 - 🚀 **[执行摘要](EXECUTIVE_SUMMARY_2025_10_29.md)** - 1分钟速览项目状态
 - 📋 **[完整评估报告](CRITICAL_EVALUATION_REPORT_2025_10_29.md)** - 详细的批判性分析
 - 🗓️ **[改进行动计划](IMPROVEMENT_ACTION_PLAN_2025_10_29.md)** - 12个月实施路线图
 
 **核心发现**:
+
 - ✅ **Rust 1.90.0** - 版本配置正确,已验证可用
 - ✅ **391个源文件** - 代码规模合理,结构清晰
 - ✅ **1963个测试标记** - 测试基础扎实
@@ -18,6 +20,7 @@
 - ⚠️ **270+依赖** - 需要审查和精简
 
 **关键行动**:
+
 1. 🔴 解决OpenTelemetry版本冲突 (Week 1)
 2. 🔴 建立测试覆盖率基准 (Week 1)
 3. 🔴 配置CI/CD pipeline (Week 2)
@@ -155,12 +158,14 @@ analysis/
 ### 文档改进亮点
 
 ✨ **新增内容**:
+
 - 为主要文档添加了"5分钟快速入门"部分
 - 创建了7个完整可运行的代码示例
 - 补充了4个真实生产环境案例
 - 添加了详细的故障排查步骤
 
 📊 **内容平衡**:
+
 - 理论内容: 40%（从70%优化）
 - 实践代码: 40%（从20%提升）
 - 实战案例: 20%（新增）
@@ -169,13 +174,23 @@ analysis/
 
 ## 📚 完整文档索引
 
-本目录包含27个主题方向的深度分析文档。
+本目录包含28个主题方向的深度分析文档。
 
 **👉 查看完整索引**: [INDEX.md](INDEX.md) - 包含详细的导航、学习路径和文档组织
+
+### 🆕 最新主题 (2025年10月29日)
+
+**28. Web可观测性** 🌐 - 完整的Web服务监控方案
+
+- [查看详情](28_web_observability/README.md) | 涵盖Axum, Actix, Rocket等主流框架
+- 🆕 [Docker容器可观测性](28_web_observability/docker_container_observability.md) - Docker/K8s部署监控
+- 🆕 [WasmEdge可观测性](28_web_observability/wasmedge_observability.md) - WebAssembly边缘计算
+- 🆕 [虚拟化技术对比](28_web_observability/virtualization_comparison.md) - VM/Docker/Wasm对比分析
 
 ### 快速链接
 
 #### 快速上手
+
 - 🚀 [快速入门指南](QUICK_START_GUIDE.md) - 新手必读
 - 🔍 [故障排查](TROUBLESHOOTING.md) - 问题解决
 - 💻 [可运行示例](01_semantic_models/RUNNABLE_EXAMPLES.md) - 实践代码
@@ -183,12 +198,14 @@ analysis/
 - 🏭 [生产案例](02_distributed_architecture/PRODUCTION_CASES.md) - 真实场景
 
 #### 评估与规划
+
 - [🚀 执行摘要](EXECUTIVE_SUMMARY_2025_10_29.md) - 项目状态一分钟速览
 - [📋 完整评估报告](CRITICAL_EVALUATION_REPORT_2025_10_29.md) - 批判性分析和建议
 - [🗓️ 改进行动计划](IMPROVEMENT_ACTION_PLAN_2025_10_29.md) - 12个月路线图
 - [✅ 准确评估(参考)](ACCURATE_CRITICAL_EVALUATION_2025_10_29.md) - 历史参考
 
 #### 分析文档
+
 - [📖 完整索引](INDEX.md) - 所有文档的详细导航
 - [📊 综合分析总结](COMPREHENSIVE_ANALYSIS_SUMMARY.md) - 项目技术分析总结
 - [🔗 文档交叉引用](DOCUMENT_CROSS_REFERENCES.md) - 文档间关系图谱
@@ -202,9 +219,9 @@ analysis/
 |------|------|------|
 | **代码** | 391文件 | Rust源文件 (不含target/) |
 | **测试** | 1963标记 | #[test]/#[cfg(test)]标记 |
-| **文档** | 211文件 | 分析+核心文档 |
-| **主题** | 27方向 | 从语义模型到韧性工程 |
-| **示例** | 170+ | 代码示例和对比矩阵 |
+| **文档** | 221文件 | 分析+核心文档 (+3个虚拟化文档) |
+| **主题** | 28方向 | 从语义模型到Web可观测性 |
+| **示例** | 325+ | 代码示例和对比矩阵 (+155新增) |
 
 ---
 
