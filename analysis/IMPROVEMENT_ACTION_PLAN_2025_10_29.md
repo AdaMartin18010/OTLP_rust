@@ -596,7 +596,7 @@ mod tests {
 
 **创建examples/目录结构**
 
-```
+```text
 examples/
 ├── 01_quick_start/
 │   ├── hello_otlp.rs              (5分钟快速入门)
@@ -752,36 +752,36 @@ criterion_main!(benches);
 
 #### 文档改进计划
 
-**Week 1: 添加快速入门**
+##### Week 1: 添加快速入门
 
 ```markdown
-# 每个主题添加5分钟快速入门
+  # 每个主题添加5分钟快速入门
 
-## 语义模型 (5分钟快速入门)
+  ## 语义模型 (5分钟快速入门)
 
-### 1. 安装 (30秒)
-\`\`\`bash
-cargo add otlp
-\`\`\`
+  ### 1. 安装 (30秒)
+  \`\`\`bash
+  cargo add otlp
+  \`\`\`
 
-### 2. 最简示例 (2分钟)
-\`\`\`rust
-use otlp::semantic_conventions::http::*;
+  ### 2. 最简示例 (2分钟)
+  \`\`\`rust
+  use otlp::semantic_conventions::http::*;
 
-let attrs = HttpAttributes::client()
-    .method(HttpMethod::Get)
-    .url("https://api.example.com")
-    .build();
-\`\`\`
+  let attrs = HttpAttributes::client()
+      .method(HttpMethod::Get)
+      .url("https://api.example.com")
+      .build();
+  \`\`\`
 
-### 3. 运行 (30秒)
-\`\`\`bash
-cargo run
-\`\`\`
+  ### 3. 运行 (30秒)
+  \`\`\`bash
+  cargo run
+  \`\`\`
 
-### 4. 下一步 (2分钟)
-- [完整教程](./tutorial.md)
-- [API文档](./api.md)
+  ### 4. 下一步 (2分钟)
+  - [完整教程](./tutorial.md)
+  - [API文档](./api.md)
 ```
 
 ##### Week 2-3: 补充实战案例
