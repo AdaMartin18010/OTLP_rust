@@ -658,27 +658,57 @@
 ```text
 analysis/
 ├── README.md                           # 项目概述
+├── INDEX.md                            # 文档索引
+├── QUICK_START_GUIDE.md                # 快速开始指南
+├── TROUBLESHOOTING.md                  # 故障排查指南
 ├── 01_semantic_models/                 # 语义模型分析
 │   ├── practical_semantic_models_guide.md # 实用语义模型指南
-│   └── semantic_models_examples.md     # 语义模型应用示例
+│   ├── semantic_models_examples.md     # 语义模型应用示例
 │   ├── otlp_semantic_foundations.md    # OTLP语义基础
 │   ├── resource_schema_analysis.md     # 资源模式分析
 │   ├── trace_metric_log_integration.md # 三支柱集成
-│   └── formal_semantics.md             # 形式化语义
+│   ├── formal_semantics.md             # 形式化语义
+│   └── RUNNABLE_EXAMPLES.md            # 可运行示例
 ├── 02_distributed_architecture/        # 分布式架构
 │   ├── semantic_distributed_architecture.md # 语义化分布式架构
+│   ├── self_healing_systems.md         # 自我修复系统
+│   ├── edge_computing_otlp.md          # 边缘计算集成
+│   ├── control_data_planes.md          # 控制数据平面
+│   ├── distributed_decision_making.md  # 分布式决策机制
+│   └── PRODUCTION_CASES.md             # 生产环境案例
 ├── 03_ottl_opamp_integration/          # OTTL与OPAMP集成
 │   ├── semantic_ottl_opamp_integration.md # 语义化OTTL与OPAMP集成
+│   ├── ottl_language_semantics.md      # OTTL语言语义
+│   └── opamp_protocol_analysis.md      # OPAMP协议分析
 ├── 04_ebpf_profiling/                  # eBPF性能分析
 │   ├── semantic_ebpf_profiling.md      # 语义化eBPF性能分析
+│   ├── profiling_standards.md          # 性能分析标准
+│   └── continuous_profiling.md         # 持续性能分析
 ├── 05_microservices_architecture/      # 微服务架构
 │   ├── semantic_microservices_architecture.md # 语义化微服务架构
+│   ├── service_mesh_observability.md   # 服务网格可观测性
+│   └── distributed_tracing.md          # 分布式追踪
 ├── 06_automation_self_ops/             # 自动化运维
 │   ├── semantic_automation_self_ops.md # 语义化自动化运维
+│   ├── self_healing_systems.md         # 自我修复系统
+│   └── intelligent_automation.md       # 智能自动化
 ├── 07_formal_verification/             # 形式化验证
+│   ├── protocol_correctness.md         # 协议正确性
+│   ├── system_properties.md            # 系统属性
+│   ├── mathematical_models.md          # 数学模型
+│   └── safety_liveness.md              # 安全性与活性
 ├── 08_academic_standards/              # 学术标准对齐
+│   ├── university_course_alignment.md  # 大学课程对齐
+│   ├── industry_standards.md           # 行业标准对齐
+│   ├── research_papers.md              # 研究论文
+│   └── best_practices.md               # 最佳实践
 ├── 09_implementation_guides/           # 实现指南
+│   ├── rust_implementation.md          # Rust实现指南
+│   ├── go_implementation.md            # Go实现指南
+│   └── END_TO_END_EXAMPLES.md          # 端到端示例
 ├── 10_future_directions/               # 未来方向
+│   ├── emerging_trends.md              # 新兴趋势
+│   └── technology_roadmap.md           # 技术路线图
 ├── 11_advanced_applications/           # 高级应用分析
 │   ├── real_world_case_studies.md      # 实际应用案例
 │   ├── performance_optimization_techniques.md # 性能优化技术
@@ -707,10 +737,14 @@ analysis/
 │   ├── data_governance_analysis.md     # 数据治理分析
 │   └── ecosystem_analysis.md           # 生态系统分析
 ├── 20_innovation_research/             # 创新研究
-│   └── innovation_research_analysis.md # 创新研究分析
+│   ├── innovation_research_analysis.md # 创新研究分析
+│   └── dependency_upgrade_analysis_2025_10_27.md # 依赖升级分析
 ├── 21_rust_otlp_semantic_models/       # Rust 1.90 与 OTLP 语义模型
+│   ├── README.md                       # 目录说明
 │   └── COMPREHENSIVE_SUMMARY.md        # 综合分析总结
 ├── 22_rust_1.90_otlp_comprehensive_analysis/ # Rust 1.90 综合分析
+│   ├── README.md                       # Rust 1.90 综合技术分析
+│   └── TECHNICAL_DETAILS.md            # 技术细节深入分析
 ├── 23_quantum_inspired_observability/  # 量子启发可观测性
 │   ├── README.md                       # 量子启发理论基础
 │   └── quantum_algorithms_for_observability.md # 量子算法应用
@@ -722,7 +756,13 @@ analysis/
 │   └── README.md                       # 语义互操作理论与实现
 ├── 27_resilience_engineering/          # 韧性工程理论
 │   └── README.md                       # 韧性四能力模型与实现
+├── 28_web_observability/               # Web 可观测性
+│   └── [13 个相关文档]                 # Web 技术栈可观测性分析
+├── archives/                           # 归档目录
+│   └── historical_analysis/            # 历史分析文档
 ├── DOCUMENT_CROSS_REFERENCES.md        # 文档交叉引用索引
+├── IMPROVEMENT_ACTION_PLAN_2025_10_29.md # 改进行动计划
+├── RUST_OTLP_SEMANTIC_ANALYSIS_2025.md # Rust OTLP 语义分析
 └── COMPREHENSIVE_ANALYSIS_SUMMARY.md   # 本总结文档
 ```
 
@@ -779,11 +819,17 @@ analysis/
 
 ### 项目统计信息
 
-- **文档总数**: 62个分析文档（新增 5 个前沿技术分析）
-- **总文档大小**: 约2.3MB（新增约 400KB）
-- **分析目录**: 27个主要分析领域（新增 7 个创新领域）
+- **文档总数**: 70+ 分析文档（含新增的 Rust 深度分析和前沿技术）
+- **总文档大小**: 约 2.5 MB
+- **分析目录**: 28 个主要分析领域（含 Web 可观测性）
 - **技术深度**: 涵盖从理论基础到实际应用的完整技术栈
-- **创新技术**: 量子启发、神经形态、边缘 AI、语义互操作、韧性工程
+- **创新技术**: 
+  - Rust 1.90 类型系统与 OTLP 语义同构
+  - 量子启发算法（Grover、量子退火、QAOA）
+  - 神经形态监控（LIF 神经元、SNN、STDP 学习）
+  - 边缘 AI 融合（联邦学习、模型量化、边缘云协作）
+  - 语义互操作（RDF 三元组、Schema Registry、零损失转换）
+  - 韧性工程（四能力模型、自适应限流、断路器、混沌工程）
 
 ### 已完成的所有任务
 
@@ -812,6 +858,9 @@ analysis/
 23. **✅ 边缘 AI 融合**: 完成了边缘 AI 架构、联邦学习、边缘云协作分析
 24. **✅ 语义互操作性**: 完成了 RDF 三元组、Schema Registry、语义转换引擎
 25. **✅ 韧性工程理论**: 完成了四能力模型、自适应限流、断路器、混沌工程
+26. **✅ Rust 语义同构分析**: 创建了 21_rust_otlp_semantic_models 目录及综合分析文档
+27. **✅ Rust 技术细节**: 创建了 22_rust_1.90_otlp_comprehensive_analysis 目录及技术深度文档
+28. **✅ 文档结构完善**: 更新了 COMPREHENSIVE_ANALYSIS_SUMMARY.md 的文档结构树
 
 ### 项目价值与贡献
 

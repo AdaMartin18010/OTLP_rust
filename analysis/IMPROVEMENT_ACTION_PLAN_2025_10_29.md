@@ -45,7 +45,7 @@
 **负责人**: 待分配  
 **截止日期**: Day 3
 
-#### 步骤
+#### 任务1步骤
 
 ```bash
 # 1. 诊断版本冲突 (30分钟)
@@ -74,7 +74,7 @@ git add Cargo.toml Cargo.lock
 git commit -m "fix: resolve OpenTelemetry version conflict to 0.31.0"
 ```
 
-#### 验收标准
+#### 任务1验收标准
 
 - ✅ `cargo tree -i opentelemetry` 只显示0.31.0
 - ✅ `cargo check --workspace` 通过
@@ -94,7 +94,7 @@ git commit -m "fix: resolve OpenTelemetry version conflict to 0.31.0"
 **负责人**: 待分配  
 **截止日期**: Day 7
 
-#### 步骤
+#### 任务2步骤
 
 ```bash
 # 1. 安装工具 (15分钟)
@@ -166,7 +166,7 @@ git add coverage/
 git commit -m "test: establish test coverage baseline"
 ```
 
-#### 验收标准
+#### 任务2验收标准
 
 - ✅ 覆盖率报告生成成功
 - ✅ 各crate覆盖率已知
@@ -182,7 +182,7 @@ git commit -m "test: establish test coverage baseline"
 **负责人**: 待分配  
 **截止日期**: Day 10
 
-#### 步骤
+#### 任务3步骤
 
 ```bash
 # 1. 创建CI配置目录
@@ -333,7 +333,7 @@ git push
 # 检查所有workflow运行成功
 ```
 
-#### 验收标准1
+#### 任务3验收标准
 
 - ✅ 4个workflow配置完成
 - ✅ CI在GitHub Actions运行成功
@@ -349,7 +349,7 @@ git push
 **负责人**: 待分配  
 **截止日期**: Day 14
 
-#### 步骤
+#### 任务4步骤
 
 ```bash
 # 1. 运行Clippy检查 (15分钟)
@@ -380,7 +380,7 @@ git add .
 git commit -m "refactor: fix clippy warnings and format code"
 ```
 
-#### 验收标准
+#### 任务4验收标准
 
 - ✅ Clippy warnings < 50个
 - ✅ 代码格式化完成
@@ -443,7 +443,7 @@ cat unused_deps.txt
 # tauri-build = "2.4.2"
 ```
 
-#### 验收标准
+#### 任务5验收标准
 
 - ✅ 依赖数量从270+减少到<100
 - ✅ 编译时间减少20%+
@@ -517,7 +517,7 @@ rm crates/otlp/src/*_legacy.rs
 # 更新示例代码
 ```
 
-#### 验收标准
+#### 任务6验收标准
 
 - ✅ 模块结构清晰
 - ✅ 无命名重复
@@ -576,7 +576,7 @@ mod tests {
 // tests/performance_regression.rs
 ```
 
-#### 验收标准
+#### 任务7验收标准
 
 - ✅ 核心模块覆盖率>80%
 - ✅ 整体覆盖率>70%
@@ -622,7 +622,7 @@ examples/
 └── README.md                       (示例总览)
 ```
 
-#### 验收标准
+#### 任务8验收标准
 
 - ✅ 50+个完整示例
 - ✅ 每个示例可独立运行
@@ -784,7 +784,7 @@ cargo run
 - [API文档](./api.md)
 ```
 
-**Week 2-3: 补充实战案例**
+##### Week 2-3: 补充实战案例
 
 - 50+个端到端完整示例
 - 10+个生产环境案例
