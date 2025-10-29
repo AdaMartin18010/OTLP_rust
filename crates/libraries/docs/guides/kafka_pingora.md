@@ -8,8 +8,7 @@
 
 ---
 
-## 📊 目录
-
+## 📋 目录
 - [Kafka 与 Pingora 集成实战指南](#kafka-与-pingora-集成实战指南)
   - [📊 目录](#-目录)
   - [Kafka 完整实战](#kafka-完整实战)

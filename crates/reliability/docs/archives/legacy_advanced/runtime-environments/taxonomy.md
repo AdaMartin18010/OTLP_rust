@@ -1,7 +1,6 @@
 ﻿# 运行时环境分类体系 (Runtime Environment Taxonomy)
 
-## 📊 目录
-
+## 📋 目录
 - [运行时环境分类体系 (Runtime Environment Taxonomy)](#运行时环境分类体系-runtime-environment-taxonomy)
   - [📊 目录](#-目录)
   - [📋 目录](#-目录-1)

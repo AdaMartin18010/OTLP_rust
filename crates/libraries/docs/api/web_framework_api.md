@@ -1,4 +1,4 @@
-# Web框架完整集成 - API参考文档
+﻿# Web框架完整集成 - API参考文档
 
 **示例文件**: `crates/libraries/examples/web_framework_complete_integration.rs`  
 **版本**: 1.0.0  
@@ -7,7 +7,7 @@
 
 ---
 
-## 目录
+## 📋 目录
 
 - [核心类型](#核心类型)
   - [AppState](#appstate)
@@ -31,6 +31,7 @@
 ### `AppState`
 
 **定义**:
+
 ```rust
 #[derive(Clone)]
 pub struct AppState {
@@ -43,6 +44,7 @@ pub struct AppState {
 **功能**: 应用程序全局状态，包含数据库连接池、Redis连接和配置信息。
 
 **字段说明**:
+
 - `db`: PostgreSQL连接池
   - 类型: `PgPool`
   - 用途: 数据库操作
@@ -59,6 +61,7 @@ pub struct AppState {
 **特征实现**: `Clone`
 
 **使用示例**:
+
 ```rust
 let state = Arc::new(AppState {
     db: pool.clone(),
@@ -78,6 +81,7 @@ async fn handler(State(state): State<Arc<AppState>>) {
 ### `AppConfig`
 
 **定义**:
+
 ```rust
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -91,6 +95,7 @@ pub struct AppConfig {
 **功能**: 应用程序配置信息。
 
 **字段说明**:
+
 - `database_url`: 数据库连接字符串
 - `redis_url`: Redis连接字符串
 - `port`: 服务器端口号
@@ -101,6 +106,7 @@ pub struct AppConfig {
 #### `AppConfig::from_env()`
 
 **签名**:
+
 ```rust
 pub fn from_env() -> Self
 ```
@@ -108,6 +114,7 @@ pub fn from_env() -> Self
 **功能**: 从环境变量加载配置。
 
 **环境变量**:
+
 - `DATABASE_URL`: 数据库连接URL（默认: `postgres://user:pass@localhost/mydb`）
 - `REDIS_URL`: Redis连接URL（默认: `redis://127.0.0.1/`）
 - `PORT`: 服务器端口（默认: `3000`）
@@ -115,6 +122,7 @@ pub fn from_env() -> Self
 **返回值**: 配置实例
 
 **使用示例**:
+
 ```rust
 // 设置环境变量
 std::env::set_var("DATABASE_URL", "postgres://localhost/myapp");
@@ -130,6 +138,7 @@ assert_eq!(config.port, 8080);
 ### `AppError`
 
 **定义**:
+
 ```rust
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
@@ -156,6 +165,7 @@ pub enum AppError {
 **功能**: 应用程序错误类型，自动转换为HTTP响应。
 
 **错误变体**:
+
 - `DatabaseError`: 数据库操作错误 → 500 Internal Server Error
 - `CacheError`: 缓存操作错误 → 500 Internal Server Error  
 - `NotFound`: 资源未找到 → 404 Not Found
@@ -166,6 +176,7 @@ pub enum AppError {
 **特征实现**: `IntoResponse` - 自动转换为HTTP响应
 
 **使用示例**:
+
 ```rust
 async fn handler() -> Result<Json<User>, AppError> {
     let user = db.find(id).await
@@ -183,6 +194,7 @@ async fn handler() -> Result<Json<User>, AppError> {
 ### `User`
 
 **定义**:
+
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct User {
@@ -198,6 +210,7 @@ pub struct User {
 **功能**: 用户实体模型。
 
 **字段说明**:
+
 - `id`: 用户唯一标识符（自动生成）
 - `username`: 用户名（唯一）
 - `email`: 电子邮件地址
@@ -211,6 +224,7 @@ pub struct User {
 ### `CreateUserRequest`
 
 **定义**:
+
 ```rust
 #[derive(Debug, Deserialize)]
 pub struct CreateUserRequest {
@@ -223,6 +237,7 @@ pub struct CreateUserRequest {
 **功能**: 创建用户请求。
 
 **验证规则**:
+
 - `username`: 必须唯一
 - `email`: 必须是有效邮箱格式（建议添加验证）
 - `password`: 明文密码（会被哈希后存储）
@@ -232,6 +247,7 @@ pub struct CreateUserRequest {
 ### `UpdateUserRequest`
 
 **定义**:
+
 ```rust
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserRequest {
@@ -243,6 +259,7 @@ pub struct UpdateUserRequest {
 **功能**: 更新用户请求。
 
 **字段说明**:
+
 - 所有字段都是Optional
 - 只更新提供的字段
 - 至少需要一个字段
@@ -254,6 +271,7 @@ pub struct UpdateUserRequest {
 ### `UserRepository`
 
 **定义**:
+
 ```rust
 pub struct UserRepository {
     pool: PgPool,
@@ -265,6 +283,7 @@ pub struct UserRepository {
 #### `UserRepository::new()`
 
 **签名**:
+
 ```rust
 pub fn new(pool: PgPool) -> Self
 ```
@@ -272,6 +291,7 @@ pub fn new(pool: PgPool) -> Self
 **功能**: 创建新的UserRepository实例。
 
 **参数**:
+
 - `pool`: PostgreSQL连接池
 
 **返回值**: UserRepository实例
@@ -281,6 +301,7 @@ pub fn new(pool: PgPool) -> Self
 #### `UserRepository::create()`
 
 **签名**:
+
 ```rust
 pub async fn create(&self, req: &CreateUserRequest) -> Result<User, AppError>
 ```
@@ -288,17 +309,21 @@ pub async fn create(&self, req: &CreateUserRequest) -> Result<User, AppError>
 **功能**: 创建新用户。
 
 **参数**:
+
 - `req`: 创建用户请求
 
 **返回值**:
+
 - `Ok(User)`: 创建成功，返回用户信息
 - `Err(AppError)`: 创建失败
 
 **错误**:
+
 - `DatabaseError`: 数据库操作失败
 - `Conflict`: 用户名已存在（通过唯一约束触发）
 
 **使用示例**:
+
 ```rust
 let repo = UserRepository::new(pool);
 let req = CreateUserRequest {
@@ -316,6 +341,7 @@ println!("Created user: {}", user.id);
 #### `UserRepository::find_by_id()`
 
 **签名**:
+
 ```rust
 pub async fn find_by_id(&self, id: i64) -> Result<Option<User>, AppError>
 ```
@@ -323,9 +349,11 @@ pub async fn find_by_id(&self, id: i64) -> Result<Option<User>, AppError>
 **功能**: 根据ID查找用户。
 
 **参数**:
+
 - `id`: 用户ID
 
 **返回值**:
+
 - `Ok(Some(User))`: 找到用户
 - `Ok(None)`: 用户不存在
 - `Err(AppError)`: 查询失败
@@ -337,6 +365,7 @@ pub async fn find_by_id(&self, id: i64) -> Result<Option<User>, AppError>
 #### `UserRepository::list()`
 
 **签名**:
+
 ```rust
 pub async fn list(&self, page: u32, page_size: u32) -> Result<Vec<User>, AppError>
 ```
@@ -344,16 +373,19 @@ pub async fn list(&self, page: u32, page_size: u32) -> Result<Vec<User>, AppErro
 **功能**: 分页查询用户列表。
 
 **参数**:
+
 - `page`: 页码（从1开始）
 - `page_size`: 每页数量
 
 **返回值**:
+
 - `Ok(Vec<User>)`: 用户列表
 - `Err(AppError)`: 查询失败
 
 **排序**: 按创建时间倒序（最新的在前）
 
 **使用示例**:
+
 ```rust
 // 获取第1页，每页20条
 let users = repo.list(1, 20).await?;
@@ -365,6 +397,7 @@ println!("Found {} users", users.len());
 #### `UserRepository::update()`
 
 **签名**:
+
 ```rust
 pub async fn update(&self, id: i64, req: &UpdateUserRequest) -> Result<User, AppError>
 ```
@@ -372,14 +405,17 @@ pub async fn update(&self, id: i64, req: &UpdateUserRequest) -> Result<User, App
 **功能**: 更新用户信息。
 
 **参数**:
+
 - `id`: 用户ID
 - `req`: 更新请求
 
 **返回值**:
+
 - `Ok(User)`: 更新成功，返回更新后的用户
 - `Err(AppError)`: 更新失败
 
 **错误**:
+
 - `BadRequest`: 没有提供任何更新字段
 - `DatabaseError`: 用户不存在或数据库错误
 
@@ -388,6 +424,7 @@ pub async fn update(&self, id: i64, req: &UpdateUserRequest) -> Result<User, App
 #### `UserRepository::delete()`
 
 **签名**:
+
 ```rust
 pub async fn delete(&self, id: i64) -> Result<(), AppError>
 ```
@@ -395,13 +432,16 @@ pub async fn delete(&self, id: i64) -> Result<(), AppError>
 **功能**: 删除用户。
 
 **参数**:
+
 - `id`: 用户ID
 
 **返回值**:
+
 - `Ok(())`: 删除成功
 - `Err(AppError)`: 删除失败
 
 **错误**:
+
 - `NotFound`: 用户不存在
 
 ---
@@ -411,6 +451,7 @@ pub async fn delete(&self, id: i64) -> Result<(), AppError>
 ### `UserService`
 
 **定义**:
+
 ```rust
 pub struct UserService {
     repository: UserRepository,
@@ -424,6 +465,7 @@ pub struct UserService {
 #### `UserService::new()`
 
 **签名**:
+
 ```rust
 pub fn new(pool: PgPool, redis: redis::aio::ConnectionManager, cache_ttl: Duration) -> Self
 ```
@@ -431,6 +473,7 @@ pub fn new(pool: PgPool, redis: redis::aio::ConnectionManager, cache_ttl: Durati
 **功能**: 创建新的UserService实例。
 
 **参数**:
+
 - `pool`: 数据库连接池
 - `redis`: Redis连接
 - `cache_ttl`: 缓存过期时间
@@ -440,6 +483,7 @@ pub fn new(pool: PgPool, redis: redis::aio::ConnectionManager, cache_ttl: Durati
 #### `UserService::create_user()`
 
 **签名**:
+
 ```rust
 pub async fn create_user(&self, req: CreateUserRequest) -> Result<User, AppError>
 ```
@@ -447,18 +491,22 @@ pub async fn create_user(&self, req: CreateUserRequest) -> Result<User, AppError
 **功能**: 创建新用户，包含业务逻辑验证。
 
 **业务逻辑**:
+
 1. 验证用户名唯一性
 2. 创建用户记录
 3. 失效相关缓存
 
 **参数**:
+
 - `req`: 创建用户请求
 
 **返回值**:
+
 - `Ok(User)`: 创建成功
 - `Err(AppError::Conflict)`: 用户名已存在
 
 **使用示例**:
+
 ```rust
 let service = UserService::new(pool, redis, Duration::from_secs(300));
 let user = service.create_user(CreateUserRequest {
@@ -473,6 +521,7 @@ let user = service.create_user(CreateUserRequest {
 #### `UserService::get_user()`
 
 **签名**:
+
 ```rust
 pub async fn get_user(&self, id: i64) -> Result<User, AppError>
 ```
@@ -480,14 +529,17 @@ pub async fn get_user(&self, id: i64) -> Result<User, AppError>
 **功能**: 获取用户信息，优先从缓存读取。
 
 **缓存策略**:
+
 1. 尝试从Redis读取
 2. 缓存未命中时查询数据库
 3. 将结果写入缓存
 
 **参数**:
+
 - `id`: 用户ID
 
 **返回值**:
+
 - `Ok(User)`: 找到用户
 - `Err(AppError::NotFound)`: 用户不存在
 
@@ -498,6 +550,7 @@ pub async fn get_user(&self, id: i64) -> Result<User, AppError>
 #### `UserService::list_users()`
 
 **签名**:
+
 ```rust
 pub async fn list_users(&self, pagination: PaginationQuery) -> Result<Vec<User>, AppError>
 ```
@@ -505,6 +558,7 @@ pub async fn list_users(&self, pagination: PaginationQuery) -> Result<Vec<User>,
 **功能**: 分页查询用户列表。
 
 **参数**:
+
 - `pagination`: 分页参数
 
 **返回值**: 用户列表
@@ -514,6 +568,7 @@ pub async fn list_users(&self, pagination: PaginationQuery) -> Result<Vec<User>,
 #### `UserService::update_user()`
 
 **签名**:
+
 ```rust
 pub async fn update_user(&self, id: i64, req: UpdateUserRequest) -> Result<User, AppError>
 ```
@@ -525,6 +580,7 @@ pub async fn update_user(&self, id: i64, req: UpdateUserRequest) -> Result<User,
 #### `UserService::delete_user()`
 
 **签名**:
+
 ```rust
 pub async fn delete_user(&self, id: i64) -> Result<(), AppError>
 ```
@@ -542,6 +598,7 @@ pub async fn delete_user(&self, id: i64) -> Result<(), AppError>
 #### `create_user_handler`
 
 **签名**:
+
 ```rust
 async fn create_user_handler(
     State(state): State<Arc<AppState>>,
@@ -555,6 +612,7 @@ async fn create_user_handler(
 **响应**: 201 Created + User JSON
 
 **示例请求**:
+
 ```http
 POST /users HTTP/1.1
 Content-Type: application/json
@@ -567,6 +625,7 @@ Content-Type: application/json
 ```
 
 **示例响应**:
+
 ```http
 HTTP/1.1 201 Created
 Content-Type: application/json
@@ -594,6 +653,7 @@ Content-Type: application/json
 **HTTP方法**: GET  
 **路径**: `/users?page=1&page_size=20`  
 **查询参数**:
+
 - `page`: 页码（默认1）
 - `page_size`: 每页数量（默认20）
 
@@ -606,6 +666,7 @@ Content-Type: application/json
 **功能**: 健康检查，检测数据库和Redis连接状态
 
 **响应示例**:
+
 ```json
 {
   "status": "healthy",
@@ -621,6 +682,7 @@ Content-Type: application/json
 ### `create_app()`
 
 **签名**:
+
 ```rust
 pub async fn create_app(state: Arc<AppState>) -> Router
 ```
@@ -628,6 +690,7 @@ pub async fn create_app(state: Arc<AppState>) -> Router
 **功能**: 创建并配置Axum应用。
 
 **特性**:
+
 - 路由配置
 - 中间件链（日志、压缩、超时）
 - 健康检查端点
@@ -636,6 +699,7 @@ pub async fn create_app(state: Arc<AppState>) -> Router
 **返回值**: 配置好的Router
 
 **使用示例**:
+
 ```rust
 let state = Arc::new(AppState { /* ... */ });
 let app = create_app(state).await;
@@ -649,6 +713,7 @@ axum::serve(listener, app).await?;
 ## 最佳实践
 
 ### 错误处理
+
 ```rust
 // ✅ 推荐：使用?操作符和map_err
 let user = service.get_user(id).await
@@ -662,6 +727,7 @@ let user = service.get_user(id).await.unwrap();
 ```
 
 ### 事务处理
+
 ```rust
 // 使用SQLx事务
 let mut tx = pool.begin().await?;
@@ -671,6 +737,7 @@ tx.commit().await?;
 ```
 
 ### 缓存策略
+
 ```rust
 // 读取优先缓存
 // 1. 尝试Redis
@@ -706,4 +773,3 @@ redis.del(format!("user:{}", id)).await?;
 **版本**: 1.0.0  
 **维护者**: OTLP Rust Team  
 **最后更新**: 2025年10月28日
-

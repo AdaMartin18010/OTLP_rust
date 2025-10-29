@@ -399,7 +399,7 @@ git commit -m "refactor: fix clippy warnings and format code"
 
 #### 详细步骤
 
-**Week 3: 识别未使用依赖**
+**Week 3: 识别未使用依赖**:
 
 ```bash
 # 1. 安装工具
@@ -413,7 +413,7 @@ cargo +nightly udeps --workspace > unused_deps.txt
 cat unused_deps.txt
 ```
 
-**Week 4-5: 清理依赖**
+**Week 4-5: 清理依赖**:
 
 ```toml
 # Cargo.toml - 移除以下未使用依赖
@@ -460,7 +460,7 @@ cat unused_deps.txt
 
 #### 重构计划
 
-**1. 统一client模块 (2天)**
+**1. 统一client模块 (2天)**:
 
 ```bash
 # 当前状态
@@ -478,7 +478,7 @@ crates/otlp/src/client/
 └── config.rs       # 客户端配置
 ```
 
-**2. 统一performance模块 (2天)**
+**2. 统一performance模块 (2天)**:
 
 ```bash
 # 当前状态
@@ -500,7 +500,7 @@ crates/otlp/src/performance/
 └── batch_processor.rs
 ```
 
-**3. 清理历史文件 (1天)**
+**3. 清理历史文件 (1天)**:
 
 ```bash
 # 移除历史遗留文件
@@ -509,7 +509,7 @@ rm crates/otlp/src/*_simple.rs (如果已合并)
 rm crates/otlp/src/*_legacy.rs
 ```
 
-**4. 更新导入和文档 (2天)**
+**4. 更新导入和文档 (2天)**:
 
 ```bash
 # 更新所有导入路径
@@ -535,7 +535,7 @@ rm crates/otlp/src/*_legacy.rs
 
 #### 提升计划
 
-**Week 9: 核心模块测试 (目标: 60%)**
+**Week 9: 核心模块测试 (目标: 60%)**:
 
 ```rust
 // 1. otlp/src/client/ - 添加测试
@@ -563,7 +563,7 @@ mod tests {
 // 3. otlp/src/transport/ - 添加测试
 ```
 
-**Week 10: 扩展测试 (目标: 70%)**
+**Week 10: 扩展测试 (目标: 70%)**:
 
 ```rust
 // 4. 集成测试
@@ -594,7 +594,7 @@ mod tests {
 
 #### 示例计划
 
-**创建examples/目录结构**
+**创建examples/目录结构**:
 
 ```text
 examples/
@@ -642,7 +642,7 @@ examples/
 
 #### 升级步骤
 
-**Week 1: 研究和准备**
+**Week 1: 研究和准备**:
 
 ```bash
 # 1. 查看变更日志
@@ -653,7 +653,7 @@ examples/
 # 3. 制定升级计划
 ```
 
-**Week 2: 实施升级**
+**Week 2: 实施升级**:
 
 ```bash
 # 1. 创建升级分支

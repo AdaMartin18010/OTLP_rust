@@ -2,8 +2,7 @@
 
 > 关联：`async-sync-classification.md`、`../algorithms/models.md`
 
-## 📊 目录
-
+## 📋 目录
 - [递归异步：语义、等价与Rust 1.90 实践](#递归异步语义等价与rust-190-实践)
   - [📊 目录](#-目录)
   - [📋 目录](#-目录-1)

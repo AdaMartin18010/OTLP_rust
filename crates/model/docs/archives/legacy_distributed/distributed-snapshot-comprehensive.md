@@ -1,7 +1,6 @@
-# 分布式快照综合分析 (Chandy-Lamport算法)
+﻿# 分布式快照综合分析 (Chandy-Lamport算法)
 
-## 目录
-
+## 📋 目录
 - [分布式快照综合分析 (Chandy-Lamport算法)](#分布式快照综合分析-chandy-lamport算法)
   - [目录](#目录)
   - [概述](#概述)

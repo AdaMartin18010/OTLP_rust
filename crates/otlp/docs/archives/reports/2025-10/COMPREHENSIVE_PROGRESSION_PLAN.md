@@ -1,4 +1,4 @@
-# OTLP项目持续推进综合计划
+﻿# OTLP项目持续推进综合计划
 
 ## 📋 目录
 
@@ -752,7 +752,7 @@ pub struct OtlpClient {
 ```markdown
 # OTLP使用指南
 
-## 目录
+## 📋 目录
 1. [快速开始](quick-start.md)
 2. [配置指南](configuration.md)
 3. [数据传输](data-transmission.md)

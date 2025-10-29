@@ -3,8 +3,7 @@
 > ⚠️ **注意**: 这是2025年10月3日的历史报告。  
 > 📄 **最新报告**: 请查看 [OVERALL_PROGRESS_SUMMARY_2025_10_04.md](./OVERALL_PROGRESS_SUMMARY_2025_10_04.md)
 
-## 📊 目录
-
+## 📋 目录
 - [C13\_Reliability 综合进度总结报告](#c13_reliability-综合进度总结报告)
   - [📊 目录](#-目录)
   - [📊 整体进度概览](#-整体进度概览)

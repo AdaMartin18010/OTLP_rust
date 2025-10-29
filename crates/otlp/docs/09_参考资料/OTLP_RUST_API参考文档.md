@@ -1,7 +1,6 @@
-# OTLP Rust API 参考文档
+﻿# OTLP Rust API 参考文档
 
-## 目录
-
+## 📋 目录
 1. [核心API](#核心api)
 2. [传输层API](#传输层api)
 3. [数据处理API](#数据处理api)

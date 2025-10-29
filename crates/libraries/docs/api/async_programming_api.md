@@ -1,4 +1,4 @@
-# 异步编程最佳实践 - API参考文档
+﻿# 异步编程最佳实践 - API参考文档
 
 **示例文件**: `crates/libraries/examples/async_programming_best_practices.rs`  
 **版本**: 1.0.0  
@@ -7,7 +7,7 @@
 
 ---
 
-## 目录
+## 📋 目录
 
 - [任务管理](#任务管理)
 - [超时和取消](#超时和取消)
@@ -26,6 +26,7 @@
 ### `basic_task_spawning()`
 
 **签名**:
+
 ```rust
 pub async fn basic_task_spawning()
 ```
@@ -33,12 +34,14 @@ pub async fn basic_task_spawning()
 **功能**: 演示基本的异步任务生成和等待模式。
 
 **涵盖内容**:
+
 - 使用`tokio::spawn`创建任务
 - 使用`JoinHandle`等待任务完成
 - 处理任务返回值
 - 错误处理
 
 **使用示例**:
+
 ```rust
 #[tokio::main]
 async fn main() {
@@ -57,6 +60,7 @@ async fn main() {
 ```
 
 **最佳实践**:
+
 - ✅ 总是处理`JoinHandle::await`的`Result`
 - ✅ 使用`tokio::spawn`而非`std::thread::spawn`
 - ⚠️ 注意任务panic会被捕获在`JoinError`中
@@ -66,6 +70,7 @@ async fn main() {
 ### `joinset_usage()`
 
 **签名**:
+
 ```rust
 pub async fn joinset_usage()
 ```
@@ -73,11 +78,13 @@ pub async fn joinset_usage()
 **功能**: 演示使用JoinSet管理多个任务。
 
 **优势**:
+
 - 自动管理多个任务的生命周期
 - 按完成顺序获取结果
 - 更好的资源管理
 
 **使用示例**:
+
 ```rust
 use tokio::task::JoinSet;
 
@@ -100,6 +107,7 @@ while let Some(result) = set.join_next().await {
 ```
 
 **适用场景**:
+
 - 需要管理多个并发任务
 - 任务数量动态变化
 - 需要按完成顺序处理结果
@@ -111,6 +119,7 @@ while let Some(result) = set.join_next().await {
 ### `limited_concurrency_example()`
 
 **签名**:
+
 ```rust
 pub async fn limited_concurrency_example()
 ```
@@ -120,6 +129,7 @@ pub async fn limited_concurrency_example()
 **核心技术**: `tokio::sync::Semaphore`
 
 **使用示例**:
+
 ```rust
 use tokio::sync::Semaphore;
 use std::sync::Arc;
@@ -140,11 +150,13 @@ let results = futures::future::join_all(handles).await;
 ```
 
 **适用场景**:
+
 - 限制资源使用（CPU、内存、网络）
 - 防止系统过载
 - 公平调度
 
 **配置建议**:
+
 - CPU密集型: `num_cpus::get()`
 - I/O密集型: `num_cpus::get() * 2-4`
 - 外部API: 根据API限流配置
@@ -156,6 +168,7 @@ let results = futures::future::join_all(handles).await;
 ### `timeout_patterns()`
 
 **签名**:
+
 ```rust
 pub async fn timeout_patterns()
 ```
@@ -165,6 +178,7 @@ pub async fn timeout_patterns()
 **核心API**: `tokio::time::timeout`
 
 **使用示例**:
+
 ```rust
 use tokio::time::{timeout, Duration};
 
@@ -183,12 +197,14 @@ let results = tokio::try_join!(
 ```
 
 **最佳实践**:
+
 - ✅ 为所有外部调用设置超时
 - ✅ 使用合理的超时时间（不要太短或太长）
 - ✅ 记录超时事件用于监控
 - ⚠️ 超时会取消Future但不会取消底层操作
 
 **推荐超时时间**:
+
 - 数据库查询: 5-30秒
 - HTTP请求: 10-60秒
 - RPC调用: 5-15秒
@@ -199,6 +215,7 @@ let results = tokio::try_join!(
 ### `cancellation_patterns()`
 
 **签名**:
+
 ```rust
 pub async fn cancellation_patterns()
 ```
@@ -208,6 +225,7 @@ pub async fn cancellation_patterns()
 **核心技术**: `tokio::select!` + `oneshot::channel`
 
 **使用示例**:
+
 ```rust
 use tokio::sync::oneshot;
 use tokio::select;
@@ -235,6 +253,7 @@ task.await.unwrap();
 ```
 
 **最佳实践**:
+
 - ✅ 使用`select!`监听取消信号
 - ✅ 清理资源后再退出
 - ✅ 记录取消原因
@@ -247,6 +266,7 @@ task.await.unwrap();
 ### `rwlock_patterns()`
 
 **签名**:
+
 ```rust
 pub async fn rwlock_patterns()
 ```
@@ -256,6 +276,7 @@ pub async fn rwlock_patterns()
 **核心API**: `tokio::sync::RwLock`
 
 **使用示例**:
+
 ```rust
 use tokio::sync::RwLock;
 use std::sync::Arc;
@@ -281,11 +302,13 @@ futures::future::join_all(read_handles).await;
 ```
 
 **性能特点**:
+
 - 读操作: 多个并发，无等待
 - 写操作: 独占访问，阻塞所有读写
 - 读多写少场景最优
 
 **vs Mutex**:
+
 | 特性 | RwLock | Mutex |
 |------|--------|-------|
 | 读并发 | ✅ 支持 | ❌ 不支持 |
@@ -299,6 +322,7 @@ futures::future::join_all(read_handles).await;
 ### `mutex_patterns()`
 
 **签名**:
+
 ```rust
 pub async fn mutex_patterns()
 ```
@@ -308,6 +332,7 @@ pub async fn mutex_patterns()
 **核心API**: `tokio::sync::Mutex`
 
 **使用示例**:
+
 ```rust
 use tokio::sync::Mutex;
 use std::sync::Arc;
@@ -328,12 +353,14 @@ println!("Final count: {}", *counter.lock().await);
 ```
 
 **最佳实践**:
+
 - ✅ 持有锁的时间越短越好
 - ✅ 不要在持有锁时await
 - ✅ 使用`Arc`共享Mutex
 - ⚠️ 避免嵌套锁（可能死锁）
 
 **性能优化**:
+
 ```rust
 // ❌ 不好：在持有锁时await
 let mut guard = mutex.lock().await;
@@ -353,6 +380,7 @@ let mut guard = mutex.lock().await;
 ### `mpsc_patterns()`
 
 **签名**:
+
 ```rust
 pub async fn mpsc_patterns()
 ```
@@ -362,6 +390,7 @@ pub async fn mpsc_patterns()
 **核心API**: `tokio::sync::mpsc`
 
 **使用示例**:
+
 ```rust
 use tokio::sync::mpsc;
 
@@ -384,6 +413,7 @@ while let Some(msg) = rx.recv().await {
 ```
 
 **容量选择**:
+
 - 无界: `mpsc::unbounded_channel()` - 可能内存溢出
 - 有界: `mpsc::channel(n)` - 提供背压
 - 推荐: 根据处理速度选择合适大小（通常100-1000）
@@ -393,6 +423,7 @@ while let Some(msg) = rx.recv().await {
 ### `bounded_channel_backpressure()`
 
 **签名**:
+
 ```rust
 pub async fn bounded_channel_backpressure()
 ```
@@ -400,11 +431,13 @@ pub async fn bounded_channel_backpressure()
 **功能**: 演示有界Channel的背压机制。
 
 **背压原理**:
+
 - Channel满时，`send()`会等待
 - 自动限制生产速度
 - 防止内存溢出
 
 **使用示例**:
+
 ```rust
 let (tx, mut rx) = mpsc::channel::<i32>(3); // 容量为3
 
@@ -425,6 +458,7 @@ while let Some(value) = rx.recv().await {
 ```
 
 **适用场景**:
+
 - 生产者快于消费者
 - 需要限制内存使用
 - 需要流量控制
@@ -434,6 +468,7 @@ while let Some(value) = rx.recv().await {
 ### `broadcast_patterns()`
 
 **签名**:
+
 ```rust
 pub async fn broadcast_patterns()
 ```
@@ -443,6 +478,7 @@ pub async fn broadcast_patterns()
 **核心API**: `tokio::sync::broadcast`
 
 **使用示例**:
+
 ```rust
 use tokio::sync::broadcast;
 
@@ -468,11 +504,13 @@ drop(tx); // 关闭channel
 ```
 
 **特点**:
+
 - 所有订阅者都收到相同消息
 - 支持动态订阅
 - 自动跳过慢订阅者
 
 **适用场景**:
+
 - 事件通知
 - 配置更新
 - 实时数据分发
@@ -484,6 +522,7 @@ drop(tx); // 关闭channel
 ### `stream_processing()`
 
 **签名**:
+
 ```rust
 pub async fn stream_processing()
 ```
@@ -493,6 +532,7 @@ pub async fn stream_processing()
 **核心API**: `futures::stream::StreamExt`
 
 **使用示例**:
+
 ```rust
 use futures::stream::{self, StreamExt};
 
@@ -506,6 +546,7 @@ println!("Results: {:?}", results);
 ```
 
 **常用操作**:
+
 - `map`: 转换元素
 - `filter`: 过滤元素
 - `take`: 取前N个
@@ -514,6 +555,7 @@ println!("Results: {:?}", results);
 - `buffer_unordered`: 并发处理
 
 **并发处理**:
+
 ```rust
 // 并发获取URLs
 let results = stream::iter(urls)
@@ -528,6 +570,7 @@ let results = stream::iter(urls)
 ### `stream_batching()`
 
 **签名**:
+
 ```rust
 pub async fn stream_batching()
 ```
@@ -535,6 +578,7 @@ pub async fn stream_batching()
 **功能**: 演示Stream的批处理模式。
 
 **使用示例**:
+
 ```rust
 use futures::stream::{self, StreamExt};
 
@@ -550,11 +594,13 @@ while let Some(batch) = stream.next().await {
 ```
 
 **适用场景**:
+
 - 批量数据库插入
 - 批量API调用
 - 降低开销
 
 **批大小建议**:
+
 - 数据库: 100-1000
 - API调用: 10-100
 - 消息队列: 10-1000
@@ -566,6 +612,7 @@ while let Some(batch) = stream.next().await {
 ### `async_recursion_example()`
 
 **签名**:
+
 ```rust
 pub fn async_recursion_example() -> BoxFuture<'static, u64>
 ```
@@ -577,6 +624,7 @@ pub fn async_recursion_example() -> BoxFuture<'static, u64>
 **解决方案**: 使用`BoxFuture`
 
 **使用示例**:
+
 ```rust
 use futures::future::{BoxFuture, FutureExt};
 
@@ -600,11 +648,13 @@ let result = async_fibonacci(10).await;
 ```
 
 **性能考虑**:
+
 - `Box`分配有开销
 - 深度递归可能栈溢出
 - 考虑改用迭代
 
 **替代方案**:
+
 ```rust
 // 使用async-recursion crate
 #[async_recursion]
@@ -623,6 +673,7 @@ async fn fibonacci(n: u64) -> u64 {
 ### `error_handling_patterns()`
 
 **签名**:
+
 ```rust
 pub async fn error_handling_patterns() -> Result<(), AsyncError>
 ```
@@ -630,6 +681,7 @@ pub async fn error_handling_patterns() -> Result<(), AsyncError>
 **功能**: 演示异步错误处理的最佳实践。
 
 **使用示例**:
+
 ```rust
 // 使用?操作符
 async fn fetch_user(id: i64) -> Result<User, Error> {
@@ -656,6 +708,7 @@ for result in results {
 ```
 
 **错误类型设计**:
+
 ```rust
 #[derive(Debug, thiserror::Error)]
 pub enum AsyncError {
@@ -677,6 +730,7 @@ pub enum AsyncError {
 ### `worker_pool_pattern()`
 
 **签名**:
+
 ```rust
 pub async fn worker_pool_pattern()
 ```
@@ -684,7 +738,8 @@ pub async fn worker_pool_pattern()
 **功能**: 实现高效的Worker Pool模式。
 
 **架构**:
-```
+
+```text
 生产者 → [工作队列] → Worker 1
                     → Worker 2
                     → Worker 3
@@ -694,6 +749,7 @@ pub async fn worker_pool_pattern()
 ```
 
 **使用示例**:
+
 ```rust
 let (work_tx, work_rx) = mpsc::channel(100);
 let (result_tx, mut result_rx) = mpsc::channel(100);
@@ -721,6 +777,7 @@ for worker_id in 0..4 {
 ```
 
 **适用场景**:
+
 - CPU密集型任务
 - 限制并发数
 - 任务调度
@@ -730,6 +787,7 @@ for worker_id in 0..4 {
 ### `request_coalescing()`
 
 **签名**:
+
 ```rust
 pub async fn request_coalescing()
 ```
@@ -737,6 +795,7 @@ pub async fn request_coalescing()
 **功能**: 请求合并/批处理模式。
 
 **使用示例**:
+
 ```rust
 // 收集一段时间内的请求，批量处理
 let mut batch = Vec::new();
@@ -762,6 +821,7 @@ loop {
 ```
 
 **优势**:
+
 - 减少系统调用
 - 提高吞吐量
 - 降低延迟抖动
@@ -773,6 +833,7 @@ loop {
 ### `performance_optimization()`
 
 **签名**:
+
 ```rust
 pub async fn performance_optimization()
 ```
@@ -782,6 +843,7 @@ pub async fn performance_optimization()
 **优化技巧**:
 
 #### 1. 避免不必要的Clone
+
 ```rust
 // ❌ 不好：每次都clone
 for i in 0..1000 {
@@ -798,6 +860,7 @@ for i in 0..1000 {
 ```
 
 #### 2. 使用try_join!提前失败
+
 ```rust
 // ❌ join! - 等待所有任务完成
 let (r1, r2, r3) = tokio::join!(task1(), task2(), task3());
@@ -807,6 +870,7 @@ let (r1, r2, r3) = tokio::try_join!(task1(), task2(), task3())?;
 ```
 
 #### 3. 无序处理更快
+
 ```rust
 // buffer_unordered 比 buffered 快（不保证顺序）
 stream.map(|x| process(x))
@@ -815,6 +879,7 @@ stream.map(|x| process(x))
 ```
 
 #### 4. 选择合适的数据结构
+
 - 读多写少: `RwLock`
 - 读写均衡: `Mutex`
 - 无竞争: `RefCell` + `thread_local!`
@@ -824,27 +889,32 @@ stream.map(|x| process(x))
 ## 最佳实践总结
 
 ### 任务生成
+
 - ✅ 使用`JoinSet`管理多任务
 - ✅ 限制并发数量
 - ⚠️ 处理任务panic
 
 ### 超时处理
+
 - ✅ 所有外部调用都设置超时
 - ✅ 使用合理的超时值
 - ⚠️ 记录超时事件
 
 ### 锁使用
+
 - ✅ 最小化锁持有时间
 - ✅ 不在持有锁时await
 - ⚠️ 避免死锁
 
 ### Channel选择
+
 - MPSC: 多对一通信
 - Broadcast: 一对多广播
 - Oneshot: 一次性响应
 - Watch: 状态同步
 
-### 性能优化
+### 性能优化1
+
 - ✅ 使用Arc而非Clone
 - ✅ 使用try_join!提前失败
 - ✅ buffer_unordered无序并发
@@ -864,4 +934,3 @@ stream.map(|x| process(x))
 **版本**: 1.0.0  
 **维护者**: OTLP Rust Team  
 **最后更新**: 2025年10月28日
-
