@@ -887,6 +887,7 @@ async fn graceful_shutdown(server: Server) {
 7. **运维**: 优雅关闭、零停机部署
 
 **生产就绪检查清单**:
+
 - [ ] 容器镜像安全扫描通过
 - [ ] 资源限制合理配置
 - [ ] 健康检查配置正确
@@ -899,4 +900,3 @@ async fn graceful_shutdown(server: Server) {
 - [ ] 灾难恢复计划
 
 **恭喜！您已完成Web可观测性全套文档学习** 🎉
-

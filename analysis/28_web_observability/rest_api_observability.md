@@ -736,7 +736,7 @@ REST API可观测性的关键要素：
 5. **性能优化**: 基于数据的持续优化
 
 **下一步**:
+
 - 📊 [GraphQL监控](./graphql_monitoring.md)
 - 🔌 [WebSocket追踪](./websocket_tracing.md)
 - 🚀 [生产环境部署](./production_deployment.md)
-

@@ -181,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added inline documentation for all public APIs
 - Added performance benchmarking examples
 
-### Changed
+### Changed1
 
 - Updated `crates/otlp/src/lib.rs` to export new modules:
   - Added `pub mod profiling;`

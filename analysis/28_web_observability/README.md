@@ -187,6 +187,7 @@ GraphQL特定的可观测性：
 📄 **文档**: [otlp_deployment_architecture.md](./otlp_deployment_architecture.md) 🔥
 
 **为什么重要**:
+
 - ✅ 系统化的部署模式对比分析
 - ✅ 完整的Kubernetes配置示例
 - ✅ 成本分析（Gateway比Sidecar节省90%）
