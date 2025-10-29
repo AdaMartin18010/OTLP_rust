@@ -166,13 +166,13 @@ pub fn edera_tracer_config() -> Result<TracerProvider> {
 
 ## 2025年9月: WebAssembly资源隔离安全研究
 
-### 研究概览
+### 研究概览1
 
 **论文**: *"Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers"*  
 **来源**: arXiv:2509.11242  
 **发布时间**: 2025年9月
 
-### 核心发现
+### 核心发现1
 
 研究系统性地探讨了**Wasm容器的资源隔离攻击面**，发现了多个潜在的安全漏洞。
 
@@ -422,13 +422,13 @@ impl WasmCircuitBreaker {
 
 ## 2025年10月: Lumos性能基准测试
 
-### 研究概览
+### 研究概览2
 
 **论文**: *"Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum"*  
 **来源**: arXiv:2510.05118  
 **发布时间**: 2025年10月
 
-### 核心发现
+### 核心发现2
 
 Lumos项目对**WebAssembly作为无服务器运行时**在边缘-云连续体中的性能进行了全面评估。
 
