@@ -19,7 +19,7 @@
 
 ### 项目结构
 
-```
+```text
 otlp-web-api/
 ├── Cargo.toml
 ├── src/
@@ -504,9 +504,9 @@ curl http://localhost:3000/api/users
 
 ## 示例2: 微服务追踪系统
 
-### 项目结构
+### 项目结构2
 
-```
+```text
 microservices-tracing/
 ├── Cargo.toml
 ├── services/
@@ -902,4 +902,3 @@ curl http://localhost:9090/api/v1/query?query=http_requests_total
 
 **更新日期**: 2025年10月29日  
 **维护者**: OTLP_rust Team
-
