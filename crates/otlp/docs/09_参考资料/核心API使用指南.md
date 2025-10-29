@@ -15,7 +15,7 @@
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 基本用法
 
@@ -64,7 +64,7 @@ tokio = { version = "1", features = ["full"] }
 
 ---
 
-## 📚 API 参考
+## API 参考
 
 ### EnhancedOtlpClient
 
@@ -344,7 +344,7 @@ let client = EnhancedOtlpClient::builder()
 
 ---
 
-## ⚙️ 配置选项
+## 配置选项
 
 ### 完整配置示例
 
@@ -400,7 +400,7 @@ let client = EnhancedOtlpClient::builder()
 
 ---
 
-## 💡 使用示例
+## 使用示例
 
 ### 示例 1: 基本 Span 创建
 
@@ -595,7 +595,7 @@ async fn risky_operation() -> Result<String, Box<dyn std::error::Error>> {
 
 ---
 
-## 🎯 最佳实践
+## 最佳实践
 
 ### 1. 客户端生命周期
 
@@ -705,7 +705,7 @@ for i in 0..10 {
 
 ---
 
-## 🔧 故障排查
+## 故障排查
 
 ### 问题 1: 连接失败
 
