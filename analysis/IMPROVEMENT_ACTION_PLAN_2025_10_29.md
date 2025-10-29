@@ -333,7 +333,7 @@ git push
 # 检查所有workflow运行成功
 ```
 
-#### 验收标准
+#### 验收标准1
 
 - ✅ 4个workflow配置完成
 - ✅ CI在GitHub Actions运行成功
