@@ -78,25 +78,25 @@ impl IntelligentAutomationSystem {
     pub async fn start(&mut self) -> Result<(), AutomationError> {
         // 启动数据收集
         self.data_collector.start().await?;
-        
+
         // 启动模式识别
         self.pattern_recognizer.start().await?;
-        
+
         // 启动异常检测
         self.anomaly_detector.start().await?;
-        
+
         // 启动决策引擎
         self.decision_engine.start().await?;
-        
+
         // 启动学习引擎
         self.learning_engine.start().await?;
-        
+
         // 启动执行引擎
         self.execution_engine.start().await?;
-        
+
         // 启动反馈循环
         self.feedback_loop.start().await?;
-        
+
         Ok(())
     }
 }
@@ -118,41 +118,41 @@ impl MLAnomalyDetector {
     pub async fn train_models(&mut self, training_data: &[TimeSeriesData]) -> Result<(), TrainingError> {
         // 1. 训练Isolation Forest
         self.isolation_forest.train(training_data).await?;
-        
+
         // 2. 训练Autoencoder
         self.autoencoder.train(training_data).await?;
-        
+
         // 3. 训练LSTM模型
         self.lstm_model.train(training_data).await?;
-        
+
         // 4. 训练集成模型
         self.ensemble_model.train(training_data).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn detect_anomalies(&self, data: &TimeSeriesData) -> Result<Vec<Anomaly>, DetectionError> {
         let mut all_anomalies = Vec::new();
-        
+
         // 1. Isolation Forest检测
         let if_anomalies = self.isolation_forest.detect(data).await?;
         all_anomalies.extend(if_anomalies);
-        
+
         // 2. Autoencoder检测
         let ae_anomalies = self.autoencoder.detect(data).await?;
         all_anomalies.extend(ae_anomalies);
-        
+
         // 3. LSTM检测
         let lstm_anomalies = self.lstm_model.detect(data).await?;
         all_anomalies.extend(lstm_anomalies);
-        
+
         // 4. 集成模型检测
         let ensemble_anomalies = self.ensemble_model.detect(data).await?;
         all_anomalies.extend(ensemble_anomalies);
-        
+
         // 5. 融合结果
         let final_anomalies = self.fuse_anomaly_results(&all_anomalies).await?;
-        
+
         Ok(final_anomalies)
     }
 }
@@ -172,41 +172,41 @@ impl PredictiveModel {
     pub async fn train_forecasting_models(&mut self, historical_data: &[TimeSeriesData]) -> Result<(), TrainingError> {
         // 1. 训练ARIMA模型
         self.arima_model.fit(historical_data).await?;
-        
+
         // 2. 训练Prophet模型
         self.prophet_model.fit(historical_data).await?;
-        
+
         // 3. 训练LSTM预测模型
         self.lstm_forecaster.train(historical_data).await?;
-        
+
         // 4. 训练Transformer模型
         self.transformer_model.train(historical_data).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn predict_future(&self, current_data: &TimeSeriesData, horizon: usize) -> Result<Forecast, PredictionError> {
         let mut predictions = Vec::new();
-        
+
         // 1. ARIMA预测
         let arima_forecast = self.arima_model.predict(horizon).await?;
         predictions.push(arima_forecast);
-        
+
         // 2. Prophet预测
         let prophet_forecast = self.prophet_model.predict(horizon).await?;
         predictions.push(prophet_forecast);
-        
+
         // 3. LSTM预测
         let lstm_forecast = self.lstm_forecaster.predict(current_data, horizon).await?;
         predictions.push(lstm_forecast);
-        
+
         // 4. Transformer预测
         let transformer_forecast = self.transformer_model.predict(current_data, horizon).await?;
         predictions.push(transformer_forecast);
-        
+
         // 5. 集成预测结果
         let ensemble_forecast = self.ensemble_predictions(&predictions).await?;
-        
+
         Ok(ensemble_forecast)
     }
 }
@@ -233,20 +233,20 @@ impl AutomationEnvironment {
             transition_model: TransitionModel::new(),
         }
     }
-    
+
     pub async fn step(&mut self, action: &Action) -> Result<EnvironmentStep, EnvironmentError> {
         // 1. 执行动作
         let result = self.execute_action(action).await?;
-        
+
         // 2. 计算奖励
         let reward = self.reward_function.calculate_reward(&result).await?;
-        
+
         // 3. 更新状态
         let next_state = self.transition_model.transition(&result).await?;
-        
+
         // 4. 判断是否结束
         let done = self.is_episode_done(&next_state).await?;
-        
+
         Ok(EnvironmentStep {
             state: next_state,
             reward,
@@ -272,14 +272,14 @@ impl RLAutomationAgent {
         for episode in 0..episodes {
             let mut state = environment.reset().await?;
             let mut total_reward = 0.0;
-            
+
             loop {
                 // 1. 选择动作
                 let action = self.select_action(&state).await?;
-                
+
                 // 2. 执行动作
                 let step = environment.step(&action).await?;
-                
+
                 // 3. 存储经验
                 let experience = Experience {
                     state: state.clone(),
@@ -289,46 +289,46 @@ impl RLAutomationAgent {
                     done: step.done,
                 };
                 self.experience_buffer.push(experience);
-                
+
                 // 4. 更新网络
                 if self.experience_buffer.len() >= 1000 {
                     self.update_networks().await?;
                 }
-                
+
                 total_reward += step.reward;
                 state = step.state;
-                
+
                 if step.done {
                     break;
                 }
             }
-            
+
             println!("Episode {}: Total reward = {}", episode, total_reward);
         }
-        
+
         Ok(())
     }
-    
+
     async fn select_action(&self, state: &State) -> Result<Action, ActionError> {
         // 使用策略网络选择动作
         let action_probs = self.policy_network.forward(state).await?;
         let action = self.sample_action(&action_probs).await?;
         Ok(action)
     }
-    
+
     async fn update_networks(&mut self) -> Result<(), TrainingError> {
         // 1. 采样经验
         let batch = self.experience_buffer.sample(32);
-        
+
         // 2. 计算目标值
         let targets = self.compute_targets(&batch).await?;
-        
+
         // 3. 更新价值网络
         self.update_value_network(&batch, &targets).await?;
-        
+
         // 4. 更新策略网络
         self.update_policy_network(&batch).await?;
-        
+
         Ok(())
     }
 }
@@ -366,12 +366,12 @@ impl DecisionTree {
             min_samples_leaf: 10,
         }
     }
-    
+
     pub fn train(&mut self, training_data: &[TrainingExample]) -> Result<(), TrainingError> {
         self.root = self.build_tree(training_data, 0)?;
         Ok(())
     }
-    
+
     fn build_tree(&self, data: &[TrainingExample], depth: usize) -> Result<DecisionNode, TrainingError> {
         // 1. 检查停止条件
         if depth >= self.max_depth || data.len() < self.min_samples_split {
@@ -379,17 +379,17 @@ impl DecisionTree {
                 prediction: self.majority_class(data),
             });
         }
-        
+
         // 2. 寻找最佳分割
         let (best_feature, best_threshold) = self.find_best_split(data)?;
-        
+
         // 3. 分割数据
         let (left_data, right_data) = self.split_data(data, &best_feature, best_threshold);
-        
+
         // 4. 递归构建子树
         let left_child = self.build_tree(&left_data, depth + 1)?;
         let right_child = self.build_tree(&right_data, depth + 1)?;
-        
+
         Ok(DecisionNode::Internal {
             feature: best_feature,
             threshold: best_threshold,
@@ -397,11 +397,11 @@ impl DecisionTree {
             right: Box::new(right_child),
         })
     }
-    
+
     pub fn predict(&self, features: &HashMap<String, f64>) -> Decision {
         self.predict_recursive(&self.root, features)
     }
-    
+
     fn predict_recursive(&self, node: &DecisionNode, features: &HashMap<String, f64>) -> Decision {
         match node {
             DecisionNode::Leaf { prediction } => prediction.clone(),
@@ -455,35 +455,35 @@ impl RuleEngine {
             conflict_resolver: ConflictResolver::new(),
         }
     }
-    
+
     pub fn add_rule(&mut self, rule: Rule) {
         self.rules.push(rule);
         self.rules.sort_by_key(|r| std::cmp::Reverse(r.priority));
     }
-    
+
     pub async fn evaluate_rules(&self, context: &SystemContext) -> Result<Vec<Action>, EvaluationError> {
         let mut triggered_rules = Vec::new();
-        
+
         // 1. 评估所有规则
         for rule in &self.rules {
             if !rule.enabled {
                 continue;
             }
-            
+
             if self.rule_evaluator.evaluate_rule(rule, context).await? {
                 triggered_rules.push(rule.clone());
             }
         }
-        
+
         // 2. 解决规则冲突
         let resolved_rules = self.conflict_resolver.resolve_conflicts(&triggered_rules).await?;
-        
+
         // 3. 提取动作
         let mut actions = Vec::new();
         for rule in resolved_rules {
             actions.extend(rule.actions);
         }
-        
+
         Ok(actions)
     }
 }
@@ -535,7 +535,7 @@ impl WorkflowEngine {
         // 1. 获取工作流定义
         let definition = self.workflow_definitions.get(workflow_id)
             .ok_or(ExecutionError::WorkflowNotFound)?;
-        
+
         // 2. 创建工作流实例
         let instance_id = Uuid::new_v4().to_string();
         let mut instance = WorkflowInstance {
@@ -548,14 +548,14 @@ impl WorkflowEngine {
             start_time: chrono::Utc::now(),
             end_time: None,
         };
-        
+
         // 3. 执行工作流步骤
         while instance.status == WorkflowStatus::Running && instance.current_step < definition.steps.len() {
             let step = &definition.steps[instance.current_step];
             let step_result = self.execute_step(&mut instance, step).await?;
-            
+
             instance.execution_history.push(step_result.clone());
-            
+
             match step_result.status {
                 StepStatus::Completed => {
                     instance.current_step += 1;
@@ -570,16 +570,16 @@ impl WorkflowEngine {
                 }
             }
         }
-        
+
         // 4. 完成工作流
         if instance.current_step >= definition.steps.len() {
             instance.status = WorkflowStatus::Completed;
         }
         instance.end_time = Some(chrono::Utc::now());
-        
+
         // 5. 保存实例
         self.workflow_instances.insert(instance_id.clone(), instance.clone());
-        
+
         Ok(WorkflowResult {
             instance_id,
             status: instance.status,
@@ -605,35 +605,35 @@ impl TaskExecutor {
         // 1. 获取任务定义
         let task_definition = self.task_registry.get_task(&task.task_type)
             .ok_or(ExecutionError::TaskNotFound)?;
-        
+
         // 2. 设置超时
         let timeout = task.timeout.unwrap_or(task_definition.default_timeout);
         let timeout_future = self.timeout_manager.set_timeout(timeout);
-        
+
         // 3. 执行任务
         let execution_future = self.execute_task_internal(task, task_definition);
-        
+
         // 4. 等待完成或超时
         tokio::select! {
             result = execution_future => result,
             _ = timeout_future => Err(ExecutionError::Timeout),
         }
     }
-    
+
     async fn execute_task_internal(&self, task: &Task, definition: &TaskDefinition) -> Result<TaskResult, ExecutionError> {
         let mut attempt = 0;
         let max_retries = task.retry_policy.max_retries;
-        
+
         loop {
             attempt += 1;
-            
+
             match self.execute_single_attempt(task, definition).await {
                 Ok(result) => return Ok(result),
                 Err(error) => {
                     if attempt >= max_retries {
                         return Err(error);
                     }
-                    
+
                     // 等待重试间隔
                     let retry_delay = self.calculate_retry_delay(attempt, &task.retry_policy);
                     tokio::time::sleep(retry_delay).await;
@@ -666,7 +666,7 @@ pub struct SystemMetricsFeedback {
 impl FeedbackSource for SystemMetricsFeedback {
     async fn collect_feedback(&self) -> Result<Vec<Feedback>, CollectionError> {
         let metrics = self.metrics_collector.collect_metrics().await?;
-        
+
         let feedback = metrics.into_iter().map(|metric| Feedback {
             id: Uuid::new_v4().to_string(),
             source: "system_metrics".to_string(),
@@ -674,7 +674,7 @@ impl FeedbackSource for SystemMetricsFeedback {
             feedback_type: FeedbackType::Metric,
             data: serde_json::to_value(metric).unwrap(),
         }).collect();
-        
+
         Ok(feedback)
     }
 }
@@ -682,12 +682,12 @@ impl FeedbackSource for SystemMetricsFeedback {
 impl FeedbackCollector {
     pub async fn collect_all_feedback(&self) -> Result<Vec<Feedback>, CollectionError> {
         let mut all_feedback = Vec::new();
-        
+
         for source in &self.feedback_sources {
             let feedback = source.collect_feedback().await?;
             all_feedback.extend(feedback);
         }
-        
+
         Ok(all_feedback)
     }
 }
@@ -707,31 +707,31 @@ impl LearningEngine {
     pub async fn learn_from_feedback(&mut self, feedback: &[Feedback]) -> Result<(), LearningError> {
         // 1. 处理反馈数据
         let processed_feedback = self.process_feedback(feedback).await?;
-        
+
         // 2. 评估当前性能
         let current_performance = self.performance_evaluator.evaluate_performance().await?;
-        
+
         // 3. 判断是否需要重新训练
         if self.should_retrain(&current_performance).await? {
             // 4. 重新训练模型
             self.model_trainer.retrain_models(&processed_feedback).await?;
-            
+
             // 5. 更新知识库
             self.knowledge_base.update_knowledge(&processed_feedback).await?;
         }
-        
+
         // 6. 调整策略
         self.adaptation_strategy.adapt_strategy(&processed_feedback).await?;
-        
+
         Ok(())
     }
-    
+
     async fn should_retrain(&self, performance: &PerformanceMetrics) -> Result<bool, LearningError> {
         // 基于性能指标判断是否需要重新训练
         let accuracy_threshold = 0.8;
         let response_time_threshold = Duration::from_secs(5);
-        
-        Ok(performance.accuracy < accuracy_threshold || 
+
+        Ok(performance.accuracy < accuracy_threshold ||
            performance.average_response_time > response_time_threshold)
     }
 }
@@ -753,24 +753,24 @@ impl AutoScalingSystem {
     pub async fn auto_scale(&mut self) -> Result<(), ScalingError> {
         // 1. 收集当前指标
         let current_metrics = self.metrics_monitor.collect_metrics().await?;
-        
+
         // 2. 预测未来负载
         let future_load = self.scaling_predictor.predict_load(&current_metrics).await?;
-        
+
         // 3. 计算所需资源
         let required_resources = self.calculate_required_resources(&future_load).await?;
-        
+
         // 4. 检查是否需要扩缩容
         if self.needs_scaling(&current_metrics, &required_resources).await? {
             // 5. 执行扩缩容
             let scaling_action = self.scaling_policy.determine_scaling_action(
-                &current_metrics, 
+                &current_metrics,
                 &required_resources
             ).await?;
-            
+
             self.scaling_executor.execute_scaling(&scaling_action).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -790,20 +790,20 @@ impl IntelligentFaultRecovery {
     pub async fn handle_fault(&mut self, fault: &Fault) -> Result<RecoveryResult, RecoveryError> {
         // 1. 分析根本原因
         let root_causes = self.root_cause_analyzer.analyze_root_causes(fault).await?;
-        
+
         // 2. 生成恢复策略
         let recovery_strategies = self.recovery_strategy_generator
             .generate_strategies(&root_causes).await?;
-        
+
         // 3. 选择最佳策略
         let best_strategy = self.select_best_strategy(&recovery_strategies).await?;
-        
+
         // 4. 执行恢复
         let recovery_result = self.recovery_executor.execute_recovery(&best_strategy).await?;
-        
+
         // 5. 验证恢复效果
         self.verify_recovery(&recovery_result).await?;
-        
+
         Ok(recovery_result)
     }
 }
@@ -834,4 +834,4 @@ impl IntelligentFaultRecovery {
 
 ---
 
-*本文档深入分析了智能自动化系统的架构设计和实现策略，为构建智能化的自主运维系统提供指导。*
+_本文档深入分析了智能自动化系统的架构设计和实现策略，为构建智能化的自主运维系统提供指导。_

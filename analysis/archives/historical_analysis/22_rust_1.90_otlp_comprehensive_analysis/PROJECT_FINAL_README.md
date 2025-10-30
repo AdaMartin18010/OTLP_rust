@@ -342,8 +342,8 @@ pub fn compare(&self, other: &VectorClock) -> CausalOrder {
 
 ---
 
-**项目座右铭**: *"From Theory to Practice, From Formal to Pragmatic"*  
-**项目核心**: *"零拷贝, 零开销, 零妥协"*
+**项目座右铭**: _"From Theory to Practice, From Formal to Pragmatic"_  
+**项目核心**: _"零拷贝, 零开销, 零妥协"_
 
 🎉 **Rust 1.90 + OTLP 综合分析项目圆满完成！** 🎉
 

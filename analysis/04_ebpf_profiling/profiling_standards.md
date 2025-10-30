@@ -109,29 +109,29 @@ SEC("perf_event")
 int cpu_profiler(struct bpf_perf_event_data *ctx)
 {
     struct cpu_sample_t sample = {};
-    
+
     // 获取当前进程信息
     u32 pid = bpf_get_current_pid_tgid() >> 32;
     u32 tid = bpf_get_current_pid_tgid() & 0xFFFFFFFF;
-    
+
     // 获取进程名称
     bpf_get_current_comm(&sample.comm, sizeof(sample.comm));
-    
+
     // 获取用户态堆栈
     sample.user_stack_id = bpf_get_stackid(ctx, &user_stack_map, BPF_F_USER_STACK);
-    
+
     // 获取内核态堆栈
     sample.kernel_stack_id = bpf_get_stackid(ctx, &kernel_stack_map, 0);
-    
+
     // 获取 CPU 信息
     sample.cpu = bpf_get_smp_processor_id();
-    
+
     // 获取时间戳
     sample.timestamp = bpf_ktime_get_ns();
-    
+
     // 提交样本
     bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &sample, sizeof(sample));
-    
+
     return 0;
 }
 ```
@@ -144,24 +144,24 @@ SEC("uprobe")
 int malloc_probe(struct pt_regs *ctx)
 {
     struct alloc_sample_t sample = {};
-    
+
     // 获取分配大小
     sample.size = PT_REGS_PARM1(ctx);
-    
+
     // 获取调用者信息
     sample.pid = bpf_get_current_pid_tgid() >> 32;
     sample.tid = bpf_get_current_pid_tgid() & 0xFFFFFFFF;
     bpf_get_current_comm(&sample.comm, sizeof(sample.comm));
-    
+
     // 获取用户态堆栈
     sample.stack_id = bpf_get_stackid(ctx, &user_stack_map, BPF_F_USER_STACK);
-    
+
     // 记录分配时间
     sample.timestamp = bpf_ktime_get_ns();
-    
+
     // 提交样本
     bpf_perf_event_output(ctx, &alloc_events, BPF_F_CURRENT_CPU, &sample, sizeof(sample));
-    
+
     return 0;
 }
 ```
@@ -224,7 +224,7 @@ message OTLPProfile {
   Profile profile = 1;
   Resource resource = 2;
   repeated Attribute attributes = 3;
-  
+
   // Profile 特定属性
   ProfileAttributes profile_attributes = 4;
 }
@@ -233,16 +233,16 @@ message ProfileAttributes {
   // 采样配置
   int64 sampling_rate = 1;
   int64 sampling_duration_nanos = 2;
-  
+
   // 环境信息
   string hostname = 3;
   string os = 4;
   string arch = 5;
-  
+
   // 运行时信息
   string runtime = 6;
   string runtime_version = 7;
-  
+
   // 应用信息
   string service_name = 8;
   string service_version = 9;
@@ -270,29 +270,29 @@ impl EBPFProfiler {
         let bpf_object = ObjectBuilder::default()
             .open_file("profiler.bpf.o")?
             .load()?;
-        
+
         // 创建性能缓冲区
         let perf_buffer = PerfBuffer::new(
             bpf_object.map("events").ok_or(ProfilerError::MapNotFound)?,
             4096,
         )?;
-        
+
         Ok(Self {
             bpf_object,
             perf_buffer,
             profile_builder: ProfileBuilder::new(),
         })
     }
-    
+
     pub async fn start_profiling(&mut self) -> Result<(), ProfilerError> {
         // 附加 eBPF 程序
         let cpu_prog = self.bpf_object.prog("cpu_profiler")
             .ok_or(ProfilerError::ProgramNotFound)?;
         cpu_prog.attach_perf_event(0, -1)?;
-        
+
         // 启动性能缓冲区处理
         self.perf_buffer.poll(Duration::from_millis(100))?;
-        
+
         // 处理事件
         loop {
             if let Some(events) = self.perf_buffer.read_events()? {
@@ -302,7 +302,7 @@ impl EBPFProfiler {
             }
         }
     }
-    
+
     fn handle_profiling_event(&mut self, event: PerfEvent) -> Result<(), ProfilerError> {
         match event.event_type {
             EventType::CpuSample => {
@@ -340,14 +340,14 @@ impl ProfileBuilder {
             location_map: HashMap::new(),
             function_map: HashMap::new(),
         };
-        
+
         // 初始化字符串表
         builder.add_string(""); // 索引 0 为空字符串
         builder.add_string("cpu"); // 索引 1
         builder.add_string("nanoseconds"); // 索引 2
         builder.add_string("samples"); // 索引 3
         builder.add_string("count"); // 索引 4
-        
+
         // 设置样本类型
         builder.profile.sample_type = vec![
             ValueType {
@@ -359,37 +359,37 @@ impl ProfileBuilder {
                 unit: builder.get_string_index("nanoseconds"),
             },
         ];
-        
+
         builder
     }
-    
+
     pub fn add_cpu_sample(&mut self, sample: CpuSample) {
         let mut location_ids = Vec::new();
-        
+
         // 添加内核堆栈
         if let Some(stack_id) = sample.kernel_stack_id {
             if let Some(locations) = self.get_stack_locations(stack_id, true) {
                 location_ids.extend(locations);
             }
         }
-        
+
         // 添加用户堆栈
         if let Some(stack_id) = sample.user_stack_id {
             if let Some(locations) = self.get_stack_locations(stack_id, false) {
                 location_ids.extend(locations);
             }
         }
-        
+
         // 创建样本
         let profile_sample = Sample {
             location_id: location_ids,
             value: vec![1, sample.timestamp],
             label: vec![],
         };
-        
+
         self.profile.sample.push(profile_sample);
     }
-    
+
     fn add_string(&mut self, s: &str) -> u64 {
         if let Some(&index) = self.string_table.get(s) {
             index
@@ -400,11 +400,11 @@ impl ProfileBuilder {
             index
         }
     }
-    
+
     fn get_string_index(&self, s: &str) -> i64 {
         self.string_table.get(s).copied().unwrap_or(0) as i64
     }
-    
+
     pub fn build(self) -> Result<Profile, ProfilerError> {
         Ok(self.profile)
     }
@@ -438,29 +438,29 @@ impl AdaptiveSampler {
             max_sample_rate: 1.0,
         }
     }
-    
+
     pub fn should_sample(&mut self) -> bool {
         self.total_events += 1;
-        
+
         // 使用当前采样率决定是否采样
         let should_sample = (self.total_events as f64 * self.current_sample_rate) as u64 > self.sample_count;
-        
+
         if should_sample {
             self.sample_count += 1;
         }
-        
+
         // 定期调整采样率
         if self.total_events % 1000 == 0 {
             self.adjust_sampling_rate();
         }
-        
+
         should_sample
     }
-    
+
     fn adjust_sampling_rate(&mut self) {
         let actual_rate = self.sample_count as f64 / self.total_events as f64;
         let error = self.target_sample_rate - actual_rate;
-        
+
         // 调整采样率
         let adjustment = error * self.adjustment_factor;
         self.current_sample_rate = (self.current_sample_rate + adjustment)
@@ -486,34 +486,34 @@ impl MultiDimensionalProfiler {
         let cpu_handle = tokio::spawn(async move {
             self.cpu_profiler.start_profiling().await
         });
-        
+
         let memory_handle = tokio::spawn(async move {
             self.memory_profiler.start_profiling().await
         });
-        
+
         let io_handle = tokio::spawn(async move {
             self.io_profiler.start_profiling().await
         });
-        
+
         // 等待所有分析器完成
         tokio::try_join!(cpu_handle, memory_handle, io_handle)?;
-        
+
         Ok(())
     }
-    
+
     pub async fn correlate_performance_data(&mut self) -> Result<CorrelationResult, ProfilerError> {
         // 收集所有性能数据
         let cpu_data = self.cpu_profiler.get_samples().await?;
         let memory_data = self.memory_profiler.get_samples().await?;
         let io_data = self.io_profiler.get_samples().await?;
-        
+
         // 进行关联分析
         let correlations = self.correlation_engine.analyze_correlations(
             &cpu_data,
             &memory_data,
             &io_data,
         ).await?;
-        
+
         Ok(CorrelationResult {
             cpu_correlations: correlations.cpu_correlations,
             memory_correlations: correlations.memory_correlations,
@@ -534,22 +534,22 @@ SEC("kprobe/schedule")
 int schedule_entry(struct pt_regs *ctx)
 {
     struct schedule_sample_t sample = {};
-    
+
     // 获取当前进程信息
     sample.pid = bpf_get_current_pid_tgid() >> 32;
     sample.tid = bpf_get_current_pid_tgid() & 0xFFFFFFFF;
     bpf_get_current_comm(&sample.comm, sizeof(sample.comm));
-    
+
     // 记录调度时间
     sample.timestamp = bpf_ktime_get_ns();
     sample.cpu = bpf_get_smp_processor_id();
-    
+
     // 获取调度原因
     sample.reason = PT_REGS_PARM1(ctx);
-    
+
     // 提交样本
     bpf_perf_event_output(ctx, &schedule_events, BPF_F_CURRENT_CPU, &sample, sizeof(sample));
-    
+
     return 0;
 }
 ```
@@ -562,24 +562,24 @@ SEC("uprobe")
 int malloc_uprobe(struct pt_regs *ctx)
 {
     struct malloc_sample_t sample = {};
-    
+
     // 获取分配大小
     sample.size = PT_REGS_PARM1(ctx);
-    
+
     // 获取进程信息
     sample.pid = bpf_get_current_pid_tgid() >> 32;
     sample.tid = bpf_get_current_pid_tgid() & 0xFFFFFFFF;
     bpf_get_current_comm(&sample.comm, sizeof(sample.comm));
-    
+
     // 获取用户态堆栈
     sample.stack_id = bpf_get_stackid(ctx, &user_stack_map, BPF_F_USER_STACK);
-    
+
     // 记录时间戳
     sample.timestamp = bpf_ktime_get_ns();
-    
+
     // 提交样本
     bpf_perf_event_output(ctx, &malloc_events, BPF_F_CURRENT_CPU, &sample, sizeof(sample));
-    
+
     return 0;
 }
 ```
@@ -599,31 +599,31 @@ impl JVMProfiler {
     pub fn new(jvm_pid: u32) -> Result<Self, ProfilerError> {
         // 附加到 JVM 进程
         let jvm_attach = JVMAttach::attach_to_process(jvm_pid)?;
-        
+
         // 加载 JVM 特定的 eBPF 程序
         let ebpF_programs = vec![
             EBPFProgram::load("jvm_gc.bpf.o")?,
             EBPFProgram::load("jvm_threads.bpf.o")?,
             EBPFProgram::load("jvm_methods.bpf.o")?,
         ];
-        
+
         Ok(Self {
             jvm_attach,
             ebpF_programs,
             jvm_events: JVMEventCollector::new(),
         })
     }
-    
+
     pub async fn profile_jvm(&mut self) -> Result<JVMProfile, ProfilerError> {
         // 收集 GC 事件
         let gc_events = self.collect_gc_events().await?;
-        
+
         // 收集线程事件
         let thread_events = self.collect_thread_events().await?;
-        
+
         // 收集方法调用事件
         let method_events = self.collect_method_events().await?;
-        
+
         // 构建 JVM 性能档案
         let jvm_profile = JVMProfile {
             gc_profile: self.build_gc_profile(gc_events)?,
@@ -631,7 +631,7 @@ impl JVMProfiler {
             method_profile: self.build_method_profile(method_events)?,
             heap_profile: self.build_heap_profile().await?,
         };
-        
+
         Ok(jvm_profile)
     }
 }
@@ -650,31 +650,31 @@ impl PythonProfiler {
     pub fn new(python_pid: u32) -> Result<Self, ProfilerError> {
         // 附加到 Python 进程
         let python_process = PythonProcess::attach(python_pid)?;
-        
+
         // 加载 Python 特定的 eBPF 程序
         let ebpF_programs = vec![
             EBPFProgram::load("python_functions.bpf.o")?,
             EBPFProgram::load("python_imports.bpf.o")?,
             EBPFProgram::load("python_gil.bpf.o")?,
         ];
-        
+
         Ok(Self {
             python_process,
             ebpF_programs,
             python_events: PythonEventCollector::new(),
         })
     }
-    
+
     pub async fn profile_python(&mut self) -> Result<PythonProfile, ProfilerError> {
         // 收集函数调用事件
         let function_events = self.collect_function_events().await?;
-        
+
         // 收集导入事件
         let import_events = self.collect_import_events().await?;
-        
+
         // 收集 GIL 事件
         let gil_events = self.collect_gil_events().await?;
-        
+
         // 构建 Python 性能档案
         let python_profile = PythonProfile {
             function_profile: self.build_function_profile(function_events)?,
@@ -682,7 +682,7 @@ impl PythonProfiler {
             gil_profile: self.build_gil_profile(gil_events)?,
             memory_profile: self.build_memory_profile().await?,
         };
-        
+
         Ok(python_profile)
     }
 }
@@ -703,20 +703,20 @@ impl ZeroCopyDataTransfer {
     pub fn new(buffer_size: usize) -> Result<Self, TransferError> {
         // 创建内存映射缓冲区
         let mmap_buffer = MmapBuffer::new(buffer_size)?;
-        
+
         // 创建环形缓冲区
         let ring_buffer = RingBuffer::new(buffer_size)?;
-        
+
         // 创建共享内存
         let shared_memory = SharedMemory::new("ebpf_profiler", buffer_size)?;
-        
+
         Ok(Self {
             mmap_buffer,
             ring_buffer,
             shared_memory,
         })
     }
-    
+
     pub fn transfer_data(&mut self, data: &[u8]) -> Result<(), TransferError> {
         // 使用零拷贝技术传输数据
         if let Some(slot) = self.ring_buffer.get_write_slot(data.len()) {
@@ -745,40 +745,40 @@ impl SIMDOptimizedProcessor {
             vector_size: 16, // 支持 AVX-512
         }
     }
-    
+
     pub fn process_samples_simd(&self, samples: &[Sample]) -> Vec<ProcessedSample> {
         let mut results = Vec::with_capacity(samples.len());
         let chunks = samples.chunks_exact(self.vector_size);
-        
+
         for chunk in chunks {
             // 使用 SIMD 处理样本
             let processed_chunk = self.process_chunk_simd(chunk);
             results.extend(processed_chunk);
         }
-        
+
         // 处理剩余样本
         let remainder = chunks.remainder();
         if !remainder.is_empty() {
             let processed_remainder = self.process_chunk_scalar(remainder);
             results.extend(processed_remainder);
         }
-        
+
         results
     }
-    
+
     fn process_chunk_simd(&self, chunk: &[Sample]) -> Vec<ProcessedSample> {
         // 提取时间戳向量
         let timestamps: Vec<u64> = chunk.iter().map(|s| s.timestamp).collect();
         let timestamp_simd = u64x16::from_slice(&timestamps);
-        
+
         // 提取 CPU 使用率向量
         let cpu_usage: Vec<f64> = chunk.iter().map(|s| s.cpu_usage).collect();
         let cpu_usage_simd = f64x16::from_slice(&cpu_usage);
-        
+
         // SIMD 计算
         let normalized_timestamps = self.normalize_timestamps_simd(timestamp_simd);
         let filtered_cpu = self.filter_cpu_usage_simd(cpu_usage_simd);
-        
+
         // 转换回标量结果
         let mut results = Vec::new();
         for i in 0..chunk.len() {
@@ -788,7 +788,7 @@ impl SIMDOptimizedProcessor {
                 filtered_cpu_usage: filtered_cpu[i],
             });
         }
-        
+
         results
     }
 }
@@ -809,23 +809,23 @@ impl MicroserviceProfiler {
     pub async fn profile_microservice_ecosystem(&mut self) -> Result<EcosystemProfile, ProfilerError> {
         // 发现所有服务
         let services = self.service_discovery.discover_services().await?;
-        
+
         // 为每个服务启动性能分析
         for service in services {
             let profiler = ServiceProfiler::new(&service).await?;
             self.profilers.insert(service.id.clone(), profiler);
         }
-        
+
         // 收集所有服务的性能数据
         let mut service_profiles = HashMap::new();
         for (service_id, profiler) in &mut self.profilers {
             let profile = profiler.collect_profile().await?;
             service_profiles.insert(service_id.clone(), profile);
         }
-        
+
         // 进行服务间关联分析
         let correlations = self.correlation_engine.analyze_service_correlations(&service_profiles).await?;
-        
+
         // 构建生态系统性能档案
         let ecosystem_profile = EcosystemProfile {
             service_profiles,
@@ -833,7 +833,7 @@ impl MicroserviceProfiler {
             system_wide_metrics: self.calculate_system_metrics(&service_profiles)?,
             performance_bottlenecks: self.identify_bottlenecks(&service_profiles, &correlations)?,
         };
-        
+
         Ok(ecosystem_profile)
     }
 }
@@ -852,16 +852,16 @@ impl ContainerProfiler {
     pub async fn profile_container(&mut self, container_id: &str) -> Result<ContainerProfile, ProfilerError> {
         // 获取容器信息
         let container_info = self.container_runtime.get_container_info(container_id).await?;
-        
+
         // 监控 cgroup 资源使用
         let cgroup_metrics = self.cgroup_monitor.collect_metrics(container_id).await?;
-        
+
         // 分析命名空间性能
         let namespace_profile = self.namespace_profiler.profile_namespaces(container_id).await?;
-        
+
         // 收集容器内进程性能数据
         let process_profiles = self.collect_container_processes(container_id).await?;
-        
+
         // 构建容器性能档案
         let container_profile = ContainerProfile {
             container_info,
@@ -871,7 +871,7 @@ impl ContainerProfiler {
             resource_utilization: self.calculate_resource_utilization(&cgroup_metrics)?,
             performance_anomalies: self.detect_anomalies(&cgroup_metrics, &process_profiles)?,
         };
-        
+
         Ok(container_profile)
     }
 }
@@ -902,4 +902,4 @@ impl ContainerProfiler {
 
 ---
 
-*本文档深入分析了 eBPF 性能分析的技术原理和实现方法，为构建高效、准确的性能分析系统提供了完整的理论基础和实践指导。*
+_本文档深入分析了 eBPF 性能分析的技术原理和实现方法，为构建高效、准确的性能分析系统提供了完整的理论基础和实践指导。_

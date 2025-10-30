@@ -474,6 +474,6 @@ Part 5: 实践应用架构             ✅ 100% (240行)
 **文档版本**: v1.1.0 (补充完成版)  
 **项目状态**: ✅ **完全完成 (100%)**
 
-**项目座右铭**: *"From Theory to Practice, From Formal to Pragmatic, From Claims to Evidence"*
+**项目座右铭**: _"From Theory to Practice, From Formal to Pragmatic, From Claims to Evidence"_
 
 🎉 **Rust 1.90 + OTLP 综合分析项目 - 完全完成！** 🎉

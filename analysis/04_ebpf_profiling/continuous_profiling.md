@@ -81,19 +81,19 @@ impl ContinuousProfilingSystem {
     pub async fn start(&mut self) -> Result<(), ProfilingError> {
         // 启动eBPF数据收集
         self.ebpf_collector.start().await?;
-        
+
         // 启动数据处理
         self.data_processor.start().await?;
-        
+
         // 启动存储引擎
         self.storage_engine.start().await?;
-        
+
         // 启动分析引擎
         self.analysis_engine.start().await?;
-        
+
         // 启动可视化服务
         self.visualization_service.start().await?;
-        
+
         Ok(())
     }
 }
@@ -131,7 +131,7 @@ impl EbpfProgram {
             configuration: ProgramConfiguration::default(),
         }
     }
-    
+
     pub fn new_memory_profiler() -> Self {
         Self {
             program_type: EbpfProgramType::Kprobe,
@@ -156,7 +156,7 @@ pub struct EbpfCollector {
 impl EbpfCollector {
     pub async fn collect_cpu_samples(&self) -> Result<Vec<CpuSample>, CollectionError> {
         let mut samples = Vec::new();
-        
+
         // 从ring buffer读取CPU采样数据
         if let Some(ring_buffer) = self.ring_buffers.get("cpu_profiler") {
             while let Some(event) = ring_buffer.read_event().await? {
@@ -164,13 +164,13 @@ impl EbpfCollector {
                 samples.push(cpu_sample);
             }
         }
-        
+
         Ok(samples)
     }
-    
+
     pub async fn collect_memory_samples(&self) -> Result<Vec<MemorySample>, CollectionError> {
         let mut samples = Vec::new();
-        
+
         // 从ring buffer读取内存采样数据
         if let Some(ring_buffer) = self.ring_buffers.get("memory_profiler") {
             while let Some(event) = ring_buffer.read_event().await? {
@@ -178,7 +178,7 @@ impl EbpfCollector {
                 samples.push(memory_sample);
             }
         }
-        
+
         Ok(samples)
     }
 }
@@ -200,23 +200,23 @@ impl JvmProfiler {
     pub async fn profile_jvm_application(&self, pid: u32) -> Result<JvmProfile, ProfilingError> {
         // 1. 附加到JVM进程
         self.jvmti_agent.attach_to_jvm(pid).await?;
-        
+
         // 2. 收集方法调用信息
         let method_calls = self.method_profiler.collect_method_calls().await?;
-        
+
         // 3. 收集GC信息
         let gc_events = self.gc_profiler.collect_gc_events().await?;
-        
+
         // 4. 收集内存使用信息
         let memory_usage = self.memory_profiler.collect_memory_usage().await?;
-        
+
         let profile = JvmProfile {
             method_calls,
             gc_events,
             memory_usage,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(profile)
     }
 }
@@ -233,19 +233,19 @@ impl JvmtiAgent {
             // 记录方法进入事件
             self.record_method_entry(method_id, thread_id);
         }));
-        
+
         // 设置方法退出回调
         self.event_callbacks.set_method_exit_callback(Box::new(|method_id, thread_id, return_value| {
             // 记录方法退出事件
             self.record_method_exit(method_id, thread_id, return_value);
         }));
-        
+
         // 设置GC回调
         self.event_callbacks.set_gc_callback(Box::new(|gc_type, gc_info| {
             // 记录GC事件
             self.record_gc_event(gc_type, gc_info);
         }));
-        
+
         Ok(())
     }
 }
@@ -264,26 +264,26 @@ impl PythonProfiler {
     pub async fn profile_python_application(&self, pid: u32) -> Result<PythonProfile, ProfilingError> {
         // 1. 设置Python解释器探针
         self.setup_python_uprobes(pid).await?;
-        
+
         // 2. 收集Python函数调用
         let python_calls = self.interpreter_profiler.collect_python_calls().await?;
-        
+
         // 3. 收集C扩展调用
         let c_extension_calls = self.c_extension_profiler.collect_c_extension_calls().await?;
-        
+
         // 4. 收集GIL信息
         let gil_events = self.collect_gil_events().await?;
-        
+
         let profile = PythonProfile {
             python_calls,
             c_extension_calls,
             gil_events,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(profile)
     }
-    
+
     async fn setup_python_uprobes(&self, pid: u32) -> Result<(), ProfilingError> {
         // 设置PyEval_EvalFrameEx探针
         self.uprobe_manager.attach_uprobe(
@@ -293,7 +293,7 @@ impl PythonProfiler {
                 self.record_python_frame(frame);
             })
         ).await?;
-        
+
         // 设置PyFunction_Call探针
         self.uprobe_manager.attach_uprobe(
             pid,
@@ -302,7 +302,7 @@ impl PythonProfiler {
                 self.record_python_function_call(function);
             })
         ).await?;
-        
+
         Ok(())
     }
 }
@@ -321,16 +321,16 @@ impl NodejsProfiler {
     pub async fn profile_nodejs_application(&self, pid: u32) -> Result<NodejsProfile, ProfilingError> {
         // 1. 收集V8引擎信息
         let v8_profile = self.v8_profiler.collect_v8_profile().await?;
-        
+
         // 2. 收集libuv事件循环信息
         let libuv_events = self.libuv_profiler.collect_libuv_events().await?;
-        
+
         // 3. 收集原生插件信息
         let native_addon_calls = self.native_addon_profiler.collect_native_calls().await?;
-        
+
         // 4. 收集JavaScript调用栈
         let js_callstack = self.collect_js_callstack().await?;
-        
+
         let profile = NodejsProfile {
             v8_profile,
             libuv_events,
@@ -338,7 +338,7 @@ impl NodejsProfiler {
             js_callstack,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(profile)
     }
 }
@@ -360,19 +360,19 @@ impl ContainerProfiler {
     pub async fn profile_container(&self, container_id: &str) -> Result<ContainerProfile, ProfilingError> {
         // 1. 获取容器信息
         let container_info = self.container_runtime.get_container_info(container_id).await?;
-        
+
         // 2. 进入容器命名空间
         self.namespace_manager.enter_container_namespace(container_id).await?;
-        
+
         // 3. 收集cgroup信息
         let cgroup_metrics = self.cgroup_profiler.collect_cgroup_metrics(&container_info).await?;
-        
+
         // 4. 收集文件系统信息
         let filesystem_metrics = self.filesystem_profiler.collect_filesystem_metrics(&container_info).await?;
-        
+
         // 5. 收集容器内进程信息
         let process_metrics = self.collect_container_processes(&container_info).await?;
-        
+
         let profile = ContainerProfile {
             container_info,
             cgroup_metrics,
@@ -380,7 +380,7 @@ impl ContainerProfiler {
             process_metrics,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(profile)
     }
 }
@@ -401,18 +401,18 @@ impl KubernetesProfiler {
         // 1. 收集节点信息
         let nodes = self.k8s_client.list_nodes().await?;
         let node_profiles = self.profile_nodes(&nodes).await?;
-        
+
         // 2. 收集Pod信息
         let pods = self.k8s_client.list_pods().await?;
         let pod_profiles = self.profile_pods(&pods).await?;
-        
+
         // 3. 收集服务信息
         let services = self.k8s_client.list_services().await?;
         let service_profiles = self.profile_services(&services).await?;
-        
+
         // 4. 收集网络信息
         let network_metrics = self.collect_network_metrics().await?;
-        
+
         let profile = KubernetesProfile {
             node_profiles,
             pod_profiles,
@@ -420,7 +420,7 @@ impl KubernetesProfiler {
             network_metrics,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(profile)
     }
 }
@@ -441,20 +441,20 @@ impl ZeroCopyProfiler {
     pub fn new() -> Result<Self, ProfilingError> {
         // 创建内存映射缓冲区
         let mmap_buffer = MmapBuffer::new(1024 * 1024 * 1024)?; // 1GB
-        
+
         // 创建ring buffer
         let ring_buffer = RingBuffer::new(1024 * 1024)?; // 1MB
-        
+
         // 创建共享内存
         let shared_memory = SharedMemory::new("profiling_shm", 512 * 1024 * 1024)?; // 512MB
-        
+
         Ok(Self {
             mmap_buffer,
             ring_buffer,
             shared_memory,
         })
     }
-    
+
     pub async fn collect_samples_zero_copy(&self) -> Result<Vec<Sample>, CollectionError> {
         // 直接从内存映射区域读取数据，避免拷贝
         let samples = self.mmap_buffer.read_samples().await?;
@@ -476,13 +476,13 @@ impl SimdOptimizedProfiler {
         // 使用SIMD指令并行处理样本数据
         let chunk_size = 8; // 8个样本并行处理
         let mut results = Vec::new();
-        
+
         for chunk in samples.chunks(chunk_size) {
             // 使用SIMD指令处理数据块
             let chunk_result = self.simd_processor.process_chunk(chunk)?;
             results.push(chunk_result);
         }
-        
+
         // 合并结果
         let final_result = self.vectorized_analyzer.merge_results(&results)?;
         Ok(final_result)
@@ -509,10 +509,10 @@ impl AdaptiveSampler {
             adjustment_factor: 0.1,
         }
     }
-    
+
     pub fn adjust_sampling_rate(&mut self, measured_overhead: f64) {
         self.current_overhead = measured_overhead;
-        
+
         if self.current_overhead > self.target_overhead {
             // 开销过高，降低采样率
             self.sampling_rate *= (1.0 - self.adjustment_factor);
@@ -520,11 +520,11 @@ impl AdaptiveSampler {
             // 开销较低，可以提高采样率
             self.sampling_rate *= (1.0 + self.adjustment_factor);
         }
-        
+
         // 限制采样率范围
         self.sampling_rate = self.sampling_rate.clamp(0.001, 0.1);
     }
-    
+
     pub fn should_sample(&self) -> bool {
         rand::random::<f64>() < self.sampling_rate
     }
@@ -547,16 +547,16 @@ impl PerformanceAnalyzer {
     pub async fn analyze_performance(&self, profile: &Profile) -> Result<PerformanceAnalysis, AnalysisError> {
         // 1. 检测热点
         let hotspots = self.hotspot_detector.detect_hotspots(profile).await?;
-        
+
         // 2. 分析瓶颈
         let bottlenecks = self.bottleneck_analyzer.analyze_bottlenecks(profile).await?;
-        
+
         // 3. 分析趋势
         let trends = self.trend_analyzer.analyze_trends(profile).await?;
-        
+
         // 4. 检测异常
         let anomalies = self.anomaly_detector.detect_anomalies(profile).await?;
-        
+
         let analysis = PerformanceAnalysis {
             hotspots,
             bottlenecks,
@@ -564,7 +564,7 @@ impl PerformanceAnalyzer {
             anomalies,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(analysis)
     }
 }
@@ -584,16 +584,16 @@ impl MLPerformanceAnalyzer {
     pub async fn analyze_with_ml(&self, profile: &Profile) -> Result<MLAnalysisResult, AnalysisError> {
         // 1. 提取特征
         let features = self.feature_extractor.extract_features(profile).await?;
-        
+
         // 2. 预测性能
         let predictions = self.model_predictor.predict_performance(&features).await?;
-        
+
         // 3. 聚类分析
         let clusters = self.clustering_engine.cluster_profiles(&features).await?;
-        
+
         // 4. 分类分析
         let classifications = self.classification_engine.classify_performance(&features).await?;
-        
+
         let result = MLAnalysisResult {
             features,
             predictions,
@@ -601,7 +601,7 @@ impl MLPerformanceAnalyzer {
             classifications,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(result)
     }
 }
@@ -622,13 +622,13 @@ impl FlameGraphGenerator {
     pub async fn generate_flame_graph(&self, profile: &Profile) -> Result<String, GenerationError> {
         // 1. 分析调用栈
         let call_stacks = self.call_stack_analyzer.analyze_call_stacks(profile).await?;
-        
+
         // 2. 生成火焰图数据
         let flame_data = self.generate_flame_data(&call_stacks).await?;
-        
+
         // 3. 渲染SVG
         let svg_content = self.svg_renderer.render_flame_graph(&flame_data, &self.color_scheme).await?;
-        
+
         Ok(svg_content)
     }
 }
@@ -648,23 +648,23 @@ impl PerformanceDashboard {
     pub async fn generate_dashboard(&self, time_range: TimeRange) -> Result<DashboardData, GenerationError> {
         // 1. 收集指标数据
         let metrics = self.metrics_collector.collect_metrics(time_range).await?;
-        
+
         // 2. 生成图表
         let charts = self.chart_generator.generate_charts(&metrics).await?;
-        
+
         // 3. 检查告警
         let alerts = self.alert_manager.check_alerts(&metrics).await?;
-        
+
         // 4. 生成报告
         let report = self.report_generator.generate_report(&metrics).await?;
-        
+
         let dashboard_data = DashboardData {
             charts,
             alerts,
             report,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(dashboard_data)
     }
 }
@@ -685,20 +685,20 @@ impl MicroserviceProfiler {
     pub async fn profile_microservices(&self) -> Result<MicroserviceProfile, ProfilingError> {
         // 1. 发现微服务
         let services = self.service_discovery.discover_services().await?;
-        
+
         // 2. 分布式性能分析
         let distributed_profile = self.distributed_profiler.profile_services(&services).await?;
-        
+
         // 3. 关联分析
         let correlations = self.correlation_analyzer.analyze_correlations(&distributed_profile).await?;
-        
+
         let profile = MicroserviceProfile {
             services,
             distributed_profile,
             correlations,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(profile)
     }
 }
@@ -717,20 +717,20 @@ impl DatabaseProfiler {
     pub async fn profile_database(&self, db_connection: &DatabaseConnection) -> Result<DatabaseProfile, ProfilingError> {
         // 1. 分析查询性能
         let query_metrics = self.query_profiler.profile_queries(db_connection).await?;
-        
+
         // 2. 分析连接池性能
         let connection_metrics = self.connection_profiler.profile_connections(db_connection).await?;
-        
+
         // 3. 分析索引性能
         let index_metrics = self.index_profiler.profile_indexes(db_connection).await?;
-        
+
         let profile = DatabaseProfile {
             query_metrics,
             connection_metrics,
             index_metrics,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(profile)
     }
 }
@@ -761,4 +761,4 @@ impl DatabaseProfiler {
 
 ---
 
-*本文档深入分析了持续性能分析的技术原理和实现方法，为构建高性能的可观测性系统提供指导。*
+_本文档深入分析了持续性能分析的技术原理和实现方法，为构建高性能的可观测性系统提供指导。_

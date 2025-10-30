@@ -77,15 +77,15 @@ Axiom message_equality_transitive :
 
 Axiom message_concatenation_associative :
   forall (ms : MessageSpace) (m1 m2 m3 : message_carrier ms),
-    message_equality ms 
+    message_equality ms
       (message_concatenation ms (message_concatenation ms m1 m2) m3)
       (message_concatenation ms m1 (message_concatenation ms m2 m3)) = true.
 
 Axiom message_concatenation_identity :
   forall (ms : MessageSpace) (m : message_carrier ms),
-    message_equality ms 
+    message_equality ms
       (message_concatenation ms (empty_message ms) m) m = true /\
-    message_equality ms 
+    message_equality ms
       (message_concatenation ms m (empty_message ms)) m = true.
 ```
 
@@ -122,7 +122,7 @@ Fixpoint sequence_filter (pred : Message -> bool) (seq : MessageSequence) : Mess
 (* 消息序列代数性质 *)
 Theorem sequence_append_associative :
   forall (seq1 seq2 seq3 : MessageSequence),
-    sequence_append (sequence_append seq1 seq2) seq3 = 
+    sequence_append (sequence_append seq1 seq2) seq3 =
     sequence_append seq1 (sequence_append seq2 seq3).
 
 Proof.
@@ -134,7 +134,7 @@ Qed.
 
 Theorem sequence_length_append :
   forall (seq1 seq2 : MessageSequence),
-    sequence_length (sequence_append seq1 seq2) = 
+    sequence_length (sequence_append seq1 seq2) =
     sequence_length seq1 + sequence_length seq2.
 
 Proof.
@@ -172,7 +172,7 @@ Axiom node_transition_preserves_invariant :
     node_state_invariant (node_transition_function nsa state event).
 
 (* 节点状态等价性 *)
-Definition node_state_equivalent (nsa : NodeStateAlgebra) 
+Definition node_state_equivalent (nsa : NodeStateAlgebra)
   (state1 state2 : node_state_carrier nsa) : bool :=
   node_status_function nsa state1 = node_status_function nsa state2 /\
   node_sequence_function nsa state1 = node_sequence_function nsa state2 /\
@@ -221,13 +221,13 @@ Axiom system_transition_preserves_invariant :
 Definition system_state_composition (ssa : SystemStateAlgebra)
   (state1 state2 : system_state_carrier ssa) : system_state_carrier ssa :=
   (* 定义系统状态的组合操作 *)
-  let combined_node_states := fun n => 
-    combine_node_states (node_states_function ssa state1 n) 
+  let combined_node_states := fun n =>
+    combine_node_states (node_states_function ssa state1 n)
                         (node_states_function ssa state2 n) in
   let combined_message_queues := fun n =>
     sequence_append (message_queues_function ssa state1 n)
                     (message_queues_function ssa state2 n) in
-  let combined_global_state := 
+  let combined_global_state :=
     combine_global_states (global_state_function ssa state1)
                           (global_state_function ssa state2) in
   (* 构造组合后的系统状态 *)
@@ -275,7 +275,7 @@ Theorem connected_topology_preserves_connectivity :
     forall (failed_nodes : list nat),
       subset failed_nodes (nodes topology) ->
       let remaining_topology := remove_nodes topology failed_nodes in
-      is_connected remaining_topology \/ 
+      is_connected remaining_topology \/
       (forall n1 n2 : nat,
         In n1 (nodes remaining_topology) ->
         In n2 (nodes remaining_topology) ->
@@ -422,7 +422,7 @@ Record MarkovChain := {
 Record MarkovProperty (P : nat -> nat -> R) := {
   transition_probability_sum : forall s : nat, sum_over_states (P s) = 1;
   non_negative_transitions : forall s s' : nat, P s s' >= 0;
-  markov_condition : forall s s' s'' : nat, 
+  markov_condition : forall s s' s'' : nat,
     P s s'' = sum_over_states (fun s''' => P s s''' * P s''' s'');
 }.
 
@@ -476,7 +476,7 @@ Record PoissonProcess := {
 Record PoissonProperties (lambda : R) (times : list R) := {
   independent_increments : IndependentIncrements times;
   stationary_increments : StationaryIncrements times;
-  poisson_distribution : forall t : R, 
+  poisson_distribution : forall t : R,
     arrival_count times t ~ Poisson (lambda * t);
 }.
 
@@ -534,7 +534,7 @@ Definition system_availability (fm : FailureModel) : R :=
 
 Theorem availability_formula :
   forall (fm : FailureModel),
-    system_availability fm = 
+    system_availability fm =
     (repair_rate fm) / ((failure_rate fm) + (repair_rate fm)).
 
 Proof.
@@ -600,17 +600,17 @@ Qed.
 
 (* 条件熵 *)
 Definition conditional_entropy (joint_dist : nat * nat -> R) (x : nat) : R :=
-  - sum_over_states (fun y => 
+  - sum_over_states (fun y =>
       (joint_dist (x, y)) * log2 (conditional_probability joint_dist x y)).
 
 (* 互信息 *)
 Definition mutual_information (joint_dist : nat * nat -> R) : R :=
-  entropy (marginal_distribution joint_dist) - 
+  entropy (marginal_distribution joint_dist) -
   conditional_entropy joint_dist.
 
 Theorem mutual_information_symmetric :
   forall (joint_dist : nat * nat -> R),
-    mutual_information joint_dist = 
+    mutual_information joint_dist =
     mutual_information (swap_joint_distribution joint_dist).
 
 Proof.
@@ -627,7 +627,7 @@ Qed.
 ```coq
 (* 信道容量定义 *)
 Definition channel_capacity (channel : nat -> nat -> R) : R :=
-  max_over_input_distributions (fun input_dist => 
+  max_over_input_distributions (fun input_dist =>
     mutual_information (joint_distribution input_dist channel)).
 
 (* 信道容量性质 *)
@@ -649,12 +649,12 @@ Qed.
 
 (* 网络信道建模 *)
 Definition network_channel_capacity (topology : NetworkTopology) : R :=
-  min_over_paths (fun path => 
+  min_over_paths (fun path =>
     min_over_edges (fun edge => edge_capacity topology edge)).
 
 Theorem network_capacity_bottleneck :
   forall (topology : NetworkTopology),
-    network_channel_capacity topology = 
+    network_channel_capacity topology =
     max_flow_min_cut_capacity topology.
 
 Proof.
@@ -747,33 +747,33 @@ Record DynamicProgram := {
 Fixpoint value_function (dp : DynamicProgram) (state : nat) (time : nat) : R :=
   match time with
   | 0 => 0
-  | S t => 
+  | S t =>
       max_over_actions (fun action =>
-        reward_function dp state action + 
-        discount_factor dp * 
-        expected_value (fun next_state => 
-          value_function dp next_state t) 
+        reward_function dp state action +
+        discount_factor dp *
+        expected_value (fun next_state =>
+          value_function dp next_state t)
           (transition_function dp state action))
   end.
 
 (* 最优策略 *)
 Definition optimal_policy (dp : DynamicProgram) (state : nat) (time : nat) : nat :=
   argmax_over_actions (fun action =>
-    reward_function dp state action + 
-    discount_factor dp * 
-    expected_value (fun next_state => 
-      value_function dp next_state time) 
+    reward_function dp state action +
+    discount_factor dp *
+    expected_value (fun next_state =>
+      value_function dp next_state time)
       (transition_function dp state action)).
 
 (* 贝尔曼方程 *)
 Theorem bellman_equation :
   forall (dp : DynamicProgram) (state : nat) (time : nat),
-    value_function dp state (S time) = 
+    value_function dp state (S time) =
     max_over_actions (fun action =>
-      reward_function dp state action + 
-      discount_factor dp * 
-      expected_value (fun next_state => 
-        value_function dp next_state time) 
+      reward_function dp state action +
+      discount_factor dp *
+      expected_value (fun next_state =>
+        value_function dp next_state time)
         (transition_function dp state action)).
 
 Proof.
@@ -809,25 +809,25 @@ pub struct PerformanceModelingSystem {
 
 impl PerformanceModelingSystem {
     pub async fn model_system_performance(
-        &mut self, 
+        &mut self,
         system_configuration: &SystemConfiguration
     ) -> Result<PerformanceModel, ModelingError> {
         // 排队论建模
         let queueing_model = self.queueing_theory
             .model_system_queues(system_configuration).await?;
-        
+
         // 网络演算建模
         let network_calculus_model = self.network_calculus
             .model_network_performance(system_configuration).await?;
-        
+
         // 流体流模型
         let fluid_flow_model = self.fluid_flow_models
             .model_fluid_flow(system_configuration).await?;
-        
+
         // 随机过程建模
         let stochastic_model = self.stochastic_processes
             .model_stochastic_behavior(system_configuration).await?;
-        
+
         Ok(PerformanceModel {
             queueing_model,
             network_calculus_model,
@@ -851,25 +851,25 @@ pub struct ReliabilityModelingSystem {
 
 impl ReliabilityModelingSystem {
     pub async fn model_system_reliability(
-        &mut self, 
+        &mut self,
         system_architecture: &SystemArchitecture
     ) -> Result<ReliabilityModel, ModelingError> {
         // 故障树分析
         let fault_tree_model = self.fault_tree_analysis
             .analyze_fault_trees(system_architecture).await?;
-        
+
         // 马尔可夫链分析
         let markov_chain_model = self.markov_chain_analysis
             .analyze_markov_chains(system_architecture).await?;
-        
+
         // 蒙特卡洛仿真
         let monte_carlo_model = self.monte_carlo_simulation
             .simulate_system_behavior(system_architecture).await?;
-        
+
         // 佩特里网分析
         let petri_net_model = self.petri_net_analysis
             .analyze_petri_nets(system_architecture).await?;
-        
+
         Ok(ReliabilityModel {
             fault_tree_model,
             markov_chain_model,

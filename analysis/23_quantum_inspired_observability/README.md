@@ -15,6 +15,7 @@ This directory explores quantum-inspired algorithms and approaches for observabi
 ---
 
 ## 📋 目录
+
 - [Quantum Algorithms for Observability](quantum_algorithms_for_observability.md)
 
 ---

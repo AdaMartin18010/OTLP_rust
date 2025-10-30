@@ -220,6 +220,7 @@ impl Exporter for ZeroCopyExporter {
 ### 1. 无锁并发
 
 **使用 crossbeam 无锁队列**:
+
 - 多生产者多消费者 (MPMC)
 - 无锁 CAS 操作
 - 避免锁竞争
@@ -227,6 +228,7 @@ impl Exporter for ZeroCopyExporter {
 ### 2. 零拷贝
 
 **使用 Bytes + Arc**:
+
 - Bytes: 引用计数字节缓冲区
 - Arc: 多后端共享数据
 - 避免内存拷贝
@@ -234,6 +236,7 @@ impl Exporter for ZeroCopyExporter {
 ### 3. 批处理
 
 **智能批量策略**:
+
 - 批量大小: 1000 spans
 - 超时时间: 5 秒
 - 自适应调整
@@ -241,6 +244,7 @@ impl Exporter for ZeroCopyExporter {
 ### 4. 异步 I/O
 
 **Tokio 异步运行时**:
+
 - 多线程 work-stealing 调度
 - 异步网络 I/O
 - 高效任务调度
@@ -252,6 +256,7 @@ impl Exporter for ZeroCopyExporter {
 ### 基准测试结果
 
 **测试环境**:
+
 - CPU: Intel i7-10700K (8 核)
 - 内存: 32GB DDR4
 - 负载: 持续发送 1M spans

@@ -101,27 +101,27 @@ pub fn init_telemetry() -> anyhow::Result<()> {
         .tonic()
         .with_endpoint("http://localhost:4317")
         .build_span_exporter()?;
-    
+
     // 2. 配置资源信息
     let resource = Resource::new(vec![
         KeyValue::new("service.name", "otlp-web-api"),
         KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
         KeyValue::new("deployment.environment", "development"),
     ]);
-    
+
     // 3. 创建TracerProvider
     let tracer_provider = TracerProvider::builder()
         .with_config(Config::default().with_resource(resource))
         .with_batch_exporter(otlp_exporter, runtime::Tokio)
         .build();
-    
+
     // 4. 设置全局TracerProvider
     global::set_tracer_provider(tracer_provider.clone());
-    
+
     // 5. 创建tracing层
     let telemetry_layer = tracing_opentelemetry::layer()
         .with_tracer(tracer_provider.tracer("otlp-web-api"));
-    
+
     // 6. 初始化tracing-subscriber
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
@@ -130,9 +130,9 @@ pub fn init_telemetry() -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .with(telemetry_layer)
         .init();
-    
+
     tracing::info!("遥测系统初始化成功");
-    
+
     Ok(())
 }
 
@@ -179,7 +179,7 @@ impl<T> ApiResponse<T> {
             message: "操作成功".to_string(),
         }
     }
-    
+
     pub fn error(message: String) -> Self {
         Self {
             success: false,
@@ -229,20 +229,20 @@ pub async fn create_user(
         email = %payload.email,
         "创建新用户"
     );
-    
+
     let user = User {
         id: Uuid::new_v4(),
         name: payload.name,
         email: payload.email,
     };
-    
+
     // 模拟数据库操作
     tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-    
+
     store.write().await.insert(user.id, user.clone());
-    
+
     info!(user_id = %user.id, "用户创建成功");
-    
+
     Ok(Json(ApiResponse::success(user)))
 }
 
@@ -253,10 +253,10 @@ pub async fn get_user(
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<User>>, StatusCode> {
     info!(user_id = %user_id, "获取用户信息");
-    
+
     // 模拟数据库查询
     tokio::time::sleep(tokio::time::Duration::from_millis(5)).await;
-    
+
     match store.read().await.get(&user_id) {
         Some(user) => {
             info!(user_id = %user_id, "用户找到");
@@ -275,19 +275,19 @@ pub async fn list_users(
     State(store): State<UserStore>,
 ) -> Json<ApiResponse<Vec<User>>> {
     info!("列出所有用户");
-    
+
     // 模拟数据库查询
     tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
-    
+
     let users: Vec<User> = store
         .read()
         .await
         .values()
         .cloned()
         .collect();
-    
+
     info!(count = users.len(), "用户列表获取成功");
-    
+
     Json(ApiResponse::success(users))
 }
 
@@ -298,10 +298,10 @@ pub async fn delete_user(
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     info!(user_id = %user_id, "删除用户");
-    
+
     // 模拟数据库操作
     tokio::time::sleep(tokio::time::Duration::from_millis(8)).await;
-    
+
     match store.write().await.remove(&user_id) {
         Some(_) => {
             info!(user_id = %user_id, "用户删除成功");
@@ -336,16 +336,16 @@ pub fn create_router(store: UserStore) -> Router {
     Router::new()
         // 健康检查
         .route("/health", get(handlers::health_check))
-        
+
         // 用户API
         .route("/api/users", post(handlers::create_user))
         .route("/api/users", get(handlers::list_users))
         .route("/api/users/:id", get(handlers::get_user))
         .route("/api/users/:id", delete(handlers::delete_user))
-        
+
         // 添加状态
         .with_state(store)
-        
+
         // 添加中间件
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive())
@@ -371,25 +371,25 @@ use tracing::info;
 async fn main() -> anyhow::Result<()> {
     // 初始化遥测系统
     telemetry::init_telemetry()?;
-    
+
     // 创建用户存储
     let store = Arc::new(RwLock::new(HashMap::new()));
-    
+
     // 创建路由
     let app = routes::create_router(store);
-    
+
     // 绑定地址
     let addr = "0.0.0.0:3000";
     info!("服务器启动在 http://{}", addr);
-    
+
     // 启动服务器
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app)
         .await?;
-    
+
     // 优雅关闭
     telemetry::shutdown_telemetry();
-    
+
     Ok(())
 }
 ```
@@ -410,14 +410,14 @@ services:
       - "4317:4317"   # OTLP gRPC
       - "4318:4318"   # OTLP HTTP
       - "8888:8888"   # Prometheus metrics
-  
+
   # Jaeger (用于查看追踪)
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686" # Jaeger UI
       - "14250:14250" # gRPC
-  
+
   # Prometheus (用于查看指标)
   prometheus:
     image: prom/prometheus:latest
@@ -425,7 +425,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
-  
+
   # API服务
   api:
     build: .
@@ -458,10 +458,10 @@ exporters:
     endpoint: jaeger:14250
     tls:
       insecure: true
-  
+
   prometheus:
     endpoint: "0.0.0.0:8888"
-  
+
   logging:
     loglevel: debug
 
@@ -471,7 +471,7 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [jaeger, logging]
-    
+
     metrics:
       receivers: [otlp]
       processors: [batch]
@@ -553,18 +553,18 @@ struct CreateOrderResponse {
 async fn main() -> anyhow::Result<()> {
     // 初始化遥测
     init_telemetry("api-gateway")?;
-    
+
     // 创建路由
     let app = Router::new()
         .route("/orders", post(create_order_handler));
-    
+
     // 启动服务器
     let addr = "0.0.0.0:8080";
     tracing::info!("API Gateway 启动在 {}", addr);
-    
+
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 
@@ -573,7 +573,7 @@ async fn create_order_handler(
     Json(req): Json<CreateOrderRequest>,
 ) -> Result<Json<CreateOrderResponse>, StatusCode> {
     let tracer = global::tracer("api-gateway");
-    
+
     let _span = tracer
         .span_builder("create_order")
         .with_kind(SpanKind::Server)
@@ -583,15 +583,15 @@ async fn create_order_handler(
             KeyValue::new("order.quantity", req.quantity as i64),
         ])
         .start(&tracer);
-    
+
     tracing::info!("处理创建订单请求");
-    
+
     // 1. 验证用户（调用user-service）
     verify_user(&req.user_id).await?;
-    
+
     // 2. 创建订单（调用order-service）
     let order_id = create_order(&req).await?;
-    
+
     // 3. 返回结果
     Ok(Json(CreateOrderResponse {
         order_id,
@@ -602,7 +602,7 @@ async fn create_order_handler(
 #[instrument]
 async fn verify_user(user_id: &str) -> Result<(), StatusCode> {
     let tracer = global::tracer("api-gateway");
-    
+
     let _span = tracer
         .span_builder("verify_user")
         .with_kind(SpanKind::Client)
@@ -611,26 +611,26 @@ async fn verify_user(user_id: &str) -> Result<(), StatusCode> {
             KeyValue::new("user.id", user_id.to_string()),
         ])
         .start(&tracer);
-    
+
     tracing::info!(user_id, "验证用户");
-    
+
     // 模拟HTTP调用user-service
     // let client = reqwest::Client::new();
     // let response = client
     //     .get(format!("http://user-service:8081/users/{}", user_id))
     //     .send()
     //     .await?;
-    
+
     // 这里简化为延迟模拟
     tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-    
+
     Ok(())
 }
 
 #[instrument]
 async fn create_order(req: &CreateOrderRequest) -> Result<String, StatusCode> {
     let tracer = global::tracer("api-gateway");
-    
+
     let _span = tracer
         .span_builder("create_order_rpc")
         .with_kind(SpanKind::Client)
@@ -639,12 +639,12 @@ async fn create_order(req: &CreateOrderRequest) -> Result<String, StatusCode> {
             KeyValue::new("user.id", req.user_id.clone()),
         ])
         .start(&tracer);
-    
+
     tracing::info!("创建订单");
-    
+
     // 模拟HTTP调用order-service
     tokio::time::sleep(tokio::time::Duration::from_millis(20)).await;
-    
+
     Ok("order-123".to_string())
 }
 
@@ -656,31 +656,31 @@ fn init_telemetry(service_name: &str) -> anyhow::Result<()> {
     };
     use opentelemetry_otlp::WithExportConfig;
     use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-    
+
     let otlp_exporter = opentelemetry_otlp::new_exporter()
         .tonic()
         .with_endpoint("http://otel-collector:4317")
         .build_span_exporter()?;
-    
+
     let resource = Resource::new(vec![
         KeyValue::new("service.name", service_name.to_string()),
     ]);
-    
+
     let tracer_provider = TracerProvider::builder()
         .with_config(Config::default().with_resource(resource))
         .with_batch_exporter(otlp_exporter, runtime::Tokio)
         .build();
-    
+
     global::set_tracer_provider(tracer_provider.clone());
-    
+
     let telemetry_layer = tracing_opentelemetry::layer()
         .with_tracer(tracer_provider.tracer(service_name));
-    
+
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(telemetry_layer)
         .init();
-    
+
     Ok(())
 }
 ```
@@ -699,13 +699,13 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
-  
+
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686"
       - "14250:14250"
-  
+
   api-gateway:
     build:
       context: .
@@ -716,7 +716,7 @@ services:
       - RUST_LOG=info
     depends_on:
       - otel-collector
-  
+
   user-service:
     build:
       context: .
@@ -727,7 +727,7 @@ services:
       - RUST_LOG=info
     depends_on:
       - otel-collector
-  
+
   order-service:
     build:
       context: .
@@ -900,5 +900,5 @@ curl http://localhost:9090/api/v1/query?query=http_requests_total
 
 ---
 
-**更新日期**: 2025年10月29日  
+**更新日期**: 2025年10月29日
 **维护者**: OTLP_rust Team

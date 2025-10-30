@@ -71,7 +71,7 @@ impl DataEncryption {
             "password", "token", "key", "secret", "auth",
             "user.email", "user.phone", "credit.card", "ssn"
         ];
-        
+
         sensitive_patterns.iter().any(|pattern| key.contains(pattern))
     }
 }
@@ -155,15 +155,15 @@ pub struct AccessConstraint {
 impl RoleBasedAccessControl {
     pub fn check_access(&self, user: &str, resource: &str, operation: Operation) -> Result<bool, AccessError> {
         let user_roles = self.user_roles.get(user).ok_or(AccessError::UserNotFound)?;
-        
+
         for role_name in user_roles {
             let role = self.roles.get(role_name).ok_or(AccessError::RoleNotFound)?;
-            
+
             if self.role_has_permission(role, resource, operation)? {
                 return Ok(true);
             }
         }
-        
+
         Ok(false)
     }
 
@@ -195,19 +195,19 @@ impl ZeroTrustSecurity {
     pub async fn verify_request(&self, request: &SecurityRequest) -> Result<SecurityContext, SecurityError> {
         // 1. 身份验证
         let identity = self.identity_verifier.verify_identity(&request.identity).await?;
-        
+
         // 2. 设备信任验证
         let device_trust = self.device_trust.verify_device(&request.device_info).await?;
-        
+
         // 3. 网络位置验证
         let network_trust = self.network_security.verify_network(&request.network_info).await?;
-        
+
         // 4. 风险评估
         let risk_score = self.calculate_risk_score(&identity, &device_trust, &network_trust);
-        
+
         // 5. 持续监控
         self.continuous_monitoring.start_monitoring(&identity.id).await?;
-        
+
         Ok(SecurityContext {
             identity,
             device_trust,
@@ -219,28 +219,28 @@ impl ZeroTrustSecurity {
 
     fn calculate_risk_score(&self, identity: &Identity, device: &DeviceTrust, network: &NetworkTrust) -> f64 {
         let mut score = 0.0;
-        
+
         // 身份风险
         score += match identity.verification_level {
             VerificationLevel::High => 0.1,
             VerificationLevel::Medium => 0.3,
             VerificationLevel::Low => 0.6,
         };
-        
+
         // 设备风险
         score += match device.trust_level {
             TrustLevel::High => 0.1,
             TrustLevel::Medium => 0.3,
             TrustLevel::Low => 0.5,
         };
-        
+
         // 网络风险
         score += match network.trust_level {
             TrustLevel::High => 0.1,
             TrustLevel::Medium => 0.4,
             TrustLevel::Low => 0.7,
         };
-        
+
         score.min(1.0)
     }
 }
@@ -278,30 +278,30 @@ impl DataMinimization {
 
     fn filter_trace_data(&self, trace: &Trace, purpose: &str) -> Trace {
         let mut filtered_trace = Trace::new(trace.trace_id.clone());
-        
+
         for span in &trace.spans {
             let filtered_span = self.filter_span_data(span, purpose);
             if self.is_span_necessary_for_purpose(&filtered_span, purpose) {
                 filtered_trace.add_span(filtered_span);
             }
         }
-        
+
         filtered_trace
     }
 
     fn filter_span_data(&self, span: &Span, purpose: &str) -> Span {
         let mut filtered_span = span.clone();
-        
+
         // 根据目的过滤属性
         filtered_span.attributes.retain(|(key, value)| {
             self.is_attribute_necessary_for_purpose(key, value, purpose)
         });
-        
+
         // 过滤事件
         filtered_span.events.retain(|event| {
             self.is_event_necessary_for_purpose(event, purpose)
         });
-        
+
         filtered_span
     }
 }
@@ -368,7 +368,7 @@ pub struct SecurityAnomalyDetector {
 impl SecurityAnomalyDetector {
     pub async fn detect_anomalies(&self, telemetry_data: &TelemetryData) -> Result<Vec<SecurityAnomaly>, DetectionError> {
         let mut anomalies = Vec::new();
-        
+
         match telemetry_data {
             TelemetryData::Trace(trace) => {
                 anomalies.extend(self.detect_trace_anomalies(trace).await?);
@@ -380,20 +380,20 @@ impl SecurityAnomalyDetector {
                 anomalies.extend(self.detect_log_anomalies(log).await?);
             }
         }
-        
+
         // 发送安全告警
         for anomaly in &anomalies {
             if anomaly.severity >= SecuritySeverity::High {
                 self.alert_manager.send_security_alert(anomaly).await?;
             }
         }
-        
+
         Ok(anomalies)
     }
 
     async fn detect_trace_anomalies(&self, trace: &Trace) -> Result<Vec<SecurityAnomaly>, DetectionError> {
         let mut anomalies = Vec::new();
-        
+
         for span in &trace.spans {
             // 检测异常访问模式
             if self.is_unusual_access_pattern(span) {
@@ -406,7 +406,7 @@ impl SecurityAnomalyDetector {
                     timestamp: SystemTime::now(),
                 });
             }
-            
+
             // 检测权限提升尝试
             if self.is_privilege_escalation_attempt(span) {
                 anomalies.push(SecurityAnomaly {
@@ -418,7 +418,7 @@ impl SecurityAnomalyDetector {
                     timestamp: SystemTime::now(),
                 });
             }
-            
+
             // 检测数据泄露风险
             if self.is_data_exfiltration_risk(span) {
                 anomalies.push(SecurityAnomaly {
@@ -431,7 +431,7 @@ impl SecurityAnomalyDetector {
                 });
             }
         }
-        
+
         Ok(anomalies)
     }
 }
@@ -450,10 +450,10 @@ pub struct ThreatIntelligenceIntegration {
 impl ThreatIntelligenceIntegration {
     pub async fn check_indicators(&self, telemetry_data: &TelemetryData) -> Result<Vec<ThreatMatch>, ThreatError> {
         let mut threat_matches = Vec::new();
-        
+
         // 提取IoC
         let indicators = self.extract_indicators(telemetry_data);
-        
+
         for indicator in indicators {
             // 检查威胁情报源
             for feed in &self.threat_feeds {
@@ -466,7 +466,7 @@ impl ThreatIntelligenceIntegration {
                     });
                 }
             }
-            
+
             // 检查声誉服务
             if let Some(reputation) = self.reputation_service.check_reputation(&indicator).await? {
                 if reputation.is_malicious() {
@@ -479,13 +479,13 @@ impl ThreatIntelligenceIntegration {
                 }
             }
         }
-        
+
         Ok(threat_matches)
     }
 
     fn extract_indicators(&self, telemetry_data: &TelemetryData) -> Vec<IndicatorOfCompromise> {
         let mut indicators = Vec::new();
-        
+
         match telemetry_data {
             TelemetryData::Trace(trace) => {
                 for span in &trace.spans {
@@ -493,12 +493,12 @@ impl ThreatIntelligenceIntegration {
                     if let Some(ip) = span.attributes.get("net.peer.ip") {
                         indicators.push(IndicatorOfCompromise::IpAddress(ip.clone()));
                     }
-                    
+
                     // 提取域名
                     if let Some(domain) = span.attributes.get("net.peer.name") {
                         indicators.push(IndicatorOfCompromise::Domain(domain.clone()));
                     }
-                    
+
                     // 提取URL
                     if let Some(url) = span.attributes.get("http.url") {
                         indicators.push(IndicatorOfCompromise::Url(url.clone()));
@@ -511,7 +511,7 @@ impl ThreatIntelligenceIntegration {
             }
             _ => {}
         }
-        
+
         indicators
     }
 }
@@ -533,38 +533,38 @@ pub struct DataGovernance {
 impl DataGovernance {
     pub async fn classify_data(&self, data: &TelemetryData) -> Result<DataClassification, GovernanceError> {
         let classification = self.data_classification.classify(data).await?;
-        
+
         // 记录分类结果
         self.audit_logger.log_data_classification(data.id(), &classification).await?;
-        
+
         Ok(classification)
     }
 
     pub async fn enforce_retention_policy(&self, data: &TelemetryData) -> Result<(), GovernanceError> {
         let classification = self.classify_data(data).await?;
         let retention_policy = self.retention_management.get_policy(&classification).await?;
-        
+
         // 检查数据是否应该被保留
         if !retention_policy.should_retain(data.created_at()) {
             self.retention_management.schedule_deletion(data.id()).await?;
         }
-        
+
         Ok(())
     }
 
     pub async fn check_consent(&self, data: &TelemetryData, user_id: &str) -> Result<bool, GovernanceError> {
         let consent = self.consent_management.get_consent(user_id).await?;
-        
+
         // 检查用户是否同意数据处理
         if !consent.has_consent_for_purpose(data.purpose()) {
             return Ok(false);
         }
-        
+
         // 检查数据是否在同意范围内
         if !consent.is_data_within_scope(data) {
             return Ok(false);
         }
-        
+
         Ok(true)
     }
 }
@@ -594,34 +594,34 @@ impl AuditTrail {
             result: access_event.result.clone(),
             metadata: serde_json::to_value(access_event).unwrap(),
         };
-        
+
         // 计算完整性哈希
         let integrity_hash = self.integrity_checker.calculate_hash(&audit_record);
-        
+
         let signed_record = SignedAuditRecord {
             record: audit_record,
             integrity_hash,
             signature: self.integrity_checker.sign(&integrity_hash)?,
         };
-        
+
         self.audit_store.store_record(signed_record).await?;
         Ok(())
     }
 
     pub async fn verify_integrity(&self, record_id: &str) -> Result<bool, AuditError> {
         let record = self.audit_store.get_record(record_id).await?;
-        
+
         // 验证签名
         if !self.integrity_checker.verify_signature(&record.integrity_hash, &record.signature)? {
             return Ok(false);
         }
-        
+
         // 验证哈希
         let calculated_hash = self.integrity_checker.calculate_hash(&record.record);
         if calculated_hash != record.integrity_hash {
             return Ok(false);
         }
-        
+
         Ok(true)
     }
 }
@@ -655,4 +655,4 @@ impl AuditTrail {
 
 ---
 
-*本文档提供了OTLP系统的安全性和隐私保护深度分析，为生产环境的安全实施提供全面指导。*
+_本文档提供了OTLP系统的安全性和隐私保护深度分析，为生产环境的安全实施提供全面指导。_

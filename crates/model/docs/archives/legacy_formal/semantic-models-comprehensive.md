@@ -3,8 +3,9 @@
 本文档详细介绍了编程语言的三种核心语义模型及其关系分析。
 
 ## 📋 目录
+
 - [语义模型综合分析](#语义模型综合分析)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [概述](#概述)
     - [1. 操作语义 (Operational Semantics)](#1-操作语义-operational-semantics)
     - [2. 指称语义 (Denotational Semantics)](#2-指称语义-denotational-semantics)

@@ -39,11 +39,11 @@
 
 最新补充的前沿技术和 Rust 深度分析：
 
-- ✅ **21_rust_otlp_semantic_models/** *(新增)*
+- ✅ **21_rust_otlp_semantic_models/** _(新增)_
   - ✅ README.md - 目录概览和导航
   - ✅ COMPREHENSIVE_SUMMARY.md - Rust 类型系统与 OTLP 语义同构深度分析
 
-- ✅ **22_rust_1.90_otlp_comprehensive_analysis/** *(新增)*
+- ✅ **22_rust_1.90_otlp_comprehensive_analysis/** _(新增)_
   - ✅ README.md - Rust 1.90 综合技术分析
   - ✅ TECHNICAL_DETAILS.md - 编译器优化、宏系统、FFI 等技术细节
 
@@ -254,4 +254,4 @@
 **验证时间**: 2025-10-29 22:24 CST  
 **验证状态**: ✅ 全部通过
 
-*本报告将随文档更新持续维护。*
+_本报告将随文档更新持续维护。_

@@ -1,8 +1,9 @@
 ﻿# 并发模型深度分析
 
 ## 📋 目录
+
 - [并发模型深度分析](#并发模型深度分析)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [概述](#概述)
   - [并发模型分类](#并发模型分类)
   - [CSP模型 (Communicating Sequential Processes)](#csp模型-communicating-sequential-processes)

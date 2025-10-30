@@ -54,7 +54,7 @@ pub struct AWSCloudWatchExporter {
 impl AWSCloudWatchExporter {
     pub async fn export_metrics(&self, metrics: Vec<Metric>) -> Result<(), ExportError> {
         let mut cloudwatch_metrics = Vec::new();
-        
+
         for metric in metrics {
             let cloudwatch_metric = aws_sdk_cloudwatch::types::MetricDatum::builder()
                 .metric_name(&metric.name)
@@ -289,10 +289,10 @@ impl PostgreSQLObservability {
 
         let result = async {
             let client = self.connection_pool.get().await?;
-            
+
             // 执行查询
             let rows = client.query(query, params).await?;
-            
+
             // 记录查询指标
             self.metrics.record_histogram(
                 "database_query_duration",
@@ -363,7 +363,7 @@ impl RedisObservability {
 
         let result = async {
             let mut conn = self.client.get_async_connection().await?;
-            
+
             // 执行Redis命令
             let value = redis::cmd(cmd)
                 .arg(args)
@@ -433,7 +433,7 @@ impl KafkaObservability {
                 .headers(self.create_trace_headers(&span));
 
             let delivery_result = self.producer.send(record, Duration::from_secs(0)).await?;
-            
+
             // 记录生产指标
             self.metrics.increment_counter("kafka_messages_produced", 1, vec![
                 KeyValue::new("topic", topic.to_string()),
@@ -496,12 +496,12 @@ impl KafkaObservability {
 
     fn create_trace_headers(&self, span: &Span) -> Headers {
         let mut headers = Headers::new();
-        
-        headers.insert("traceparent", format!("00-{}-{}-01", 
+
+        headers.insert("traceparent", format!("00-{}-{}-01",
             span.span_context().trace_id(),
             span.span_context().span_id()
         ));
-        
+
         headers
     }
 
@@ -702,12 +702,12 @@ config:
       endpoint: "http://jaeger-collector:14250"
     prometheus:
       endpoint: "0.0.0.0:8889"
-  
+
   processors:
     batch:
       send_batch_size: 512
       timeout: 30s
-  
+
   receivers:
     otlp:
       protocols:
@@ -846,13 +846,13 @@ impl OtlpConfig {
 
     pub fn validate(&self) -> Result<(), ConfigError> {
         // 验证配置的完整性和正确性
-        if self.exporters.jaeger.is_none() && 
-           self.exporters.prometheus.is_none() && 
+        if self.exporters.jaeger.is_none() &&
+           self.exporters.prometheus.is_none() &&
            self.exporters.otlp.is_none() {
             return Err(ConfigError::NoExporters);
         }
 
-        if self.receivers.otlp.protocols.grpc.is_none() && 
+        if self.receivers.otlp.protocols.grpc.is_none() &&
            self.receivers.otlp.protocols.http.is_none() {
             return Err(ConfigError::NoReceivers);
         }
@@ -875,7 +875,7 @@ pub struct DynamicConfigManager {
 impl DynamicConfigManager {
     pub async fn start_watching(&self) -> Result<(), ConfigError> {
         let mut receiver = self.config_watcher.watch().await?;
-        
+
         while let Some(new_config) = receiver.recv().await {
             let mut config = self.current_config.write().unwrap();
             *config = new_config;
@@ -929,7 +929,7 @@ impl MtlsAuthenticator {
         let mut tls_config = ServerConfig::new(NoClientAuth::new());
         tls_config.set_single_cert(self.server_cert.clone(), self.server_key.clone())?;
         tls_config.set_client_certificate_verifier(self.create_cert_verifier());
-        
+
         Ok(tls_config)
     }
 
@@ -959,7 +959,7 @@ impl ClientCertVerifier for CustomCertVerifier {
         }
 
         let leaf_cert = &certs[0];
-        
+
         // 验证证书链
         let mut chain = webpki::CertificateChain::new();
         for cert in certs {
@@ -969,7 +969,7 @@ impl ClientCertVerifier for CustomCertVerifier {
         // 验证签名
         let trust_anchor = webpki::TrustAnchor::try_from_cert_der(&self.ca_cert.0)?;
         let trust_anchors = &[trust_anchor];
-        
+
         leaf_cert.verify_is_valid_tls_client_cert(
             webpki::EndEntityCert::try_from(&leaf_cert.0)?,
             &webpki::TlsClientTrustAnchors(trust_anchors),
@@ -1103,7 +1103,7 @@ impl HealthChecker {
 
         // 记录健康检查指标
         self.metrics.record_gauge("health_check_duration", span.start_time().elapsed().as_secs_f64());
-        
+
         span.end();
         report
     }
@@ -1219,4 +1219,4 @@ impl AlertingSystem {
 
 ---
 
-*本文档提供了OTLP系统集成的全面指南，为实际生产环境的部署和运维提供详细指导。*
+_本文档提供了OTLP系统集成的全面指南，为实际生产环境的部署和运维提供详细指导。_

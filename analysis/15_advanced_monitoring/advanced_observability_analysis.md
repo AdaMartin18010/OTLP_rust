@@ -64,29 +64,29 @@ impl SLIManager {
     pub async fn define_sli(&mut self, definition: SLIDefinition) -> Result<(), SLIError> {
         // 验证SLI定义
         self.validate_sli_definition(&definition)?;
-        
+
         // 注册SLI
         self.sli_definitions.insert(definition.id.clone(), definition.clone());
-        
+
         // 启动SLI监控
         self.sli_monitor.start_monitoring(&definition).await?;
-        
+
         Ok(())
     }
 
     pub async fn calculate_sli(&self, sli_id: &str, time_range: &TimeRange) -> Result<SLIMeasurement, SLIError> {
         let definition = self.sli_definitions.get(sli_id)
             .ok_or(SLIError::SLINotFound)?;
-        
+
         // 收集数据
         let data = self.collect_sli_data(definition, time_range).await?;
-        
+
         // 计算SLI值
         let sli_value = self.sli_calculator.calculate(definition, &data).await?;
-        
+
         // 分析SLI趋势
         let analysis = self.sli_analyzer.analyze_sli_trend(&sli_value, time_range).await?;
-        
+
         Ok(SLIMeasurement {
             sli_id: sli_id.to_string(),
             value: sli_value,
@@ -98,7 +98,7 @@ impl SLIManager {
 
     async fn collect_sli_data(&self, definition: &SLIDefinition, time_range: &TimeRange) -> Result<SLIData, SLIError> {
         let mut sli_data = SLIData::new();
-        
+
         for data_source in &definition.data_sources {
             match data_source {
                 DataSource::Metrics(metrics_source) => {
@@ -115,7 +115,7 @@ impl SLIManager {
                 }
             }
         }
-        
+
         Ok(sli_data)
     }
 }
@@ -155,32 +155,32 @@ impl SLOManager {
     pub async fn define_slo(&mut self, definition: SLODefinition) -> Result<(), SLOError> {
         // 验证SLO定义
         self.validate_slo_definition(&definition)?;
-        
+
         // 注册SLO
         self.slo_definitions.insert(definition.id.clone(), definition.clone());
-        
+
         // 设置告警
         self.slo_alerting.setup_slo_alerts(&definition).await?;
-        
+
         Ok(())
     }
 
     pub async fn calculate_slo_status(&self, slo_id: &str) -> Result<SLOStatus, SLOError> {
         let definition = self.slo_definitions.get(slo_id)
             .ok_or(SLOError::SLONotFound)?;
-        
+
         // 计算当前SLI值
         let sli_measurement = self.calculate_current_sli(&definition.sli_id).await?;
-        
+
         // 计算SLO状态
         let slo_status = self.slo_calculator.calculate_status(definition, &sli_measurement).await?;
-        
+
         // 计算错误预算
         let error_budget = self.calculate_error_budget(definition, &sli_measurement).await?;
-        
+
         // 计算燃烧率
         let burn_rate = self.slo_burn_rate.calculate_burn_rate(definition, &sli_measurement).await?;
-        
+
         Ok(SLOStatus {
             slo_id: slo_id.to_string(),
             current_sli: sli_measurement.value,
@@ -196,10 +196,10 @@ impl SLOManager {
     async fn calculate_error_budget(&self, definition: &SLODefinition, sli_measurement: &SLIMeasurement) -> Result<ErrorBudget, SLOError> {
         let target_errors = (1.0 - definition.target) * sli_measurement.time_range.duration.as_secs() as f64;
         let actual_errors = (1.0 - sli_measurement.value) * sli_measurement.time_range.duration.as_secs() as f64;
-        
+
         let error_budget_remaining = target_errors - actual_errors;
         let error_budget_percentage = error_budget_remaining / target_errors;
-        
+
         Ok(ErrorBudget {
             total_budget: target_errors,
             consumed_budget: actual_errors,
@@ -243,22 +243,22 @@ pub struct Capability {
 impl ObservabilityMaturityAssessor {
     pub async fn assess_maturity(&self, system: &ObservabilitySystem) -> Result<MaturityAssessment, AssessmentError> {
         let mut assessment = MaturityAssessment::new();
-        
+
         // 评估各个能力域
         for capability in &self.maturity_framework.capabilities {
             let capability_score = self.assess_capability(capability, system).await?;
             assessment.capability_scores.insert(capability.id.clone(), capability_score);
         }
-        
+
         // 计算总体成熟度
         assessment.overall_maturity = self.calculate_overall_maturity(&assessment.capability_scores);
-        
+
         // 识别改进机会
         assessment.improvement_opportunities = self.identify_improvement_opportunities(&assessment).await?;
-        
+
         // 制定改进计划
         assessment.improvement_plan = self.improvement_planner.create_plan(&assessment).await?;
-        
+
         Ok(assessment)
     }
 
@@ -269,23 +269,23 @@ impl ObservabilityMaturityAssessor {
             evidence: Vec::new(),
             gaps: Vec::new(),
         };
-        
+
         for criterion in &capability.assessment_criteria {
             let criterion_score = self.assess_criterion(criterion, system).await?;
             score.evidence.push(criterion_score.evidence);
             score.gaps.extend(criterion_score.gaps);
             score.score += criterion_score.score * criterion.weight;
         }
-        
+
         score.score /= capability.assessment_criteria.iter().map(|c| c.weight).sum::<f64>();
-        
+
         Ok(score)
     }
 
     fn calculate_overall_maturity(&self, capability_scores: &HashMap<String, CapabilityScore>) -> MaturityLevel {
         let total_score: f64 = capability_scores.values().map(|s| s.score).sum();
         let average_score = total_score / capability_scores.len() as f64;
-        
+
         // 根据平均分数确定成熟度等级
         match average_score {
             score if score >= 0.9 => self.maturity_framework.get_level(5), // 优化级
@@ -321,38 +321,38 @@ pub struct DataQualityMetrics {
 impl ObservabilityDataQualityAssessor {
     pub async fn assess_data_quality(&self, data: &ObservabilityData) -> Result<DataQualityReport, QualityError> {
         let mut report = DataQualityReport::new();
-        
+
         // 评估完整性
         report.completeness = self.assess_completeness(data).await?;
-        
+
         // 评估准确性
         report.accuracy = self.assess_accuracy(data).await?;
-        
+
         // 评估一致性
         report.consistency = self.assess_consistency(data).await?;
-        
+
         // 评估及时性
         report.timeliness = self.assess_timeliness(data).await?;
-        
+
         // 评估有效性
         report.validity = self.assess_validity(data).await?;
-        
+
         // 评估唯一性
         report.uniqueness = self.assess_uniqueness(data).await?;
-        
+
         // 计算总体质量分数
         report.overall_quality = self.calculate_overall_quality(&report);
-        
+
         // 识别质量问题
         report.quality_issues = self.identify_quality_issues(&report).await?;
-        
+
         Ok(report)
     }
 
     async fn assess_completeness(&self, data: &ObservabilityData) -> Result<f64, QualityError> {
         let mut completeness_score = 0.0;
         let mut total_fields = 0;
-        
+
         match data {
             ObservabilityData::Metrics(metrics) => {
                 for metric in metrics {
@@ -382,29 +382,29 @@ impl ObservabilityDataQualityAssessor {
                 }
             }
         }
-        
+
         Ok(if total_fields > 0 { completeness_score / total_fields as f64 } else { 1.0 })
     }
 
     async fn assess_accuracy(&self, data: &ObservabilityData) -> Result<f64, QualityError> {
         let mut accuracy_score = 0.0;
         let mut total_checks = 0;
-        
+
         // 验证数据格式
         let format_validation = self.data_validator.validate_format(data).await?;
         accuracy_score += format_validation.score;
         total_checks += 1;
-        
+
         // 验证数据范围
         let range_validation = self.data_validator.validate_ranges(data).await?;
         accuracy_score += range_validation.score;
         total_checks += 1;
-        
+
         // 验证数据逻辑
         let logic_validation = self.data_validator.validate_logic(data).await?;
         accuracy_score += logic_validation.score;
         total_checks += 1;
-        
+
         Ok(accuracy_score / total_checks as f64)
     }
 }
@@ -427,53 +427,53 @@ pub struct LayeredMonitoringArchitecture {
 impl LayeredMonitoringArchitecture {
     pub async fn collect_monitoring_data(&self) -> Result<LayeredMonitoringData, MonitoringError> {
         let mut monitoring_data = LayeredMonitoringData::new();
-        
+
         // 基础设施层监控
         let infrastructure_data = self.infrastructure_layer.collect_data().await?;
         monitoring_data.infrastructure = infrastructure_data;
-        
+
         // 应用层监控
         let application_data = self.application_layer.collect_data().await?;
         monitoring_data.application = application_data;
-        
+
         // 业务层监控
         let business_data = self.business_layer.collect_data().await?;
         monitoring_data.business = business_data;
-        
+
         // 用户体验层监控
         let ux_data = self.user_experience_layer.collect_data().await?;
         monitoring_data.user_experience = ux_data;
-        
+
         // 关联分析
         let correlations = self.correlation_engine.analyze_correlations(&monitoring_data).await?;
         monitoring_data.correlations = correlations;
-        
+
         Ok(monitoring_data)
     }
 
     pub async fn detect_anomalies(&self, monitoring_data: &LayeredMonitoringData) -> Result<Vec<Anomaly>, DetectionError> {
         let mut anomalies = Vec::new();
-        
+
         // 基础设施层异常检测
         let infra_anomalies = self.infrastructure_layer.detect_anomalies(&monitoring_data.infrastructure).await?;
         anomalies.extend(infra_anomalies);
-        
+
         // 应用层异常检测
         let app_anomalies = self.application_layer.detect_anomalies(&monitoring_data.application).await?;
         anomalies.extend(app_anomalies);
-        
+
         // 业务层异常检测
         let business_anomalies = self.business_layer.detect_anomalies(&monitoring_data.business).await?;
         anomalies.extend(business_anomalies);
-        
+
         // 用户体验层异常检测
         let ux_anomalies = self.user_experience_layer.detect_anomalies(&monitoring_data.user_experience).await?;
         anomalies.extend(ux_anomalies);
-        
+
         // 跨层关联异常检测
         let cross_layer_anomalies = self.correlation_engine.detect_cross_layer_anomalies(monitoring_data).await?;
         anomalies.extend(cross_layer_anomalies);
-        
+
         Ok(anomalies)
     }
 }
@@ -494,30 +494,30 @@ pub struct IntelligentAlertManager {
 impl IntelligentAlertManager {
     pub async fn process_alerts(&self, alerts: &[Alert]) -> Result<AlertProcessingResult, AlertError> {
         let mut result = AlertProcessingResult::new();
-        
+
         // 告警关联
         let correlated_alerts = self.alert_correlator.correlate_alerts(alerts).await?;
         result.correlated_alerts = correlated_alerts;
-        
+
         // 告警优先级评估
         let prioritized_alerts = self.alert_prioritizer.prioritize_alerts(&result.correlated_alerts).await?;
         result.prioritized_alerts = prioritized_alerts;
-        
+
         // 告警抑制
         let suppressed_alerts = self.alert_suppression.apply_suppression_rules(&result.prioritized_alerts).await?;
         result.suppressed_alerts = suppressed_alerts;
-        
+
         // 告警路由
         let routing_results = self.alert_routing.route_alerts(&result.prioritized_alerts).await?;
         result.routing_results = routing_results;
-        
+
         Ok(result)
     }
 
     pub async fn create_alert_rule(&self, rule_definition: AlertRuleDefinition) -> Result<AlertRule, AlertError> {
         // 验证告警规则
         self.validate_alert_rule(&rule_definition)?;
-        
+
         // 创建告警规则
         let alert_rule = AlertRule {
             id: Uuid::new_v4().to_string(),
@@ -531,10 +531,10 @@ impl IntelligentAlertManager {
             created_at: SystemTime::now(),
             updated_at: SystemTime::now(),
         };
-        
+
         // 注册告警规则
         self.alert_rules.register_rule(alert_rule.clone()).await?;
-        
+
         Ok(alert_rule)
     }
 }
@@ -557,16 +557,16 @@ impl IntelligentDashboardGenerator {
     pub async fn generate_dashboard(&self, requirements: &DashboardRequirements) -> Result<Dashboard, DashboardError> {
         // 分析用户需求
         let user_analysis = self.analyze_user_requirements(requirements).await?;
-        
+
         // 选择模板
         let template = self.dashboard_templates.select_template(&user_analysis).await?;
-        
+
         // 生成可视化组件
         let visualizations = self.generate_visualizations(&user_analysis, &template).await?;
-        
+
         // 优化布局
         let optimized_layout = self.layout_optimizer.optimize_layout(&visualizations).await?;
-        
+
         // 创建仪表板
         let dashboard = Dashboard {
             id: Uuid::new_v4().to_string(),
@@ -578,13 +578,13 @@ impl IntelligentDashboardGenerator {
             created_at: SystemTime::now(),
             updated_at: SystemTime::now(),
         };
-        
+
         Ok(dashboard)
     }
 
     async fn generate_visualizations(&self, analysis: &UserAnalysis, template: &DashboardTemplate) -> Result<Vec<Visualization>, VisualizationError> {
         let mut visualizations = Vec::new();
-        
+
         for component_requirement in &analysis.visualization_requirements {
             let visualization = match component_requirement.visualization_type {
                 VisualizationType::TimeSeries => {
@@ -606,10 +606,10 @@ impl IntelligentDashboardGenerator {
                     self.data_visualizer.create_gauge(component_requirement).await?
                 }
             };
-            
+
             visualizations.push(visualization);
         }
-        
+
         Ok(visualizations)
     }
 }
@@ -630,16 +630,16 @@ impl AdaptiveVisualizationEngine {
     pub async fn adapt_visualization(&self, visualization: &Visualization, context: &VisualizationContext) -> Result<AdaptedVisualization, AdaptationError> {
         // 分析上下文
         let context_analysis = self.context_analyzer.analyze_context(context).await?;
-        
+
         // 选择最佳可视化类型
         let optimal_visualization_type = self.visualization_selector.select_optimal_type(&context_analysis).await?;
-        
+
         // 适配布局
         let adapted_layout = self.layout_adaptor.adapt_layout(visualization, &context_analysis).await?;
-        
+
         // 优化性能
         let performance_optimized = self.performance_optimizer.optimize_performance(&adapted_layout).await?;
-        
+
         Ok(AdaptedVisualization {
             original_visualization: visualization.clone(),
             adapted_type: optimal_visualization_type,
@@ -679,4 +679,4 @@ impl AdaptiveVisualizationEngine {
 
 ---
 
-*本文档提供了OTLP系统高级监控和可观测性的深度分析，为构建企业级可观测性系统提供全面指导。*
+_本文档提供了OTLP系统高级监控和可观测性的深度分析，为构建企业级可观测性系统提供全面指导。_

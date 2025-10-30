@@ -62,20 +62,20 @@
   // 使用clippy进行代码检查
   // 遵循Rust命名约定
   // 保持代码简洁和可读性
-  
+
   pub struct OtlpCollector {
       pub config: CollectorConfig,
       pub metrics: MetricsRegistry,
       pub traces: TraceRegistry,
       pub logs: LogRegistry,
   }
-  
+
   impl OtlpCollector {
       /// 创建新的OTLP收集器实例
       pub fn new(config: CollectorConfig) -> Result<Self, CollectorError> {
           // 实现细节
       }
-      
+
       /// 处理遥测数据
       pub async fn process_telemetry(
           &mut self,
@@ -93,22 +93,22 @@
 
   ```rust
   use thiserror::Error;
-  
+
   #[derive(Error, Debug)]
   pub enum OtlpError {
       #[error("网络错误: {0}")]
       NetworkError(#[from] std::io::Error),
-      
+
       #[error("序列化错误: {0}")]
       SerializationError(#[from] serde_json::Error),
-      
+
       #[error("配置错误: {0}")]
       ConfigurationError(String),
-      
+
       #[error("资源不足: {0}")]
       ResourceExhausted(String),
   }
-  
+
   pub type Result<T> = std::result::Result<T, OtlpError>;
   ```
 
@@ -156,19 +156,19 @@
   tokio = { version = "1.0", features = ["full"] }
   serde = { version = "1.0", features = ["derive"] }
   serde_json = "1.0"
-  
+
   # 网络和序列化
   tonic = "0.10"
   prost = "0.12"
-  
+
   # 错误处理
   thiserror = "1.0"
   anyhow = "1.0"
-  
+
   # 日志和监控
   tracing = "0.1"
   tracing-subscriber = "0.3"
-  
+
   [dev-dependencies]
   # 测试依赖
   tokio-test = "0.4"
@@ -191,28 +191,28 @@
 mod tests {
     use super::*;
     use tokio_test;
-    
+
     #[tokio::test]
     async fn test_otlp_collector_creation() {
         let config = CollectorConfig::default();
         let collector = OtlpCollector::new(config).await;
         assert!(collector.is_ok());
     }
-    
+
     #[tokio::test]
     async fn test_telemetry_processing() {
         let mut collector = create_test_collector().await;
         let data = create_test_telemetry_data();
-        
+
         let result = collector.process_telemetry(data).await;
         assert!(result.is_ok());
     }
-    
+
     #[tokio::test]
     async fn test_batch_processing() {
         let mut collector = create_test_collector().await;
         let batch = create_test_batch();
-        
+
         let result = collector.process_batch(batch).await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap().processed_count, 100);
@@ -231,24 +231,24 @@ mod tests {
   pub struct TestDataBuilder {
       base_data: TelemetryData,
   }
-  
+
   impl TestDataBuilder {
       pub fn new() -> Self {
           Self {
               base_data: TelemetryData::default(),
           }
       }
-      
+
       pub fn with_metric(mut self, metric: Metric) -> Self {
           self.base_data.metrics.push(metric);
           self
       }
-      
+
       pub fn with_trace(mut self, trace: Trace) -> Self {
           self.base_data.traces.push(trace);
           self
       }
-      
+
       pub fn build(self) -> TelemetryData {
           self.base_data
       }
@@ -267,28 +267,28 @@ mod tests {
 
   ```rust
   /// OTLP收集器用于收集、处理和导出遥测数据
-  /// 
+  ///
   /// # 示例
-  /// 
+  ///
   /// ```rust
   /// use otlp_rust::collector::OtlpCollector;
   /// use otlp_rust::config::CollectorConfig;
-  /// 
+  ///
   /// #[tokio::main]
   /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
   ///     let config = CollectorConfig::default();
   ///     let mut collector = OtlpCollector::new(config).await?;
-  ///     
+  ///
   ///     // 处理遥测数据
   ///     let data = create_telemetry_data();
   ///     collector.process_telemetry(data).await?;
-  ///     
+  ///
   ///     Ok(())
   /// }
   /// ```
-  /// 
+  ///
   /// # 错误处理
-  /// 
+  ///
   /// 所有方法都返回`Result`类型，包含详细的错误信息。
   /// 使用`?`操作符进行错误传播，或使用`match`进行错误处理。
   pub struct OtlpCollector {
@@ -361,7 +361,7 @@ pub mod api {
     pub struct OtlpApiServer {
         collector: Arc<CollectorService>,
     }
-    
+
     impl OtlpApiServer {
         pub async fn handle_export_request(
             &self,
@@ -378,7 +378,7 @@ pub mod service {
         processors: Vec<Box<dyn Processor>>,
         exporters: Vec<Box<dyn Exporter>>,
     }
-    
+
     impl CollectorService {
         pub async fn process_export(
             &self,
@@ -416,16 +416,16 @@ pub mod metrics_service {
         processor: MetricsProcessor,
         exporter: MetricsExporter,
     }
-    
+
     impl MetricsService {
         pub async fn collect_metrics(&self) -> Result<(), ServiceError> {
             // 指标收集逻辑
         }
-        
+
         pub async fn process_metrics(&self, metrics: &[Metric]) -> Result<(), ServiceError> {
             // 指标处理逻辑
         }
-        
+
         pub async fn export_metrics(&self, metrics: &[Metric]) -> Result<(), ServiceError> {
             // 指标导出逻辑
         }
@@ -439,16 +439,16 @@ pub mod traces_service {
         processor: TracesProcessor,
         exporter: TracesExporter,
     }
-    
+
     impl TracesService {
         pub async fn collect_traces(&self) -> Result<(), ServiceError> {
             // 追踪收集逻辑
         }
-        
+
         pub async fn process_traces(&self, traces: &[Trace]) -> Result<(), ServiceError> {
             // 追踪处理逻辑
         }
-        
+
         pub async fn export_traces(&self, traces: &[Trace]) -> Result<(), ServiceError> {
             // 追踪导出逻辑
         }
@@ -482,12 +482,12 @@ impl MemoryPool {
             buffer_size,
         }
     }
-    
+
     pub fn get_buffer(&self) -> BytesMut {
         let mut buffers = self.buffers.lock().unwrap();
         buffers.pop().unwrap_or_else(|| BytesMut::with_capacity(self.buffer_size))
     }
-    
+
     pub fn return_buffer(&self, mut buffer: BytesMut) {
         buffer.clear();
         if buffer.capacity() == self.buffer_size {
@@ -509,20 +509,20 @@ impl StreamingProcessor {
         processor: impl Fn(&[T]) -> Result<(), ProcessingError>,
     ) -> Result<(), ProcessingError> {
         let mut batch = Vec::with_capacity(self.batch_size);
-        
+
         while let Some(item) = stream.next().await {
             batch.push(item);
-            
+
             if batch.len() >= self.batch_size {
                 processor(&batch)?;
                 batch.clear();
             }
         }
-        
+
         if !batch.is_empty() {
             processor(&batch)?;
         }
-        
+
         Ok(())
     }
 }
@@ -552,7 +552,7 @@ impl ConcurrencyController {
             max_concurrent,
         }
     }
-    
+
     pub async fn execute<F, T>(&self, task: F) -> Result<T, ConcurrencyError>
     where
         F: Future<Output = Result<T, ConcurrencyError>>,
@@ -577,11 +577,11 @@ impl BackpressureController {
             max_queue_size,
         }
     }
-    
+
     pub async fn submit_task(&self, task: ProcessingTask) -> Result<(), BackpressureError> {
         self.sender.send(task).await.map_err(|_| BackpressureError::QueueFull)
     }
-    
+
     pub async fn process_tasks<F>(&mut self, processor: F) -> Result<(), ProcessingError>
     where
         F: Fn(ProcessingTask) -> Result<(), ProcessingError>,
@@ -621,7 +621,7 @@ impl LoadBalancer {
     pub fn new(instances: Vec<ServiceInstance>, strategy: LoadBalancingStrategy) -> Self {
         Self { instances, strategy }
     }
-    
+
     pub fn select_instance(&self, request: &Request) -> Option<&ServiceInstance> {
         match self.strategy {
             LoadBalancingStrategy::RoundRobin => self.round_robin_selection(),
@@ -647,17 +647,17 @@ impl DataSharding {
             shard_key_extractor,
         }
     }
-    
+
     pub fn get_shard(&self, record: &Record) -> &DataShard {
         let key = (self.shard_key_extractor)(record);
         let shard_index = self.hash_key(&key) % self.shards.len();
         &self.shards[shard_index]
     }
-    
+
     fn hash_key(&self, key: &str) -> usize {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
         hasher.finish() as usize
@@ -700,21 +700,21 @@ impl PluginManager {
             exporters: HashMap::new(),
         }
     }
-    
+
     pub fn register_processor(&mut self, processor: Box<dyn Processor>) {
         let name = processor.name().to_string();
         self.processors.insert(name, processor);
     }
-    
+
     pub fn register_exporter(&mut self, exporter: Box<dyn Exporter>) {
         let name = exporter.name().to_string();
         self.exporters.insert(name, exporter);
     }
-    
+
     pub fn get_processor(&self, name: &str) -> Option<&dyn Processor> {
         self.processors.get(name).map(|p| p.as_ref())
     }
-    
+
     pub fn get_exporter(&self, name: &str) -> Option<&dyn Exporter> {
         self.exporters.get(name).map(|e| e.as_ref())
     }
@@ -757,14 +757,14 @@ impl AuthenticationService {
         let decoding_key = DecodingKey::from_secret(secret.as_ref());
         let mut validation = Validation::new(Algorithm::HS256);
         validation.set_issuer(&["otlp-service"]);
-        
+
         Self {
             encoding_key,
             decoding_key,
             validation,
         }
     }
-    
+
     pub fn generate_token(&self, user_id: &str, roles: Vec<String>) -> Result<String, AuthError> {
         let now = chrono::Utc::now().timestamp() as usize;
         let claims = Claims {
@@ -773,11 +773,11 @@ impl AuthenticationService {
             iat: now,
             roles,
         };
-        
+
         encode(&Header::default(), &claims, &self.encoding_key)
             .map_err(|_| AuthError::TokenGenerationFailed)
     }
-    
+
     pub fn validate_token(&self, token: &str) -> Result<Claims, AuthError> {
         decode::<Claims>(token, &self.decoding_key, &self.validation)
             .map(|data| data.claims)
@@ -836,18 +836,18 @@ impl AuthorizationService {
             user_roles: HashMap::new(),
         }
     }
-    
+
     pub fn add_role(&mut self, role: Role) {
         self.roles.insert(role.name.clone(), role);
     }
-    
+
     pub fn assign_role(&mut self, user_id: &str, role_name: &str) {
         self.user_roles
             .entry(user_id.to_string())
             .or_insert_with(Vec::new)
             .push(role_name.to_string());
     }
-    
+
     pub fn check_permission(
         &self,
         user_id: &str,
@@ -870,7 +870,7 @@ impl AuthorizationService {
         }
         false
     }
-    
+
     fn evaluate_conditions(
         &self,
         conditions: &[Condition],
@@ -919,30 +919,30 @@ impl EncryptionService {
         let cipher = Aes256Gcm::new(key);
         Self { cipher }
     }
-    
+
     pub fn encrypt(&self, plaintext: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         let mut rng = rand::thread_rng();
         let nonce_bytes: [u8; 12] = rng.gen();
         let nonce = Nonce::from_slice(&nonce_bytes);
-        
+
         let ciphertext = self.cipher
             .encrypt(nonce, plaintext)
             .map_err(|_| EncryptionError::EncryptionFailed)?;
-        
+
         let mut result = Vec::new();
         result.extend_from_slice(&nonce_bytes);
         result.extend_from_slice(&ciphertext);
         Ok(result)
     }
-    
+
     pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         if ciphertext.len() < 12 {
             return Err(EncryptionError::InvalidCiphertext);
         }
-        
+
         let (nonce_bytes, encrypted_data) = ciphertext.split_at(12);
         let nonce = Nonce::from_slice(nonce_bytes);
-        
+
         self.cipher
             .decrypt(nonce, encrypted_data)
             .map_err(|_| EncryptionError::DecryptionFailed)
@@ -961,11 +961,11 @@ impl KeyManagementService {
             key_derivation: KeyDerivationService::new(),
         }
     }
-    
+
     pub fn derive_key(&self, context: &str) -> [u8; 32] {
         self.key_derivation.derive_key(&self.master_key, context)
     }
-    
+
     pub fn rotate_key(&mut self) -> Result<(), KeyManagementError> {
         // 密钥轮换逻辑
         Ok(())
@@ -1002,7 +1002,7 @@ pub struct MaskingRule {
 impl DataMaskingService {
     pub fn new() -> Self {
         let mut masking_rules = HashMap::new();
-        
+
         // 邮箱脱敏
         masking_rules.insert(
             "email".to_string(),
@@ -1012,7 +1012,7 @@ impl DataMaskingService {
                 classification: DataClassification::Confidential,
             },
         );
-        
+
         // 电话号码脱敏
         masking_rules.insert(
             "phone".to_string(),
@@ -1022,22 +1022,22 @@ impl DataMaskingService {
                 classification: DataClassification::Confidential,
             },
         );
-        
+
         Self { masking_rules }
     }
-    
+
     pub fn mask_data(&self, data: &str, classification: DataClassification) -> String {
         let mut masked_data = data.to_string();
-        
+
         for (_, rule) in &self.masking_rules {
             if matches!(rule.classification, DataClassification::Confidential | DataClassification::Restricted) {
                 masked_data = rule.pattern.replace_all(&masked_data, &rule.replacement).to_string();
             }
         }
-        
+
         masked_data
     }
-    
+
     pub fn classify_data(&self, data: &str) -> DataClassification {
         for (_, rule) in &self.masking_rules {
             if rule.pattern.is_match(data) {
@@ -1078,33 +1078,33 @@ impl BusinessMetrics {
             "otlp_requests_total",
             "Total number of OTLP requests"
         )?;
-        
+
         let request_duration = Histogram::new(
             "otlp_request_duration_seconds",
             "Request duration in seconds"
         )?;
-        
+
         let active_connections = Gauge::new(
             "otlp_active_connections",
             "Number of active connections"
         )?;
-        
+
         let error_rate = Gauge::new(
             "otlp_error_rate",
             "Error rate percentage"
         )?;
-        
+
         let throughput = Gauge::new(
             "otlp_throughput_rps",
             "Requests per second"
         )?;
-        
+
         registry.register(Box::new(request_total.clone()))?;
         registry.register(Box::new(request_duration.clone()))?;
         registry.register(Box::new(active_connections.clone()))?;
         registry.register(Box::new(error_rate.clone()))?;
         registry.register(Box::new(throughput.clone()))?;
-        
+
         Ok(Self {
             request_total,
             request_duration,
@@ -1113,11 +1113,11 @@ impl BusinessMetrics {
             throughput,
         })
     }
-    
+
     pub fn record_request(&self, duration: f64, success: bool) {
         self.request_total.inc();
         self.request_duration.observe(duration);
-        
+
         if !success {
             // 更新错误率
             let total_requests = self.request_total.get();
@@ -1157,33 +1157,33 @@ impl SystemMetrics {
             "system_cpu_usage_percent",
             "CPU usage percentage"
         )?;
-        
+
         let memory_usage = Gauge::new(
             "system_memory_usage_bytes",
             "Memory usage in bytes"
         )?;
-        
+
         let disk_usage = Gauge::new(
             "system_disk_usage_bytes",
             "Disk usage in bytes"
         )?;
-        
+
         let network_io = Gauge::new(
             "system_network_io_bytes",
             "Network I/O in bytes"
         )?;
-        
+
         let gc_duration = Histogram::new(
             "system_gc_duration_seconds",
             "Garbage collection duration"
         )?;
-        
+
         registry.register(Box::new(cpu_usage.clone()))?;
         registry.register(Box::new(memory_usage.clone()))?;
         registry.register(Box::new(disk_usage.clone()))?;
         registry.register(Box::new(network_io.clone()))?;
         registry.register(Box::new(gc_duration.clone()))?;
-        
+
         Ok(Self {
             cpu_usage,
             memory_usage,
@@ -1192,24 +1192,24 @@ impl SystemMetrics {
             gc_duration,
         })
     }
-    
+
     pub async fn update_metrics(&self) -> Result<(), SystemMetricsError> {
         // 更新CPU使用率
         let cpu_usage = self.get_cpu_usage().await?;
         self.cpu_usage.set(cpu_usage);
-        
+
         // 更新内存使用
         let memory_usage = self.get_memory_usage().await?;
         self.memory_usage.set(memory_usage as f64);
-        
+
         // 更新磁盘使用
         let disk_usage = self.get_disk_usage().await?;
         self.disk_usage.set(disk_usage as f64);
-        
+
         // 更新网络I/O
         let network_io = self.get_network_io().await?;
         self.network_io.set(network_io as f64);
-        
+
         Ok(())
     }
 }
@@ -1263,12 +1263,12 @@ impl StructuredLogger {
             metadata: HashMap::new(),
         }
     }
-    
+
     pub fn with_metadata(mut self, key: String, value: serde_json::Value) -> Self {
         self.metadata.insert(key, value);
         self
     }
-    
+
     pub fn log(&self, level: LogLevel, message: &str, context: Option<HashMap<String, serde_json::Value>>) {
         let mut entry = LogEntry {
             timestamp: chrono::Utc::now(),
@@ -1281,13 +1281,13 @@ impl StructuredLogger {
             request_id: self.get_request_id(),
             metadata: self.metadata.clone(),
         };
-        
+
         if let Some(context) = context {
             entry.metadata.extend(context);
         }
-        
+
         let log_json = serde_json::to_string(&entry).unwrap_or_else(|_| "{}".to_string());
-        
+
         match level {
             LogLevel::Trace => debug!("{}", log_json),
             LogLevel::Debug => debug!("{}", log_json),
@@ -1296,22 +1296,22 @@ impl StructuredLogger {
             LogLevel::Error => error!("{}", log_json),
         }
     }
-    
+
     fn get_trace_id(&self) -> Option<String> {
         // 从tracing上下文获取trace_id
         None
     }
-    
+
     fn get_span_id(&self) -> Option<String> {
         // 从tracing上下文获取span_id
         None
     }
-    
+
     fn get_user_id(&self) -> Option<String> {
         // 从请求上下文获取user_id
         None
     }
-    
+
     fn get_request_id(&self) -> Option<String> {
         // 从请求上下文获取request_id
         None
@@ -1361,24 +1361,24 @@ impl LogAggregator {
             indexer,
         }
     }
-    
+
     pub async fn aggregate_logs(&self) -> Result<(), LogAggregationError> {
         let mut all_logs = Vec::new();
-        
+
         for collector in &self.collectors {
             let logs = collector.collect_logs().await?;
             all_logs.extend(logs);
         }
-        
+
         // 存储日志
         self.storage.store_logs(&all_logs).await?;
-        
+
         // 索引日志
         self.indexer.index_logs(&all_logs).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn search_logs(&self, query: &LogSearchQuery) -> Result<Vec<LogEntry>, LogSearchError> {
         self.indexer.search_logs(query).await
     }

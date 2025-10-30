@@ -44,9 +44,9 @@ pub struct ObjectPool<T> {
 }
 
 impl<T> ObjectPool<T> {
-    pub fn new<F>(factory: F, max_size: usize) -> Self 
-    where 
-        F: Fn() -> T + Send + Sync + 'static 
+    pub fn new<F>(factory: F, max_size: usize) -> Self
+    where
+        F: Fn() -> T + Send + Sync + 'static
     {
         Self {
             pool: Arc::new(Mutex::new(VecDeque::new())),
@@ -57,7 +57,7 @@ impl<T> ObjectPool<T> {
 
     pub fn acquire(&self) -> PooledObject<T> {
         let mut pool = self.pool.lock().unwrap();
-        
+
         if let Some(obj) = pool.pop_front() {
             PooledObject::new(obj, self.pool.clone())
         } else {
@@ -116,15 +116,15 @@ impl ZeroCopySerializer {
     pub fn serialize_trace(&self, trace: &Trace) -> Bytes {
         let mut buffer = self.buffer_pool.acquire();
         let buf = buffer.get_mut();
-        
+
         // 直接写入缓冲区，避免中间拷贝
         self.write_trace_header(buf, trace);
         self.write_spans_zero_copy(buf, &trace.spans);
-        
+
         if self.compression != CompressionType::None {
             self.compress_buffer(buf);
         }
-        
+
         buf.split().freeze()
     }
 
@@ -138,7 +138,7 @@ impl ZeroCopySerializer {
                 span.start_time,
                 span.duration
             ).unwrap();
-            
+
             // 直接写入属性，避免Vec分配
             for (key, value) in &span.attributes {
                 write!(buf, "\t{}={}\n", key, value).unwrap();
@@ -164,13 +164,13 @@ pub struct AsyncBatchProcessor<T> {
     concurrency_limit: Arc<Semaphore>,
 }
 
-impl<T> AsyncBatchProcessor<T> 
-where 
-    T: Send + 'static 
+impl<T> AsyncBatchProcessor<T>
+where
+    T: Send + 'static
 {
-    pub fn new<F>(batch_size: usize, flush_interval: Duration, processor: F) -> Self 
-    where 
-        F: Fn(Vec<T>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync + 'static 
+    pub fn new<F>(batch_size: usize, flush_interval: Duration, processor: F) -> Self
+    where
+        F: Fn(Vec<T>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync + 'static
     {
         let (sender, mut receiver) = mpsc::unbounded_channel();
         let concurrency_limit = Arc::new(Semaphore::new(num_cpus::get() * 2));
@@ -184,9 +184,9 @@ where
                 batch.push(item);
 
                 // 批量大小或时间间隔触发处理
-                if batch.len() >= batch_size || 
+                if batch.len() >= batch_size ||
                    last_flush.elapsed() >= flush_interval {
-                    
+
                     if !batch.is_empty() {
                         let permit = concurrency_limit.clone().acquire_owned().await.unwrap();
                         let batch_to_process = std::mem::replace(&mut batch, Vec::with_capacity(batch_size));
@@ -197,7 +197,7 @@ where
                             drop(permit);
                         });
                     }
-                    
+
                     last_flush = Instant::now();
                 }
             }
@@ -231,13 +231,13 @@ pub struct WorkStealingScheduler<T> {
     stealers: Vec<Stealer<T>>,
 }
 
-impl<T> WorkStealingScheduler<T> 
-where 
-    T: Send + 'static 
+impl<T> WorkStealingScheduler<T>
+where
+    T: Send + 'static
 {
-    pub fn new<F>(num_threads: usize, processor: F) -> Self 
-    where 
-        F: Fn(T) + Send + Sync + 'static 
+    pub fn new<F>(num_threads: usize, processor: F) -> Self
+    where
+        F: Fn(T) + Send + Sync + 'static
     {
         let injector = Arc::new(Injector::new());
         let mut workers = Vec::new();
@@ -343,7 +343,7 @@ impl ConnectionPool {
         // 创建新连接
         let addr = format!("{}:{}", host, port);
         let stream = TcpStream::connect(&addr).await?;
-        
+
         Ok(PooledConnection {
             stream,
             created_at: Instant::now(),
@@ -419,7 +419,7 @@ impl AdaptiveCompressor {
 
     pub fn update_performance_metrics(&mut self, metrics: &CompressionMetrics) {
         self.performance_monitor.update(metrics);
-        
+
         // 根据性能指标调整算法优先级
         if metrics.average_compression_time > Duration::from_millis(100) {
             // 如果压缩时间过长，降低复杂算法的优先级
@@ -445,7 +445,7 @@ impl AdaptiveSampler {
     pub fn should_sample(&self, trace: &Trace, context: &SamplingContext) -> bool {
         let base_rate = self.get_base_sampling_rate(trace);
         let adjusted_rate = self.adjust_rate_for_context(base_rate, context);
-        
+
         // 基于trace特征调整采样率
         let feature_adjustment = self.calculate_feature_adjustment(trace);
         let final_rate = adjusted_rate * feature_adjustment;
@@ -455,7 +455,7 @@ impl AdaptiveSampler {
 
     fn adjust_rate_for_context(&self, base_rate: f64, context: &SamplingContext) -> f64 {
         let metrics = self.performance_metrics.lock().unwrap();
-        
+
         // 根据系统负载调整采样率
         let load_factor = if metrics.cpu_usage > 0.8 {
             0.5 // 高负载时降低采样率
@@ -510,8 +510,8 @@ pub struct MultiLevelCache<K, V> {
     l3_cache: Arc<dyn PersistentCache<K, V>>, // 持久化缓存
 }
 
-impl<K, V> MultiLevelCache<K, V> 
-where 
+impl<K, V> MultiLevelCache<K, V>
+where
     K: Clone + Hash + Eq + Send + Sync + 'static,
     V: Clone + Send + Sync + 'static,
 {
@@ -640,4 +640,4 @@ impl PerformanceMonitor {
 
 ---
 
-*本文档提供了OTLP系统的高级性能优化技术，为大规模生产环境提供性能优化指导。*
+_本文档提供了OTLP系统的高级性能优化技术，为大规模生产环境提供性能优化指导。_

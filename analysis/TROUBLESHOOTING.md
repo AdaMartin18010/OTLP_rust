@@ -1,20 +1,12 @@
 # OTLP_rust 故障排查指南
 
+## 📋 目录
+
+- [OTLP_rust 故障排查指南](#otlp_rust-故障排查指南)
+
 ## 🎯 目标
 
 本文档提供OTLP_rust项目开发和使用过程中常见问题的诊断和解决方案。
-
----
-
-## 📋 目录
-
-- [编译和构建问题](#编译和构建问题)
-- [依赖和版本问题](#依赖和版本问题)
-- [运行时问题](#运行时问题)
-- [网络和连接问题](#网络和连接问题)
-- [性能问题](#性能问题)
-- [测试问题](#测试问题)
-- [平台特定问题](#平台特定问题)
 
 ---
 
@@ -262,7 +254,7 @@ fn main() {
 fn main() {
     let tracer = init_tracer();
     // ... 使用tracer
-    
+
     // 优雅关闭
     opentelemetry::global::shutdown_tracer_provider();
 }
@@ -500,7 +492,7 @@ use std::sync::Arc;
 use parking_lot::Mutex;
 
 lazy_static! {
-    static ref SPAN_POOL: Arc<Mutex<Vec<Box<Span>>>> = 
+    static ref SPAN_POOL: Arc<Mutex<Vec<Box<Span>>>> =
         Arc::new(Mutex::new(Vec::with_capacity(1000)));
 }
 
@@ -526,22 +518,22 @@ fn create_attribute(key: &'static str, value: Cow<'static, str>) -> KeyValue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // 方案1：为每个测试使用独立的Provider
     #[tokio::test]
     async fn test_tracing() {
         let provider = TracerProvider::builder()
             .with_simple_exporter(/* */)
             .build();
-        
+
         let tracer = provider.tracer("test-tracer");
         // ... 测试代码
-        
+
         // 清理
         drop(tracer);
         drop(provider);
     }
-    
+
     // 方案2：使用测试专用的NoopProvider
     #[test]
     fn test_without_real_tracing() {
@@ -673,5 +665,5 @@ cargo bloat --release
 
 ---
 
-**最后更新**: 2025年10月29日  
+**最后更新**: 2025年10月29日
 **维护者**: OTLP_rust Team

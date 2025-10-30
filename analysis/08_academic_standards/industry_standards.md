@@ -530,25 +530,25 @@ pub struct StandardsComplianceValidator {
 
 impl StandardsComplianceValidator {
     pub async fn validate_all_standards(
-        &mut self, 
+        &mut self,
         system_specification: &SystemSpecification
     ) -> Result<ComplianceReport, ValidationError> {
         // CNCF标准验证
         let cncf_compliance = self.cncf_validator
             .validate_cncf_standards(system_specification).await?;
-        
+
         // OpenTelemetry标准验证
         let otel_compliance = self.otel_validator
             .validate_otel_standards(system_specification).await?;
-        
+
         // IEEE标准验证
         let ieee_compliance = self.ieee_validator
             .validate_ieee_standards(system_specification).await?;
-        
+
         // ISO标准验证
         let iso_compliance = self.iso_validator
             .validate_iso_standards(system_specification).await?;
-        
+
         Ok(ComplianceReport {
             cncf_compliance,
             otel_compliance,
@@ -578,27 +578,27 @@ pub struct ContinuousComplianceMonitor {
 
 impl ContinuousComplianceMonitor {
     pub async fn monitor_compliance(
-        &mut self, 
+        &mut self,
         system_state: &SystemState
     ) -> Result<ComplianceStatus, MonitoringError> {
         // 检查合规性状态
         let compliance_status = self.compliance_checker
             .check_compliance_status(system_state).await?;
-        
+
         // 执行策略检查
         let policy_violations = self.policy_engine
             .check_policy_violations(system_state).await?;
-        
+
         // 记录审计日志
         self.audit_logger
             .log_compliance_check(&compliance_status, &policy_violations).await?;
-        
+
         // 处理告警
         if !policy_violations.is_empty() {
             self.alert_manager
                 .handle_compliance_violations(&policy_violations).await?;
         }
-        
+
         Ok(compliance_status)
     }
 }
@@ -619,32 +619,32 @@ pub struct StandardsVersionManager {
 
 impl StandardsVersionManager {
     pub async fn track_standard_versions(
-        &mut self, 
+        &mut self,
         standards: &[Standard]
     ) -> Result<VersionTrackingReport, TrackingError> {
         let mut tracking_report = VersionTrackingReport::new();
-        
+
         for standard in standards {
             // 检查标准版本更新
             let version_info = self.version_tracker
                 .check_version_updates(standard).await?;
-            
+
             // 检查兼容性
             let compatibility_status = self.compatibility_checker
                 .check_compatibility(standard, &version_info).await?;
-            
+
             // 规划迁移策略
             if !compatibility_status.is_compatible {
                 let migration_plan = self.migration_planner
                     .plan_migration(standard, &version_info).await?;
                 tracking_report.add_migration_plan(standard, migration_plan);
             }
-            
+
             // 发送通知
             self.notification_system
                 .notify_version_update(standard, &version_info).await?;
         }
-        
+
         Ok(tracking_report)
     }
 }
@@ -663,28 +663,28 @@ pub struct StandardsImpactAnalyzer {
 
 impl StandardsImpactAnalyzer {
     pub async fn analyze_standards_impact(
-        &mut self, 
+        &mut self,
         standard_changes: &[StandardChange]
     ) -> Result<ImpactAnalysisReport, AnalysisError> {
         let mut impact_report = ImpactAnalysisReport::new();
-        
+
         for change in standard_changes {
             // 评估影响范围
             let impact_scope = self.impact_assessor
                 .assess_impact_scope(change).await?;
-            
+
             // 评估风险
             let risk_assessment = self.risk_evaluator
                 .evaluate_risks(change, &impact_scope).await?;
-            
+
             // 计算成本
             let cost_analysis = self.cost_calculator
                 .calculate_implementation_cost(change).await?;
-            
+
             // 分析收益
             let benefit_analysis = self.benefit_analyzer
                 .analyze_benefits(change).await?;
-            
+
             impact_report.add_analysis(change, ImpactAnalysis {
                 impact_scope,
                 risk_assessment,
@@ -692,7 +692,7 @@ impl StandardsImpactAnalyzer {
                 benefit_analysis,
             });
         }
-        
+
         Ok(impact_report)
     }
 }

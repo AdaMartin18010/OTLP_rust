@@ -139,14 +139,14 @@ impl UserService {
     pub async fn create_user(&self, user_data: CreateUserRequest) -> Result<User, ServiceError> {
         let parent_context = Context::current();
         let span = self.observability.track_user_action("", "create_user", &parent_context);
-        
+
         span.set_attribute(KeyValue::new("user.email", user_data.email.clone()));
         span.set_attribute(KeyValue::new("user.registration_source", user_data.source.clone()));
 
         let result = async {
             // 验证用户数据
             self.validate_user_data(&user_data).await?;
-            
+
             // 检查邮箱是否已存在
             if self.user_repository.email_exists(&user_data.email).await? {
                 return Err(ServiceError::EmailAlreadyExists);
@@ -154,10 +154,10 @@ impl UserService {
 
             // 创建用户
             let user = self.user_repository.create_user(user_data).await?;
-            
+
             // 记录成功指标
             self.observability.metrics.increment_counter("user.created", 1);
-            
+
             Ok(user)
         }.await;
 
@@ -241,7 +241,7 @@ impl ECommerceAnomalyDetector {
             self.alerting_service.send_alert(
                 AlertLevel::Medium,
                 "High payment frequency detected",
-                format!("User {} made {} payments in the last hour", 
+                format!("User {} made {} payments in the last hour",
                        payment_data.user_id, recent_payments.len()),
             ).await;
         }
@@ -458,7 +458,7 @@ impl ComplianceLogger {
         };
 
         self.audit_trail.record_event(audit_event);
-        
+
         // 检查是否需要向监管机构报告
         if self.requires_regulatory_reporting(trade) {
             self.regulatory_reporter.report_trade(trade);
@@ -467,23 +467,23 @@ impl ComplianceLogger {
 
     fn extract_compliance_flags(&self, order: &Order) -> Vec<String> {
         let mut flags = Vec::new();
-        
+
         // 检查大额交易
         if order.quantity as f64 * order.price > 1000000.0 {
             flags.push("large_trade".to_string());
         }
-        
+
         // 检查异常时间交易
         let hour = chrono::Utc::now().hour();
         if hour < 6 || hour > 22 {
             flags.push("after_hours_trade".to_string());
         }
-        
+
         // 检查高频交易
         if self.is_high_frequency_trader(&order.trader_id) {
             flags.push("high_frequency_trading".to_string());
         }
-        
+
         flags
     }
 }
@@ -619,12 +619,12 @@ impl IoTDeviceMonitor {
     fn is_anomalous_reading(&self, device_id: &str, reading: &SensorReading) -> bool {
         // 获取设备的历史数据统计
         let stats = self.device_registry.get_device_stats(device_id);
-        
+
         // 检查是否超出正常范围
         let mean = stats.mean;
         let std_dev = stats.standard_deviation;
         let threshold = 3.0; // 3-sigma rule
-        
+
         (reading.value - mean).abs() > threshold * std_dev
     }
 
@@ -633,13 +633,13 @@ impl IoTDeviceMonitor {
         let alert = Alert {
             severity: AlertLevel::Medium,
             device_id: device_id.to_string(),
-            message: format!("Anomalous reading detected: {} {} (expected range: {:.2} ± {:.2})", 
-                           reading.value, reading.unit, 
+            message: format!("Anomalous reading detected: {} {} (expected range: {:.2} ± {:.2})",
+                           reading.value, reading.unit,
                            self.device_registry.get_device_stats(device_id).mean,
                            self.device_registry.get_device_stats(device_id).standard_deviation),
             timestamp: SystemTime::now(),
         };
-        
+
         // 发送告警到告警系统
         self.send_alert(alert);
     }
@@ -808,7 +808,7 @@ impl ServiceMeshObservability {
             KeyValue::new("circuit_breaker_name", circuit_breaker.name.clone()),
         ]);
 
-        self.metrics.record_gauge("circuit_breaker_state", 
+        self.metrics.record_gauge("circuit_breaker_state",
             match circuit_breaker.state.as_str() {
                 "CLOSED" => 0.0,
                 "OPEN" => 1.0,
@@ -842,7 +842,7 @@ impl ServiceRequestSpan {
 
     pub fn set_response_status(&mut self, status_code: u16) {
         self.span.set_attribute(KeyValue::new("response.status_code", status_code as f64));
-        
+
         // 记录响应状态指标
         self.metrics.increment_counter("http_requests_total", 1, vec![
             KeyValue::new("status_code", status_code.to_string()),
@@ -856,7 +856,7 @@ impl ServiceRequestSpan {
     pub fn set_processing_time(&mut self) {
         let processing_time = self.start_time.elapsed();
         self.span.set_attribute(KeyValue::new("processing.time", processing_time.as_secs_f64()));
-        
+
         // 记录处理时间指标
         self.metrics.record_histogram("request_processing_time", processing_time.as_secs_f64(), vec![]);
     }
@@ -897,7 +897,7 @@ impl DataProcessingOptimizer {
         let batches = self.split_dataset_into_batches(dataset, batch_size);
 
         let mut processing_tasks = Vec::new();
-        
+
         for (batch_id, batch) in batches.into_iter().enumerate() {
             let task = self.process_batch_async(batch_id, batch);
             processing_tasks.push(task);
@@ -905,12 +905,12 @@ impl DataProcessingOptimizer {
 
         // 并发处理所有批次
         let results = futures::future::join_all(processing_tasks).await;
-        
+
         // 合并结果
         let final_result = self.merge_batch_results(results);
 
         // 记录处理指标
-        self.metrics.record_histogram("dataset_processing_time", 
+        self.metrics.record_histogram("dataset_processing_time",
             span.start_time().elapsed().as_secs_f64(),
             vec![
                 KeyValue::new("dataset_type", dataset.data_type.clone()),
@@ -925,11 +925,11 @@ impl DataProcessingOptimizer {
         // 基于系统资源和数据特征计算最优批次大小
         let available_memory = self.get_available_memory();
         let cpu_cores = num_cpus::get();
-        
+
         // 每个批次应该占用约 1/CPU核心数的内存
         let memory_per_batch = available_memory / cpu_cores;
         let estimated_record_size = 1024; // 假设每条记录1KB
-        
+
         (memory_per_batch / estimated_record_size).min(dataset_size)
     }
 
@@ -1047,4 +1047,4 @@ impl StreamProcessingOptimizer {
 
 ---
 
-*本文档通过实际应用案例分析，展示了OTLP在不同行业和场景中的深度应用，为实际工程实践提供参考和指导。*
+_本文档通过实际应用案例分析，展示了OTLP在不同行业和场景中的深度应用，为实际工程实践提供参考和指导。_

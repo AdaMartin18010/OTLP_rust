@@ -640,8 +640,8 @@ perf script | stackcollapse-perf.pl | flamegraph.pl > flamegraph.svg
 
 **参考文献**:
 
-1. Herlihy, M., & Wing, J. M. (1990). "Linearizability: A Correctness Condition for Concurrent Objects." *TOPLAS*.
-2. Jung, R., et al. (2020). "Stacked Borrows: An Aliasing Model for Rust." *POPL 2020*.
+1. Herlihy, M., & Wing, J. M. (1990). "Linearizability: A Correctness Condition for Concurrent Objects." _TOPLAS_.
+2. Jung, R., et al. (2020). "Stacked Borrows: An Aliasing Model for Rust." _POPL 2020_.
 3. Tokio Documentation (2024). "Runtime Scheduling."
 
 ---

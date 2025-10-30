@@ -65,7 +65,7 @@
 
 ```rust
 //! 电商平台追踪配置
-//! 
+//!
 //! 特点：
 //! - 智能采样（热点订单100%采样，普通订单10%采样）
 //! - 批处理优化（减少网络开销）
@@ -96,24 +96,24 @@ pub fn init_ecommerce_tracing() -> anyhow::Result<()> {
         KeyValue::new("k8s.namespace.name", std::env::var("K8S_NAMESPACE")?),
         KeyValue::new("k8s.pod.name", std::env::var("HOSTNAME")?),
     ]);
-    
+
     // 2. 配置OTLP导出器
     let otlp_exporter = opentelemetry_otlp::new_exporter()
         .tonic()
         .with_endpoint(std::env::var("OTLP_ENDPOINT")?)
         .with_timeout(std::time::Duration::from_secs(10))
         .build_span_exporter()?;
-    
+
     // 3. 配置批处理
     let batch_config = BatchConfig::default()
         .with_max_queue_size(8192)       // 大队列支持高并发
         .with_max_export_batch_size(2048) // 大批次减少导出频率
         .with_scheduled_delay(std::time::Duration::from_secs(5))
         .with_max_concurrent_exports(4);  // 并发导出
-    
+
     // 4. 配置智能采样器
     let sampler = create_smart_sampler();
-    
+
     // 5. 创建TracerProvider
     let tracer_provider = TracerProvider::builder()
         .with_config(
@@ -123,11 +123,11 @@ pub fn init_ecommerce_tracing() -> anyhow::Result<()> {
         )
         .with_batch_exporter(otlp_exporter, runtime::Tokio)
         .build();
-    
+
     global::set_tracer_provider(tracer_provider);
-    
+
     tracing::info!("电商平台追踪系统初始化成功");
-    
+
     Ok(())
 }
 
@@ -138,14 +138,14 @@ fn create_smart_sampler() -> Sampler {
     // - VIP用户订单: 100%采样
     // - 高价值订单(>1000元): 100%采样
     // - 普通订单: 10%采样
-    
+
     Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(0.1)))
 }
 
 /// 订单服务追踪示例
 pub async fn process_order_with_tracing(order_id: &str, amount: f64) -> anyhow::Result<()> {
     let tracer = global::tracer("order-service");
-    
+
     let span = tracer
         .span_builder("process_order")
         .with_kind(SpanKind::Server)
@@ -153,27 +153,27 @@ pub async fn process_order_with_tracing(order_id: &str, amount: f64) -> anyhow::
             KeyValue::new("order.id", order_id.to_string()),
             KeyValue::new("order.amount", amount),
             KeyValue::new("order.currency", "CNY"),
-            
+
             // 业务语义
             KeyValue::new("business.flow", "order_creation"),
             KeyValue::new("business.priority", if amount > 1000.0 { "high" } else { "normal" }),
         ])
         .start(&tracer);
-    
+
     // 1. 验证库存
     check_inventory_with_tracing(order_id).await?;
-    
+
     // 2. 锁定库存
     lock_inventory_with_tracing(order_id).await?;
-    
+
     // 3. 创建订单
     create_order_record_with_tracing(order_id).await?;
-    
+
     // 4. 异步通知
     notify_order_created_with_tracing(order_id).await?;
-    
+
     drop(span);
-    
+
     Ok(())
 }
 
@@ -187,7 +187,7 @@ async fn check_inventory_with_tracing(order_id: &str) -> anyhow::Result<()> {
             KeyValue::new("order.id", order_id.to_string()),
         ])
         .start(&tracer);
-    
+
     // 调用库存服务...
     Ok(())
 }
@@ -233,55 +233,55 @@ impl EcommerceSelfHealingSystem {
             alert_manager: Arc::new(AlertManager::new()),
         }
     }
-    
+
     /// 启动自我修复系统
     pub async fn start(&self) -> anyhow::Result<()> {
         // 启动健康检查
         self.start_health_check().await;
-        
+
         // 启动熔断器
         self.start_circuit_breaker().await;
-        
+
         // 启动自动伸缩
         self.start_auto_scaler().await;
-        
+
         Ok(())
     }
-    
+
     async fn start_health_check(&self) {
         let health_checker = Arc::clone(&self.health_checker);
-        
+
         tokio::spawn(async move {
             loop {
                 // 检查所有服务健康状态
                 health_checker.check_all_services().await;
-                
+
                 tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
             }
         });
     }
-    
+
     async fn start_circuit_breaker(&self) {
         let circuit_breaker = Arc::clone(&self.circuit_breaker);
-        
+
         tokio::spawn(async move {
             loop {
                 // 检查服务错误率
                 circuit_breaker.check_error_rates().await;
-                
+
                 tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             }
         });
     }
-    
+
     async fn start_auto_scaler(&self) {
         let auto_scaler = Arc::clone(&self.auto_scaler);
-        
+
         tokio::spawn(async move {
             loop {
                 // 根据负载自动伸缩
                 auto_scaler.scale_based_on_metrics().await;
-                
+
                 tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
             }
         });
@@ -299,21 +299,21 @@ impl HealthChecker {
             services: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub async fn check_all_services(&self) {
         tracing::info!("开始健康检查");
-        
+
         // 检查各个服务
         self.check_service("order-service", "http://order-service:8080/health").await;
         self.check_service("user-service", "http://user-service:8081/health").await;
         self.check_service("payment-service", "http://payment-service:8082/health").await;
     }
-    
+
     async fn check_service(&self, name: &str, endpoint: &str) {
         match reqwest::get(endpoint).await {
             Ok(response) if response.status().is_success() => {
                 tracing::info!(service = name, "服务健康");
-                
+
                 // 更新服务状态
                 self.services.write().await.insert(
                     name.to_string(),
@@ -325,21 +325,21 @@ impl HealthChecker {
             }
             _ => {
                 tracing::error!(service = name, "服务不健康");
-                
+
                 // 触发自愈流程
                 self.trigger_healing(name).await;
             }
         }
     }
-    
+
     async fn trigger_healing(&self, service_name: &str) {
         tracing::warn!(service = service_name, "触发自愈流程");
-        
+
         // 1. 重启服务
         // kubectl rollout restart deployment/{service_name}
-        
+
         // 2. 如果重启失败，切换到备用实例
-        
+
         // 3. 发送告警
     }
 }
@@ -368,7 +368,7 @@ impl CircuitBreaker {
             states: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub async fn check_error_rates(&self) {
         // 从Prometheus获取错误率
         // 如果错误率>10%，打开熔断器
@@ -393,14 +393,14 @@ impl AutoScaler {
             current_replicas: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub async fn scale_based_on_metrics(&self) {
         // 从Prometheus获取CPU、内存、QPS等指标
         // 根据规则自动伸缩
-        
+
         let cpu_usage = self.get_cpu_usage("order-service").await;
         let current_replicas = self.get_replicas("order-service").await;
-        
+
         if cpu_usage > 80.0 && current_replicas < 50 {
             // 扩容
             self.scale_up("order-service", current_replicas + 5).await;
@@ -409,27 +409,27 @@ impl AutoScaler {
             self.scale_down("order-service", current_replicas - 2).await;
         }
     }
-    
+
     async fn get_cpu_usage(&self, _service: &str) -> f64 {
         // 从Prometheus查询
         75.0 // 示例
     }
-    
+
     async fn get_replicas(&self, service: &str) -> i32 {
         *self.current_replicas.read().await.get(service).unwrap_or(&3)
     }
-    
+
     async fn scale_up(&self, service: &str, replicas: i32) {
         tracing::info!(service, replicas, "扩容服务");
-        
+
         // kubectl scale deployment/{service} --replicas={replicas}
-        
+
         self.current_replicas.write().await.insert(service.to_string(), replicas);
     }
-    
+
     async fn scale_down(&self, service: &str, replicas: i32) {
         tracing::info!(service, replicas, "缩容服务");
-        
+
         self.current_replicas.write().await.insert(service.to_string(), replicas);
     }
 }
@@ -596,9 +596,9 @@ groups:
   # 订单服务错误率告警
   - alert: OrderServiceHighErrorRate
     expr: |
-      sum(rate(http_requests_total{service="order-service",status=~"5.."}[5m])) 
-      / 
-      sum(rate(http_requests_total{service="order-service"}[5m])) 
+      sum(rate(http_requests_total{service="order-service",status=~"5.."}[5m]))
+      /
+      sum(rate(http_requests_total{service="order-service"}[5m]))
       > 0.05
     for: 5m
     labels:
@@ -607,11 +607,11 @@ groups:
     annotations:
       summary: "订单服务错误率过高"
       description: "订单服务错误率{{ $value | humanizePercentage }}，超过5%阈值"
-  
+
   # 订单服务延迟告警
   - alert: OrderServiceHighLatency
     expr: |
-      histogram_quantile(0.99, 
+      histogram_quantile(0.99,
         sum(rate(http_request_duration_seconds_bucket{service="order-service"}[5m])) by (le)
       ) > 1.0
     for: 5m
@@ -621,7 +621,7 @@ groups:
     annotations:
       summary: "订单服务延迟过高"
       description: "订单服务P99延迟{{ $value }}秒，超过1秒阈值"
-  
+
   # 订单积压告警
   - alert: OrderBacklogHigh
     expr: order_queue_depth > 10000
@@ -670,7 +670,7 @@ groups:
 
 ```rust
 //! 金融支付系统追踪配置
-//! 
+//!
 //! 特点：
 //! - 敏感数据脱敏
 //! - 完整审计日志
@@ -684,7 +684,7 @@ pub async fn process_payment_with_security(
     amount: f64,
 ) -> anyhow::Result<()> {
     let tracer = global::tracer("payment-service");
-    
+
     let span = tracer
         .span_builder("process_payment")
         .with_attributes(vec![
@@ -693,22 +693,22 @@ pub async fn process_payment_with_security(
             KeyValue::new("payment.card_last4", mask_card_number(card_number)),
             KeyValue::new("payment.amount", amount),
             KeyValue::new("payment.currency", "USD"),
-            
+
             // 审计信息
             KeyValue::new("audit.user_id", get_current_user_id()),
             KeyValue::new("audit.ip", get_client_ip()),
             KeyValue::new("audit.timestamp", current_timestamp()),
-            
+
             // 合规标签
             KeyValue::new("compliance.pci_dss", "enabled"),
             KeyValue::new("compliance.data_classification", "confidential"),
         ])
         .start(&tracer);
-    
+
     // 支付处理逻辑...
-    
+
     drop(span);
-    
+
     Ok(())
 }
 
@@ -777,7 +777,7 @@ impl EdgeNodeTracer {
             max_buffer_size: 10000,
         }
     }
-    
+
     /// 记录设备数据（带缓冲）
     pub fn record_device_data(&mut self, device_id: &str, data: f64) {
         // 边缘节点可能网络不稳定，使用本地缓冲
@@ -786,23 +786,23 @@ impl EdgeNodeTracer {
             value: data,
             timestamp: std::time::SystemTime::now(),
         };
-        
+
         self.buffer.push(span_data);
-        
+
         // 达到阈值时批量上传
         if self.buffer.len() >= self.max_buffer_size {
             self.flush();
         }
     }
-    
+
     /// 批量上传
     fn flush(&mut self) {
         // 压缩数据
         let compressed = compress_span_data(&self.buffer);
-        
+
         // 上传到云端
         upload_to_cloud(compressed);
-        
+
         // 清空缓冲
         self.buffer.clear();
     }
@@ -845,7 +845,7 @@ pub async fn process_tenant_request(
     request: Request,
 ) -> anyhow::Result<Response> {
     let tracer = global::tracer("saas-platform");
-    
+
     let span = tracer
         .span_builder("process_request")
         .with_attributes(vec![
@@ -853,21 +853,21 @@ pub async fn process_tenant_request(
             KeyValue::new("tenant.id", tenant_id.to_string()),
             KeyValue::new("tenant.tier", get_tenant_tier(tenant_id)),
             KeyValue::new("tenant.region", get_tenant_region(tenant_id)),
-            
+
             // 请求信息
             KeyValue::new("request.id", request.id.clone()),
             KeyValue::new("request.method", request.method.clone()),
-            
+
             // 资源配额
             KeyValue::new("quota.used", get_tenant_quota_used(tenant_id)),
             KeyValue::new("quota.limit", get_tenant_quota_limit(tenant_id)),
         ])
         .start(&tracer);
-    
+
     // 处理请求...
-    
+
     drop(span);
-    
+
     Ok(Response::new())
 }
 
@@ -943,5 +943,5 @@ impl Response {
 
 ---
 
-**更新日期**: 2025年10月29日  
+**更新日期**: 2025年10月29日
 **维护者**: OTLP_rust Team

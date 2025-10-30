@@ -44,35 +44,35 @@ pub struct IntelligentAnomalyDetector {
 impl IntelligentAnomalyDetector {
     pub async fn detect_anomalies(&self, metrics: &[Metric]) -> Result<Vec<Anomaly>, DetectionError> {
         let mut anomalies = Vec::new();
-        
+
         for metric in metrics {
             // 提取特征
             let features = self.feature_extractor.extract_features(metric).await?;
-            
+
             // 统计异常检测
             let statistical_anomalies = self.detect_statistical_anomalies(metric, &features).await?;
-            
+
             // 机器学习异常检测
             let ml_anomalies = self.detect_ml_anomalies(metric, &features).await?;
-            
+
             // 集成检测结果
             let ensemble_anomalies = self.ensemble_detector.combine_results(
-                &statistical_anomalies, 
+                &statistical_anomalies,
                 &ml_anomalies
             )?;
-            
+
             anomalies.extend(ensemble_anomalies);
         }
-        
+
         Ok(anomalies)
     }
 
     async fn detect_statistical_anomalies(&self, metric: &Metric, features: &Features) -> Result<Vec<Anomaly>, DetectionError> {
         let model_name = format!("statistical_{}", metric.name);
-        
+
         if let Some(model) = self.statistical_models.get(&model_name) {
             let anomaly_score = model.predict(features)?;
-            
+
             if anomaly_score > 0.8 {
                 return Ok(vec![Anomaly {
                     id: Uuid::new_v4().to_string(),
@@ -85,16 +85,16 @@ impl IntelligentAnomalyDetector {
                 }]);
             }
         }
-        
+
         Ok(vec![])
     }
 
     async fn detect_ml_anomalies(&self, metric: &Metric, features: &Features) -> Result<Vec<Anomaly>, DetectionError> {
         let model_name = format!("ml_{}", metric.name);
-        
+
         if let Some(model) = self.ml_models.get(&model_name) {
             let prediction = model.predict(features)?;
-            
+
             if prediction.is_anomaly {
                 return Ok(vec![Anomaly {
                     id: Uuid::new_v4().to_string(),
@@ -107,7 +107,7 @@ impl IntelligentAnomalyDetector {
                 }]);
             }
         }
-        
+
         Ok(vec![])
     }
 }
@@ -126,26 +126,26 @@ pub struct TimeSeriesAnomalyDetector {
 impl TimeSeriesAnomalyDetector {
     pub async fn detect_time_series_anomalies(&self, time_series: &TimeSeries) -> Result<Vec<TimeSeriesAnomaly>, DetectionError> {
         let mut anomalies = Vec::new();
-        
+
         // 季节性分解
         let decomposition = self.seasonal_decomposer.decompose(time_series).await?;
-        
+
         // LSTM异常检测
         let lstm_anomalies = self.detect_with_lstm(&decomposition.trend).await?;
-        
+
         // Transformer异常检测
         let transformer_anomalies = self.detect_with_transformer(&decomposition.residual).await?;
-        
+
         // 合并结果
         anomalies.extend(lstm_anomalies);
         anomalies.extend(transformer_anomalies);
-        
+
         Ok(anomalies)
     }
 
     async fn detect_with_lstm(&self, trend: &TimeSeries) -> Result<Vec<TimeSeriesAnomaly>, DetectionError> {
         let predictions = self.lstm_model.predict_next_values(trend, 10).await?;
-        
+
         let mut anomalies = Vec::new();
         for (i, (actual, predicted)) in trend.values.iter().zip(predictions.iter()).enumerate() {
             let error = (actual - predicted).abs();
@@ -159,7 +159,7 @@ impl TimeSeriesAnomalyDetector {
                 });
             }
         }
-        
+
         Ok(anomalies)
     }
 }
@@ -181,16 +181,16 @@ impl CapacityPredictor {
     pub async fn predict_capacity(&self, historical_data: &CapacityData) -> Result<CapacityForecast, PredictionError> {
         // ARIMA预测
         let arima_forecast = self.arima_model.forecast(historical_data, 30).await?;
-        
+
         // Prophet预测
         let prophet_forecast = self.prophet_model.forecast(historical_data, 30).await?;
-        
+
         // 神经网络预测
         let nn_forecast = self.neural_network.forecast(historical_data, 30).await?;
-        
+
         // 集成预测结果
         let ensemble_forecast = self.ensemble_forecasts(&arima_forecast, &prophet_forecast, &nn_forecast)?;
-        
+
         Ok(CapacityForecast {
             predictions: ensemble_forecast,
             confidence_intervals: self.calculate_confidence_intervals(&ensemble_forecast),
@@ -201,7 +201,7 @@ impl CapacityPredictor {
 
     fn generate_recommendations(&self, forecast: &[CapacityPrediction]) -> Vec<CapacityRecommendation> {
         let mut recommendations = Vec::new();
-        
+
         for prediction in forecast {
             if prediction.cpu_usage > 0.8 {
                 recommendations.push(CapacityRecommendation {
@@ -212,7 +212,7 @@ impl CapacityPredictor {
                     suggested_action: "Add more CPU cores or scale horizontally".to_string(),
                 });
             }
-            
+
             if prediction.memory_usage > 0.9 {
                 recommendations.push(CapacityRecommendation {
                     type_: RecommendationType::ScaleUp,
@@ -223,7 +223,7 @@ impl CapacityPredictor {
                 });
             }
         }
-        
+
         recommendations
     }
 }
@@ -243,13 +243,13 @@ impl FailurePredictor {
     pub async fn predict_failures(&self, system_metrics: &SystemMetrics) -> Result<FailurePrediction, PredictionError> {
         // 特征工程
         let features = self.feature_engineer.extract_failure_features(system_metrics).await?;
-        
+
         // 生存分析预测
         let survival_prediction = self.survival_model.predict_failure_time(&features).await?;
-        
+
         // 分类模型预测
         let classification_prediction = self.classification_model.predict_failure_type(&features).await?;
-        
+
         Ok(FailurePrediction {
             failure_probability: survival_prediction.probability,
             expected_failure_time: survival_prediction.expected_time,
@@ -262,7 +262,7 @@ impl FailurePredictor {
 
     fn identify_contributing_factors(&self, features: &FailureFeatures) -> Vec<ContributingFactor> {
         let mut factors = Vec::new();
-        
+
         if features.cpu_utilization > 0.8 {
             factors.push(ContributingFactor {
                 factor_type: FactorType::HighCPUUsage,
@@ -270,7 +270,7 @@ impl FailurePredictor {
                 description: "High CPU utilization may lead to performance degradation".to_string(),
             });
         }
-        
+
         if features.memory_pressure > 0.9 {
             factors.push(ContributingFactor {
                 factor_type: FactorType::MemoryPressure,
@@ -278,7 +278,7 @@ impl FailurePredictor {
                 description: "High memory pressure may cause OOM errors".to_string(),
             });
         }
-        
+
         if features.error_rate > 0.05 {
             factors.push(ContributingFactor {
                 factor_type: FactorType::HighErrorRate,
@@ -286,7 +286,7 @@ impl FailurePredictor {
                 description: "High error rate indicates system instability".to_string(),
             });
         }
-        
+
         factors
     }
 }
@@ -308,13 +308,13 @@ impl GraphNeuralNetworkRCA {
     pub async fn analyze_root_cause(&self, incident: &Incident) -> Result<RootCauseAnalysis, AnalysisError> {
         // 构建依赖图
         let graph = self.build_incident_graph(incident).await?;
-        
+
         // GNN预测
         let gnn_prediction = self.gnn_model.predict_root_cause(&graph).await?;
-        
+
         // 因果分析
         let causality_analysis = self.causality_engine.analyze_causality(&graph, incident).await?;
-        
+
         // 综合结果
         Ok(RootCauseAnalysis {
             root_cause: self.identify_primary_root_cause(&gnn_prediction, &causality_analysis),
@@ -327,34 +327,34 @@ impl GraphNeuralNetworkRCA {
 
     async fn build_incident_graph(&self, incident: &Incident) -> Result<IncidentGraph, AnalysisError> {
         let mut graph = IncidentGraph::new();
-        
+
         // 添加服务节点
         for service in &incident.affected_services {
             graph.add_service_node(service.clone());
         }
-        
+
         // 添加依赖关系
         for dependency in &incident.service_dependencies {
             graph.add_dependency_edge(dependency.from.clone(), dependency.to.clone(), dependency.weight);
         }
-        
+
         // 添加指标节点
         for metric in &incident.metrics {
             graph.add_metric_node(metric.name.clone(), metric.value);
         }
-        
+
         // 添加事件节点
         for event in &incident.events {
             graph.add_event_node(event.clone());
         }
-        
+
         Ok(graph)
     }
 
     fn identify_primary_root_cause(&self, gnn_pred: &GNNPrediction, causality: &CausalityAnalysis) -> RootCause {
         // 结合GNN预测和因果分析确定根因
         let mut candidates = Vec::new();
-        
+
         for node in &gnn_pred.high_probability_nodes {
             if let Some(causality_score) = causality.get_causality_score(node) {
                 candidates.push(RootCauseCandidate {
@@ -365,13 +365,13 @@ impl GraphNeuralNetworkRCA {
                 });
             }
         }
-        
+
         // 选择得分最高的候选作为根因
         candidates.sort_by(|a, b| b.combined_score.partial_cmp(&a.combined_score).unwrap());
-        
+
         RootCause {
             component: candidates[0].node.component.clone(),
-            reason: format!("GNN probability: {:.3}, Causality score: {:.3}", 
+            reason: format!("GNN probability: {:.3}, Causality score: {:.3}",
                           candidates[0].gnn_score, candidates[0].causality_score),
             confidence: candidates[0].combined_score,
         }
@@ -392,43 +392,43 @@ pub struct CausalityEngine {
 impl CausalityEngine {
     pub async fn analyze_causality(&self, graph: &IncidentGraph, incident: &Incident) -> Result<CausalityAnalysis, AnalysisError> {
         let mut analysis = CausalityAnalysis::new();
-        
+
         // 因果发现
         let causal_relationships = self.discover_causal_relationships(graph).await?;
-        
+
         // 干预分析
         let intervention_effects = self.analyze_interventions(&causal_relationships, incident).await?;
-        
+
         // 反事实分析
         let counterfactuals = self.analyze_counterfactuals(&causal_relationships, incident).await?;
-        
+
         analysis.causal_relationships = causal_relationships;
         analysis.intervention_effects = intervention_effects;
         analysis.counterfactuals = counterfactuals;
-        
+
         Ok(analysis)
     }
 
     async fn discover_causal_relationships(&self, graph: &IncidentGraph) -> Result<Vec<CausalRelationship>, AnalysisError> {
         let mut relationships = Vec::new();
-        
+
         // 使用PC算法发现因果关系
         let pc_relationships = self.pc_algorithm_discovery(graph).await?;
         relationships.extend(pc_relationships);
-        
+
         // 使用GES算法优化因果关系
         let ges_relationships = self.ges_algorithm_discovery(graph).await?;
         relationships.extend(ges_relationships);
-        
+
         // 合并和去重
         self.merge_causal_relationships(&mut relationships);
-        
+
         Ok(relationships)
     }
 
     async fn analyze_interventions(&self, relationships: &[CausalRelationship], incident: &Incident) -> Result<Vec<InterventionEffect>, AnalysisError> {
         let mut effects = Vec::new();
-        
+
         for relationship in relationships {
             if relationship.confidence > 0.7 {
                 // 模拟干预效果
@@ -436,17 +436,17 @@ impl CausalityEngine {
                     target: relationship.cause.clone(),
                     intervention_type: InterventionType::Fix,
                 };
-                
+
                 let effect = self.intervention_engine.simulate_intervention(
-                    &intervention, 
+                    &intervention,
                     &relationship.effect,
                     incident
                 ).await?;
-                
+
                 effects.push(effect);
             }
         }
-        
+
         Ok(effects)
     }
 }
@@ -468,25 +468,25 @@ impl IntelligentAlertAggregator {
     pub async fn process_alerts(&self, alerts: &[Alert]) -> Result<Vec<AggregatedAlert>, ProcessingError> {
         // 噪声过滤
         let filtered_alerts = self.noise_filter.filter_noise(alerts).await?;
-        
+
         // 告警聚类
         let clusters = self.clustering_engine.cluster_alerts(&filtered_alerts).await?;
-        
+
         // 优先级分类
         let classified_clusters = self.classify_cluster_priorities(&clusters).await?;
-        
+
         // 生成聚合告警
         let aggregated_alerts = self.generate_aggregated_alerts(&classified_clusters).await?;
-        
+
         Ok(aggregated_alerts)
     }
 
     async fn classify_cluster_priorities(&self, clusters: &[AlertCluster]) -> Result<Vec<ClassifiedCluster>, ProcessingError> {
         let mut classified_clusters = Vec::new();
-        
+
         for cluster in clusters {
             let priority = self.priority_classifier.classify_priority(cluster).await?;
-            
+
             classified_clusters.push(ClassifiedCluster {
                 cluster: cluster.clone(),
                 priority,
@@ -494,13 +494,13 @@ impl IntelligentAlertAggregator {
                 urgency: self.calculate_urgency(cluster).await?,
             });
         }
-        
+
         Ok(classified_clusters)
     }
 
     async fn generate_aggregated_alerts(&self, classified_clusters: &[ClassifiedCluster]) -> Result<Vec<AggregatedAlert>, ProcessingError> {
         let mut aggregated_alerts = Vec::new();
-        
+
         for classified_cluster in classified_clusters {
             let aggregated_alert = AggregatedAlert {
                 id: Uuid::new_v4().to_string(),
@@ -516,10 +516,10 @@ impl IntelligentAlertAggregator {
                 first_seen: classified_cluster.cluster.first_seen,
                 last_seen: classified_cluster.cluster.last_seen,
             };
-            
+
             aggregated_alerts.push(aggregated_alert);
         }
-        
+
         Ok(aggregated_alerts)
     }
 }
@@ -538,34 +538,34 @@ pub struct AdaptiveThresholdAdjuster {
 impl AdaptiveThresholdAdjuster {
     pub async fn adjust_thresholds(&self, metrics: &[Metric]) -> Result<Vec<AdjustedThreshold>, AdjustmentError> {
         let mut adjusted_thresholds = Vec::new();
-        
+
         for metric in metrics {
             // 分析基线
             let baseline = self.baseline_analyzer.analyze_baseline(metric).await?;
-            
+
             // 检测趋势
             let trend = self.trend_analyzer.detect_trend(metric).await?;
-            
+
             // 检测季节性
             let seasonality = self.seasonality_detector.detect_seasonality(metric).await?;
-            
+
             // 计算调整后的阈值
             let adjusted_threshold = self.calculate_adjusted_threshold(
-                &baseline, 
-                &trend, 
+                &baseline,
+                &trend,
                 &seasonality
             )?;
-            
+
             adjusted_thresholds.push(adjusted_threshold);
         }
-        
+
         Ok(adjusted_thresholds)
     }
 
     fn calculate_adjusted_threshold(&self, baseline: &Baseline, trend: &Trend, seasonality: &Seasonality) -> Result<AdjustedThreshold, AdjustmentError> {
         let mut warning_threshold = baseline.warning_threshold;
         let mut critical_threshold = baseline.critical_threshold;
-        
+
         // 根据趋势调整
         match trend.direction {
             TrendDirection::Increasing => {
@@ -578,14 +578,14 @@ impl AdaptiveThresholdAdjuster {
             }
             TrendDirection::Stable => {}
         }
-        
+
         // 根据季节性调整
         if seasonality.is_significant {
             let seasonal_factor = seasonality.get_current_factor();
             warning_threshold *= seasonal_factor;
             critical_threshold *= seasonal_factor;
         }
-        
+
         Ok(AdjustedThreshold {
             metric_name: baseline.metric_name.clone(),
             warning_threshold,
@@ -614,34 +614,34 @@ impl ModelLifecycleManager {
     pub async fn train_new_model(&self, training_data: &TrainingData, config: &ModelConfig) -> Result<ModelVersion, TrainingError> {
         // 训练模型
         let model = self.model_trainer.train(training_data, config).await?;
-        
+
         // 评估模型
         let evaluation = self.model_evaluator.evaluate(&model, training_data.test_set()).await?;
-        
+
         // 注册模型
         let version = self.model_registry.register_model(model, evaluation).await?;
-        
+
         // 如果性能足够好，部署模型
         if evaluation.overall_score > 0.8 {
             self.model_deployer.deploy_model(&version).await?;
         }
-        
+
         Ok(version)
     }
 
     pub async fn update_model(&self, model_id: &str, new_data: &TrainingData) -> Result<ModelVersion, UpdateError> {
         // 获取当前模型
         let current_model = self.model_registry.get_model(model_id).await?;
-        
+
         // 增量训练
         let updated_model = self.model_trainer.incremental_train(&current_model, new_data).await?;
-        
+
         // 评估更新后的模型
         let evaluation = self.model_evaluator.evaluate(&updated_model, new_data.test_set()).await?;
-        
+
         // 比较性能
         let current_evaluation = self.model_evaluator.evaluate(&current_model, new_data.test_set()).await?;
-        
+
         if evaluation.overall_score > current_evaluation.overall_score {
             // 部署新模型
             let new_version = self.model_registry.register_model(updated_model, evaluation).await?;
@@ -667,24 +667,24 @@ pub struct ModelPerformanceMonitor {
 impl ModelPerformanceMonitor {
     pub async fn monitor_model_performance(&self, model_id: &str, predictions: &[Prediction]) -> Result<PerformanceReport, MonitoringError> {
         let mut report = PerformanceReport::new();
-        
+
         // 跟踪性能指标
         let performance_metrics = self.performance_tracker.track_performance(model_id, predictions).await?;
         report.performance_metrics = performance_metrics;
-        
+
         // 检测数据漂移
         let drift_detection = self.drift_detector.detect_drift(model_id, predictions).await?;
         report.drift_detection = drift_detection;
-        
+
         // 检测概念漂移
         let concept_drift = self.drift_detector.detect_concept_drift(model_id, predictions).await?;
         report.concept_drift = concept_drift;
-        
+
         // 生成告警
         if drift_detection.is_significant || concept_drift.is_significant {
             self.performance_alert_manager.send_drift_alert(model_id, &drift_detection, &concept_drift).await?;
         }
-        
+
         Ok(report)
     }
 }
@@ -710,4 +710,4 @@ impl ModelPerformanceMonitor {
 
 ---
 
-*本文档提供了AI/ML与可观测性集成的深度分析，为构建智能化的可观测性系统提供技术指导。*
+_本文档提供了AI/ML与可观测性集成的深度分析，为构建智能化的可观测性系统提供技术指导。_

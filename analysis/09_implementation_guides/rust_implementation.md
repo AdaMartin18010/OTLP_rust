@@ -39,31 +39,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         KeyValue::new("service.name", "rust-otlp-demo"),
         KeyValue::new("service.version", "1.0.0"),
     ]);
-    
+
     // 2. 创建OTLP导出器
     let exporter = opentelemetry_otlp::new_exporter()
         .tonic()
         .with_endpoint("http://localhost:4317")
         .build_span_exporter()?;
-    
+
     // 3. 创建TracerProvider
     let provider = TracerProvider::builder()
         .with_config(Config::default().with_resource(resource))
         .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
         .build();
-    
+
     // 4. 获取Tracer并创建Span
     let tracer = provider.tracer("demo-tracer");
-    
+
     tracer.in_span("main_operation", |_cx| {
         println!("✅ 正在执行操作...");
         std::thread::sleep(std::time::Duration::from_millis(100));
         println!("✅ 操作完成！Span已发送到OTLP收集器");
     });
-    
+
     // 5. 优雅关闭
     opentelemetry::global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 ```
@@ -227,7 +227,7 @@ pub struct TraceCollector {
 impl TraceCollector {
     pub fn new(config: CollectorConfig) -> Self {
         let (sender, receiver) = mpsc::unbounded_channel();
-        
+
         Self {
             spans: Arc::new(RwLock::new(Vec::new())),
             sender,
@@ -235,62 +235,62 @@ impl TraceCollector {
             config,
         }
     }
-    
+
     pub async fn collect_span(&self, span: Span) -> Result<(), CollectionError> {
         // 验证span数据
         self.validate_span(&span)?;
-        
+
         // 发送到处理队列
         self.sender.send(span).map_err(|e| {
             CollectionError::SendError(e.to_string())
         })?;
-        
+
         Ok(())
     }
-    
+
     pub async fn start_collection(&self) -> Result<(), CollectionError> {
         let receiver = self.receiver.clone();
         let spans = self.spans.clone();
         let config = self.config.clone();
-        
+
         tokio::spawn(async move {
             let mut receiver = receiver.write().await;
             let mut batch = Vec::new();
             let mut last_flush = Instant::now();
-            
+
             while let Some(span) = receiver.recv().await {
                 batch.push(span);
-                
+
                 // 检查批量大小或时间间隔
-                if batch.len() >= config.batch_size 
+                if batch.len() >= config.batch_size
                    || last_flush.elapsed() >= config.flush_interval {
-                    
+
                     // 批量处理spans
                     let mut spans_guard = spans.write().await;
                     spans_guard.extend(batch.drain(..));
                     drop(spans_guard);
-                    
+
                     last_flush = Instant::now();
                 }
             }
         });
-        
+
         Ok(())
     }
-    
+
     fn validate_span(&self, span: &Span) -> Result<(), ValidationError> {
         if span.trace_id.is_empty() {
             return Err(ValidationError::MissingTraceId);
         }
-        
+
         if span.span_id.is_empty() {
             return Err(ValidationError::MissingSpanId);
         }
-        
+
         if span.name.is_empty() {
             return Err(ValidationError::MissingSpanName);
         }
-        
+
         Ok(())
     }
 }
@@ -319,17 +319,17 @@ impl Processor for BatchProcessor {
     async fn process(&self, data: &mut TelemetryData) -> Result<(), ProcessingError> {
         let mut buffer = self.buffer.write().await;
         buffer.push(data.clone());
-        
+
         if buffer.len() >= self.batch_size {
             let batch = buffer.drain(..).collect();
             self.sender.send(batch).map_err(|e| {
                 ProcessingError::SendError(e.to_string())
             })?;
         }
-        
+
         Ok(())
     }
-    
+
     async fn shutdown(&self) -> Result<(), ProcessingError> {
         let mut buffer = self.buffer.write().await;
         if !buffer.is_empty() {
@@ -338,7 +338,7 @@ impl Processor for BatchProcessor {
                 ProcessingError::SendError(e.to_string())
             })?;
         }
-        
+
         Ok(())
     }
 }
@@ -374,10 +374,10 @@ impl Processor for AttributeProcessor {
                 },
             }
         }
-        
+
         Ok(())
     }
-    
+
     async fn shutdown(&self) -> Result<(), ProcessingError> {
         Ok(())
     }
@@ -387,11 +387,11 @@ impl AttributeProcessor {
     fn hash_value(&self, value: &AttributeValue) -> AttributeValue {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         value.hash(&mut hasher);
         let hash = hasher.finish();
-        
+
         AttributeValue::String(format!("hash_{}", hash))
     }
 }
@@ -417,7 +417,7 @@ impl OTLPExporter {
             .timeout(config.timeout)
             .build()
             .expect("Failed to create HTTP client");
-        
+
         Self {
             client,
             endpoint: config.endpoint,
@@ -426,87 +426,87 @@ impl OTLPExporter {
             compression: config.compression,
         }
     }
-    
+
     pub async fn export_traces(&self, spans: Vec<Span>) -> Result<(), ExportError> {
         // 转换为OTLP格式
         let otlp_spans = self.convert_to_otlp_spans(spans)?;
-        
+
         // 序列化
         let mut buffer = Vec::new();
         otlp_spans.encode(&mut buffer).map_err(|e| {
             ExportError::SerializationError(e.to_string())
         })?;
-        
+
         // 压缩
         let compressed_data = self.compress_data(&buffer)?;
-        
+
         // 发送HTTP请求
         let mut request = self.client
             .post(&format!("{}/v1/traces", self.endpoint))
             .body(compressed_data);
-        
+
         for (key, value) in &self.headers {
             request = request.header(key, value);
         }
-        
+
         match self.compression {
             CompressionType::Gzip => {
                 request = request.header("Content-Encoding", "gzip");
             },
             CompressionType::None => {},
         }
-        
+
         let response = request.send().await.map_err(|e| {
             ExportError::NetworkError(e.to_string())
         })?;
-        
+
         if !response.status().is_success() {
             return Err(ExportError::HttpError(response.status().as_u16()));
         }
-        
+
         Ok(())
     }
-    
+
     fn convert_to_otlp_spans(&self, spans: Vec<Span>) -> Result<otlp::TracesData, ConversionError> {
         let mut resource_spans = HashMap::new();
-        
+
         for span in spans {
             let resource_key = self.get_resource_key(&span.resource);
             let resource_span_list = resource_spans
                 .entry(resource_key)
                 .or_insert_with(Vec::new);
-            
+
             resource_span_list.push(self.convert_span_to_otlp(span)?);
         }
-        
+
         let mut traces_data = otlp::TracesData::default();
-        
+
         for (resource, spans) in resource_spans {
             let mut resource_spans = otlp::ResourceSpans::default();
             resource_spans.resource = Some(resource);
-            
+
             let mut scope_spans = otlp::ScopeSpans::default();
             scope_spans.spans = spans;
-            
+
             resource_spans.scope_spans = vec![scope_spans];
             traces_data.resource_spans.push(resource_spans);
         }
-        
+
         Ok(traces_data)
     }
-    
+
     fn compress_data(&self, data: &[u8]) -> Result<Vec<u8>, CompressionError> {
         match self.compression {
             CompressionType::Gzip => {
                 use flate2::write::GzEncoder;
                 use flate2::Compression;
                 use std::io::Write;
-                
+
                 let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
                 encoder.write_all(data).map_err(|e| {
                     CompressionError::CompressionFailed(e.to_string())
                 })?;
-                
+
                 encoder.finish().map_err(|e| {
                     CompressionError::CompressionFailed(e.to_string())
                 })
@@ -546,7 +546,7 @@ impl SpanPool {
             current_size: AtomicUsize::new(0),
         }
     }
-    
+
     pub fn get_span(&self) -> Box<Span> {
         if let Some(span) = self.pool.pop() {
             // 重置span数据
@@ -556,7 +556,7 @@ impl SpanPool {
             Box::new(Span::default())
         }
     }
-    
+
     pub fn return_span(&self, mut span: Box<Span>) {
         if self.current_size.load(Ordering::Relaxed) < self.max_size {
             // 清理span数据
@@ -565,7 +565,7 @@ impl SpanPool {
         }
         // 如果池已满，让span自动释放
     }
-    
+
     fn reset_span(&self, span: &mut Span) {
         span.trace_id.clear();
         span.span_id.clear();
@@ -574,7 +574,7 @@ impl SpanPool {
         span.events.clear();
         span.links.clear();
     }
-    
+
     fn clear_span(&self, span: &mut Span) {
         span.trace_id.clear();
         span.span_id.clear();
@@ -608,22 +608,22 @@ impl ConcurrentProcessor {
             error_count: AtomicU64::new(0),
         }
     }
-    
+
     pub async fn process_batch(&self, batch: Vec<TelemetryData>) -> Result<(), ProcessingError> {
         let chunk_size = (batch.len() + self.worker_count - 1) / self.worker_count;
         let chunks: Vec<_> = batch.chunks(chunk_size).collect();
-        
+
         let mut tasks = Vec::new();
-        
+
         for chunk in chunks {
             let chunk = chunk.to_vec();
             let semaphore = self.semaphore.clone();
             let processed_count = &self.processed_count;
             let error_count = &self.error_count;
-            
+
             let task = tokio::spawn(async move {
                 let _permit = semaphore.acquire().await.unwrap();
-                
+
                 for data in chunk {
                     match Self::process_single_data(data).await {
                         Ok(_) => {
@@ -635,20 +635,20 @@ impl ConcurrentProcessor {
                     }
                 }
             });
-            
+
             tasks.push(task);
         }
-        
+
         // 等待所有任务完成
         for task in tasks {
             task.await.map_err(|e| {
                 ProcessingError::TaskError(e.to_string())
             })?;
         }
-        
+
         Ok(())
     }
-    
+
     async fn process_single_data(data: TelemetryData) -> Result<(), ProcessingError> {
         // 处理单个数据项
         tokio::time::sleep(Duration::from_millis(1)).await;
@@ -687,11 +687,11 @@ impl ConnectionPool {
                 }
             }
         }
-        
+
         // 创建新连接
         self.create_connection(endpoint).await
     }
-    
+
     pub async fn return_connection(&self, connection: Connection) {
         let mut connections = self.connections.write().await;
         if connections.len() < self.max_connections {
@@ -699,14 +699,14 @@ impl ConnectionPool {
         }
         // 如果池已满，连接会自动关闭
     }
-    
+
     async fn create_connection(&self, endpoint: &str) -> Result<Connection, NetworkError> {
         let stream = TcpStream::connect(endpoint).await.map_err(|e| {
             NetworkError::ConnectionFailed(e.to_string())
         })?;
-        
+
         let framed = Framed::new(stream, LengthDelimitedCodec::new());
-        
+
         Ok(Connection {
             endpoint: endpoint.to_string(),
             framed: Arc::new(RwLock::new(framed)),
@@ -725,13 +725,13 @@ impl Connection {
     pub fn is_idle(&self) -> bool {
         self.last_used.elapsed() < Duration::from_secs(30)
     }
-    
+
     pub async fn send_data(&mut self, data: &[u8]) -> Result<(), NetworkError> {
         let mut framed = self.framed.write().await;
         framed.send(data.into()).await.map_err(|e| {
             NetworkError::SendFailed(e.to_string())
         })?;
-        
+
         self.last_used = Instant::now();
         Ok(())
     }
@@ -749,16 +749,16 @@ use thiserror::Error;
 pub enum OTLPError {
     #[error("Collection error: {0}")]
     Collection(#[from] CollectionError),
-    
+
     #[error("Processing error: {0}")]
     Processing(#[from] ProcessingError),
-    
+
     #[error("Export error: {0}")]
     Export(#[from] ExportError),
-    
+
     #[error("Configuration error: {0}")]
     Configuration(#[from] ConfigurationError),
-    
+
     #[error("Network error: {0}")]
     Network(#[from] NetworkError),
 }
@@ -767,13 +767,13 @@ pub enum OTLPError {
 pub enum CollectionError {
     #[error("Validation failed: {0}")]
     Validation(#[from] ValidationError),
-    
+
     #[error("Send error: {0}")]
     SendError(String),
-    
+
     #[error("Buffer overflow")]
     BufferOverflow,
-    
+
     #[error("Resource detection failed: {0}")]
     ResourceDetection(String),
 }
@@ -782,13 +782,13 @@ pub enum CollectionError {
 pub enum ProcessingError {
     #[error("Transformation failed: {0}")]
     Transformation(String),
-    
+
     #[error("Filtering failed: {0}")]
     Filtering(String),
-    
+
     #[error("Batching failed: {0}")]
     Batching(String),
-    
+
     #[error("Task error: {0}")]
     TaskError(String),
 }
@@ -797,16 +797,16 @@ pub enum ProcessingError {
 pub enum ExportError {
     #[error("Serialization error: {0}")]
     SerializationError(String),
-    
+
     #[error("Compression error: {0}")]
     CompressionError(String),
-    
+
     #[error("Network error: {0}")]
     NetworkError(String),
-    
+
     #[error("HTTP error: {0}")]
     HttpError(u16),
-    
+
     #[error("Authentication failed")]
     AuthenticationFailed,
 }
@@ -839,20 +839,20 @@ impl RetryPolicy {
     {
         let mut attempt = 0;
         let mut delay = self.base_delay;
-        
+
         loop {
             attempt += 1;
-            
+
             match operation() {
                 Ok(result) => return Ok(result),
                 Err(error) => {
                     if attempt >= self.max_attempts {
                         return Err(error);
                     }
-                    
+
                     // 等待重试
                     tokio::time::sleep(delay).await;
-                    
+
                     // 计算下次重试延迟
                     delay = std::cmp::min(
                         Duration::from_millis(
@@ -891,7 +891,7 @@ impl CircuitBreaker {
             let state_guard = self.state.read().await;
             state_guard.clone()
         };
-        
+
         match state {
             CircuitBreakerState::Open => {
                 // 检查是否可以尝试恢复
@@ -912,7 +912,7 @@ impl CircuitBreaker {
                 // 正常状态
             },
         }
-        
+
         // 执行操作
         match operation() {
             Ok(result) => {
@@ -925,11 +925,11 @@ impl CircuitBreaker {
                 // 操作失败，增加失败计数
                 let failures = self.failure_count.fetch_add(1, Ordering::Relaxed) + 1;
                 *self.last_failure_time.write().await = Some(Instant::now());
-                
+
                 if failures >= self.failure_threshold {
                     *self.state.write().await = CircuitBreakerState::Open;
                 }
-                
+
                 Err(CircuitBreakerError::OperationFailed(error))
             }
         }
@@ -940,7 +940,7 @@ impl CircuitBreaker {
 pub enum CircuitBreakerError<E> {
     #[error("Circuit breaker is open")]
     CircuitOpen,
-    
+
     #[error("Operation failed: {0:?}")]
     OperationFailed(E),
 }
@@ -955,23 +955,23 @@ pub enum CircuitBreakerError<E> {
 mod tests {
     use super::*;
     use tokio_test;
-    
+
     #[tokio::test]
     async fn test_trace_collector_basic_functionality() {
         let config = CollectorConfig::default();
         let collector = TraceCollector::new(config);
-        
+
         let span = Span {
             trace_id: "test_trace_id".to_string(),
             span_id: "test_span_id".to_string(),
             name: "test_span".to_string(),
             ..Default::default()
         };
-        
+
         let result = collector.collect_span(span).await;
         assert!(result.is_ok());
     }
-    
+
     #[tokio::test]
     async fn test_batch_processor_batching() {
         let processor = BatchProcessor {
@@ -980,21 +980,21 @@ mod tests {
             buffer: Arc::new(RwLock::new(Vec::new())),
             sender: mpsc::unbounded_channel().0,
         };
-        
+
         // 添加数据到批处理器
         for i in 0..5 {
             let mut data = TelemetryData::default();
             data.attributes.insert("index".to_string(), AttributeValue::Int(i));
-            
+
             let result = processor.process(&mut data).await;
             assert!(result.is_ok());
         }
-        
+
         // 验证批处理行为
         let buffer = processor.buffer.read().await;
         assert_eq!(buffer.len(), 2); // 3个已发送，2个在缓冲区
     }
-    
+
     #[tokio::test]
     async fn test_otlp_exporter_serialization() {
         let config = ExporterConfig {
@@ -1003,9 +1003,9 @@ mod tests {
             compression: CompressionType::None,
             headers: HashMap::new(),
         };
-        
+
         let exporter = OTLPExporter::new(config);
-        
+
         let spans = vec![
             Span {
                 trace_id: "trace1".to_string(),
@@ -1014,10 +1014,10 @@ mod tests {
                 ..Default::default()
             }
         ];
-        
+
         let otlp_spans = exporter.convert_to_otlp_spans(spans);
         assert!(otlp_spans.is_ok());
-        
+
         let otlp_data = otlp_spans.unwrap();
         assert_eq!(otlp_data.resource_spans.len(), 1);
     }
@@ -1031,15 +1031,15 @@ mod tests {
 mod integration_tests {
     use super::*;
     use testcontainers::*;
-    
+
     #[tokio::test]
     async fn test_end_to_end_trace_flow() {
         // 启动测试容器
         let docker = clients::Cli::default();
         let jaeger = docker.run(images::generic::GenericImage::new("jaegertracing/all-in-one", "latest"));
-        
+
         let jaeger_port = jaeger.get_host_port_ipv4(14268);
-        
+
         // 配置OTLP系统
         let config = OTLPConfig {
             collector: CollectorConfig::default(),
@@ -1051,9 +1051,9 @@ mod integration_tests {
                 headers: HashMap::new(),
             },
         };
-        
+
         let otlp_core = OTLPCore::new(config).await.unwrap();
-        
+
         // 创建测试span
         let span = Span {
             trace_id: "integration_test_trace".to_string(),
@@ -1063,25 +1063,25 @@ mod integration_tests {
             end_time: SystemTime::now() + Duration::from_millis(100),
             ..Default::default()
         };
-        
+
         // 发送span
         otlp_core.collector.collect_span(span).await.unwrap();
-        
+
         // 等待处理完成
         tokio::time::sleep(Duration::from_secs(2)).await;
-        
+
         // 验证数据已发送到Jaeger
         // 这里可以添加对Jaeger API的查询来验证数据
     }
-    
+
     #[tokio::test]
     async fn test_high_throughput_performance() {
         let config = OTLPConfig::default();
         let otlp_core = OTLPCore::new(config).await.unwrap();
-        
+
         let start_time = Instant::now();
         let span_count = 10000;
-        
+
         // 并发发送大量span
         let mut tasks = Vec::new();
         for i in 0..span_count {
@@ -1093,23 +1093,23 @@ mod integration_tests {
                     name: format!("test_span_{}", i),
                     ..Default::default()
                 };
-                
+
                 collector.collect_span(span).await
             });
             tasks.push(task);
         }
-        
+
         // 等待所有任务完成
         for task in tasks {
             task.await.unwrap().unwrap();
         }
-        
+
         let elapsed = start_time.elapsed();
         let throughput = span_count as f64 / elapsed.as_secs_f64();
-        
-        println!("Processed {} spans in {:?}, throughput: {:.2} spans/sec", 
+
+        println!("Processed {} spans in {:?}, throughput: {:.2} spans/sec",
                  span_count, elapsed, throughput);
-        
+
         // 验证性能指标
         assert!(throughput > 1000.0, "Throughput should be > 1000 spans/sec");
     }
@@ -1147,19 +1147,19 @@ fn benchmark_attribute_processing(c: &mut Criterion) {
             },
         ],
     };
-    
+
     c.bench_function("attribute_processing", |b| {
         b.iter(|| {
             let mut data = TelemetryData {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("sensitive_data".to_string(), 
+                    attrs.insert("sensitive_data".to_string(),
                                AttributeValue::String("secret_value".to_string()));
                     attrs
                 },
                 ..Default::default()
             };
-            
+
             tokio_test::block_on(async {
                 processor.process(black_box(&mut data)).await
             })
@@ -1175,7 +1175,7 @@ fn benchmark_batch_processing(c: &mut Criterion) {
         buffer: Arc::new(RwLock::new(Vec::new())),
         sender,
     };
-    
+
     c.bench_function("batch_processing", |b| {
         b.iter(|| {
             let mut data = TelemetryData::default();
@@ -1186,7 +1186,7 @@ fn benchmark_batch_processing(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, 
+criterion_group!(benches,
     benchmark_span_creation,
     benchmark_attribute_processing,
     benchmark_batch_processing
@@ -1252,55 +1252,55 @@ impl OTLPConfig {
     pub fn from_file(path: &str) -> Result<Self, ConfigError> {
         let content = std::fs::read_to_string(path)
             .map_err(|e| ConfigError::FileReadError(e.to_string()))?;
-        
+
         let config: OTLPConfig = toml::from_str(&content)
             .map_err(|e| ConfigError::ParseError(e.to_string()))?;
-        
+
         config.validate()?;
         Ok(config)
     }
-    
+
     pub fn from_env() -> Result<Self, ConfigError> {
         let mut config = Self::default();
-        
+
         if let Ok(endpoint) = std::env::var("OTLP_EXPORTER_ENDPOINT") {
             config.exporter.endpoint = endpoint;
         }
-        
+
         if let Ok(timeout) = std::env::var("OTLP_EXPORTER_TIMEOUT") {
             let timeout_secs: u64 = timeout.parse()
                 .map_err(|e| ConfigError::ParseError(e.to_string()))?;
             config.exporter.timeout = Duration::from_secs(timeout_secs);
         }
-        
+
         if let Ok(batch_size) = std::env::var("OTLP_BATCH_SIZE") {
             config.collector.batch_size = batch_size.parse()
                 .map_err(|e| ConfigError::ParseError(e.to_string()))?;
         }
-        
+
         config.validate()?;
         Ok(config)
     }
-    
+
     fn validate(&self) -> Result<(), ConfigError> {
         if self.collector.batch_size == 0 {
             return Err(ConfigError::ValidationError(
                 "Batch size must be greater than 0".to_string()
             ));
         }
-        
+
         if self.exporter.endpoint.is_empty() {
             return Err(ConfigError::ValidationError(
                 "Exporter endpoint cannot be empty".to_string()
             ));
         }
-        
+
         if self.exporter.timeout.as_secs() == 0 {
             return Err(ConfigError::ValidationError(
                 "Exporter timeout must be greater than 0".to_string()
             ));
         }
-        
+
         Ok(())
     }
 }

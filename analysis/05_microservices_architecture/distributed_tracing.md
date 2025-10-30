@@ -157,16 +157,16 @@ impl DistributedTracingSystem {
         for collector in &mut self.collectors {
             collector.start().await?;
         }
-        
+
         // 启动存储后端
         self.storage.start().await?;
-        
+
         // 启动查询引擎
         self.query_engine.start().await?;
-        
+
         // 启动可视化服务
         self.visualization.start().await?;
-        
+
         Ok(())
     }
 }
@@ -192,33 +192,33 @@ impl AutoInstrumentation {
             let span = tracer.start_span("http_client_request")
                 .with_tag("http.method", request.method().as_str())
                 .with_tag("http.url", request.url().as_str());
-            
+
             let result = original_send(request);
-            
+
             span.set_tag("http.status_code", result.status_code());
             span.finish();
-            
+
             result
         });
-        
+
         Ok(())
     }
-    
+
     pub fn instrument_database(&self, db: &mut Database) -> Result<(), InstrumentationError> {
         // 为数据库操作添加追踪
         let original_query = db.query.clone();
         db.query = Box::new(move |sql| {
             let span = tracer.start_span("database_query")
                 .with_tag("db.statement", sql);
-            
+
             let result = original_query(sql);
-            
+
             span.set_tag("db.rows_affected", result.rows_affected());
             span.finish();
-            
+
             result
         });
-        
+
         Ok(())
     }
 }
@@ -238,9 +238,9 @@ impl ManualInstrumentation {
         F: FnOnce(Span) -> Result<R, TracingError>,
     {
         let span = self.tracer.start_span(operation_name);
-        
+
         let result = operation(span.clone());
-        
+
         match result {
             Ok(value) => {
                 span.set_tag("success", true);
@@ -275,19 +275,19 @@ impl ProbabilisticSampler {
             random_generator: thread_rng(),
         }
     }
-    
+
     pub fn should_sample(&mut self, trace_id: &TraceId) -> bool {
         // 使用trace_id的哈希值确保同一trace的采样决策一致
         let hash = self.hash_trace_id(trace_id);
         let threshold = (self.sampling_rate * u64::MAX as f64) as u64;
-        
+
         hash < threshold
     }
-    
+
     fn hash_trace_id(&self, trace_id: &TraceId) -> u64 {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         trace_id.hash(&mut hasher);
         hasher.finish()
@@ -316,12 +316,12 @@ impl AdaptiveSampler {
             adjustment_factor: 0.1,
         }
     }
-    
+
     pub fn update_sampling_rate(&mut self, current_traces_per_second: f64) {
         self.current_traces_per_second = current_traces_per_second;
-        
+
         let ratio = self.current_traces_per_second / self.target_traces_per_second;
-        
+
         if ratio > 1.1 {
             // 超过目标10%，降低采样率
             self.current_sampling_rate *= (1.0 - self.adjustment_factor);
@@ -329,16 +329,16 @@ impl AdaptiveSampler {
             // 低于目标10%，提高采样率
             self.current_sampling_rate *= (1.0 + self.adjustment_factor);
         }
-        
+
         // 限制采样率范围
         self.current_sampling_rate = self.current_sampling_rate
             .clamp(0.001, 1.0);
     }
-    
+
     pub fn should_sample(&self, trace_id: &TraceId) -> bool {
         let hash = self.hash_trace_id(trace_id);
         let threshold = (self.current_sampling_rate * u64::MAX as f64) as u64;
-        
+
         hash < threshold
     }
 }
@@ -373,17 +373,17 @@ impl RuleBasedSampler {
         // 按优先级排序规则
         let mut sorted_rules = self.rules.clone();
         sorted_rules.sort_by_key(|rule| std::cmp::Reverse(rule.priority));
-        
+
         for rule in sorted_rules {
             if self.matches_conditions(span, &rule.conditions) {
                 return self.sample_with_rate(span, rule.sampling_rate);
             }
         }
-        
+
         // 默认不采样
         false
     }
-    
+
     fn matches_conditions(&self, span: &Span, conditions: &[SamplingCondition]) -> bool {
         for condition in conditions {
             if !self.matches_condition(span, condition) {
@@ -392,7 +392,7 @@ impl RuleBasedSampler {
         }
         true
     }
-    
+
     fn matches_condition(&self, span: &Span, condition: &SamplingCondition) -> bool {
         match condition {
             SamplingCondition::ServiceName(service_name) => {
@@ -442,15 +442,15 @@ impl StorageBackend for JaegerStorage {
         }
         Ok(())
     }
-    
+
     async fn query_traces(&self, query: &TraceQuery) -> Result<Vec<Trace>, QueryError> {
         self.client.find_traces(query).await
     }
-    
+
     async fn get_trace(&self, trace_id: &TraceId) -> Result<Option<Trace>, QueryError> {
         self.client.get_trace(trace_id).await
     }
-    
+
     async fn search_spans(&self, query: &SpanQuery) -> Result<Vec<Span>, QueryError> {
         self.client.find_spans(query).await
     }
@@ -470,19 +470,19 @@ impl TraceQueryEngine {
     pub async fn query_traces(&self, query: &TraceQuery) -> Result<Vec<Trace>, QueryError> {
         // 1. 解析查询条件
         let parsed_query = self.parse_query(query)?;
-        
+
         // 2. 使用索引加速查询
         let candidate_traces = self.indexer.find_candidates(&parsed_query).await?;
-        
+
         // 3. 执行精确查询
         let traces = self.storage.query_traces(&parsed_query).await?;
-        
+
         // 4. 聚合结果
         let aggregated_traces = self.aggregator.aggregate_traces(&traces).await?;
-        
+
         Ok(aggregated_traces)
     }
-    
+
     pub async fn analyze_trace_patterns(&self, time_range: TimeRange) -> Result<TraceAnalysis, AnalysisError> {
         // 1. 查询时间范围内的所有追踪
         let query = TraceQuery {
@@ -490,16 +490,16 @@ impl TraceQueryEngine {
             ..Default::default()
         };
         let traces = self.query_traces(&query).await?;
-        
+
         // 2. 分析服务依赖关系
         let service_dependencies = self.analyze_service_dependencies(&traces).await?;
-        
+
         // 3. 分析性能瓶颈
         let performance_bottlenecks = self.analyze_performance_bottlenecks(&traces).await?;
-        
+
         // 4. 分析错误模式
         let error_patterns = self.analyze_error_patterns(&traces).await?;
-        
+
         Ok(TraceAnalysis {
             service_dependencies,
             performance_bottlenecks,
@@ -528,33 +528,33 @@ impl BatchProcessor {
         {
             let mut buffer = self.buffer.lock().unwrap();
             buffer.push(trace);
-            
+
             if buffer.len() >= self.batch_size {
                 let traces = buffer.drain(..).collect::<Vec<_>>();
                 drop(buffer);
-                
+
                 self.flush_traces(traces).await?;
             }
         }
-        
+
         Ok(())
     }
-    
+
     async fn flush_traces(&self, traces: Vec<Trace>) -> Result<(), ProcessingError> {
         self.storage.store_traces(&traces).await?;
         Ok(())
     }
-    
+
     pub async fn start_flush_timer(&self) -> Result<(), ProcessingError> {
         let buffer = self.buffer.clone();
         let storage = self.storage.clone();
         let flush_interval = self.flush_interval;
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(flush_interval);
             loop {
                 interval.tick().await;
-                
+
                 let traces = {
                     let mut buffer = buffer.lock().unwrap();
                     if !buffer.is_empty() {
@@ -563,13 +563,13 @@ impl BatchProcessor {
                         continue;
                     }
                 };
-                
+
                 if let Err(e) = storage.store_traces(&traces).await {
                     eprintln!("Failed to flush traces: {}", e);
                 }
             }
         });
-        
+
         Ok(())
     }
 }
@@ -601,13 +601,13 @@ impl TraceCompressor {
     pub fn compress_traces(&self, traces: &[Trace]) -> Result<Vec<u8>, CompressionError> {
         // 1. 序列化追踪数据
         let serialized = self.serialize_traces(traces)?;
-        
+
         // 2. 压缩数据
         let compressed = self.compress_data(&serialized)?;
-        
+
         Ok(compressed)
     }
-    
+
     fn serialize_traces(&self, traces: &[Trace]) -> Result<Vec<u8>, SerializationError> {
         match self.encoding_format {
             EncodingFormat::Protobuf => {
@@ -626,14 +626,14 @@ impl TraceCompressor {
             }
         }
     }
-    
+
     fn compress_data(&self, data: &[u8]) -> Result<Vec<u8>, CompressionError> {
         match self.compression_algorithm {
             CompressionAlgorithm::Gzip => {
                 use flate2::write::GzEncoder;
                 use flate2::Compression;
                 use std::io::Write;
-                
+
                 let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
                 encoder.write_all(data)?;
                 Ok(encoder.finish()?)
@@ -668,23 +668,23 @@ impl TraceLogCorrelator {
         // 1. 获取追踪数据
         let trace = self.trace_storage.get_trace(trace_id).await?
             .ok_or(CorrelationError::TraceNotFound)?;
-        
+
         // 2. 获取相关日志
         let logs = self.get_related_logs(&trace).await?;
-        
+
         // 3. 执行关联分析
         let correlation_result = self.correlation_engine.correlate(&trace, &logs).await?;
-        
+
         Ok(CorrelatedData {
             trace,
             logs,
             correlation_result,
         })
     }
-    
+
     async fn get_related_logs(&self, trace: &Trace) -> Result<Vec<LogEntry>, LogError> {
         let mut logs = Vec::new();
-        
+
         for span in &trace.spans {
             // 根据span的时间范围和标签查找相关日志
             let log_query = LogQuery {
@@ -694,11 +694,11 @@ impl TraceLogCorrelator {
                 },
                 tags: span.tags.clone(),
             };
-            
+
             let span_logs = self.log_storage.query_logs(&log_query).await?;
             logs.extend(span_logs);
         }
-        
+
         Ok(logs)
     }
 }
@@ -718,23 +718,23 @@ impl TraceMetricCorrelator {
         // 1. 获取追踪数据
         let trace = self.trace_storage.get_trace(trace_id).await?
             .ok_or(CorrelationError::TraceNotFound)?;
-        
+
         // 2. 获取相关指标
         let metrics = self.get_related_metrics(&trace).await?;
-        
+
         // 3. 分析相关性
         let correlation_analysis = self.correlation_analyzer.analyze_correlation(&trace, &metrics).await?;
-        
+
         Ok(MetricCorrelation {
             trace,
             metrics,
             correlation_analysis,
         })
     }
-    
+
     async fn get_related_metrics(&self, trace: &Trace) -> Result<Vec<Metric>, MetricError> {
         let mut metrics = Vec::new();
-        
+
         for span in &trace.spans {
             // 根据span的服务名和时间范围查找相关指标
             if let Some(service_name) = span.tags.get("service.name") {
@@ -745,12 +745,12 @@ impl TraceMetricCorrelator {
                         end: span.start_time + span.duration,
                     },
                 };
-                
+
                 let span_metrics = self.metric_storage.query_metrics(&metric_query).await?;
                 metrics.extend(span_metrics);
             }
         }
-        
+
         Ok(metrics)
     }
 }
@@ -771,13 +771,13 @@ impl TraceVisualizer {
     pub async fn visualize_trace(&self, trace: &Trace) -> Result<TraceVisualization, VisualizationError> {
         // 1. 构建追踪图
         let trace_graph = self.graph_builder.build_trace_graph(trace).await?;
-        
+
         // 2. 构建时间线
         let timeline = self.timeline_builder.build_timeline(trace).await?;
-        
+
         // 3. 分析服务依赖
         let dependencies = self.dependency_analyzer.analyze_dependencies(trace).await?;
-        
+
         Ok(TraceVisualization {
             trace_graph,
             timeline,
@@ -818,7 +818,7 @@ impl ServiceDependencyGraph {
     pub fn from_traces(traces: &[Trace]) -> Self {
         let mut nodes = HashMap::new();
         let mut edges = Vec::new();
-        
+
         for trace in traces {
             for span in &trace.spans {
                 // 更新服务节点
@@ -832,13 +832,13 @@ impl ServiceDependencyGraph {
                         p95_duration: Duration::zero(),
                         p99_duration: Duration::zero(),
                     });
-                    
+
                     node.call_count += 1;
                     if span.tags.get("error").is_some() {
                         node.error_count += 1;
                     }
                 }
-                
+
                 // 更新服务边
                 if let (Some(from_service), Some(to_service)) = (
                     span.tags.get("service.name"),
@@ -863,7 +863,7 @@ impl ServiceDependencyGraph {
                 }
             }
         }
-        
+
         Self { nodes, edges }
     }
 }
@@ -888,16 +888,16 @@ impl MicroserviceTraceAnalyzer {
             ..Default::default()
         };
         let traces = self.trace_engine.query_traces(&query).await?;
-        
+
         // 2. 分析服务性能
         let service_performance = self.performance_analyzer.analyze_service_performance(&traces).await?;
-        
+
         // 3. 检测性能瓶颈
         let bottlenecks = self.bottleneck_detector.detect_bottlenecks(&traces).await?;
-        
+
         // 4. 分析服务依赖关系
         let dependencies = self.analyze_service_dependencies(&traces).await?;
-        
+
         Ok(MicroserviceAnalysis {
             service_performance,
             bottlenecks,
@@ -923,16 +923,16 @@ impl ErrorRootCauseAnalyzer {
         // 1. 获取错误追踪
         let error_trace = self.trace_engine.get_trace(error_trace_id).await?
             .ok_or(AnalysisError::TraceNotFound)?;
-        
+
         // 2. 分类错误类型
         let error_classification = self.error_classifier.classify_error(&error_trace).await?;
-        
+
         // 3. 分析因果关系
         let causal_analysis = self.causal_analyzer.analyze_causality(&error_trace).await?;
-        
+
         // 4. 查找相似错误
         let similar_errors = self.find_similar_errors(&error_trace).await?;
-        
+
         Ok(RootCauseAnalysis {
             error_trace,
             error_classification,
@@ -968,4 +968,4 @@ impl ErrorRootCauseAnalyzer {
 
 ---
 
-*本文档深入分析了分布式追踪系统的设计原理和实现技术，为构建高性能的可观测性系统提供指导。*
+_本文档深入分析了分布式追踪系统的设计原理和实现技术，为构建高性能的可观测性系统提供指导。_

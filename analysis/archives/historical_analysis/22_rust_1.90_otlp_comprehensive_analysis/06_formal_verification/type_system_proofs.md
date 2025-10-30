@@ -650,8 +650,8 @@ fn verify_trace_id_consistency() {
 
 **参考文献**:
 
-1. Jung, R., et al. (2017). "RustBelt: Securing the Foundations of the Rust Programming Language." *POPL 2017*.
-2. Astrauskas, V., et al. (2019). "Leveraging Rust Types for Modular Specification and Verification." *OOPSLA 2019*.
+1. Jung, R., et al. (2017). "RustBelt: Securing the Foundations of the Rust Programming Language." _POPL 2017_.
+2. Astrauskas, V., et al. (2019). "Leveraging Rust Types for Modular Specification and Verification." _OOPSLA 2019_.
 3. AWS (2022). "Kani Rust Verifier." <https://github.com/model-checking/kani>
 
 ---

@@ -75,7 +75,7 @@ import (
     "context"
     "fmt"
     "sync"
-    
+
     "go.opentelemetry.io/collector/component"
     "go.opentelemetry.io/collector/config"
     "go.opentelemetry.io/collector/consumer"
@@ -90,7 +90,7 @@ type OtlpCollector struct {
     processors map[component.ID]component.Processor
     exporters  map[component.ID]component.Exporter
     pipelines  map[component.ID]*Pipeline
-    
+
     mu sync.RWMutex
 }
 
@@ -125,70 +125,70 @@ func NewOtlpCollector(config *Config) *OtlpCollector {
 func (c *OtlpCollector) Start(ctx context.Context) error {
     c.mu.Lock()
     defer c.mu.Unlock()
-    
+
     // 启动接收器
     for id, receiver := range c.receivers {
         if err := receiver.Start(ctx, c); err != nil {
             return fmt.Errorf("failed to start receiver %s: %w", id, err)
         }
     }
-    
+
     // 启动处理器
     for id, processor := range c.processors {
         if err := processor.Start(ctx, c); err != nil {
             return fmt.Errorf("failed to start processor %s: %w", id, err)
         }
     }
-    
+
     // 启动导出器
     for id, exporter := range c.exporters {
         if err := exporter.Start(ctx, c); err != nil {
             return fmt.Errorf("failed to start exporter %s: %w", id, err)
         }
     }
-    
+
     // 启动管道
     for id, pipeline := range c.pipelines {
         if err := pipeline.Start(ctx); err != nil {
             return fmt.Errorf("failed to start pipeline %s: %w", id, err)
         }
     }
-    
+
     return nil
 }
 
 func (c *OtlpCollector) Shutdown(ctx context.Context) error {
     c.mu.Lock()
     defer c.mu.Unlock()
-    
+
     // 关闭管道
     for id, pipeline := range c.pipelines {
         if err := pipeline.Shutdown(ctx); err != nil {
             return fmt.Errorf("failed to shutdown pipeline %s: %w", id, err)
         }
     }
-    
+
     // 关闭导出器
     for id, exporter := range c.exporters {
         if err := exporter.Shutdown(ctx); err != nil {
             return fmt.Errorf("failed to shutdown exporter %s: %w", id, err)
         }
     }
-    
+
     // 关闭处理器
     for id, processor := range c.processors {
         if err := processor.Shutdown(ctx); err != nil {
             return fmt.Errorf("failed to shutdown processor %s: %w", id, err)
         }
     }
-    
+
     // 关闭接收器
     for id, receiver := range c.receivers {
         if err := receiver.Shutdown(ctx); err != nil {
             return fmt.Errorf("failed to shutdown receiver %s: %w", id, err)
         }
     }
-    
+
     return nil
 }
 ```
@@ -201,7 +201,7 @@ package pipeline
 import (
     "context"
     "sync"
-    
+
     "go.opentelemetry.io/collector/consumer"
     "go.opentelemetry.io/collector/pdata/pmetric"
     "go.opentelemetry.io/collector/pdata/ptrace"
@@ -212,22 +212,22 @@ type Pipeline struct {
     receivers  []consumer.Metrics
     processors []consumer.Metrics
     exporters  []consumer.Metrics
-    
+
     traceReceivers  []consumer.Traces
     traceProcessors []consumer.Traces
     traceExporters  []consumer.Traces
-    
+
     logReceivers  []consumer.Logs
     logProcessors []consumer.Logs
     logExporters  []consumer.Logs
-    
+
     mu sync.RWMutex
 }
 
 func (p *Pipeline) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
     p.mu.RLock()
     defer p.mu.RUnlock()
-    
+
     // 通过处理器链处理指标
     current := md
     for _, processor := range p.processors {
@@ -235,21 +235,21 @@ func (p *Pipeline) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error
             return err
         }
     }
-    
+
     // 发送到导出器
     for _, exporter := range p.exporters {
         if err := exporter.ConsumeMetrics(ctx, current); err != nil {
             return err
         }
     }
-    
+
     return nil
 }
 
 func (p *Pipeline) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
     p.mu.RLock()
     defer p.mu.RUnlock()
-    
+
     // 通过处理器链处理追踪
     current := td
     for _, processor := range p.traceProcessors {
@@ -257,21 +257,21 @@ func (p *Pipeline) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
             return err
         }
     }
-    
+
     // 发送到导出器
     for _, exporter := range p.traceExporters {
         if err := exporter.ConsumeTraces(ctx, current); err != nil {
             return err
         }
     }
-    
+
     return nil
 }
 
 func (p *Pipeline) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
     p.mu.RLock()
     defer p.mu.RUnlock()
-    
+
     // 通过处理器链处理日志
     current := ld
     for _, processor := range p.logProcessors {
@@ -279,14 +279,14 @@ func (p *Pipeline) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
             return err
         }
     }
-    
+
     // 发送到导出器
     for _, exporter := range p.logExporters {
         if err := exporter.ConsumeLogs(ctx, current); err != nil {
             return err
         }
     }
-    
+
     return nil
 }
 ```
@@ -359,7 +359,7 @@ import (
     "context"
     "sync"
     "time"
-    
+
     "go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -390,20 +390,20 @@ func (bp *BatchProcessor) Start(ctx context.Context) error {
 func (bp *BatchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
     bp.mu.Lock()
     defer bp.mu.Unlock()
-    
+
     bp.buffer = append(bp.buffer, md)
-    
+
     if len(bp.buffer) >= bp.batchSize {
         return bp.flush(ctx)
     }
-    
+
     return nil
 }
 
 func (bp *BatchProcessor) flushLoop(ctx context.Context) {
     ticker := time.NewTicker(bp.flushInterval)
     defer ticker.Stop()
-    
+
     for {
         select {
         case <-ticker.C:
@@ -422,19 +422,19 @@ func (bp *BatchProcessor) flush(ctx context.Context) error {
     if len(bp.buffer) == 0 {
         return nil
     }
-    
+
     // 合并所有指标
     combined := pmetric.NewMetrics()
     for _, md := range bp.buffer {
         md.ResourceMetrics().MoveAndAppendTo(combined.ResourceMetrics())
     }
-    
+
     // 发送到消费者
     err := bp.consumer.ConsumeMetrics(ctx, combined)
-    
+
     // 清空缓冲区
     bp.buffer = bp.buffer[:0]
-    
+
     return err
 }
 ```
@@ -449,7 +449,7 @@ package config
 import (
     "fmt"
     "time"
-    
+
     "go.opentelemetry.io/collector/component"
     "go.opentelemetry.io/collector/config/configgrpc"
     "go.opentelemetry.io/collector/config/confighttp"
@@ -512,25 +512,25 @@ func (cfg *Config) Validate() error {
     if err := cfg.Service.Validate(); err != nil {
         return fmt.Errorf("service config validation failed: %w", err)
     }
-    
+
     for id, receiver := range cfg.Receivers {
         if err := receiver.Validate(); err != nil {
             return fmt.Errorf("receiver %s validation failed: %w", id, err)
         }
     }
-    
+
     for id, processor := range cfg.Processors {
         if err := processor.Validate(); err != nil {
             return fmt.Errorf("processor %s validation failed: %w", id, err)
         }
     }
-    
+
     for id, exporter := range cfg.Exporters {
         if err := exporter.Validate(); err != nil {
             return fmt.Errorf("exporter %s validation failed: %w", id, err)
         }
     }
-    
+
     return nil
 }
 
@@ -538,19 +538,19 @@ func (cfg *OTLPReceiverConfig) Validate() error {
     if cfg.GRPC == nil && cfg.HTTP == nil {
         return fmt.Errorf("either grpc or http must be configured")
     }
-    
+
     if cfg.GRPC != nil {
         if err := cfg.GRPC.Validate(); err != nil {
             return fmt.Errorf("grpc config validation failed: %w", err)
         }
     }
-    
+
     if cfg.HTTP != nil {
         if err := cfg.HTTP.Validate(); err != nil {
             return fmt.Errorf("http config validation failed: %w", err)
         }
     }
-    
+
     return nil
 }
 
@@ -558,15 +558,15 @@ func (cfg *BatchProcessorConfig) Validate() error {
     if cfg.Timeout <= 0 {
         return fmt.Errorf("timeout must be positive")
     }
-    
+
     if cfg.SendBatchSize == 0 {
         return fmt.Errorf("send_batch_size must be positive")
     }
-    
+
     if cfg.SendBatchMaxSize > 0 && cfg.SendBatchSize > cfg.SendBatchMaxSize {
         return fmt.Errorf("send_batch_size must be less than or equal to send_batch_max_size")
     }
-    
+
     return nil
 }
 ```
@@ -582,7 +582,7 @@ import (
     "context"
     "testing"
     "time"
-    
+
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     "go.opentelemetry.io/collector/pdata/pmetric"
@@ -599,12 +599,12 @@ func TestOtlpCollector_Start(t *testing.T) {
             Pipelines: make(map[component.ID]PipelineConfig),
         },
     }
-    
+
     collector := NewOtlpCollector(config)
-    
+
     ctx := context.Background()
     err := collector.Start(ctx)
-    
+
     assert.NoError(t, err)
     defer collector.Shutdown(ctx)
 }
@@ -612,20 +612,20 @@ func TestOtlpCollector_Start(t *testing.T) {
 func TestBatchProcessor_ConsumeMetrics(t *testing.T) {
     consumer := &mockMetricsConsumer{}
     processor := NewBatchProcessor(2, 100*time.Millisecond, consumer)
-    
+
     ctx := context.Background()
     err := processor.Start(ctx)
     require.NoError(t, err)
     defer processor.Shutdown(ctx)
-    
+
     // 发送单个指标
     md := pmetric.NewMetrics()
     err = processor.ConsumeMetrics(ctx, md)
     assert.NoError(t, err)
-    
+
     // 等待批量处理
     time.Sleep(150 * time.Millisecond)
-    
+
     assert.Equal(t, 1, consumer.ConsumeMetricsCallCount())
 }
 
@@ -657,7 +657,7 @@ import (
     "context"
     "testing"
     "time"
-    
+
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     "go.opentelemetry.io/collector/component"
@@ -667,24 +667,24 @@ import (
 func TestEndToEndFlow(t *testing.T) {
     // 创建测试配置
     config := createTestConfig()
-    
+
     // 创建收集器
     collector := NewOtlpCollector(config)
-    
+
     // 启动收集器
     ctx := context.Background()
     err := collector.Start(ctx)
     require.NoError(t, err)
     defer collector.Shutdown(ctx)
-    
+
     // 发送测试数据
     testData := createTestMetrics()
     err = collector.ConsumeMetrics(ctx, testData)
     assert.NoError(t, err)
-    
+
     // 等待处理完成
     time.Sleep(1 * time.Second)
-    
+
     // 验证结果
     assertMetricsExported(t)
 }
@@ -843,7 +843,7 @@ var (
         },
         []string{"receiver", "type"},
     )
-    
+
     metricsProcessed = promauto.NewCounterVec(
         prometheus.CounterOpts{
             Name: "otlp_collector_metrics_processed_total",
@@ -851,7 +851,7 @@ var (
         },
         []string{"processor", "type"},
     )
-    
+
     metricsExported = promauto.NewCounterVec(
         prometheus.CounterOpts{
             Name: "otlp_collector_metrics_exported_total",
@@ -859,7 +859,7 @@ var (
         },
         []string{"exporter", "type"},
     )
-    
+
     processingDuration = promauto.NewHistogramVec(
         prometheus.HistogramOpts{
             Name: "otlp_collector_processing_duration_seconds",
@@ -891,20 +891,20 @@ type Component interface {
 
 func (hc *HealthChecker) CheckHealth(ctx context.Context) map[string]error {
     results := make(map[string]error)
-    
+
     for name, component := range hc.components {
         ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
         defer cancel()
-        
+
         results[name] = component.HealthCheck(ctx)
     }
-    
+
     return results
 }
 
 func (hc *HealthChecker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     results := hc.CheckHealth(r.Context())
-    
+
     status := http.StatusOK
     for _, err := range results {
         if err != nil {
@@ -912,9 +912,9 @@ func (hc *HealthChecker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
             break
         }
     }
-    
+
     w.WriteHeader(status)
-    
+
     if status == http.StatusOK {
         w.Write([]byte("OK"))
     } else {
@@ -977,7 +977,7 @@ import (
 
 func NewLogger(level string) (*zap.Logger, error) {
     config := zap.NewProductionConfig()
-    
+
     switch level {
     case "debug":
         config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
@@ -990,7 +990,7 @@ func NewLogger(level string) (*zap.Logger, error) {
     default:
         config.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
     }
-    
+
     return config.Build()
 }
 
@@ -1001,4 +1001,4 @@ func WithComponent(logger *zap.Logger, component string) *zap.Logger {
 
 ---
 
-*本文档提供了OTLP系统在Go语言中的完整实现指南，包括架构设计、核心组件、性能优化、测试策略和部署运维等各个方面。*
+_本文档提供了OTLP系统在Go语言中的完整实现指南，包括架构设计、核心组件、性能优化、测试策略和部署运维等各个方面。_

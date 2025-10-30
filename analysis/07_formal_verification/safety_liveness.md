@@ -58,7 +58,7 @@ StateSafety ==
         /\ nodeStates[n].status \in {"active", "inactive", "failed"}
         /\ nodeStates[n].sequenceNumber >= 0
         /\ nodeStates[n].lastHeartbeat >= 0
-        /\ (nodeStates[n].status = "active" => 
+        /\ (nodeStates[n].status = "active" =>
             nodeStates[n].lastHeartbeat + HeartbeatTimeout >= TLCGet("level"))
 ```
 
@@ -111,10 +111,10 @@ Proof.
   intros s H_invariant.
   unfold data_safety.
   intros msg H_msg_in H_committed.
-  
+
   (* 基于系统不变式进行证明 *)
   destruct H_invariant as [H_data_integrity H_other_props].
-  
+
   (* 证明消息源和目标的合法性 *)
   split.
   - apply H_data_integrity. exact H_msg_in. exact H_committed.
@@ -150,10 +150,10 @@ Proof.
   intros s H_invariant.
   unfold state_safety.
   intros n H_n_in.
-  
+
   (* 基于节点状态不变式进行证明 *)
   destruct H_invariant as [H_data_integrity H_node_integrity H_other_props].
-  
+
   (* 证明节点状态的合法性 *)
   split.
   - apply H_node_integrity. exact H_n_in.
@@ -187,10 +187,10 @@ Proof.
   intros s H_invariant.
   unfold message_delivery_safety.
   intros msg H_msg_in H_committed.
-  
+
   (* 基于消息处理协议进行证明 *)
   destruct H_invariant as [H_data_integrity H_node_integrity H_message_processing H_other_props].
-  
+
   (* 证明消息传递的安全性 *)
   split.
   - apply H_data_integrity. exact H_msg_in. exact H_committed.
@@ -279,7 +279,7 @@ proof -
     "message_delivery_safety s" and
     "consistency_safety s"
     by (simp_all add: system_invariant_def)
-  
+
   thus ?thesis by (simp add: safety_properties_def)
 qed
 ```
@@ -308,7 +308,7 @@ SystemResponsiveness ==
     \A n \in nodes :
         /\ nodeStates[n].status = "active"
         /\ messageQueues[n] /= <<>>
-        => <> (\E msg \in messages : 
+        => <> (\E msg \in messages :
             /\ msg.destination = n
             /\ msg.id \in globalState.committedMessages)
 ```
@@ -330,7 +330,7 @@ SystemProgressLiveness ==
     \A n \in nodes :
         /\ nodeStates[n].status = "active"
         /\ messageQueues[n] /= <<>>
-        => <> (messageQueues[n] = <<>> \/ 
+        => <> (messageQueues[n] = <<>> \/
                \E msg \in messages : msg.id \in globalState.committedMessages)
 ```
 
@@ -357,7 +357,7 @@ Proof.
   intros s H_invariant H_fairness.
   unfold message_delivery_liveness.
   intros msg H_msg_in H_dest_in H_dest_active H_timeout.
-  
+
   (* 基于公平性假设和系统进展性质 *)
   apply eventually_impl.
   - apply H_fairness.
@@ -375,7 +375,7 @@ Definition system_responsiveness (s : SystemState) : Prop :=
     In n (system_nodes s) ->
     node_status (system_node_states s n) = Active ->
     system_message_queues s n <> [] ->
-    eventually (fun s' => 
+    eventually (fun s' =>
       exists (msg : Message),
         In msg (system_messages s') /\
         msg_destination msg = n /\
@@ -392,7 +392,7 @@ Proof.
   intros s H_invariant H_fairness.
   unfold system_responsiveness.
   intros n H_n_in H_n_active H_queue_nonempty.
-  
+
   (* 基于消息处理活性和公平性进行证明 *)
   apply eventually_impl.
   - apply H_fairness.
@@ -422,7 +422,7 @@ Proof.
   intros s H_invariant H_fairness.
   unfold fault_recovery_liveness.
   intros failed_node H_failed_in H_failed_status H_timeout_exceeded.
-  
+
   (* 基于故障恢复机制和公平性进行证明 *)
   apply eventually_impl.
   - apply H_fairness.
@@ -468,7 +468,7 @@ theorem message_delivery_liveness_guaranteed:
 proof -
   from assms(1) have "system_invariant s" by simp
   from assms(2) have "fair_execution" by simp
-  
+
   show ?thesis
   proof (simp add: message_delivery_liveness_def, intro allI impI)
     fix msg
@@ -476,10 +476,10 @@ proof -
       and "msg_destination msg ∈ system_nodes s"
       and "node_status (system_node_states s (msg_destination msg)) = Active"
       and "msg_timestamp msg + message_timeout ≤ current_time"
-    
+
     from fair_execution have "eventually (λs'. msg_id msg ∈ global_committed_messages (system_global_state s'))"
       by (rule fair_execution_guarantees_message_delivery)
-    
+
     thus "eventually (λs'. msg_id msg ∈ global_committed_messages (system_global_state s'))" by simp
   qed
 qed
@@ -491,19 +491,19 @@ theorem system_responsiveness_guaranteed:
 proof -
   from assms(1) have "system_invariant s" by simp
   from assms(2) have "fair_execution" by simp
-  
+
   show ?thesis
   proof (simp add: system_responsiveness_def, intro allI impI)
     fix n
     assume "n ∈ system_nodes s"
       and "node_status (system_node_states s n) = Active"
       and "system_message_queues s n ≠ []"
-    
+
     from fair_execution have "eventually (λs'. ∃msg ∈ system_messages s'.
       msg_destination msg = n ∧
       msg_id msg ∈ global_committed_messages (system_global_state s'))"
       by (rule fair_execution_guarantees_responsiveness)
-    
+
     thus "eventually (λs'. ∃msg ∈ system_messages s'.
       msg_destination msg = n ∧
       msg_id msg ∈ global_committed_messages (system_global_state s'))" by simp
@@ -524,19 +524,19 @@ theorem liveness_properties_eventually_hold:
 proof -
   from assms(1) have "system_invariant s" by simp
   from assms(2) have "fair_execution" by simp
-  
+
   have "eventually message_delivery_liveness"
     by (rule message_delivery_liveness_guaranteed)
-  
+
   have "eventually system_responsiveness"
     by (rule system_responsiveness_guaranteed)
-  
+
   have "eventually fault_recovery_liveness"
     by (rule fault_recovery_liveness_guaranteed)
-  
+
   have "eventually system_progress_liveness"
     by (rule system_progress_liveness_guaranteed)
-  
+
   thus ?thesis
     by (simp add: liveness_properties_def eventually_conj)
 qed
@@ -558,7 +558,7 @@ Theorem safety_liveness_tradeoff :
 
 Proof.
   intros s H_invariant H_fairness H_safety H_liveness.
-  
+
   (* 证明在安全性和活性都满足的情况下，系统行为是最优的 *)
   apply optimal_behavior_characterization.
   - exact H_invariant.
@@ -576,7 +576,7 @@ Theorem safety_liveness_interdependence :
 
 Proof.
   intros s H_invariant H_interdependence.
-  
+
   (* 证明安全性和活性的相互依赖关系 *)
   apply correctness_characterization.
   - exact H_invariant.
@@ -597,23 +597,23 @@ pub struct SafetyLivenessManager {
 
 impl SafetyLivenessManager {
     pub async fn ensure_safety_and_liveness(
-        &mut self, 
+        &mut self,
         system_state: &SystemState
     ) -> Result<SafetyLivenessResult, ManagementError> {
         // 监控安全性
         let safety_status = self.safety_monitor.check_safety_properties(system_state).await?;
-        
+
         // 监控活性
         let liveness_status = self.liveness_monitor.check_liveness_properties(system_state).await?;
-        
+
         // 分析安全性与活性的权衡
         let tradeoff_analysis = self.tradeoff_controller
             .analyze_safety_liveness_tradeoff(&safety_status, &liveness_status).await?;
-        
+
         // 自适应调整
         let adaptation_result = self.adaptation_engine
             .adapt_system_behavior(&tradeoff_analysis).await?;
-        
+
         Ok(SafetyLivenessResult {
             safety_status,
             liveness_status,
@@ -621,23 +621,23 @@ impl SafetyLivenessManager {
             adaptation_result,
         })
     }
-    
+
     pub async fn handle_safety_liveness_conflict(
-        &mut self, 
+        &mut self,
         conflict: &SafetyLivenessConflict
     ) -> Result<ConflictResolution, ConflictError> {
         // 分析冲突类型
         let conflict_type = self.analyze_conflict_type(conflict).await?;
-        
+
         // 选择解决策略
         let resolution_strategy = self.select_resolution_strategy(&conflict_type).await?;
-        
+
         // 执行解决策略
         let resolution = self.execute_resolution_strategy(&resolution_strategy, conflict).await?;
-        
+
         // 验证解决效果
         self.verify_resolution_effectiveness(&resolution).await?;
-        
+
         Ok(resolution)
     }
 }

@@ -154,7 +154,7 @@ impl AIEngine {
         let anomalies = self.anomaly_detector.detect(data).await?;
         Ok(anomalies)
     }
-    
+
     pub async fn predict_future(&self, data: &TimeSeriesData) -> Result<Forecast, AIError> {
         // 使用时间序列预测模型
         let forecast = self.prediction_engine.predict(data).await?;
@@ -487,4 +487,4 @@ OTLP项目的技术路线图体现了从基础功能到前沿技术的完整演�
 
 ---
 
-*本文档为OTLP项目的技术路线图，为项目的长期发展提供战略指导和技术方向。*
+_本文档为OTLP项目的技术路线图，为项目的长期发展提供战略指导和技术方向。_

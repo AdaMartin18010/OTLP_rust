@@ -143,7 +143,7 @@ pub async fn send_telemetry<T: TelemetryDataTrait + Send + 'static>(
 
 **核心内容**:
 
-- ✅ Resource 语义约定 (完整的 service.*/ host.* / process.*)
+- ✅ Resource 语义约定 (完整的 service._/ host._ / process.*)
 - ✅ Trace 语义 (TraceID, SpanID, TraceState, SpanKind)
 - ✅ Metric 语义 (Gauge, Counter, Histogram, Summary)
 - ✅ Log 语义 (SeverityNumber, TraceContext 关联)
@@ -606,8 +606,8 @@ Part 2 详细文档:                  2,753 行
 
 **完成时间**: 2025年10月3日 18:30
 
-**项目座右铭**: *"From Theory to Practice, From Formal to Pragmatic"*  
-**项目核心**: *"零拷贝, 零开销, 零妥协"*
+**项目座右铭**: _"From Theory to Practice, From Formal to Pragmatic"_  
+**项目核心**: _"零拷贝, 零开销, 零妥协"_
 
 ---
 

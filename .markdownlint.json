@@ -1,0 +1,135 @@
+{
+  "default": true,
+  "// ===== 文档结构 =====": "",
+  "MD001": true,
+  "heading-increment": true,
+  "MD003": {
+    "style": "atx"
+  },
+  "heading-style": {
+    "style": "atx"
+  },
+  "MD022": true,
+  "blanks-around-headings": true,
+  "MD023": true,
+  "heading-start-left": true,
+  "MD024": {
+    "siblings_only": true
+  },
+  "no-duplicate-heading": {
+    "siblings_only": true
+  },
+  "MD025": true,
+  "single-title": true,
+  "MD026": {
+    "punctuation": ".,;:!。，；：！"
+  },
+  "no-trailing-punctuation": {
+    "punctuation": ".,;:!。，；：！"
+  },
+  "MD041": true,
+  "first-line-heading": true,
+  "// ===== 列表 =====": "",
+  "MD004": {
+    "style": "dash"
+  },
+  "ul-style": {
+    "style": "dash"
+  },
+  "MD005": true,
+  "list-indent": true,
+  "MD007": {
+    "indent": 2
+  },
+  "ul-indent": {
+    "indent": 2
+  },
+  "MD029": {
+    "style": "ordered"
+  },
+  "ol-prefix": {
+    "style": "ordered"
+  },
+  "MD030": true,
+  "list-marker-space": true,
+  "MD032": true,
+  "blanks-around-lists": true,
+  "// ===== 空行 =====": "",
+  "MD012": {
+    "maximum": 2
+  },
+  "no-multiple-blanks": {
+    "maximum": 2
+  },
+  "MD047": true,
+  "single-trailing-newline": true,
+  "// ===== 代码块 =====": "",
+  "MD031": true,
+  "blanks-around-fences": true,
+  "MD040": true,
+  "fenced-code-language": true,
+  "MD046": {
+    "style": "fenced"
+  },
+  "code-block-style": {
+    "style": "fenced"
+  },
+  "MD048": {
+    "style": "backtick"
+  },
+  "code-fence-style": {
+    "style": "backtick"
+  },
+  "// ===== 行长度和空格 =====": "",
+  "MD013": false,
+  "line-length": false,
+  "MD009": {
+    "br_spaces": 2
+  },
+  "no-trailing-spaces": {
+    "br_spaces": 2
+  },
+  "MD010": true,
+  "no-hard-tabs": true,
+  "MD027": true,
+  "no-multiple-space-blockquote": true,
+  "MD028": true,
+  "no-blanks-blockquote": true,
+  "// ===== HTML =====": "",
+  "MD033": false,
+  "no-inline-html": false,
+  "// ===== 链接和图片 =====": "",
+  "MD034": true,
+  "no-bare-urls": true,
+  "MD042": true,
+  "no-empty-links": true,
+  "MD045": true,
+  "no-alt-text": true,
+  "MD051": true,
+  "link-fragments": true,
+  "MD052": {
+    "reference_links_images": "full_validation"
+  },
+  "reference-links-images": {
+    "reference_links_images": "full_validation"
+  },
+  "MD053": true,
+  "link-image-reference-definitions": true,
+  "// ===== 强调 =====": "",
+  "MD036": true,
+  "no-emphasis-as-heading": true,
+  "MD037": true,
+  "no-space-in-emphasis": true,
+  "MD049": {
+    "style": "underscore"
+  },
+  "emphasis-style": {
+    "style": "underscore"
+  },
+  "MD050": {
+    "style": "asterisk"
+  },
+  "strong-style": {
+    "style": "asterisk"
+  }
+}

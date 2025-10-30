@@ -52,7 +52,7 @@
 
 - p 是原子命题
 - Xφ: 下一时刻 φ 为真
-- Fφ: 最终 φ 为真  
+- Fφ: 最终 φ 为真
 - Gφ: 始终 φ 为真
 - φ₁ U φ₂: φ₁ 直到 φ₂ 为真
 
@@ -153,7 +153,7 @@ EXTENDS Naturals, Sequences, TLC
 
 CONSTANTS Services, Messages, Timeout
 
-VARIABLES 
+VARIABLES
     \* 系统状态
     messages,           \* 消息队列
     delivered,          \* 已交付消息
@@ -204,7 +204,7 @@ Spec == Init /\ [][Next]_<<messages, delivered, acknowledged, timers, connection
 ```tla
 // 安全性属性
 Safety ==
-    /\ \A s \in Services : 
+    /\ \A s \in Services :
         \A msg \in delivered[s] : msg \in acknowledged[s]
     /\ \A s \in Services :
         Len(messages[s]) + Len(delivered[s]) <= MaxMessages
@@ -218,7 +218,7 @@ Liveness ==
 
 // 公平性属性
 Fairness ==
-    /\ \A s \in Services : 
+    /\ \A s \in Services :
         [](<> (connections[s] = Connected))
     /\ \A s \in Services :
         [](<> (Len(messages[s]) > 0 => <> DeliverMessage(s)))
@@ -324,7 +324,7 @@ record agent_state =
   timer :: nat
 
 definition send_message :: "agent_state ⇒ message ⇒ agent_state" where
-"send_message s msg = (if connection s then 
+"send_message s msg = (if connection s then
   s⦇messages := msg # messages s⦈ else s)"
 
 definition deliver_message :: "agent_state ⇒ message ⇒ agent_state option" where
@@ -337,7 +337,7 @@ definition acknowledge_message :: "agent_state ⇒ message ⇒ agent_state" wher
 
 (* 一致性属性 *)
 definition consistency :: "agent_state ⇒ bool" where
-"consistency s ≡ 
+"consistency s ≡
   (∀msg. msg ∈ set (delivered s) ⟶ msg ∈ set (acknowledged s)) ∧
   (length (messages s) + length (delivered s) ≤ 1000)"
 
@@ -354,9 +354,9 @@ qed
 
 (* 最终一致性定理 *)
 theorem eventual_consistency:
-  "∀s msg. msg ∈ set (messages s) ⟶ 
-   (∃s'. deliver_message s msg = Some s' ∧ 
-         msg ∈ set (delivered s') ∧ 
+  "∀s msg. msg ∈ set (messages s) ⟶
+   (∃s'. deliver_message s msg = Some s' ∧
+         msg ∈ set (delivered s') ∧
          msg ∈ set (acknowledged s'))"
   by (auto simp: deliver_message_def acknowledge_message_def)
 
@@ -373,7 +373,7 @@ EXTENDS Naturals, RealTime
 
 CONSTANTS MaxLatency, ProcessingTime
 
-VARIABLES 
+VARIABLES
     message_timestamps,    \* 消息时间戳
     processing_times,      \* 处理时间
     end_to_end_latency     \* 端到端延迟
@@ -386,7 +386,7 @@ PerformanceTypeOK ==
 ProcessMessage(msg) ==
     /\ msg \in DOMAIN message_timestamps
     /\ processing_times' = [processing_times EXCEPT ![msg] = @ + ProcessingTime]
-    /\ end_to_end_latency' = [end_to_end_latency EXCEPT ![msg] = 
+    /\ end_to_end_latency' = [end_to_end_latency EXCEPT ![msg] =
         @ + (processing_times'[msg] - message_timestamps[msg])]
     /\ UNCHANGED <<message_timestamps>>
 
@@ -398,7 +398,7 @@ LatencyBound ==
 (* 吞吐量属性 *)
 ThroughputBound ==
     \A t \in 0..100 :
-        Cardinality({msg \in Messages : 
+        Cardinality({msg \in Messages :
             message_timestamps[msg] <= t + ProcessingTime /\
             processing_times[msg] > t}) <= MaxThroughput
 ```
@@ -426,12 +426,12 @@ impl PerformanceValidator {
             processing_times: HashMap::new(),
         }
     }
-    
+
     pub fn validate_latency(&self, msg_id: MessageId) -> Result<(), ValidationError> {
         if let Some(timestamp) = self.message_timestamps.get(&msg_id) {
             if let Some(processing_time) = self.processing_times.get(&msg_id) {
                 let end_to_end_latency = timestamp.elapsed();
-                
+
                 if end_to_end_latency > self.max_latency {
                     return Err(ValidationError::LatencyExceeded {
                         actual: end_to_end_latency,
@@ -440,28 +440,28 @@ impl PerformanceValidator {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
+
     pub fn validate_throughput(&self, time_window: Duration) -> Result<(), ValidationError> {
         let now = Instant::now();
         let window_start = now - time_window;
-        
+
         let messages_in_window = self.message_timestamps
             .values()
             .filter(|&&timestamp| timestamp >= window_start)
             .count() as u64;
-        
+
         let expected_max = (time_window.as_secs() * self.max_throughput) / 1;
-        
+
         if messages_in_window > expected_max {
             return Err(ValidationError::ThroughputExceeded {
                 actual: messages_in_window,
                 limit: expected_max,
             });
         }
-        
+
         Ok(())
     }
 }
@@ -477,7 +477,7 @@ EXTENDS Naturals, FiniteSets
 
 CONSTANTS Agents, Resources, Permissions
 
-VARIABLES 
+VARIABLES
     authenticated_agents,     \* 已认证代理
     agent_permissions,        \* 代理权限
     access_attempts,          \* 访问尝试
@@ -538,46 +538,46 @@ impl IntegrityVerifier {
             signatures: HashMap::new(),
         }
     }
-    
-    pub fn verify_message_integrity(&self, 
-                                   msg: &Message, 
+
+    pub fn verify_message_integrity(&self,
+                                   msg: &Message,
                                    expected_checksum: &str) -> Result<(), IntegrityError> {
         let computed_checksum = self.compute_checksum(msg);
-        
+
         if computed_checksum != expected_checksum {
             return Err(IntegrityError::ChecksumMismatch {
                 computed: computed_checksum,
                 expected: expected_checksum.to_string(),
             });
         }
-        
+
         Ok(())
     }
-    
-    pub fn verify_digital_signature(&self, 
-                                   msg: &Message, 
-                                   signature: &str, 
+
+    pub fn verify_digital_signature(&self,
+                                   msg: &Message,
+                                   signature: &str,
                                    public_key: &str) -> Result<(), IntegrityError> {
         // 实现数字签名验证
         let message_hash = self.compute_checksum(msg);
-        
+
         // 使用公钥验证签名
         if !self.verify_signature(&message_hash, signature, public_key) {
             return Err(IntegrityError::SignatureInvalid);
         }
-        
+
         Ok(())
     }
-    
+
     fn compute_checksum(&self, msg: &Message) -> String {
         let mut hasher = Sha256::new();
         hasher.update(msg.serialize());
         format!("{:x}", hasher.finalize())
     }
-    
-    fn verify_signature(&self, 
-                       message_hash: &str, 
-                       signature: &str, 
+
+    fn verify_signature(&self,
+                       message_hash: &str,
+                       signature: &str,
                        public_key: &str) -> bool {
         // 实现具体的签名验证逻辑
         // 这里简化处理
@@ -596,7 +596,7 @@ EXTENDS Naturals, RealTime
 
 CONSTANTS MaxFailures, RecoveryTime
 
-VARIABLES 
+VARIABLES
     agent_states,        \* 代理状态
     failure_count,       \* 故障计数
     recovery_timers,     \* 恢复计时器
@@ -613,9 +613,9 @@ AgentFailure(agent) ==
     /\ agent_states' = [agent_states EXCEPT ![agent] = Failed]
     /\ failure_count' = failure_count + 1
     /\ recovery_timers' = [recovery_timers EXCEPT ![agent] = RecoveryTime]
-    /\ system_health' = IF failure_count + 1 <= MaxFailures 
-                       THEN IF failure_count + 1 > MaxFailures / 2 
-                            THEN Degraded 
+    /\ system_health' = IF failure_count + 1 <= MaxFailures
+                       THEN IF failure_count + 1 > MaxFailures / 2
+                            THEN Degraded
                             ELSE Healthy
                        ELSE Failed
     /\ UNCHANGED <<>>
@@ -624,7 +624,7 @@ AgentRecovery(agent) ==
     /\ agent_states[agent] = Failed
     /\ recovery_timers[agent] > 0
     /\ recovery_timers' = [recovery_timers EXCEPT ![agent] = @ - 1]
-    /\ agent_states' = [agent_states EXCEPT ![agent] = 
+    /\ agent_states' = [agent_states EXCEPT ![agent] =
         IF @ = 1 THEN Healthy ELSE Recovering]
     /\ UNCHANGED <<failure_count, system_health>>
 
@@ -662,19 +662,19 @@ impl PartitionToleranceValidator {
             max_partition_duration: Duration::from_secs(300),
         }
     }
-    
-    pub fn validate_partition_tolerance(&self, 
-                                      nodes: &[NodeId], 
+
+    pub fn validate_partition_tolerance(&self,
+                                      nodes: &[NodeId],
                                       time_window: Duration) -> Result<(), PartitionError> {
         // 检查分区检测时间
         if self.partition_detection_time > Duration::from_secs(10) {
             return Err(PartitionError::DetectionTimeTooLong);
         }
-        
+
         // 检查分区恢复时间
         for (partition_id, nodes_in_partition) in &self.network_partitions {
             let partition_duration = self.get_partition_duration(*partition_id);
-            
+
             if partition_duration > self.max_partition_duration {
                 return Err(PartitionError::PartitionTooLong {
                     partition_id: *partition_id,
@@ -682,7 +682,7 @@ impl PartitionToleranceValidator {
                 });
             }
         }
-        
+
         // 验证每个分区都能独立运行
         for (partition_id, nodes_in_partition) in &self.network_partitions {
             if !self.can_partition_operate_independently(nodes_in_partition) {
@@ -691,16 +691,16 @@ impl PartitionToleranceValidator {
                 });
             }
         }
-        
+
         Ok(())
     }
-    
-    fn can_partition_operate_independently(&self, 
+
+    fn can_partition_operate_independently(&self,
                                           nodes: &HashSet<NodeId>) -> bool {
         // 检查分区是否有足够的节点来维持服务
         nodes.len() >= 3 // 至少需要3个节点来维持一致性
     }
-    
+
     fn get_partition_duration(&self, partition_id: PartitionId) -> Duration {
         // 获取分区持续时间
         Duration::from_secs(0) // 简化实现
@@ -714,29 +714,29 @@ impl PartitionToleranceValidator {
 
 ```tla
 // TLA+ 模型检查配置
-CONSTANTS 
+CONSTANTS
     Services = {"service1", "service2", "service3"}
     Messages = {"msg1", "msg2", "msg3"}
     Timeout = 10
 
-INSTANCE OTLPProtocol WITH 
+INSTANCE OTLPProtocol WITH
     Services <- Services,
     Messages <- Messages,
     Timeout <- Timeout
 
 (* 模型检查属性 *)
-PROPERTIES 
+PROPERTIES
     Safety /\ Liveness /\ Fairness /\ Responsiveness
 
 (* 不变式 *)
-INVARIANTS 
+INVARIANTS
     TypeOK /\ Consistency /\ SecurityProperty
 
 (* 行为规格 *)
 SPECIFICATION Spec
 
 (* 约束 *)
-CONSTRAINTS 
+CONSTRAINTS
     MaxLatency = 1000 /\ MaxThroughput = 100
 ```
 
@@ -762,52 +762,52 @@ impl StateSpaceAnalyzer {
             properties: Vec::new(),
         }
     }
-    
-    pub fn analyze_reachability(&mut self, 
-                               initial_state: SystemState, 
+
+    pub fn analyze_reachability(&mut self,
+                               initial_state: SystemState,
                                max_depth: usize) -> Result<ReachabilityAnalysis, Error> {
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();
         let mut reachable_states = Vec::new();
-        
+
         queue.push_back(initial_state.clone());
         visited.insert(initial_state.clone());
         reachable_states.push(initial_state);
-        
+
         let mut depth = 0;
-        
+
         while !queue.is_empty() && depth < max_depth {
             let current_state = queue.pop_front().unwrap();
-            
+
             // 获取可达状态
             let next_states = self.get_next_states(&current_state);
-            
+
             for next_state in next_states {
                 if !visited.contains(&next_state) {
                     visited.insert(next_state.clone());
                     queue.push_back(next_state.clone());
                     reachable_states.push(next_state);
                 }
-                
+
                 // 记录状态转换
                 self.transitions.entry(current_state.clone())
                     .or_insert_with(Vec::new)
                     .push(next_state);
             }
-            
+
             depth += 1;
         }
-        
+
         Ok(ReachabilityAnalysis {
             reachable_states,
             total_states: visited.len(),
             max_depth_reached: depth,
         })
     }
-    
+
     pub fn verify_invariants(&self, states: &[SystemState]) -> Result<InvariantVerification, Error> {
         let mut violations = Vec::new();
-        
+
         for state in states {
             for invariant in &self.invariants {
                 if !invariant.check(state) {
@@ -819,14 +819,14 @@ impl StateSpaceAnalyzer {
                 }
             }
         }
-        
+
         Ok(InvariantVerification {
             total_states: states.len(),
             violations,
             all_invariants_satisfied: violations.is_empty(),
         })
     }
-    
+
     fn get_next_states(&self, state: &SystemState) -> Vec<SystemState> {
         // 实现状态转换逻辑
         vec![] // 简化实现
@@ -847,22 +847,22 @@ pub struct ECommerceProtocolValidator {
 }
 
 impl ECommerceProtocolValidator {
-    pub fn validate_order_consistency(&self, 
+    pub fn validate_order_consistency(&self,
                                      order_flow: &OrderFlow) -> Result<ConsistencyReport, Error> {
         let mut report = ConsistencyReport::new();
-        
+
         // 验证订单状态转换
         for transition in &order_flow.transitions {
             if !self.is_valid_order_transition(transition) {
                 report.add_violation(ConsistencyViolation {
                     type: ViolationType::InvalidStateTransition,
-                    description: format!("Invalid transition from {:?} to {:?}", 
+                    description: format!("Invalid transition from {:?} to {:?}",
                                        transition.from, transition.to),
                     severity: ViolationSeverity::High,
                 });
             }
         }
-        
+
         // 验证库存一致性
         for order in &order_flow.orders {
             if !self.validate_inventory_consistency(order).await? {
@@ -873,7 +873,7 @@ impl ECommerceProtocolValidator {
                 });
             }
         }
-        
+
         // 验证支付一致性
         for payment in &order_flow.payments {
             if !self.validate_payment_consistency(payment).await? {
@@ -884,10 +884,10 @@ impl ECommerceProtocolValidator {
                 });
             }
         }
-        
+
         Ok(report)
     }
-    
+
     fn is_valid_order_transition(&self, transition: &OrderTransition) -> bool {
         match (transition.from, transition.to) {
             (OrderStatus::Created, OrderStatus::Confirmed) => true,
@@ -912,4 +912,4 @@ impl ECommerceProtocolValidator {
 
 ---
 
-*本文档基于形式化方法理论、时序逻辑、模型检查技术以及2025年最新的协议验证最佳实践编写。*
+_本文档基于形式化方法理论、时序逻辑、模型检查技术以及2025年最新的协议验证最佳实践编写。_

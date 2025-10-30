@@ -193,14 +193,14 @@ pub struct PathResolver {
 impl PathResolver {
     pub fn resolve(&self, path: &Path, data: &Value) -> Result<Value, ResolutionError> {
         let mut current = data.clone();
-        
+
         for segment in &path.segments {
             current = self.resolve_segment(&current, segment)?;
         }
-        
+
         Ok(current)
     }
-    
+
     fn resolve_segment(&self, data: &Value, segment: &PathSegment) -> Result<Value, ResolutionError> {
         match segment {
             PathSegment::Identifier(name) => {
@@ -234,7 +234,7 @@ impl PathResolver {
 表达式求值规则:
 eval: Expression × Context → Value
 
-eval(expr, ctx) = 
+eval(expr, ctx) =
   case expr of
   | Literal(lit) → evalLiteral(lit)
   | Path(path) → resolvePath(path, ctx.data)
@@ -271,24 +271,24 @@ impl StringFunctions {
         };
         Ok(Value::String(result))
     }
-    
+
     pub fn extract_patterns(&self, input: Value, patterns: &[String]) -> Result<Value, FunctionError> {
         let string = input.as_string()?;
         let mut extracted = HashMap::new();
-        
+
         for pattern in patterns {
             let regex = Regex::new(pattern)?;
             if let Some(captures) = regex.captures(&string) {
                 for (i, capture) in captures.iter().enumerate() {
                     if let Some(capture) = capture {
-                        let key = if i == 0 { "full_match".to_string() } 
+                        let key = if i == 0 { "full_match".to_string() }
                                 else { format!("group_{}", i - 1) };
                         extracted.insert(key, capture.as_str().to_string());
                     }
                 }
             }
         }
-        
+
         Ok(Value::Object(extracted))
     }
 }
@@ -335,7 +335,7 @@ impl OTTLInterpreter {
         }
         Ok(())
     }
-    
+
     fn execute_statement(&self, statement: &Statement, data: &mut Value) -> Result<(), ExecutionError> {
         match statement {
             Statement::Conditional { condition, action } => {
@@ -364,16 +364,16 @@ impl OTTLCompiler {
     pub fn compile(&self, program: &Program) -> Result<CompiledProgram, CompilationError> {
         // 1. 语法分析和语义检查
         let validated_program = self.validate_program(program)?;
-        
+
         // 2. 中间表示生成
         let ir = self.generate_ir(&validated_program)?;
-        
+
         // 3. 优化
         let optimized_ir = self.optimize_ir(ir)?;
-        
+
         // 4. 代码生成
         let compiled = self.generate_code(optimized_ir)?;
-        
+
         Ok(compiled)
     }
 }
@@ -395,7 +395,7 @@ impl BatchProcessor {
         let results: Result<Vec<_>, _> = chunks.into_par_iter()
             .map(|chunk| self.process_chunk(chunk, program))
             .collect();
-        
+
         Ok(results?.into_iter().flatten().collect())
     }
 }
@@ -413,30 +413,30 @@ impl SIMDOptimizer {
         // 使用 SIMD 指令进行字符串替换优化
         let pattern_bytes = pattern.as_bytes();
         let replacement_bytes = replacement.as_bytes();
-        
+
         if pattern_bytes.len() != replacement_bytes.len() {
             return input.replace(pattern, replacement);
         }
-        
+
         // 使用 SIMD 进行批量字符替换
         let mut result = String::with_capacity(input.len());
         let mut i = 0;
-        
+
         while i + 16 <= input.len() {
             let chunk = &input[i..i + 16];
             let simd_chunk = u8x16::from_slice(chunk.as_bytes());
-            
+
             // SIMD 比较和替换
             let pattern_simd = u8x16::from_slice(&[pattern_bytes[0]; 16]);
             let mask = simd_chunk.simd_eq(pattern_simd);
-            
+
             let replacement_simd = u8x16::from_slice(&[replacement_bytes[0]; 16]);
             let result_simd = mask.select(replacement_simd, simd_chunk);
-            
+
             result.push_str(std::str::from_utf8(&result_simd.to_array()).unwrap());
             i += 16;
         }
-        
+
         result
     }
 }
@@ -490,15 +490,15 @@ impl CustomFunction for GeoLocationFunction {
     fn name(&self) -> &str {
         "geo_location"
     }
-    
+
     fn execute(&self, args: &[Value], _context: &EvaluationContext) -> Result<Value, FunctionError> {
         if args.len() != 1 {
             return Err(FunctionError::WrongArgumentCount);
         }
-        
+
         let ip = args[0].as_string()?;
         let location = self.lookup_geo_location(&ip)?;
-        
+
         Ok(Value::Object(hashmap! {
             "country".to_string() => Value::String(location.country),
             "city".to_string() => Value::String(location.city),
@@ -528,12 +528,12 @@ impl PluginRegistry {
     pub fn load_plugin(&mut self, plugin: Box<dyn OTTLPlugin>) -> Result<(), PluginError> {
         let name = plugin.name().to_string();
         plugin.initialize(&Value::Object(HashMap::new()))?;
-        
+
         for function in plugin.functions() {
             let func_name = function.name().to_string();
             self.functions.insert(func_name, function);
         }
-        
+
         self.plugins.insert(name, plugin);
         Ok(())
     }
@@ -548,7 +548,7 @@ impl PluginRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_simple_assignment() {
         let program = Program {
@@ -559,12 +559,12 @@ mod tests {
                 }),
             ],
         };
-        
+
         let mut data = Value::Object(HashMap::new());
         let interpreter = OTTLInterpreter::new();
-        
+
         interpreter.execute(&program, &mut data).unwrap();
-        
+
         assert_eq!(data.get("attributes").unwrap().get("name").unwrap(), &Value::String("test".to_string()));
     }
 }
@@ -577,7 +577,7 @@ mod tests {
 mod benchmarks {
     use super::*;
     use test::Bencher;
-    
+
     #[bench]
     fn bench_simple_transform(b: &mut Bencher) {
         let program = Program {
@@ -588,10 +588,10 @@ mod benchmarks {
                 }),
             ],
         };
-        
+
         let mut data = Value::Object(HashMap::new());
         let interpreter = OTTLInterpreter::new();
-        
+
         b.iter(|| {
             interpreter.execute(&program, &mut data).unwrap();
         });
@@ -624,4 +624,4 @@ mod benchmarks {
 
 ---
 
-*本文档深入分析了 OTTL 语言的语义和实现机制，为构建高效、可扩展的数据转换系统提供了完整的理论基础和实践指导。*
+_本文档深入分析了 OTTL 语言的语义和实现机制，为构建高效、可扩展的数据转换系统提供了完整的理论基础和实践指导。_

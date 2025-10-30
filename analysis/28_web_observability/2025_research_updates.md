@@ -47,7 +47,7 @@
 
 ### 研究概览
 
-**论文**: *"Goldilocks Isolation: High Performance VMs with Edera"*  
+**论文**: _"Goldilocks Isolation: High Performance VMs with Edera"_  
 **来源**: arXiv:2501.04580  
 **发布时间**: 2025年1月
 
@@ -168,7 +168,7 @@ pub fn edera_tracer_config() -> Result<TracerProvider> {
 
 ### 研究概览1
 
-**论文**: *"Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers"*  
+**论文**: _"Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers"_  
 **来源**: arXiv:2509.11242  
 **发布时间**: 2025年9月
 
@@ -424,7 +424,7 @@ impl WasmCircuitBreaker {
 
 ### 研究概览2
 
-**论文**: *"Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum"*  
+**论文**: _"Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum"_  
 **来源**: arXiv:2510.05118  
 **发布时间**: 2025年10月
 
@@ -951,15 +951,15 @@ Edera及新型Hypervisor:
 ### 学术论文
 
 1. **Edera研究**  
-   *Goldilocks Isolation: High Performance VMs with Edera*  
+   _Goldilocks Isolation: High Performance VMs with Edera_  
    arXiv:2501.04580 (2025年1月)
 
 2. **Wasm安全研究**  
-   *Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers*  
+   _Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers_  
    arXiv:2509.11242 (2025年9月)
 
 3. **Lumos性能评估**  
-   *Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum*  
+   _Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum_  
    arXiv:2510.05118 (2025年10月)
 
 ### 官方文档

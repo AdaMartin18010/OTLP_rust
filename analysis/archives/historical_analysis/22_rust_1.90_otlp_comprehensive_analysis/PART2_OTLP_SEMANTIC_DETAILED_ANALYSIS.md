@@ -1,14 +1,15 @@
 ﻿# 第二部分详细展开: OTLP/OPAMP/OTTL/eBPF 语义模型深度分析
 
-> **创建日期**: 2025年10月3日  
-> **总行数目标**: 1500+ 行  
+> **创建日期**: 2025年10月3日
+> **总行数目标**: 1500+ 行
 > **状态**: 🔄 分批构建中
 
 ---
 
 ## 📋 目录
+
 - [第二部分详细展开: OTLP/OPAMP/OTTL/eBPF 语义模型深度分析](#第二部分详细展开-otlpopampottlebpf-语义模型深度分析)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [1. OTLP 协议完整语义模型](#1-otlp-协议完整语义模型)
     - [1.1 OTLP 数据模型层次结构](#11-otlp-数据模型层次结构)
   - [1.2 Resource 语义约定完整对标](#12-resource-语义约定完整对标)
@@ -134,22 +135,22 @@ impl ServiceResourceBuilder {
             instance_id: None,
         }
     }
-    
+
     pub fn with_version(mut self, version: impl Into<String>) -> Self {
         self.version = Some(version.into());
         self
     }
-    
+
     pub fn with_namespace(mut self, namespace: impl Into<String>) -> Self {
         self.namespace = Some(namespace.into());
         self
     }
-    
+
     pub fn with_instance_id(mut self, instance_id: impl Into<String>) -> Self {
         self.instance_id = Some(instance_id.into());
         self
     }
-    
+
     pub fn build(self) -> Vec<KeyValue> {
         let mut attributes = vec![
             KeyValue {
@@ -157,28 +158,28 @@ impl ServiceResourceBuilder {
                 value: AnyValue::String(self.name),
             },
         ];
-        
+
         if let Some(version) = self.version {
             attributes.push(KeyValue {
                 key: semantic_conventions::service::VERSION.to_string(),
                 value: AnyValue::String(version),
             });
         }
-        
+
         if let Some(namespace) = self.namespace {
             attributes.push(KeyValue {
                 key: semantic_conventions::service::NAMESPACE.to_string(),
                 value: AnyValue::String(namespace),
             });
         }
-        
+
         if let Some(instance_id) = self.instance_id {
             attributes.push(KeyValue {
                 key: semantic_conventions::service::INSTANCE_ID.to_string(),
                 value: AnyValue::String(instance_id),
             });
         }
-        
+
         attributes
     }
 }
@@ -236,78 +237,78 @@ impl K8sResourceBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     pub fn with_cluster(mut self, cluster: impl Into<String>) -> Self {
         self.cluster = Some(cluster.into());
         self
     }
-    
+
     pub fn with_namespace(mut self, namespace: impl Into<String>) -> Self {
         self.namespace = Some(namespace.into());
         self
     }
-    
+
     pub fn with_pod(mut self, name: impl Into<String>, uid: impl Into<String>) -> Self {
         self.pod_name = Some(name.into());
         self.pod_uid = Some(uid.into());
         self
     }
-    
+
     pub fn with_node(mut self, node: impl Into<String>) -> Self {
         self.node = Some(node.into());
         self
     }
-    
+
     pub fn with_deployment(mut self, deployment: impl Into<String>) -> Self {
         self.deployment = Some(deployment.into());
         self
     }
-    
+
     pub fn build(self) -> Vec<KeyValue> {
         let mut attributes = Vec::new();
-        
+
         if let Some(cluster) = self.cluster {
             attributes.push(KeyValue {
                 key: k8s::CLUSTER_NAME.to_string(),
                 value: AnyValue::String(cluster),
             });
         }
-        
+
         if let Some(namespace) = self.namespace {
             attributes.push(KeyValue {
                 key: k8s::NAMESPACE_NAME.to_string(),
                 value: AnyValue::String(namespace),
             });
         }
-        
+
         if let Some(pod_name) = self.pod_name {
             attributes.push(KeyValue {
                 key: k8s::POD_NAME.to_string(),
                 value: AnyValue::String(pod_name),
             });
         }
-        
+
         if let Some(pod_uid) = self.pod_uid {
             attributes.push(KeyValue {
                 key: k8s::POD_UID.to_string(),
                 value: AnyValue::String(pod_uid),
             });
         }
-        
+
         if let Some(node) = self.node {
             attributes.push(KeyValue {
                 key: k8s::NODE_NAME.to_string(),
                 value: AnyValue::String(node),
             });
         }
-        
+
         if let Some(deployment) = self.deployment {
             attributes.push(KeyValue {
                 key: k8s::DEPLOYMENT_NAME.to_string(),
                 value: AnyValue::String(deployment),
             });
         }
-        
+
         attributes
     }
 }
@@ -345,7 +346,7 @@ pub mod cloud {
     pub const AVAILABILITY_ZONE: &str = "cloud.availability_zone";
     pub const PLATFORM: &str = "cloud.platform";
     pub const RESOURCE_ID: &str = "cloud.resource_id";
-    
+
     /// AWS 特定
     pub mod aws {
         pub const ECS_CLUSTER_ARN: &str = "aws.ecs.cluster.arn";
@@ -423,32 +424,32 @@ impl CloudResourceBuilder {
             resource_id: None,
         }
     }
-    
+
     pub fn with_account_id(mut self, account_id: impl Into<String>) -> Self {
         self.account_id = Some(account_id.into());
         self
     }
-    
+
     pub fn with_region(mut self, region: impl Into<String>) -> Self {
         self.region = Some(region.into());
         self
     }
-    
+
     pub fn with_availability_zone(mut self, az: impl Into<String>) -> Self {
         self.availability_zone = Some(az.into());
         self
     }
-    
+
     pub fn with_platform(mut self, platform: CloudPlatform) -> Self {
         self.platform = Some(platform);
         self
     }
-    
+
     pub fn with_resource_id(mut self, resource_id: impl Into<String>) -> Self {
         self.resource_id = Some(resource_id.into());
         self
     }
-    
+
     pub fn build(self) -> Vec<KeyValue> {
         let mut attributes = vec![
             KeyValue {
@@ -456,42 +457,42 @@ impl CloudResourceBuilder {
                 value: AnyValue::String(self.provider.as_str().to_string()),
             },
         ];
-        
+
         if let Some(account_id) = self.account_id {
             attributes.push(KeyValue {
                 key: cloud::ACCOUNT_ID.to_string(),
                 value: AnyValue::String(account_id),
             });
         }
-        
+
         if let Some(region) = self.region {
             attributes.push(KeyValue {
                 key: cloud::REGION.to_string(),
                 value: AnyValue::String(region),
             });
         }
-        
+
         if let Some(az) = self.availability_zone {
             attributes.push(KeyValue {
                 key: cloud::AVAILABILITY_ZONE.to_string(),
                 value: AnyValue::String(az),
             });
         }
-        
+
         if let Some(platform) = self.platform {
             attributes.push(KeyValue {
                 key: cloud::PLATFORM.to_string(),
                 value: AnyValue::String(platform.as_str().to_string()),
             });
         }
-        
+
         if let Some(resource_id) = self.resource_id {
             attributes.push(KeyValue {
                 key: cloud::RESOURCE_ID.to_string(),
                 value: AnyValue::String(resource_id),
             });
         }
-        
+
         attributes
     }
 }
@@ -575,13 +576,13 @@ impl SpanBuilder {
             state: Arc::new(Mutex::new(SpanState::Created)),
         }
     }
-    
+
     pub fn with_parent(mut self, trace_id: [u8; 16], parent_span_id: [u8; 8]) -> Self {
         self.trace_id = trace_id;
         self.parent_span_id = Some(parent_span_id);
         self
     }
-    
+
     pub fn with_attribute(mut self, key: impl Into<String>, value: AnyValue) -> Self {
         self.attributes.push(KeyValue {
             key: key.into(),
@@ -589,15 +590,15 @@ impl SpanBuilder {
         });
         self
     }
-    
+
     pub fn start(mut self) -> ActiveSpan {
         let start_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         *self.state.lock().unwrap() = SpanState::Started;
-        
+
         ActiveSpan {
             trace_id: self.trace_id,
             span_id: self.span_id,
@@ -640,12 +641,12 @@ impl ActiveSpan {
             eprintln!("Cannot add event to non-active span");
             return;
         }
-        
+
         let time_unix_nano = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         self.events.push(Event {
             time_unix_nano,
             name: name.into(),
@@ -653,36 +654,36 @@ impl ActiveSpan {
             dropped_attributes_count: 0,
         });
     }
-    
+
     pub fn set_attribute(&mut self, key: impl Into<String>, value: AnyValue) {
         let state = *self.state.lock().unwrap();
         if state != SpanState::Started {
             eprintln!("Cannot set attribute on non-active span");
             return;
         }
-        
+
         self.attributes.push(KeyValue {
             key: key.into(),
             value,
         });
     }
-    
+
     pub fn set_status(&mut self, code: StatusCode, message: impl Into<String>) {
         self.status = Status {
             code,
             message: message.into(),
         };
     }
-    
+
     pub fn end(mut self) -> Span {
         let end_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         self.end_time_unix_nano = end_time;
         *self.state.lock().unwrap() = SpanState::Ended;
-        
+
         Span {
             trace_id: self.trace_id,
             span_id: self.span_id,
@@ -758,17 +759,17 @@ impl SpanKind {
     pub fn is_inbound(&self) -> bool {
         matches!(self, SpanKind::Server | SpanKind::Consumer)
     }
-    
+
     /// 检查是否为出站 Span
     pub fn is_outbound(&self) -> bool {
         matches!(self, SpanKind::Client | SpanKind::Producer)
     }
-    
+
     /// 检查是否为内部 Span
     pub fn is_internal(&self) -> bool {
         matches!(self, SpanKind::Internal | SpanKind::Unspecified)
     }
-    
+
     /// 获取对应的对端 SpanKind
     pub fn peer_kind(&self) -> Option<SpanKind> {
         match self {
@@ -826,15 +827,15 @@ pub struct TraceFlags(u8);
 
 impl TraceFlags {
     pub const SAMPLED: u8 = 0x01;
-    
+
     pub fn new(flags: u8) -> Self {
         Self(flags)
     }
-    
+
     pub fn is_sampled(&self) -> bool {
         (self.0 & Self::SAMPLED) != 0
     }
-    
+
     pub fn set_sampled(&mut self, sampled: bool) {
         if sampled {
             self.0 |= Self::SAMPLED;
@@ -846,58 +847,58 @@ impl TraceFlags {
 
 impl FromStr for TraceParent {
     type Err = String;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split('-').collect();
-        
+
         if parts.len() != 4 {
             return Err(format!("Invalid traceparent format: expected 4 parts, got {}", parts.len()));
         }
-        
+
         // 解析 version
         let version = u8::from_str_radix(parts[0], 16)
             .map_err(|e| format!("Invalid version: {}", e))?;
-        
+
         if version != 0 {
             return Err(format!("Unsupported version: {}", version));
         }
-        
+
         // 解析 trace_id
         if parts[1].len() != 32 {
             return Err(format!("Invalid trace_id length: expected 32, got {}", parts[1].len()));
         }
-        
+
         let mut trace_id = [0u8; 16];
         for i in 0..16 {
             trace_id[i] = u8::from_str_radix(&parts[1][i*2..i*2+2], 16)
                 .map_err(|e| format!("Invalid trace_id byte {}: {}", i, e))?;
         }
-        
+
         // 检查 trace_id 不能全为 0
         if trace_id.iter().all(|&b| b == 0) {
             return Err("trace_id cannot be all zeros".to_string());
         }
-        
+
         // 解析 parent_id
         if parts[2].len() != 16 {
             return Err(format!("Invalid parent_id length: expected 16, got {}", parts[2].len()));
         }
-        
+
         let mut parent_id = [0u8; 8];
         for i in 0..8 {
             parent_id[i] = u8::from_str_radix(&parts[2][i*2..i*2+2], 16)
                 .map_err(|e| format!("Invalid parent_id byte {}: {}", i, e))?;
         }
-        
+
         // 检查 parent_id 不能全为 0
         if parent_id.iter().all(|&b| b == 0) {
             return Err("parent_id cannot be all zeros".to_string());
         }
-        
+
         // 解析 trace_flags
         let trace_flags_u8 = u8::from_str_radix(parts[3], 16)
             .map_err(|e| format!("Invalid trace_flags: {}", e))?;
-        
+
         Ok(TraceParent {
             version,
             trace_id,
@@ -924,17 +925,17 @@ impl std::fmt::Display for TraceParent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_parse_traceparent() {
         let input = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
         let tp = TraceParent::from_str(input).unwrap();
-        
+
         assert_eq!(tp.version, 0);
         assert_eq!(hex::encode(tp.trace_id), "0af7651916cd43dd8448eb211c80319c");
         assert_eq!(hex::encode(tp.parent_id), "b7ad6b7169203331");
         assert!(tp.trace_flags.is_sampled());
-        
+
         // 测试序列化
         assert_eq!(tp.to_string(), input);
     }
@@ -1047,30 +1048,30 @@ use std::collections::HashMap;
 pub struct AgentToServer {
     /// 实例唯一标识 (UUID)
     pub instance_uid: String,
-    
+
     /// 序列号（单调递增，用于去重）
     pub sequence_num: u64,
-    
+
     /// Agent 能力声明
     #[serde(skip_serializing_if = "Option::is_none")]
     pub capabilities: Option<AgentCapabilities>,
-    
+
     /// Agent 健康状态
     #[serde(skip_serializing_if = "Option::is_none")]
     pub health: Option<AgentHealth>,
-    
+
     /// 远程配置状态
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_config_status: Option<RemoteConfigStatus>,
-    
+
     /// 包状态
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package_statuses: Option<PackageStatuses>,
-    
+
     /// Agent 描述
     #[serde(skip_serializing_if = "Option::is_none")]
     pub agent_description: Option<AgentDescription>,
-    
+
     /// 标志位
     pub flags: u64,
 }
@@ -1080,22 +1081,22 @@ pub struct AgentToServer {
 pub struct AgentCapabilities {
     /// 报告有效配置
     pub reports_effective_config: bool,
-    
+
     /// 接受远程配置
     pub accepts_remote_config: bool,
-    
+
     /// 报告自身健康状态
     pub reports_health: bool,
-    
+
     /// 报告遥测数据
     pub reports_own_telemetry: bool,
-    
+
     /// 接受包（二进制升级）
     pub accepts_packages: bool,
-    
+
     /// 报告包状态
     pub reports_package_statuses: bool,
-    
+
     /// 接受连接设置
     pub accepts_connection_settings: bool,
 }
@@ -1119,14 +1120,14 @@ impl Default for AgentCapabilities {
 pub struct AgentHealth {
     /// 是否健康
     pub healthy: bool,
-    
+
     /// 启动时间（Unix 纳秒）
     pub start_time_unix_nano: u64,
-    
+
     /// 最近错误
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_error: Option<String>,
-    
+
     /// 自定义健康指标
     #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_metrics: Option<HashMap<String, f64>>,
@@ -1137,10 +1138,10 @@ pub struct AgentHealth {
 pub struct RemoteConfigStatus {
     /// 最后接收的配置哈希
     pub last_remote_config_hash: Vec<u8>,
-    
+
     /// 配置应用状态
     pub status: ConfigApplyStatus,
-    
+
     /// 错误消息（如果失败）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
@@ -1164,23 +1165,23 @@ pub enum ConfigApplyStatus {
 pub struct ServerToAgent {
     /// 实例 UID（回显）
     pub instance_uid: String,
-    
+
     /// 错误响应
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_response: Option<ServerErrorResponse>,
-    
+
     /// 远程配置
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_config: Option<AgentRemoteConfig>,
-    
+
     /// 连接设置
     #[serde(skip_serializing_if = "Option::is_none")]
     pub connection_settings: Option<ConnectionSettings>,
-    
+
     /// 包可用通知
     #[serde(skip_serializing_if = "Option::is_none")]
     pub packages_available: Option<PackagesAvailable>,
-    
+
     /// 标志位
     pub flags: u64,
 }
@@ -1190,7 +1191,7 @@ pub struct ServerToAgent {
 pub struct AgentRemoteConfig {
     /// 配置主体（YAML/JSON 字节）
     pub config: ConfigMap,
-    
+
     /// 配置哈希（SHA256）
     pub config_hash: Vec<u8>,
 }
@@ -1205,7 +1206,7 @@ pub struct ConfigMap {
 pub struct AgentConfigFile {
     /// 文件主体
     pub body: Vec<u8>,
-    
+
     /// 内容类型
     pub content_type: String,
 }
@@ -1215,7 +1216,7 @@ pub struct AgentConfigFile {
 pub struct PackagesAvailable {
     /// 可用包列表
     pub packages: HashMap<String, PackageAvailable>,
-    
+
     /// 所有包的哈希
     pub all_packages_hash: Vec<u8>,
 }
@@ -1224,16 +1225,16 @@ pub struct PackagesAvailable {
 pub struct PackageAvailable {
     /// 包类型（例如 "otel-collector"）
     pub type_: String,
-    
+
     /// 版本
     pub version: String,
-    
+
     /// 下载 URL
     pub download_url: String,
-    
+
     /// 文件哈希（SHA256）
     pub hash: Vec<u8>,
-    
+
     /// 数字签名
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<Vec<u8>>,
@@ -1254,25 +1255,25 @@ use std::sync::Arc;
 pub struct OpampClient {
     /// Server 端点
     endpoint: String,
-    
+
     /// Agent 实例 UID
     instance_uid: String,
-    
+
     /// 能力声明
     capabilities: AgentCapabilities,
-    
+
     /// 配置处理器
     config_handler: Arc<dyn ConfigHandler>,
-    
+
     /// 包管理器
     package_manager: Arc<dyn PackageManager>,
-    
+
     /// 健康状态
     health: Arc<RwLock<AgentHealth>>,
-    
+
     /// 序列号生成器
     sequence_num: Arc<RwLock<u64>>,
-    
+
     /// 当前配置哈希
     current_config_hash: Arc<RwLock<Option<Vec<u8>>>>,
 }
@@ -1281,7 +1282,7 @@ pub struct OpampClient {
 pub trait ConfigHandler: Send + Sync {
     /// 应用配置
     async fn apply_config(&self, config: AgentRemoteConfig) -> Result<(), String>;
-    
+
     /// 获取当前有效配置
     async fn get_effective_config(&self) -> Result<ConfigMap, String>;
 }
@@ -1290,7 +1291,7 @@ pub trait ConfigHandler: Send + Sync {
 pub trait PackageManager: Send + Sync {
     /// 下载并安装包
     async fn install_package(&self, package: PackageAvailable) -> Result<(), String>;
-    
+
     /// 获取当前安装的包
     async fn get_installed_packages(&self) -> Result<HashMap<String, String>, String>;
 }
@@ -1303,12 +1304,12 @@ impl OpampClient {
         package_manager: Arc<dyn PackageManager>,
     ) -> Self {
         use std::time::SystemTime;
-        
+
         let start_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         Self {
             endpoint,
             instance_uid,
@@ -1325,34 +1326,34 @@ impl OpampClient {
             current_config_hash: Arc::new(RwLock::new(None)),
         }
     }
-    
+
     /// 启动 OPAMP 客户端
     pub async fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
         // 1. 建立双向流式连接
         let channel = Channel::from_shared(self.endpoint.clone())?
             .connect()
             .await?;
-        
+
         let mut client = OpampServiceClient::new(channel);
-        
+
         // 2. 创建双向流
         let (tx, rx) = mpsc::channel::<AgentToServer>(100);
-        
+
         let outbound = tokio_stream::wrappers::ReceiverStream::new(rx);
-        
+
         let response = client
             .agent_to_server_stream(Request::new(outbound))
             .await?;
-        
+
         let mut inbound = response.into_inner();
-        
+
         // 3. 发送初始 agent_identify
         self.send_agent_identify(&tx).await?;
-        
+
         // 4. 启动消息处理循环
         let tx_clone = tx.clone();
         let self_clone = Arc::new(self.clone());
-        
+
         tokio::spawn(async move {
             while let Some(result) = inbound.message().await.transpose() {
                 match result {
@@ -1368,13 +1369,13 @@ impl OpampClient {
                 }
             }
         });
-        
+
         // 5. 启动心跳循环
         self.heartbeat_loop(tx).await?;
-        
+
         Ok(())
     }
-    
+
     /// 发送 agent_identify
     async fn send_agent_identify(
         &self,
@@ -1382,7 +1383,7 @@ impl OpampClient {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut seq = self.sequence_num.write().await;
         *seq += 1;
-        
+
         let msg = AgentToServer {
             instance_uid: self.instance_uid.clone(),
             sequence_num: *seq,
@@ -1401,11 +1402,11 @@ impl OpampClient {
             }),
             flags: 0,
         };
-        
+
         tx.send(msg).await?;
         Ok(())
     }
-    
+
     /// 处理 Server 消息
     async fn handle_server_message(
         &self,
@@ -1417,17 +1418,17 @@ impl OpampClient {
             eprintln!("❌ Server error: {:?}", error);
             return Ok(());
         }
-        
+
         // 处理远程配置
         if let Some(remote_config) = msg.remote_config {
             println!("📥 Received remote config, hash: {}", hex::encode(&remote_config.config_hash));
-            
+
             // 应用配置
             let status = match self.config_handler.apply_config(remote_config.clone()).await {
                 Ok(_) => {
                     println!("✅ Config applied successfully");
                     *self.current_config_hash.write().await = Some(remote_config.config_hash.clone());
-                    
+
                     RemoteConfigStatus {
                         last_remote_config_hash: remote_config.config_hash,
                         status: ConfigApplyStatus::Applied,
@@ -1436,7 +1437,7 @@ impl OpampClient {
                 }
                 Err(e) => {
                     eprintln!("❌ Config apply failed: {}", e);
-                    
+
                     RemoteConfigStatus {
                         last_remote_config_hash: remote_config.config_hash,
                         status: ConfigApplyStatus::Failed,
@@ -1444,11 +1445,11 @@ impl OpampClient {
                     }
                 }
             };
-            
+
             // 上报配置状态
             let mut seq = self.sequence_num.write().await;
             *seq += 1;
-            
+
             let status_msg = AgentToServer {
                 instance_uid: self.instance_uid.clone(),
                 sequence_num: *seq,
@@ -1459,17 +1460,17 @@ impl OpampClient {
                 agent_description: None,
                 flags: 0,
             };
-            
+
             tx.send(status_msg).await?;
         }
-        
+
         // 处理包可用通知
         if let Some(packages) = msg.packages_available {
             println!("📦 Packages available: {}", packages.packages.len());
-            
+
             for (name, package) in packages.packages {
                 println!("  - {}: version {}", name, package.version);
-                
+
                 // 异步安装包
                 let pm = self.package_manager.clone();
                 tokio::spawn(async move {
@@ -1480,23 +1481,23 @@ impl OpampClient {
                 });
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 心跳循环
     async fn heartbeat_loop(
         &self,
         tx: mpsc::Sender<AgentToServer>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut interval = interval(Duration::from_secs(30));
-        
+
         loop {
             interval.tick().await;
-            
+
             let mut seq = self.sequence_num.write().await;
             *seq += 1;
-            
+
             let heartbeat = AgentToServer {
                 instance_uid: self.instance_uid.clone(),
                 sequence_num: *seq,
@@ -1507,13 +1508,13 @@ impl OpampClient {
                 agent_description: None,
                 flags: 0,
             };
-            
+
             if let Err(e) = tx.send(heartbeat).await {
                 eprintln!("❌ Heartbeat failed: {}", e);
                 break;
             }
         }
-        
+
         Ok(())
     }
 }
@@ -1668,10 +1669,10 @@ condition     = boolean_expr ;
 action        = function_call | assignment ;
 
 (* 布尔表达式 *)
-boolean_expr  = comparison_expr 
-              | logical_expr 
-              | "true" 
-              | "false" 
+boolean_expr  = comparison_expr
+              | logical_expr
+              | "true"
+              | "false"
               | "(" boolean_expr ")" ;
 
 comparison_expr = value_expr, comparator, value_expr ;
@@ -1681,13 +1682,13 @@ logical_expr  = boolean_expr, logical_op, boolean_expr ;
 logical_op    = "and" | "or" | "not" ;
 
 (* 值表达式 *)
-value_expr    = path 
-              | literal 
-              | function_call 
+value_expr    = path
+              | literal
+              | function_call
               | "(" value_expr ")" ;
 
 (* Path 语言 (关键特性) *)
-path          = context, ".", field, { ".", field } 
+path          = context, ".", field, { ".", field }
               | context, ".", field, "[", index, "]" ;
 context       = "resource" | "span" | "metric" | "log" | "spanevent" ;
 field         = identifier ;
@@ -1698,7 +1699,7 @@ function_call = identifier, "(", [ arg_list ], ")" ;
 arg_list      = value_expr, { ",", value_expr } ;
 
 (* 赋值操作 *)
-assignment    = "set(", path, ",", value_expr, ")" 
+assignment    = "set(", path, ",", value_expr, ")"
               | "delete_key(", path, ",", string_literal, ")" ;
 
 (* 字面量 *)
@@ -1753,7 +1754,7 @@ span.attributes["http.status_code"] >= 500 > set(span.status.code, StatusCode::E
 ```ottl
 # SHA256 哈希敏感数据
 resource.attributes["user.email"] != nil > set(
-    resource.attributes["user.email"], 
+    resource.attributes["user.email"],
     SHA256(resource.attributes["user.email"])
 )
 
@@ -1803,7 +1804,7 @@ Path 组成:
   resource.attributes["service.name"]
   ├─────┘  ├────────┘ ├───────────┘
   Context   Field      Index
-  
+
   span.events[0].name
   ├──┘ ├────┘├┘ ├──┘
   Ctx  Field Idx Field
@@ -1818,23 +1819,23 @@ pub enum OttlContext {
     /// Resource 上下文 (所有信号共享)
     /// 路径: resource.attributes["key"]
     Resource,
-    
+
     /// Span 上下文 (Trace 信号)
     /// 路径: span.name, span.status.code, span.attributes["key"]
     Span,
-    
+
     /// SpanEvent 上下文 (Trace 信号)
     /// 路径: spanevent.name, spanevent.attributes["key"]
     SpanEvent,
-    
+
     /// Metric 上下文 (Metric 信号)
     /// 路径: metric.name, metric.type, metric.data_points[0].value
     Metric,
-    
+
     /// DataPoint 上下文 (Metric 信号)
     /// 路径: datapoint.start_time, datapoint.value
     DataPoint,
-    
+
     /// Log 上下文 (Log 信号)
     /// 路径: log.severity, log.body, log.attributes["key"]
     Log,
@@ -1851,7 +1852,7 @@ pub struct OttlPath {
 pub enum PathSegment {
     /// 字段访问: .name
     Field(String),
-    
+
     /// 索引访问: [0] 或 ["key"]
     Index(PathIndex),
 }
@@ -1883,16 +1884,16 @@ impl OttlPathParser {
     pub fn parse(input: &str) -> Result<OttlPath, OttlError> {
         let (remaining, path) = Self::parse_path(input)
             .map_err(|e| OttlError::ParseError(e.to_string()))?;
-        
+
         if !remaining.is_empty() {
             return Err(OttlError::ParseError(
                 format!("Unexpected trailing input: {}", remaining)
             ));
         }
-        
+
         Ok(path)
     }
-    
+
     /// 解析 Context
     fn parse_context(input: &str) -> IResult<&str, OttlContext> {
         alt((
@@ -1904,7 +1905,7 @@ impl OttlPathParser {
             map(tag("log"), |_| OttlContext::Log),
         ))(input)
     }
-    
+
     /// 解析 Path 段
     fn parse_path(input: &str) -> IResult<&str, OttlPath> {
         let (input, context) = Self::parse_context(input)?;
@@ -1912,10 +1913,10 @@ impl OttlPathParser {
             Self::parse_field_segment,
             Self::parse_index_segment,
         )))(input)?;
-        
+
         Ok((input, OttlPath { context, segments }))
     }
-    
+
     /// 解析字段段: .field_name
     fn parse_field_segment(input: &str) -> IResult<&str, PathSegment> {
         let (input, _) = char('.')(input)?;
@@ -1923,10 +1924,10 @@ impl OttlPathParser {
             alt((alpha1, tag("_"))),
             many0(alt((alphanumeric1, tag("_")))),
         ))(input)?;
-        
+
         Ok((input, PathSegment::Field(field.to_string())))
     }
-    
+
     /// 解析索引段: [0] 或 ["key"]
     fn parse_index_segment(input: &str) -> IResult<&str, PathSegment> {
         delimited(
@@ -1952,25 +1953,25 @@ mod tests {
         let path = OttlPathParser::parse("span.name").unwrap();
         assert_eq!(path.context, OttlContext::Span);
         assert_eq!(path.segments.len(), 1);
-        
+
         match &path.segments[0] {
             PathSegment::Field(f) => assert_eq!(f, "name"),
             _ => panic!("Expected Field segment"),
         }
     }
-    
+
     #[test]
     fn test_parse_indexed_path() {
         let path = OttlPathParser::parse("resource.attributes[\"service.name\"]").unwrap();
         assert_eq!(path.context, OttlContext::Resource);
         assert_eq!(path.segments.len(), 2);
-        
+
         match &path.segments[1] {
             PathSegment::Index(PathIndex::String(s)) => assert_eq!(s, "service.name"),
             _ => panic!("Expected String index"),
         }
     }
-    
+
     #[test]
     fn test_parse_complex_path() {
         let path = OttlPathParser::parse("span.events[0].attributes[\"error.message\"]").unwrap();
@@ -1993,25 +1994,25 @@ OTTL 提供丰富的内置函数，涵盖字符串处理、数学运算、加密
 pub enum OttlFunctionCategory {
     /// 字符串处理
     String,
-    
+
     /// 数学运算
     Math,
-    
+
     /// 加密哈希
     Crypto,
-    
+
     /// 时间处理
     Time,
-    
+
     /// 类型转换
     Conversion,
-    
+
     /// 数组操作
     Array,
-    
+
     /// 正则表达式
     Regex,
-    
+
     /// 采样决策
     Sampling,
 }
@@ -2043,18 +2044,18 @@ impl OttlFunction for SHA256Function {
     fn name(&self) -> &str {
         "SHA256"
     }
-    
+
     fn execute(&self, args: &[OttlValue]) -> Result<OttlValue, OttlError> {
         self.validate_args(args)?;
-        
+
         let input = args[0].as_string()?;
         let mut hasher = Sha256::new();
         hasher.update(input.as_bytes());
         let result = hasher.finalize();
-        
+
         Ok(OttlValue::String(hex::encode(result)))
     }
-    
+
     fn validate_args(&self, args: &[OttlValue]) -> Result<(), OttlError> {
         if args.len() != 1 {
             return Err(OttlError::InvalidArgCount {
@@ -2062,14 +2063,14 @@ impl OttlFunction for SHA256Function {
                 actual: args.len(),
             });
         }
-        
+
         if !matches!(args[0], OttlValue::String(_)) {
             return Err(OttlError::InvalidArgType {
                 expected: "String",
                 actual: args[0].type_name(),
             });
         }
-        
+
         Ok(())
     }
 }
@@ -2081,10 +2082,10 @@ impl OttlFunction for TruncateFunction {
     fn name(&self) -> &str {
         "truncate"
     }
-    
+
     fn execute(&self, args: &[OttlValue]) -> Result<OttlValue, OttlError> {
         self.validate_args(args)?;
-        
+
         let input = args[0].as_string()?;
         let max_len = args[1].as_int()? as usize;
         let suffix = if args.len() == 3 {
@@ -2092,15 +2093,15 @@ impl OttlFunction for TruncateFunction {
         } else {
             String::new()
         };
-        
+
         if input.len() <= max_len {
             return Ok(OttlValue::String(input.clone()));
         }
-        
+
         let truncated = &input[..max_len];
         Ok(OttlValue::String(format!("{}{}", truncated, suffix)))
     }
-    
+
     fn validate_args(&self, args: &[OttlValue]) -> Result<(), OttlError> {
         if args.len() < 2 || args.len() > 3 {
             return Err(OttlError::InvalidArgCount {
@@ -2119,21 +2120,21 @@ impl OttlFunction for ReplacePatternFunction {
     fn name(&self) -> &str {
         "replace_pattern"
     }
-    
+
     fn execute(&self, args: &[OttlValue]) -> Result<OttlValue, OttlError> {
         self.validate_args(args)?;
-        
+
         let input = args[0].as_string()?;
         let pattern = args[1].as_string()?;
         let replacement = args[2].as_string()?;
-        
+
         let re = Regex::new(pattern)
             .map_err(|e| OttlError::RegexError(e.to_string()))?;
-        
+
         let result = re.replace_all(input, replacement.as_str());
         Ok(OttlValue::String(result.to_string()))
     }
-    
+
     fn validate_args(&self, args: &[OttlValue]) -> Result<(), OttlError> {
         if args.len() != 3 {
             return Err(OttlError::InvalidArgCount {
@@ -2152,26 +2153,26 @@ impl OttlFunction for TraceIDRatioSamplerFunction {
     fn name(&self) -> &str {
         "TraceIDRatioBasedSampler"
     }
-    
+
     fn execute(&self, args: &[OttlValue]) -> Result<OttlValue, OttlError> {
         self.validate_args(args)?;
-        
+
         let trace_id = args[0].as_bytes()?;
         let ratio = args[1].as_float()?;
-        
+
         // 使用 TraceID 的后8字节计算哈希值
         let trace_id_suffix = &trace_id[8..16];
         let trace_id_value = u64::from_be_bytes(
             trace_id_suffix.try_into().unwrap()
         );
-        
+
         // 采样决策: trace_id_value / u64::MAX < ratio
         let threshold = (ratio * u64::MAX as f64) as u64;
         let should_sample = trace_id_value < threshold;
-        
+
         Ok(OttlValue::Bool(should_sample))
     }
-    
+
     fn validate_args(&self, args: &[OttlValue]) -> Result<(), OttlError> {
         if args.len() != 2 {
             return Err(OttlError::InvalidArgCount {
@@ -2192,24 +2193,24 @@ impl OttlFunctionRegistry {
         let mut registry = Self {
             functions: HashMap::new(),
         };
-        
+
         // 注册内置函数
         registry.register(Box::new(SHA256Function));
         registry.register(Box::new(TruncateFunction));
         registry.register(Box::new(ReplacePatternFunction));
         registry.register(Box::new(TraceIDRatioSamplerFunction));
-        
+
         registry
     }
-    
+
     pub fn register(&mut self, function: Box<dyn OttlFunction>) {
         self.functions.insert(function.name().to_string(), function);
     }
-    
+
     pub fn get(&self, name: &str) -> Option<&dyn OttlFunction> {
         self.functions.get(name).map(|b| b.as_ref())
     }
-    
+
     pub fn call(
         &self,
         name: &str,
@@ -2217,7 +2218,7 @@ impl OttlFunctionRegistry {
     ) -> Result<OttlValue, OttlError> {
         let function = self.get(name)
             .ok_or_else(|| OttlError::UnknownFunction(name.to_string()))?;
-        
+
         function.execute(args)
     }
 }
@@ -2251,23 +2252,23 @@ pub struct OttlStatement {
 pub enum Expr {
     /// 字面量: "hello", 42, true
     Literal(OttlValue),
-    
+
     /// Path: span.name, resource.attributes["key"]
     Path(OttlPath),
-    
+
     /// 函数调用: SHA256("data")
     FunctionCall {
         name: String,
         args: Vec<Expr>,
     },
-    
+
     /// 二元操作: left == right
     BinaryOp {
         left: Box<Expr>,
         op: BinaryOperator,
         right: Box<Expr>,
     },
-    
+
     /// 一元操作: not condition
     UnaryOp {
         op: UnaryOperator,
@@ -2287,7 +2288,7 @@ pub enum BinaryOperator {
     Le,   // <=
     In,   // in
     NotIn, // not in
-    
+
     // 逻辑操作
     And, // and
     Or,  // or
@@ -2304,22 +2305,22 @@ pub enum UnaryOperator {
 pub enum Action {
     /// 保留: keep()
     Keep,
-    
+
     /// 丢弃: drop()
     Drop,
-    
+
     /// 设置: set(path, value)
     Set {
         path: OttlPath,
         value: Expr,
     },
-    
+
     /// 删除键: delete_key(path, key)
     DeleteKey {
         path: OttlPath,
         key: String,
     },
-    
+
     /// 路由: route("destination")
     Route {
         destination: String,
@@ -2352,7 +2353,7 @@ impl OttlValue {
             OttlValue::Nil => "Nil",
         }
     }
-    
+
     pub fn as_string(&self) -> Result<String, OttlError> {
         match self {
             OttlValue::String(s) => Ok(s.clone()),
@@ -2362,7 +2363,7 @@ impl OttlValue {
             }),
         }
     }
-    
+
     pub fn as_int(&self) -> Result<i64, OttlError> {
         match self {
             OttlValue::Int(i) => Ok(*i),
@@ -2372,7 +2373,7 @@ impl OttlValue {
             }),
         }
     }
-    
+
     pub fn as_float(&self) -> Result<f64, OttlError> {
         match self {
             OttlValue::Float(f) => Ok(*f),
@@ -2383,7 +2384,7 @@ impl OttlValue {
             }),
         }
     }
-    
+
     pub fn as_bool(&self) -> Result<bool, OttlError> {
         match self {
             OttlValue::Bool(b) => Ok(*b),
@@ -2393,7 +2394,7 @@ impl OttlValue {
             }),
         }
     }
-    
+
     pub fn as_bytes(&self) -> Result<Vec<u8>, OttlError> {
         match self {
             OttlValue::Bytes(b) => Ok(b.clone()),
@@ -2577,11 +2578,11 @@ impl AdaptiveSampler {
             cpu_threshold: 0.7,  // CPU > 70% 时提高采样率
         }
     }
-    
+
     pub async fn adjust_sampling_rate(&self) {
         loop {
             let cpu_usage = get_cpu_usage().await;
-            
+
             let target_hz = if cpu_usage > self.cpu_threshold {
                 // CPU 繁忙 → 提高采样率
                 self.max_hz
@@ -2589,7 +2590,7 @@ impl AdaptiveSampler {
                 // CPU 空闲 → 降低采样率
                 self.base_hz
             };
-            
+
             self.current_hz.store(target_hz, Ordering::Relaxed);
             tokio::time::sleep(Duration::from_secs(10)).await;
         }
@@ -2609,7 +2610,7 @@ impl BatchedSampleProcessor {
     pub async fn process_loop(&self) {
         loop {
             tokio::time::sleep(Duration::from_secs(5)).await;
-            
+
             let samples = {
                 let mut buffer = self.buffer.write();
                 if buffer.len() >= self.batch_size {
@@ -2618,7 +2619,7 @@ impl BatchedSampleProcessor {
                     continue;
                 }
             };
-            
+
             // 批量处理样本 (避免频繁锁争用)
             self.process_batch(samples).await;
         }
@@ -2700,13 +2701,13 @@ pub struct SelfOpsCoordinator {
     // 感知层
     ebpf_profiler: Arc<CpuProfiler>,
     otlp_collector: Arc<OtlpCollector>,
-    
+
     // 分析层
     anomaly_detector: Arc<AnomalyDetector>,
-    
+
     // 决策层
     ottl_engine: Arc<OttlEngine>,
-    
+
     // 执行层
     opamp_client: Arc<OpampClient>,
 }
@@ -2718,24 +2719,24 @@ impl SelfOpsCoordinator {
             let profiles = self.ebpf_profiler.get_samples();
             let traces = self.otlp_collector.get_traces().await?;
             let metrics = self.otlp_collector.get_metrics().await?;
-            
+
             // 2. 分析: 检测异常
             let anomalies = self.anomaly_detector.detect(&profiles, &traces, &metrics)?;
-            
+
             if !anomalies.is_empty() {
                 tracing::warn!("Detected {} anomalies", anomalies.len());
-                
+
                 for anomaly in &anomalies {
                     // 3. 决策: 应用 OTTL 规则
                     let actions = self.ottl_engine.evaluate_anomaly(anomaly)?;
-                    
+
                     // 4. 执行: 通过 OPAMP 下发配置
                     for action in actions {
                         self.opamp_client.execute_action(action).await?;
                     }
                 }
             }
-            
+
             tokio::time::sleep(Duration::from_secs(30)).await;
         }
     }
@@ -2746,8 +2747,8 @@ impl SelfOpsCoordinator {
 
 **✅ Part 2 完成标记 (OTLP 生态系统完整分析)**:
 
-**最终行数**: ~3200 行  
-**完成度**: 100%  
+**最终行数**: ~3200 行
+**完成度**: 100%
 **覆盖内容**:
 
 - ✅ Section 1: OTLP 协议语义模型 (910行)

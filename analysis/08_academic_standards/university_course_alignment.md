@@ -71,7 +71,7 @@
             // 学生需要实现分布式资源发现算法
             // 包括服务发现、健康检查、负载均衡等
         }
-        
+
         // 实现分布式追踪
         pub async fn collect_trace(&self, trace_id: TraceId) -> Result<Trace, Error> {
             // 学生需要实现分布式追踪算法
@@ -96,7 +96,7 @@
             // 学生需要实现故障检测算法
             // 包括心跳检测、超时检测、一致性检查等
         }
-        
+
         // 实现故障恢复策略
         pub async fn recover_from_failure(&self, failure: &Failure) -> Result<(), Error> {
             // 学生需要实现故障恢复策略
@@ -222,15 +222,15 @@
             self.endpoint = endpoint
             self.credentials = credentials
             self.session = requests.Session()
-        
+
         def send_trace(self, trace: Trace) -> Response:
             # 学生实现OTLP Trace传输
             # 包括序列化、压缩、传输、错误处理等
-            
+
         def send_metric(self, metric: Metric) -> Response:
             # 学生实现OTLP Metric传输
             # 包括数据聚合、批量传输、重试机制等
-            
+
         def send_log(self, log: Log) -> Response:
             # 学生实现OTLP Log传输
             # 包括结构化日志、索引、搜索等
@@ -245,7 +245,7 @@
             self.compression = CompressionEngine()
             self.batching = BatchingEngine()
             self.retry = RetryEngine()
-        
+
         def optimize_transmission(self, data: ObservabilityData) -> OptimizedData:
             # 学生实现网络传输优化
             # 包括压缩、批处理、重试、负载均衡等
@@ -303,12 +303,12 @@
     public class SecureOTLPTransport {
         private SSLContext sslContext;
         private CertificateManager certificateManager;
-        
+
         public SecureOTLPTransport(String caCert, String clientCert, String clientKey) {
             // 学生实现mTLS配置
             this.sslContext = createSSLContext(caCert, clientCert, clientKey);
         }
-        
+
         public void sendSecureData(ObservabilityData data) throws SecurityException {
             // 学生实现安全数据传输
             // 包括加密、认证、完整性验证等
@@ -323,12 +323,12 @@
     public class NetworkPerformanceMonitor {
         private MetricsCollector metricsCollector;
         private AlertManager alertManager;
-        
+
         public void monitorNetworkPerformance() {
             // 学生实现网络性能监控
             // 包括延迟测量、吞吐量统计、丢包检测等
         }
-        
+
         public void generateNetworkReport() {
             // 学生实现网络性能报告
             // 包括性能分析、趋势预测、优化建议等
@@ -377,7 +377,7 @@
     class ObservabilitySystemImpl implements ObservabilitySystem {
         // 学生实现系统架构设计
         // 包括组件设计、接口定义、数据流设计等
-        
+
         constructor() {
             this.dataCollection = new DataCollectionLayer();
             this.dataProcessing = new DataProcessingLayer();
@@ -456,12 +456,12 @@
     class ConcurrentDataProcessor {
         private val executorService = Executors.newFixedThreadPool(10)
         private val dataQueue = ConcurrentLinkedQueue<ObservabilityData>()
-        
+
         fun processData(data: ObservabilityData) {
             // 学生实现并发数据处理
             // 包括线程池管理、数据队列、同步机制等
         }
-        
+
         fun shutdown() {
             // 学生实现优雅关闭
             // 包括任务完成等待、资源清理等
@@ -478,7 +478,7 @@
             // 学生实现数据收集测试
             // 包括模拟数据生成、测试用例设计、断言验证等
         }
-        
+
         fun testDataProcessing() {
             // 学生实现数据处理测试
             // 包括性能测试、压力测试、边界测试等
@@ -525,11 +525,11 @@
         def __init__(self):
             self.model = IsolationForest(contamination=0.1)
             self.scaler = StandardScaler()
-        
+
         def train(self, data: np.ndarray):
             # 学生实现异常检测模型训练
             # 包括数据预处理、特征工程、模型训练等
-            
+
         def detect_anomalies(self, data: np.ndarray) -> np.ndarray:
             # 学生实现异常检测
             # 包括数据标准化、异常评分、阈值判断等
@@ -547,15 +547,15 @@
         def __init__(self, sequence_length: int):
             self.sequence_length = sequence_length
             self.model = self.build_model()
-        
+
         def build_model(self):
             # 学生实现LSTM模型构建
             # 包括网络结构设计、激活函数选择、优化器配置等
-            
+
         def train(self, data: np.ndarray):
             # 学生实现模型训练
             # 包括数据序列化、批次处理、损失函数定义等
-            
+
         def predict(self, data: np.ndarray) -> np.ndarray:
             # 学生实现时间序列预测
             # 包括数据预处理、模型推理、结果后处理等
@@ -748,4 +748,4 @@
 
 ---
 
-*本文档基于斯坦福大学、MIT等知名大学的课程大纲和教学实践，结合OTLP技术特点编写。*
+_本文档基于斯坦福大学、MIT等知名大学的课程大纲和教学实践，结合OTLP技术特点编写。_

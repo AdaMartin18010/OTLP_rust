@@ -61,22 +61,22 @@ pub enum QualityDimension {
 impl DataQualityManager {
     pub async fn assess_data_quality(&self, data: &TelemetryData, quality_framework: &DataQualityFramework) -> Result<DataQualityAssessment, AssessmentError> {
         let mut assessment = DataQualityAssessment::new();
-        
+
         // 评估各个质量维度
         for dimension in &quality_framework.quality_dimensions {
             let dimension_score = self.quality_assessor.assess_quality_dimension(data, dimension).await?;
             assessment.dimension_scores.insert(dimension.clone(), dimension_score);
         }
-        
+
         // 计算总体质量分数
         assessment.overall_quality_score = self.calculate_overall_quality_score(&assessment.dimension_scores);
-        
+
         // 识别质量问题
         assessment.quality_issues = self.identify_quality_issues(&assessment, quality_framework).await?;
-        
+
         // 生成质量报告
         assessment.quality_report = self.quality_reporter.generate_quality_report(&assessment).await?;
-        
+
         Ok(assessment)
     }
 
@@ -112,7 +112,7 @@ impl DataQualityManager {
     async fn assess_completeness(&self, data: &TelemetryData) -> Result<QualityScore, AssessmentError> {
         let mut completeness_score = 0.0;
         let mut total_fields = 0;
-        
+
         match data {
             TelemetryData::Metrics(metrics) => {
                 for metric in metrics {
@@ -142,9 +142,9 @@ impl DataQualityManager {
                 }
             }
         }
-        
+
         let score = if total_fields > 0 { completeness_score / total_fields as f64 } else { 1.0 };
-        
+
         Ok(QualityScore {
             dimension: QualityDimension::Completeness,
             score,
@@ -155,24 +155,24 @@ impl DataQualityManager {
     async fn assess_accuracy(&self, data: &TelemetryData) -> Result<QualityScore, AssessmentError> {
         let mut accuracy_score = 0.0;
         let mut total_checks = 0;
-        
+
         // 验证数据格式
         let format_validation = self.validate_data_format(data).await?;
         accuracy_score += format_validation.score;
         total_checks += 1;
-        
+
         // 验证数据范围
         let range_validation = self.validate_data_ranges(data).await?;
         accuracy_score += range_validation.score;
         total_checks += 1;
-        
+
         // 验证数据逻辑
         let logic_validation = self.validate_data_logic(data).await?;
         accuracy_score += logic_validation.score;
         total_checks += 1;
-        
+
         let score = accuracy_score / total_checks as f64;
-        
+
         Ok(QualityScore {
             dimension: QualityDimension::Accuracy,
             score,
@@ -196,19 +196,19 @@ pub struct DataQualityMonitor {
 impl DataQualityMonitor {
     pub async fn monitor_data_quality(&self, monitoring_config: &QualityMonitoringConfig) -> Result<QualityMonitoringResult, MonitoringError> {
         let mut result = QualityMonitoringResult::new();
-        
+
         // 收集质量指标
         let quality_metrics = self.quality_metrics_collector.collect_quality_metrics(&monitoring_config.data_sources).await?;
         result.quality_metrics = quality_metrics;
-        
+
         // 分析质量趋势
         let trend_analysis = self.quality_trend_analyzer.analyze_quality_trends(&quality_metrics).await?;
         result.trend_analysis = trend_analysis;
-        
+
         // 检测质量异常
         let quality_anomalies = self.detect_quality_anomalies(&quality_metrics, &monitoring_config.thresholds).await?;
         result.quality_anomalies = quality_anomalies;
-        
+
         // 生成质量告警
         for anomaly in &result.quality_anomalies {
             if anomaly.severity >= QualityAnomalySeverity::High {
@@ -216,55 +216,55 @@ impl DataQualityMonitor {
                 result.quality_alerts.push(alert);
             }
         }
-        
+
         // 更新质量仪表板
         result.dashboard_update = self.quality_dashboard.update_dashboard(&quality_metrics, &trend_analysis).await?;
-        
+
         Ok(result)
     }
 
     async fn detect_quality_anomalies(&self, metrics: &QualityMetrics, thresholds: &QualityThresholds) -> Result<Vec<QualityAnomaly>, DetectionError> {
         let mut anomalies = Vec::new();
-        
+
         // 检测完整性异常
         if metrics.completeness_score < thresholds.completeness_threshold {
             anomalies.push(QualityAnomaly {
                 anomaly_type: QualityAnomalyType::CompletenessIssue,
                 severity: self.calculate_anomaly_severity(metrics.completeness_score, thresholds.completeness_threshold),
-                description: format!("Data completeness below threshold: {:.2}% < {:.2}%", 
-                                   metrics.completeness_score * 100.0, 
+                description: format!("Data completeness below threshold: {:.2}% < {:.2}%",
+                                   metrics.completeness_score * 100.0,
                                    thresholds.completeness_threshold * 100.0),
                 affected_data_sources: metrics.data_sources.clone(),
                 detected_at: SystemTime::now(),
             });
         }
-        
+
         // 检测准确性异常
         if metrics.accuracy_score < thresholds.accuracy_threshold {
             anomalies.push(QualityAnomaly {
                 anomaly_type: QualityAnomalyType::AccuracyIssue,
                 severity: self.calculate_anomaly_severity(metrics.accuracy_score, thresholds.accuracy_threshold),
-                description: format!("Data accuracy below threshold: {:.2}% < {:.2}%", 
-                                   metrics.accuracy_score * 100.0, 
+                description: format!("Data accuracy below threshold: {:.2}% < {:.2}%",
+                                   metrics.accuracy_score * 100.0,
                                    thresholds.accuracy_threshold * 100.0),
                 affected_data_sources: metrics.data_sources.clone(),
                 detected_at: SystemTime::now(),
             });
         }
-        
+
         // 检测一致性异常
         if metrics.consistency_score < thresholds.consistency_threshold {
             anomalies.push(QualityAnomaly {
                 anomaly_type: QualityAnomalyType::ConsistencyIssue,
                 severity: self.calculate_anomaly_severity(metrics.consistency_score, thresholds.consistency_threshold),
-                description: format!("Data consistency below threshold: {:.2}% < {:.2}%", 
-                                   metrics.consistency_score * 100.0, 
+                description: format!("Data consistency below threshold: {:.2}% < {:.2}%",
+                                   metrics.consistency_score * 100.0,
                                    thresholds.consistency_threshold * 100.0),
                 affected_data_sources: metrics.data_sources.clone(),
                 detected_at: SystemTime::now(),
             });
         }
-        
+
         Ok(anomalies)
     }
 }
@@ -299,82 +299,82 @@ pub struct DataLifecyclePolicy {
 impl DataLifecycleManager {
     pub async fn manage_data_lifecycle(&self, data: &TelemetryData, lifecycle_policies: &[DataLifecyclePolicy]) -> Result<LifecycleManagementResult, ManagementError> {
         let mut result = LifecycleManagementResult::new();
-        
+
         // 分类数据
         let data_classification = self.data_classifier.classify_data(data).await?;
         result.data_classification = data_classification;
-        
+
         // 选择适用的生命周期策略
         let applicable_policy = self.select_applicable_policy(&data_classification, lifecycle_policies).await?;
         result.applicable_policy = applicable_policy;
-        
+
         // 执行生命周期管理
         let lifecycle_actions = self.execute_lifecycle_actions(data, &applicable_policy).await?;
         result.lifecycle_actions = lifecycle_actions;
-        
+
         // 更新数据状态
         let data_status_update = self.update_data_status(data, &lifecycle_actions).await?;
         result.data_status_update = data_status_update;
-        
+
         Ok(result)
     }
 
     async fn execute_lifecycle_actions(&self, data: &TelemetryData, policy: &DataLifecyclePolicy) -> Result<Vec<LifecycleAction>, ActionError> {
         let mut actions = Vec::new();
-        
+
         // 检查是否需要归档
         if self.should_archive_data(data, policy).await? {
             let archival_action = self.archival_manager.archive_data(data, policy).await?;
             actions.push(archival_action);
         }
-        
+
         // 检查是否需要删除
         if self.should_delete_data(data, policy).await? {
             let deletion_action = self.deletion_manager.delete_data(data, policy).await?;
             actions.push(deletion_action);
         }
-        
+
         // 检查是否需要更新保留策略
         if self.should_update_retention(data, policy).await? {
             let retention_action = self.retention_manager.update_retention(data, policy).await?;
             actions.push(retention_action);
         }
-        
+
         Ok(actions)
     }
 
     async fn should_archive_data(&self, data: &TelemetryData, policy: &DataLifecyclePolicy) -> Result<bool, DecisionError> {
         let data_age = self.calculate_data_age(data).await?;
-        
+
         // 如果数据年龄超过归档期限，则需要归档
         if data_age > policy.archival_period {
             return Ok(true);
         }
-        
+
         // 检查访问模式
         let access_frequency = self.analyze_access_frequency(data).await?;
         if access_frequency < 0.1 { // 访问频率低于10%
             return Ok(true);
         }
-        
+
         Ok(false)
     }
 
     async fn should_delete_data(&self, data: &TelemetryData, policy: &DataLifecyclePolicy) -> Result<bool, DecisionError> {
         let data_age = self.calculate_data_age(data).await?;
-        
+
         // 如果数据年龄超过删除期限，则需要删除
         if data_age > policy.deletion_period {
             return Ok(true);
         }
-        
+
         // 检查合规要求
         for compliance_req in &policy.compliance_requirements {
             if self.check_compliance_deletion_requirement(data, compliance_req).await? {
                 return Ok(true);
             }
         }
-        
+
         Ok(false)
     }
 }
@@ -394,49 +394,49 @@ pub struct DataArchivalManager {
 impl DataArchivalManager {
     pub async fn archive_data(&self, data: &TelemetryData, policy: &DataLifecyclePolicy) -> Result<ArchivalAction, ArchivalError> {
         let mut action = ArchivalAction::new();
-        
+
         // 选择归档策略
         let archival_strategy = self.archival_strategy.select_strategy(data, policy).await?;
         action.archival_strategy = archival_strategy;
-        
+
         // 优化存储
         let storage_optimization = self.storage_optimizer.optimize_for_archival(data, &archival_strategy).await?;
         action.storage_optimization = storage_optimization;
-        
+
         // 压缩数据
         let compression_result = self.compression_engine.compress_for_archival(data, &archival_strategy).await?;
         action.compression_result = compression_result;
-        
+
         // 创建归档元数据
         let archival_metadata = self.metadata_manager.create_archival_metadata(data, policy).await?;
         action.archival_metadata = archival_metadata;
-        
+
         // 执行归档
         let archival_execution = self.execute_archival(data, &archival_strategy, &compression_result).await?;
         action.archival_execution = archival_execution;
-        
+
         Ok(action)
     }
 
     async fn execute_archival(&self, data: &TelemetryData, strategy: &ArchivalStrategy, compression: &CompressionResult) -> Result<ArchivalExecution, ExecutionError> {
         let mut execution = ArchivalExecution::new();
-        
+
         // 选择归档存储
         let archival_storage = self.select_archival_storage(strategy).await?;
         execution.archival_storage = archival_storage;
-        
+
         // 传输数据到归档存储
         let data_transfer = self.transfer_data_to_archival(data, &archival_storage, compression).await?;
         execution.data_transfer = data_transfer;
-        
+
         // 验证归档完整性
         let integrity_verification = self.verify_archival_integrity(data, &archival_storage).await?;
         execution.integrity_verification = integrity_verification;
-        
+
         // 更新数据状态
         let status_update = self.update_archival_status(data, &archival_storage).await?;
         execution.status_update = status_update;
-        
+
         Ok(execution)
     }
 }
@@ -477,59 +477,59 @@ pub enum ClassificationLevel {
 impl DataClassificationSystem {
     pub async fn classify_data(&self, data: &TelemetryData) -> Result<DataClassification, ClassificationError> {
         let mut classification = DataClassification::new();
-        
+
         // 分析数据内容
         let content_analysis = self.analyze_data_content(data).await?;
-        
+
         // 确定分类级别
         classification.classification_level = self.determine_classification_level(&content_analysis).await?;
-        
+
         // 确定数据类别
         classification.data_category = self.determine_data_category(&content_analysis).await?;
-        
+
         // 分析敏感度
         classification.sensitivity_level = self.sensitivity_analyzer.analyze_sensitivity(&content_analysis).await?;
-        
+
         // 评估业务影响
         classification.business_impact = self.assess_business_impact(&content_analysis, &classification).await?;
-        
+
         // 确定合规要求
         classification.compliance_requirements = self.determine_compliance_requirements(&classification).await?;
-        
+
         // 设计访问控制
         classification.access_controls = self.access_controller.design_access_controls(&classification).await?;
-        
+
         Ok(classification)
     }
 
     async fn determine_classification_level(&self, content_analysis: &ContentAnalysis) -> Result<ClassificationLevel, DeterminationError> {
         let mut score = 0.0;
-        
+
         // 分析个人身份信息
         if content_analysis.contains_pii {
             score += 0.4;
         }
-        
+
         // 分析财务信息
         if content_analysis.contains_financial_data {
             score += 0.3;
         }
-        
+
         // 分析健康信息
         if content_analysis.contains_health_data {
             score += 0.3;
         }
-        
+
         // 分析商业机密
         if content_analysis.contains_trade_secrets {
             score += 0.4;
         }
-        
+
         // 分析系统信息
         if content_analysis.contains_system_information {
             score += 0.2;
         }
-        
+
         // 根据分数确定分类级别
         match score {
             s if s >= 0.8 => Ok(ClassificationLevel::TopSecret),
@@ -583,49 +583,49 @@ pub struct DataLineage {
 impl DataLineageTracker {
     pub async fn track_data_lineage(&self, data_asset: &DataAsset) -> Result<DataLineage, LineageError> {
         let mut lineage = DataLineage::new();
-        
+
         // 构建血缘图
         let lineage_graph = self.lineage_builder.build_lineage_graph(data_asset).await?;
         lineage.lineage_graph = lineage_graph;
-        
+
         // 识别数据资产
         lineage.data_assets = self.identify_data_assets(&lineage_graph).await?;
-        
+
         // 识别转换过程
         lineage.transformations = self.identify_transformations(&lineage_graph).await?;
-        
+
         // 识别依赖关系
         lineage.dependencies = self.identify_dependencies(&lineage_graph).await?;
-        
+
         // 分析血缘影响
         let impact_analysis = self.impact_analyzer.analyze_lineage_impact(&lineage).await?;
         lineage.impact_analysis = impact_analysis;
-        
+
         Ok(lineage)
     }
 
     pub async fn analyze_data_impact(&self, change_request: &DataChangeRequest) -> Result<ImpactAnalysis, AnalysisError> {
         let mut analysis = ImpactAnalysis::new();
-        
+
         // 识别影响的数据资产
         let affected_assets = self.identify_affected_assets(change_request).await?;
         analysis.affected_assets = affected_assets;
-        
+
         // 分析下游影响
         let downstream_impact = self.analyze_downstream_impact(&affected_assets).await?;
         analysis.downstream_impact = downstream_impact;
-        
+
         // 分析上游影响
         let upstream_impact = self.analyze_upstream_impact(&affected_assets).await?;
         analysis.upstream_impact = upstream_impact;
-        
+
         // 评估影响严重性
         let impact_severity = self.assess_impact_severity(&analysis).await?;
         analysis.impact_severity = impact_severity;
-        
+
         // 生成影响报告
         analysis.impact_report = self.generate_impact_report(&analysis).await?;
-        
+
         Ok(analysis)
     }
 }
@@ -659,4 +659,4 @@ impl DataLineageTracker {
 
 ---
 
-*本文档提供了OTLP系统数据治理的深度分析，为构建企业级数据治理体系提供全面指导。*
+_本文档提供了OTLP系统数据治理的深度分析，为构建企业级数据治理体系提供全面指导。_

@@ -110,7 +110,7 @@ SystemResponsiveness ==
     \A n \in nodes :
         /\ nodeStates[n].status = "active"
         /\ messageQueues[n] /= <<>> =>
-        <> (\E msg \in messages : 
+        <> (\E msg \in messages :
             /\ msg.destination = n
             /\ msg.id \in globalState.committedMessages)
 ```
@@ -172,9 +172,9 @@ LatencyBound ==
 ```tla
 ThroughputGuarantee ==
     \A timeWindow \in Nat :
-        Cardinality({msg \in messages : 
+        Cardinality({msg \in messages :
             /\ msg.id \in globalState.committedMessages
-            /\ msg.timestamp \in timeWindow..timeWindow + TimeWindowSize}) 
+            /\ msg.timestamp \in timeWindow..timeWindow + TimeWindowSize})
         >= MinThroughput * TimeWindowSize
 ```
 
@@ -199,7 +199,7 @@ Proof.
   (* 基于系统状态不变式进行证明 *)
   unfold system_invariant in H_msg_in.
   destruct H_msg_in as [H_valid H_processed].
-  
+
   (* 证明消息源和目标的合法性 *)
   split.
   - apply H_valid. left. reflexivity.
@@ -226,10 +226,10 @@ Theorem message_delivery_safety :
 
 Proof.
   intros s msg H_msg_in H_dest_in H_dest_active H_committed.
-  
+
   (* 基于消息处理协议进行证明 *)
   destruct (message_processing_protocol s msg) as [n H_processed].
-  
+
   exists n.
   split.
   - apply H_processed.
@@ -253,7 +253,7 @@ Theorem message_delivery_liveness :
 
 Proof.
   intros s msg H_msg_in H_dest_in H_dest_active H_timeout.
-  
+
   (* 使用公平性假设和系统进展性质 *)
   apply eventually_impl.
   - apply fairness_assumption.
@@ -270,7 +270,7 @@ Theorem system_responsiveness :
     In n (system_nodes s) ->
     node_status (system_node_states s n) = Active ->
     system_message_queues s n <> [] ->
-    eventually (fun s' => 
+    eventually (fun s' =>
       exists (msg : Message),
         In msg (system_messages s') /\
         msg_destination msg = n /\
@@ -278,7 +278,7 @@ Theorem system_responsiveness :
 
 Proof.
   intros s n H_n_in H_n_active H_queue_nonempty.
-  
+
   (* 基于消息处理活性进行证明 *)
   apply eventually_impl.
   - apply message_processing_liveness.
@@ -307,7 +307,7 @@ Theorem byzantine_fault_tolerance :
 
 Proof.
   intros s failed_nodes H_subset H_fault_bound msg H_msg_in H_src_not_failed H_dest_not_failed H_src_active H_dest_active.
-  
+
   (* 基于拜占庭容错协议进行证明 *)
   apply eventually_impl.
   - apply byzantine_consensus_protocol.
@@ -336,7 +336,7 @@ Theorem network_partition_tolerance :
 
 Proof.
   intros s partition1 partition2 H_partition H_disjoint H_part1_nonempty H_part2_nonempty msg H_msg_in H_src_in_part1 H_dest_in_part1.
-  
+
   (* 基于分区内通信进行证明 *)
   apply eventually_impl.
   - apply intra_partition_communication.
@@ -383,13 +383,13 @@ proof -
     "node_status_validity s" and
     "message_processing_consistency s"
     by (simp_all add: system_invariant_def)
-  
+
   from assms(2) have
     "data_integrity s'" and
     "node_status_validity s'" and
     "message_processing_consistency s'"
     by (rule system_transition_preserves_properties)
-  
+
   thus ?thesis
     by (simp add: system_invariant_def)
 qed
@@ -415,7 +415,7 @@ proof -
     "state_consistency s" and
     "fault_tolerance s"
     by (simp_all add: system_invariant_def)
-  
+
   thus ?thesis
     by (simp add: safety_properties_def)
 qed
@@ -431,14 +431,14 @@ proof -
     "state_consistency s" and
     "fault_tolerance s"
     by (simp_all add: safety_properties_def)
-  
+
   from assms(2) have
     "data_integrity s'" and
     "message_delivery_safety s'" and
     "state_consistency s'" and
     "fault_tolerance s'"
     by (rule system_transition_preserves_safety)
-  
+
   thus ?thesis
     by (simp add: safety_properties_def)
 qed
@@ -459,13 +459,13 @@ theorem liveness_properties_eventually_hold:
   shows "eventually liveness_properties"
 proof -
   from assms(1) have "system_invariant s" by simp
-  
+
   from assms(2) have
     "eventually message_delivery_liveness" and
     "eventually system_responsiveness" and
     "eventually fault_recovery_liveness"
     by (rule fair_execution_guarantees_liveness)
-  
+
   thus ?thesis
     by (simp add: liveness_properties_def eventually_conj)
 qed
@@ -489,11 +489,11 @@ Theorem latency_bound_guarantee :
 Proof.
   intros s H_invariant.
   unfold max_processing_delay.
-  
+
   (* 基于系统性能模型进行证明 *)
   apply max_list_bound.
   intros msg H_msg_in.
-  
+
   (* 证明单个消息的延迟界限 *)
   apply message_processing_delay_bound.
   - exact H_invariant.
@@ -502,7 +502,7 @@ Qed.
 
 (* 吞吐量保证 *)
 Definition throughput_in_time_window (s : SystemState) (start_time end_time : nat) : nat :=
-  length (filter (fun msg => 
+  length (filter (fun msg =>
     In (msg_id msg) (global_committed_messages (system_global_state s)) /\
     msg_timestamp msg >= start_time /\
     msg_timestamp msg < end_time
@@ -517,7 +517,7 @@ Theorem throughput_guarantee :
 Proof.
   intros s start_time end_time H_invariant H_window_size.
   unfold throughput_in_time_window.
-  
+
   (* 基于系统吞吐量模型进行证明 *)
   apply throughput_model_guarantee.
   - exact H_invariant.
@@ -540,7 +540,7 @@ Theorem memory_usage_bound :
 Proof.
   intros s H_invariant.
   unfold max_memory_usage.
-  
+
   (* 基于内存管理策略进行证明 *)
   apply memory_management_bound.
   exact H_invariant.
@@ -558,7 +558,7 @@ Theorem cpu_usage_bound :
 Proof.
   intros s H_invariant.
   unfold max_cpu_usage.
-  
+
   (* 基于CPU调度策略进行证明 *)
   apply cpu_scheduling_bound.
   exact H_invariant.
@@ -580,25 +580,25 @@ pub struct MicroservicePropertyVerifier {
 
 impl MicroservicePropertyVerifier {
     pub async fn verify_microservice_properties(
-        &mut self, 
+        &mut self,
         microservice_system: &MicroserviceSystem
     ) -> Result<PropertyVerificationResult, VerificationError> {
         // 验证安全性属性
         let safety_result = self.safety_verifier
             .verify_safety_properties(microservice_system).await?;
-        
+
         // 验证活性属性
         let liveness_result = self.liveness_verifier
             .verify_liveness_properties(microservice_system).await?;
-        
+
         // 验证性能属性
         let performance_result = self.performance_verifier
             .verify_performance_properties(microservice_system).await?;
-        
+
         // 验证容错性属性
         let fault_tolerance_result = self.fault_tolerance_verifier
             .verify_fault_tolerance_properties(microservice_system).await?;
-        
+
         Ok(PropertyVerificationResult {
             safety_result,
             liveness_result,
@@ -628,25 +628,25 @@ pub struct CloudNativePropertyVerifier {
 
 impl CloudNativePropertyVerifier {
     pub async fn verify_cloud_native_properties(
-        &mut self, 
+        &mut self,
         cloud_native_system: &CloudNativeSystem
     ) -> Result<CloudNativeVerificationResult, VerificationError> {
         // 验证Kubernetes集群属性
         let k8s_result = self.kubernetes_verifier
             .verify_cluster_properties(&cloud_native_system.kubernetes_cluster).await?;
-        
+
         // 验证容器属性
         let container_result = self.container_verifier
             .verify_container_properties(&cloud_native_system.containers).await?;
-        
+
         // 验证服务网格属性
         let service_mesh_result = self.service_mesh_verifier
             .verify_service_mesh_properties(&cloud_native_system.service_mesh).await?;
-        
+
         // 验证多租户属性
         let multi_tenant_result = self.multi_tenant_verifier
             .verify_multi_tenant_properties(&cloud_native_system.tenants).await?;
-        
+
         Ok(CloudNativeVerificationResult {
             k8s_result,
             container_result,
@@ -673,7 +673,7 @@ pub struct AutomatedPropertyVerification {
 
 impl AutomatedPropertyVerification {
     pub async fn verify_all_properties(
-        &mut self, 
+        &mut self,
         system_specification: &SystemSpecification
     ) -> Result<ComprehensiveVerificationResult, VerificationError> {
         // 并行运行所有验证工具
@@ -683,7 +683,7 @@ impl AutomatedPropertyVerification {
             self.isabelle_verifier.verify_properties(system_specification),
             self.model_checker.verify_properties(system_specification)
         );
-        
+
         // 聚合验证结果
         let aggregated_result = self.result_aggregator.aggregate_verification_results(
             tla_result?,
@@ -691,7 +691,7 @@ impl AutomatedPropertyVerification {
             isabelle_result?,
             model_check_result?
         ).await?;
-        
+
         Ok(aggregated_result)
     }
 }

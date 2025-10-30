@@ -1,0 +1,160 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "ignorePaths": [
+    "node_modules/**",
+    "target/**",
+    "**/target/**",
+    "**/.git/**",
+    "**/*.lock",
+    "Cargo.lock"
+  ],
+  "words": [
+    // Rust 技术术语
+    "usize",
+    "tokio",
+    "anyhow",
+    "serde",
+    "protobuf",
+    "reqwest",
+    "chrono",
+    "tonic",
+    "axum",
+    "tracing",
+    "rustc",
+    "rustup",
+    "clippy",
+    "rustfmt",
+    "nextest",
+    "sccache",
+    // OpenTelemetry 相关
+    "OTLP",
+    "OPAMP",
+    "OTTL",
+    "opentelemetry",
+    "Jaeger",
+    "Zipkin",
+    "Prometheus",
+    "Grafana",
+    "traceparent",
+    "tracestate",
+    "semconv",
+    // 业务术语
+    "ecommerce",
+    "microservices",
+    "microservice",
+    "SaaS",
+    "APIs",
+    // 压缩/编码
+    "zstd",
+    "gzip",
+    "protoc",
+    // Kubernetes 相关
+    "kubectl",
+    "kubernetes",
+    "k8s",
+    "cgroup",
+    "cgroups",
+    "namespace",
+    "namespaces",
+    "replicaset",
+    "replicasets",
+    // eBPF 相关
+    "eBPF",
+    "kprobe",
+    "kprobes",
+    "uprobe",
+    "uprobes",
+    "kretprobe",
+    "uretprobe",
+    "tracepoint",
+    "tracepoints",
+    "perf",
+    "jvmti",
+    "Jvmti",
+    // 性能分析
+    "hotspot",
+    "hotspots",
+    "Hotspot",
+    "mmap",
+    "Mmap",
+    // 数据库
+    "PostgreSQL",
+    "MySQL",
+    "MongoDB",
+    "Redis",
+    "Elasticsearch",
+    // 网络协议
+    "gRPC",
+    "HTTP",
+    "HTTPS",
+    "WebSocket",
+    "websocket",
+    "TCP",
+    "UDP",
+    "TLS",
+    "mTLS",
+    // 安全相关
+    "OAuth",
+    "JWT",
+    "RBAC",
+    // 云平台
+    "AWS",
+    "Azure",
+    "GCP",
+    // 其他技术术语
+    "GraphQL",
+    "RESTful",
+    "JSON",
+    "YAML",
+    "TOML",
+    "CPU",
+    "GPU",
+    "QPS",
+    "TPS",
+    "P99",
+    "SLO",
+    "SLA",
+    "SLI",
+    "EBNF",
+    "ebnf",
+    "PBFT",
+    "Lamport",
+    // Node.js 相关
+    "libuv",
+    "Libuv",
+    // 网络/性能术语
+    "cooldown",
+    "Mbps",
+    "Gbps",
+    "anonymization",
+    // 通用标识符
+    "myapp",
+    // Linux 包管理相关
+    "devel"
+  ],
+  "ignoreWords": [
+    // 中文拼音/特殊标识符
+    "CNY",
+    "VIP"
+  ],
+  "dictionaries": [
+    "rust",
+    "en-US",
+    "companies",
+    "softwareTerms",
+    "misc",
+    "project-words"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "project-words",
+      "path": "./.cspell-project-words.txt",
+      "addWords": true
+    }
+  ],
+  "enableFiletypes": [
+    "markdown",
+    "rust"
+  ]
+}

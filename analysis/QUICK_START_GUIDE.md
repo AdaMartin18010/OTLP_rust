@@ -95,17 +95,17 @@ use opentelemetry_sdk::Resource;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化追踪器
     let tracer = init_tracer()?;
-    
+
     // 创建span追踪微服务调用
     tracer.in_span("process_order", |cx| {
         // 业务逻辑
         println!("处理订单...");
-        
+
         // 添加自定义属性
         cx.span().set_attribute(KeyValue::new("order.id", "12345"));
         cx.span().set_attribute(KeyValue::new("customer.id", "67890"));
     });
-    
+
     global::shutdown_tracer_provider();
     Ok(())
 }
@@ -124,10 +124,10 @@ use opentelemetry_sdk::metrics::SdkMeterProvider;
 
 fn monitor_performance() {
     let meter = SdkMeterProvider::default().meter("my-service");
-    
+
     // 创建计数器
     let request_counter = meter.u64_counter("http.requests").init();
-    
+
     // 记录请求
     request_counter.add(1, &[
         KeyValue::new("method", "GET"),
@@ -144,7 +144,7 @@ use opentelemetry::logs::{Logger, LoggerProvider};
 fn distributed_logging() {
     let logger_provider = /* 初始化 */;
     let logger = logger_provider.logger("my-app");
-    
+
     logger.emit(
         opentelemetry::logs::LogRecord::builder()
             .with_severity_text("ERROR")
@@ -298,7 +298,7 @@ cargo tarpaulin --workspace --out Html
 
 ### 遇到问题？
 
-1. 检查 [常见问题](#常见问题排查)
+1. 检查 [常见问题](#-常见问题排查)
 2. 搜索项目 [Issues](https://github.com/your-org/OTLP_rust/issues)
 3. 在 [Discussions](https://github.com/your-org/OTLP_rust/discussions) 提问
 4. 参考 [完整文档索引](INDEX.md)
@@ -322,8 +322,8 @@ cargo tarpaulin --workspace --out Html
 
 ---
 
-**更新日期**: 2025年10月29日  
-**文档版本**: v1.0  
+**更新日期**: 2025年10月29日
+**文档版本**: v1.0
 **维护者**: OTLP_rust Team
 
 祝您学习愉快！🎉

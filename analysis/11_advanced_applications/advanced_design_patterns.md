@@ -91,10 +91,10 @@ impl ServiceCallSpan {
 
     pub fn end_with_result(&mut self, result: &ServiceCallResult) {
         let duration = self.start_time.elapsed();
-        
+
         self.span.set_attribute(KeyValue::new("mesh.response_time", duration.as_secs_f64()));
         self.span.set_attribute(KeyValue::new("mesh.response_code", result.status_code as f64));
-        
+
         if !result.success {
             self.span.set_attribute(KeyValue::new("mesh.error", result.error.clone()));
             self.span.set_status(StatusCode::Error, &result.error);
@@ -138,10 +138,10 @@ impl ServiceRegistry for ConsulServiceRegistry {
             // 注册服务到Consul
             let registration = self.build_consul_registration(service);
             self.client.agent().service_register(&registration).await?;
-            
+
             // 设置健康检查
             self.health_checker.register_health_check(service).await?;
-            
+
             Ok::<(), RegistryError>(())
         }.await;
 
@@ -181,9 +181,9 @@ pub struct EventSourcedAggregate<T> {
     event_store: Arc<dyn EventStore>,
 }
 
-impl<T> EventSourcedAggregate<T> 
-where 
-    T: Default + Clone + Send + Sync + 'static 
+impl<T> EventSourcedAggregate<T>
+where
+    T: Default + Clone + Send + Sync + 'static
 {
     pub fn new(id: String, event_store: Arc<dyn EventStore>) -> Self {
         Self {
@@ -197,7 +197,7 @@ where
 
     pub async fn load_from_history(&mut self) -> Result<(), EventStoreError> {
         let events = self.event_store.get_events(&self.id, 0).await?;
-        
+
         for event in events {
             self.apply_event(&event);
             self.version += 1;
@@ -263,7 +263,7 @@ impl EventBus {
     pub fn subscribe(&self, event_type: String, handler: Box<dyn EventHandler>) {
         let mut subscribers = self.subscribers.lock().unwrap();
         subscribers.entry(event_type.clone()).or_insert_with(Vec::new).push(handler);
-        
+
         self.observability.metrics.increment_counter("event_subscriptions", 1, vec![
             KeyValue::new("event_type", event_type),
         ]);
@@ -295,10 +295,10 @@ impl EventBus {
 
         // 等待所有订阅者处理完成
         let results = futures::future::join_all(tasks).await;
-        
+
         let mut success_count = 0;
         let mut error_count = 0;
-        
+
         for result in results {
             match result {
                 Ok(Ok(_)) => success_count += 1,
@@ -348,15 +348,15 @@ impl CommandHandler<CreateUserCommand, UserId> for UserCommandHandler {
         let result = async {
             // 验证命令
             self.validate_command(&command).await?;
-            
+
             // 创建聚合根
             let mut user = EventSourcedAggregate::new(Uuid::new_v4().to_string(), self.event_store.clone());
             user.load_from_history().await?;
-            
+
             // 执行命令
             user.add_event("UserCreated".to_string(), serde_json::to_value(&command)?);
             user.save_changes().await?;
-            
+
             Ok::<UserId, CommandError>(UserId(user.id))
         }.await;
 
@@ -400,7 +400,7 @@ impl QueryHandler<GetUserQuery, Option<UserView>> for UserQueryHandler {
 
             // 从读模型获取
             let user_view = self.read_model.get_user(&query.user_id.0).await?;
-            
+
             // 缓存结果
             if let Some(ref user_view) = user_view {
                 self.cache.set(&query.user_id.0, user_view.clone()).await?;
@@ -556,7 +556,7 @@ impl UserDomainService {
             .start(&self.observability.tracer);
 
         let existing_user = self.user_repository.find_by_email(email).await?;
-        
+
         if existing_user.is_some() {
             span.set_status(StatusCode::Error, "Email already exists");
             return Err(DomainError::EmailAlreadyExists);
@@ -582,7 +582,7 @@ impl UserDomainService {
         };
 
         self.email_service.send_email(welcome_email).await?;
-        
+
         span.set_status(StatusCode::Ok, "Welcome email sent");
         Ok(())
     }
@@ -657,7 +657,7 @@ impl ObservabilityObserver for PerformanceMonitoringObserver {
     fn on_span_ended(&self, span: &Span) {
         let duration = span.end_time() - span.start_time();
         self.metrics_collector.record_histogram("span_duration", duration.as_secs_f64());
-        
+
         if span.status_code() == StatusCode::Error {
             self.metrics_collector.increment_counter("span_errors", 1);
         }
@@ -746,7 +746,7 @@ pub struct AdaptiveSamplingStrategy {
 impl SamplingStrategy for AdaptiveSamplingStrategy {
     fn should_sample(&self, context: &SamplingContext) -> bool {
         let base_decision = self.base_strategy.should_sample(context);
-        
+
         if !base_decision {
             return false;
         }
@@ -754,7 +754,7 @@ impl SamplingStrategy for AdaptiveSamplingStrategy {
         // 根据系统性能调整采样率
         let performance_metrics = self.performance_monitor.get_current_metrics();
         let adjusted_rate = self.calculate_adjusted_rate(&performance_metrics);
-        
+
         thread_rng().gen::<f64>() < adjusted_rate
     }
 
@@ -826,7 +826,7 @@ impl ObservabilityComponentFactory for TracerFactory {
 
     fn create(&self, config: Self::Config) -> Result<Self::Component, Self::Error> {
         let exporter = self.exporter_factory.create(config.exporter_config)?;
-        
+
         let processor = match config.processor_type {
             ProcessorType::Simple => {
                 SimpleSpanProcessor::new(exporter)
@@ -861,7 +861,7 @@ impl ObservabilityComponentFactory for MetricsCollectorFactory {
 
     fn create(&self, config: Self::Config) -> Result<Self::Component, Self::Error> {
         let exporter = self.exporter_factory.create(config.exporter_config)?;
-        
+
         let reader = PeriodicReader::builder(exporter, tokio::spawn, tokio::time::interval)
             .with_interval(config.collection_interval)
             .build();
@@ -913,9 +913,9 @@ pub struct ObservabilityDecorator {
     logger: Logger,
 }
 
-impl<T> ServiceDecorator<T> for ObservabilityDecorator 
-where 
-    T: Service + 'static 
+impl<T> ServiceDecorator<T> for ObservabilityDecorator
+where
+    T: Service + 'static
 {
     fn decorate(&self, service: T) -> Box<dyn Service> {
         Box::new(ObservableService {
@@ -934,9 +934,9 @@ pub struct ObservableService<T> {
     logger: Logger,
 }
 
-impl<T> Service for ObservableService<T> 
-where 
-    T: Service 
+impl<T> Service for ObservableService<T>
+where
+    T: Service
 {
     async fn handle_request(&self, request: Request) -> Result<Response, ServiceError> {
         let span = self.tracer
@@ -973,13 +973,13 @@ where
                 span.set_attribute(KeyValue::new("response.status", response.status as f64));
                 span.set_attribute(KeyValue::new("response.size", response.size as f64));
                 span.set_status(StatusCode::Ok, "Request processed successfully");
-                
+
                 self.metrics.record_histogram("request_duration", duration.as_secs_f64());
             }
             Err(error) => {
                 span.set_attribute(KeyValue::new("error", error.to_string()));
                 span.set_status(StatusCode::Error, error.to_string());
-                
+
                 self.metrics.increment_counter("requests_error", 1);
                 self.logger.error("Request processing failed", vec![
                     KeyValue::new("error", error.to_string()),
@@ -1021,4 +1021,4 @@ where
 
 ---
 
-*本文档提供了OTLP系统中的高级设计模式和架构模式分析，为构建高质量的可观测性系统提供架构指导。*
+_本文档提供了OTLP系统中的高级设计模式和架构模式分析，为构建高质量的可观测性系统提供架构指导。_

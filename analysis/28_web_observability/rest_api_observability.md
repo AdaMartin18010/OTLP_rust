@@ -1,7 +1,7 @@
 # REST API 可观测性 - REST API Observability
 
-**创建日期**: 2025年10月29日  
-**适用场景**: RESTful Web Services  
+**创建日期**: 2025年10月29日
+**适用场景**: RESTful Web Services
 **状态**: ✅ 生产验证
 
 ---
@@ -14,7 +14,6 @@
 - [CRUD操作追踪](#crud操作追踪)
 - [API版本管理](#api版本管理)
 - [限流和配额](#限流和配额)
-- [认证授权追踪](#认证授权追踪)
 - [生产案例](#生产案例)
 
 ---
@@ -51,10 +50,10 @@ use opentelemetry::KeyValue;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化追踪
     init_tracing()?;
-    
+
     // 创建共享状态
     let state = AppState::new().await?;
-    
+
     // 构建应用
     let app = Router::new()
         // 用户API
@@ -70,13 +69,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // 添加追踪层
         .layer(TraceLayer::new_for_http())
         .with_state(state);
-    
+
     // 启动服务器
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await?;
     info!("🚀 Server listening on {}", listener.local_addr()?);
-    
+
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 
@@ -96,11 +95,11 @@ async fn list_users(
     Query(params): Query<ListUsersQuery>,
 ) -> Result<Json<Vec<User>>, ApiError> {
     info!("Listing users with params: {:?}", params);
-    
+
     let users = state.db
         .list_users(params.page, params.per_page)
         .await?;
-    
+
     info!("Found {} users", users.len());
     Ok(Json(users))
 }
@@ -120,12 +119,12 @@ async fn get_user(
     Path(user_id): Path<u64>,
 ) -> Result<Json<User>, ApiError> {
     info!("Fetching user {}", user_id);
-    
+
     let user = state.db
         .get_user(user_id)
         .await?
         .ok_or(ApiError::NotFound)?;
-    
+
     info!("User found: {}", user.email);
     Ok(Json(user))
 }
@@ -145,15 +144,15 @@ async fn create_user(
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<(StatusCode, Json<User>), ApiError> {
     info!("Creating new user: {}", payload.email);
-    
+
     // 验证
     validate_create_user(&payload)?;
-    
+
     // 创建用户
     let user = state.db
         .create_user(payload)
         .await?;
-    
+
     info!("User created successfully with ID: {}", user.id);
     Ok((StatusCode::CREATED, Json(user)))
 }
@@ -174,12 +173,12 @@ async fn update_user(
     Json(payload): Json<UpdateUserRequest>,
 ) -> Result<Json<User>, ApiError> {
     info!("Updating user {}", user_id);
-    
+
     let user = state.db
         .update_user(user_id, payload)
         .await?
         .ok_or(ApiError::NotFound)?;
-    
+
     info!("User updated successfully");
     Ok(Json(user))
 }
@@ -199,11 +198,11 @@ async fn delete_user(
     Path(user_id): Path<u64>,
 ) -> Result<StatusCode, ApiError> {
     info!("Deleting user {}", user_id);
-    
+
     state.db
         .delete_user(user_id)
         .await?;
-    
+
     info!("User deleted successfully");
     Ok(StatusCode::NO_CONTENT)
 }
@@ -267,13 +266,13 @@ impl ApiMetrics {
                 .u64_counter("http.server.request.count")
                 .with_description("Total number of HTTP requests")
                 .init(),
-            
+
             request_duration: meter
                 .f64_histogram("http.server.request.duration")
                 .with_description("HTTP request duration in seconds")
                 .with_unit("s")
                 .init(),
-            
+
             error_count: meter
                 .u64_counter("http.server.error.count")
                 .with_description("Total number of HTTP errors")
@@ -291,7 +290,7 @@ async fn metrics_middleware<B>(
     let start = std::time::Instant::now();
     let method = request.method().clone();
     let path = request.uri().path().to_string();
-    
+
     // 计数请求
     metrics.request_count.add(
         1,
@@ -300,10 +299,10 @@ async fn metrics_middleware<B>(
             KeyValue::new("http.route", path.clone()),
         ],
     );
-    
+
     // 处理请求
     let response = next.run(request).await;
-    
+
     // 记录延迟
     let duration = start.elapsed().as_secs_f64();
     metrics.request_duration.record(
@@ -314,7 +313,7 @@ async fn metrics_middleware<B>(
             KeyValue::new("http.status_code", response.status().as_u16() as i64),
         ],
     );
-    
+
     // 记录错误
     if response.status().is_server_error() || response.status().is_client_error() {
         metrics.error_count.add(
@@ -326,7 +325,7 @@ async fn metrics_middleware<B>(
             ],
         );
     }
-    
+
     response
 }
 ```
@@ -350,12 +349,12 @@ impl ApiSLO {
         let availability = self.calculate_availability(metrics).await;
         let p95_latency = self.calculate_p95_latency(metrics).await;
         let error_rate = self.calculate_error_rate(metrics).await;
-        
+
         // 检查合规性
         let availability_ok = availability >= self.availability_target;
         let latency_ok = p95_latency <= self.p95_latency_target;
         let error_rate_ok = error_rate <= self.error_rate_target;
-        
+
         // 记录到追踪
         tracing::info!(
             availability = %availability,
@@ -363,7 +362,7 @@ impl ApiSLO {
             error_rate = %error_rate,
             "SLO compliance check"
         );
-        
+
         SLOReport {
             availability,
             p95_latency,
@@ -398,20 +397,20 @@ async fn create_product(
     tracing::info!("Validating product data");
     validate_product(&product)?;
     tracing::info!("Validation passed");
-    
+
     // 数据库插入
     tracing::info!("Inserting product into database");
     let product_id = db.insert_product(product).await?;
     tracing::info!(product.id = %product_id, "Product created");
-    
+
     // 缓存更新
     tracing::info!("Updating cache");
     cache.invalidate_products_list().await?;
-    
+
     // 事件发布
     tracing::info!("Publishing product_created event");
     event_bus.publish(ProductCreatedEvent { product_id }).await?;
-    
+
     Ok(product)
 }
 
@@ -433,16 +432,16 @@ async fn get_product(
         tracing::info!("Cache hit");
         return Ok(product);
     }
-    
+
     tracing::info!("Cache miss, querying database");
-    
+
     // 从数据库读取
     let product = db.get_product(product_id).await?
         .ok_or(ApiError::NotFound)?;
-    
+
     // 更新缓存
     cache.set_product(product_id, &product).await?;
-    
+
     Ok(product)
 }
 
@@ -464,27 +463,27 @@ async fn update_product(
     // 获取当前版本
     let current = db.get_product(product_id).await?
         .ok_or(ApiError::NotFound)?;
-    
+
     tracing::info!(
         current_version = %current.version,
         "Current product retrieved"
     );
-    
+
     // 应用更新
     let updated = apply_updates(current, updates)?;
-    
+
     // 保存到数据库
     db.update_product(product_id, &updated).await?;
-    
+
     // 清除缓存
     cache.delete_product(product_id).await?;
-    
+
     // 发布事件
     event_bus.publish(ProductUpdatedEvent {
         product_id,
         changes: vec!["price", "stock"],
     }).await?;
-    
+
     tracing::info!("Product updated successfully");
     Ok(updated)
 }
@@ -504,13 +503,13 @@ async fn delete_product(
 ) -> Result<(), ApiError> {
     // 软删除
     db.soft_delete_product(product_id).await?;
-    
+
     // 清除缓存
     cache.delete_product(product_id).await?;
-    
+
     // 发布事件
     event_bus.publish(ProductDeletedEvent { product_id }).await?;
-    
+
     tracing::info!("Product soft-deleted successfully");
     Ok(())
 }
@@ -553,13 +552,13 @@ async fn api_version_middleware<B>(
         .and_then(|v| v.to_str().ok())
         .and_then(|v| ApiVersion::from_header(Some(v)).ok())
         .unwrap_or(ApiVersion::V1);
-    
+
     // 记录到span
     tracing::Span::current().record("api.version", &format!("{:?}", version));
-    
+
     // 添加到请求扩展
     request.extensions_mut().insert(version);
-    
+
     next.run(request).await
 }
 
@@ -571,7 +570,7 @@ async fn get_user_versioned(
     State(db): State<Database>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let user = db.get_user(user_id).await?;
-    
+
     // 根据版本返回不同的响应格式
     let response = match version {
         ApiVersion::V1 => json!({
@@ -592,7 +591,7 @@ async fn get_user_versioned(
             },
         }),
     };
-    
+
     Ok(Json(response))
 }
 ```
@@ -620,13 +619,13 @@ impl RateLimiter {
             meter,
         }
     }
-    
+
     async fn acquire(&self, client_id: &str) -> Result<SemaphorePermit, ApiError> {
         // 记录限流尝试
         self.meter
             .u64_counter("rate_limit.attempts")
             .add(1, &[KeyValue::new("client_id", client_id.to_string())]);
-        
+
         // 尝试获取许可
         match self.semaphore.try_acquire() {
             Ok(permit) => {
@@ -638,7 +637,7 @@ impl RateLimiter {
                 self.meter
                     .u64_counter("rate_limit.rejections")
                     .add(1, &[KeyValue::new("client_id", client_id.to_string())]);
-                
+
                 tracing::warn!("Rate limit exceeded");
                 Err(ApiError::RateLimitExceeded)
             }
@@ -653,10 +652,10 @@ async fn rate_limit_middleware<B>(
     next: Next<B>,
 ) -> Result<Response, ApiError> {
     let client_id = extract_client_id(&request)?;
-    
+
     // 获取许可
     let _permit = limiter.acquire(&client_id).await?;
-    
+
     // 处理请求
     Ok(next.run(request).await)
 }
@@ -668,8 +667,8 @@ async fn rate_limit_middleware<B>(
 
 ### 案例: 电商API服务
 
-**场景**: 高并发电商REST API  
-**流量**: 10K+ req/s  
+**场景**: 高并发电商REST API
+**流量**: 10K+ req/s
 **技术栈**: Axum + PostgreSQL + Redis
 
 ```rust
@@ -678,40 +677,40 @@ async fn rate_limit_middleware<B>(
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化追踪
     init_telemetry()?;
-    
+
     // 数据库连接池
     let db_pool = create_db_pool().await?;
-    
+
     // Redis缓存
     let redis = create_redis_client().await?;
-    
+
     // 构建应用
     let app = Router::new()
         // 产品API
         .route("/api/v1/products", get(list_products))
         .route("/api/v1/products/:id", get(get_product))
-        
+
         // 购物车API
         .route("/api/v1/cart", get(get_cart).post(add_to_cart))
         .route("/api/v1/cart/:item_id", delete(remove_from_cart))
-        
+
         // 订单API
         .route("/api/v1/orders", get(list_orders).post(create_order))
         .route("/api/v1/orders/:id", get(get_order))
-        
+
         // 中间件栈
         .layer(middleware::from_fn(rate_limit_middleware))
         .layer(middleware::from_fn(auth_middleware))
         .layer(middleware::from_fn(metrics_middleware))
         .layer(TraceLayer::new_for_http())
-        
+
         .with_state(AppState { db_pool, redis });
-    
+
     // 启动服务器
     axum::Server::bind(&"0.0.0.0:8080".parse()?)
         .serve(app.into_make_service())
         .await?;
-    
+
     Ok(())
 }
 
