@@ -16,14 +16,14 @@
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 改进的async/await语法
     let client = OtlpClient::new(config).await?;
-    
+
     // 更好的Future组合
     let result = tokio::try_join!(
         client.send_trace("operation1"),
         client.send_metric("metric1", 42.0),
         client.send_log("log1", LogSeverity::Info)
     )?;
-    
+
     Ok(())
 }
 ```
@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 // 异步流处理OTLP数据
 async fn process_telemetry_stream(client: &OtlpClient) -> Result<()> {
     let mut stream = client.create_telemetry_stream().await?;
-    
+
     while let Some(data) = stream.next().await {
         match data {
             TelemetryData::Trace(trace) => {
@@ -48,7 +48,7 @@ async fn process_telemetry_stream(client: &OtlpClient) -> Result<()> {
             }
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -93,7 +93,7 @@ impl TelemetryData {
             attributes: self.attributes.clone(),
         }
     }
-    
+
     pub fn size(&self) -> usize {
         // 高效的大小计算，避免遍历
         let mut size = std::mem::size_of::<Self>();
@@ -124,14 +124,14 @@ impl OtlpClient {
         if *is_init {
             return Ok(());
         }
-        
+
         // 初始化逻辑
         self.exporter.initialize().await?;
-        
+
         *is_init = true;
         Ok(())
     }
-    
+
     pub async fn get_metrics(&self) -> ClientMetrics {
         let metrics = self.metrics.read().await;
         metrics.clone()
@@ -160,18 +160,18 @@ impl LockFreeTelemetryQueue {
             max_size,
         }
     }
-    
+
     pub fn push(&self, data: TelemetryData) -> Result<()> {
         let current_size = self.size.load(Ordering::Relaxed);
         if current_size >= self.max_size {
             return Err(OtlpError::queue_full());
         }
-        
+
         self.queue.push(data);
         self.size.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
-    
+
     pub fn pop(&self) -> Option<TelemetryData> {
         if let Some(data) = self.queue.pop() {
             self.size.fetch_sub(1, Ordering::Relaxed);
@@ -193,17 +193,17 @@ impl LockFreeTelemetryQueue {
 // 批量异步处理OTLP数据
 async fn batch_process_telemetry(client: &OtlpClient) -> Result<()> {
     let mut batch = Vec::new();
-    
+
     // 收集数据
     for i in 0..1000 {
         let data = TelemetryData::trace(format!("operation-{}", i));
         batch.push(data);
     }
-    
+
     // 批量发送
     let result = client.send_batch(batch).await?;
     println!("批量发送成功: {} 条", result.success_count);
-    
+
     Ok(())
 }
 ```
@@ -214,13 +214,13 @@ async fn batch_process_telemetry(client: &OtlpClient) -> Result<()> {
 // 并发异步处理
 async fn concurrent_process_telemetry(client: &OtlpClient) -> Result<()> {
     let mut handles = Vec::new();
-    
+
     // 创建并发任务
     for i in 0..10 {
         let client_clone = client.clone();
         let handle = tokio::spawn(async move {
             let mut results = Vec::new();
-            
+
             for j in 0..100 {
                 let result = client_clone.send_trace(format!("concurrent-{}-{}", i, j)).await?
                     .with_attribute("worker.id", i.to_string())
@@ -229,12 +229,12 @@ async fn concurrent_process_telemetry(client: &OtlpClient) -> Result<()> {
                     .await?;
                 results.push(result);
             }
-            
+
             Ok::<Vec<_>, Box<dyn std::error::Error + Send + Sync>>(results)
         });
         handles.push(handle);
     }
-    
+
     // 等待所有任务完成
     let mut total_success = 0;
     for handle in handles {
@@ -243,7 +243,7 @@ async fn concurrent_process_telemetry(client: &OtlpClient) -> Result<()> {
             total_success += result.success_count;
         }
     }
-    
+
     println!("并发处理完成，总成功数: {}", total_success);
     Ok(())
 }
@@ -356,12 +356,12 @@ impl ThreadSafeOtlpClient {
             is_initialized: RwLock::new(false),
             metrics: RwLock::new(ClientMetrics::default()),
         };
-        
+
         Ok(Self {
             inner: Arc::new(inner),
         })
     }
-    
+
     pub async fn send_trace(&self, name: &str) -> Result<TraceBuilder> {
         let data = TelemetryData::trace(name.to_string());
         Ok(TraceBuilder::new(self.inner.clone(), data))
@@ -391,23 +391,23 @@ impl AtomicMetrics {
             current_connections: AtomicUsize::new(0),
         }
     }
-    
+
     pub fn increment_requests(&self) {
         self.total_requests.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     pub fn increment_success(&self) {
         self.successful_requests.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     pub fn increment_failure(&self) {
         self.failed_requests.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     pub fn get_success_rate(&self) -> f64 {
         let total = self.total_requests.load(Ordering::Relaxed);
         let success = self.successful_requests.load(Ordering::Relaxed);
-        
+
         if total == 0 {
             0.0
         } else {
@@ -443,7 +443,7 @@ impl TelemetryDataPool {
             (self.factory)()
         }
     }
-    
+
     pub async fn release(&self, mut data: TelemetryData) {
         let mut pool = self.pool.write().await;
         if pool.len() < self.max_size {
@@ -471,19 +471,19 @@ impl StringPool {
             max_size,
         }
     }
-    
+
     pub async fn intern(&self, s: &str) -> Arc<String> {
         let mut pool = self.pool.write().await;
-        
+
         if let Some(arc_string) = pool.get(s) {
             return arc_string.clone();
         }
-        
+
         let arc_string = Arc::new(s.to_string());
         if pool.len() < self.max_size {
             pool.insert(s.to_string(), arc_string.clone());
         }
-        
+
         arc_string
     }
 }
@@ -505,14 +505,14 @@ impl ConnectionPool {
     pub async fn get_connection(&self, endpoint: &str) -> Option<Connection> {
         let mut connections = self.connections.write().await;
         let endpoint_connections = connections.entry(endpoint.to_string()).or_insert_with(Vec::new);
-        
+
         endpoint_connections.pop()
     }
-    
+
     pub async fn return_connection(&self, endpoint: &str, connection: Connection) {
         let mut connections = self.connections.write().await;
         let endpoint_connections = connections.entry(endpoint.to_string()).or_insert_with(Vec::new);
-        
+
         if endpoint_connections.len() < self.max_connections_per_endpoint {
             endpoint_connections.push(connection);
         }

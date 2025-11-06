@@ -1,11 +1,39 @@
 //! # OTLP配置模块
 //!
 //! 提供OTLP客户端的配置管理，支持Rust 1.90的配置特性。
+//! 充分利用const API实现编译时优化。
 
 use crate::error::{ConfigurationError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration;
+
+/// 默认配置常量 (编译时计算)
+pub const DEFAULT_BATCH_SIZE: usize = 1000;
+pub const DEFAULT_TIMEOUT_SECS: u64 = 5;
+pub const DEFAULT_RETRY_ATTEMPTS: u32 = 3;
+pub const DEFAULT_SAMPLE_RATE: f64 = 1.0;
+
+/// 性能常量
+pub const MAX_BATCH_SIZE: usize = 10000;
+pub const MIN_BATCH_SIZE: usize = 10;
+pub const MAX_RETRY_ATTEMPTS: u32 = 10;
+
+/// 时间常量 (使用const Duration)
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
+pub const MAX_TIMEOUT: Duration = Duration::from_secs(60);
+pub const MIN_TIMEOUT: Duration = Duration::from_millis(100);
+
+/// 编译时验证的配置检查
+pub const fn validate_batch_size(size: usize) -> bool {
+    size >= MIN_BATCH_SIZE && size <= MAX_BATCH_SIZE
+}
+
+/// 编译时验证的超时值
+/// 注意: Duration的比较在const上下文中有限制，这里提供运行时验证
+pub fn validate_timeout(timeout: Duration) -> bool {
+    timeout >= MIN_TIMEOUT && timeout <= MAX_TIMEOUT
+}
 
 /// OTLP传输协议类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

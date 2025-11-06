@@ -3,7 +3,7 @@
 ## 📋 目录
 
 - [Rust 1.90 特性增强报告](#rust-190-特性增强报告)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [概述](#概述)
   - [Rust 1.90 新特性集成](#rust-190-新特性集成)
     - [1. 显式推断的常量参数稳定化](#1-显式推断的常量参数稳定化)
@@ -116,7 +116,7 @@ fn calculate_metrics<'a>(data: &'a [f64]) -> f64 {
 // 安全的函数指针比较
 impl OptimizationAlgorithm for GradientDescentOptimizer {
     type ObjectiveFunction = fn(&[f64]) -> f64;
-    
+
     fn optimize(&self, f: Self::ObjectiveFunction, initial: &[f64]) -> Vec<f64> {
         // 安全的函数指针使用
         let gradient = self.numerical_gradient(f, &x);
@@ -150,7 +150,7 @@ pub fn execute_external_model_checker(&self) -> Result<String, String> {
         .arg("--input")
         .arg("model.smv")
         .output()?;
-    
+
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 ```
@@ -427,4 +427,3 @@ let mut sampler = MCMCSampler::<2>::new(initial_state, proposal_variance);
 **报告生成时间**: 2024年12月
 **Rust 版本**: 1.90.0
 **库版本**: 0.2.0
-

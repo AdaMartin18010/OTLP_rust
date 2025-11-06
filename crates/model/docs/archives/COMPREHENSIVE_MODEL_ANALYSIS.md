@@ -3,7 +3,7 @@
 ## 📋 目录
 
 - [C12\_Model 全面模型分析和分层分类体系](#c12_model-全面模型分析和分层分类体系)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [📋 项目概述](#-项目概述)
   - [🏗️ 模型分层架构](#️-模型分层架构)
     - [第一层：基础语言模型 (Language Models)](#第一层基础语言模型-language-models)
@@ -250,7 +250,7 @@ c12_model 是一个基于 Rust 1.90 的现代化理论模型实现库，提供�
 分布式模型
     ↓ 依赖
 算法模型
-    ↓ 依赖  
+    ↓ 依赖
 异步并发模型
     ↓ 依赖
 语言模型
@@ -312,7 +312,7 @@ pub async fn async_recursive_algorithm<T>(
     if depth > MAX_DEPTH {
         return Err(ModelError::StackOverflowError("Max depth exceeded".to_string()));
     }
-    
+
     // 异步递归调用
     tokio::task::yield_now().await;
     // ...
@@ -473,9 +473,9 @@ let result = async_executor.execute_recursive(
     "fibonacci".to_string(),
     |n, context, executor| async move {
         AsyncRecursionExamples::fibonacci_memoized(
-            n, 
-            Arc::new(Mutex::new(HashMap::new())), 
-            executor, 
+            n,
+            Arc::new(Mutex::new(HashMap::new())),
+            executor,
             context
         ).await
     },
@@ -512,4 +512,3 @@ c12_model 提供了一个全面的、分层的、分类的模型体系，涵盖�
 - **原型开发**: 快速原型和概念验证
 
 通过这个全面的模型体系，开发者可以深入理解各种理论模型的实现细节，并将其应用到实际的系统开发中。
-

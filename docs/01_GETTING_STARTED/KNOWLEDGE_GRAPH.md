@@ -83,7 +83,7 @@ graph TB
 
 ### 1.2 核心概念关系
 
-```
+```text
 Trace (追踪)
 ├─ Span (操作) ⭐ 核心概念
 │  ├─ Name (名称)
@@ -146,7 +146,7 @@ graph LR
 
 ### 2.2 知识点依赖
 
-```
+```text
 基础层 (必须)
 ├─ Rust基础 ✅
 ├─ async/await ✅
@@ -200,7 +200,7 @@ graph TD
 
 ### 3.2 Web框架选择
 
-```
+```text
 场景1: 新项目
 └─ 推荐: Axum
    └─ 理由: 最简单，1行代码集成
@@ -247,7 +247,7 @@ graph TD
 
 ### 4.2 检查清单
 
-```
+```text
 □ 第1步: Collector是否运行?
   命令: docker ps | grep otel
   期望: 看到运行的容器
@@ -275,7 +275,7 @@ graph TD
 
 ### 5.1 完整数据流
 
-```
+```text
 [1] 应用代码
     ↓ 创建Span
 [2] Tracer
@@ -293,7 +293,7 @@ graph TD
 
 ### 5.2 时序图
 
-```
+```text
 你的代码                SDK              Collector        Jaeger
    │                    │                   │               │
    │── span_start() ───→│                   │               │
@@ -313,7 +313,7 @@ graph TD
 
 ### 6.1 DO ✅
 
-```
+```text
 开发阶段:
 ✅ 使用Console导出器
 ✅ 100%采样
@@ -341,7 +341,7 @@ graph TD
 
 ### 6.2 DON'T ❌
 
-```
+```text
 ❌ 不要在循环中创建Tracer
 ❌ 不要添加敏感信息到Attribute
 ❌ 不要忘记调用shutdown
@@ -356,7 +356,7 @@ graph TD
 
 ### 7.1 开发工具链
 
-```
+```text
 开发环境
 ├─ Rust工具链
 │  ├─ rustc 1.90+
@@ -386,7 +386,7 @@ graph TD
 
 ### 8.1 从新手到专家
 
-```
+```text
 Level 1: 新手 (第1-2天)
 ├─ 能运行示例
 ├─ 理解基本概念
@@ -419,7 +419,7 @@ Level 5: 专家 (持续)
 
 ### 9.1 5分钟速查
 
-```
+```text
 【创建项目】
 cargo new app && cd app
 
@@ -468,7 +468,7 @@ telnet localhost 4317
 
 ### 10.1 文档导航
 
-```
+```text
 入门阶段 (你在这里)
 ├─ [概念](./CONCEPTS.md) - 核心概念
 ├─ [对比](./COMPARISON_MATRIX.md) - 技术选择
@@ -487,7 +487,7 @@ telnet localhost 4317
 
 ### 10.2 外部资源
 
-```
+```text
 官方文档:
 └─ https://opentelemetry.io/docs/
 

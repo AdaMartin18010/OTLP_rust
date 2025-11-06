@@ -1,7 +1,7 @@
 # OTTL实践示例集
 
-> **版本**: 2.0  
-> **日期**: 2025年10月17日  
+> **版本**: 2.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -26,13 +26,13 @@ processors:
       - context: span
         statements:
           # 脱敏邮箱
-          - set(attributes["user.email"], SHA256(attributes["user.email"])) 
+          - set(attributes["user.email"], SHA256(attributes["user.email"]))
             where attributes["user.email"] != nil
-          
+
           # 脱敏电话
-          - set(attributes["user.phone"], SHA256(attributes["user.phone"])) 
+          - set(attributes["user.phone"], SHA256(attributes["user.phone"]))
             where attributes["user.phone"] != nil
-          
+
           # 脱敏信用卡（保留后4位）
           - set(attributes["payment.card"], Concat("****-****-****-", Substring(attributes["payment.card"], -4, 4)))
             where attributes["payment.card"] != nil
@@ -67,7 +67,7 @@ processors:
         statements:
           # 只保留关键属性
           - keep_keys(attributes, ["service.name", "deployment.environment", "http.method", "http.status_code"])
-    
+
     trace_statements:
       - context: span
         statements:
@@ -88,7 +88,7 @@ processors:
         statements:
           # /users/123 -> /users/{id}
           - replace_pattern(attributes["http.route"], "/users/\\d+", "/users/{id}")
-          
+
           # /orders/abc-def-123 -> /orders/{order_id}
           - replace_pattern(attributes["http.route"], "/orders/[a-z0-9-]+", "/orders/{order_id}")
 ```
@@ -107,15 +107,15 @@ processors:
       - context: span
         statements:
           # 标记超时
-          - set(attributes["anomaly.type"], "timeout") 
+          - set(attributes["anomaly.type"], "timeout")
             where duration > Duration("3s")
-          
+
           # 标记错误
-          - set(attributes["anomaly.type"], "error") 
+          - set(attributes["anomaly.type"], "error")
             where status.code == STATUS_CODE_ERROR
-          
+
           # 标记慢查询
-          - set(attributes["anomaly.type"], "slow_db") 
+          - set(attributes["anomaly.type"], "slow_db")
             where attributes["db.statement"] != nil and duration > Duration("1s")
 ```
 
@@ -129,11 +129,11 @@ processors:
       - context: resource
         statements:
           # 添加区域信息
-          - set(attributes["deployment.region"], "us-west") 
+          - set(attributes["deployment.region"], "us-west")
             where attributes["cloud.availability_zone"] matches "us-west-.*"
-          
+
           # 添加环境标签
-          - set(attributes["deployment.environment"], "production") 
+          - set(attributes["deployment.environment"], "production")
             where attributes["service.namespace"] == "prod"
 ```
 
@@ -152,7 +152,7 @@ processors:
         statements:
           # 从Resource提取租户
           - set(attributes["tenant.id"], resource.attributes["tenant.id"])
-          
+
           # 从HTTP头提取租户
           - set(attributes["tenant.id"], attributes["http.request.header.x-tenant-id"])
             where attributes["tenant.id"] == nil
@@ -167,7 +167,7 @@ processors:
       - context: span
         statements:
           - set(attributes["routing_key"], attributes["tenant.id"])
-  
+
   routing:
     from_attribute: routing_key
     table:
@@ -191,11 +191,11 @@ processors:
       - context: span
         statements:
           # 标记慢请求（总是保留）
-          - set(attributes["sample.keep"], true) 
+          - set(attributes["sample.keep"], true)
             where duration > Duration("500ms")
-          
+
           # 标记错误（总是保留）
-          - set(attributes["sample.keep"], true) 
+          - set(attributes["sample.keep"], true)
             where status.code == STATUS_CODE_ERROR
 
   # 配合tailsampling使用
@@ -222,11 +222,11 @@ processors:
       - context: span
         statements:
           # 删除健康检查span
-          - drop() 
+          - drop()
             where attributes["http.route"] == "/health"
-          
+
           # 删除metrics采集span
-          - drop() 
+          - drop()
             where attributes["http.route"] == "/metrics"
 ```
 
@@ -245,11 +245,11 @@ processors:
         statements:
           # HTTP method大写
           - set(attributes["http.method"], ConvertCase(attributes["http.method"], "upper"))
-          
+
           # 状态码转数字
           - set(attributes["http.status_code"], Int(attributes["http.status_code"]))
             where IsString(attributes["http.status_code"])
-          
+
           # 添加默认值
           - set(attributes["http.scheme"], "http")
             where attributes["http.scheme"] == nil
@@ -266,11 +266,11 @@ processors:
           # 客户端错误 (4xx)
           - set(attributes["error.category"], "client_error")
             where attributes["http.status_code"] >= 400 and attributes["http.status_code"] < 500
-          
+
           # 服务器错误 (5xx)
           - set(attributes["error.category"], "server_error")
             where attributes["http.status_code"] >= 500
-          
+
           # 超时错误
           - set(attributes["error.category"], "timeout")
             where attributes["error.type"] == "TimeoutException"
@@ -291,7 +291,7 @@ processors:
           # 生产环境低采样
           - set(attributes["sample.rate"], 0.01)
             where resource.attributes["deployment.environment"] == "production"
-          
+
           # 开发环境高采样
           - set(attributes["sample.rate"], 1.0)
             where resource.attributes["deployment.environment"] == "development"
@@ -325,7 +325,7 @@ processors:
           # 从Trace Context提取信息
           - set(attributes["trace_id"], trace_id.string)
           - set(attributes["span_id"], span_id.string)
-    
+
     trace_statements:
       - context: span
         statements:
@@ -349,10 +349,10 @@ processors:
         statements:
           # 添加调试时间戳
           - set(attributes["debug.processed_at"], Time())
-          
+
           # 添加处理标记
           - set(attributes["debug.ottl_version"], "1.0")
-          
+
           # 记录原始值
           - set(attributes["debug.original_duration"], duration)
 ```
@@ -387,7 +387,7 @@ processors:
         statements:
           - set(attributes["http.method"], ConvertCase(attributes["http.method"], "upper"))
           - replace_pattern(attributes["http.route"], "/users/\\d+", "/users/{id}")
-  
+
   # 2. 数据增强
   transform/2_enrich:
     trace_statements:
@@ -395,7 +395,7 @@ processors:
         statements:
           - set(attributes["deployment.region"], resource.attributes["cloud.region"])
           - set(attributes["anomaly.type"], "timeout") where duration > Duration("3s")
-  
+
   # 3. 数据脱敏
   transform/3_sanitize:
     trace_statements:
@@ -403,7 +403,7 @@ processors:
         statements:
           - set(attributes["user.email"], SHA256(attributes["user.email"]))
             where attributes["user.email"] != nil
-  
+
   # 4. 降维
   transform/4_reduce:
     trace_statements:

@@ -22,9 +22,11 @@
 //! let result = transformer.transform(telemetry_data).await?;
 //! ```
 
+pub mod bytecode;
 pub mod parser;
 pub mod transform;
 
+pub use bytecode::{BytecodeCompiler, BytecodeProgram, Opcode};
 pub use parser::{Expression, ParseError, Statement};
 pub use transform::{OtlpTransform, TransformConfig, TransformResult};
 

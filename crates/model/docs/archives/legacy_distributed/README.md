@@ -2,7 +2,7 @@
 
 > **分布式共识算法和一致性模型**
 
-**最后更新**: 2025-10-19  
+**最后更新**: 2025-10-19
 **适用版本**: Rust 1.90+
 
 ---
@@ -133,7 +133,7 @@ impl LamportClock {
     fn tick(&mut self) {
         self.timestamp += 1;
     }
-    
+
     fn update(&mut self, other: u64) {
         self.timestamp = self.timestamp.max(other) + 1;
     }
@@ -410,8 +410,8 @@ let global_snapshot = snapshot.get_snapshot()?;
 
 ---
 
-**分布式系统维护**: 项目维护团队  
-**最后更新**: 2025-10-19  
+**分布式系统维护**: 项目维护团队
+**最后更新**: 2025-10-19
 **反馈**: [GitHub Issues](https://github.com/rust-lang/rust-lang/issues)
 
 ---

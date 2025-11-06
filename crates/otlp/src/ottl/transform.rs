@@ -2,6 +2,7 @@
 //!
 //! 提供 OTTL 语句的执行和数据转换功能。
 
+use super::bytecode::{BytecodeCompiler, BytecodeProgram};
 use super::parser::{Expression, Path, Statement};
 use crate::data::TelemetryData;
 use crate::error::{OtlpError, Result};
@@ -11,6 +12,13 @@ use crate::error::{OtlpError, Result};
 pub struct TransformConfig {
     /// 转换语句列表
     pub statements: Vec<Statement>,
+
+    /// 是否使用字节码优化 (2025年新增，默认启用)
+    pub use_bytecode: bool,
+
+    /// 字节码程序缓存 (如果使用字节码)
+    #[allow(dead_code)]
+    bytecode_programs: Option<Vec<BytecodeProgram>>,
 }
 
 impl Default for TransformConfig {
@@ -24,6 +32,8 @@ impl TransformConfig {
     pub fn new() -> Self {
         Self {
             statements: Vec::new(),
+            use_bytecode: true, // 默认启用字节码优化
+            bytecode_programs: None,
         }
     }
 
@@ -31,6 +41,28 @@ impl TransformConfig {
     pub fn add_statement(mut self, statement: Statement) -> Self {
         self.statements.push(statement);
         self
+    }
+
+    /// 启用/禁用字节码优化
+    pub fn with_bytecode(mut self, enabled: bool) -> Self {
+        self.use_bytecode = enabled;
+        self
+    }
+
+    /// 编译语句到字节码 (如果启用)
+    pub fn compile_bytecode(&mut self) -> Result<()> {
+        if self.use_bytecode {
+            let mut compiler = BytecodeCompiler::new();
+            let mut programs = Vec::new();
+
+            for statement in &self.statements {
+                let program = compiler.compile(statement)?;
+                programs.push(program);
+            }
+
+            self.bytecode_programs = Some(programs);
+        }
+        Ok(())
     }
 }
 

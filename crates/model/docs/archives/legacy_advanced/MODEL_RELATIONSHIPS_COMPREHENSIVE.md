@@ -131,20 +131,20 @@ fn verify_semantic_equivalence() {
         }),
         right: Box::new(Expression::Int(4)),
     };
-    
+
     let env = Environment::new();
-    
+
     // 操作语义 (大步)
     let operational = BigStepSemantics::eval_expr(&expr, &env).unwrap();
-    
+
     // 指称语义
     let denotational = DenotationalSemantics::denote_expr(&expr);
     let denotational_result = denotational(&env).unwrap();
-    
+
     // 验证等价
     assert_eq!(operational, denotational_result);
     assert_eq!(operational, Value::Int(20));
-    
+
     // 自动验证
     let equiv = SemanticEquivalenceAnalyzer::prove_operational_denotational_equivalence(
         &expr, &env
@@ -260,7 +260,7 @@ impl CSPActor {
     fn receive(&self) -> Message {
         self.inbox.recv().unwrap()  // CSP 同步接收
     }
-    
+
     fn send(&self, msg: Message) {
         self.outbox.send(msg).unwrap()  // CSP 同步发送
     }
@@ -282,7 +282,7 @@ impl ActorChannel {
     async fn send(&self, msg: Message) {
         self.mailbox.lock().unwrap().push_back(msg);
     }
-    
+
     async fn recv(&self) -> Message {
         loop {
             if let Some(msg) = self.mailbox.lock().unwrap().pop_front() {
@@ -363,7 +363,7 @@ let shared = Arc::new(RwLock::new(HashMap::new()));
 
 ```text
 效率递增:
-O(n!) 
+O(n!)
   ↓ 剪枝优化
 O(2ⁿ)
   ↓ 动态规划
@@ -389,7 +389,7 @@ O(1)
           快速排序      归并排序      堆排序
          /      \           |           |
     随机化  三路划分    外部排序    优先队列
-    
+
                   非比较排序 (可达 O(n))
                  /          |          \
           计数排序      基数排序      桶排序
@@ -402,7 +402,7 @@ O(1)
       Dijkstra  Bellman-Ford  Floyd-Warshall
           |         |              |
       单源非负  单源可负权    全源O(V³)
-      
+
             最小生成树
               /    \
           Kruskal  Prim
@@ -583,12 +583,12 @@ mod layered {
     pub struct PresentationLayer {
         business: BusinessLayer,
     }
-    
+
     // 业务层
     pub struct BusinessLayer {
         data: DataLayer,
     }
-    
+
     // 数据层
     pub struct DataLayer;
 }
@@ -597,12 +597,12 @@ mod layered {
 mod hexagonal {
     // 核心领域
     pub struct CoreDomain;
-    
+
     // 端口 (trait)
     pub trait RepositoryPort {
         fn save(&self, data: Data) -> Result<()>;
     }
-    
+
     // 适配器 (实现)
     pub struct PostgresAdapter;
     impl RepositoryPort for PostgresAdapter {
@@ -677,12 +677,12 @@ fn create_order_sync(order: Order) -> Result<()> {
 async fn create_order_event_driven(order: Order) -> Result<()> {
     // 发布订单创建事件
     event_bus.publish(Event::OrderCreated(order)).await?;
-    
+
     // 后续处理通过事件处理器异步完成
     // - UserValidationHandler
-    // - InventoryCheckHandler  
+    // - InventoryCheckHandler
     // - PaymentHandler
-    
+
     Ok(())  // 立即返回
 }
 ```
@@ -759,7 +759,7 @@ impl DataProcessor {
         self.pipeline.push(Box::new(stage));
         self
     }
-    
+
     // 命令式: 显式循环
     fn process(&self, mut data: i32) -> i32 {
         for stage in &self.pipeline {
@@ -805,13 +805,13 @@ use c12_model::*;
 struct DistributedAsyncSystem {
     // 分布式模型
     cluster: DistributedSystemManager,
-    
+
     // 异步模型
     runtime: AsyncModelEngine,
-    
+
     // 共识算法
     consensus: PaxosProtocol,
-    
+
     // 背压控制
     backpressure: TokenBucket,
 }
@@ -820,13 +820,13 @@ impl DistributedAsyncSystem {
     async fn replicate_async(&self, data: Data) -> Result<()> {
         // 1. 异步提议共识
         let proposal = self.consensus.propose(data).await?;
-        
+
         // 2. 背压控制
         self.backpressure.acquire(1).await?;
-        
+
         // 3. 分布式复制
         self.cluster.broadcast(proposal).await?;
-        
+
         Ok(())
     }
 }
@@ -840,7 +840,7 @@ impl DistributedAsyncSystem {
 #[cfg(test)]
 mod equivalence_tests {
     use super::*;
-    
+
     #[test]
     fn test_semantic_equivalence() {
         let expr = Expression::BinOp {
@@ -848,32 +848,32 @@ mod equivalence_tests {
             left: Box::new(Expression::Int(2)),
             right: Box::new(Expression::Int(3)),
         };
-        
+
         let env = Environment::new();
-        
+
         // 操作语义
         let op_result = BigStepSemantics::eval_expr(&expr, &env).unwrap();
-        
+
         // 指称语义
         let den_fn = DenotationalSemantics::denote_expr(&expr);
         let den_result = den_fn(&env).unwrap();
-        
+
         // 验证等价
         assert_eq!(op_result, den_result);
     }
-    
+
     #[test]
     fn test_async_sync_equivalence() {
         // 同步版本
         fn sync_compute(x: i32) -> i32 {
             x * 2 + 1
         }
-        
+
         // 异步版本
         async fn async_compute(x: i32) -> i32 {
             x * 2 + 1
         }
-        
+
         // 验证结果相同
         let sync_result = sync_compute(5);
         let async_result = tokio_test::block_on(async_compute(5));
@@ -895,7 +895,7 @@ fn benchmark_models(c: &mut Criterion) {
             BigStepSemantics::eval_expr(black_box(&expr), black_box(&env))
         });
     });
-    
+
     c.bench_function("denotational_semantics", |b| {
         let expr = create_expr();
         let env = Environment::new();
@@ -924,14 +924,14 @@ proptest! {
             left: Box::new(Expression::Int(a)),
             right: Box::new(Expression::Int(b)),
         };
-        
+
         let env = Environment::new();
-        
+
         // 操作语义和指称语义必须给出相同结果
         let op_result = BigStepSemantics::eval_expr(&expr, &env).unwrap();
         let den_fn = DenotationalSemantics::denote_expr(&expr);
         let den_result = den_fn(&env).unwrap();
-        
+
         prop_assert_eq!(op_result, den_result);
     }
 }

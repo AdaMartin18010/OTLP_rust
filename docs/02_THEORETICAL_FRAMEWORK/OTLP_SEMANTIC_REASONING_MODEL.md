@@ -1,8 +1,8 @@
 # OTLP 语义推理模型：故障检测与系统状态分析
 
-**版本**: 1.0  
-**日期**: 2025年10月26日  
-**主题**: 语义模型、推理引擎、故障检测、根因分析、系统状态推理  
+**版本**: 1.0
+**日期**: 2025年10月26日
+**主题**: 语义模型、推理引擎、故障检测、根因分析、系统状态推理
 **状态**: 🟢 活跃维护
 
 > **简介**: 语义推理模型 - 基于OTLP的故障检测、根因分析和系统状态推理。
@@ -202,30 +202,30 @@ impl CrossSignalSemanticGraph {
             nodes: HashMap::new(),
             edges: Vec::new(),
         };
-        
+
         // 添加 Trace 节点
         for trace in traces {
             for span in &trace.spans {
                 graph.add_span_node(span.clone());
             }
         }
-        
+
         // 添加 Metric 节点并建立关联
         for metric in metrics {
             graph.add_metric_node(metric);
         }
-        
+
         // 添加 Log 节点并建立关联
         for log in logs {
             graph.add_log_node(log);
         }
-        
+
         // 建立跨信号关系
         graph.establish_cross_signal_relations();
-        
+
         graph
     }
-    
+
     fn add_span_node(&mut self, span: Span) {
         let node = SemanticNode::Span {
             span: span.clone(),
@@ -234,23 +234,23 @@ impl CrossSignalSemanticGraph {
         };
         self.nodes.insert(NodeId::Span(span.span_id), node);
     }
-    
+
     fn add_metric_node(&mut self, metric: &Metric) {
         // 从 Metric 的 Resource 或 Attributes 中提取 SpanId
         let source_span = metric.attributes
             .get("span.id")
             .and_then(|s| SpanId::from_hex(s).ok());
-        
+
         let node = SemanticNode::Metric {
             name: metric.name.clone(),
             value: metric.value,
             timestamp: metric.timestamp,
             source_span,
         };
-        
+
         let metric_id = NodeId::Metric(metric.name.clone());
         self.nodes.insert(metric_id.clone(), node);
-        
+
         // 建立 Span -> Metric 关系
         if let Some(span_id) = source_span {
             self.edges.push(SemanticEdge {
@@ -262,20 +262,20 @@ impl CrossSignalSemanticGraph {
             });
         }
     }
-    
+
     fn add_log_node(&mut self, log: &LogRecord) {
         let source_span = log.span_id;
-        
+
         let node = SemanticNode::Log {
             id: format!("{:?}", log.timestamp),
             message: log.body.clone(),
             severity: log.severity,
             source_span,
         };
-        
+
         let log_id = NodeId::Log(format!("{:?}", log.timestamp));
         self.nodes.insert(log_id.clone(), node);
-        
+
         // 建立 Span -> Log 关系
         if let Some(span_id) = source_span {
             self.edges.push(SemanticEdge {
@@ -285,20 +285,20 @@ impl CrossSignalSemanticGraph {
             });
         }
     }
-    
+
     fn establish_cross_signal_relations(&mut self) {
         // 基于时间窗口和上下文建立关联
         self.correlate_by_time_window();
         self.correlate_by_trace_context();
     }
-    
+
     fn correlate_by_time_window(&mut self) {
         // 在时间窗口内关联 Metrics 和 Logs
         const TIME_WINDOW: u64 = 1_000_000_000; // 1秒
-        
+
         let mut metrics_by_time: Vec<(u64, NodeId)> = Vec::new();
         let mut logs_by_time: Vec<(u64, NodeId)> = Vec::new();
-        
+
         for (id, node) in &self.nodes {
             match node {
                 SemanticNode::Metric { timestamp, .. } => {
@@ -311,7 +311,7 @@ impl CrossSignalSemanticGraph {
                 _ => {}
             }
         }
-        
+
         // 建立时间相关的关联
         for (metric_time, metric_id) in &metrics_by_time {
             for (log_time, log_id) in &logs_by_time {
@@ -325,7 +325,7 @@ impl CrossSignalSemanticGraph {
             }
         }
     }
-    
+
     fn correlate_by_trace_context(&mut self) {
         // 基于 TraceId 和 SpanId 建立强关联
         // 已在 add_metric_node 和 add_log_node 中处理
@@ -374,11 +374,11 @@ impl TimeSeriesAnalyzer {
     /// 检测趋势
     pub fn detect_trend(&self, metric_name: &str) -> Option<Trend> {
         let series = self.series.get(metric_name)?;
-        
+
         if series.len() < 2 {
             return None;
         }
-        
+
         // 简单线性回归
         let n = series.len() as f64;
         let sum_x: f64 = series.iter().enumerate().map(|(i, _)| i as f64).sum();
@@ -389,9 +389,9 @@ impl TimeSeriesAnalyzer {
         let sum_x2: f64 = series.iter().enumerate()
             .map(|(i, _)| (i as f64).powi(2))
             .sum();
-        
+
         let slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x.powi(2));
-        
+
         Some(if slope > 0.1 {
             Trend::Increasing(slope)
         } else if slope < -0.1 {
@@ -400,18 +400,18 @@ impl TimeSeriesAnalyzer {
             Trend::Stable
         })
     }
-    
+
     /// 检测异常点
     pub fn detect_anomalies(&self, metric_name: &str) -> Vec<Anomaly> {
         let series = self.series.get(metric_name).unwrap();
-        
+
         // 使用 3-sigma 规则
         let mean = series.iter().map(|p| p.value).sum::<f64>() / series.len() as f64;
         let variance = series.iter()
             .map(|p| (p.value - mean).powi(2))
             .sum::<f64>() / series.len() as f64;
         let std_dev = variance.sqrt();
-        
+
         let mut anomalies = Vec::new();
         for point in series {
             let z_score = (point.value - mean).abs() / std_dev;
@@ -428,14 +428,14 @@ impl TimeSeriesAnalyzer {
                 });
             }
         }
-        
+
         anomalies
     }
-    
+
     /// 预测未来值
     pub fn forecast(&self, metric_name: &str, steps_ahead: usize) -> Vec<f64> {
         let series = self.series.get(metric_name).unwrap();
-        
+
         // 简单移动平均预测
         let window_size = 5.min(series.len());
         let recent: Vec<f64> = series.iter()
@@ -443,9 +443,9 @@ impl TimeSeriesAnalyzer {
             .take(window_size)
             .map(|p| p.value)
             .collect();
-        
+
         let avg = recent.iter().sum::<f64>() / recent.len() as f64;
-        
+
         vec![avg; steps_ahead]
     }
 }
@@ -498,19 +498,19 @@ impl ServiceTopologyAnalyzer {
                     .get("service.name")
                     .cloned()
                     .unwrap_or_else(|| "unknown".to_string());
-                
+
                 // 添加节点
                 if !self.topology.contains_node(&service) {
                     self.topology.add_node(service.clone());
                 }
-                
+
                 // 添加边 (服务调用)
                 if let Some(parent_span) = self.find_parent_span(trace, span) {
                     let parent_service = parent_span.resource.attributes
                         .get("service.name")
                         .cloned()
                         .unwrap_or_else(|| "unknown".to_string());
-                    
+
                     if parent_service != service {
                         self.add_or_update_edge(&parent_service, &service, span);
                     }
@@ -518,17 +518,17 @@ impl ServiceTopologyAnalyzer {
             }
         }
     }
-    
+
     fn find_parent_span<'a>(&self, trace: &'a Trace, span: &Span) -> Option<&'a Span> {
         span.parent_span_id.and_then(|parent_id| {
             trace.spans.iter().find(|s| s.span_id == parent_id)
         })
     }
-    
+
     fn add_or_update_edge(&mut self, from: &str, to: &str, span: &Span) {
         let latency = span.end_time.unwrap_or(0) - span.start_time;
         let is_error = span.status.code == StatusCode::Error;
-        
+
         if let Some(edge) = self.topology.get_edge_mut(from, to) {
             edge.call_count += 1;
             edge.avg_latency = Duration::from_nanos(
@@ -552,7 +552,7 @@ impl ServiceTopologyAnalyzer {
             );
         }
     }
-    
+
     /// 识别关键路径
     pub fn identify_critical_path(&self, start: &str, end: &str) -> Vec<String> {
         // 使用 Dijkstra 算法找到延迟最高的路径
@@ -560,26 +560,26 @@ impl ServiceTopologyAnalyzer {
             edge.avg_latency.as_millis() as f64
         })
     }
-    
+
     /// 识别单点故障
     pub fn identify_single_points_of_failure(&self) -> Vec<String> {
         let mut spofs = Vec::new();
-        
+
         for node in self.topology.nodes() {
             // 检查移除此节点是否会导致图不连通
             if self.is_critical_node(node) {
                 spofs.push(node.clone());
             }
         }
-        
+
         spofs
     }
-    
+
     fn is_critical_node(&self, node: &str) -> bool {
         // 简化实现:检查是否是唯一路径上的节点
         let in_degree = self.topology.in_degree(node);
         let out_degree = self.topology.out_degree(node);
-        
+
         in_degree > 0 && out_degree > 0 && (in_degree == 1 || out_degree == 1)
     }
 }
@@ -597,38 +597,38 @@ impl<N: Clone + Eq + std::hash::Hash, E> Graph<N, E> {
             edges: HashMap::new(),
         }
     }
-    
+
     pub fn add_node(&mut self, node: N) {
         self.nodes.insert(node);
     }
-    
+
     pub fn add_edge(&mut self, from: N, to: N, edge: E) {
         self.edges.insert((from, to), edge);
     }
-    
+
     pub fn contains_node(&self, node: &N) -> bool {
         self.nodes.contains(node)
     }
-    
-    pub fn get_edge_mut(&mut self, from: &N, to: &N) -> Option<&mut E> 
+
+    pub fn get_edge_mut(&mut self, from: &N, to: &N) -> Option<&mut E>
     where
         N: Clone,
     {
         self.edges.get_mut(&(from.clone(), to.clone()))
     }
-    
+
     pub fn nodes(&self) -> impl Iterator<Item = &N> {
         self.nodes.iter()
     }
-    
+
     pub fn in_degree(&self, node: &N) -> usize {
         self.edges.keys().filter(|(_, to)| to == node).count()
     }
-    
+
     pub fn out_degree(&self, node: &N) -> usize {
         self.edges.keys().filter(|(from, _)| from == node).count()
     }
-    
+
     pub fn shortest_path<F>(&self, _start: &N, _end: &N, _weight: F) -> Vec<N>
     where
         F: Fn(&E) -> f64,
@@ -659,11 +659,11 @@ impl CausalReasoningEngine {
         // 使用 Granger 因果检验
         let cause_series = self.observations.get(cause).unwrap();
         let effect_series = self.observations.get(effect).unwrap();
-        
+
         // 简化实现:计算相关性和时间滞后
         let correlation = self.compute_correlation(cause_series, effect_series);
         let lag = self.find_optimal_lag(cause_series, effect_series);
-        
+
         if correlation > 0.7 && lag > 0 {
             CausalStrength::Strong(correlation)
         } else if correlation > 0.5 {
@@ -672,27 +672,27 @@ impl CausalReasoningEngine {
             CausalStrength::Weak(correlation)
         }
     }
-    
+
     fn compute_correlation(&self, x: &[f64], y: &[f64]) -> f64 {
         let n = x.len().min(y.len()) as f64;
         let mean_x = x.iter().sum::<f64>() / n;
         let mean_y = y.iter().sum::<f64>() / n;
-        
+
         let cov: f64 = x.iter().zip(y.iter())
             .map(|(xi, yi)| (xi - mean_x) * (yi - mean_y))
             .sum::<f64>() / n;
-        
+
         let std_x = (x.iter().map(|xi| (xi - mean_x).powi(2)).sum::<f64>() / n).sqrt();
         let std_y = (y.iter().map(|yi| (yi - mean_y).powi(2)).sum::<f64>() / n).sqrt();
-        
+
         cov / (std_x * std_y)
     }
-    
+
     fn find_optimal_lag(&self, _cause: &[f64], _effect: &[f64]) -> usize {
         // 简化实现
         1
     }
-    
+
     /// 反事实推理: "如果X没有发生,Y会怎样?"
     pub fn counterfactual_reasoning(
         &self,
@@ -790,20 +790,20 @@ impl RuleBasedReasoningEngine {
     pub fn add_rule(&mut self, rule: Rule) {
         self.rules.push(rule);
     }
-    
+
     /// 添加事实
     pub fn add_fact(&mut self, fact: Fact) {
         self.facts.insert(fact);
     }
-    
+
     /// 前向推理
     pub fn forward_reasoning(&mut self) -> Vec<(Conclusion, f64)> {
         let mut conclusions = Vec::new();
         let mut changed = true;
-        
+
         while changed {
             changed = false;
-            
+
             for rule in &self.rules {
                 if self.evaluate_conditions(&rule.conditions) {
                     if !self.facts.contains(&rule.conclusion.fact) {
@@ -814,14 +814,14 @@ impl RuleBasedReasoningEngine {
                 }
             }
         }
-        
+
         conclusions
     }
-    
+
     fn evaluate_conditions(&self, conditions: &[Condition]) -> bool {
         conditions.iter().all(|cond| self.evaluate_condition(cond))
     }
-    
+
     fn evaluate_condition(&self, condition: &Condition) -> bool {
         match condition {
             Condition::Fact(fact) => self.facts.contains(fact),
@@ -867,7 +867,7 @@ impl RuleBasedReasoningEngine {
             },
             confidence: 0.9,
         });
-        
+
         // 规则2: CPU 使用率高 → 需要扩容
         self.add_rule(Rule {
             name: "scale_up_on_high_cpu".to_string(),
@@ -935,7 +935,7 @@ impl BayesianNetwork {
         // 使用变量消除算法
         self.variable_elimination(query, query_value, evidence)
     }
-    
+
     fn variable_elimination(
         &self,
         query: &str,
@@ -945,14 +945,14 @@ impl BayesianNetwork {
         // 简化实现
         0.5
     }
-    
+
     /// 构建故障诊断网络
     pub fn build_fault_diagnosis_network() -> Self {
         let mut network = Self {
             nodes: HashMap::new(),
             edges: Vec::new(),
         };
-        
+
         // 节点: 高延迟
         network.nodes.insert(
             "high_latency".to_string(),
@@ -970,7 +970,7 @@ impl BayesianNetwork {
                 },
             },
         );
-        
+
         // 节点: 数据库慢
         network.nodes.insert(
             "db_slow".to_string(),
@@ -997,9 +997,9 @@ impl BayesianNetwork {
                 },
             },
         );
-        
+
         network.edges.push(("high_latency".to_string(), "db_slow".to_string()));
-        
+
         network
     }
 }
@@ -1019,7 +1019,7 @@ pub struct MLReasoningEngine {
 pub trait MLModel: Send + Sync {
     /// 预测
     fn predict(&self, features: &[f64]) -> f64;
-    
+
     /// 预测概率
     fn predict_proba(&self, features: &[f64]) -> Vec<f64>;
 }
@@ -1034,7 +1034,7 @@ impl MLReasoningEngine {
             false
         }
     }
-    
+
     /// 故障预测
     pub fn predict_failure(
         &self,
@@ -1075,12 +1075,12 @@ impl FaultPropagationAnalyzer {
     ) -> Vec<PropagationPath> {
         let mut paths = Vec::new();
         let mut visited = HashSet::new();
-        
+
         self.dfs_propagation(fault_source, vec![fault_source.to_string()], &mut visited, &mut paths);
-        
+
         paths
     }
-    
+
     fn dfs_propagation(
         &self,
         current: &str,
@@ -1089,10 +1089,10 @@ impl FaultPropagationAnalyzer {
         paths: &mut Vec<PropagationPath>,
     ) {
         visited.insert(current.to_string());
-        
+
         // 获取下游服务
         let downstream = self.get_downstream_services(current);
-        
+
         if downstream.is_empty() {
             // 叶子节点,记录路径
             paths.push(PropagationPath {
@@ -1109,12 +1109,12 @@ impl FaultPropagationAnalyzer {
             }
         }
     }
-    
+
     fn get_downstream_services(&self, service: &str) -> Vec<String> {
         // 从依赖图中获取下游服务
         Vec::new()
     }
-    
+
     fn calculate_propagation_probability(&self, _path: &[String]) -> f64 {
         // 基于服务间的错误传播率计算
         0.8
@@ -1150,20 +1150,20 @@ impl HealthAssessor {
     pub fn assess_health(&self, metrics: &HashMap<String, f64>) -> HealthScore {
         let mut score = 0.0;
         let mut total_weight = 0.0;
-        
+
         for (metric, value) in metrics {
             if let Some(&weight) = self.weights.get(metric) {
                 score += value * weight;
                 total_weight += weight;
             }
         }
-        
+
         let normalized_score = if total_weight > 0.0 {
             score / total_weight
         } else {
             0.0
         };
-        
+
         HealthScore {
             overall: normalized_score,
             components: metrics.clone(),
@@ -1205,7 +1205,7 @@ impl BottleneckIdentifier {
     /// 识别性能瓶颈
     pub fn identify_bottlenecks(&self) -> Vec<Bottleneck> {
         let mut bottlenecks = Vec::new();
-        
+
         for service in self.topology.topology.nodes() {
             // 检查延迟
             let avg_latency = self.get_average_latency(service);
@@ -1220,15 +1220,15 @@ impl BottleneckIdentifier {
                         .collect(),
                 });
             }
-            
+
             // 检查吞吐量
             // 检查资源使用率
             // ...
         }
-        
+
         bottlenecks
     }
-    
+
     fn get_average_latency(&self, _service: &str) -> Duration {
         Duration::from_millis(100)
     }
@@ -1268,7 +1268,7 @@ impl CapacityPredictor {
     ) -> CapacityPrediction {
         let current_value = 0.0; // 从时间序列获取
         let trend = self.time_series_analyzer.detect_trend(metric);
-        
+
         let predicted_value = match trend {
             Some(Trend::Increasing(rate)) => {
                 current_value + rate * horizon.as_secs_f64()
@@ -1278,7 +1278,7 @@ impl CapacityPredictor {
             }
             _ => current_value,
         };
-        
+
         CapacityPrediction {
             metric: metric.to_string(),
             current_value,

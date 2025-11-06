@@ -1,7 +1,7 @@
 # OTLP on Kubernetes with Istio/Envoy - 完整生产实践指南
 
-> **版本**: v2.0  
-> **状态**: ✅ 生产就绪  
+> **版本**: v2.0
+> **状态**: ✅ 生产就绪
 > **最后更新**: 2025年10月17日
 
 ---
@@ -212,36 +212,36 @@ data:
             cors:
               allowed_origins:
                 - "*"
-      
+
       # Kubernetes集群指标
       k8s_cluster:
         auth_type: serviceAccount
         node_conditions_to_report: [Ready, MemoryPressure, DiskPressure]
-      
+
       # Kubelet指标
       kubeletstats:
         collection_interval: 30s
         auth_type: serviceAccount
         endpoint: "${K8S_NODE_NAME}:10250"
         insecure_skip_verify: true
-    
+
     processors:
       # 批处理
       batch:
         timeout: 10s
         send_batch_size: 1024
-      
+
       # 内存限制
       memory_limiter:
         check_interval: 1s
         limit_mib: 512
         spike_limit_mib: 128
-      
+
       # 资源检测
       resourcedetection/env:
         detectors: [env, system]
         timeout: 2s
-      
+
       # Kubernetes属性
       k8sattributes:
         auth_type: serviceAccount
@@ -257,52 +257,52 @@ data:
             - tag_name: app
               key: app
               from: pod
-      
+
       # 采样
       probabilistic_sampler:
         hash_seed: 22
         sampling_percentage: 10
-    
+
     exporters:
       # 日志导出（调试）
       logging:
         loglevel: info
         sampling_initial: 5
         sampling_thereafter: 200
-      
+
       # Jaeger导出
       otlp/jaeger:
         endpoint: jaeger-collector.observability.svc.cluster.local:4317
         tls:
           insecure: true
-      
+
       # Prometheus导出
       prometheusremotewrite:
         endpoint: http://prometheus.observability.svc.cluster.local:9090/api/v1/write
         tls:
           insecure: true
-      
+
       # Loki导出
       loki:
         endpoint: http://loki.observability.svc.cluster.local:3100/loki/api/v1/push
-    
+
     service:
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, k8sattributes, resourcedetection/env, probabilistic_sampler, batch]
           exporters: [logging, otlp/jaeger]
-        
+
         metrics:
           receivers: [otlp, k8s_cluster, kubeletstats]
           processors: [memory_limiter, k8sattributes, resourcedetection/env, batch]
           exporters: [logging, prometheusremotewrite]
-        
+
         logs:
           receivers: [otlp]
           processors: [memory_limiter, k8sattributes, resourcedetection/env, batch]
           exporters: [logging, loki]
-      
+
       telemetry:
         logs:
           level: info
@@ -1171,7 +1171,7 @@ spec:
       annotations:
         summary: "OTLP Collector实例宕机"
         description: "Collector {{ $labels.instance }} 已宕机超过5分钟"
-    
+
     - alert: OTLPCollectorHighErrorRate
       expr: |
         rate(otelcol_exporter_send_failed_spans[5m]) /
@@ -1182,7 +1182,7 @@ spec:
       annotations:
         summary: "OTLP Collector错误率过高"
         description: "错误率: {{ $value | humanizePercentage }}"
-    
+
     - alert: OTLPCollectorHighMemory
       expr: |
         process_resident_memory_bytes{job="otel-collector"} /
@@ -1193,7 +1193,7 @@ spec:
       annotations:
         summary: "OTLP Collector内存使用过高"
         description: "内存使用: {{ $value | humanizePercentage }}"
-    
+
     - alert: OTLPCollectorQueueBacklog
       expr: otelcol_exporter_queue_size > 1000
       for: 5m
@@ -1326,12 +1326,12 @@ processors:
     timeout: 5s                    # 降低延迟
     send_batch_size: 2048          # 增加批大小
     send_batch_max_size: 4096
-  
+
   memory_limiter:
     check_interval: 1s
     limit_mib: 2048                # 增加内存限制
     spike_limit_mib: 512
-  
+
   # 仅处理必要的属性
   resource:
     attributes:
@@ -1477,7 +1477,7 @@ config:
           endpoint: 0.0.0.0:4317
         http:
           endpoint: 0.0.0.0:4318
-  
+
   processors:
     batch:
       timeout: 10s
@@ -1486,7 +1486,7 @@ config:
       check_interval: 1s
       limit_mib: 1536
       spike_limit_mib: 512
-  
+
   exporters:
     logging:
       loglevel: info
@@ -1494,7 +1494,7 @@ config:
       endpoint: jaeger-collector:4317
       tls:
         insecure: true
-  
+
   service:
     pipelines:
       traces:
@@ -1602,11 +1602,11 @@ export default function() {
       }]
     }]
   });
-  
+
   let res = http.post(url, payload, {
     headers: { 'Content-Type': 'application/json' },
   });
-  
+
   check(res, {
     'status is 200': (r) => r.status === 200,
     'response time < 500ms': (r) => r.timings.duration < 500,
@@ -1780,6 +1780,6 @@ echo "✅ 升级完成"
 
 ---
 
-**文档状态**: ✅ 生产就绪  
-**完成时间**: 2025年10月17日  
+**文档状态**: ✅ 生产就绪
+**完成时间**: 2025年10月17日
 **维护团队**: OTLP Cloud Native团队

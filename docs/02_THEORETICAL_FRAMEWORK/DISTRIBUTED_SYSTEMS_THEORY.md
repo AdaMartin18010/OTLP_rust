@@ -1,8 +1,8 @@
 # 分布式系统理论与 OTLP 实现分析
 
-**版本**: 1.0  
-**日期**: 2025年10月26日  
-**主题**: CAP定理、一致性模型、共识算法、分布式追踪理论  
+**版本**: 1.0
+**日期**: 2025年10月26日
+**主题**: CAP定理、一致性模型、共识算法、分布式追踪理论
 **状态**: 🟢 活跃维护
 
 > **简介**: 分布式系统理论 - CAP定理、一致性模型、共识算法和分布式追踪的完整理论。
@@ -168,18 +168,18 @@ impl LamportClock {
     pub fn new() -> Self {
         Self(0)
     }
-    
+
     /// 本地事件:递增时钟
     pub fn tick(&mut self) {
         self.0 += 1;
     }
-    
+
     /// 发送消息:附加当前时钟
     pub fn send(&mut self) -> u64 {
         self.tick();
         self.0
     }
-    
+
     /// 接收消息:更新时钟
     pub fn receive(&mut self, msg_timestamp: u64) {
         self.0 = self.0.max(msg_timestamp);
@@ -202,18 +202,18 @@ impl VectorClock {
         clocks.insert(process_id.clone(), 0);
         Self { clocks, process_id }
     }
-    
+
     /// 本地事件
     pub fn tick(&mut self) {
         *self.clocks.entry(self.process_id.clone()).or_insert(0) += 1;
     }
-    
+
     /// 发送消息
     pub fn send(&mut self) -> HashMap<String, u64> {
         self.tick();
         self.clocks.clone()
     }
-    
+
     /// 接收消息
     pub fn receive(&mut self, msg_clock: &HashMap<String, u64>) {
         for (pid, &timestamp) in msg_clock {
@@ -222,27 +222,27 @@ impl VectorClock {
         }
         self.tick();
     }
-    
+
     /// 比较两个向量时钟
     pub fn compare(&self, other: &VectorClock) -> Ordering {
         let mut less = false;
         let mut greater = false;
-        
+
         let all_pids: HashSet<_> = self.clocks.keys()
             .chain(other.clocks.keys())
             .collect();
-        
+
         for pid in all_pids {
             let self_val = self.clocks.get(pid).copied().unwrap_or(0);
             let other_val = other.clocks.get(pid).copied().unwrap_or(0);
-            
+
             if self_val < other_val {
                 less = true;
             } else if self_val > other_val {
                 greater = true;
             }
         }
-        
+
         match (less, greater) {
             (true, false) => Ordering::Less,      // self < other
             (false, true) => Ordering::Greater,   // self > other
@@ -250,7 +250,7 @@ impl VectorClock {
             (true, true) => Ordering::Equal,      // 并发 (concurrent)
         }
     }
-    
+
     /// 检查是否并发
     pub fn is_concurrent(&self, other: &VectorClock) -> bool {
         matches!(self.compare(other), Ordering::Equal) && self != other
@@ -267,13 +267,13 @@ impl CausalSpan {
     pub fn new(name: &str, process_id: String) -> Self {
         let mut span = Span::new(name);
         let vector_clock = VectorClock::new(process_id);
-        
+
         // 将向量时钟编码到 Span 属性中
         Self::encode_vector_clock(&mut span, &vector_clock);
-        
+
         Self { span, vector_clock }
     }
-    
+
     fn encode_vector_clock(span: &mut Span, vc: &VectorClock) {
         for (pid, &timestamp) in &vc.clocks {
             span.set_attribute(
@@ -282,7 +282,7 @@ impl CausalSpan {
             );
         }
     }
-    
+
     fn decode_vector_clock(span: &Span) -> Option<HashMap<String, u64>> {
         let mut clocks = HashMap::new();
         for (key, value) in &span.attributes {
@@ -298,7 +298,7 @@ impl CausalSpan {
             Some(clocks)
         }
     }
-    
+
     /// 建立因果关系
     pub fn establish_causality(&mut self, parent: &CausalSpan) {
         self.vector_clock.receive(&parent.vector_clock.clocks);
@@ -348,7 +348,7 @@ pub trait DistributedStore {
         value: Vec<u8>,
         consistency: ConsistencyLevel,
     ) -> Result<()>;
-    
+
     /// 读取数据
     async fn read(
         &self,
@@ -380,7 +380,7 @@ impl DistributedStore for OTLPDistributedStore {
         let mut span = self.tracer.start("distributed_write");
         span.set_attribute("key", &key);
         span.set_attribute("consistency", format!("{:?}", consistency));
-        
+
         match consistency {
             ConsistencyLevel::Linearizable => {
                 // 需要全局顺序,使用 Paxos/Raft
@@ -399,10 +399,10 @@ impl DistributedStore for OTLPDistributedStore {
                 self.eventual_write(key, value).await?;
             }
         }
-        
+
         Ok(())
     }
-    
+
     async fn read(
         &self,
         key: &str,
@@ -411,7 +411,7 @@ impl DistributedStore for OTLPDistributedStore {
         let mut span = self.tracer.start("distributed_read");
         span.set_attribute("key", key);
         span.set_attribute("consistency", format!("{:?}", consistency));
-        
+
         match consistency {
             ConsistencyLevel::Linearizable => {
                 // 读取最新值,可能需要等待
@@ -439,19 +439,19 @@ impl OTLPDistributedStore {
         // 1. 获取全局锁或使用共识算法
         // 2. 写入所有副本
         // 3. 等待多数确认
-        
+
         let quorum = (self.replicas.len() + 1) / 2 + 1;
         let mut acks = 1; // 本地写入
-        
+
         self.local.insert(key.clone(), value.clone());
-        
+
         // 并行写入副本
         let mut tasks = Vec::new();
         for replica in &self.replicas {
             let replica = replica.clone();
             let key = key.clone();
             let value = value.clone();
-            
+
             tasks.push(tokio::spawn(async move {
                 // 发送写入请求到副本
                 // 这里简化为模拟
@@ -459,7 +459,7 @@ impl OTLPDistributedStore {
                 Ok::<_, anyhow::Error>(())
             }));
         }
-        
+
         // 等待 quorum 确认
         for task in tasks {
             if task.await.is_ok() {
@@ -469,29 +469,29 @@ impl OTLPDistributedStore {
                 }
             }
         }
-        
+
         Err(anyhow!("Failed to achieve quorum"))
     }
-    
+
     async fn causal_write(&mut self, key: String, value: Vec<u8>) -> Result<()> {
         // 因果一致性写入
         self.vector_clock.tick();
-        
+
         // 附加向量时钟
         let mut versioned_value = Vec::new();
         versioned_value.extend_from_slice(&bincode::serialize(&self.vector_clock.clocks)?);
         versioned_value.extend_from_slice(&value);
-        
+
         self.local.insert(key, versioned_value);
-        
+
         // 异步复制到其他节点
         Ok(())
     }
-    
+
     async fn eventual_write(&mut self, key: String, value: Vec<u8>) -> Result<()> {
         // 最终一致性:立即返回,后台异步复制
         self.local.insert(key.clone(), value.clone());
-        
+
         // 启动后台任务复制
         let replicas = self.replicas.clone();
         tokio::spawn(async move {
@@ -500,35 +500,35 @@ impl OTLPDistributedStore {
                 let _ = Self::async_replicate(&replica, &key, &value).await;
             }
         });
-        
+
         Ok(())
     }
-    
+
     async fn async_replicate(replica: &str, key: &str, value: &[u8]) -> Result<()> {
         // 模拟异步复制
         tokio::time::sleep(Duration::from_millis(50)).await;
         println!("Replicated {} to {}", key, replica);
         Ok(())
     }
-    
+
     async fn linearizable_read(&self, key: &str) -> Result<Vec<u8>> {
         // 线性一致性读取:可能需要读取多数副本
         self.local.get(key)
             .cloned()
             .ok_or_else(|| anyhow!("Key not found"))
     }
-    
+
     async fn sequential_read(&self, key: &str) -> Result<Vec<u8>> {
         self.local.get(key)
             .cloned()
             .ok_or_else(|| anyhow!("Key not found"))
     }
-    
+
     async fn causal_read(&self, key: &str) -> Result<Vec<u8>> {
         // 因果一致性读取:需要检查向量时钟
         let versioned_value = self.local.get(key)
             .ok_or_else(|| anyhow!("Key not found"))?;
-        
+
         // 解析向量时钟和实际值
         // 简化实现
         Ok(versioned_value.clone())
@@ -607,16 +607,16 @@ impl Proposer {
     /// Phase 1: Prepare
     pub async fn prepare(&mut self) -> Result<Option<Proposal>> {
         let mut span = self.tracer.start("paxos_prepare");
-        
+
         self.proposal_number += 1;
         let n = self.proposal_number;
-        
+
         span.set_attribute("proposal_number", n.to_string());
-        
+
         // 发送 Prepare 到多数 Acceptors
         let quorum = (self.acceptors.len() + 1) / 2 + 1;
         let mut promises = Vec::new();
-        
+
         for acceptor in &self.acceptors {
             // 模拟发送 Prepare 请求
             let response = self.send_prepare(acceptor, n).await?;
@@ -627,34 +627,34 @@ impl Proposer {
                 }
             }
         }
-        
+
         if promises.len() < quorum {
             return Err(anyhow!("Failed to get quorum of promises"));
         }
-        
+
         // 选择已接受提案中编号最大的值
         let max_accepted = promises.into_iter()
             .filter_map(|p| p)
             .max_by_key(|p| p.number);
-        
+
         Ok(max_accepted)
     }
-    
+
     /// Phase 2: Accept
     pub async fn accept(&self, value: Vec<u8>) -> Result<()> {
         let mut span = self.tracer.start("paxos_accept");
-        
+
         let proposal = Proposal {
             number: self.proposal_number,
             value,
         };
-        
+
         span.set_attribute("proposal_number", proposal.number.to_string());
-        
+
         // 发送 Accept 到多数 Acceptors
         let quorum = (self.acceptors.len() + 1) / 2 + 1;
         let mut accepted_count = 0;
-        
+
         for acceptor in &self.acceptors {
             if self.send_accept(acceptor, &proposal).await.is_ok() {
                 accepted_count += 1;
@@ -663,16 +663,16 @@ impl Proposer {
                 }
             }
         }
-        
+
         Err(anyhow!("Failed to get quorum of accepts"))
     }
-    
+
     async fn send_prepare(&self, _acceptor: &str, _n: u64) -> Result<Option<Option<Proposal>>> {
         // 模拟网络请求
         tokio::time::sleep(Duration::from_millis(10)).await;
         Ok(Some(None))
     }
-    
+
     async fn send_accept(&self, _acceptor: &str, _proposal: &Proposal) -> Result<()> {
         // 模拟网络请求
         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -696,40 +696,40 @@ impl Acceptor {
             tracer,
         }
     }
-    
+
     /// 处理 Prepare 请求
     pub fn handle_prepare(&mut self, n: u64) -> Option<Option<Proposal>> {
         let mut span = self.tracer.start("acceptor_prepare");
         span.set_attribute("proposal_number", n.to_string());
-        
+
         if let Some(promised) = self.state.promised_number {
             if n <= promised {
                 span.set_attribute("result", "rejected");
                 return None;
             }
         }
-        
+
         self.state.promised_number = Some(n);
         span.set_attribute("result", "promised");
-        
+
         Some(self.state.accepted.clone())
     }
-    
+
     /// 处理 Accept 请求
     pub fn handle_accept(&mut self, proposal: Proposal) -> Result<()> {
         let mut span = self.tracer.start("acceptor_accept");
         span.set_attribute("proposal_number", proposal.number.to_string());
-        
+
         if let Some(promised) = self.state.promised_number {
             if proposal.number < promised {
                 span.set_attribute("result", "rejected");
                 return Err(anyhow!("Proposal number too low"));
             }
         }
-        
+
         self.state.accepted = Some(proposal);
         span.set_attribute("result", "accepted");
-        
+
         Ok(())
     }
 }
@@ -807,17 +807,17 @@ impl RaftNode {
     /// 开始选举
     pub async fn start_election(&mut self) -> Result<()> {
         let mut span = self.tracer.start("raft_election");
-        
+
         self.role = RaftRole::Candidate;
         self.current_term += 1;
         self.voted_for = Some(self.id.clone());
-        
+
         span.set_attribute("term", self.current_term.to_string());
         span.set_attribute("candidate", &self.id);
-        
+
         let mut votes = 1; // 投票给自己
         let quorum = (self.peers.len() + 1) / 2 + 1;
-        
+
         // 请求投票
         for peer in &self.peers {
             if self.request_vote(peer).await? {
@@ -829,44 +829,44 @@ impl RaftNode {
                 }
             }
         }
-        
+
         span.set_attribute("result", "failed");
         self.role = RaftRole::Follower;
-        
+
         Ok(())
     }
-    
+
     fn become_leader(&mut self) {
         let mut span = self.tracer.start("become_leader");
         span.set_attribute("term", self.current_term.to_string());
-        
+
         self.role = RaftRole::Leader;
-        
+
         // 初始化 Leader 状态
         // nextIndex, matchIndex 等
     }
-    
+
     /// 追加日志条目
     pub async fn append_entries(&mut self, command: Vec<u8>) -> Result<()> {
         if self.role != RaftRole::Leader {
             return Err(anyhow!("Not a leader"));
         }
-        
+
         let mut span = self.tracer.start("raft_append");
-        
+
         let entry = LogEntry {
             term: self.current_term,
             index: self.log.len() as u64,
             command,
         };
-        
+
         self.log.push(entry.clone());
         span.set_attribute("index", entry.index.to_string());
-        
+
         // 复制到 Followers
         let mut replicated = 1;
         let quorum = (self.peers.len() + 1) / 2 + 1;
-        
+
         for peer in &self.peers {
             if self.replicate_to_follower(peer, &entry).await.is_ok() {
                 replicated += 1;
@@ -878,16 +878,16 @@ impl RaftNode {
                 }
             }
         }
-        
+
         Err(anyhow!("Failed to replicate to quorum"))
     }
-    
+
     async fn request_vote(&self, _peer: &str) -> Result<bool> {
         // 模拟投票请求
         tokio::time::sleep(Duration::from_millis(10)).await;
         Ok(true)
     }
-    
+
     async fn replicate_to_follower(&self, _peer: &str, _entry: &LogEntry) -> Result<()> {
         // 模拟日志复制
         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -930,14 +930,14 @@ impl OTLPSemantics {
     pub fn create_distributed_trace(&self, service: &str) -> DistributedTrace {
         let trace_id = TraceId::generate();
         let root_span = self.create_root_span(trace_id, service);
-        
+
         DistributedTrace {
             trace_id,
             root_span,
             spans: Vec::new(),
         }
     }
-    
+
     fn create_root_span(&self, trace_id: TraceId, service: &str) -> Span {
         let mut span = self.tracer.start("root");
         span.trace_id = trace_id;
@@ -980,18 +980,18 @@ impl DistributedTracingManager {
     ) -> Result<Response> {
         let mut span = self.tracer.start("cross_service_call");
         span.set_attribute("target.service", target_service);
-        
+
         // 注入追踪上下文
         let mut headers = HashMap::new();
         self.propagator.inject(&span, &mut headers);
-        
+
         // 发送请求
         let response = self.send_request(target_service, request, headers).await?;
-        
+
         span.set_attribute("response.status", response.status.to_string());
         Ok(response)
     }
-    
+
     async fn send_request(
         &self,
         _service: &str,
@@ -1019,22 +1019,22 @@ impl TraceContextPropagator {
             ),
         );
     }
-    
+
     /// 从 HTTP 头提取上下文
     pub fn extract(&self, headers: &HashMap<String, String>) -> Option<SpanContext> {
         let traceparent = headers.get("traceparent")?;
         self.parse_traceparent(traceparent)
     }
-    
+
     fn parse_traceparent(&self, traceparent: &str) -> Option<SpanContext> {
         let parts: Vec<&str> = traceparent.split('-').collect();
         if parts.len() != 4 {
             return None;
         }
-        
+
         let trace_id = TraceId::from_hex(parts[1]).ok()?;
         let span_id = SpanId::from_hex(parts[2]).ok()?;
-        
+
         Some(SpanContext {
             trace_id,
             span_id,
@@ -1076,20 +1076,20 @@ impl CausalInferenceEngine {
     pub fn build_causal_graph(&self, trace_id: TraceId) -> Result<CausalGraph> {
         let trace = self.traces.get(&trace_id)
             .ok_or_else(|| anyhow!("Trace not found"))?;
-        
+
         let mut graph = CausalGraph::new(trace_id);
-        
+
         // 添加节点
         for span in &trace.spans {
             graph.add_node(span.span_id, span.clone());
         }
-        
+
         // 添加边 (因果关系)
         for span in &trace.spans {
             if let Some(parent_id) = span.parent_span_id {
                 graph.add_edge(parent_id, span.span_id, CausalRelation::ParentChild);
             }
-            
+
             // 检查 Links (跨 Trace 因果关系)
             for link in &span.links {
                 graph.add_edge(
@@ -1099,26 +1099,26 @@ impl CausalInferenceEngine {
                 );
             }
         }
-        
+
         Ok(graph)
     }
-    
+
     /// 查找根因
     pub fn find_root_cause(&self, trace_id: TraceId, error_span_id: SpanId) -> Result<Vec<SpanId>> {
         let graph = self.build_causal_graph(trace_id)?;
-        
+
         // 反向遍历因果图
         let mut root_causes = Vec::new();
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();
         queue.push_back(error_span_id);
-        
+
         while let Some(span_id) = queue.pop_front() {
             if visited.contains(&span_id) {
                 continue;
             }
             visited.insert(span_id);
-            
+
             let predecessors = graph.predecessors(span_id);
             if predecessors.is_empty() {
                 // 找到根节点
@@ -1129,7 +1129,7 @@ impl CausalInferenceEngine {
                 }
             }
         }
-        
+
         Ok(root_causes)
     }
 }
@@ -1156,15 +1156,15 @@ impl CausalGraph {
             edges: Vec::new(),
         }
     }
-    
+
     pub fn add_node(&mut self, span_id: SpanId, span: Span) {
         self.nodes.insert(span_id, span);
     }
-    
+
     pub fn add_edge(&mut self, from: SpanId, to: SpanId, relation: CausalRelation) {
         self.edges.push((from, to, relation));
     }
-    
+
     pub fn predecessors(&self, span_id: SpanId) -> Vec<SpanId> {
         self.edges
             .iter()
@@ -1235,17 +1235,17 @@ impl FaultDetector {
                 severity: Severity::High,
             },
         ];
-        
+
         Self { patterns, tracer }
     }
-    
+
     /// 检测异常
     pub fn detect_anomalies(&self, trace: &Trace) -> Vec<Anomaly> {
         let mut span = self.tracer.start("detect_anomalies");
         span.set_attribute("trace_id", trace.trace_id.to_string());
-        
+
         let mut anomalies = Vec::new();
-        
+
         for trace_span in &trace.spans {
             for pattern in &self.patterns {
                 if (pattern.detector)(trace_span) {
@@ -1261,7 +1261,7 @@ impl FaultDetector {
                 }
             }
         }
-        
+
         span.set_attribute("anomaly_count", anomalies.len().to_string());
         anomalies
     }

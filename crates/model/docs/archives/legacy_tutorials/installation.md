@@ -3,8 +3,7 @@
 ## 📋 目录
 
 - [安装指南](#安装指南)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [📋 目录](#-目录)
   - [系统要求](#系统要求)
   - [安装 Rust](#安装-rust)
   - [添加依赖](#添加依赖)
@@ -71,11 +70,11 @@ fn main() {
     // 测试排队论模型
     let queue = MM1Queue::new(1.0, 2.0);
     println!("利用率: {:.2}%", queue.utilization() * 100.0);
-    
+
     // 测试配置管理
     let config = ModelConfig::default();
     println!("配置创建成功: {}", config.precision.default_precision);
-    
+
     println!("c18_model 安装成功！");
 }
 ```
@@ -125,4 +124,3 @@ c18_model = { version = "0.2.0", features = ["visualization", "benchmarks"] }
 1. 阅读 [快速开始指南](quick-start.md)
 2. 查看 [使用示例](examples.md)
 3. 探索 [API 参考](api-reference/)
-

@@ -8,10 +8,34 @@
 
 ## 📋 示例索引
 
-1. [完整的Web API示例](#示例1-完整的web-api示例)
-2. [微服务追踪系统](#示例2-微服务追踪系统)
-3. [高性能OTLP客户端](#示例3-高性能otlp客户端)
-4. [生产环境部署示例](#示例4-生产环境部署示例)
+- [OTLP Rust 端到端完整示例](#otlp-rust-端到端完整示例)
+  - [🎯 目标](#-目标)
+  - [📋 示例索引](#-示例索引)
+  - [示例1: 完整的Web API示例](#示例1-完整的web-api示例)
+    - [项目结构](#项目结构)
+    - [第一步：创建项目](#第一步创建项目)
+    - [第二步：配置依赖 (Cargo.toml)](#第二步配置依赖-cargotoml)
+    - [第三步：实现遥测模块 (src/telemetry.rs)](#第三步实现遥测模块-srctelemetryrs)
+    - [第四步：定义数据模型 (src/models.rs)](#第四步定义数据模型-srcmodelsrs)
+    - [第五步：实现处理器 (src/handlers.rs)](#第五步实现处理器-srchandlersrs)
+    - [第六步：配置路由 (src/routes.rs)](#第六步配置路由-srcroutesrs)
+    - [第七步：主程序 (src/main.rs)](#第七步主程序-srcmainrs)
+    - [第八步：Docker Compose配置 (docker-compose.yml)](#第八步docker-compose配置-docker-composeyml)
+    - [第九步：OTEL Collector配置 (otel-collector-config.yaml)](#第九步otel-collector配置-otel-collector-configyaml)
+    - [运行示例](#运行示例)
+  - [示例2: 微服务追踪系统](#示例2-微服务追踪系统)
+    - [项目结构2](#项目结构2)
+    - [API Gateway (services/api-gateway/src/main.rs)](#api-gateway-servicesapi-gatewaysrcmainrs)
+    - [Docker Compose (docker-compose.yml)](#docker-compose-docker-composeyml)
+    - [运行微服务示例](#运行微服务示例)
+  - [示例3: 高性能OTLP客户端](#示例3-高性能otlp客户端)
+  - [示例4: 生产环境部署示例](#示例4-生产环境部署示例)
+    - [Kubernetes部署配置](#kubernetes部署配置)
+    - [部署命令](#部署命令)
+  - [📊 性能测试](#-性能测试)
+    - [压力测试](#压力测试)
+    - [追踪数据量统计](#追踪数据量统计)
+  - [📚 总结](#-总结)
 
 ---
 

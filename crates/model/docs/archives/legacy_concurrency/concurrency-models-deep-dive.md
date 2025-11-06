@@ -117,21 +117,21 @@ use std::thread;
 fn csp_example() {
     // 创建channel
     let (tx, rx) = mpsc::channel();
-    
+
     // 发送进程
     let sender = thread::spawn(move || {
         for i in 0..10 {
             tx.send(i).unwrap();
         }
     });
-    
+
     // 接收进程
     let receiver = thread::spawn(move || {
         while let Ok(value) = rx.recv() {
             println!("Received: {}", value);
         }
     });
-    
+
     sender.join().unwrap();
     receiver.join().unwrap();
 }
@@ -139,13 +139,13 @@ fn csp_example() {
 // Select机制(多路复用)
 fn select_example() {
     use crossbeam_channel::select;
-    
+
     let (tx1, rx1) = crossbeam_channel::unbounded();
     let (tx2, rx2) = crossbeam_channel::unbounded();
-    
+
     thread::spawn(move || tx1.send("from channel 1").unwrap());
     thread::spawn(move || tx2.send("from channel 2").unwrap());
-    
+
     select! {
         recv(rx1) -> msg => println!("rx1: {:?}", msg),
         recv(rx2) -> msg => println!("rx2: {:?}", msg),
@@ -215,7 +215,7 @@ use std::thread;
 // Actor trait
 trait Actor: Send {
     type Message: Send;
-    
+
     fn receive(&mut self, msg: Self::Message);
 }
 
@@ -235,7 +235,7 @@ impl<A: Actor + 'static> ActorSystem<A> {
         };
         (system, actor_ref)
     }
-    
+
     fn run(mut self) {
         thread::spawn(move || {
             while let Ok(msg) = self.mailbox.recv() {
@@ -269,7 +269,7 @@ enum CounterMessage {
 
 impl Actor for Counter {
     type Message = CounterMessage;
-    
+
     fn receive(&mut self, msg: Self::Message) {
         match msg {
             CounterMessage::Increment => self.count += 1,
@@ -286,10 +286,10 @@ fn actor_example() {
     let counter = Counter { count: 0 };
     let (system, actor_ref) = ActorSystem::new(counter);
     system.run();
-    
+
     actor_ref.send(CounterMessage::Increment);
     actor_ref.send(CounterMessage::Increment);
-    
+
     let (tx, rx) = mpsc::channel();
     actor_ref.send(CounterMessage::Get(tx));
     let count = rx.recv().unwrap();
@@ -357,7 +357,7 @@ use std::thread;
 fn mutex_example() {
     let counter = Arc::new(Mutex::new(0));
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         let counter = Arc::clone(&counter);
         let handle = thread::spawn(move || {
@@ -366,11 +366,11 @@ fn mutex_example() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("Result: {}", *counter.lock().unwrap());  // 10
 }
 ```
@@ -382,27 +382,27 @@ use std::sync::{Arc, RwLock};
 
 fn rwlock_example() {
     let data = Arc::new(RwLock::new(vec![1, 2, 3]));
-    
+
     // 多个读者
     let data1 = Arc::clone(&data);
     let reader1 = thread::spawn(move || {
         let r = data1.read().unwrap();
         println!("Reader 1: {:?}", *r);
     });
-    
+
     let data2 = Arc::clone(&data);
     let reader2 = thread::spawn(move || {
         let r = data2.read().unwrap();
         println!("Reader 2: {:?}", *r);
     });
-    
+
     // 一个写者
     let data3 = Arc::clone(&data);
     let writer = thread::spawn(move || {
         let mut w = data3.write().unwrap();
         w.push(4);
     });
-    
+
     reader1.join().unwrap();
     reader2.join().unwrap();
     writer.join().unwrap();
@@ -418,7 +418,7 @@ use std::sync::Arc;
 fn atomic_example() {
     let counter = Arc::new(AtomicUsize::new(0));
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         let counter = Arc::clone(&counter);
         let handle = thread::spawn(move || {
@@ -428,11 +428,11 @@ fn atomic_example() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("Result: {}", counter.load(Ordering::SeqCst));  // 10000
 }
 ```
@@ -525,11 +525,11 @@ c!v (send) ≈ Actor send msg
 // CSP风格
 fn csp_style() {
     let (tx, rx) = mpsc::channel();
-    
+
     thread::spawn(move || {
         tx.send("Hello").unwrap();
     });
-    
+
     let msg = rx.recv().unwrap();
 }
 
@@ -540,7 +540,7 @@ struct MessageActor {
 
 impl Actor for MessageActor {
     type Message = String;
-    
+
     fn receive(&mut self, msg: Self::Message) {
         self.mailbox.push(msg);
     }
@@ -550,7 +550,7 @@ fn actor_style() {
     let actor = MessageActor { mailbox: vec![] };
     let (system, actor_ref) = ActorSystem::new(actor);
     system.run();
-    
+
     actor_ref.send("Hello".to_string());
 }
 ```
@@ -634,7 +634,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 fn cas_example() {
     let atomic = AtomicUsize::new(5);
-    
+
     // 如果当前值是5,则更新为10
     let result = atomic.compare_exchange(
         5,                    // expected
@@ -642,7 +642,7 @@ fn cas_example() {
         Ordering::SeqCst,     // success ordering
         Ordering::SeqCst,     // failure ordering
     );
-    
+
     assert_eq!(result, Ok(5));
     assert_eq!(atomic.load(Ordering::SeqCst), 10);
 }
@@ -653,7 +653,7 @@ fn cas_example() {
 ```rust
 fn fetch_add_example() {
     let atomic = AtomicUsize::new(0);
-    
+
     let old = atomic.fetch_add(5, Ordering::SeqCst);
     assert_eq!(old, 0);
     assert_eq!(atomic.load(Ordering::SeqCst), 5);
@@ -672,7 +672,7 @@ use std::sync::atomic::{fence, Ordering};
 fn fence_example() {
     // 编译器屏障
     std::sync::atomic::compiler_fence(Ordering::SeqCst);
-    
+
     // CPU + 编译器屏障
     fence(Ordering::SeqCst);
 }
@@ -691,12 +691,12 @@ use rayon::prelude::*;
 
 fn data_parallel_example() {
     let data = vec![1, 2, 3, 4, 5, 6, 7, 8];
-    
+
     // 并行map
     let results: Vec<_> = data.par_iter()
         .map(|x| x * x)
         .collect();
-    
+
     println!("{:?}", results);  // [1, 4, 9, 16, 25, 36, 49, 64]
 }
 ```
@@ -726,12 +726,12 @@ fn task_parallel_example() {
         // 计算斐波那契
         fibonacci(30)
     });
-    
+
     let task2 = thread::spawn(|| {
         // 排序
         sort(data)
     });
-    
+
     let result1 = task1.join().unwrap();
     let result2 = task2.join().unwrap();
 }
@@ -763,14 +763,14 @@ use std::thread;
 fn pipeline_example() {
     let (tx1, rx1) = mpsc::channel();
     let (tx2, rx2) = mpsc::channel();
-    
+
     // Stage 1: 读取
     thread::spawn(move || {
         for i in 0..100 {
             tx1.send(i).unwrap();
         }
     });
-    
+
     // Stage 2: 处理
     thread::spawn(move || {
         while let Ok(value) = rx1.recv() {
@@ -778,7 +778,7 @@ fn pipeline_example() {
             tx2.send(processed).unwrap();
         }
     });
-    
+
     // Stage 3: 输出
     thread::spawn(move || {
         while let Ok(value) = rx2.recv() {
@@ -815,17 +815,17 @@ fn parallel_quicksort<T: Ord + Send>(mut arr: Vec<T>) -> Vec<T> {
     if arr.len() <= 1 {
         return arr;
     }
-    
+
     let pivot = arr.remove(0);
     let (left, right): (Vec<_>, Vec<_>) = arr.into_iter()
         .partition(|x| x < &pivot);
-    
+
     // 并行递归
     let (mut left, mut right) = rayon::join(
         || parallel_quicksort(left),
         || parallel_quicksort(right),
     );
-    
+
     left.push(pivot);
     left.append(&mut right);
     left
@@ -871,16 +871,16 @@ use std::thread;
 
 fn work_stealing_example() {
     let injector = Injector::new();  // 全局任务队列
-    
+
     // 每个线程的本地队列
     let workers: Vec<_> = (0..4).map(|_| Worker::new_fifo()).collect();
     let stealers: Vec<_> = workers.iter().map(|w| w.stealer()).collect();
-    
+
     // 工作线程
     let threads: Vec<_> = workers.into_iter().enumerate().map(|(i, worker)| {
         let stealers = stealers.clone();
         let injector = injector.clone();
-        
+
         thread::spawn(move || {
             loop {
                 // 1. 从本地队列获取
@@ -894,7 +894,7 @@ fn work_stealing_example() {
                             .filter(|(idx, _)| *idx != i)
                             .find_map(|(_, s)| s.steal().success())
                     });
-                
+
                 if let Some(task) = task {
                     // 执行任务
                     execute(task);
@@ -904,12 +904,12 @@ fn work_stealing_example() {
             }
         })
     }).collect();
-    
+
     // 注入任务
     for i in 0..100 {
         injector.push(Task::new(i));
     }
-    
+
     for thread in threads {
         thread.join().unwrap();
     }
@@ -953,17 +953,17 @@ impl<T> LockFreeStack<T> {
             head: AtomicPtr::new(ptr::null_mut()),
         }
     }
-    
+
     fn push(&self, data: T) {
         let new_node = Box::into_raw(Box::new(Node {
             data,
             next: ptr::null_mut(),
         }));
-        
+
         loop {
             let head = self.head.load(Ordering::Acquire);
             unsafe { (*new_node).next = head; }
-            
+
             if self.head.compare_exchange(
                 head,
                 new_node,
@@ -974,16 +974,16 @@ impl<T> LockFreeStack<T> {
             }
         }
     }
-    
+
     fn pop(&self) -> Option<T> {
         loop {
             let head = self.head.load(Ordering::Acquire);
             if head.is_null() {
                 return None;
             }
-            
+
             let next = unsafe { (*head).next };
-            
+
             if self.head.compare_exchange(
                 head,
                 next,
@@ -1025,23 +1025,23 @@ impl<T> LockFreeQueue<T> {
             data: None,
             next: AtomicPtr::new(ptr::null_mut()),
         }));
-        
+
         Self {
             head: AtomicPtr::new(dummy),
             tail: AtomicPtr::new(dummy),
         }
     }
-    
+
     fn enqueue(&self, data: T) {
         let new_node = Box::into_raw(Box::new(Node {
             data: Some(data),
             next: AtomicPtr::new(ptr::null_mut()),
         }));
-        
+
         loop {
             let tail = self.tail.load(Ordering::Acquire);
             let next = unsafe { (*tail).next.load(Ordering::Acquire) };
-            
+
             if next.is_null() {
                 if unsafe {
                     (*tail).next.compare_exchange(
@@ -1069,13 +1069,13 @@ impl<T> LockFreeQueue<T> {
             }
         }
     }
-    
+
     fn dequeue(&self) -> Option<T> {
         loop {
             let head = self.head.load(Ordering::Acquire);
             let tail = self.tail.load(Ordering::Acquire);
             let next = unsafe { (*head).next.load(Ordering::Acquire) };
-            
+
             if head == tail {
                 if next.is_null() {
                     return None;
@@ -1118,7 +1118,7 @@ impl<T> HazardPointer<T> {
     fn protect(&self, ptr: *mut T) {
         self.pointer.store(ptr, Ordering::Release);
     }
-    
+
     fn is_protected(&self, ptr: *mut T) -> bool {
         self.pointer.load(Ordering::Acquire) == ptr
     }
@@ -1132,18 +1132,18 @@ struct RetireList<T> {
 impl<T> RetireList<T> {
     fn retire(&mut self, ptr: *mut T, hazard_pointers: &[HazardPointer<T>]) {
         self.list.push(ptr);
-        
+
         // 定期扫描并回收
         if self.list.len() > 100 {
             self.scan_and_reclaim(hazard_pointers);
         }
     }
-    
+
     fn scan_and_reclaim(&mut self, hazard_pointers: &[HazardPointer<T>]) {
         self.list.retain(|&ptr| {
             let protected = hazard_pointers.iter()
                 .any(|hp| hp.is_protected(ptr));
-            
+
             if !protected {
                 unsafe { Box::from_raw(ptr); }
                 false
@@ -1188,7 +1188,7 @@ use std::thread;
 // ✅ 安全: Arc<T> where T: Send + Sync
 fn safe_example() {
     let data = Arc::new(vec![1, 2, 3]);
-    
+
     let data1 = Arc::clone(&data);
     thread::spawn(move || {
         println!("{:?}", data1);  // 只读,安全
@@ -1198,7 +1198,7 @@ fn safe_example() {
 // ❌ 编译错误: Rc不是Send
 // fn unsafe_example() {
 //     let data = Rc::new(vec![1, 2, 3]);
-//     
+//
 //     thread::spawn(move || {
 //         println!("{:?}", data);  // 编译错误!
 //     });
@@ -1259,20 +1259,20 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
-    
+
     loop {
         let (mut socket, _) = listener.accept().await?;
-        
+
         // 为每个连接spawn任务
         tokio::spawn(async move {
             let mut buf = [0; 1024];
-            
+
             loop {
                 let n = socket.read(&mut buf).await.unwrap();
                 if n == 0 {
                     return;
                 }
-                
+
                 socket.write_all(&buf[0..n]).await.unwrap();
             }
         });
@@ -1311,19 +1311,19 @@ use c12_model::*;
 fn distributed_compute() -> Result<()> {
     // Actor模型分布式计算
     let mut system = ActorModel::new();
-    
+
     // 创建worker actors
     for i in 0..10 {
         let actor = Actor::new(&format!("worker{}", i));
         system.spawn_actor(actor);
     }
-    
+
     // 分发任务
     for task in tasks {
         let worker = select_worker(&system)?;
         system.send_message(&worker, Message::new("compute", task))?;
     }
-    
+
     // 收集结果
     let results = system.collect_results()?;
     Ok(())

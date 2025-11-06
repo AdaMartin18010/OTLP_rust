@@ -1,7 +1,7 @@
 # Profiling快速集成指南
 
-> **版本**: 2.0  
-> **日期**: 2025年10月17日  
+> **版本**: 2.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -117,7 +117,7 @@ func main() {
     pyroscope.Start(pyroscope.Config{
         ApplicationName: "my-app",
         ServerAddress:   "http://pyroscope:4040",
-        
+
         // CPU profiling
         ProfileTypes: []pyroscope.ProfileType{
             pyroscope.ProfileCPU,
@@ -126,7 +126,7 @@ func main() {
             pyroscope.ProfileInuseObjects,
             pyroscope.ProfileInuseSpace,
         },
-        
+
         // 与OTLP Resource关联
         Tags: map[string]string{
             "env":     "production",
@@ -134,7 +134,7 @@ func main() {
             "service": "my-app",
         },
     })
-    
+
     // 应用代码...
 }
 ```
@@ -248,7 +248,7 @@ datasources:
   - name: Pyroscope
     type: pyroscope
     url: http://pyroscope:4040
-    
+
   - name: Tempo
     type: tempo
     url: http://tempo:3200
@@ -277,12 +277,12 @@ datasources:
 # 基于告警动态调整采样频率
 sampling:
   default: 19  # 默认19Hz
-  
+
   on_alert:
     - trigger: high_cpu
       frequency: 100  # CPU异常时提高到100Hz
       duration: 10m
-    
+
     - trigger: high_latency
       frequency: 49
       duration: 15m

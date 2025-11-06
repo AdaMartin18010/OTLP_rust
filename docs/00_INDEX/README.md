@@ -123,7 +123,7 @@
 
 ## 📊 Documentation Structure (文档结构)
 
-```
+```text
 docs/
 ├── 00_INDEX/              # 📚 You are here
 ├── 01_GETTING_STARTED/    # 🚀 Quick start guides

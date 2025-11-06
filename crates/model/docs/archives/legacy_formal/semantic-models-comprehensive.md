@@ -347,7 +347,7 @@ assert_eq!(result, Value::Int(20)); // (2 + 3) * 4 = 20
 3. 条件：
 
    ```text
-   ⟦if b then S₁ else S₂⟧σ = 
+   ⟦if b then S₁ else S₂⟧σ =
      if ⟦b⟧σ then ⟦S₁⟧σ else ⟦S₂⟧σ
    ```
 
@@ -551,7 +551,7 @@ let wp = AxiomaticSemantics::weakest_precondition(&stmt, &postcond)?;
 **指称语义**：
 
 ```text
-⟦e₁ + e₂⟧ρ = ⟦e₁⟧ρ + ⟦e₂⟧ρ 
+⟦e₁ + e₂⟧ρ = ⟦e₁⟧ρ + ⟦e₂⟧ρ
           = ⟦e₂⟧ρ + ⟦e₁⟧ρ  (整数加法交换律)
           = ⟦e₂ + e₁⟧ρ
 ```
@@ -579,7 +579,7 @@ let equivalent = SemanticEquivalenceAnalyzer::are_expressions_equivalent(&e1, &e
 assert!(equivalent); // 加法交换律
 
 // 证明操作语义和指称语义的等价性
-let op_denot_equiv = 
+let op_denot_equiv =
     SemanticEquivalenceAnalyzer::prove_operational_denotational_equivalence(&e1, &env)?;
 assert!(op_denot_equiv);
 ```

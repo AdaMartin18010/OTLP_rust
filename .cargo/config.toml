@@ -7,15 +7,16 @@
 # 注意: 这些设置会影响所有构建，包括开发构建
 # 如果需要更快的开发构建，请使用 cargo build 而不添加 --release
 rustflags = [
-    # CPU指令集优化 - 2025年最新设置
-    "-C", "target-cpu=native",           # 针对当前CPU优化
-    # "-C", "target-feature=+crt-static",  # 静态链接C运行时（Windows MSVC默认）
-    
-    # Rust 1.90 新特性优化 - SIMD指令集
-    # 注意: 这些指令集在现代CPU上广泛支持，但会影响可移植性
-    # "-C", "target-feature=+avx2,+fma",   # 启用AVX2和FMA指令
-    # "-C", "target-feature=+bmi2,+popcnt", # 启用BMI2和POPCNT指令
-    # "-C", "target-feature=+sse4.2",      # 启用SSE4.2指令集（已包含在native中）
+  # CPU指令集优化 - 2025年最新设置
+  "-C",
+  "target-cpu=native", # 针对当前CPU优化
+  # "-C", "target-feature=+crt-static",  # 静态链接C运行时（Windows MSVC默认）
+
+  # Rust 1.90 新特性优化 - SIMD指令集
+  # 注意: 这些指令集在现代CPU上广泛支持，但会影响可移植性
+  # "-C", "target-feature=+avx2,+fma",   # 启用AVX2和FMA指令
+  # "-C", "target-feature=+bmi2,+popcnt", # 启用BMI2和POPCNT指令
+  # "-C", "target-feature=+sse4.2",      # 启用SSE4.2指令集（已包含在native中）
 ]
 
 # 网络配置
@@ -40,24 +41,27 @@ CARGO_NET_RETRY = "2"
 # 目标配置 - Windows MSVC
 [target.x86_64-pc-windows-msvc]
 rustflags = [
-    "-C", "target-cpu=native",           # 针对当前CPU优化
-    # Windows MSVC默认使用动态链接，无需强制静态链接
+  "-C",
+  "target-cpu=native", # 针对当前CPU优化
+  # Windows MSVC默认使用动态链接，无需强制静态链接
 ]
 
 # Linux x86_64 目标配置
 [target.x86_64-unknown-linux-gnu]
 rustflags = [
-    "-C", "target-cpu=native",           # 针对当前CPU优化
-    # "-C", "target-feature=+crt-static",  # 静态链接（可选）
-    # "-C", "link-arg=-static",            # 完全静态链接（可选，需要musl）
+  "-C",
+  "target-cpu=native", # 针对当前CPU优化
+  # "-C", "target-feature=+crt-static",  # 静态链接（可选）
+  # "-C", "link-arg=-static",            # 完全静态链接（可选，需要musl）
 ]
 
 # Linux ARM64 目标配置
 [target.aarch64-unknown-linux-gnu]
 rustflags = [
-    "-C", "target-cpu=native",           # 针对当前CPU优化
-    # "-C", "target-feature=+crt-static",  # 静态链接（可选）
-    # "-C", "link-arg=-static",            # 完全静态链接（可选）
+  "-C",
+  "target-cpu=native", # 针对当前CPU优化
+  # "-C", "target-feature=+crt-static",  # 静态链接（可选）
+  # "-C", "link-arg=-static",            # 完全静态链接（可选）
 ]
 
 # 别名配置 - 精简版，保留最常用的别名

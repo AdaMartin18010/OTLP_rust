@@ -54,7 +54,7 @@
 
 项目包含 **25+ 个可运行的示例程序**，位于：
 
-```
+```text
 crates/otlp/examples/
 ├── 01_quick_start.rs              # 快速开始
 ├── 02_custom_config.rs            # 自定义配置
@@ -88,7 +88,7 @@ cargo run -p otlp --example
 
 **13+ 个可靠性框架示例**，位于：
 
-```
+```text
 crates/reliability/examples/
 ├── 01_basic_error_handling.rs     # 基础错误处理
 ├── 02_circuit_breaker.rs          # 断路器

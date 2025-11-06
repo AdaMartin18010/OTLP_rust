@@ -54,6 +54,14 @@ pub struct ServerToAgent {
 
     /// 其他设置
     pub other_settings: Option<OtherSettings>,
+
+    /// 灰度策略 (2025年新增)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graduation_strategy: Option<crate::opamp::graduation::GraduationStrategy>,
+
+    /// 回滚窗口配置 (2025年新增)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rollback_window: Option<std::time::Duration>,
 }
 
 /// Agent 描述

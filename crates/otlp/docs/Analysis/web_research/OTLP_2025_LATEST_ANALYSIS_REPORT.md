@@ -41,14 +41,14 @@
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 改进的async/await语法
     let client = OtlpClient::new(config).await?;
-    
+
     // 更好的Future组合
     let result = tokio::try_join!(
         client.send_trace("operation1"),
         client.send_metric("metric1", 42.0),
         client.send_log("log1", LogSeverity::Info)
     )?;
-    
+
     Ok(())
 }
 ```
@@ -138,17 +138,17 @@ let result = client.send_trace("operation").await?
 // 异步批处理
 async fn batch_processing(client: &OtlpClient) -> Result<()> {
     let mut batch = Vec::new();
-    
+
     // 收集数据（同步）
     for i in 0..1000 {
         let data = TelemetryData::trace(format!("operation-{}", i));
         batch.push(data);
     }
-    
+
     // 批量发送（异步）
     let result = client.send_batch(batch).await?;
     println!("批量发送成功: {} 条", result.success_count);
-    
+
     Ok(())
 }
 ```
@@ -159,7 +159,7 @@ async fn batch_processing(client: &OtlpClient) -> Result<()> {
 // 并发异步处理
 async fn concurrent_processing(client: &OtlpClient) -> Result<()> {
     let mut futures = Vec::new();
-    
+
     // 创建并发任务
     for i in 0..10 {
         let client_clone = client.clone();
@@ -170,13 +170,13 @@ async fn concurrent_processing(client: &OtlpClient) -> Result<()> {
         });
         futures.push(future);
     }
-    
+
     // 等待所有任务完成（同步协调）
     for future in futures {
         let result = future.await??;
         println!("并发发送成功: {} 条", result.success_count);
     }
-    
+
     Ok(())
 }
 ```
@@ -200,9 +200,9 @@ impl AdaptiveBatchProcessor {
         if self.latency_history.len() > 10 {
             self.latency_history.pop_front();
         }
-        
+
         let avg_latency = self.calculate_average_latency();
-        
+
         if avg_latency > self.target_latency {
             // 延迟过高，减少批大小
             self.current_batch_size = (self.current_batch_size * 0.8) as usize
@@ -230,7 +230,7 @@ pub struct SmartRetryPolicy {
 impl SmartRetryPolicy {
     async fn calculate_delay(&self, attempt: usize, error: &OtlpError) -> Duration {
         let mut delay = self.base_delay;
-        
+
         // 指数退避
         for _ in 0..attempt {
             delay = Duration::from_millis(
@@ -241,14 +241,14 @@ impl SmartRetryPolicy {
                 break;
             }
         }
-        
+
         // 添加抖动
         if self.jitter {
             let jitter_range = delay.as_millis() / 4;
             let jitter = rand::thread_rng().gen_range(0..=jitter_range);
             delay = Duration::from_millis(delay.as_millis() + jitter);
         }
-        
+
         // 根据错误类型调整延迟
         match error {
             OtlpError::Network(_) => delay * 2,  // 网络错误，增加延迟
@@ -277,7 +277,7 @@ impl TraceBuilder {
         self.data = self.data.with_attribute(key, value);
         self
     }
-    
+
     pub async fn finish(self) -> Result<ExportResult> {
         let data = self.data.finish();
         self.client.send(data).await
@@ -315,7 +315,7 @@ impl TransportStrategy for GrpcTransportStrategy {
         // gRPC实现
         self.client.export_traces(data).await
     }
-    
+
     async fn send_batch(&self, data: Vec<TelemetryData>) -> Result<ExportResult> {
         // 批量gRPC实现
         self.client.export_traces_batch(data).await
@@ -334,7 +334,7 @@ impl TransportStrategy for HttpTransportStrategy {
         // HTTP实现
         self.client.post_traces(data).await
     }
-    
+
     async fn send_batch(&self, data: Vec<TelemetryData>) -> Result<ExportResult> {
         // 批量HTTP实现
         self.client.post_traces_batch(data).await
@@ -368,7 +368,7 @@ impl MetricsObserver for PerformanceMetricsObserver {
             _ => {}
         }
     }
-    
+
     async fn on_batch_completed(&self, result: &ExportResult) {
         let mut metrics = self.metrics.write().await;
         metrics.total_requests += 1;
@@ -399,7 +399,7 @@ impl TelemetryData {
         size += self.attributes.len() * std::mem::size_of::<(String, AttributeValue)>();
         size
     }
-    
+
     pub fn clone_lightweight(&self) -> Self {
         // 轻量级克隆，只克隆引用
         Self {
@@ -433,7 +433,7 @@ impl TelemetryDataPool {
             (self.factory)()
         }
     }
-    
+
     pub async fn release(&self, mut data: TelemetryData) {
         let mut pool = self.pool.write().await;
         if pool.len() < self.max_size {
@@ -497,10 +497,10 @@ impl ServiceDiscovery {
         let registry = self.registry.read().await;
         let endpoints = registry.get(service_name)
             .ok_or_else(|| OtlpError::service_not_found(service_name))?;
-        
+
         // 健康检查
         let healthy_endpoints = self.health_checker.filter_healthy(endpoints).await;
-        
+
         // 负载均衡
         Ok(self.load_balancer.select_endpoints(healthy_endpoints))
     }
@@ -520,17 +520,17 @@ pub struct ConfigCenter {
 impl ConfigCenter {
     pub async fn watch_config_changes(&self) -> Result<()> {
         let mut stream = self.config_client.watch_config().await?;
-        
+
         while let Some(new_config) = stream.next().await {
             let mut current = self.current_config.write().await;
             *current = new_config;
-            
+
             // 通知所有观察者
             for watcher in &self.watchers {
                 watcher.on_config_updated(&*current).await?;
             }
         }
-        
+
         Ok(())
     }
 }
@@ -559,13 +559,13 @@ impl PluginManager {
     pub async fn load_plugin(&self, plugin: Box<dyn OTLPPlugin>) -> Result<()> {
         let name = plugin.name().to_string();
         plugin.initialize(&self.config).await?;
-        
+
         let mut plugins = self.plugins.write().await;
         plugins.insert(name, plugin);
-        
+
         Ok(())
     }
-    
+
     pub async fn process_data(&self, data: &mut TelemetryData) -> Result<()> {
         let plugins = self.plugins.read().await;
         for plugin in plugins.values() {
@@ -681,7 +681,7 @@ impl TransportProtocol {
             TransportProtocol::HttpProtobuf => 4318,
         }
     }
-    
+
     pub fn content_type(&self) -> &'static str {
         match self {
             TransportProtocol::Grpc => "application/grpc",
@@ -751,7 +751,7 @@ impl BasicConfig {
             retry_count: 3,
         }
     }
-    
+
     pub fn for_production() -> Self {
         Self {
             endpoint: "https://otlp-collector.company.com".to_string(),
@@ -810,11 +810,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_service("my-service", "1.0.0");
-    
+
     // 创建客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送追踪数据
     let result = client.send_trace("user-login").await?
         .with_attribute("user.id", "12345")
@@ -822,9 +822,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_numeric_attribute("login.duration", 150.0)
         .finish()
         .await?;
-    
+
     println!("发送成功: {} 条", result.success_count);
-    
+
     Ok(())
 }
 ```
@@ -834,7 +834,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```rust
 async fn batch_data_processing(client: &OtlpClient) -> Result<()> {
     let mut batch = Vec::new();
-    
+
     // 生成批量数据
     for i in 0..1000 {
         let data = TelemetryData::trace(format!("batch-operation-{}", i))
@@ -843,11 +843,11 @@ async fn batch_data_processing(client: &OtlpClient) -> Result<()> {
             .with_numeric_attribute("operation.index", i as f64);
         batch.push(data);
     }
-    
+
     // 批量发送
     let result = client.send_batch(batch).await?;
     println!("批量发送成功: {} 条", result.success_count);
-    
+
     Ok(())
 }
 ```
@@ -859,13 +859,13 @@ async fn batch_data_processing(client: &OtlpClient) -> Result<()> {
 ```rust
 async fn concurrent_data_processing(client: &OtlpClient) -> Result<()> {
     let mut handles = Vec::new();
-    
+
     // 创建并发任务
     for i in 0..10 {
         let client_clone = client.clone();
         let handle = tokio::spawn(async move {
             let mut results = Vec::new();
-            
+
             for j in 0..100 {
                 let result = client_clone.send_trace(format!("concurrent-{}-{}", i, j)).await?
                     .with_attribute("worker.id", i.to_string())
@@ -874,12 +874,12 @@ async fn concurrent_data_processing(client: &OtlpClient) -> Result<()> {
                     .await?;
                 results.push(result);
             }
-            
+
             Ok::<Vec<_>, Box<dyn std::error::Error + Send + Sync>>(results)
         });
         handles.push(handle);
     }
-    
+
     // 等待所有任务完成
     let mut total_success = 0;
     for handle in handles {
@@ -888,7 +888,7 @@ async fn concurrent_data_processing(client: &OtlpClient) -> Result<()> {
             total_success += result.success_count;
         }
     }
-    
+
     println!("并发处理完成，总成功数: {}", total_success);
     Ok(())
 }
@@ -912,12 +912,12 @@ impl DataProcessor for CustomProcessor {
                 return Ok(()); // 跳过此数据
             }
         }
-        
+
         // 应用转换器
         for transformer in &self.transformers {
             transformer.transform(data).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -934,16 +934,16 @@ async fn use_custom_processor(client: &OtlpClient) -> Result<()> {
             Box::new(DataSanitizer::new()),
         ],
     };
-    
+
     // 配置客户端使用自定义处理器
     client.set_processor(processor).await?;
-    
+
     // 发送数据
     let result = client.send_trace("processed-operation").await?
         .with_attribute("environment", "production")
         .finish()
         .await?;
-    
+
     println!("处理并发送成功: {} 条", result.success_count);
     Ok(())
 }
@@ -969,10 +969,10 @@ impl MicroserviceMonitor {
             .with_service(&service_name, &service_version)
             .with_resource_attribute("service.instance.id", generate_instance_id())
             .with_resource_attribute("deployment.environment", "production");
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self {
             client,
             service_name,
@@ -980,7 +980,7 @@ impl MicroserviceMonitor {
             instance_id: generate_instance_id(),
         })
     }
-    
+
     pub async fn track_request(&self, method: &str, path: &str, status_code: u16, duration: Duration) -> Result<()> {
         let result = self.client.send_trace("http_request").await?
             .with_attribute("http.method", method)
@@ -991,14 +991,14 @@ impl MicroserviceMonitor {
             .with_attribute("service.version", &self.service_version)
             .finish()
             .await?;
-        
+
         // 记录指标
         self.client.send_metric("http_requests_total", 1.0).await?
             .with_label("method", method)
             .with_label("status", status_code.to_string())
             .send()
             .await?;
-        
+
         Ok(())
     }
 }
@@ -1019,7 +1019,7 @@ impl CloudNativeAdapter {
         // 获取Kubernetes信息
         let kubernetes_info = Self::get_kubernetes_info().await?;
         let pod_info = Self::get_pod_info().await?;
-        
+
         let config = OtlpConfig::default()
             .with_endpoint(&kubernetes_info.otlp_endpoint)
             .with_service(&pod_info.service_name, &pod_info.service_version)
@@ -1028,24 +1028,24 @@ impl CloudNativeAdapter {
             .with_resource_attribute("k8s.pod.uid", &pod_info.uid)
             .with_resource_attribute("k8s.node.name", &pod_info.node_name)
             .with_resource_attribute("k8s.container.name", &pod_info.container_name);
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self {
             client,
             kubernetes_info,
             pod_info,
         })
     }
-    
+
     async fn get_kubernetes_info() -> Result<KubernetesInfo> {
         // 从环境变量或Kubernetes API获取信息
         let namespace = std::env::var("KUBERNETES_NAMESPACE")
             .unwrap_or_else(|_| "default".to_string());
         let otlp_endpoint = std::env::var("OTLP_ENDPOINT")
             .unwrap_or_else(|_| "http://otel-collector:4317".to_string());
-        
+
         Ok(KubernetesInfo {
             namespace,
             otlp_endpoint,
@@ -1082,7 +1082,7 @@ impl PluginRegistry {
         plugins.insert(name.clone(), plugin);
         Ok(())
     }
-    
+
     pub async fn get_plugin(&self, name: &str) -> Option<Arc<dyn OTLPPlugin>> {
         let plugins = self.plugins.read().await;
         plugins.get(name).map(|p| Arc::from(p.as_ref()))
@@ -1109,15 +1109,15 @@ impl MiddlewareChain {
         self.execute_next(&mut data, &mut index).await?;
         Ok(data)
     }
-    
+
     async fn execute_next(&self, data: &mut TelemetryData, index: &mut usize) -> Result<()> {
         if *index >= self.middlewares.len() {
             return Ok(());
         }
-        
+
         let middleware = &self.middlewares[*index];
         *index += 1;
-        
+
         let next = Next::new(self, *index);
         middleware.process(data, next).await
     }
@@ -1174,7 +1174,7 @@ impl DataSerializer for MessagePackSerializer {
     fn serialize(&self, data: &TelemetryData) -> Result<Vec<u8>> {
         rmp_serde::to_vec(data).map_err(|e| OtlpError::serialization(e.to_string()))
     }
-    
+
     fn deserialize(&self, bytes: &[u8]) -> Result<TelemetryData> {
         rmp_serde::from_slice(bytes).map_err(|e| OtlpError::deserialization(e.to_string()))
     }
@@ -1201,14 +1201,14 @@ impl MemoryOptimizer {
             string_pool: StringPool::new(10000),
         }
     }
-    
+
     pub async fn optimize_data(&self, data: &mut TelemetryData) {
         // 字符串去重
         data.deduplicate_strings(&self.string_pool).await;
-        
+
         // 属性压缩
         data.compress_attributes().await;
-        
+
         // 内存对齐
         data.align_memory();
     }
@@ -1231,19 +1231,19 @@ impl NetworkOptimizer {
         if let Some(connection) = self.connection_pool.get_connection(endpoint).await {
             return Ok(connection);
         }
-        
+
         // 负载均衡选择
         let selected_endpoint = self.load_balancer.select_endpoint(endpoint).await?;
-        
+
         // 熔断器检查
         if self.circuit_breaker.is_open(&selected_endpoint) {
             return Err(OtlpError::circuit_breaker_open());
         }
-        
+
         // 创建新连接
         let connection = Connection::new(&selected_endpoint).await?;
         self.connection_pool.add_connection(endpoint, connection.clone()).await;
-        
+
         Ok(connection)
     }
 }
@@ -1290,8 +1290,8 @@ impl NetworkOptimizer {
 
 ---
 
-**报告完成时间**: 2025年1月  
-**报告维护者**: Rust OTLP Team  
-**项目版本**: 0.1.0  
-**Rust版本要求**: 1.90+  
+**报告完成时间**: 2025年1月
+**报告维护者**: Rust OTLP Team
+**项目版本**: 0.1.0
+**Rust版本要求**: 1.90+
 **项目状态**: 已完成核心功能，持续改进中

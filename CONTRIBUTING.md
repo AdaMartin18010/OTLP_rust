@@ -229,7 +229,7 @@ use thiserror::Error;
 pub enum OtlpError {
     #[error("Connection failed: {0}")]
     ConnectionError(String),
-    
+
     #[error("Invalid configuration: {0}")]
     ConfigError(String),
 }
@@ -250,7 +250,7 @@ pub async fn send_data(&self, data: &[u8]) -> Result<(), OtlpError> {
         .body(data)
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -557,4 +557,4 @@ Every contribution, no matter how small, is valuable. Thank you for making OTLP 
 
 ---
 
-*Last Updated: 2025-10-20*-
+_Last Updated: 2025-10-20_-

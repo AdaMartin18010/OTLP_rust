@@ -1,7 +1,7 @@
 # Profiles集成完整指南
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -171,15 +171,15 @@ message ScopeProfiles {
 message ProfileContainer {
   // Profile ID
   bytes profile_id = 1;
-  
+
   // 时间范围
   fixed64 start_time_unix_nano = 2;
   fixed64 end_time_unix_nano = 3;
-  
+
   // 属性
   repeated opentelemetry.proto.common.v1.KeyValue attributes = 4;
   uint32 dropped_attributes_count = 5;
-  
+
   // 原始pprof数据
   bytes profile = 6;
 }
@@ -192,26 +192,26 @@ message ProfileContainer {
 message Profile {
   // 采样类型
   repeated ValueType sample_type = 1;
-  
+
   // 样本数据
   repeated Sample sample = 2;
-  
+
   // 地址映射
   repeated Mapping mapping = 3;
-  
+
   // 函数位置
   repeated Location location = 4;
-  
+
   // 函数信息
   repeated Function function = 5;
-  
+
   // 字符串表
   repeated string string_table = 6;
-  
+
   // 时间
   int64 time_nanos = 9;
   int64 duration_nanos = 10;
-  
+
   // Profile类型
   ValueType period_type = 11;
   int64 period = 12;
@@ -255,10 +255,10 @@ pub struct ProfilesData {
 pub struct ResourceProfiles {
     #[prost(message, optional, tag = "1")]
     pub resource: Option<Resource>,
-    
+
     #[prost(message, repeated, tag = "2")]
     pub scope_profiles: Vec<ScopeProfiles>,
-    
+
     #[prost(string, tag = "3")]
     pub schema_url: String,
 }
@@ -267,10 +267,10 @@ pub struct ResourceProfiles {
 pub struct ScopeProfiles {
     #[prost(message, optional, tag = "1")]
     pub scope: Option<InstrumentationScope>,
-    
+
     #[prost(message, repeated, tag = "2")]
     pub profiles: Vec<ProfileContainer>,
-    
+
     #[prost(string, tag = "3")]
     pub schema_url: String,
 }
@@ -280,23 +280,23 @@ pub struct ProfileContainer {
     /// Profile唯一标识
     #[prost(bytes, tag = "1")]
     pub profile_id: Vec<u8>,
-    
+
     /// 采样开始时间
     #[prost(fixed64, tag = "2")]
     pub start_time_unix_nano: u64,
-    
+
     /// 采样结束时间
     #[prost(fixed64, tag = "3")]
     pub end_time_unix_nano: u64,
-    
+
     /// 属性
     #[prost(message, repeated, tag = "4")]
     pub attributes: Vec<KeyValue>,
-    
+
     /// 丢弃的属性数量
     #[prost(uint32, tag = "5")]
     pub dropped_attributes_count: u32,
-    
+
     /// pprof格式的原始Profile数据
     #[prost(bytes, tag = "6")]
     pub profile: Vec<u8>,
@@ -315,7 +315,7 @@ impl ProfileContainer {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         Self {
             profile_id,
             start_time_unix_nano: now - duration.as_nanos() as u64,
@@ -334,7 +334,7 @@ impl ProfileContainer {
             profile: pprof_data,
         }
     }
-    
+
     /// 添加Trace关联
     pub fn link_to_trace(&mut self, trace_id: &[u8], span_id: &[u8]) {
         self.attributes.extend_from_slice(&[
@@ -398,7 +398,7 @@ import (
     "context"
     "runtime/pprof"
     "time"
-    
+
     "go.opentelemetry.io/otel"
     "go.opentelemetry.io/otel/exporters/otlp/otlpprofile"
     "go.opentelemetry.io/otel/exporters/otlp/otlpprofile/otlpprofilegrpc"
@@ -415,23 +415,23 @@ func main() {
             semconv.DeploymentEnvironment("production"),
         ),
     )
-    
+
     // 创建Profiles Exporter
     exporter, _ := otlpprofilegrpc.New(context.Background(),
         otlpprofilegrpc.WithEndpoint("localhost:4317"),
         otlpprofilegrpc.WithInsecure(),
     )
-    
+
     // 创建Profiler
     profiler := otlpprofile.NewProfiler(
         otlpprofile.WithResource(res),
         otlpprofile.WithExporter(exporter),
         otlpprofile.WithProfilingInterval(60*time.Second),  // 60秒采样一次
     )
-    
+
     // 启动持续性能剖析
     go profiler.Start(context.Background())
-    
+
     // 应用主逻辑
     runApplication()
 }
@@ -439,7 +439,7 @@ func main() {
 // 按需采集示例
 func captureProfileOnDemand(ctx context.Context, profileType string) ([]byte, error) {
     var buf bytes.Buffer
-    
+
     switch profileType {
     case "cpu":
         // CPU Profile (采样30秒)
@@ -448,20 +448,20 @@ func captureProfileOnDemand(ctx context.Context, profileType string) ([]byte, er
         }
         time.Sleep(30 * time.Second)
         pprof.StopCPUProfile()
-    
+
     case "heap":
         // Heap Profile
         if err := pprof.WriteHeapProfile(&buf); err != nil {
             return nil, err
         }
-    
+
     case "goroutine":
         // Goroutine Profile
         profile := pprof.Lookup("goroutine")
         if err := profile.WriteTo(&buf, 0); err != nil {
             return nil, err
         }
-    
+
     case "mutex":
         // Mutex Profile
         profile := pprof.Lookup("mutex")
@@ -469,7 +469,7 @@ func captureProfileOnDemand(ctx context.Context, profileType string) ([]byte, er
             return nil, err
         }
     }
-    
+
     return buf.Bytes(), nil
 }
 
@@ -477,16 +477,16 @@ func captureProfileOnDemand(ctx context.Context, profileType string) ([]byte, er
 func captureProfileWithTrace(ctx context.Context) {
     span := trace.SpanFromContext(ctx)
     spanCtx := span.SpanContext()
-    
+
     // 采集CPU Profile
     var buf bytes.Buffer
     pprof.StartCPUProfile(&buf)
-    
+
     // 业务逻辑
     doWork()
-    
+
     pprof.StopCPUProfile()
-    
+
     // 发送Profile,并关联TraceID和SpanID
     sendProfile(ProfileData{
         Type: "cpu",
@@ -503,21 +503,21 @@ func captureProfileWithTrace(ctx context.Context) {
 # Profiler配置
 profiler:
   enabled: true
-  
+
   # 采样配置
   sampling:
     # CPU采样率(Hz)
     cpu_sampling_rate: 100
-    
+
     # Heap采样间隔(字节)
     heap_sampling_interval: 524288  # 512KB
-    
+
     # 采样周期
     collection_interval: 60s
-    
+
     # 采样时长
     cpu_profile_duration: 30s
-  
+
   # Profile类型
   types:
     - cpu
@@ -525,18 +525,18 @@ profiler:
     - goroutine
     - mutex
     - block
-  
+
   # 上传配置
   upload:
     endpoint: http://localhost:4317
     timeout: 30s
     batch_size: 10
-    
+
   # 关联配置
   correlation:
     # 自动关联Trace
     enable_trace_correlation: true
-    
+
     # 慢请求触发Profile
     slow_request_threshold: 5s
     slow_request_profile_duration: 10s
@@ -556,33 +556,33 @@ public class ProfileExample {
         OtlpGrpcProfileExporter exporter = OtlpGrpcProfileExporter.builder()
             .setEndpoint("http://localhost:4317")
             .build();
-        
+
         // 创建ProfilerProvider
         SdkProfilerProvider profilerProvider = SdkProfilerProvider.builder()
             .setResource(resource)
             .addProfileExporter(exporter)
             .build();
-        
+
         // 启动持续性能剖析
         profilerProvider.start();
-        
+
         // 应用逻辑
         runApplication();
     }
-    
+
     // 使用async-profiler
     public static void captureJavaProfile() throws Exception {
         AsyncProfiler profiler = AsyncProfiler.getInstance();
-        
+
         // 开始采样
         profiler.start("cpu,alloc", 60_000_000);  // 60秒
-        
+
         // 业务逻辑
         doWork();
-        
+
         // 停止并获取结果
         byte[] profileData = profiler.stop();
-        
+
         // 发送到OTel Collector
         sendProfile(profileData);
     }
@@ -606,14 +606,14 @@ def setup_profiling():
         "service.name": "my-python-service",
         "service.version": "1.0.0",
     })
-    
+
     # 创建ProfilerProvider
     profiler_provider = ProfilerProvider(resource=resource)
-    
+
     # 添加Exporter
     exporter = OTLPProfileExporter(endpoint="http://localhost:4317")
     profiler_provider.add_profile_exporter(exporter)
-    
+
     return profiler_provider
 
 def profile_function(func):
@@ -621,20 +621,20 @@ def profile_function(func):
     def wrapper(*args, **kwargs):
         profiler = cProfile.Profile()
         profiler.enable()
-        
+
         # 执行函数
         result = func(*args, **kwargs)
-        
+
         profiler.disable()
-        
+
         # 转换为pprof格式并发送
         s = io.StringIO()
         ps = pstats.Stats(profiler, stream=s)
         ps.print_stats()
-        
+
         profile_data = convert_to_pprof(ps)
         send_profile(profile_data)
-        
+
         return result
     return wrapper
 
@@ -646,7 +646,7 @@ def expensive_operation():
 # 使用py-spy进行持续性能剖析
 def start_continuous_profiling():
     import subprocess
-    
+
     # 启动py-spy
     subprocess.Popen([
         "py-spy",
@@ -669,17 +669,17 @@ use std::time::Duration;
 // 使用pprof-rs
 pub fn capture_cpu_profile(duration: Duration) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let guard = ProfilerGuard::new(100)?;  // 100Hz采样率
-    
+
     // 业务逻辑运行指定时长
     std::thread::sleep(duration);
-    
+
     // 生成报告
     if let Ok(report) = guard.report().build() {
         let mut buf = Vec::new();
         report.pprof()?.write_to_vec(&mut buf)?;
         return Ok(buf);
     }
-    
+
     Err("Failed to generate profile".into())
 }
 
@@ -694,13 +694,13 @@ where
 {
     let mut span = tracer.start(name);
     let span_ctx = span.span_context().clone();
-    
+
     // 开始采样
     let guard = ProfilerGuard::new(100).unwrap();
-    
+
     // 执行函数
     let result = f();
-    
+
     // 停止采样并生成Profile
     if let Ok(report) = guard.report().build() {
         let mut buf = Vec::new();
@@ -713,7 +713,7 @@ where
             ).await;
         }
     }
-    
+
     span.end();
     result
 }
@@ -755,12 +755,12 @@ async fn send_profile_with_trace(
         dropped_attributes_count: 0,
         profile: pprof_data,
     };
-    
+
     // 通过OTLP gRPC发送
     let mut client = ProfilesServiceClient::connect("http://localhost:4317")
         .await
         .unwrap();
-    
+
     client.export(ExportProfilesServiceRequest {
         resource_profiles: vec![/* ... */],
     }).await.unwrap();
@@ -789,7 +789,7 @@ processors:
     timeout: 10s
     send_batch_size: 100
     send_batch_max_size: 1000
-  
+
   # 添加属性
   attributes/profiles:
     actions:
@@ -799,15 +799,15 @@ processors:
       - key: cluster
         value: k8s-prod-01
         action: upsert
-  
+
   # Profile与Trace关联
   span_profiles:
     # 自动关联
     enabled: true
-    
+
     # 慢Span触发Profile采集
     slow_span_threshold: 5s
-    
+
   # 采样
   probabilistic_sampler/profiles:
     sampling_percentage: 10  # 采样10%
@@ -816,11 +816,11 @@ exporters:
   # Pyroscope后端
   pyroscope:
     endpoint: http://pyroscope:4040
-  
+
   # Grafana Phlare后端
   otlphttp/phlare:
     endpoint: http://phlare:4100/otlp
-  
+
   # Datadog后端
   datadog/profiles:
     api:
@@ -837,7 +837,7 @@ service:
         - batch/profiles
         - probabilistic_sampler/profiles
       exporters: [pyroscope, otlphttp/phlare]
-    
+
     # Traces管道 (用于关联)
     traces:
       receivers: [otlp]
@@ -896,14 +896,14 @@ data:
   config.yaml: |
     # Phlare配置
     target: all
-    
+
     # OTLP接收
     otlp:
       grpc:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-    
+
     # 存储
     storage:
       backend: s3
@@ -911,7 +911,7 @@ data:
         bucket_name: phlare-profiles
         endpoint: s3.amazonaws.com
         region: us-east-1
-    
+
     # 查询
     querier:
       max_concurrent: 20
@@ -969,7 +969,7 @@ curl 'http://pyroscope:4040/render?from=now-1h&until=now&query=my-service.cpu{en
                     .transitionEase(d3.easeCubic)
                     .inverted(false)
                     .sort(true);
-                
+
                 d3.select("#chart")
                     .datum(data)
                     .call(flamegraph);
@@ -990,18 +990,18 @@ curl 'http://pyroscope:4040/render?from=now-1h&until=now&query=my-service.cpu{en
 processors:
   span_profiles:
     enabled: true
-    
+
     # 所有Span自动触发Profile
     always_profile: false
-    
+
     # 慢Span触发Profile
     slow_span_threshold: 5s
     slow_span_profile_duration: 10s
-    
+
     # 错误Span触发Profile
     error_span_profile: true
     error_span_profile_duration: 10s
-    
+
     # 采样率
     sampling_rate: 0.1  # 10%
 ```
@@ -1014,16 +1014,16 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
     span := trace.SpanFromContext(ctx)
     spanCtx := span.SpanContext()
-    
+
     // 判断是否需要Profile
     if shouldProfile(r) {
         // 开始CPU Profiling
         var buf bytes.Buffer
         pprof.StartCPUProfile(&buf)
-        
+
         defer func() {
             pprof.StopCPUProfile()
-            
+
             // 发送Profile并关联Trace
             sendProfileWithTrace(ProfileData{
                 Type: "cpu",
@@ -1034,7 +1034,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
             })
         }()
     }
-    
+
     // 业务逻辑
     doWork()
 }
@@ -1044,12 +1044,12 @@ func shouldProfile(r *http.Request) bool {
     if r.Header.Get("X-Enable-Profiling") == "true" {
         return true
     }
-    
+
     // 2. 基于概率采样
     if rand.Float64() < 0.01 {  // 1%
         return true
     }
-    
+
     return false
 }
 ```
@@ -1082,7 +1082,7 @@ sampling:
     heap_sample_interval: 524288  # 512KB
     interval: 60s
     percentage: 100%
-  
+
   # Level 2: 条件触发
   conditional:
     # 慢请求
@@ -1091,20 +1091,20 @@ sampling:
       threshold: 5s
       profile_duration: 10s
       sample_rate: 100%
-    
+
     # 错误请求
     error_request:
       enabled: true
       profile_duration: 10s
       sample_rate: 50%
-    
+
     # 高CPU
     high_cpu:
       enabled: true
       threshold: 80%
       profile_duration: 30s
       cooldown: 5m
-  
+
   # Level 3: 按需(手动触发)
   on_demand:
     enabled: true
@@ -1121,19 +1121,19 @@ resource_limits:
     max_overhead: 5%  # 最大5% CPU开销
     throttle_on_high_load: true
     high_load_threshold: 80%
-  
+
   # 内存使用
   memory:
     max_profile_size: 10MB
     max_buffer_size: 100MB
     compression_enabled: true
-  
+
   # 网络带宽
   network:
     max_upload_rate: 1MB/s
     batch_profiles: true
     batch_size: 10
-  
+
   # 存储
   storage:
     max_profiles_per_hour: 60
@@ -1223,36 +1223,36 @@ cost_optimization:
   sampling:
     # 正常流量低采样
     normal_traffic: 1%
-    
+
     # 问题流量高采样
     slow_requests: 100%
     error_requests: 50%
-    
+
   # 2. 数据压缩
   compression:
     enabled: true
     algorithm: gzip
     level: 6
-  
+
   # 3. 存储分层
   storage_tiers:
     hot:
       duration: 7d
       storage_class: ssd
-    
+
     warm:
       duration: 30d
       storage_class: hdd
-    
+
     cold:
       duration: 90d
       storage_class: glacier
-  
+
   # 4. 自动清理
   cleanup:
     enabled: true
     retention: 90d
-    
+
     # 保留重要Profile
     keep_rules:
       - slow_requests

@@ -1,28 +1,38 @@
 //! 端到端集成测试套件
-//! 
+//!
 //! 本测试套件提供了完整的端到端集成测试，验证整个OTLP系统的功能。
 
 use std::collections::HashMap;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use tokio::time::sleep;
 
 use otlp::{
+    ComprehensiveEnterpriseManager,
+
+    ComprehensiveMonitoringManager,
     // 核心组件
-    ComprehensivePerformanceOptimizer, ComprehensiveSecurityManager,
-    ComprehensiveMonitoringManager, ComprehensiveEnterpriseManager,
-    
-    // 数据模型
-    TelemetryData, TelemetryDataType, TelemetryContent, TraceData,
-    
-    // 企业级功能
-    Tenant, TenantStatus, TenantSettings, EnterpriseRequest,
-    DataPolicy, DataRule, DataCondition, DataAction,
-    
+    ComprehensivePerformanceOptimizer,
+    ComprehensiveSecurityManager,
+    DataAction,
+
+    DataCondition,
+    DataPolicy,
+    DataRule,
+    EnterpriseRequest,
     // 安全功能
     SecureRequest,
+    TelemetryContent,
+    // 数据模型
+    TelemetryData,
+    TelemetryDataType,
+    // 企业级功能
+    Tenant,
+    TenantSettings,
+    TenantStatus,
+    TraceData,
 };
 
 /// 集成测试套件
@@ -58,31 +68,31 @@ impl IntegrationTestSuite {
 
         // 1. 基础功能测试
         results.basic_functionality = self.test_basic_functionality().await?;
-        
+
         // 2. 性能优化测试
         results.performance_optimization = self.test_performance_optimization().await?;
-        
+
         // 3. 安全功能测试
         results.security_features = self.test_security_features().await?;
-        
+
         // 4. 监控功能测试
         results.monitoring_features = self.test_monitoring_features().await?;
-        
+
         // 5. 企业级功能测试
         results.enterprise_features = self.test_enterprise_features().await?;
-        
+
         // 6. 端到端流程测试
         results.end_to_end_flow = self.test_end_to_end_flow().await?;
-        
+
         // 7. 错误处理测试
         results.error_handling = self.test_error_handling().await?;
-        
+
         // 8. 性能基准测试
         results.performance_benchmarks = self.test_performance_benchmarks().await?;
 
         results.total_duration = start_time.elapsed().unwrap_or_default();
         results.overall_success = results.all_tests_passed();
-        
+
         Ok(results)
     }
 
@@ -338,7 +348,7 @@ impl IntegrationTestSuite {
                 links: Vec::new(),
             }),
         };
-        
+
         assert_eq!(telemetry_data.data_type, TelemetryDataType::Trace);
         Ok(())
     }
@@ -361,7 +371,10 @@ impl IntegrationTestSuite {
 
     async fn test_batch_processing(&self) -> Result<()> {
         let test_data = create_test_telemetry_data(100)?;
-        let _optimized_data = self.performance_optimizer.optimize_processing(test_data).await?;
+        let _optimized_data = self
+            .performance_optimizer
+            .optimize_processing(test_data)
+            .await?;
         Ok(())
     }
 
@@ -410,8 +423,11 @@ impl IntegrationTestSuite {
                 custom_attributes: HashMap::new(),
             },
         };
-        
-        self.enterprise_manager.multi_tenant_manager.create_tenant(tenant).await?;
+
+        self.enterprise_manager
+            .multi_tenant_manager
+            .create_tenant(tenant)
+            .await?;
         Ok(())
     }
 
@@ -420,21 +436,22 @@ impl IntegrationTestSuite {
             id: "test_policy".to_string(),
             name: "Test Policy".to_string(),
             description: "Test data policy".to_string(),
-            rules: vec![
-                DataRule {
-                    id: "test_rule".to_string(),
-                    name: "Test Rule".to_string(),
-                    condition: DataCondition::ContainsPII,
-                    action: DataAction::Encrypt,
-                    priority: 1,
-                },
-            ],
+            rules: vec![DataRule {
+                id: "test_rule".to_string(),
+                name: "Test Rule".to_string(),
+                condition: DataCondition::ContainsPII,
+                action: DataAction::Encrypt,
+                priority: 1,
+            }],
             is_active: true,
             created_at: SystemTime::now(),
             updated_at: SystemTime::now(),
         };
-        
-        self.enterprise_manager.data_governance_manager.add_policy(policy).await?;
+
+        self.enterprise_manager
+            .data_governance_manager
+            .add_policy(policy)
+            .await?;
         Ok(())
     }
 
@@ -449,9 +466,12 @@ impl IntegrationTestSuite {
             ip_address: Some("192.168.1.100".to_string()),
             user_agent: Some("test_agent".to_string()),
         };
-        
-        let _security_response = self.security_manager.process_secure_request(secure_request).await?;
-        
+
+        let _security_response = self
+            .security_manager
+            .process_secure_request(secure_request)
+            .await?;
+
         let enterprise_request = EnterpriseRequest {
             id: "integration_test".to_string(),
             tenant_id: "default".to_string(),
@@ -459,22 +479,30 @@ impl IntegrationTestSuite {
             data_type: "test".to_string(),
             user_id: Some("test_user".to_string()),
         };
-        
-        let _enterprise_response = self.enterprise_manager.process_enterprise_request(enterprise_request).await?;
-        
+
+        let _enterprise_response = self
+            .enterprise_manager
+            .process_enterprise_request(enterprise_request)
+            .await?;
+
         Ok(())
     }
 
     async fn test_error_recovery(&self) -> Result<()> {
         // 测试错误恢复机制
         let multi_tenant_manager = &self.enterprise_manager.multi_tenant_manager;
-        let quota_result = multi_tenant_manager.check_quota("nonexistent_tenant", "requests_per_second", 1).await;
+        let quota_result = multi_tenant_manager
+            .check_quota("nonexistent_tenant", "requests_per_second", 1)
+            .await;
         assert!(quota_result.is_err());
         Ok(())
     }
 
     async fn run_performance_benchmarks(&self) -> Result<()> {
-        let _benchmark_results = self.performance_optimizer.run_performance_benchmarks().await?;
+        let _benchmark_results = self
+            .performance_optimizer
+            .run_performance_benchmarks()
+            .await?;
         Ok(())
     }
 }
@@ -580,47 +608,55 @@ impl IntegrationTestResults {
     }
 
     pub fn all_tests_passed(&self) -> bool {
-        self.basic_functionality.failed == 0 &&
-        self.performance_optimization.failed == 0 &&
-        self.security_features.failed == 0 &&
-        self.monitoring_features.failed == 0 &&
-        self.enterprise_features.failed == 0 &&
-        self.end_to_end_flow.failed == 0 &&
-        self.error_handling.failed == 0 &&
-        self.performance_benchmarks.failed == 0
+        self.basic_functionality.failed == 0
+            && self.performance_optimization.failed == 0
+            && self.security_features.failed == 0
+            && self.monitoring_features.failed == 0
+            && self.enterprise_features.failed == 0
+            && self.end_to_end_flow.failed == 0
+            && self.error_handling.failed == 0
+            && self.performance_benchmarks.failed == 0
     }
 
     pub fn total_tests(&self) -> u32 {
-        self.basic_functionality.passed + self.basic_functionality.failed +
-        self.performance_optimization.passed + self.performance_optimization.failed +
-        self.security_features.passed + self.security_features.failed +
-        self.monitoring_features.passed + self.monitoring_features.failed +
-        self.enterprise_features.passed + self.enterprise_features.failed +
-        self.end_to_end_flow.passed + self.end_to_end_flow.failed +
-        self.error_handling.passed + self.error_handling.failed +
-        self.performance_benchmarks.passed + self.performance_benchmarks.failed
+        self.basic_functionality.passed
+            + self.basic_functionality.failed
+            + self.performance_optimization.passed
+            + self.performance_optimization.failed
+            + self.security_features.passed
+            + self.security_features.failed
+            + self.monitoring_features.passed
+            + self.monitoring_features.failed
+            + self.enterprise_features.passed
+            + self.enterprise_features.failed
+            + self.end_to_end_flow.passed
+            + self.end_to_end_flow.failed
+            + self.error_handling.passed
+            + self.error_handling.failed
+            + self.performance_benchmarks.passed
+            + self.performance_benchmarks.failed
     }
 
     pub fn total_passed(&self) -> u32 {
-        self.basic_functionality.passed +
-        self.performance_optimization.passed +
-        self.security_features.passed +
-        self.monitoring_features.passed +
-        self.enterprise_features.passed +
-        self.end_to_end_flow.passed +
-        self.error_handling.passed +
-        self.performance_benchmarks.passed
+        self.basic_functionality.passed
+            + self.performance_optimization.passed
+            + self.security_features.passed
+            + self.monitoring_features.passed
+            + self.enterprise_features.passed
+            + self.end_to_end_flow.passed
+            + self.error_handling.passed
+            + self.performance_benchmarks.passed
     }
 
     pub fn total_failed(&self) -> u32 {
-        self.basic_functionality.failed +
-        self.performance_optimization.failed +
-        self.security_features.failed +
-        self.monitoring_features.failed +
-        self.enterprise_features.failed +
-        self.end_to_end_flow.failed +
-        self.error_handling.failed +
-        self.performance_benchmarks.failed
+        self.basic_functionality.failed
+            + self.performance_optimization.failed
+            + self.security_features.failed
+            + self.monitoring_features.failed
+            + self.enterprise_features.failed
+            + self.end_to_end_flow.failed
+            + self.error_handling.failed
+            + self.performance_benchmarks.failed
     }
 
     pub fn overall_success_rate(&self) -> f64 {
@@ -639,9 +675,16 @@ impl IntegrationTestResults {
         println!("失败: {}", self.total_failed());
         println!("成功率: {:.2}%", self.overall_success_rate() * 100.0);
         println!("总耗时: {:?}", self.total_duration);
-        println!("整体状态: {}", if self.overall_success { "✅ 通过" } else { "❌ 失败" });
+        println!(
+            "整体状态: {}",
+            if self.overall_success {
+                "✅ 通过"
+            } else {
+                "❌ 失败"
+            }
+        );
         println!();
-        
+
         println!("=== 详细结果 ===");
         let results = [
             &self.basic_functionality,
@@ -653,9 +696,10 @@ impl IntegrationTestResults {
             &self.error_handling,
             &self.performance_benchmarks,
         ];
-        
+
         for result in results {
-            println!("{}: 通过 {}, 失败 {}, 耗时 {:?}, 成功率 {:.2}%",
+            println!(
+                "{}: 通过 {}, 失败 {}, 耗时 {:?}, 成功率 {:.2}%",
                 result.name,
                 result.passed,
                 result.failed,
@@ -669,7 +713,7 @@ impl IntegrationTestResults {
 /// 创建测试遥测数据
 fn create_test_telemetry_data(count: usize) -> Result<Vec<TelemetryData>> {
     let mut data = Vec::with_capacity(count);
-    
+
     for i in 0..count {
         let telemetry_data = TelemetryData {
             data_type: TelemetryDataType::Trace,
@@ -686,7 +730,7 @@ fn create_test_telemetry_data(count: usize) -> Result<Vec<TelemetryData>> {
         };
         data.push(telemetry_data);
     }
-    
+
     Ok(data)
 }
 
@@ -695,10 +739,10 @@ fn create_test_telemetry_data(count: usize) -> Result<Vec<TelemetryData>> {
 async fn test_integration_suite() -> Result<()> {
     let test_suite = IntegrationTestSuite::new();
     test_suite.initialize().await?;
-    
+
     let results = test_suite.run_full_integration_test().await?;
     results.print_summary();
-    
+
     assert!(results.overall_success, "集成测试失败");
     Ok(())
 }

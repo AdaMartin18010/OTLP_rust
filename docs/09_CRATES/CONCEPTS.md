@@ -64,7 +64,7 @@
 
 #### 定义
 
-**Workspace结构 WS = (root, members, dependencies)**
+**Workspace结构 WS = (root, members, dependencies)**:
 
 **项目结构**:
 
@@ -131,7 +131,7 @@ OTLP_rust/
 
 #### 定义
 
-**OpenTelemetry Protocol Implementation**
+**OpenTelemetry Protocol Implementation**:
 
 **核心功能**:
 
@@ -189,7 +189,7 @@ let tracer = provider.tracer("my-service");
 
 #### 定义
 
-**Data Models and State Machines**
+**Data Models and State Machines**:
 
 **核心功能**:
 
@@ -243,7 +243,7 @@ if limiter.check() {
 
 #### 定义
 
-**Reliability and Fault Tolerance**
+**Reliability and Fault Tolerance**:
 
 **核心功能**:
 
@@ -307,7 +307,7 @@ retry.execute(|| {
 
 #### 定义
 
-**Common Utilities and Libraries**
+**Common Utilities and Libraries**:
 
 **核心功能**:
 

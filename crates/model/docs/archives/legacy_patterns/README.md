@@ -2,7 +2,7 @@
 
 > **建模相关的设计模式**，提供可复用的解决方案
 
-**最后更新**: 2025-10-19  
+**最后更新**: 2025-10-19
 **适用版本**: Rust 1.90+
 
 ---
@@ -32,7 +32,7 @@ struct MyActor {
 
 impl Actor for MyActor {
     type Message = i32;
-    
+
     fn handle(&mut self, msg: Self::Message) {
         self.state += msg;
     }
@@ -449,8 +449,8 @@ impl Subject {
 
 ---
 
-**模式维护**: 项目维护团队  
-**最后更新**: 2025-10-19  
+**模式维护**: 项目维护团队
+**最后更新**: 2025-10-19
 **反馈**: [GitHub Issues](https://github.com/rust-lang/rust-lang/issues)
 
 ---

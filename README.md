@@ -441,21 +441,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_service_name("my-service")
         .build()
         .await?;
-    
+
     // 创建追踪器
     let tracer = client.tracer("my-component");
     let span = tracer.start("my-operation");
-    
+
     // 添加属性
     span.set_attribute("user.id", "12345");
     span.set_attribute("operation.type", "database");
-    
+
     // 执行业务逻辑
     // ...
-    
+
     // 结束 span
     drop(span);
-    
+
     Ok(())
 }
 ```
@@ -469,13 +469,13 @@ use reliability::prelude::*;
 async fn main() -> Result<(), UnifiedError> {
     // 初始化可靠性框架
     reliability::init().await?;
-    
+
     // 创建断路器
     let circuit_breaker = CircuitBreaker::new(5, Duration::from_secs(60));
-    
+
     // 创建重试策略
     let retry_policy = RetryPolicy::exponential_backoff(3, Duration::from_millis(100), Duration::from_secs(5), 2.0);
-    
+
     // 执行带容错的操作
     let result = circuit_breaker
         .with_retry(retry_policy)
@@ -484,7 +484,7 @@ async fn main() -> Result<(), UnifiedError> {
             Ok::<String, UnifiedError>("success".to_string())
         })
         .await?;
-    
+
     println!("操作结果: {}", result);
     Ok(())
 }
@@ -736,4 +736,4 @@ We welcome community contributions! Please check:
 
 **项目状态**: 🏆 Perfect | **质量评分**: ⭐⭐⭐⭐⭐ 98/100 | **文档完整度**: 100% ✅
 
-*最后更新: 2025年10月28日 - 史诗级成就达成！*
+_最后更新: 2025年10月28日 - 史诗级成就达成！_

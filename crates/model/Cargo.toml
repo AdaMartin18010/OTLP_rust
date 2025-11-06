@@ -21,9 +21,9 @@ keywords = [
 ]
 categories = ["science", "algorithms", "mathematics", "simulation"]
 readme = "README.md"
-rust-version = "1.90"
+rust-version = "1.91"
 
-# Rust 1.90 新特性配置
+# Rust 1.91 新特性配置
 # Profile configurations are managed at workspace root level
 
 [dependencies]
@@ -123,7 +123,7 @@ default = ["std", "enhanced-math", "advanced-algorithms", "tokio-adapter"]
 std = []
 no-std = []
 
-# Rust 1.90 增强特性
+# Rust 1.91 增强特性
 enhanced-math = ["nalgebra", "num-complex", "num-bigint"]
 advanced-algorithms = ["petgraph"]
 parallel-computing = []

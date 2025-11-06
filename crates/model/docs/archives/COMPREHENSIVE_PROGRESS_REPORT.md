@@ -3,7 +3,7 @@
 ## 📋 目录
 
 - [C12 Model 综合进展报告](#c12-model-综合进展报告)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [执行摘要](#执行摘要)
   - [核心成就](#核心成就)
     - [1. 语义模型完整实现 ✅](#1-语义模型完整实现-)
@@ -67,12 +67,12 @@
   - 小步语义 (Small-Step): 单步执行规则
   - 大步语义 (Big-Step): 直接求值规则
   - Beta 规约和替换机制
-  
+
 - ✅ **指称语义 (Denotational Semantics)**
   - 表达式到数学函数的映射
   - 语句到状态转换函数的映射
   - 组合性原则实现
-  
+
 - ✅ **公理语义 (Axiomatic Semantics)**
   - Hoare Logic 三元组
   - 最弱前置条件计算
@@ -264,12 +264,12 @@ mod tests {
             }),
             right: Box::new(Expression::Int(4)),
         };
-        
+
         let env = Environment::new();
         let result = BigStepSemantics::eval_expr(&expr, &env).unwrap();
         assert_eq!(result, Value::Int(20));
     }
-    
+
     #[test]
     fn test_semantic_equivalence() {
         // 验证操作语义和指称语义等价
@@ -566,5 +566,4 @@ c12_model 项目已经建立了一个**全面、系统、理论严谨**的模型
 
 ---
 
-*本报告总结了 c12_model 项目在模型理论、算法实现、分布式系统等方面的综合进展,为后续发展奠定了坚实基础。*
-
+_本报告总结了 c12_model 项目在模型理论、算法实现、分布式系统等方面的综合进展,为后续发展奠定了坚实基础。_

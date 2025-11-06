@@ -1,8 +1,8 @@
 # 形式化验证框架与证明
 
-**版本**: 1.0  
-**日期**: 2025年10月26日  
-**主题**: 形式化方法、定理证明、模型检验、正确性证明  
+**版本**: 1.0
+**日期**: 2025年10月26日
+**主题**: 形式化方法、定理证明、模型检验、正确性证明
 **状态**: 🟢 活跃维护
 
 > **简介**: 形式化验证框架 - 定理证明、模型检验和OTLP系统的正确性证明。
@@ -63,13 +63,13 @@
 pub trait FormalSpecification {
     /// 前置条件
     fn precondition(&self) -> bool;
-    
+
     /// 后置条件
     fn postcondition(&self, result: &Self::Output) -> bool;
-    
+
     /// 不变量
     fn invariant(&self) -> bool;
-    
+
     type Output;
 }
 
@@ -81,19 +81,19 @@ pub struct TraceCollectorSpec {
 
 impl FormalSpecification for TraceCollectorSpec {
     type Output = Result<()>;
-    
+
     /// 前置条件: Trace 必须有效
     fn precondition(&self) -> bool {
         // ∀trace ∈ traces, valid(trace)
         self.traces.values().all(|trace| self.is_valid_trace(trace))
     }
-    
+
     /// 后置条件: Trace 被正确存储
     fn postcondition(&self, result: &Self::Output) -> bool {
         // result = Ok ⇒ trace 已存储
         result.is_ok()
     }
-    
+
     /// 不变量: 所有 Span 都属于某个 Trace
     fn invariant(&self) -> bool {
         // ∀span, ∃trace, span ∈ trace.spans
@@ -193,11 +193,11 @@ impl CollectorStateMachine {
                 ));
             }
         };
-        
+
         self.current_state = new_state;
         Ok(())
     }
-    
+
     /// 验证状态转移的合法性
     pub fn verify_transition_validity() -> bool {
         // 形式化验证所有可能的状态转移
@@ -208,11 +208,11 @@ impl CollectorStateMachine {
             (CollectorState::Running, CollectorTransition::Shutdown, CollectorState::ShuttingDown),
             (CollectorState::Paused, CollectorTransition::Shutdown, CollectorState::ShuttingDown),
         ];
-        
+
         // 验证: 每个状态都有明确的转移规则
         // 验证: 不存在无效的状态转移
         // 验证: 最终状态是 Stopped
-        
+
         true
     }
 }
@@ -241,7 +241,7 @@ impl InvariantChecker {
         }
         true
     }
-    
+
     /// 不变量 2: 因果一致性
     /// ∀span, span.parent_span_id ≠ None ⇒ ∃parent, parent.span_id = span.parent_span_id
     pub fn check_causal_consistency(&self) -> bool {
@@ -249,7 +249,7 @@ impl InvariantChecker {
             let span_ids: HashSet<_> = trace.spans.iter()
                 .map(|s| s.span_id)
                 .collect();
-            
+
             for span in &trace.spans {
                 if let Some(parent_id) = span.parent_span_id {
                     if !span_ids.contains(&parent_id) {
@@ -260,7 +260,7 @@ impl InvariantChecker {
         }
         true
     }
-    
+
     /// 不变量 3: 时间顺序
     /// ∀span, span.parent_span_id ≠ None ⇒ parent.start_time ≤ span.start_time
     pub fn check_temporal_ordering(&self) -> bool {
@@ -268,7 +268,7 @@ impl InvariantChecker {
             let span_map: HashMap<_, _> = trace.spans.iter()
                 .map(|s| (s.span_id, s))
                 .collect();
-            
+
             for span in &trace.spans {
                 if let Some(parent_id) = span.parent_span_id {
                     if let Some(parent) = span_map.get(&parent_id) {
@@ -281,7 +281,7 @@ impl InvariantChecker {
         }
         true
     }
-    
+
     /// 不变量 4: 无环
     /// Trace 的 Span 图必须是 DAG (有向无环图)
     pub fn check_acyclic(&self) -> bool {
@@ -292,11 +292,11 @@ impl InvariantChecker {
         }
         true
     }
-    
+
     fn has_cycle(&self, trace: &Trace) -> bool {
         let mut visited = HashSet::new();
         let mut rec_stack = HashSet::new();
-        
+
         for span in &trace.spans {
             if span.parent_span_id.is_none() {
                 if self.has_cycle_util(trace, span.span_id, &mut visited, &mut rec_stack) {
@@ -304,10 +304,10 @@ impl InvariantChecker {
                 }
             }
         }
-        
+
         false
     }
-    
+
     fn has_cycle_util(
         &self,
         trace: &Trace,
@@ -317,7 +317,7 @@ impl InvariantChecker {
     ) -> bool {
         visited.insert(span_id);
         rec_stack.insert(span_id);
-        
+
         // 查找子 Span
         for span in &trace.spans {
             if span.parent_span_id == Some(span_id) {
@@ -330,7 +330,7 @@ impl InvariantChecker {
                 }
             }
         }
-        
+
         rec_stack.remove(&span_id);
         false
     }
@@ -351,13 +351,13 @@ LTL 公式:
 OTLP 系统的 LTL 规约:
 1. □(request → ◇response)
    "每个请求最终都会得到响应"
-   
+
 2. □(error → ◇logged)
    "每个错误最终都会被记录"
-   
+
 3. □(span.start → ◇span.end)
    "每个开始的 Span 最终都会结束"
-   
+
 4. □(collector.running → ¬collector.stopped)
    "运行中的 Collector 不会同时处于停止状态"
 ```
@@ -397,12 +397,12 @@ impl LTLModelChecker {
     pub fn check(&self, formula: &LTLFormula) -> bool {
         self.check_at_position(formula, 0)
     }
-    
+
     fn check_at_position(&self, formula: &LTLFormula, pos: usize) -> bool {
         if pos >= self.states.len() {
             return false;
         }
-        
+
         match formula {
             LTLFormula::Atomic(prop) => {
                 self.states[pos].get(prop).copied().unwrap_or(false)
@@ -472,7 +472,7 @@ impl LTLModelChecker {
 /// Trace 完整性证明
 pub mod trace_integrity_proof {
     use super::*;
-    
+
     /// 引理 1: 添加 Span 时检查 trace_id
     pub fn lemma_add_span_checks_trace_id(
         trace: &Trace,
@@ -481,7 +481,7 @@ pub mod trace_integrity_proof {
         // 如果 trace_id 不匹配,返回 false
         span.trace_id == trace.trace_id
     }
-    
+
     /// 引理 2: 只有通过检查的 Span 才会被添加
     pub fn lemma_only_valid_spans_added(
         trace: &mut Trace,
@@ -493,17 +493,17 @@ pub mod trace_integrity_proof {
         trace.spans.push(span);
         Ok(())
     }
-    
+
     /// 定理: Trace 完整性
     pub fn theorem_trace_integrity(trace: &Trace) -> bool {
         // 证明: 所有 Span 的 trace_id 都等于 Trace 的 trace_id
         trace.spans.iter().all(|span| span.trace_id == trace.trace_id)
     }
-    
+
     #[cfg(test)]
     mod tests {
         use super::*;
-        
+
         #[test]
         fn test_trace_integrity() {
             let trace_id = TraceId::generate();
@@ -511,7 +511,7 @@ pub mod trace_integrity_proof {
                 trace_id,
                 spans: Vec::new(),
             };
-            
+
             // 添加有效 Span
             let span1 = Span {
                 trace_id,
@@ -519,9 +519,9 @@ pub mod trace_integrity_proof {
                 name: "test".to_string(),
                 ..Default::default()
             };
-            
+
             assert!(lemma_only_valid_spans_added(&mut trace, span1).is_ok());
-            
+
             // 尝试添加无效 Span
             let span2 = Span {
                 trace_id: TraceId::generate(), // 不同的 trace_id
@@ -529,9 +529,9 @@ pub mod trace_integrity_proof {
                 name: "test2".to_string(),
                 ..Default::default()
             };
-            
+
             assert!(lemma_only_valid_spans_added(&mut trace, span2).is_err());
-            
+
             // 验证定理
             assert!(theorem_trace_integrity(&trace));
         }
@@ -617,7 +617,7 @@ impl<T> OrderedMutex<T> {
             mutex: Mutex::new(value),
         }
     }
-    
+
     pub fn lock(&self, current_order: &mut Option<ResourceOrder>) -> MutexGuard<T> {
         // 检查顺序
         if let Some(prev_order) = current_order {
@@ -628,7 +628,7 @@ impl<T> OrderedMutex<T> {
                 prev_order
             );
         }
-        
+
         *current_order = Some(self.order);
         self.mutex.lock().unwrap()
     }
@@ -662,13 +662,13 @@ impl ModelChecker {
     pub fn explore_state_space(&mut self) -> Vec<SystemState> {
         let mut reachable = Vec::new();
         let mut queue = VecDeque::new();
-        
+
         queue.push_back(self.initial_state.clone());
         self.visited.insert(self.initial_state.clone());
-        
+
         while let Some(state) = queue.pop_front() {
             reachable.push(state.clone());
-            
+
             // 生成后继状态
             for next_state in self.successors(&state) {
                 if !self.visited.contains(&next_state) {
@@ -677,15 +677,15 @@ impl ModelChecker {
                 }
             }
         }
-        
+
         reachable
     }
-    
+
     fn successors(&self, state: &SystemState) -> Vec<SystemState> {
         // 生成所有可能的后继状态
         Vec::new()
     }
-    
+
     /// 检查安全性质
     pub fn check_safety_property<F>(&mut self, property: F) -> bool
     where
@@ -694,7 +694,7 @@ impl ModelChecker {
         let reachable = self.explore_state_space();
         reachable.iter().all(|state| property(state))
     }
-    
+
     /// 检查活性性质
     pub fn check_liveness_property<F>(&mut self, property: F) -> bool
     where
@@ -724,17 +724,17 @@ impl CounterexampleGenerator {
         F: Fn(&SystemState) -> bool,
     {
         let reachable = self.model_checker.explore_state_space();
-        
+
         for state in reachable {
             if !property(&state) {
                 // 找到违反性质的状态,回溯路径
                 return Some(self.backtrack_path(&state));
             }
         }
-        
+
         None
     }
-    
+
     fn backtrack_path(&self, _target: &SystemState) -> Vec<SystemState> {
         // 从初始状态到目标状态的路径
         Vec::new()
@@ -799,16 +799,16 @@ Rust 的类型系统保证:
 pub mod data_race_freedom {
     use std::sync::Arc;
     use std::sync::Mutex;
-    
+
     /// 定理: 使用 Arc<Mutex<T>> 保证无数据竞争
     pub fn theorem_no_data_race() {
         // Rust 的类型系统保证:
         // 1. Arc 提供共享所有权
         // 2. Mutex 提供互斥访问
         // 3. 编译器检查确保正确使用
-        
+
         let data = Arc::new(Mutex::new(0));
-        
+
         let handles: Vec<_> = (0..10)
             .map(|_| {
                 let data = Arc::clone(&data);
@@ -819,11 +819,11 @@ pub mod data_race_freedom {
                 })
             })
             .collect();
-        
+
         for handle in handles {
             handle.join().unwrap();
         }
-        
+
         assert_eq!(*data.lock().unwrap(), 10);
     }
 }
@@ -835,14 +835,14 @@ pub mod data_race_freedom {
 /// 原子操作验证
 pub mod atomicity {
     use std::sync::atomic::{AtomicU64, Ordering};
-    
+
     /// 定理: 原子操作保证原子性
     pub fn theorem_atomic_operations() {
         let counter = AtomicU64::new(0);
-        
+
         // 原子递增
         counter.fetch_add(1, Ordering::SeqCst);
-        
+
         // 保证: 操作是原子的,不会被中断
         // 保证: 内存顺序一致性 (SeqCst)
     }
@@ -864,26 +864,26 @@ pub mod complexity_analysis {
         // 1. 使用 HashMap 存储 Traces
         // 2. HashMap 的平均查找时间是 O(1)
         // 3. 因此 Trace 查找是 O(1)
-        
+
         use std::collections::HashMap;
-        
+
         let mut traces = HashMap::new();
         let trace_id = TraceId::generate();
-        
+
         // O(1) 插入
         traces.insert(trace_id, Trace::default());
-        
+
         // O(1) 查找
         let _trace = traces.get(&trace_id);
     }
-    
+
     /// 定理: Span 排序的时间复杂度是 O(n log n)
     pub fn theorem_span_sort_complexity() {
         // 证明:
         // 1. 使用标准库的 sort
         // 2. 标准库使用 TimSort
         // 3. TimSort 的最坏时间复杂度是 O(n log n)
-        
+
         let mut spans = vec![/* ... */];
         spans.sort_by_key(|s| s.start_time); // O(n log n)
     }

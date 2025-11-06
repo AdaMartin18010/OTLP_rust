@@ -138,12 +138,12 @@ while i < m {
 ```rust
 for i in 1..n - 1 {
     let mirror = 2 * center - i;
-    
+
     // ✨ 利用对称性优化
     if right > i {
         p[i] = p[mirror].min(right - i);
     }
-    
+
     // ✨ 中心扩展
     while t_chars[i + p[i] + 1] == t_chars[i - p[i] - 1] {
         p[i] += 1;
@@ -155,7 +155,7 @@ for i in 1..n - 1 {
 
 ```rust
 // ✨ O(1)更新哈希值
-text_hash = (BASE * (text_hash + MOD - (text_bytes[i] as u64 * h) % MOD) 
+text_hash = (BASE * (text_hash + MOD - (text_bytes[i] as u64 * h) % MOD)
     + text_bytes[i + m] as u64) % MOD;
 ```
 
@@ -259,7 +259,7 @@ use c12_model::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut metrics = AlgorithmMetrics::new();
-    
+
     // 1. 字符串算法 - KMP搜索
     let positions = StringAlgorithms::kmp_search(
         "ABABDABACDABABCABAB",
@@ -267,17 +267,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &mut metrics
     )?;
     println!("KMP找到位置: {:?}", positions);
-    
+
     // 2. 数学算法 - 快速幂
     let power = MathematicalAlgorithms::fast_power(2, 100, 1_000_000_007, &mut metrics)?;
     println!("2^100 mod 10^9+7 = {}", power);
-    
+
     // 3. 图算法 - Floyd-Warshall
     let vertices = vec!["A", "B", "C"];
     let edges = vec![("A", "B", 1.0), ("B", "C", 2.0)];
     let distances = GreedyAlgorithms::floyd_warshall(&vertices, &edges, &mut metrics)?;
     println!("最短路径: {:?}", distances);
-    
+
     Ok(())
 }
 ```
@@ -382,10 +382,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ---
 
-**会话时间**: 2025-10-01  
-**项目版本**: v0.2.0 → v0.2.1  
-**Rust版本**: 1.90+  
+**会话时间**: 2025-10-01
+**项目版本**: v0.2.0 → v0.2.1
+**Rust版本**: 1.90+
 **状态**: ✅ 成功完成
 
 🎉 **算法模型增强任务圆满完成！**
-

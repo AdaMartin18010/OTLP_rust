@@ -1,8 +1,8 @@
 ﻿# 高级限流策略完整指南
 
-**Crate:** c13_reliability  
-**主题:** Advanced Rate Limiting Strategies  
-**Rust 版本:** 1.90.0  
+**Crate:** c13_reliability
+**主题:** Advanced Rate Limiting Strategies
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -11,27 +11,32 @@
 
 - [高级限流策略完整指南](#高级限流策略完整指南)
   - [📋 目录](#-目录)
-  - [🎯 高级限流概述](#高级限流概述)
+  - [高级限流概述](#高级限流概述)
     - [限流的挑战](#限流的挑战)
     - [限流层次](#限流层次)
-  - [🌐 分布式限流](#分布式限流)
+  - [分布式限流](#分布式限流)
     - [1. 基于 Redis 的分布式限流](#1-基于-redis-的分布式限流)
+      - [滑动窗口实现](#滑动窗口实现)
+      - [Token Bucket with Redis](#token-bucket-with-redis)
     - [2. 基于共识的分布式限流](#2-基于共识的分布式限流)
-  - [🎛️ 自适应限流](#自适应限流)
+      - [Raft-based Rate Limiter](#raft-based-rate-limiter)
+  - [自适应限流](#自适应限流)
     - [1. 基于系统指标的自适应限流](#1-基于系统指标的自适应限流)
+      - [CPU/Memory-based Adaptive Limiter](#cpumemory-based-adaptive-limiter)
     - [2. 基于响应时间的自适应限流](#2-基于响应时间的自适应限流)
-  - [📊 分层限流](#分层限流)
+      - [Latency-based Adaptive Limiter](#latency-based-adaptive-limiter)
+  - [分层限流](#分层限流)
     - [多维度限流架构](#多维度限流架构)
     - [配额管理](#配额管理)
-  - [📈 限流指标和监控](#限流指标和监控)
+  - [限流指标和监控](#限流指标和监控)
     - [指标收集](#指标收集)
-  - [🔗 限流与熔断联动](#限流与熔断联动)
+  - [限流与熔断联动](#限流与熔断联动)
     - [集成实现](#集成实现)
-  - [💎 QoS 服务质量保证](#qos-服务质量保证)
+  - [QoS 服务质量保证](#qos-服务质量保证)
     - [优先级队列限流](#优先级队列限流)
-  - [⚖️ 反压机制](#反压机制)
+  - [反压机制](#反压机制)
     - [Backpressure 实现](#backpressure-实现)
-  - [📚 总结](#总结)
+  - [总结](#总结)
     - [高级限流清单](#高级限流清单)
     - [最佳实践](#最佳实践)
 
@@ -90,20 +95,20 @@ impl RedisRateLimiter {
         let redis_key = format!("{}:{}", self.key_prefix, key);
         let now = chrono::Utc::now().timestamp();
         let window_start = now - window_seconds as i64;
-        
+
         // Lua 脚本保证原子性
         let script = r#"
             local key = KEYS[1]
             local now = tonumber(ARGV[1])
             local window_start = tonumber(ARGV[2])
             local max_requests = tonumber(ARGV[3])
-            
+
             -- 移除过期的请求
             redis.call('ZREMRANGEBYSCORE', key, '-inf', window_start)
-            
+
             -- 计算当前请求数
             local current = redis.call('ZCARD', key)
-            
+
             if current < max_requests then
                 -- 添加新请求
                 redis.call('ZADD', key, now, now)
@@ -113,7 +118,7 @@ impl RedisRateLimiter {
                 return 0
             end
         "#;
-        
+
         let result: i32 = redis::Script::new(script)
             .key(&redis_key)
             .arg(now)
@@ -121,7 +126,7 @@ impl RedisRateLimiter {
             .arg(max_requests)
             .invoke_async(&mut self.redis)
             .await?;
-        
+
         Ok(result == 1)
     }
 }
@@ -133,17 +138,17 @@ async fn rate_limit_middleware(
     next: Next,
 ) -> Result<Response, StatusCode> {
     let user_id = extract_user_id(&request)?;
-    
+
     let mut limiter = limiter.lock().await;
     let allowed = limiter
         .check_rate_limit(&format!("user:{}", user_id), 100, 60)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     if !allowed {
         return Err(StatusCode::TOO_MANY_REQUESTS);
     }
-    
+
     Ok(next.run(request).await)
 }
 ```
@@ -171,17 +176,17 @@ impl DistributedTokenBucket {
             local capacity = tonumber(ARGV[2])
             local refill_rate = tonumber(ARGV[3])
             local now = tonumber(ARGV[4])
-            
+
             -- 获取当前状态
             local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
             local current_tokens = tonumber(bucket[1]) or capacity
             local last_refill = tonumber(bucket[2]) or now
-            
+
             -- 计算补充的令牌数
             local elapsed = now - last_refill
             local refilled = elapsed * refill_rate
             current_tokens = math.min(capacity, current_tokens + refilled)
-            
+
             -- 尝试消费令牌
             if current_tokens >= tokens then
                 current_tokens = current_tokens - tokens
@@ -192,9 +197,9 @@ impl DistributedTokenBucket {
                 return 0
             end
         "#;
-        
+
         let now = chrono::Utc::now().timestamp_millis() as f64 / 1000.0;
-        
+
         let result: i32 = redis::Script::new(script)
             .key(key)
             .arg(tokens)
@@ -203,7 +208,7 @@ impl DistributedTokenBucket {
             .arg(now)
             .invoke_async(&mut self.redis)
             .await?;
-        
+
         Ok(result == 1)
     }
 }
@@ -241,18 +246,18 @@ impl ConsensusRateLimiter {
                 }
             }
         }
-        
+
         // 2. 通过 Raft 获取全局配额
         let command = RateLimitCommand::CheckAndIncrement {
             key: key.to_string(),
             max_requests,
         };
-        
+
         let result = self.raft.propose(command).await?;
-        
+
         Ok(result)
     }
-    
+
     async fn increment_local(&self, key: &str) {
         let mut counter = self.local_counter.write().await;
         *counter.entry(key.to_string()).or_insert(0) += 1;
@@ -289,35 +294,35 @@ impl AdaptiveRateLimiter {
             system: Arc::new(Mutex::new(System::new_all())),
         }
     }
-    
+
     /// 启动自适应调整
     pub fn start_adaptation(self: Arc<Self>) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(5));
-            
+
             loop {
                 interval.tick().await;
                 self.adjust_limit().await;
             }
         });
     }
-    
+
     async fn adjust_limit(&self) {
         let mut system = self.system.lock().await;
         system.refresh_all();
-        
+
         // 1. 获取 CPU 使用率
         let cpu_usage = system.global_cpu_info().cpu_usage();
-        
+
         // 2. 获取内存使用率
         let memory_usage = (system.used_memory() as f64 / system.total_memory() as f64) * 100.0;
-        
+
         // 3. 计算新的限流值
         let new_limit = self.calculate_new_limit(cpu_usage, memory_usage as f32);
-        
+
         // 4. 更新限流值
         *self.current_limit.write().await = new_limit;
-        
+
         tracing::info!(
             cpu_usage = %cpu_usage,
             memory_usage = %memory_usage,
@@ -325,7 +330,7 @@ impl AdaptiveRateLimiter {
             "Adaptive rate limit adjusted"
         );
     }
-    
+
     fn calculate_new_limit(&self, cpu_usage: f32, memory_usage: f32) -> u64 {
         // CPU > 80% 或 Memory > 80%: 降低限流
         if cpu_usage > 80.0 || memory_usage > 80.0 {
@@ -333,21 +338,21 @@ impl AdaptiveRateLimiter {
             let new_limit = self.base_limit - (self.base_limit as f32 * reduction * 0.5) as u64;
             return new_limit.max(self.min_limit);
         }
-        
+
         // CPU < 50% 且 Memory < 50%: 增加限流
         if cpu_usage < 50.0 && memory_usage < 50.0 {
             let increase = ((50.0 - cpu_usage.max(memory_usage)) / 50.0).min(1.0);
             let new_limit = self.base_limit + (self.base_limit as f32 * increase * 0.3) as u64;
             return new_limit.min(self.max_limit);
         }
-        
+
         // 其他情况：保持基准值
         self.base_limit
     }
-    
+
     pub async fn check_rate_limit(&self, key: &str) -> Result<bool> {
         let current_limit = *self.current_limit.read().await;
-        
+
         // 使用当前限流值进行检查
         self.check_with_limit(key, current_limit).await
     }
@@ -377,36 +382,36 @@ impl LatencyBasedLimiter {
             sample_size: 100,
         }
     }
-    
+
     /// 记录请求延迟
     pub async fn record_latency(&self, latency: Duration) {
         let mut samples = self.latency_samples.write().await;
-        
+
         samples.push_back(latency);
-        
+
         if samples.len() > self.sample_size {
             samples.pop_front();
         }
-        
+
         // 每收集 10 个样本，调整一次限流
         if samples.len() % 10 == 0 {
             self.adjust_based_on_latency(&samples).await;
         }
     }
-    
+
     async fn adjust_based_on_latency(&self, samples: &VecDeque<Duration>) {
         if samples.is_empty() {
             return;
         }
-        
+
         // 计算 P99 延迟
         let mut sorted: Vec<Duration> = samples.iter().copied().collect();
         sorted.sort();
         let p99_index = (sorted.len() as f64 * 0.99) as usize;
         let p99_latency = sorted[p99_index];
-        
+
         let mut current_limit = self.current_limit.write().await;
-        
+
         // P99 延迟超过目标：降低限流
         if p99_latency > self.target_latency {
             let ratio = p99_latency.as_millis() as f64 / self.target_latency.as_millis() as f64;
@@ -418,7 +423,7 @@ impl LatencyBasedLimiter {
             *current_limit = (*current_limit as f64 * 1.1) as u64;
             *current_limit = (*current_limit).min(10000);  // 最大 10000 QPS
         }
-        
+
         tracing::info!(
             p99_latency_ms = %p99_latency.as_millis(),
             new_limit = %current_limit,
@@ -433,14 +438,14 @@ async fn handle_with_latency_tracking(
     request: Request,
 ) -> Response {
     let start = Instant::now();
-    
+
     // 处理请求
     let response = process_request(request).await;
-    
+
     // 记录延迟
     let latency = start.elapsed();
     limiter.record_latency(latency).await;
-    
+
     response
 }
 ```
@@ -477,7 +482,7 @@ impl HierarchicalRateLimiter {
                 retry_after: Some(Duration::from_secs(60)),
             });
         }
-        
+
         // 2. 检查租户限流
         let tenant_limiter = self.get_or_create_tenant_limiter(tenant_id).await;
         if !tenant_limiter.check().await? {
@@ -486,7 +491,7 @@ impl HierarchicalRateLimiter {
                 retry_after: Some(Duration::from_secs(60)),
             });
         }
-        
+
         // 3. 检查用户限流
         let user_key = format!("{}:{}", tenant_id, user_id);
         let user_limiter = self.get_or_create_user_limiter(&user_key).await;
@@ -496,7 +501,7 @@ impl HierarchicalRateLimiter {
                 retry_after: Some(Duration::from_secs(60)),
             });
         }
-        
+
         // 4. 检查 API 限流
         let api_limiter = self.get_or_create_api_limiter(api).await;
         if !api_limiter.check().await? {
@@ -505,7 +510,7 @@ impl HierarchicalRateLimiter {
                 retry_after: Some(Duration::from_secs(60)),
             });
         }
-        
+
         Ok(RateLimitDecision::Allowed)
     }
 }
@@ -540,7 +545,7 @@ pub struct Quota {
 impl QuotaManager {
     pub async fn allocate_quota(&self, tenant_id: &str, amount: u64) -> Result<()> {
         let mut quotas = self.quotas.write().await;
-        
+
         let quota = quotas.entry(tenant_id.to_string())
             .or_insert_with(|| Quota {
                 max_requests: 0,
@@ -548,31 +553,31 @@ impl QuotaManager {
                 used: 0,
                 reset_at: Instant::now() + Duration::from_secs(3600),
             });
-        
+
         quota.max_requests += amount;
-        
+
         tracing::info!(
             tenant_id = %tenant_id,
             allocated = %amount,
             total = %quota.max_requests,
             "Quota allocated"
         );
-        
+
         Ok(())
     }
-    
+
     pub async fn consume_quota(&self, tenant_id: &str, amount: u64) -> Result<bool> {
         let mut quotas = self.quotas.write().await;
-        
+
         let quota = quotas.get_mut(tenant_id)
             .ok_or_else(|| anyhow::anyhow!("Quota not found"))?;
-        
+
         // 检查是否需要重置
         if Instant::now() >= quota.reset_at {
             quota.used = 0;
             quota.reset_at = Instant::now() + quota.window;
         }
-        
+
         // 检查配额
         if quota.used + amount <= quota.max_requests {
             quota.used += amount;
@@ -637,15 +642,15 @@ impl RateLimitMetrics {
             ).unwrap(),
         }
     }
-    
+
     pub fn record_allowed(&self) {
         self.requests_allowed.inc();
     }
-    
+
     pub fn record_limited(&self) {
         self.requests_limited.inc();
     }
-    
+
     pub fn update_limit(&self, limit: u64) {
         self.current_limit.set(limit as i64);
     }
@@ -658,18 +663,18 @@ async fn rate_limit_with_metrics(
     key: &str,
 ) -> Result<bool> {
     let start = Instant::now();
-    
+
     let allowed = limiter.check_rate_limit(key).await?;
-    
+
     let decision_time = start.elapsed();
     metrics.decision_time.observe(decision_time.as_secs_f64());
-    
+
     if allowed {
         metrics.record_allowed();
     } else {
         metrics.record_limited();
     }
-    
+
     Ok(allowed)
 }
 ```
@@ -699,7 +704,7 @@ impl RateLimiterWithCircuitBreaker {
         if !self.rate_limiter.check_rate_limit(key).await? {
             return Err(anyhow::anyhow!("Rate limit exceeded"));
         }
-        
+
         // 2. 通过熔断器执行
         self.circuit_breaker.call(operation).await
     }
@@ -756,38 +761,38 @@ pub struct PriorityRateLimiter {
 impl PriorityRateLimiter {
     pub fn new() -> Self {
         let mut limiters = HashMap::new();
-        
+
         // Critical: 50% 配额
         limiters.insert(
             Priority::Critical,
             Arc::new(RateLimiter::new(500, Duration::from_secs(1))),
         );
-        
+
         // High: 30% 配额
         limiters.insert(
             Priority::High,
             Arc::new(RateLimiter::new(300, Duration::from_secs(1))),
         );
-        
+
         // Normal: 15% 配额
         limiters.insert(
             Priority::Normal,
             Arc::new(RateLimiter::new(150, Duration::from_secs(1))),
         );
-        
+
         // Low: 5% 配额
         limiters.insert(
             Priority::Low,
             Arc::new(RateLimiter::new(50, Duration::from_secs(1))),
         );
-        
+
         Self { limiters }
     }
-    
+
     pub async fn check(&self, priority: Priority) -> Result<bool> {
         let limiter = self.limiters.get(&priority)
             .ok_or_else(|| anyhow::anyhow!("Priority not found"))?;
-        
+
         limiter.check().await
     }
 }
@@ -799,11 +804,11 @@ async fn handle_request_with_priority(
 ) -> Result<Response> {
     // 根据用户级别确定优先级
     let priority = determine_priority(&request);
-    
+
     if !limiter.check(priority).await? {
         return Err(anyhow::anyhow!("Rate limit exceeded for priority {:?}", priority));
     }
-    
+
     process_request(request).await
 }
 ```
@@ -834,7 +839,7 @@ impl BackpressureController {
             max_load,
         }
     }
-    
+
     /// 尝试获取许可
     pub async fn try_acquire(&self) -> Result<Option<BackpressureGuard>> {
         // 检查负载
@@ -842,12 +847,12 @@ impl BackpressureController {
         if current >= self.max_load {
             return Ok(None);  // 负载过高，拒绝
         }
-        
+
         // 尝试获取信号量
         match self.semaphore.try_acquire() {
             Ok(permit) => {
                 self.current_load.fetch_add(1, Ordering::Relaxed);
-                
+
                 Ok(Some(BackpressureGuard {
                     _permit: permit,
                     load_counter: Arc::clone(&self.current_load),
@@ -856,7 +861,7 @@ impl BackpressureController {
             Err(_) => Ok(None),  // 无可用许可
         }
     }
-    
+
     /// 获取当前负载
     pub fn current_load(&self) -> u64 {
         self.current_load.load(Ordering::Relaxed)
@@ -885,11 +890,11 @@ async fn handle_with_backpressure(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
-    
+
     // 在 guard 保护下处理请求
     let response = process_request(request).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok(response)
 }
 ```
@@ -918,6 +923,6 @@ async fn handle_with_backpressure(
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日

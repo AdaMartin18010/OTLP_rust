@@ -175,7 +175,7 @@
 //!     let config = OtlpConfig::new()
 //!         .with_endpoint("http://localhost:4317")
 //!         .with_connect_timeout(std::time::Duration::from_secs(5));
-//!     
+//!
 //!     // 创建追踪数据
 //!     let trace_data = TraceData {
 //!         trace_id: "example-trace-id".to_string(),
@@ -190,9 +190,9 @@
 //!         events: vec![],
 //!         links: vec![],
 //!     };
-//!     
+//!
 //!     println!("追踪数据: {:?}", trace_data);
-//!     
+//!
 //!     Ok(())
 //! }
 //! ```
@@ -202,21 +202,21 @@
 // ============================================================================
 
 /// 新的核心实现 - 基于 opentelemetry-otlp 的增强客户端
-/// 
+///
 /// 这是推荐使用的核心实现，保证 OTLP 1.0.0 标准兼容性
-/// 
+///
 /// # 快速开始
-/// 
+///
 /// ```rust,no_run
 /// use otlp::core::EnhancedOtlpClient;
-/// 
+///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let client = EnhancedOtlpClient::builder()
 ///     .with_endpoint("http://localhost:4317")
 ///     .with_service_name("my-service")
 ///     .build()
 ///     .await?;
-/// 
+///
 /// let tracer = client.tracer("my-component");
 /// let span = tracer.start("my-operation");
 /// // ... 业务逻辑
@@ -246,6 +246,10 @@ pub mod performance;
 
 // Profiling模块 (OpenTelemetry Profiling标准)
 pub mod profiling;
+
+// 重新导出2025年新增的eBPF功能
+#[cfg(target_os = "linux")]
+pub use profiling::ebpf::{EbpfProfiler, EbpfProfilerConfig, OverheadMetrics};
 
 // Semantic Conventions模块 (语义约定标准)
 pub mod semantic_conventions;
@@ -318,21 +322,17 @@ pub mod performance_optimization_advanced;
 // ============================================================================
 
 /// 重新导出核心模块的主要类型
-/// 
+///
 /// 这些类型基于 opentelemetry-otlp 0.31.0，保证 OTLP 1.0.0 标准兼容性
 pub use core::{
-    EnhancedOtlpClient, 
-    ClientBuilder, 
-    ClientConfig, 
-    ClientStats,
-    PerformanceOptimizer,
+    ClientBuilder, ClientConfig, ClientStats, EnhancedOtlpClient, PerformanceOptimizer,
     ReliabilityManager,
 };
 
 // 重新导出 OpenTelemetry 官方类型
 pub use opentelemetry::{
-    trace::{Tracer, TracerProvider},
     KeyValue,
+    trace::{Tracer, TracerProvider},
 };
 
 // ============================================================================
@@ -469,6 +469,15 @@ pub use microservices::{
 // 重新导出简化客户端相关类型
 pub use simple_client::{
     BatchSendResult, HealthStatus, LogLevel, SimpleClientBuilder, SimpleOperation, SimpleOtlpClient,
+};
+
+// 重新导出2025年新增的OTTL字节码功能
+pub use ottl::{BytecodeCompiler, BytecodeProgram, Opcode};
+
+// 重新导出2025年新增的OPAMP灰度策略功能
+pub use opamp::{
+    GraduationStrategy, HealthStatus as OpampHealthStatus, LabelSelector, MatchExpression,
+    MatchOperator, RollbackManager,
 };
 
 // 重新导出优化处理器相关类型

@@ -25,14 +25,14 @@ pub enum TraceType {
         links: Vec<SpanLink>,
         status: SpanStatus,
     },
-    
+
     // 本地追踪
     LocalTrace {
         operation_name: String,
         duration: Duration,
         attributes: HashMap<String, AttributeValue>,
     },
-    
+
     // 性能追踪
     PerformanceTrace {
         operation_name: String,
@@ -55,7 +55,7 @@ pub enum MetricType {
         labels: HashMap<String, String>,
         timestamp: SystemTime,
     },
-    
+
     // 仪表盘
     Gauge {
         name: String,
@@ -63,7 +63,7 @@ pub enum MetricType {
         labels: HashMap<String, String>,
         timestamp: SystemTime,
     },
-    
+
     // 直方图
     Histogram {
         name: String,
@@ -73,7 +73,7 @@ pub enum MetricType {
         labels: HashMap<String, String>,
         timestamp: SystemTime,
     },
-    
+
     // 摘要
     Summary {
         name: String,
@@ -99,7 +99,7 @@ pub enum LogType {
         trace_context: Option<TraceContext>,
         span_context: Option<SpanContext>,
     },
-    
+
     // 应用日志
     ApplicationLog {
         level: LogLevel,
@@ -108,7 +108,7 @@ pub enum LogType {
         exception: Option<ExceptionInfo>,
         mdc: HashMap<String, String>,
     },
-    
+
     // 系统日志
     SystemLog {
         facility: SyslogFacility,
@@ -117,7 +117,7 @@ pub enum LogType {
         process_id: u32,
         message: String,
     },
-    
+
     // 审计日志
     AuditLog {
         event_type: AuditEventType,
@@ -145,17 +145,17 @@ pub struct CorrelatedTelemetryData {
 impl CorrelatedTelemetryData {
     pub fn correlate_by_trace_id(&self) -> Result<()> {
         let trace_id = self.trace.trace_id();
-        
+
         // 关联指标数据
         for metric in &self.metrics {
             metric.set_trace_id(trace_id.clone());
         }
-        
+
         // 关联日志数据
         for log in &self.logs {
             log.set_trace_context(trace_id.clone(), self.trace.span_id());
         }
-        
+
         Ok(())
     }
 }
@@ -175,13 +175,13 @@ pub struct TimeWindowedData {
 impl TimeWindowedData {
     pub fn aggregate_metrics(&self) -> HashMap<String, AggregatedMetric> {
         let mut aggregated = HashMap::new();
-        
+
         for metric in &self.metrics {
             let key = format!("{}_{:?}", metric.name(), metric.labels());
             let entry = aggregated.entry(key).or_insert_with(|| AggregatedMetric::new());
             entry.add_metric(metric);
         }
-        
+
         aggregated
     }
 }
@@ -206,10 +206,10 @@ impl GrpcTransport {
         let request = ExportTraceServiceRequest {
             resource_spans: traces.into_iter().map(|t| t.into()).collect(),
         };
-        
+
         let mut request = tonic::Request::new(request);
         request.set_timeout(self.timeout);
-        
+
         let response = self.service.export(request).await?;
         Ok(())
     }
@@ -229,7 +229,7 @@ pub struct HttpJsonTransport {
 impl HttpJsonTransport {
     pub async fn send_traces(&self, traces: Vec<TraceData>) -> Result<()> {
         let json_data = serde_json::to_value(traces)?;
-        
+
         let response = self.client
             .post(&format!("{}/v1/traces", self.endpoint))
             .json(&json_data)
@@ -237,11 +237,11 @@ impl HttpJsonTransport {
             .timeout(self.timeout)
             .send()
             .await?;
-        
+
         if !response.status().is_success() {
             return Err(OtlpError::HttpError(response.status()));
         }
-        
+
         Ok(())
     }
 }
@@ -262,12 +262,12 @@ impl HttpProtobufTransport {
         let request = ExportTraceServiceRequest {
             resource_spans: traces.into_iter().map(|t| t.into()).collect(),
         };
-        
+
         let mut buffer = Vec::new();
         request.encode(&mut buffer)?;
-        
+
         let compressed_buffer = self.compress_data(buffer)?;
-        
+
         let response = self.client
             .post(&format!("{}/v1/traces", self.endpoint))
             .body(compressed_buffer)
@@ -275,7 +275,7 @@ impl HttpProtobufTransport {
             .timeout(self.timeout)
             .send()
             .await?;
-        
+
         Ok(())
     }
 }
@@ -384,7 +384,7 @@ impl ConfigManager {
         if let Some(value) = self.config_cache.read().await.get(key) {
             return Ok(value.clone());
         }
-        
+
         // 按优先级查找配置
         for source in &self.config_sources {
             if let Some(value) = source.get_config(key).await? {
@@ -394,7 +394,7 @@ impl ConfigManager {
                 return Ok(value);
             }
         }
-        
+
         Err(OtlpError::ConfigNotFound(key.to_string()))
     }
 }
@@ -423,11 +423,11 @@ impl ConfigRule for EndpointRule {
         if endpoint.is_empty() {
             return Err(OtlpError::InvalidConfig("endpoint cannot be empty".to_string()));
         }
-        
+
         if !endpoint.starts_with("http://") && !endpoint.starts_with("https://") {
             return Err(OtlpError::InvalidConfig("endpoint must start with http:// or https://".to_string()));
         }
-        
+
         Ok(())
     }
 }
@@ -451,24 +451,24 @@ pub struct MicroserviceMonitoring {
 impl MicroserviceMonitoring {
     pub async fn collect_metrics(&self) -> Vec<MetricData> {
         let mut metrics = Vec::new();
-        
+
         // 服务指标
         metrics.push(MetricData::counter("service.requests.total", 1.0)
             .with_label("service", &self.service_name)
             .with_label("version", &self.service_version));
-        
+
         // 依赖指标
         for dependency in &self.dependencies {
             metrics.push(MetricData::gauge("service.dependency.latency", dependency.latency)
                 .with_label("dependency", &dependency.name));
         }
-        
+
         // 健康检查指标
         for health_check in &self.health_checks {
             metrics.push(MetricData::gauge("service.health", health_check.is_healthy() as u8 as f64)
                 .with_label("check", &health_check.name));
         }
-        
+
         metrics
     }
 }
@@ -487,23 +487,23 @@ pub struct PerformanceAnalysis {
 impl PerformanceAnalysis {
     pub async fn collect_performance_data(&self) -> Vec<TraceData> {
         let mut traces = Vec::new();
-        
+
         // CPU性能追踪
         let cpu_trace = self.cpu_profiler.collect_trace().await?;
         traces.push(cpu_trace);
-        
+
         // 内存性能追踪
         let memory_trace = self.memory_profiler.collect_trace().await?;
         traces.push(memory_trace);
-        
+
         // I/O性能追踪
         let io_trace = self.io_profiler.collect_trace().await?;
         traces.push(io_trace);
-        
+
         // 网络性能追踪
         let network_trace = self.network_profiler.collect_trace().await?;
         traces.push(network_trace);
-        
+
         traces
     }
 }
@@ -522,7 +522,7 @@ impl ErrorTracking {
     pub async fn track_error(&self, error: &Error) -> LogData {
         let stack_trace = self.stack_trace_analyzer.analyze(error).await?;
         let error_class = self.error_classifier.classify(error);
-        
+
         LogData::error(&format!("Error occurred: {}", error))
             .with_attribute("error.class", error_class)
             .with_attribute("error.message", error.to_string())
@@ -549,31 +549,31 @@ impl FullStackMonitoring {
         let mut traces = Vec::new();
         let mut metrics = Vec::new();
         let mut logs = Vec::new();
-        
+
         // 前端数据
         let frontend_data = self.frontend_monitoring.collect_data().await?;
         traces.extend(frontend_data.traces);
         metrics.extend(frontend_data.metrics);
         logs.extend(frontend_data.logs);
-        
+
         // 后端数据
         let backend_data = self.backend_monitoring.collect_data().await?;
         traces.extend(backend_data.traces);
         metrics.extend(backend_data.metrics);
         logs.extend(backend_data.logs);
-        
+
         // 数据库数据
         let database_data = self.database_monitoring.collect_data().await?;
         traces.extend(database_data.traces);
         metrics.extend(database_data.metrics);
         logs.extend(database_data.logs);
-        
+
         // 基础设施数据
         let infrastructure_data = self.infrastructure_monitoring.collect_data().await?;
         traces.extend(infrastructure_data.traces);
         metrics.extend(infrastructure_data.metrics);
         logs.extend(infrastructure_data.logs);
-        
+
         CorrelatedTelemetryData {
             traces,
             metrics,
@@ -598,14 +598,14 @@ impl RealTimeMonitoring {
         while let Some(data) = self.data_stream.recv().await {
             // 实时处理数据
             self.process_realtime_data(data).await?;
-            
+
             // 检查告警条件
             self.alert_manager.check_alerts(&data).await?;
-            
+
             // 更新仪表板
             self.dashboard_updater.update_dashboard(&data).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -657,6 +657,6 @@ impl RealTimeMonitoring {
 
 ---
 
-**文档版本**: v1.0  
-**更新时间**: 2025年1月  
+**文档版本**: v1.0
+**更新时间**: 2025年1月
 **技术栈**: Rust 1.90 + OTLP v1.0

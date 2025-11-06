@@ -17,10 +17,7 @@ struct-field-name-threshold = 7
 type-complexity-threshold = 250
 
 # 禁止的方法
-disallowed-methods = [
-    "std::env::var",
-    "std::env::var_os",
-]
+disallowed-methods = ["std::env::var", "std::env::var_os"]
 
 # 禁止的类型（暂时禁用以解除大量告警，后续逐步治理替换DashMap/IndexMap等）
 # disallowed-types = [
@@ -48,16 +45,27 @@ min-ident-chars-threshold = 1
 
 # 文档有效标识符
 doc-valid-idents = [
-    "KiB", "MiB", "GiB", "TiB", "PiB", "EiB",
-    "HTTP", "HTTPS", "JSON", "XML", "API", "URL", "URI",
-    "OTLP", "OpenTelemetry", "gRPC", "HTTP/2",
+  "KiB",
+  "MiB",
+  "GiB",
+  "TiB",
+  "PiB",
+  "EiB",
+  "HTTP",
+  "HTTPS",
+  "JSON",
+  "XML",
+  "API",
+  "URL",
+  "URI",
+  "OTLP",
+  "OpenTelemetry",
+  "gRPC",
+  "HTTP/2",
 ]
 
 # 允许的通配符导入
-allowed-wildcard-imports = [
-    "std::prelude::*",
-    "tokio::prelude::*",
-]
+allowed-wildcard-imports = ["std::prelude::*", "tokio::prelude::*"]
 
 # 标准宏大括号（暂时禁用，当前Clippy版本不支持该自定义格式）
 # standard-macro-braces = [
@@ -74,19 +82,16 @@ allowed-wildcard-imports = [
 # ]
 
 # 允许的重复crate
-allowed-duplicate-crates = [
-    "log",
-    "env_logger",
-]
+allowed-duplicate-crates = ["log", "env_logger"]
 
 # 第三方crate
 third-party = [
-    "anyhow",
-    "thiserror",
-    "serde",
-    "tokio",
-    "tracing",
-    "opentelemetry",
+  "anyhow",
+  "thiserror",
+  "serde",
+  "tokio",
+  "tracing",
+  "opentelemetry",
 ]
 
 # 栈大小阈值
@@ -129,9 +134,7 @@ enum-variant-name-threshold = 3
 enum-variant-size-threshold = 200
 
 # 特质关联项目种类顺序
-trait-assoc-item-kinds-order = [
-    "const", "type", "fn"
-]
+trait-assoc-item-kinds-order = ["const", "type", "fn"]
 
 # 模块项目排序分组（暂时禁用，避免配置不兼容导致Clippy失败）
 # module-item-order-groupings = [
@@ -189,9 +192,9 @@ allow-useless-vec-in-tests = true
 
 # 忽略内部可变性
 ignore-interior-mutability = [
-    "std::cell::Cell",
-    "std::cell::RefCell",
-    "std::sync::atomic::AtomicBool",
-    "std::sync::atomic::AtomicIsize",
-    "std::sync::atomic::AtomicUsize",
+  "std::cell::Cell",
+  "std::cell::RefCell",
+  "std::sync::atomic::AtomicBool",
+  "std::sync::atomic::AtomicIsize",
+  "std::sync::atomic::AtomicUsize",
 ]

@@ -1,15 +1,72 @@
-﻿# OTLP详细分类与组合方式探讨
+# OTLP详细分类与组合方式探讨
 
 ## 📋 目录
 
-- [数据分类体系](#数据分类体系)
-- [传输协议分类](#传输协议分类)
-- [配置分类体系](#配置分类体系)
-- [组合方式详细分析](#组合方式详细分析)
-- [使用场景分类](#使用场景分类)
-- [性能特征分类](#性能特征分类)
-- [部署模式分类](#部署模式分类)
-- [集成模式分类](#集成模式分类)
+- [OTLP详细分类与组合方式探讨](#otlp详细分类与组合方式探讨)
+  - [📋 目录](#-目录)
+  - [数据分类体系](#数据分类体系)
+    - [📊 遥测数据类型分类](#-遥测数据类型分类)
+      - [1. 主要数据类型](#1-主要数据类型)
+      - [2. 追踪数据子分类](#2-追踪数据子分类)
+      - [3. 指标数据子分类](#3-指标数据子分类)
+      - [4. 日志数据子分类](#4-日志数据子分类)
+    - [🏷️ 属性值类型分类](#️-属性值类型分类)
+      - [1. 基础属性类型](#1-基础属性类型)
+      - [2. 语义化属性分类](#2-语义化属性分类)
+  - [传输协议分类](#传输协议分类)
+    - [🌐 协议类型分类](#-协议类型分类)
+      - [1. 主要传输协议](#1-主要传输协议)
+      - [2. 压缩算法分类](#2-压缩算法分类)
+      - [3. 安全特性分类](#3-安全特性分类)
+  - [配置分类体系](#配置分类体系)
+    - [⚙️ 基础配置分类](#️-基础配置分类)
+      - [1. 连接配置](#1-连接配置)
+      - [2. 批处理配置](#2-批处理配置)
+      - [3. 采样配置](#3-采样配置)
+    - [🔧 高级配置分类](#-高级配置分类)
+      - [1. 性能配置](#1-性能配置)
+      - [2. 监控配置](#2-监控配置)
+  - [组合方式详细分析](#组合方式详细分析)
+    - [🔄 配置组合模式](#-配置组合模式)
+      - [1. 链式配置组合](#1-链式配置组合)
+      - [2. 构建器模式组合](#2-构建器模式组合)
+      - [3. 工厂模式组合](#3-工厂模式组合)
+    - [🏗️ 数据构建组合模式](#️-数据构建组合模式)
+      - [1. 追踪数据构建组合](#1-追踪数据构建组合)
+      - [2. 指标数据构建组合](#2-指标数据构建组合)
+      - [3. 日志数据构建组合](#3-日志数据构建组合)
+    - [⚡ 异步处理组合模式](#-异步处理组合模式)
+      - [1. 并发异步处理](#1-并发异步处理)
+      - [2. 流式处理组合](#2-流式处理组合)
+  - [使用场景分类](#使用场景分类)
+    - [🏢 企业级场景](#-企业级场景)
+      - [1. 大规模微服务监控](#1-大规模微服务监控)
+      - [2. 云原生环境](#2-云原生环境)
+    - [🚀 高性能场景](#-高性能场景)
+      - [1. 实时数据处理](#1-实时数据处理)
+      - [2. 边缘计算环境](#2-边缘计算环境)
+  - [性能特征分类](#性能特征分类)
+    - [📊 性能指标分类](#-性能指标分类)
+      - [1. 吞吐量指标](#1-吞吐量指标)
+      - [2. 延迟指标](#2-延迟指标)
+      - [3. 资源使用指标](#3-资源使用指标)
+  - [部署模式分类](#部署模式分类)
+    - [🏗️ 部署架构分类](#️-部署架构分类)
+      - [1. 单机部署](#1-单机部署)
+      - [2. 分布式部署](#2-分布式部署)
+      - [3. 云原生部署](#3-云原生部署)
+  - [集成模式分类](#集成模式分类)
+    - [🔌 框架集成模式](#-框架集成模式)
+      - [1. Web框架集成](#1-web框架集成)
+      - [2. 数据库集成](#2-数据库集成)
+      - [3. 消息队列集成](#3-消息队列集成)
+  - [总结](#总结)
+    - [✅ 数据分类体系](#-数据分类体系)
+    - [🌐 传输协议分类](#-传输协议分类)
+    - [⚙️ 配置分类体系](#️-配置分类体系)
+    - [🔄 组合方式分析](#-组合方式分析)
+    - [🏢 使用场景分类](#-使用场景分类)
+
 
 ---
 
@@ -36,7 +93,7 @@ impl TelemetryDataType {
             Self::Log => Priority::Low,       // 日志数据优先级低
         }
     }
-    
+
     pub fn retention_period(&self) -> Duration {
         match self {
             Self::Trace => Duration::from_secs(7 * 24 * 3600),  // 7天
@@ -168,9 +225,9 @@ impl AttributeValue {
             Self::DoubleArray(arr) => arr.len() * 8,
         }
     }
-    
+
     pub fn is_array(&self) -> bool {
-        matches!(self, Self::StringArray(_) | Self::BoolArray(_) | 
+        matches!(self, Self::StringArray(_) | Self::BoolArray(_) |
                         Self::IntArray(_) | Self::DoubleArray(_))
     }
 }
@@ -185,23 +242,23 @@ pub mod semantic_attributes {
     pub const SERVICE_NAME: &str = "service.name";
     pub const SERVICE_VERSION: &str = "service.version";
     pub const SERVICE_NAMESPACE: &str = "service.namespace";
-    
+
     // 部署相关
     pub const DEPLOYMENT_ENVIRONMENT: &str = "deployment.environment";
     pub const DEPLOYMENT_REGION: &str = "deployment.region";
     pub const DEPLOYMENT_ZONE: &str = "deployment.zone";
-    
+
     // 网络相关
     pub const NET_PEER_IP: &str = "net.peer.ip";
     pub const NET_PEER_PORT: &str = "net.peer.port";
     pub const NET_PEER_NAME: &str = "net.peer.name";
-    
+
     // HTTP相关
     pub const HTTP_METHOD: &str = "http.method";
     pub const HTTP_URL: &str = "http.url";
     pub const HTTP_STATUS_CODE: &str = "http.status_code";
     pub const HTTP_USER_AGENT: &str = "http.user_agent";
-    
+
     // 数据库相关
     pub const DB_SYSTEM: &str = "db.system";
     pub const DB_NAME: &str = "db.name";
@@ -235,7 +292,7 @@ impl TransportProtocol {
             Self::Http => 5,         // 较低性能
         }
     }
-    
+
     pub fn compatibility_rating(&self) -> u8 {
         match self {
             Self::Http => 10,        // 最佳兼容性
@@ -243,7 +300,7 @@ impl TransportProtocol {
             Self::Grpc => 6,         // 需要gRPC支持
         }
     }
-    
+
     pub fn security_features(&self) -> Vec<SecurityFeature> {
         match self {
             Self::Grpc => vec![
@@ -284,7 +341,7 @@ impl Compression {
             Self::Zstd => 0.2,      // 80%压缩率
         }
     }
-    
+
     pub fn cpu_overhead(&self) -> f64 {
         match self {
             Self::None => 0.0,      // 无CPU开销
@@ -293,7 +350,7 @@ impl Compression {
             Self::Zstd => 0.2,      // 20%CPU开销
         }
     }
-    
+
     pub fn recommended_for(&self) -> Vec<UseCase> {
         match self {
             Self::None => vec![UseCase::LocalDevelopment, UseCase::Testing],
@@ -404,7 +461,7 @@ impl BatchProcessorType {
             Self::TimeWindow => 2048,
         }
     }
-    
+
     pub fn recommended_timeout(&self) -> Duration {
         match self {
             Self::Simple => Duration::from_millis(5000),
@@ -631,7 +688,7 @@ impl ConfigFactory {
             .with_batch_config(BatchConfig::production())
             .with_retry_config(RetryConfig::production())
     }
-    
+
     pub fn create_development_config() -> OtlpConfig {
         OtlpConfig::default()
             .with_endpoint("http://localhost:4317")
@@ -642,7 +699,7 @@ impl ConfigFactory {
             .with_batch_config(BatchConfig::development())
             .with_retry_config(RetryConfig::development())
     }
-    
+
     pub fn create_testing_config() -> OtlpConfig {
         OtlpConfig::default()
             .with_endpoint("http://test-api.example.com/otlp")
@@ -712,7 +769,7 @@ let log = TelemetryData::log("用户登录成功", LogSeverity::Info)
 // 并发异步处理组合
 async fn process_multiple_operations(client: &OtlpClient) -> Result<()> {
     let mut futures = Vec::new();
-    
+
     for i in 0..10 {
         let client_clone = client.clone();
         let future = tokio::spawn(async move {
@@ -724,10 +781,10 @@ async fn process_multiple_operations(client: &OtlpClient) -> Result<()> {
         });
         futures.push(future);
     }
-    
+
     // 等待所有操作完成
     let results = futures::future::join_all(futures).await;
-    
+
     for result in results {
         match result {
             Ok(Ok(export_result)) => {
@@ -741,7 +798,7 @@ async fn process_multiple_operations(client: &OtlpClient) -> Result<()> {
             }
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -752,30 +809,30 @@ async fn process_multiple_operations(client: &OtlpClient) -> Result<()> {
 // 流式处理组合
 async fn stream_processing(client: &OtlpClient) -> Result<()> {
     let (tx, mut rx) = mpsc::unbounded_channel::<TelemetryData>();
-    
+
     // 生产者任务
     let producer = tokio::spawn(async move {
         for i in 0..1000 {
             let data = TelemetryData::trace(format!("stream-operation-{}", i))
                 .with_attribute("stream_id", "stream-001")
                 .with_attribute("sequence", i.to_string());
-            
+
             if tx.send(data).is_err() {
                 break;
             }
-            
+
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     });
-    
+
     // 消费者任务
     let consumer = tokio::spawn(async move {
         let mut batch = Vec::new();
         let batch_size = 100;
-        
+
         while let Some(data) = rx.recv().await {
             batch.push(data);
-            
+
             if batch.len() >= batch_size {
                 if let Err(e) = client.send_batch(batch.clone()).await {
                     eprintln!("批量发送失败: {}", e);
@@ -783,7 +840,7 @@ async fn stream_processing(client: &OtlpClient) -> Result<()> {
                 batch.clear();
             }
         }
-        
+
         // 发送剩余数据
         if !batch.is_empty() {
             if let Err(e) = client.send_batch(batch).await {
@@ -791,13 +848,13 @@ async fn stream_processing(client: &OtlpClient) -> Result<()> {
             }
         }
     });
-    
+
     // 等待所有任务完成
     let (producer_result, consumer_result) = tokio::join!(producer, consumer);
-    
+
     producer_result?;
     consumer_result?;
-    
+
     Ok(())
 }
 ```
@@ -916,7 +973,7 @@ impl RealtimeProcessingConfig {
         self.cpu_limit = 0.8;
         self.optimization_level = OptimizationLevel::Maximum;
     }
-    
+
     pub fn optimize_for_throughput(&mut self) {
         self.latency_target = Duration::from_millis(100);
         self.throughput_target = 100000;
@@ -993,7 +1050,7 @@ impl ThroughputMetrics {
             128
         }
     }
-    
+
     pub fn calculate_optimal_worker_threads(&self) -> usize {
         let cpu_count = num_cpus::get();
         if self.concurrent_requests > cpu_count * 10 {
@@ -1023,7 +1080,7 @@ impl LatencyMetrics {
     pub fn is_latency_critical(&self) -> bool {
         self.p95_latency > Duration::from_millis(100)
     }
-    
+
     pub fn recommended_optimization(&self) -> OptimizationStrategy {
         if self.p99_latency > Duration::from_millis(1000) {
             OptimizationStrategy::Aggressive
@@ -1059,19 +1116,19 @@ pub struct ResourceMetrics {
 impl ResourceMetrics {
     pub fn get_optimization_suggestions(&self) -> Vec<OptimizationSuggestion> {
         let mut suggestions = Vec::new();
-        
+
         if self.cpu_usage > 0.8 {
             suggestions.push(OptimizationSuggestion::ReduceWorkerThreads);
         }
-        
+
         if self.memory_usage > 1024 * 1024 * 1024 { // 1GB
             suggestions.push(OptimizationSuggestion::ReduceBatchSize);
         }
-        
+
         if self.connection_count > 100 {
             suggestions.push(OptimizationSuggestion::OptimizeConnectionPool);
         }
-        
+
         suggestions
     }
 }
@@ -1391,8 +1448,7 @@ pub struct ConsumerConfig {
 
 ---
 
-**最后更新**: 2025年1月  
-**维护者**: Rust OTLP Team  
-**版本**: 0.1.0  
+**最后更新**: 2025年1月
+**维护者**: Rust OTLP Team
+**版本**: 0.1.0
 **Rust版本**: 1.90+
-

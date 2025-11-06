@@ -482,7 +482,7 @@ async fn main() {
 
 **循环过程**:
 
-```
+```text
 Monitor → Analyze → Plan → Execute → Monitor
     ↓         ↓       ↓       ↓
   Knowledge ←--------←-------←

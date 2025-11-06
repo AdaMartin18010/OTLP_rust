@@ -69,7 +69,7 @@ async fn create_user(
     .fetch_one(&state.db)
     .await
     .map_err(|e| e.to_string())?;
-    
+
     Ok(Json(user))
 }
 
@@ -82,7 +82,7 @@ async fn get_user(
         .fetch_one(&state.db)
         .await
         .map_err(|e| e.to_string())?;
-    
+
     Ok(Json(user))
 }
 
@@ -90,24 +90,24 @@ async fn get_user(
 async fn main() -> anyhow::Result<()> {
     // 初始化日志
     tracing_subscriber::fmt::init();
-    
+
     // 连接数据库
     let pool = PgPool::connect("postgres://user:pass@localhost/db").await?;
-    
+
     // 创建应用状态
     let state = Arc::new(AppState { db: pool });
-    
+
     // 构建路由
     let app = Router::new()
         .route("/users", post(create_user))
         .route("/users/:id", get(get_user))
         .with_state(state);
-    
+
     // 启动服务器
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     println!("服务器运行在 http://0.0.0.0:3000");
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 ```
@@ -153,7 +153,7 @@ impl ServiceRegistry {
         let consul = ConsulClient::new(consul_addr);
         Self { consul }
     }
-    
+
     pub async fn register_service(
         &self,
         name: &str,
@@ -169,18 +169,18 @@ impl ServiceRegistry {
             Check: None,
             Tags: vec![],
         };
-        
+
         self.consul.register_service(&service).await?;
         println!("服务 {} 已注册", name);
-        
+
         Ok(())
     }
-    
+
     pub async fn discover_service(&self, name: &str) -> anyhow::Result<Vec<Service>> {
         let services = self.consul.get_service(name, None).await?;
         Ok(services)
     }
-    
+
     pub async fn deregister_service(&self, id: &str) -> anyhow::Result<()> {
         self.consul.deregister_service(id).await?;
         println!("服务 {} 已注销", id);
@@ -227,19 +227,19 @@ async fn kafka_processing_pipeline() -> anyhow::Result<()> {
         .set("group.id", "processing-group")
         .set("enable.auto.commit", "false")
         .create()?;
-    
+
     consumer.subscribe(&["events"])?;
-    
+
     // 流式处理
     let mut stream = consumer.stream();
-    
+
     while let Some(message) = stream.next().await {
         match message {
             Ok(m) => {
                 if let Some(payload) = m.payload() {
                     // 处理消息
                     process_event(payload).await?;
-                    
+
                     // 手动提交offset
                     consumer.commit_message(&m, rdkafka::consumer::CommitMode::Async)?;
                 }
@@ -247,20 +247,20 @@ async fn kafka_processing_pipeline() -> anyhow::Result<()> {
             Err(e) => eprintln!("Kafka错误: {}", e),
         }
     }
-    
+
     Ok(())
 }
 
 async fn process_event(payload: &[u8]) -> anyhow::Result<()> {
     // 解析事件
     let event: serde_json::Value = serde_json::from_slice(payload)?;
-    
+
     // 业务逻辑处理
     println!("处理事件: {:?}", event);
-    
+
     // 写入时间序列数据库
     // write_to_influxdb(event).await?;
-    
+
     Ok(())
 }
 ```
@@ -353,38 +353,38 @@ fn smol_example() {
 // Domain Layer - 核心业务逻辑
 pub mod domain {
     use async_trait::async_trait;
-    
+
     #[derive(Debug, Clone)]
     pub struct User {
         pub id: u64,
         pub name: String,
         pub email: String,
     }
-    
+
     // Port: 输出端口
     #[async_trait]
     pub trait UserRepository: Send + Sync {
         async fn find_by_id(&self, id: u64) -> Result<Option<User>, String>;
         async fn save(&self, user: &User) -> Result<(), String>;
     }
-    
+
     // 业务逻辑
     pub struct UserService<R: UserRepository> {
         repo: R,
     }
-    
+
     impl<R: UserRepository> UserService<R> {
         pub fn new(repo: R) -> Self {
             Self { repo }
         }
-        
+
         pub async fn register_user(&self, name: String, email: String) -> Result<User, String> {
             let user = User {
                 id: 0, // 由数据库生成
                 name,
                 email,
             };
-            
+
             self.repo.save(&user).await?;
             Ok(user)
         }
@@ -396,17 +396,17 @@ pub mod infrastructure {
     use super::domain::*;
     use async_trait::async_trait;
     use sqlx::PgPool;
-    
+
     pub struct PostgresUserRepository {
         pool: PgPool,
     }
-    
+
     impl PostgresUserRepository {
         pub fn new(pool: PgPool) -> Self {
             Self { pool }
         }
     }
-    
+
     #[async_trait]
     impl UserRepository for PostgresUserRepository {
         async fn find_by_id(&self, id: u64) -> Result<Option<User>, String> {
@@ -417,14 +417,14 @@ pub mod infrastructure {
             .fetch_optional(&self.pool)
             .await
             .map_err(|e| e.to_string())?;
-            
+
             Ok(result.map(|(id, name, email)| User {
                 id: id as u64,
                 name,
                 email,
             }))
         }
-        
+
         async fn save(&self, user: &User) -> Result<(), String> {
             sqlx::query("INSERT INTO users (name, email) VALUES ($1, $2)")
                 .bind(&user.name)
@@ -432,7 +432,7 @@ pub mod infrastructure {
                 .execute(&self.pool)
                 .await
                 .map_err(|e| e.to_string())?;
-            
+
             Ok(())
         }
     }
@@ -475,11 +475,11 @@ impl EventStore {
             events: Arc::new(RwLock::new(Vec::new())),
         }
     }
-    
+
     fn append(&self, event: UserEvent) {
         self.events.write().unwrap().push(event);
     }
-    
+
     fn get_all(&self) -> Vec<UserEvent> {
         self.events.read().unwrap().clone()
     }
@@ -496,7 +496,7 @@ impl UserReadModel {
             users: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     fn apply_event(&self, event: &UserEvent) {
         let mut users = self.users.write().unwrap();
         match event {
@@ -513,7 +513,7 @@ impl UserReadModel {
             }
         }
     }
-    
+
     fn get_user(&self, id: u64) -> Option<(String, String)> {
         self.users.read().unwrap().get(&id).cloned()
     }
@@ -534,39 +534,39 @@ impl UserCommandHandler {
             next_id: Arc::new(RwLock::new(1)),
         }
     }
-    
+
     fn handle(&self, command: UserCommand) -> Result<(), String> {
         match command {
             UserCommand::CreateUser { name, email } => {
                 let mut id = self.next_id.write().unwrap();
                 let user_id = *id;
                 *id += 1;
-                
+
                 let event = UserEvent::Created {
                     id: user_id,
                     name,
                     email,
                 };
-                
+
                 self.event_store.append(event.clone());
                 self.read_model.apply_event(&event);
-                
+
                 Ok(())
             }
             UserCommand::UpdateEmail { id, new_email } => {
                 let event = UserEvent::EmailUpdated { id, new_email };
-                
+
                 self.event_store.append(event.clone());
                 self.read_model.apply_event(&event);
-                
+
                 Ok(())
             }
             UserCommand::DeleteUser { id } => {
                 let event = UserEvent::Deleted { id };
-                
+
                 self.event_store.append(event.clone());
                 self.read_model.apply_event(&event);
-                
+
                 Ok(())
             }
         }
@@ -633,13 +633,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           components: rustfmt, clippy
-      
+
       - name: Cache cargo
         uses: actions/cache@v3
         with:
@@ -650,16 +650,16 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
+
       - name: Check format
         run: cargo fmt -- --check
-      
+
       - name: Clippy
         run: cargo clippy -- -D warnings
-      
+
       - name: Run tests
         run: cargo test --all-features
-      
+
       - name: Build
         run: cargo build --release
 
@@ -667,13 +667,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
-      
+
       - name: Generate coverage
         run: cargo tarpaulin --out Xml
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 ```
@@ -703,44 +703,44 @@ impl Metrics {
             "http_requests_total",
             "Total HTTP requests"
         ).unwrap();
-        
+
         let requests_in_flight = IntGauge::new(
             "http_requests_in_flight",
             "Current HTTP requests in flight"
         ).unwrap();
-        
+
         let request_duration = Histogram::with_opts(
             HistogramOpts::new(
                 "http_request_duration_seconds",
                 "HTTP request duration"
             )
         ).unwrap();
-        
+
         let registry = Registry::new();
         registry.register(Box::new(requests_total.clone())).unwrap();
         registry.register(Box::new(requests_in_flight.clone())).unwrap();
         registry.register(Box::new(request_duration.clone())).unwrap();
-        
+
         Arc::new(Self {
             requests_total,
             requests_in_flight,
             request_duration,
         })
     }
-    
+
     pub fn record_request<F, R>(&self, f: F) -> R
     where
         F: FnOnce() -> R,
     {
         self.requests_total.inc();
         self.requests_in_flight.inc();
-        
+
         let timer = self.request_duration.start_timer();
         let result = f();
         timer.observe_duration();
-        
+
         self.requests_in_flight.dec();
-        
+
         result
     }
 }
@@ -768,6 +768,6 @@ impl Metrics {
 
 ---
 
-**更新日期**: 2025-10-24  
-**文档版本**: 2.0  
+**更新日期**: 2025-10-24
+**文档版本**: 2.0
 **维护团队**: C11 Libraries Documentation Team

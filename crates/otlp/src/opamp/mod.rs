@@ -24,6 +24,7 @@
 //! client.start().await?;
 //! ```
 
+pub mod graduation;
 pub mod messages;
 
 use tonic;
@@ -32,6 +33,12 @@ use uuid;
 
 pub use messages::{
     AgentCapabilities, AgentHealth, AgentToServer, PackageStatus, RemoteConfigStatus, ServerToAgent,
+};
+
+// 导出灰度策略相关类型
+pub use graduation::{
+    GraduationStrategy, HealthStatus, LabelSelector, MatchExpression, MatchOperator,
+    RollbackManager,
 };
 
 /// OPAMP 错误类型

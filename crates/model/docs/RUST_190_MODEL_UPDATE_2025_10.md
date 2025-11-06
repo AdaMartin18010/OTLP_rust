@@ -1203,7 +1203,7 @@ cargo publish --workspace
 
 ### A. 性能基准
 
-```
+```text
 硬件: AMD Ryzen 9 5950X
 编译器: rustc 1.90.0
 

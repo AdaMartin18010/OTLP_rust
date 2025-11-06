@@ -141,7 +141,7 @@ END IF
 ```text
 初始状态:
 P1: balance=100
-P2: balance=50  
+P2: balance=50
 P3: balance=75
 
 时刻T1: P1发起快照
@@ -250,7 +250,7 @@ impl DistributedSnapshot {
         node_data: HashMap<String, VersionedValue>,
     ) -> DistributedResult<()> {
         println!("Node {} initiating snapshot {}", node_id, self.snapshot_id);
-        
+
         // 1. 记录本节点状态
         let vector_clock = VectorClock::new(node_id.clone());
         let snapshot = NodeSnapshot {
@@ -259,13 +259,13 @@ impl DistributedSnapshot {
             vector_clock,
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64,
         };
-        
+
         self.node_states.write()?.insert(node_id.clone(), snapshot);
         self.participants.write()?.insert(node_id);
-        
+
         // 2. 向所有其他节点发送快照标记
         // (实际实现需要网络通信)
-        
+
         Ok(())
     }
 }
@@ -281,11 +281,11 @@ pub fn receive_marker(
     node_data: HashMap<String, VersionedValue>,
 ) -> DistributedResult<()> {
     let mut participants = self.participants.write()?;
-    
+
     if !participants.contains(&receiving_node) {
         // 第一次收到标记
         println!("Node {} received snapshot marker from {}", receiving_node, from_node);
-        
+
         // 记录本节点状态
         let vector_clock = VectorClock::new(receiving_node.clone());
         let snapshot = NodeSnapshot {
@@ -294,17 +294,17 @@ pub fn receive_marker(
             vector_clock,
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64,
         };
-        
+
         self.node_states.write()?.insert(receiving_node.clone(), snapshot);
         participants.insert(receiving_node.clone());
-        
+
         // 向其他节点转发标记
     }
-    
+
     // 标记from_node到receiving_node的通道快照完成
     let channel_key = (from_node, receiving_node);
     self.channel_states.write()?.entry(channel_key).or_insert_with(Vec::new);
-    
+
     Ok(())
 }
 ```
@@ -319,7 +319,7 @@ pub fn record_channel_message(
     message: SnapshotMessage,
 ) -> DistributedResult<()> {
     let participants = self.participants.read()?;
-    
+
     // 只记录发送者已快照但接收者还未快照的消息
     if participants.contains(&from_node) && !participants.contains(&to_node) {
         let channel_key = (from_node, to_node);
@@ -328,7 +328,7 @@ pub fn record_channel_message(
             .or_insert_with(Vec::new)
             .push(message);
     }
-    
+
     Ok(())
 }
 ```
@@ -344,7 +344,7 @@ fn main() -> DistributedResult<()> {
         "snapshot_001".to_string(),
         "node1".to_string(),
     );
-    
+
     // Node1发起快照
     let mut node1_data = HashMap::new();
     node1_data.insert("balance".to_string(), VersionedValue {
@@ -352,9 +352,9 @@ fn main() -> DistributedResult<()> {
         version: VectorClock::new("node1".to_string()),
         timestamp: 0,
     });
-    
+
     snapshot.initiate("node1".to_string(), node1_data)?;
-    
+
     // Node2收到标记
     let mut node2_data = HashMap::new();
     node2_data.insert("balance".to_string(), VersionedValue {
@@ -362,13 +362,13 @@ fn main() -> DistributedResult<()> {
         version: VectorClock::new("node2".to_string()),
         timestamp: 0,
     });
-    
+
     snapshot.receive_marker(
         "node1".to_string(),
         "node2".to_string(),
         node2_data,
     )?;
-    
+
     // 记录传输中的消息
     snapshot.record_channel_message(
         "node1".to_string(),
@@ -381,16 +381,16 @@ fn main() -> DistributedResult<()> {
             timestamp: 100,
         },
     )?;
-    
+
     // 获取快照结果
     let global_snapshot = snapshot.get_snapshot()?;
-    
+
     println!("Snapshot ID: {}", global_snapshot.snapshot_id);
     println!("Node states: {:?}", global_snapshot.node_states.len());
     println!("Channel states: {:?}", global_snapshot.channel_states.len());
-    
+
     snapshot.mark_completed();
-    
+
     Ok(())
 }
 ```
@@ -466,15 +466,15 @@ async fn backup_database() -> DistributedResult<()> {
         format!("backup_{}", Utc::now().timestamp()),
         coordinator_node_id(),
     );
-    
+
     snapshot.initiate(coordinator_node_id(), get_local_data())?;
-    
+
     // 等待所有节点完成快照
     wait_for_completion(&snapshot).await?;
-    
+
     // 持久化到存储
     persist_snapshot(snapshot.get_snapshot()?).await?;
-    
+
     Ok(())
 }
 ```
@@ -485,7 +485,7 @@ async fn backup_database() -> DistributedResult<()> {
 fn detect_deadlock() -> DistributedResult<bool> {
     let snapshot = capture_global_snapshot()?;
     let wait_graph = build_wait_graph(&snapshot)?;
-    
+
     Ok(has_cycle(&wait_graph))
 }
 ```
@@ -499,12 +499,12 @@ fn on_error_detected() -> DistributedResult<()> {
         format!("error_snapshot_{}", Utc::now().timestamp()),
         local_node_id(),
     );
-    
+
     snapshot.initiate(local_node_id(), collect_debug_info())?;
-    
+
     // 发送给调试服务器
     send_to_debug_server(snapshot.get_snapshot()?)?;
-    
+
     Ok(())
 }
 ```
@@ -557,7 +557,7 @@ impl DistributedSnapshot {
     pub fn node_states(&self) -> Arc<RwLock<HashMap<NodeId, NodeSnapshot>>> {
         Arc::clone(&self.node_states)
     }
-    
+
     // AtomicBool 提供无锁同步
     pub fn is_completed(&self) -> bool {
         self.completed.load(Ordering::SeqCst)

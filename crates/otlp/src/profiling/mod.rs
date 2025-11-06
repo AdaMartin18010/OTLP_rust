@@ -20,29 +20,30 @@
 //! #[tokio::main]
 //! async fn main() {
 //!     let mut profiler = CpuProfiler::new(CpuProfilerConfig::default());
-//!     
+//!
 //!     profiler.start().await.unwrap();
-//!     
+//!
 //!     // Your code here
-//!     
+//!
 //!     profiler.stop().await.unwrap();
 //!     let profile = profiler.generate_profile().await.unwrap();
 //! }
 //! ```
 
 // Re-export main types and modules
-pub mod types;
-pub mod pprof;
 pub mod cpu;
-pub mod memory;
+#[cfg(target_os = "linux")]
+pub mod ebpf;
 pub mod exporter;
+pub mod memory;
+pub mod pprof;
 pub mod sampling;
+pub mod types;
 
 // Re-export commonly used types
 pub use types::{
-    AttributeValue, Function, InstrumentationScope, Label, Line, Location, Mapping,
-    PprofProfile, Profile, ProfileContainer, ProfileType, Resource, Sample,
-    ScopeProfiles, ValueType,
+    AttributeValue, Function, InstrumentationScope, Label, Line, Location, Mapping, PprofProfile,
+    Profile, ProfileContainer, ProfileType, Resource, Sample, ScopeProfiles, ValueType,
 };
 
 pub use pprof::{PprofBuilder, PprofEncoder, StackTraceCollector};
@@ -52,18 +53,18 @@ pub use pprof::StackFrame as ProfilingStackFrame;
 pub use cpu::{CpuProfiler, CpuProfilerConfig, CpuProfilerStats, profile_async};
 
 pub use memory::{
-    MemoryProfiler, MemoryProfilerConfig, MemoryProfilerStats, 
-    SystemMemoryInfo, get_system_memory_info,
+    MemoryProfiler, MemoryProfilerConfig, MemoryProfilerStats, SystemMemoryInfo,
+    get_system_memory_info,
 };
 
 pub use exporter::{
-    ExportError, ProfileBuilder, ProfileExporter, ProfileExporterConfig,
-    generate_profile_id, link_profile_to_current_trace, profile_id_from_hex,
+    ExportError, ProfileBuilder, ProfileExporter, ProfileExporterConfig, generate_profile_id,
+    link_profile_to_current_trace, profile_id_from_hex,
 };
 
 pub use sampling::{
-    AdaptiveSampler, AlwaysSample, NeverSample, ProbabilisticSampler, RateSampler,
-    SamplingStats, SamplingStrategy,
+    AdaptiveSampler, AlwaysSample, NeverSample, ProbabilisticSampler, RateSampler, SamplingStats,
+    SamplingStrategy,
 };
 
 use crate::data::{TelemetryContent, TelemetryData, TelemetryDataType};
@@ -732,7 +733,10 @@ mod tests {
 
         // 启动后收集数据应该成功
         assert!(profiler.start().await.is_ok());
-        let data = profiler.collect_data().await.expect("Failed to collect profiler data");
+        let data = profiler
+            .collect_data()
+            .await
+            .expect("Failed to collect profiler data");
         assert!(!data.is_empty());
     }
 }

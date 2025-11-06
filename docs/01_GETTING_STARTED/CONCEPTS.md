@@ -164,7 +164,7 @@ cargo run
 
 **输出**:
 
-```
+```text
 Hello, OTLP!
 ```
 
@@ -374,7 +374,7 @@ fn init_tracer() -> Result<opentelemetry_sdk::trace::Tracer, Box<dyn std::error:
 
 **生成的Trace树**:
 
-```
+```text
 process_request (user_id=123, user_name="Alice")
 ├─ log: Processing request
 ├─ fetch_data
@@ -484,7 +484,7 @@ let service_name = env::var("OTEL_SERVICE_NAME")
 
 #### 检查清单
 
-```
+```text
 □ Collector是否运行？
   docker ps | grep otel
 
@@ -530,7 +530,7 @@ if TcpStream::connect("localhost:4317").await.is_ok() {
 
 #### 典型开销
 
-```
+```text
 无追踪:          10,000 QPS
 有追踪(不采样):   9,900 QPS  (-1%)
 有追踪(10%采样):  9,800 QPS  (-2%)
@@ -549,7 +549,7 @@ if TcpStream::connect("localhost:4317").await.is_ok() {
 
 #### 错误1: "connection refused"
 
-```
+```text
 原因: Collector未运行或端口错误
 解决:
 1. 检查Collector: docker ps
@@ -559,7 +559,7 @@ if TcpStream::connect("localhost:4317").await.is_ok() {
 
 #### 错误2: "spans dropped"
 
-```
+```text
 原因: 生成速度 > 导出速度
 解决:
 1. 增加批次大小: with_max_export_batch_size(1024)
@@ -569,7 +569,7 @@ if TcpStream::connect("localhost:4317").await.is_ok() {
 
 #### 错误3: "no data in backend"
 
-```
+```text
 原因: Collector配置问题
 解决:
 1. 检查Collector配置
@@ -633,7 +633,7 @@ std::thread::sleep(Duration::from_secs(5));  // 错误！
 
 ### 5.1 学习路径
 
-```
+```text
 第1天: 快速开始 (本文档) ✅
   └─ 运行第一个示例
 

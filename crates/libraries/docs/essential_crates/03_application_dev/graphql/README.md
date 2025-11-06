@@ -1,7 +1,7 @@
 # GraphQL - 灵活的 API 查询语言
 
-> **核心库**: async-graphql, juniper  
-> **适用场景**: 复杂数据查询、移动端 API、灵活数据获取、BFF (Backend for Frontend)  
+> **核心库**: async-graphql, juniper
+> **适用场景**: 复杂数据查询、移动端 API、灵活数据获取、BFF (Backend for Frontend)
 > **技术栈定位**: 应用开发层 - API 层
 
 ---
@@ -178,7 +178,7 @@ impl Query {
             email: "alice@example.com".to_string(),
         })
     }
-    
+
     // 查询所有用户
     async fn users(&self) -> Vec<User> {
         vec![
@@ -193,11 +193,11 @@ impl User {
     async fn id(&self) -> u32 {
         self.id
     }
-    
+
     async fn name(&self) -> &str {
         &self.name
     }
-    
+
     async fn email(&self) -> &str {
         &self.email
     }
@@ -208,7 +208,7 @@ type MySchema = Schema<Query, EmptyMutation, EmptySubscription>;
 #[tokio::main]
 async fn main() {
     let schema = Schema::new(Query, EmptyMutation, EmptySubscription);
-    
+
     // 使用 schema
     let query = r#"
         query {
@@ -219,7 +219,7 @@ async fn main() {
             }
         }
     "#;
-    
+
     let result = schema.execute(query).await;
     println!("{:?}", result.data);
 }
@@ -247,7 +247,7 @@ impl Mutation {
             email: input.email,
         }
     }
-    
+
     async fn update_user(&self, id: u32, name: Option<String>) -> Option<User> {
         Some(User {
             id,
@@ -255,7 +255,7 @@ impl Mutation {
             email: "updated@example.com".to_string(),
         })
     }
-    
+
     async fn delete_user(&self, id: u32) -> bool {
         true
     }
@@ -281,11 +281,11 @@ async fn graphql_handler(
 #[tokio::main]
 async fn main() {
     let schema = Schema::new(Query, Mutation, EmptySubscription);
-    
+
     let app = Router::new()
         .route("/graphql", post(graphql_handler))
         .layer(Extension(schema));
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000")
         .await
         .unwrap();
@@ -306,7 +306,7 @@ struct UserLoader;
 impl Loader<u32> for UserLoader {
     type Value = User;
     type Error = std::io::Error;
-    
+
     async fn load(&self, keys: &[u32]) -> Result<HashMap<u32, Self::Value>, Self::Error> {
         // 批量加载用户
         let users = load_users_from_db(keys).await;
@@ -414,7 +414,7 @@ impl Post {
     async fn id(&self) -> u32 { self.id }
     async fn title(&self) -> &str { &self.title }
     async fn content(&self) -> &str { &self.content }
-    
+
     // 嵌套查询作者
     async fn author(&self, ctx: &Context<'_>) -> Option<User> {
         let pool = ctx.data::<PgPool>().unwrap();
@@ -438,7 +438,7 @@ impl Query {
     async fn posts(&self, ctx: &Context<'_>, limit: Option<i32>) -> Vec<Post> {
         let pool = ctx.data::<PgPool>().unwrap();
         let limit = limit.unwrap_or(10);
-        
+
         sqlx::query_as!(
             Post,
             "SELECT id, title, content, author_id FROM posts LIMIT $1",
@@ -463,7 +463,7 @@ struct Mutation;
 impl Mutation {
     async fn create_post(&self, ctx: &Context<'_>, input: CreatePostInput) -> Post {
         let pool = ctx.data::<PgPool>().unwrap();
-        
+
         sqlx::query_as!(
             Post,
             "INSERT INTO posts (title, content, author_id) VALUES ($1, $2, $3) RETURNING id, title, content, author_id",
@@ -528,7 +528,7 @@ struct PostLoader;
 impl Loader<u32> for PostLoader {
     type Value = Vec<Post>;
     type Error = std::io::Error;
-    
+
     async fn load(&self, keys: &[u32]) -> Result<HashMap<u32, Self::Value>, Self::Error> {
         // 一次性加载所有文章
         let posts = load_posts_by_author_ids(keys).await;
@@ -548,7 +548,7 @@ use async_graphql::{Error, ErrorExtensions};
 enum MyError {
     #[error("未找到用户")]
     NotFound,
-    
+
     #[error("数据库错误")]
     Database(#[from] sqlx::Error),
 }
@@ -722,6 +722,6 @@ let schema = Schema::build(Query, Mutation, EmptySubscription)
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 96/100

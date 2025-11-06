@@ -3,7 +3,7 @@
 ## 📋 目录
 
 - [算法模型增强完成报告](#算法模型增强完成报告)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [📅 更新信息](#-更新信息)
   - [✅ 完成内容](#-完成内容)
     - [1. 图算法实现（6个核心算法）](#1-图算法实现6个核心算法)
@@ -255,11 +255,11 @@ fn union<T: Clone + Eq + Hash>(
 ) {
     let root_x = find(parent, x);
     let root_y = find(parent, y);
-    
+
     if root_x != root_y {
         let rank_x = rank.get(&root_x).copied().unwrap_or(0);
         let rank_y = rank.get(&root_y).copied().unwrap_or(0);
-        
+
         if rank_x < rank_y {
             parent.insert(root_x, root_y);
         } else if rank_x > rank_y {
@@ -301,16 +301,16 @@ while i < m {
 ```rust
 for i in 1..n - 1 {
     let mirror = 2 * center - i;
-    
+
     if right > i {
         p[i] = p[mirror].min(right - i);  // 利用对称性
     }
-    
+
     // 中心扩展
     while t_chars[i + p[i] + 1] == t_chars[i - p[i] - 1] {
         p[i] += 1;
     }
-    
+
     // 更新右边界
     if i + p[i] > right {
         center = i;
@@ -516,8 +516,7 @@ println!("φ(36) = {}", phi);
 
 ---
 
-**报告生成时间**: 2025-10-01  
-**项目版本**: v0.2.1  
-**Rust版本**: 1.90+  
+**报告生成时间**: 2025-10-01
+**项目版本**: v0.2.1
+**Rust版本**: 1.90+
 **状态**: ✅ 全部完成
-

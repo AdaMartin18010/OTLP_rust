@@ -156,23 +156,23 @@ fn example_raft_election() -> DistributedResult<()> {
         Duration::from_millis(150), // election_timeout
         Duration::from_millis(50),  // heartbeat_interval
     );
-    
+
     let node2 = RaftProtocol::new("node2".to_string(), Duration::from_millis(150), Duration::from_millis(50));
     let node3 = RaftProtocol::new("node3".to_string(), Duration::from_millis(150), Duration::from_millis(50));
-    
+
     // 添加对等节点
     node1.add_peer("node2".to_string())?;
     node1.add_peer("node3".to_string())?;
-    
+
     // 触发选举
     let won_election = node1.start_election()?;
-    
+
     if won_election {
         println!("Node1 became leader!");
         assert_eq!(node1.get_state()?, RaftState::Leader);
         assert_eq!(node1.get_current_term(), 1);
     }
-    
+
     Ok(())
 }
 ```
@@ -206,22 +206,22 @@ fn example_raft_election() -> DistributedResult<()> {
 ```rust
 fn example_log_replication() -> DistributedResult<()> {
     let leader = RaftProtocol::new("leader".to_string(), Duration::from_millis(150), Duration::from_millis(50));
-    
+
     // 模拟成为Leader
     leader.add_peer("follower1".to_string())?;
     leader.add_peer("follower2".to_string())?;
     leader.start_election()?;
-    
+
     // Leader追加日志
     let index1 = leader.append_entry("SET x = 1".to_string())?;
     let index2 = leader.append_entry("SET y = 2".to_string())?;
-    
+
     println!("Appended entry at index {}", index1);
     println!("Appended entry at index {}", index2);
-    
+
     // 检查日志长度
     assert_eq!(leader.log_len()?, 2);
-    
+
     Ok(())
 }
 ```
@@ -238,8 +238,8 @@ fn example_log_replication() -> DistributedResult<()> {
 // Follower在投票前检查候选人的日志
 let (my_last_log_index, my_last_log_term) = self.get_last_log_info()?;
 
-let log_is_ok = candidate_last_log_term > my_last_log_term || 
-               (candidate_last_log_term == my_last_log_term && 
+let log_is_ok = candidate_last_log_term > my_last_log_term ||
+               (candidate_last_log_term == my_last_log_term &&
                 candidate_last_log_index >= my_last_log_index);
 
 if log_is_ok {
@@ -312,7 +312,7 @@ impl RaftProtocol {
         }
         // ...
     }
-    
+
     // 原子操作保证一致性
     pub fn get_current_term(&self) -> u64 {
         self.current_term.load(Ordering::SeqCst)
@@ -333,7 +333,7 @@ fn main() -> DistributedResult<()> {
         RaftProtocol::new("node2".to_string(), Duration::from_millis(150), Duration::from_millis(50)),
         RaftProtocol::new("node3".to_string(), Duration::from_millis(150), Duration::from_millis(50)),
     ];
-    
+
     // 建立对等关系
     for node in &nodes {
         for other in &nodes {
@@ -342,22 +342,22 @@ fn main() -> DistributedResult<()> {
             }
         }
     }
-    
+
     // 模拟选举
     let leader = &nodes[0];
     leader.start_election()?;
     println!("Leader elected: {}", leader.node_id());
-    
+
     // 客户端请求
     leader.append_entry("SET x = 10".to_string())?;
     leader.append_entry("SET y = 20".to_string())?;
     leader.append_entry("SET z = x + y".to_string())?;
-    
+
     println!("Log length: {}", leader.log_len()?);
-    
+
     // Leader发送心跳
     leader.send_heartbeat()?;
-    
+
     // Follower处理AppendEntries
     let follower = &nodes[1];
     let response = follower.handle_append_entries(
@@ -368,7 +368,7 @@ fn main() -> DistributedResult<()> {
         vec![], // 心跳为空
         0, // leader_commit
     )?;
-    
+
     match response {
         RaftMessage::AppendEntriesResponse { success, .. } => {
             assert!(success);
@@ -376,7 +376,7 @@ fn main() -> DistributedResult<()> {
         }
         _ => unreachable!(),
     }
-    
+
     Ok(())
 }
 ```

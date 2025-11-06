@@ -14,9 +14,9 @@
 
 ### 2.1 意義
 
-    把 OTLP（OpenTelemetry Protocol）僅僅當作「另一條 RPC 鏈路」會低估它的潛力；
-    若回到「模型定義 + 分層收集 + 語義化數據」這三個維度，
-    它就變成一套自帶自省（introspection）語義的分散式資料作業系統。
+把 OTLP（OpenTelemetry Protocol）僅僅當作「另一條 RPC 鏈路」會低估它的潛力；
+若回到「模型定義 + 分層收集 + 語義化數據」這三個維度，
+它就變成一套自帶自省（introspection）語義的分散式資料作業系統。
 
 ### 2.2 論證
 
@@ -108,47 +108,47 @@
 
 ## 💡 OTTL和OPAMP
 
-    下面给出一份「系统级」论证：
-    先厘清 OTTL 与 OPAMP 各自的定位与语法模型，再证明二者如何形成一个可闭环的分布式数据-控制双平面，
-    从而使 OpenTelemetry 从「可观测协议」升级为「自我运维操作系统」。
+  下面给出一份「系统级」论证：
+  先厘清 OTTL 与 OPAMP 各自的定位与语法模型，再证明二者如何形成一个可闭环的分布式数据-控制双平面，
+  从而使 OpenTelemetry 从「可观测协议」升级为「自我运维操作系统」。
 
 ### 3.1 OTTL（OpenTelemetry Transformation Language）
 
-    设计目标
-    让 Collector 内部 具备「通用、声明式、热插拔」的算子能力，而无需写 Go 代码或重新编译。
-    统一处理三种信号：Traces、Metrics、Logs —— 同一条语句可作用于 Span/Metric/DataPoint/LogRecord。
-    语法模型（EBNF 提炼）
+  设计目标
+  让 Collector 内部 具备「通用、声明式、热插拔」的算子能力，而无需写 Go 代码或重新编译。
+  统一处理三种信号：Traces、Metrics、Logs —— 同一条语句可作用于 Span/Metric/DataPoint/LogRecord。
+  语法模型（EBNF 提炼）
 
-    ```ebnf
-    statement  = condition ">" action
-    condition  = boolean_expression   // 过滤
-    action     = set(name, value) | keep_keys | limit | convert …
-    value      = path | literal | function_call
-    path       = resource.attr.x | metric.name | span.events …
-    ```
+  ```ebnf
+  statement  = condition ">" action
+  condition  = boolean_expression   // 过滤
+  action     = set(name, value) | keep_keys | limit | convert …
+  value      = path | literal | function_call
+  path       = resource.attr.x | metric.name | span.events …
+  ```
 
-    关键特性
-    Path 语言：
-        点分式直接映射到 pdata 的字段，性能接近零拷贝。
-    函数可插拔：
-        SHA256(), UUID(), format(), truncate() … 均注册到 funcMap，可扩展。
-    上下文隔离：
-        每条语句只能读写当前 Pipeline 的「信号快照」，无副作用，保证可重入。
+  关键特性
+  Path 语言：
+      点分式直接映射到 pdata 的字段，性能接近零拷贝。
+  函数可插拔：
+      SHA256(), UUID(), format(), truncate() … 均注册到 funcMap，可扩展。
+  上下文隔离：
+      每条语句只能读写当前 Pipeline 的「信号快照」，无副作用，保证可重入。
 
-    执行层实现
-    解析器 → AST → Planner → 生成基于反射/位偏移的 Setter/Getter 函数指针（< 200 ns/次调用）。
-    支持批量 SIMD 过滤（limit / drop）与短路求值。
-    在 processor/transform 里以 WASM 或 本地庫 形式運行，可動態載入而無需重啟 Collector。
+  执行层实现
+  解析器 → AST → Planner → 生成基于反射/位偏移的 Setter/Getter 函数指针（< 200 ns/次调用）。
+  支持批量 SIMD 过滤（limit / drop）与短路求值。
+  在 processor/transform 里以 WASM 或 本地庫 形式運行，可動態載入而無需重啟 Collector。
 
-    典型場景舉證
-    敏感脫敏：
-        set(body, SHA256(body)) where resource.attributes["env"] == "prod"
-    降維聚合：
-        keep_keys(metric.attributes, ["cluster", "node"]) 後接 sum processor，可把 10 萬維瞬間壓成 1 千維。
-    異常標記：
-        set(span.status.message, "timeout_threshold_exceeded") where duration > 3s
-    動態路由：
-        route() where resource.attributes["tenant"] == "A" → 直接分流到不同的 exporter（Kafka topic / S3 prefix）。
+  典型場景舉證
+  敏感脫敏：
+      set(body, SHA256(body)) where resource.attributes["env"] == "prod"
+  降維聚合：
+      keep_keys(metric.attributes, ["cluster", "node"]) 後接 sum processor，可把 10 萬維瞬間壓成 1 千維。
+  異常標記：
+      set(span.status.message, "timeout_threshold_exceeded") where duration > 3s
+  動態路由：
+      route() where resource.attributes["tenant"] == "A" → 直接分流到不同的 exporter（Kafka topic / S3 prefix）。
 
 ### 3.2 OPAMP（Open Agent Management Protocol）
 
@@ -288,25 +288,25 @@
 
 ### 6.3 傳輸層：照舊走 OTLP-gRPC/HTTP
 
-    端口、頭部、壓縮、重試、簽名與現有 OTLP 完全一致；
-    後端只需在 Collector 加一個 profiles receiver 即可同時收 Trace/Metric/Log/Profile。
-    支援 mTLS + OPAMP 下發採樣參數（頻率、持續時間、標籤選擇器），
-    形成「控制-資料」雙平面，10 秒內可把全叢集 CPU 採樣從 99 Hz 降到 9 Hz，降低 90% 網路頻寬。
+  端口、頭部、壓縮、重試、簽名與現有 OTLP 完全一致；
+  後端只需在 Collector 加一個 profiles receiver 即可同時收 Trace/Metric/Log/Profile。
+  支援 mTLS + OPAMP 下發採樣參數（頻率、持續時間、標籤選擇器），
+  形成「控制-資料」雙平面，10 秒內可把全叢集 CPU 採樣從 99 Hz 降到 9 Hz，降低 90% 網路頻寬。
 
 ### 6.4 落地層：兩套「事實標準」實作
 
-    |實作|語言|掛載點|開銷|備註
-    |----|----|----|----|----|
-    |async-profiler|C++/Java Agent|perf_event_open + bpf_get_stackid|< 1% CPU|輸出 .jfr 與 pprof 雙格式，JVM 生產首選|
-    |parca-agent|Rust|BPF_PROG_TYPE_PERF_EVENT|< 1% CPU|原生 OTLP-Profile，K8s DaemonSet 首選|
-    |Elastic Universal Profiling|Go|perf_event_open + eBPF|≈ 0.3%|商業免費層，支援混合雲|
+  |實作|語言|掛載點|開銷|備註|
+  |----|----|----|----|----|
+  |async-profiler|C++/Java Agent|perf_event_open + bpf_get_stackid|< 1% CPU|輸出 .jfr 與 pprof 雙格式，JVM 生產首選|
+  |parca-agent|Rust|BPF_PROG_TYPE_PERF_EVENT|< 1% CPU|原生 OTLP-Profile，K8s DaemonSet 首選|
+  |Elastic Universal Profiling|Go|perf_event_open + eBPF|≈ 0.3%|商業免費層，支援混合雲|
 
 ### 6.5 小結：「標準」其實就是 pprof + OTLP Resource
 
-    資料格式 → Google pprof.proto（事實標準）
-    資源語義 → OpenTelemetry Resource + 新定 Profile Attributes（2025-06 已 Stable）
-    傳輸通道 → 原生 OTLP-gRPC/HTTP，與 Trace/Metric/Log 完全統一
-    採集行為 → 遵守 Linux BPF 與 perf_event_open(2) 的內核介面
-    因此，eBPF Profiling 並沒有獨立的新「RFC」，而是
-    「pprof 格式」+「OTLP 語義封裝」+「Linux BPF 採集」
-    三者組成業界「準標準」；只要後端支援 OTLP-Profile，就能直接消費任何符合上述三條的 Agent。
+  資料格式 → Google pprof.proto（事實標準）
+  資源語義 → OpenTelemetry Resource + 新定 Profile Attributes（2025-06 已 Stable）
+  傳輸通道 → 原生 OTLP-gRPC/HTTP，與 Trace/Metric/Log 完全統一
+  採集行為 → 遵守 Linux BPF 與 perf_event_open(2) 的內核介面
+  因此，eBPF Profiling 並沒有獨立的新「RFC」，而是
+  「pprof 格式」+「OTLP 語義封裝」+「Linux BPF 採集」
+  三者組成業界「準標準」；只要後端支援 OTLP-Profile，就能直接消費任何符合上述三條的 Agent。

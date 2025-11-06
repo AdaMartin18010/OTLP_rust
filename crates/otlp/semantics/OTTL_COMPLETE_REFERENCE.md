@@ -1,7 +1,7 @@
 # OTTL完整参考手册
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -261,11 +261,11 @@ not  # 逻辑非
 
 ```ottl
 # 复杂条件
-span.attributes["http.status_code"] >= 500 and 
+span.attributes["http.status_code"] >= 500 and
   span.kind == SPAN_KIND_SERVER
 
 # 多条件或
-resource.attributes["service.name"] == "frontend" or 
+resource.attributes["service.name"] == "frontend" or
   resource.attributes["service.name"] == "api-gateway"
 ```
 
@@ -296,18 +296,18 @@ processors:
       - context: span
         statements:
           # 规范化服务名称
-          - set(resource.attributes["service.name"], 
+          - set(resource.attributes["service.name"],
                 ToLower(resource.attributes["service.name"]))
-          
+
           # 添加前缀
-          - set(span.name, 
+          - set(span.name,
                 Concat("api.", span.name))
-          
+
           # 清理路径中的ID
-          - set(span.attributes["http.target"], 
+          - set(span.attributes["http.target"],
                 ReplacePattern(
-                  span.attributes["http.target"], 
-                  "/\\d+/", 
+                  span.attributes["http.target"],
+                  "/\\d+/",
                   "/{id}/"
                 ))
 ```
@@ -334,7 +334,7 @@ processors:
           - delete_key(span.attributes, "user.email")
           - delete_key(span.attributes, "user.phone")
           - delete_matching_keys(span.attributes, ".*token.*")
-          
+
           # 属性白名单 - 只保留允许的属性
           - keep_keys(span.attributes, [
               "http.method",
@@ -342,7 +342,7 @@ processors:
               "http.url",
               "service.name"
             ])
-          
+
           # 值截断 - 防止过长
           - truncate_all(span.attributes, 512)
 ```
@@ -387,11 +387,11 @@ processors:
       - context: span
         statements:
           # PII哈希化
-          - set(span.attributes["user.id_hash"], 
+          - set(span.attributes["user.id_hash"],
                 SHA256(span.attributes["user.id"]))
           - delete_key(span.attributes, "user.id")
-          
-          - set(span.attributes["email_hash"], 
+
+          - set(span.attributes["email_hash"],
                 SHA256(span.attributes["email"]))
           - delete_key(span.attributes, "email")
 ```
@@ -414,9 +414,9 @@ processors:
         statements:
           # 添加处理时间戳
           - set(span.attributes["processed_at"], Now())
-          
+
           # 计算延迟(毫秒)
-          - set(span.attributes["latency_ms"], 
+          - set(span.attributes["latency_ms"],
                 UnixMilli(span.end_time_unix_nano - span.start_time_unix_nano))
 ```
 
@@ -449,9 +449,9 @@ processors:
       - context: span
         statements:
           # 条件验证和转换
-          - set(span.attributes["http.status_code"], 
-                IsInt(span.attributes["http.status_code"]) ? 
-                  span.attributes["http.status_code"] : 
+          - set(span.attributes["http.status_code"],
+                IsInt(span.attributes["http.status_code"]) ?
+                  span.attributes["http.status_code"] :
                   Int(span.attributes["http.status_code"]))
 ```
 
@@ -480,7 +480,7 @@ processors:
       - context: span
         statements:
           - set(span.name, ToLower(span.name))
-  
+
   transform/step2:
     trace_statements:
       - context: span
@@ -506,7 +506,7 @@ processors:
       - context: span
         statements:
           # 只处理需要的span
-          - set(span.attributes["normalized_status"], 
+          - set(span.attributes["normalized_status"],
                 span.attributes["http.status_code"] >= 500 ? "error" : "ok")
             where span.kind == SPAN_KIND_SERVER
 ```
@@ -525,15 +525,15 @@ processors:
           - delete_matching_keys(span.attributes, ".*password.*")
           - delete_matching_keys(span.attributes, ".*token.*")
           - delete_matching_keys(span.attributes, ".*secret.*")
-          
+
           # 哈希化用户标识
-          - set(span.attributes["user.id"], 
+          - set(span.attributes["user.id"],
                 SHA256(span.attributes["user.id"]))
             where span.attributes["user.id"] != nil
-          
+
           # 掩码处理
-          - set(span.attributes["credit_card"], 
-                Concat("****-****-****-", 
+          - set(span.attributes["credit_card"],
+                Concat("****-****-****-",
                        Substring(span.attributes["credit_card"], -4, 4)))
             where span.attributes["credit_card"] != nil
 ```
@@ -549,10 +549,10 @@ processors:
           # 截断过长的SQL语句
           - truncate_all(span.attributes, 4096)
             where span.attributes["db.statement"] != nil
-          
+
           # 删除包含潜在注入的语句
           - delete_key(span.attributes, "db.statement")
-            where IsMatch(span.attributes["db.statement"], 
+            where IsMatch(span.attributes["db.statement"],
                          ".*(DROP|DELETE|TRUNCATE).*")
 ```
 
@@ -567,14 +567,14 @@ processors:
       - context: span
         statements:
           # URL路径参数化
-          - set(span.attributes["http.target"], 
+          - set(span.attributes["http.target"],
                 ReplacePattern(
                   span.attributes["http.target"],
                   "/users/\\d+",
                   "/users/{id}"
                 ))
-          
-          - set(span.attributes["http.target"], 
+
+          - set(span.attributes["http.target"],
                 ReplacePattern(
                   span.attributes["http.target"],
                   "/orders/[a-f0-9-]{36}",
@@ -591,13 +591,13 @@ processors:
       - context: datapoint
         statements:
           # HTTP状态码分组
-          - set(attributes["http.status_class"], 
+          - set(attributes["http.status_class"],
                 attributes["http.status_code"] >= 500 ? "5xx" :
                 attributes["http.status_code"] >= 400 ? "4xx" :
                 attributes["http.status_code"] >= 300 ? "3xx" :
                 attributes["http.status_code"] >= 200 ? "2xx" : "1xx")
           - delete_key(attributes, "http.status_code")
-          
+
           # 删除高基数标签
           - delete_key(attributes, "user.id")
           - delete_key(attributes, "session.id")
@@ -617,10 +617,10 @@ processors:
           - set(resource.attributes["deployment.environment"], "production")
           - set(resource.attributes["datacenter"], "us-east-1")
           - set(resource.attributes["cluster"], "k8s-prod-01")
-          
+
           # 添加处理时间戳
           - set(span.attributes["processed_at"], Now())
-          
+
           # 添加版本信息
           - set(span.attributes["collector.version"], "v0.89.0")
 ```
@@ -634,15 +634,15 @@ processors:
       - context: span
         statements:
           # 从URL提取租户ID
-          - set(span.attributes["tenant.id"], 
+          - set(span.attributes["tenant.id"],
                 ExtractPatterns(
-                  span.attributes["http.url"], 
+                  span.attributes["http.url"],
                   "/tenants/(\\w+)"
                 )[0])
             where IsMatch(span.attributes["http.url"], "/tenants/\\w+")
-          
+
           # 从header提取业务ID
-          - set(span.attributes["business.unit"], 
+          - set(span.attributes["business.unit"],
                 span.attributes["http.request.header.x-business-unit"])
 ```
 
@@ -662,15 +662,15 @@ processors:
         exporters: [otlp/critical, otlp/archive]
       - value: normal
         exporters: [otlp/normal]
-  
+
   transform/routing:
     trace_statements:
       - context: span
         statements:
           # 设置路由键
-          - set(span.attributes["routing_key"], 
-                span.status.code == STATUS_CODE_ERROR and 
-                span.attributes["http.status_code"] >= 500 ? 
+          - set(span.attributes["routing_key"],
+                span.status.code == STATUS_CODE_ERROR and
+                span.attributes["http.status_code"] >= 500 ?
                   "critical" : "normal")
 ```
 
@@ -683,14 +683,14 @@ processors:
       - context: span
         statements:
           # 计算采样决策
-          - set(span.attributes["should_sample"], 
+          - set(span.attributes["should_sample"],
                 # 错误100%采样
                 span.status.code == STATUS_CODE_ERROR ? true :
                 # 慢请求100%采样
                 (span.end_time_unix_nano - span.start_time_unix_nano) > Duration("1s") ? true :
                 # 正常请求10%采样
                 FNV(TraceID(span.trace_id)) % 10 == 0 ? true : false)
-  
+
   filter/sampling:
     traces:
       span:
@@ -707,20 +707,20 @@ processors:
         statements:
           # 步骤1: 规范化
           - set(span.name, ToLower(Trim(span.name)))
-          
+
           # 步骤2: 参数化
-          - set(span.name, 
+          - set(span.name,
                 ReplacePattern(span.name, "\\d+", "{id}"))
-          
+
           # 步骤3: 添加前缀
-          - set(span.name, 
+          - set(span.name,
                 Concat(resource.attributes["service.name"], ".", span.name))
-          
+
           # 步骤4: 计算衍生指标
-          - set(span.attributes["latency_ms"], 
+          - set(span.attributes["latency_ms"],
                 (span.end_time_unix_nano - span.start_time_unix_nano) / 1000000)
-          
-          - set(span.attributes["is_slow"], 
+
+          - set(span.attributes["is_slow"],
                 span.attributes["latency_ms"] > 1000)
 ```
 
@@ -749,7 +749,7 @@ processors:
       - context: span
         statements:
           - set(span.attributes["normalized_name"], ToLower(span.name))
-          - set(span.attributes["prefixed_name"], 
+          - set(span.attributes["prefixed_name"],
                 Concat("api.", ToLower(span.name)))  # 重复ToLower
 
 # ✅ 好 - 复用结果
@@ -759,7 +759,7 @@ processors:
       - context: span
         statements:
           - set(span.attributes["normalized_name"], ToLower(span.name))
-          - set(span.attributes["prefixed_name"], 
+          - set(span.attributes["prefixed_name"],
                 Concat("api.", span.attributes["normalized_name"]))
 ```
 
@@ -773,7 +773,7 @@ processors:
       span:
         # 只保留SERVER和CLIENT span
         - span.kind == SPAN_KIND_SERVER or span.kind == SPAN_KIND_CLIENT
-  
+
   transform/process:
     trace_statements:
       - context: span
@@ -803,7 +803,7 @@ processors:
 exporters:
   logging:
     loglevel: info
-  
+
   prometheus:
     endpoint: "0.0.0.0:8888"
 
@@ -812,7 +812,7 @@ service:
     metrics:
       level: detailed
       address: 0.0.0.0:8888
-  
+
   pipelines:
     traces:
       receivers: [otlp]

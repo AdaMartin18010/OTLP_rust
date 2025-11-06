@@ -1,8 +1,8 @@
 # OTLP 理论与运维实践综合集成框架
 
-**版本**: 1.0  
-**日期**: 2025年10月26日  
-**主题**: 多理论视角集成、运维实践应用、故障检测与系统控制  
+**版本**: 1.0
+**日期**: 2025年10月26日
+**主题**: 多理论视角集成、运维实践应用、故障检测与系统控制
 **状态**: 🟢 活跃维护
 
 > **简介**: 综合集成框架 - 七大理论视角的完整集成和运维实践应用。
@@ -139,19 +139,19 @@
 pub struct IntegratedTheoreticalFramework {
     /// 控制流/执行流/数据流分析器
     flow_analyzer: FlowAnalyzer,
-    
+
     /// 并发模型分析器
     concurrency_analyzer: ConcurrencyAnalyzer,
-    
+
     /// 分布式系统分析器
     distributed_analyzer: DistributedSystemAnalyzer,
-    
+
     /// 语义推理引擎
     reasoning_engine: SemanticReasoningEngine,
-    
+
     /// 形式化验证器
     formal_verifier: FormalVerifier,
-    
+
     /// 自适应控制器
     adaptive_controller: AdaptiveController,
 }
@@ -166,23 +166,23 @@ impl IntegratedTheoreticalFramework {
     ) -> Result<SystemAnalysisReport> {
         // 1. 流分析
         let flow_analysis = self.flow_analyzer.analyze(&traces).await?;
-        
+
         // 2. 并发分析
         let concurrency_analysis = self.concurrency_analyzer.analyze(&traces).await?;
-        
+
         // 3. 分布式分析
         let distributed_analysis = self.distributed_analyzer.analyze(&traces).await?;
-        
+
         // 4. 语义推理
         let reasoning_result = self.reasoning_engine.reason(
             &traces,
             &metrics,
             &logs,
         ).await?;
-        
+
         // 5. 形式化验证
         let verification_result = self.formal_verifier.verify(&flow_analysis).await?;
-        
+
         // 6. 生成综合报告
         Ok(SystemAnalysisReport {
             flow_analysis,
@@ -225,23 +225,23 @@ impl FaultLocalizationAnalyzer {
     ) -> Result<FaultLocation> {
         // 1. 构建控制流图
         let cfg = self.cfg_builder.build_from_trace(trace)?;
-        
+
         // 2. 回溯执行路径
         let execution_path = self.trace_analyzer.extract_path_to_error(
             trace,
             error_span.span_id,
         )?;
-        
+
         // 3. 数据流分析 - 找出导致错误的数据
         let faulty_data = self.dfa_analyzer.analyze_reaching_definitions(
             &cfg,
             &execution_path,
             error_span,
         )?;
-        
+
         // 4. 定位故障源头
         let root_cause = self.identify_root_cause(&faulty_data, &cfg)?;
-        
+
         Ok(FaultLocation {
             faulty_span: root_cause.span_id,
             service: root_cause.service_name,
@@ -251,7 +251,7 @@ impl FaultLocalizationAnalyzer {
             confidence: root_cause.confidence,
         })
     }
-    
+
     /// 识别根因
     fn identify_root_cause(
         &self,
@@ -261,13 +261,13 @@ impl FaultLocalizationAnalyzer {
         // 沿着数据流反向追踪
         let mut current_def = faulty_data.error_definition;
         let mut visited = HashSet::new();
-        
+
         while let Some(def) = current_def {
             if visited.contains(&def.span_id) {
                 break; // 避免循环
             }
             visited.insert(def.span_id);
-            
+
             // 检查是否是外部输入或初始错误
             if self.is_root_cause(&def, cfg)? {
                 return Ok(RootCause {
@@ -277,11 +277,11 @@ impl FaultLocalizationAnalyzer {
                     confidence: self.calculate_confidence(&def, faulty_data)?,
                 });
             }
-            
+
             // 继续向上追溯
             current_def = self.dfa_analyzer.get_reaching_definition(&def, cfg)?;
         }
-        
+
         Err(anyhow!("无法确定根因"))
     }
 }
@@ -328,25 +328,25 @@ pub enum FaultType {
 #[tokio::test]
 async fn test_fault_localization() {
     let analyzer = FaultLocalizationAnalyzer::new();
-    
+
     // 模拟一个包含故障的 Trace
     let trace = create_sample_trace_with_fault();
     let error_span = trace.spans.iter()
         .find(|s| s.status.code == StatusCode::Error)
         .unwrap();
-    
+
     // 定位故障
     let fault_location = analyzer.localize_fault(error_span, &trace)
         .await
         .unwrap();
-    
+
     println!("故障定位结果:");
     println!("  故障服务: {}", fault_location.service);
     println!("  故障类型: {:?}", fault_location.fault_type);
     println!("  置信度: {:.2}%", fault_location.confidence * 100.0);
     println!("  控制流路径: {:?}", fault_location.control_flow_path);
     println!("  数据流路径: {:?}", fault_location.data_flow_path);
-    
+
     assert!(fault_location.confidence > 0.8);
 }
 ```
@@ -375,32 +375,32 @@ impl PerformanceBottleneckAnalyzer {
         metrics: &[Metric],
     ) -> Result<Vec<PerformanceBottleneck>> {
         let mut bottlenecks = Vec::new();
-        
+
         // 1. 热点检测 - 找出执行频率高的 Span
         let hotspots = self.hotspot_detector.detect(traces)?;
-        
+
         // 2. 关键路径分析 - 找出耗时最长的路径
         let critical_paths = self.critical_path_analyzer.analyze(traces)?;
-        
+
         // 3. 结合 Metrics 进行深度分析
         for hotspot in hotspots {
             if let Some(bottleneck) = self.analyze_hotspot(&hotspot, metrics).await? {
                 bottlenecks.push(bottleneck);
             }
         }
-        
+
         for path in critical_paths {
             if let Some(bottleneck) = self.analyze_critical_path(&path, metrics).await? {
                 bottlenecks.push(bottleneck);
             }
         }
-        
+
         // 4. 按严重程度排序
         bottlenecks.sort_by(|a, b| b.severity.partial_cmp(&a.severity).unwrap());
-        
+
         Ok(bottlenecks)
     }
-    
+
     /// 分析热点
     async fn analyze_hotspot(
         &self,
@@ -409,12 +409,12 @@ impl PerformanceBottleneckAnalyzer {
     ) -> Result<Option<PerformanceBottleneck>> {
         // 检查是否真的是瓶颈
         let avg_duration = hotspot.total_duration / hotspot.execution_count;
-        
+
         if avg_duration > Duration::from_millis(100) {
             // 查找相关的 CPU/内存指标
             let cpu_usage = self.get_cpu_usage_for_span(hotspot.span_id, metrics)?;
             let memory_usage = self.get_memory_usage_for_span(hotspot.span_id, metrics)?;
-            
+
             Ok(Some(PerformanceBottleneck {
                 span_id: hotspot.span_id,
                 service: hotspot.service_name.clone(),
@@ -491,38 +491,38 @@ impl AnomalyDetector {
         trace: &Trace,
     ) -> Result<Vec<Anomaly>> {
         let mut anomalies = Vec::new();
-        
+
         // 1. 控制流异常检测
         let cf_anomalies = self.detect_control_flow_anomalies(trace).await?;
         anomalies.extend(cf_anomalies);
-        
+
         // 2. 数据流异常检测
         let df_anomalies = self.detect_data_flow_anomalies(trace).await?;
         anomalies.extend(df_anomalies);
-        
+
         // 3. 执行模式异常检测
         let pattern_anomalies = self.detect_pattern_anomalies(trace).await?;
         anomalies.extend(pattern_anomalies);
-        
+
         Ok(anomalies)
     }
-    
+
     /// 检测控制流异常
     async fn detect_control_flow_anomalies(
         &self,
         trace: &Trace,
     ) -> Result<Vec<Anomaly>> {
         let mut anomalies = Vec::new();
-        
+
         // 构建实际的控制流图
         let actual_cfg = self.control_flow_analyzer.build_cfg(trace)?;
-        
+
         // 获取正常的控制流模式
         let expected_cfg = self.baseline_model.get_expected_cfg(&trace.service_name)?;
-        
+
         // 比较差异
         let differences = self.compare_cfgs(&actual_cfg, &expected_cfg)?;
-        
+
         for diff in differences {
             match diff {
                 CFGDifference::UnexpectedBranch { span_id, branch } => {
@@ -551,20 +551,20 @@ impl AnomalyDetector {
                 }
             }
         }
-        
+
         Ok(anomalies)
     }
-    
+
     /// 检测数据流异常
     async fn detect_data_flow_anomalies(
         &self,
         trace: &Trace,
     ) -> Result<Vec<Anomaly>> {
         let mut anomalies = Vec::new();
-        
+
         // 数据流分析
         let data_flows = self.data_flow_analyzer.analyze(trace)?;
-        
+
         for flow in data_flows {
             // 检查数据是否未初始化就使用
             if flow.is_uninitialized_use() {
@@ -575,7 +575,7 @@ impl AnomalyDetector {
                     severity: 0.85,
                 });
             }
-            
+
             // 检查数据是否被定义但从未使用
             if flow.is_dead_code() {
                 anomalies.push(Anomaly {
@@ -585,7 +585,7 @@ impl AnomalyDetector {
                     severity: 0.3,
                 });
             }
-            
+
             // 检查数据类型不匹配
             if let Some(type_mismatch) = flow.check_type_consistency() {
                 anomalies.push(Anomaly {
@@ -600,7 +600,7 @@ impl AnomalyDetector {
                 });
             }
         }
-        
+
         Ok(anomalies)
     }
 }
@@ -664,20 +664,20 @@ impl ComputabilityAnalyzer {
     ) -> Result<ComputabilityAnalysis> {
         // 1. 建立图灵机模型
         let tm_model = self.turing_machine_model.model_operation(operation)?;
-        
+
         // 2. 检查是否可能无限循环
         let halting_analysis = self.analyze_halting_problem(&tm_model, context)?;
-        
+
         // 3. 计算复杂度分析
         let complexity = self.complexity_analyzer.analyze(&tm_model)?;
-        
+
         // 4. 预测执行时间
         let estimated_time = self.timeout_predictor.predict(
             &tm_model,
             context,
             &complexity,
         )?;
-        
+
         Ok(ComputabilityAnalysis {
             is_computable: true,
             halting_probability: halting_analysis.probability,
@@ -688,7 +688,7 @@ impl ComputabilityAnalyzer {
             warnings: halting_analysis.warnings,
         })
     }
-    
+
     /// 分析停机问题
     fn analyze_halting_problem(
         &self,
@@ -697,13 +697,13 @@ impl ComputabilityAnalyzer {
     ) -> Result<HaltingAnalysis> {
         let mut warnings = Vec::new();
         let mut probability = 1.0;
-        
+
         // 检查递归深度
         if tm_model.max_recursion_depth > 1000 {
             warnings.push("递归深度过深,可能导致栈溢出".to_string());
             probability *= 0.8;
         }
-        
+
         // 检查循环条件
         for loop_construct in &tm_model.loops {
             if !loop_construct.has_guaranteed_termination() {
@@ -714,19 +714,19 @@ impl ComputabilityAnalyzer {
                 probability *= 0.7;
             }
         }
-        
+
         // 检查外部依赖
         if tm_model.has_external_dependencies {
             warnings.push("依赖外部系统,可能因外部故障而无法完成".to_string());
             probability *= 0.9;
         }
-        
+
         Ok(HaltingAnalysis {
             probability,
             warnings,
         })
     }
-    
+
     /// 推荐超时时间
     fn recommend_timeout(&self, estimated_time: &Duration) -> Duration {
         // 设置为估计时间的 3 倍,留出安全边界
@@ -789,37 +789,37 @@ impl ConcurrencyFaultDetector {
         traces: &[Trace],
     ) -> Result<Vec<ConcurrencyFault>> {
         let mut faults = Vec::new();
-        
+
         // 1. 使用进程代数分析并发交互
         let process_faults = self.analyze_with_process_algebra(traces).await?;
         faults.extend(process_faults);
-        
+
         // 2. 使用 Petri 网分析资源竞争
         let resource_faults = self.analyze_with_petri_net(traces).await?;
         faults.extend(resource_faults);
-        
+
         // 3. 使用 Actor 模型分析消息传递
         let message_faults = self.analyze_with_actor_model(traces).await?;
         faults.extend(message_faults);
-        
+
         Ok(faults)
     }
-    
+
     /// 使用进程代数分析
     async fn analyze_with_process_algebra(
         &self,
         traces: &[Trace],
     ) -> Result<Vec<ConcurrencyFault>> {
         let mut faults = Vec::new();
-        
+
         // 为每个 Trace 建立 CCS 模型
         for trace in traces {
             let ccs_model = self.process_algebra_analyzer.build_ccs_model(trace)?;
-            
+
             // 检查互模拟等价性
             let expected_model = self.process_algebra_analyzer
                 .get_expected_model(&trace.service_name)?;
-            
+
             if !ccs_model.is_bisimilar(&expected_model) {
                 faults.push(ConcurrencyFault {
                     fault_type: ConcurrencyFaultType::ProcessInteractionAnomaly,
@@ -829,7 +829,7 @@ impl ConcurrencyFaultDetector {
                     affected_spans: ccs_model.get_divergent_processes(),
                 });
             }
-            
+
             // 检查死锁可能性
             if ccs_model.has_potential_deadlock() {
                 faults.push(ConcurrencyFault {
@@ -841,21 +841,21 @@ impl ConcurrencyFaultDetector {
                 });
             }
         }
-        
+
         Ok(faults)
     }
-    
+
     /// 使用 Petri 网分析
     async fn analyze_with_petri_net(
         &self,
         traces: &[Trace],
     ) -> Result<Vec<ConcurrencyFault>> {
         let mut faults = Vec::new();
-        
+
         for trace in traces {
             // 建立 Petri 网模型
             let petri_net = self.petri_net_analyzer.build_petri_net(trace)?;
-            
+
             // 检查是否有不可达的状态
             let unreachable_states = petri_net.find_unreachable_states()?;
             if !unreachable_states.is_empty() {
@@ -867,7 +867,7 @@ impl ConcurrencyFaultDetector {
                     affected_spans: vec![],
                 });
             }
-            
+
             // 检查资源竞争
             let resource_conflicts = petri_net.detect_resource_conflicts()?;
             for conflict in resource_conflicts {
@@ -880,7 +880,7 @@ impl ConcurrencyFaultDetector {
                 });
             }
         }
-        
+
         Ok(faults)
     }
 }
@@ -939,19 +939,19 @@ impl DeadlockDetector {
     ) -> Result<Option<DeadlockInfo>> {
         // 1. 构建资源分配图
         let resource_graph = self.resource_graph_builder.build(traces)?;
-        
+
         // 2. 检测循环等待
         if let Some(cycle) = resource_graph.find_cycle() {
             // 找到死锁
             let involved_spans = cycle.spans;
             let involved_resources = cycle.resources;
-            
+
             // 3. 分析死锁原因
             let root_cause = self.analyze_deadlock_cause(&cycle, traces)?;
-            
+
             // 4. 生成解决方案
             let solutions = self.generate_deadlock_solutions(&cycle, &resource_graph)?;
-            
+
             return Ok(Some(DeadlockInfo {
                 involved_spans,
                 involved_resources,
@@ -960,7 +960,7 @@ impl DeadlockDetector {
                 detection_time: Utc::now(),
             }));
         }
-        
+
         // 5. 使用 Petri 网进行更深入的分析
         let petri_net = self.petri_net_analyzer.build_from_traces(traces)?;
         if petri_net.has_deadlock_state()? {
@@ -972,21 +972,21 @@ impl DeadlockDetector {
                 detection_time: Utc::now(),
             }));
         }
-        
+
         Ok(None)
     }
-    
+
     /// 检测活锁
     pub async fn detect_livelock(
         &self,
         traces: &[Trace],
     ) -> Result<Option<LivelockInfo>> {
         // 活锁特征: 系统持续运行但无法取得进展
-        
+
         for trace in traces {
             // 检查是否有重复的执行模式
             let execution_pattern = self.extract_execution_pattern(trace)?;
-            
+
             if let Some(repeating_cycle) = execution_pattern.find_repeating_cycle() {
                 // 检查是否有状态变化
                 if !repeating_cycle.has_state_progress() {
@@ -1000,10 +1000,10 @@ impl DeadlockDetector {
                 }
             }
         }
-        
+
         Ok(None)
     }
-    
+
     /// 生成死锁解决方案
     fn generate_deadlock_solutions(
         &self,
@@ -1011,7 +1011,7 @@ impl DeadlockDetector {
         graph: &ResourceAllocationGraph,
     ) -> Result<Vec<String>> {
         let mut solutions = Vec::new();
-        
+
         // 方案 1: 资源排序
         solutions.push(format!(
             "实施资源获取顺序: {}",
@@ -1020,16 +1020,16 @@ impl DeadlockDetector {
                 .collect::<Vec<_>>()
                 .join(" -> ")
         ));
-        
+
         // 方案 2: 超时机制
         solutions.push("为资源获取添加超时机制,超时后释放已持有的资源".to_string());
-        
+
         // 方案 3: 死锁检测与恢复
         solutions.push("实施定期死锁检测,发现后终止一个进程以打破循环".to_string());
-        
+
         // 方案 4: 资源预分配
         solutions.push("使用资源预分配策略,一次性获取所有需要的资源".to_string());
-        
+
         Ok(solutions)
     }
 }
@@ -1083,28 +1083,28 @@ impl CausalRelationshipAnalyzer {
     ) -> Result<CausalAnalysisResult> {
         // 1. 为每个事件分配向量时钟
         let events_with_clocks = self.assign_vector_clocks(traces)?;
-        
+
         // 2. 构建 Happens-Before 关系图
         let happens_before_graph = self.happens_before_analyzer
             .build_graph(&events_with_clocks)?;
-        
+
         // 3. 构建因果图
         let causal_graph = self.causal_graph_builder
             .build(&happens_before_graph)?;
-        
+
         // 4. 分析因果链
         let causal_chains = self.extract_causal_chains(&causal_graph)?;
-        
+
         // 5. 识别因果异常
         let anomalies = self.detect_causal_anomalies(&causal_graph)?;
-        
+
         Ok(CausalAnalysisResult {
             causal_graph,
             causal_chains,
             anomalies,
         })
     }
-    
+
     /// 分配向量时钟
     fn assign_vector_clocks(
         &self,
@@ -1112,18 +1112,18 @@ impl CausalRelationshipAnalyzer {
     ) -> Result<Vec<EventWithClock>> {
         let mut events = Vec::new();
         let mut vector_clocks: HashMap<String, VectorClock> = HashMap::new();
-        
+
         for trace in traces {
             for span in &trace.spans {
                 // 获取或创建该服务的向量时钟
                 let service_name = &span.service_name;
                 let clock = vector_clocks.entry(service_name.clone())
                     .or_insert_with(|| VectorClock::new(service_name.clone()));
-                
+
                 // Span 开始事件
                 clock.tick();
                 let start_clock = clock.clone();
-                
+
                 events.push(EventWithClock {
                     event: Event::SpanStart {
                         span_id: span.span_id,
@@ -1132,7 +1132,7 @@ impl CausalRelationshipAnalyzer {
                     vector_clock: start_clock,
                     timestamp: span.start_time,
                 });
-                
+
                 // 如果有父 Span,更新向量时钟
                 if let Some(parent_id) = span.parent_span_id {
                     if let Some(parent_event) = events.iter()
@@ -1141,11 +1141,11 @@ impl CausalRelationshipAnalyzer {
                         clock.receive(&parent_event.vector_clock.clocks);
                     }
                 }
-                
+
                 // Span 结束事件
                 clock.tick();
                 let end_clock = clock.clone();
-                
+
                 events.push(EventWithClock {
                     event: Event::SpanEnd {
                         span_id: span.span_id,
@@ -1156,22 +1156,22 @@ impl CausalRelationshipAnalyzer {
                 });
             }
         }
-        
+
         Ok(events)
     }
-    
+
     /// 检测因果异常
     fn detect_causal_anomalies(
         &self,
         causal_graph: &CausalGraph,
     ) -> Result<Vec<CausalAnomaly>> {
         let mut anomalies = Vec::new();
-        
+
         // 检查因果倒置
         for edge in &causal_graph.edges {
             let source_event = &causal_graph.nodes[&edge.source];
             let target_event = &causal_graph.nodes[&edge.target];
-            
+
             // 如果目标事件的时间戳早于源事件,可能存在时钟偏移
             if target_event.timestamp < source_event.timestamp {
                 anomalies.push(CausalAnomaly {
@@ -1187,7 +1187,7 @@ impl CausalRelationshipAnalyzer {
                 });
             }
         }
-        
+
         // 检查因果链断裂
         let disconnected_components = causal_graph.find_disconnected_components();
         if disconnected_components.len() > 1 {
@@ -1202,7 +1202,7 @@ impl CausalRelationshipAnalyzer {
                 severity: 0.6,
             });
         }
-        
+
         Ok(anomalies)
     }
 }
@@ -1281,7 +1281,7 @@ impl ConsistencyMonitor {
             }
         }
     }
-    
+
     /// 检查线性一致性
     async fn check_linearizability(
         &self,
@@ -1289,11 +1289,11 @@ impl ConsistencyMonitor {
     ) -> Result<ConsistencyReport> {
         // 提取所有读写操作
         let operations = self.extract_operations(traces)?;
-        
+
         // 检查是否存在有效的线性化
         let linearization_result = self.linearizability_checker
             .check(&operations)?;
-        
+
         if linearization_result.is_linearizable {
             Ok(ConsistencyReport {
                 consistency_model: ConsistencyModel::Linearizability,
@@ -1310,21 +1310,21 @@ impl ConsistencyMonitor {
             })
         }
     }
-    
+
     /// 检查因果一致性
     async fn check_causal_consistency(
         &self,
         traces: &[Trace],
     ) -> Result<ConsistencyReport> {
         let operations = self.extract_operations(traces)?;
-        
+
         // 构建因果关系图
         let causal_graph = self.build_causal_graph(&operations)?;
-        
+
         // 检查是否违反因果一致性
         let violations = self.causal_consistency_checker
             .check(&causal_graph)?;
-        
+
         Ok(ConsistencyReport {
             consistency_model: ConsistencyModel::CausalConsistency,
             is_consistent: violations.is_empty(),
@@ -1332,20 +1332,20 @@ impl ConsistencyMonitor {
             linearization: None,
         })
     }
-    
+
     /// 检查最终一致性
     async fn check_eventual_consistency(
         &self,
         traces: &[Trace],
     ) -> Result<ConsistencyReport> {
         let operations = self.extract_operations(traces)?;
-        
+
         // 检查是否最终达到一致状态
         let convergence_result = self.eventual_consistency_checker
             .check_convergence(&operations)?;
-        
+
         let mut violations = Vec::new();
-        
+
         if !convergence_result.has_converged {
             violations.push(ConsistencyViolation {
                 violation_type: ViolationType::NoConvergence,
@@ -1356,7 +1356,7 @@ impl ConsistencyMonitor {
                 involved_operations: convergence_result.divergent_operations,
             });
         }
-        
+
         Ok(ConsistencyReport {
             consistency_model: ConsistencyModel::EventualConsistency,
             is_consistent: convergence_result.has_converged,
@@ -1432,20 +1432,20 @@ impl PartitionDetector {
     ) -> Result<Option<PartitionInfo>> {
         // 1. 分析网络拓扑
         let topology = self.network_topology_analyzer.analyze(traces)?;
-        
+
         // 2. 检测连通性
         let connectivity = topology.check_connectivity();
-        
+
         if connectivity.is_partitioned {
             // 3. 识别分区
             let partitions = connectivity.partitions;
-            
+
             // 4. 检查 Quorum
             let quorum_status = self.quorum_checker.check(&partitions)?;
-            
+
             // 5. 评估影响
             let impact = self.assess_partition_impact(&partitions, traces)?;
-            
+
             return Ok(Some(PartitionInfo {
                 partitions,
                 quorum_status,
@@ -1454,10 +1454,10 @@ impl PartitionDetector {
                 recommended_actions: self.generate_partition_actions(&partitions, &quorum_status)?,
             }));
         }
-        
+
         Ok(None)
     }
-    
+
     /// 处理网络分区
     pub async fn handle_partition(
         &self,
@@ -1465,7 +1465,7 @@ impl PartitionDetector {
     ) -> Result<PartitionHandlingResult> {
         self.partition_handler.handle(partition_info).await
     }
-    
+
     /// 评估分区影响
     fn assess_partition_impact(
         &self,
@@ -1475,11 +1475,11 @@ impl PartitionDetector {
         let mut affected_services = HashSet::new();
         let mut failed_requests = 0;
         let mut degraded_services = Vec::new();
-        
+
         for partition in partitions {
             for service in &partition.services {
                 affected_services.insert(service.clone());
-                
+
                 // 检查该服务的请求成功率
                 let success_rate = self.calculate_success_rate(service, traces)?;
                 if success_rate < 0.5 {
@@ -1487,14 +1487,14 @@ impl PartitionDetector {
                 }
             }
         }
-        
+
         // 统计失败的请求
         for trace in traces {
             if trace.has_error() {
                 failed_requests += 1;
             }
         }
-        
+
         Ok(PartitionImpact {
             affected_services: affected_services.into_iter().collect(),
             failed_requests,
@@ -1502,7 +1502,7 @@ impl PartitionDetector {
             severity: self.calculate_severity(failed_requests, affected_services.len()),
         })
     }
-    
+
     /// 生成分区处理建议
     fn generate_partition_actions(
         &self,
@@ -1510,19 +1510,19 @@ impl PartitionDetector {
         quorum_status: &QuorumStatus,
     ) -> Result<Vec<String>> {
         let mut actions = Vec::new();
-        
+
         if !quorum_status.has_quorum {
             actions.push("警告: 失去 Quorum,系统进入只读模式".to_string());
             actions.push("尝试恢复网络连接以重新建立 Quorum".to_string());
         }
-        
+
         if partitions.len() == 2 {
             actions.push("检测到脑裂,需要人工介入选择主分区".to_string());
         }
-        
+
         actions.push("启动分区恢复协议".to_string());
         actions.push("记录分区期间的操作以便后续合并".to_string());
-        
+
         Ok(actions)
     }
 }
@@ -1595,19 +1595,19 @@ impl MultiDimensionalFaultDetector {
         logs: &[Log],
     ) -> Result<Vec<Fault>> {
         let mut faults = Vec::new();
-        
+
         // 1. 时间维度分析
         let temporal_faults = self.detect_temporal_faults(traces, metrics, logs).await?;
         faults.extend(temporal_faults);
-        
+
         // 2. 空间维度分析 (服务拓扑)
         let spatial_faults = self.detect_spatial_faults(traces, metrics).await?;
         faults.extend(spatial_faults);
-        
+
         // 3. 因果维度分析
         let causal_faults = self.detect_causal_faults(traces, logs).await?;
         faults.extend(causal_faults);
-        
+
         // 4. 跨信号关联分析
         let correlated_faults = self.detect_correlated_faults(
             traces,
@@ -1615,13 +1615,13 @@ impl MultiDimensionalFaultDetector {
             logs,
         ).await?;
         faults.extend(correlated_faults);
-        
+
         // 5. 去重和合并
         let merged_faults = self.merge_related_faults(faults)?;
-        
+
         Ok(merged_faults)
     }
-    
+
     /// 时间维度故障检测
     async fn detect_temporal_faults(
         &self,
@@ -1630,11 +1630,11 @@ impl MultiDimensionalFaultDetector {
         logs: &[Log],
     ) -> Result<Vec<Fault>> {
         let mut faults = Vec::new();
-        
+
         // 分析 Metrics 时间序列
         for metric in metrics {
             let time_series = self.time_series_analyzer.extract(metric)?;
-            
+
             // 异常检测
             if let Some(anomaly) = time_series.detect_anomaly()? {
                 // 查找相关的 Traces
@@ -1643,14 +1643,14 @@ impl MultiDimensionalFaultDetector {
                     anomaly.start_time,
                     anomaly.end_time,
                 )?;
-                
+
                 // 查找相关的 Logs
                 let related_logs = self.find_logs_in_time_window(
                     logs,
                     anomaly.start_time,
                     anomaly.end_time,
                 )?;
-                
+
                 faults.push(Fault {
                     fault_type: FaultType::MetricAnomaly,
                     detection_method: DetectionMethod::TimeSeries,
@@ -1667,10 +1667,10 @@ impl MultiDimensionalFaultDetector {
                 });
             }
         }
-        
+
         Ok(faults)
     }
-    
+
     /// 空间维度故障检测 (服务拓扑)
     async fn detect_spatial_faults(
         &self,
@@ -1678,15 +1678,15 @@ impl MultiDimensionalFaultDetector {
         metrics: &[Metric],
     ) -> Result<Vec<Fault>> {
         let mut faults = Vec::new();
-        
+
         // 构建服务拓扑图
         let topology = self.spatial_analyzer.build_service_topology(traces)?;
-        
+
         // 检测拓扑异常
         for service in topology.services() {
             // 检查服务的健康状态
             let health = self.assess_service_health(service, traces, metrics)?;
-            
+
             if health.is_unhealthy() {
                 // 检查下游服务是否也不健康 (级联故障)
                 let downstream_services = topology.get_downstream_services(service);
@@ -1696,7 +1696,7 @@ impl MultiDimensionalFaultDetector {
                             .map(|h| h.is_unhealthy())
                             .unwrap_or(false)
                     });
-                
+
                 faults.push(Fault {
                     fault_type: if cascade_detected {
                         FaultType::CascadingFailure
@@ -1717,10 +1717,10 @@ impl MultiDimensionalFaultDetector {
                 });
             }
         }
-        
+
         Ok(faults)
     }
-    
+
     /// 因果维度故障检测
     async fn detect_causal_faults(
         &self,
@@ -1728,17 +1728,17 @@ impl MultiDimensionalFaultDetector {
         logs: &[Log],
     ) -> Result<Vec<Fault>> {
         let mut faults = Vec::new();
-        
+
         // 构建因果图
         let causal_graph = self.causal_analyzer.build_causal_graph(traces, logs)?;
-        
+
         // 查找错误节点
         let error_nodes = causal_graph.find_error_nodes();
-        
+
         for error_node in error_nodes {
             // 回溯因果链找到根因
             let causal_chain = causal_graph.trace_back_to_root(error_node)?;
-            
+
             faults.push(Fault {
                 fault_type: FaultType::CausalChainFailure,
                 detection_method: DetectionMethod::CausalAnalysis,
@@ -1752,10 +1752,10 @@ impl MultiDimensionalFaultDetector {
                 ),
             });
         }
-        
+
         Ok(faults)
     }
-    
+
     /// 跨信号关联故障检测
     async fn detect_correlated_faults(
         &self,
@@ -1764,25 +1764,25 @@ impl MultiDimensionalFaultDetector {
         logs: &[Log],
     ) -> Result<Vec<Fault>> {
         let mut faults = Vec::new();
-        
+
         // 使用语义关系图进行关联
         for trace in traces {
             if trace.has_error() {
                 // 查找相关的 Metrics
                 let related_metrics = self.semantic_graph
                     .find_related_metrics(trace)?;
-                
+
                 // 查找相关的 Logs
                 let related_logs = self.semantic_graph
                     .find_related_logs(trace)?;
-                
+
                 // 综合分析
                 let correlation_score = self.calculate_correlation_score(
                     trace,
                     &related_metrics,
                     &related_logs,
                 )?;
-                
+
                 if correlation_score > 0.7 {
                     faults.push(Fault {
                         fault_type: FaultType::CorrelatedFailure,
@@ -1801,7 +1801,7 @@ impl MultiDimensionalFaultDetector {
                 }
             }
         }
-        
+
         Ok(faults)
     }
 }
@@ -1813,7 +1813,7 @@ pub struct Fault {
     pub detection_method: DetectionMethod,
     pub severity: f64,
     pub description: String,
-    
+
     // 可选字段
     pub trace_id: Option<TraceId>,
     pub service_name: Option<String>,
@@ -1865,26 +1865,26 @@ impl RootCauseAnalyzer {
     ) -> Result<RootCauseAnalysisResult> {
         // 1. 构建故障症状集合
         let symptoms = self.collect_symptoms(fault, traces, metrics, logs)?;
-        
+
         // 2. 使用贝叶斯网络进行概率推理
         let bayesian_result = self.bayesian_network.infer(&symptoms)?;
-        
+
         // 3. 使用因果推理引擎
         let causal_result = self.causal_inference_engine.infer(
             &symptoms,
             traces,
         )?;
-        
+
         // 4. 使用规则推理
         let rule_result = self.rule_based_engine.reason(&symptoms)?;
-        
+
         // 5. 综合多种方法的结果
         let root_causes = self.synthesize_results(
             bayesian_result,
             causal_result,
             rule_result,
         )?;
-        
+
         // 6. 验证根因
         let verified_root_causes = self.verify_root_causes(
             &root_causes,
@@ -1892,7 +1892,7 @@ impl RootCauseAnalyzer {
             metrics,
             logs,
         )?;
-        
+
         Ok(RootCauseAnalysisResult {
             root_causes: verified_root_causes,
             confidence: self.calculate_overall_confidence(&verified_root_causes),
@@ -1903,7 +1903,7 @@ impl RootCauseAnalyzer {
             ],
         })
     }
-    
+
     /// 收集故障症状
     fn collect_symptoms(
         &self,
@@ -1913,7 +1913,7 @@ impl RootCauseAnalyzer {
         logs: &[Log],
     ) -> Result<Vec<Symptom>> {
         let mut symptoms = Vec::new();
-        
+
         // 从 Trace 中提取症状
         if let Some(trace_id) = fault.trace_id {
             if let Some(trace) = traces.iter().find(|t| t.trace_id == trace_id) {
@@ -1925,7 +1925,7 @@ impl RootCauseAnalyzer {
                         source: Source::Trace(trace_id),
                     });
                 }
-                
+
                 // 延迟异常
                 let avg_duration = trace.calculate_average_duration();
                 if avg_duration > Duration::from_secs(5) {
@@ -1937,7 +1937,7 @@ impl RootCauseAnalyzer {
                 }
             }
         }
-        
+
         // 从 Metrics 中提取症状
         for metric in metrics {
             if let Some(anomaly) = metric.detect_anomaly()? {
@@ -1948,7 +1948,7 @@ impl RootCauseAnalyzer {
                 });
             }
         }
-        
+
         // 从 Logs 中提取症状
         for log in logs {
             if log.severity >= Severity::Error {
@@ -1959,10 +1959,10 @@ impl RootCauseAnalyzer {
                 });
             }
         }
-        
+
         Ok(symptoms)
     }
-    
+
     /// 综合多种分析结果
     fn synthesize_results(
         &self,
@@ -1971,7 +1971,7 @@ impl RootCauseAnalyzer {
         rule: RuleBasedResult,
     ) -> Result<Vec<RootCause>> {
         let mut root_causes = HashMap::new();
-        
+
         // 从贝叶斯结果中提取
         for (cause, probability) in bayesian.probable_causes {
             root_causes.entry(cause.clone())
@@ -1982,11 +1982,11 @@ impl RootCauseAnalyzer {
                     supporting_methods: Vec::new(),
                 })
                 .confidence += probability * 0.4; // 权重 40%
-            
+
             root_causes.get_mut(&cause).unwrap()
                 .supporting_methods.push(AnalysisMethod::BayesianInference);
         }
-        
+
         // 从因果推理结果中提取
         for cause in causal.causal_factors {
             root_causes.entry(cause.name.clone())
@@ -1997,11 +1997,11 @@ impl RootCauseAnalyzer {
                     supporting_methods: Vec::new(),
                 })
                 .confidence += cause.strength * 0.4; // 权重 40%
-            
+
             root_causes.get_mut(&cause.name).unwrap()
                 .supporting_methods.push(AnalysisMethod::CausalInference);
         }
-        
+
         // 从规则推理结果中提取
         for rule_match in rule.matched_rules {
             root_causes.entry(rule_match.conclusion.clone())
@@ -2012,15 +2012,15 @@ impl RootCauseAnalyzer {
                     supporting_methods: Vec::new(),
                 })
                 .confidence += rule_match.confidence * 0.2; // 权重 20%
-            
+
             root_causes.get_mut(&rule_match.conclusion).unwrap()
                 .supporting_methods.push(AnalysisMethod::RuleBasedReasoning);
         }
-        
+
         // 转换为 Vec 并排序
         let mut result: Vec<_> = root_causes.into_values().collect();
         result.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
-        
+
         Ok(result)
     }
 }
@@ -2095,10 +2095,10 @@ impl SystemStateReasoningEngine {
     ) -> Result<SystemState> {
         // 1. 从观测数据中提取当前状态
         let current_state = self.extract_current_state(traces, metrics, logs)?;
-        
+
         // 2. 使用状态机模型验证状态有效性
         let is_valid = self.state_machine_model.is_valid_state(&current_state)?;
-        
+
         if !is_valid {
             return Ok(SystemState {
                 state_type: StateType::Invalid,
@@ -2108,31 +2108,31 @@ impl SystemStateReasoningEngine {
                 predicted_next_states: vec![],
             });
         }
-        
+
         // 3. 使用时序逻辑检查系统属性
         let property_violations = self.temporal_logic_checker
             .check_properties(&current_state)?;
-        
+
         // 4. 计算健康分数
         let health_score = self.calculate_health_score(
             &current_state,
             &property_violations,
         )?;
-        
+
         // 5. 预测未来状态
         let predicted_states = self.predictor.predict_next_states(
             &current_state,
             traces,
             metrics,
         )?;
-        
+
         // 6. 生成警告
         let warnings = self.generate_warnings(
             &current_state,
             &property_violations,
             &predicted_states,
         )?;
-        
+
         Ok(SystemState {
             state_type: self.classify_state(&current_state, health_score)?,
             health_score,
@@ -2141,7 +2141,7 @@ impl SystemStateReasoningEngine {
             predicted_next_states: predicted_states,
         })
     }
-    
+
     /// 提取当前状态
     fn extract_current_state(
         &self,
@@ -2150,13 +2150,13 @@ impl SystemStateReasoningEngine {
         logs: &[Log],
     ) -> Result<StateSnapshot> {
         let mut state = StateSnapshot::new();
-        
+
         // 从 Traces 中提取
         state.active_requests = traces.len();
         state.error_rate = traces.iter()
             .filter(|t| t.has_error())
             .count() as f64 / traces.len() as f64;
-        
+
         // 从 Metrics 中提取
         for metric in metrics {
             match metric.name.as_str() {
@@ -2167,15 +2167,15 @@ impl SystemStateReasoningEngine {
                 _ => {}
             }
         }
-        
+
         // 从 Logs 中提取
         state.error_count = logs.iter()
             .filter(|l| l.severity >= Severity::Error)
             .count();
-        
+
         Ok(state)
     }
-    
+
     /// 计算健康分数
     fn calculate_health_score(
         &self,
@@ -2183,28 +2183,28 @@ impl SystemStateReasoningEngine {
         violations: &[PropertyViolation],
     ) -> Result<f64> {
         let mut score = 100.0;
-        
+
         // 根据错误率扣分
         score -= state.error_rate * 50.0;
-        
+
         // 根据 CPU 使用率扣分
         if state.cpu_usage > 0.8 {
             score -= (state.cpu_usage - 0.8) * 100.0;
         }
-        
+
         // 根据内存使用率扣分
         if state.memory_usage > 0.9 {
             score -= (state.memory_usage - 0.9) * 200.0;
         }
-        
+
         // 根据延迟扣分
         if state.p99_latency > Duration::from_secs(1) {
             score -= 20.0;
         }
-        
+
         // 根据属性违反扣分
         score -= violations.len() as f64 * 10.0;
-        
+
         Ok(score.max(0.0).min(100.0))
     }
 }
@@ -2282,39 +2282,39 @@ impl ConfigurationVerifier {
     ) -> Result<VerificationResult> {
         let mut errors = Vec::new();
         let mut warnings = Vec::new();
-        
+
         // 1. 类型检查
         if let Err(type_errors) = self.type_checker.check(config) {
             errors.extend(type_errors);
         }
-        
+
         // 2. 约束检查
         if let Err(constraint_violations) = self.constraint_solver.check(config) {
             errors.extend(constraint_violations);
         }
-        
+
         // 3. 不变量检查
         if let Err(invariant_violations) = self.invariant_checker.check(config) {
             errors.extend(invariant_violations);
         }
-        
+
         // 4. 语义检查
         warnings.extend(self.check_semantic_issues(config)?);
-        
+
         Ok(VerificationResult {
             is_valid: errors.is_empty(),
             errors,
             warnings,
         })
     }
-    
+
     /// 检查语义问题
     fn check_semantic_issues(
         &self,
         config: &Configuration,
     ) -> Result<Vec<Warning>> {
         let mut warnings = Vec::new();
-        
+
         // 检查资源配置是否合理
         if config.memory_limit < config.memory_request {
             warnings.push(Warning {
@@ -2322,7 +2322,7 @@ impl ConfigurationVerifier {
                 message: "内存限制小于内存请求".to_string(),
             });
         }
-        
+
         // 检查超时配置
         if config.request_timeout < Duration::from_secs(1) {
             warnings.push(Warning {
@@ -2330,7 +2330,7 @@ impl ConfigurationVerifier {
                 message: "请求超时时间过短,可能导致频繁超时".to_string(),
             });
         }
-        
+
         // 检查并发配置
         if config.max_concurrent_requests > 10000 {
             warnings.push(Warning {
@@ -2338,7 +2338,7 @@ impl ConfigurationVerifier {
                 message: "最大并发请求数过大,可能导致资源耗尽".to_string(),
             });
         }
-        
+
         Ok(warnings)
     }
 }
@@ -2393,7 +2393,7 @@ impl InvariantChecker {
         system_state: &SystemState,
     ) -> Result<Vec<InvariantViolation>> {
         let mut violations = Vec::new();
-        
+
         for invariant in &self.invariants {
             if !invariant.holds(system_state)? {
                 violations.push(InvariantViolation {
@@ -2405,7 +2405,7 @@ impl InvariantChecker {
                 });
             }
         }
-        
+
         Ok(violations)
     }
 }
@@ -2426,24 +2426,24 @@ impl Invariant for ResourceUsageInvariant {
     fn name(&self) -> &str {
         "ResourceUsage"
     }
-    
+
     fn description(&self) -> &str {
         "系统资源使用率不应超过安全阈值"
     }
-    
+
     fn condition(&self) -> &str {
         "cpu_usage < 0.9 AND memory_usage < 0.95"
     }
-    
+
     fn severity(&self) -> f64 {
         0.9
     }
-    
+
     fn holds(&self, state: &SystemState) -> Result<bool> {
         // 从状态中提取资源使用率
         let cpu_usage = state.get_metric("cpu_usage")?;
         let memory_usage = state.get_metric("memory_usage")?;
-        
+
         Ok(cpu_usage < 0.9 && memory_usage < 0.95)
     }
 }
@@ -2481,13 +2481,13 @@ impl TemporalPropertyVerifier {
         traces: &[Trace],
     ) -> Result<Vec<PropertyViolation>> {
         let mut violations = Vec::new();
-        
+
         // 安全性属性: "永远不会发生坏事"
         // 示例: G(¬deadlock) - 永远不会死锁
         let deadlock_property = LTLFormula::Globally(Box::new(
             LTLFormula::Not(Box::new(LTLFormula::Atomic("deadlock".to_string())))
         ));
-        
+
         if !self.ltl_checker.check(&deadlock_property, traces)? {
             violations.push(PropertyViolation {
                 property_type: PropertyType::Safety,
@@ -2496,7 +2496,7 @@ impl TemporalPropertyVerifier {
                 counterexample: self.ltl_checker.get_counterexample()?,
             });
         }
-        
+
         // 示例: G(request → F(response)) - 每个请求最终都会得到响应
         let response_property = LTLFormula::Globally(Box::new(
             LTLFormula::Implies(
@@ -2506,7 +2506,7 @@ impl TemporalPropertyVerifier {
                 )))
             )
         ));
-        
+
         if !self.ltl_checker.check(&response_property, traces)? {
             violations.push(PropertyViolation {
                 property_type: PropertyType::Safety,
@@ -2515,23 +2515,23 @@ impl TemporalPropertyVerifier {
                 counterexample: self.ltl_checker.get_counterexample()?,
             });
         }
-        
+
         Ok(violations)
     }
-    
+
     /// 验证活性属性
     pub async fn verify_liveness_properties(
         &self,
         traces: &[Trace],
     ) -> Result<Vec<PropertyViolation>> {
         let mut violations = Vec::new();
-        
+
         // 活性属性: "好事最终会发生"
         // 示例: F(success) - 最终会成功
         let success_property = LTLFormula::Eventually(Box::new(
             LTLFormula::Atomic("success".to_string())
         ));
-        
+
         if !self.ltl_checker.check(&success_property, traces)? {
             violations.push(PropertyViolation {
                 property_type: PropertyType::Liveness,
@@ -2540,7 +2540,7 @@ impl TemporalPropertyVerifier {
                 counterexample: self.ltl_checker.get_counterexample()?,
             });
         }
-        
+
         Ok(violations)
     }
 }
@@ -2613,29 +2613,29 @@ impl MAPEKSystem {
             // 1. Monitor - 监控
             let monitoring_data = self.monitor.collect_data().await?;
             self.knowledge_base.update_monitoring_data(monitoring_data.clone());
-            
+
             // 2. Analyze - 分析
             let analysis_result = self.analyzer.analyze(
                 &monitoring_data,
                 &self.knowledge_base,
             ).await?;
-            
+
             if analysis_result.requires_adaptation {
                 // 3. Plan - 规划
                 let adaptation_plan = self.planner.plan(
                     &analysis_result,
                     &self.knowledge_base,
                 ).await?;
-                
+
                 // 4. Execute - 执行
                 let execution_result = self.executor.execute(
                     &adaptation_plan,
                 ).await?;
-                
+
                 // 5. 更新知识库
                 self.knowledge_base.update_execution_result(execution_result);
             }
-            
+
             // 休眠一段时间后继续下一个循环
             tokio::time::sleep(Duration::from_secs(30)).await;
         }
@@ -2653,7 +2653,7 @@ impl Monitor {
         let traces = self.otlp_collector.collect_traces().await?;
         let metrics = self.otlp_collector.collect_metrics().await?;
         let logs = self.otlp_collector.collect_logs().await?;
-        
+
         Ok(MonitoringData {
             traces,
             metrics,
@@ -2682,16 +2682,16 @@ impl Analyzer {
             &data.metrics,
             &data.logs,
         ).await?;
-        
+
         // 性能分析
         let performance_issues = self.performance_analyzer.analyze(
             &data.traces,
             &data.metrics,
         ).await?;
-        
+
         // 判断是否需要适应
         let requires_adaptation = !faults.is_empty() || !performance_issues.is_empty();
-        
+
         Ok(AnalysisResult {
             faults,
             performance_issues,
@@ -2713,29 +2713,29 @@ impl Planner {
         knowledge: &KnowledgeBase,
     ) -> Result<AdaptationPlan> {
         let mut actions = Vec::new();
-        
+
         // 为每个故障规划修复动作
         for fault in &analysis.faults {
             let repair_actions = self.plan_fault_repair(fault, knowledge)?;
             actions.extend(repair_actions);
         }
-        
+
         // 为性能问题规划优化动作
         for issue in &analysis.performance_issues {
             let optimization_actions = self.plan_performance_optimization(issue, knowledge)?;
             actions.extend(optimization_actions);
         }
-        
+
         // 选择最优策略
         let selected_strategy = self.strategy_selector.select(&actions, knowledge)?;
-        
+
         Ok(AdaptationPlan {
             actions: selected_strategy.actions,
             expected_outcome: selected_strategy.expected_outcome,
             estimated_duration: selected_strategy.estimated_duration,
         })
     }
-    
+
     /// 规划故障修复
     fn plan_fault_repair(
         &self,
@@ -2743,7 +2743,7 @@ impl Planner {
         knowledge: &KnowledgeBase,
     ) -> Result<Vec<AdaptationAction>> {
         let mut actions = Vec::new();
-        
+
         match fault.fault_type {
             FaultType::ServiceFailure => {
                 // 重启服务
@@ -2766,7 +2766,7 @@ impl Planner {
             }
             _ => {}
         }
-        
+
         Ok(actions)
     }
 }
@@ -2783,18 +2783,18 @@ impl Executor {
         plan: &AdaptationPlan,
     ) -> Result<ExecutionResult> {
         let mut results = Vec::new();
-        
+
         for action in &plan.actions {
             let result = self.execute_action(action).await?;
             results.push(result);
         }
-        
+
         Ok(ExecutionResult {
             action_results: results,
             success: results.iter().all(|r| r.success),
         })
     }
-    
+
     /// 执行单个动作
     async fn execute_action(
         &self,
@@ -2866,25 +2866,25 @@ impl HPAController {
     ) -> Result<ScalingDecision> {
         // 1. 计算当前负载
         let current_load = self.calculate_load(current_metrics)?;
-        
+
         // 2. 使用 PID 控制器计算目标副本数
         let target_replicas = self.pid_controller.calculate(
             current_load,
             current_metrics.current_replicas as f64,
         )?;
-        
+
         // 3. 预测未来负载
         let predicted_load = self.load_predictor.predict(
             current_metrics,
             Duration::from_secs(300), // 预测未来 5 分钟
         )?;
-        
+
         // 4. 根据预测调整目标副本数
         let adjusted_target = self.adjust_for_prediction(
             target_replicas,
             predicted_load,
         )?;
-        
+
         // 5. 应用扩缩容限制
         let final_target = self.apply_constraints(
             adjusted_target,
@@ -2892,14 +2892,14 @@ impl HPAController {
             current_metrics.min_replicas,
             current_metrics.max_replicas,
         )?;
-        
+
         // 6. 执行扩缩容
         if final_target != current_metrics.current_replicas {
             self.kubernetes_client.scale_deployment(
                 service_name,
                 final_target,
             ).await?;
-            
+
             Ok(ScalingDecision {
                 action: if final_target > current_metrics.current_replicas {
                     ScalingAction::ScaleUp
@@ -2944,7 +2944,7 @@ impl PIDController {
             last_error: 0.0,
         }
     }
-    
+
     /// 计算控制输出
     pub fn calculate(
         &mut self,
@@ -2953,19 +2953,19 @@ impl PIDController {
     ) -> Result<u32> {
         // 计算误差
         let error = setpoint - measured_value;
-        
+
         // 积分项
         self.integral += error;
-        
+
         // 微分项
         let derivative = error - self.last_error;
-        
+
         // PID 输出
         let output = self.kp * error + self.ki * self.integral + self.kd * derivative;
-        
+
         // 更新上次误差
         self.last_error = error;
-        
+
         // 转换为副本数
         Ok((measured_value + output).max(1.0) as u32)
     }
@@ -2996,7 +2996,7 @@ impl SelfHealingManager {
     ) -> Result<HealingResult> {
         // 1. 健康检查
         let health_status = self.health_checker.check(service_name).await?;
-        
+
         if health_status.is_healthy() {
             return Ok(HealingResult {
                 action: HealingAction::None,
@@ -3004,23 +3004,23 @@ impl SelfHealingManager {
                 message: "服务健康,无需自愈".to_string(),
             });
         }
-        
+
         // 2. 确定故障类型
         let fault_type = self.classify_fault(&health_status)?;
-        
+
         // 3. 选择恢复策略
         let recovery_strategy = self.select_recovery_strategy(&fault_type)?;
-        
+
         // 4. 执行恢复
         let recovery_result = self.recovery_executor.execute(
             service_name,
             &recovery_strategy,
         ).await?;
-        
+
         // 5. 验证恢复
         tokio::time::sleep(Duration::from_secs(10)).await;
         let post_health = self.health_checker.check(service_name).await?;
-        
+
         Ok(HealingResult {
             action: recovery_strategy.action,
             success: post_health.is_healthy(),
@@ -3048,7 +3048,7 @@ impl CircuitBreaker {
         F: Future<Output = Result<T>>,
     {
         let mut state = self.state.lock().await;
-        
+
         match *state {
             CircuitBreakerState::Closed => {
                 drop(state);
@@ -3118,29 +3118,29 @@ pub enum CircuitBreakerState {
 #[tokio::test]
 async fn test_cascading_failure_diagnosis() {
     let framework = IntegratedTheoreticalFramework::new();
-    
+
     // 收集 OTLP 数据
     let traces = collect_traces_during_incident().await;
     let metrics = collect_metrics_during_incident().await;
     let logs = collect_logs_during_incident().await;
-    
+
     // 综合分析
     let analysis = framework.analyze_system_state(
         traces,
         metrics,
         logs,
     ).await.unwrap();
-    
+
     // 输出分析结果
     println!("=== 级联故障诊断结果 ===");
-    
+
     // 1. 流分析结果
     println!("\n控制流分析:");
     for path in &analysis.flow_analysis.critical_paths {
         println!("  关键路径: {:?}", path);
         println!("  总耗时: {:?}", path.total_duration);
     }
-    
+
     // 2. 因果分析结果
     println!("\n因果关系分析:");
     let causal_chain = analysis.distributed_analysis.causal_chain;
@@ -3148,7 +3148,7 @@ async fn test_cascading_failure_diagnosis() {
     for (i, node) in causal_chain.iter().enumerate() {
         println!("    {}. {} ({})", i + 1, node.service, node.operation);
     }
-    
+
     // 3. 根因分析结果
     println!("\n根因分析:");
     for root_cause in &analysis.reasoning_result.root_causes {
@@ -3156,13 +3156,13 @@ async fn test_cascading_failure_diagnosis() {
         println!("  置信度: {:.2}%", root_cause.confidence * 100.0);
         println!("  支持方法: {:?}", root_cause.supporting_methods);
     }
-    
+
     // 4. 推荐的修复措施
     println!("\n推荐措施:");
     for recommendation in &analysis.recommendations {
         println!("  - {}", recommendation);
     }
-    
+
     // 验证结果
     assert!(analysis.reasoning_result.root_causes.len() > 0);
     assert!(analysis.reasoning_result.root_causes[0].confidence > 0.7);
@@ -3212,19 +3212,19 @@ async fn test_cascading_failure_diagnosis() {
 ```rust
 async fn diagnose_slow_query() -> Result<()> {
     let analyzer = PerformanceBottleneckAnalyzer::new();
-    
+
     // 收集数据
     let traces = collect_recent_traces(Duration::from_secs(300)).await?;
     let metrics = collect_db_metrics().await?;
-    
+
     // 识别瓶颈
     let bottlenecks = analyzer.identify_bottlenecks(&traces, &metrics).await?;
-    
+
     // 筛选数据库相关的瓶颈
     let db_bottlenecks: Vec<_> = bottlenecks.iter()
         .filter(|b| b.operation.contains("query") || b.operation.contains("SELECT"))
         .collect();
-    
+
     for bottleneck in db_bottlenecks {
         println!("慢查询检测:");
         println!("  服务: {}", bottleneck.service);
@@ -3237,7 +3237,7 @@ async fn diagnose_slow_query() -> Result<()> {
             println!("    - {}", rec);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -3257,33 +3257,33 @@ async fn diagnose_slow_query() -> Result<()> {
 ```rust
 async fn detect_memory_leak() -> Result<()> {
     let detector = MemoryLeakDetector::new();
-    
+
     // 收集内存指标时间序列
     let memory_metrics = collect_memory_metrics_timeseries(
         Duration::from_hours(24)
     ).await?;
-    
+
     // 检测内存泄漏
     let leak_analysis = detector.analyze(&memory_metrics).await?;
-    
+
     if leak_analysis.has_leak {
         println!("检测到内存泄漏!");
         println!("  泄漏率: {} MB/hour", leak_analysis.leak_rate);
         println!("  预计 OOM 时间: {:?}", leak_analysis.estimated_oom_time);
-        
+
         // 定位泄漏源
         let traces = collect_traces_with_high_memory().await?;
         let leak_sources = detector.locate_leak_sources(&traces).await?;
-        
+
         println!("  可能的泄漏源:");
         for source in leak_sources {
-            println!("    - {} (置信度: {:.2}%)", 
-                source.location, 
+            println!("    - {} (置信度: {:.2}%)",
+                source.location,
                 source.confidence * 100.0
             );
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -3303,26 +3303,26 @@ async fn detect_memory_leak() -> Result<()> {
 ```rust
 async fn handle_network_partition() -> Result<()> {
     let detector = PartitionDetector::new();
-    
+
     // 检测分区
     let traces = collect_cross_dc_traces().await?;
     let metrics = collect_network_metrics().await?;
-    
+
     if let Some(partition_info) = detector.detect_partition(&traces, &metrics).await? {
         println!("检测到网络分区!");
         println!("  分区数量: {}", partition_info.partitions.len());
         println!("  Quorum 状态: {:?}", partition_info.quorum_status);
         println!("  影响的服务: {:?}", partition_info.impact.affected_services);
-        
+
         // 执行恢复策略
         let recovery_result = detector.handle_partition(&partition_info).await?;
-        
+
         println!("  恢复措施:");
         for action in &partition_info.recommended_actions {
             println!("    - {}", action);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -3342,22 +3342,22 @@ async fn handle_network_partition() -> Result<()> {
 ```rust
 async fn detect_race_condition() -> Result<()> {
     let detector = ConcurrencyFaultDetector::new();
-    
+
     // 收集并发执行的 Traces
     let traces = collect_concurrent_traces().await?;
-    
+
     // 检测并发故障
     let faults = detector.detect_concurrency_faults(&traces).await?;
-    
+
     // 筛选竞态条件
     let race_conditions: Vec<_> = faults.iter()
         .filter(|f| matches!(
             f.fault_type,
-            ConcurrencyFaultType::ResourceContention | 
+            ConcurrencyFaultType::ResourceContention |
             ConcurrencyFaultType::MessageReordering
         ))
         .collect();
-    
+
     for race in race_conditions {
         println!("检测到竞态条件:");
         println!("  类型: {:?}", race.fault_type);
@@ -3365,7 +3365,7 @@ async fn detect_race_condition() -> Result<()> {
         println!("  涉及的 Spans: {:?}", race.affected_spans);
         println!("  严重程度: {:.2}", race.severity);
     }
-    
+
     Ok(())
 }
 ```
@@ -3466,7 +3466,7 @@ pub struct IntegratedTheoreticalFramework {
     reasoning_engine: SemanticReasoningEngine,
     formal_verifier: FormalVerifier,
     adaptive_controller: AdaptiveController,
-    
+
     // 配置
     config: FrameworkConfig,
 }
@@ -3484,7 +3484,7 @@ impl IntegratedTheoreticalFramework {
             config: FrameworkConfig::default(),
         }
     }
-    
+
     /// 综合分析系统状态
     pub async fn analyze_system_state(
         &self,
@@ -3495,7 +3495,7 @@ impl IntegratedTheoreticalFramework {
         // 实现见前文
         todo!()
     }
-    
+
     /// 执行故障诊断
     pub async fn diagnose_fault(
         &self,
@@ -3505,10 +3505,10 @@ impl IntegratedTheoreticalFramework {
         let traces = self.collect_related_traces(fault_symptoms).await?;
         let metrics = self.collect_related_metrics(fault_symptoms).await?;
         let logs = self.collect_related_logs(fault_symptoms).await?;
-        
+
         // 2. 综合分析
         let analysis = self.analyze_system_state(traces, metrics, logs).await?;
-        
+
         // 3. 根因分析
         let root_causes = self.reasoning_engine.analyze_root_cause(
             &analysis.faults[0],
@@ -3516,7 +3516,7 @@ impl IntegratedTheoreticalFramework {
             &analysis.metrics,
             &analysis.logs,
         ).await?;
-        
+
         // 4. 生成诊断报告
         Ok(DiagnosisReport {
             fault_symptoms: fault_symptoms.clone(),
@@ -3525,7 +3525,7 @@ impl IntegratedTheoreticalFramework {
             recommendations: self.generate_recommendations(&root_causes)?,
         })
     }
-    
+
     /// 执行自动修复
     pub async fn auto_heal(
         &mut self,
@@ -3585,25 +3585,25 @@ impl IntelligentAlertingEngine {
     ) -> Result<Option<Alert>> {
         // 1. 异常检测
         let is_anomaly = self.anomaly_detector.detect(metric).await?;
-        
+
         if !is_anomaly {
             return Ok(None);
         }
-        
+
         // 2. 降噪 - 避免告警风暴
         if self.noise_reducer.should_suppress(metric, context).await? {
             return Ok(None);
         }
-        
+
         // 3. 聚合相关告警
         let aggregated_alert = self.alert_aggregator.aggregate(
             metric,
             context,
         ).await?;
-        
+
         // 4. 计算严重程度
         let severity = self.calculate_severity(&aggregated_alert)?;
-        
+
         Ok(Some(Alert {
             title: aggregated_alert.title,
             description: aggregated_alert.description,
@@ -3752,9 +3752,9 @@ impl IntelligentAlertingEngine {
 
 ---
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025年10月7日  
-**维护者**: OTLP Rust 项目团队  
+**文档版本**: 1.0.0
+**最后更新**: 2025年10月7日
+**维护者**: OTLP Rust 项目团队
 **许可证**: MIT
 
 **相关文档**:

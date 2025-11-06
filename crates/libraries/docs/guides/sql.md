@@ -11,7 +11,7 @@
 ## 📋 目录
 
 - [SQL 数据库完整实战指南](#sql-数据库完整实战指南)
-  - [� 目录](#-目录)
+  - [📋 目录](#-目录)
   - [数据库选择指南](#数据库选择指南)
     - [PostgreSQL vs MySQL vs SQLite](#postgresql-vs-mysql-vs-sqlite)
   - [环境准备](#环境准备)

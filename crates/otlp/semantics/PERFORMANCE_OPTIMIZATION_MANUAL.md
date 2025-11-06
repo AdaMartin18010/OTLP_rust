@@ -1,7 +1,7 @@
 # 性能优化完整手册
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -76,19 +76,19 @@ bottlenecks:
     - 同步导出(阻塞业务逻辑)
     - 大量属性(高基数)
     - 未配置采样
-  
+
   Collector层:
     - 资源不足(CPU/内存)
     - 处理器配置不当
     - 批处理过小
     - 队列积压
-  
+
   网络层:
     - 带宽不足
     - 高延迟链路
     - 未压缩传输
     - TCP连接过多
-  
+
   存储层:
     - 索引性能差
     - 磁盘I/O瓶颈
@@ -148,10 +148,10 @@ processors:
   tail_sampling:
     # 决策等待时间
     decision_wait: 10s
-    
+
     # 最大Span数量
     num_traces: 100000
-    
+
     # 采样策略
     policies:
       # 1. 保留所有错误
@@ -159,13 +159,13 @@ processors:
         type: status_code
         status_code:
           status_codes: [ERROR]
-      
+
       # 2. 保留慢请求(>1s)
       - name: slow-traces
         type: latency
         latency:
           threshold_ms: 1000
-      
+
       # 3. 按服务采样
       - name: important-services
         type: string_attribute
@@ -174,13 +174,13 @@ processors:
           values: [payment, checkout]
           enabled_regex_matching: false
           invert_match: false
-      
+
       # 4. 速率限制(100 traces/s)
       - name: rate-limit
         type: rate_limiting
         rate_limiting:
           spans_per_second: 100
-      
+
       # 5. 概率采样(1%)
       - name: probabilistic
         type: probabilistic
@@ -215,19 +215,19 @@ impl AdaptiveSampler {
             traces_in_window: Arc::new(Mutex::new(0)),
         }
     }
-    
+
     // 定期调整采样率
     pub async fn adjust_rate(&self) {
         let mut interval = tokio::time::interval(self.window);
-        
+
         loop {
             interval.tick().await;
-            
+
             let traces = *self.traces_in_window.lock().unwrap();
             let actual_tps = traces as f64 / self.window.as_secs() as f64;
-            
+
             let mut current_rate = self.current_rate.lock().unwrap();
-            
+
             if actual_tps > self.target_tps * 1.1 {
                 // 降低采样率
                 *current_rate *= 0.9;
@@ -235,28 +235,28 @@ impl AdaptiveSampler {
                 // 提高采样率
                 *current_rate = (*current_rate * 1.1).min(1.0);
             }
-            
+
             println!("Adjusted sampling rate to {:.2}%", *current_rate * 100.0);
-            
+
             // 重置计数器
             *self.traces_in_window.lock().unwrap() = 0;
         }
     }
-    
+
     // 采样决策
     pub fn should_sample(&self, trace_id: &[u8]) -> bool {
         let current_rate = *self.current_rate.lock().unwrap();
-        
+
         // 基于TraceID的确定性采样
         let hash = xxhash_rust::xxh3::xxh3_64(trace_id);
         let threshold = (current_rate * u64::MAX as f64) as u64;
-        
+
         let sampled = hash < threshold;
-        
+
         if sampled {
             *self.traces_in_window.lock().unwrap() += 1;
         }
-        
+
         sampled
     }
 }
@@ -329,7 +329,7 @@ processors:
   batch:
     timeout: 1s
     send_batch_size: 1024
-  
+
   memory_limiter:
     limit_mib: 512
 
@@ -357,10 +357,10 @@ processors:
   # 高级处理
   tail_sampling:
     # ...
-  
+
   attributes:
     # ...
-  
+
   batch:
     timeout: 10s
     send_batch_size: 10240
@@ -385,10 +385,10 @@ processors:
   batch:
     # 超时:数据在内存中的最长时间
     timeout: 10s
-    
+
     # 批次大小:触发发送的Span数量
     send_batch_size: 1024
-    
+
     # 最大批次:超过此值强制发送
     send_batch_max_size: 2048
 
@@ -399,13 +399,13 @@ tuning_guide:
     timeout: 30s
     # 优势: 更高效的批处理
     # 风险: 更高延迟,更多内存
-  
+
   低延迟场景:
     send_batch_size: 512
     timeout: 1s
     # 优势: 低延迟
     # 风险: 更频繁的网络调用
-  
+
   均衡配置:
     send_batch_size: 1024
     timeout: 10s
@@ -418,16 +418,16 @@ processors:
   memory_limiter:
     # 检查间隔
     check_interval: 1s
-    
+
     # 内存限制(MiB)
     limit_mib: 2048
-    
+
     # 开始限流的阈值(80%)
     spike_limit_mib: 400
-    
+
     # 限流后的Span处理百分比
     limit_percentage: 20
-    
+
     # 恢复正常的阈值
     spike_limit_percentage: 10
 
@@ -445,17 +445,17 @@ behavior:
 exporters:
   otlp:
     endpoint: backend:4317
-    
+
     # 发送队列配置
     sending_queue:
       enabled: true
-      
+
       # 队列大小
       num_consumers: 10
-      
+
       # 队列容量(Spans数)
       queue_size: 5000
-    
+
     # 重试配置
     retry_on_failure:
       enabled: true
@@ -469,7 +469,7 @@ queue_tuning:
     queue_size: 10000
     num_consumers: 20
     max_elapsed_time: 10m
-  
+
   低内存:
     queue_size: 1000
     num_consumers: 5
@@ -488,26 +488,26 @@ exporters:
   otlp:
     endpoint: backend:4317
     compression: gzip  # 或 snappy, zstd
-    
+
 # 压缩对比
 compression_comparison:
   none:
     cpu_overhead: 0%
     bandwidth_savings: 0%
     latency: baseline
-  
+
   gzip:
     cpu_overhead: 5-10%
     bandwidth_savings: 60-80%
     latency: +5-10ms
     # 推荐: 通用场景
-  
+
   snappy:
     cpu_overhead: 2-5%
     bandwidth_savings: 40-60%
     latency: +2-5ms
     # 推荐: CPU敏感场景
-  
+
   zstd:
     cpu_overhead: 3-7%
     bandwidth_savings: 70-85%
@@ -521,13 +521,13 @@ compression_comparison:
 exporters:
   otlp:
     endpoint: backend:4317
-    
+
     # gRPC配置
     balancer_name: round_robin
-    
+
     # 连接池
     max_connections: 100
-    
+
     # Keepalive
     keepalive:
       time: 30s
@@ -558,21 +558,21 @@ elasticsearch:
     index_prefix: jaeger-span
     date_separator: "-"
     # 索引: jaeger-span-2025-10-17
-  
+
   # 分片配置
   shards:
     number_of_shards: 5  # 根据数据量调整
     number_of_replicas: 1
-  
+
   # Refresh间隔
   refresh_interval: 30s  # 默认1s,调大减少开销
-  
+
   # 批量写入
   bulk:
     size: 5MB
     actions: 1000
     flush_interval: 10s
-  
+
   # ILM策略(Index Lifecycle Management)
   ilm:
     hot_phase:
@@ -580,20 +580,20 @@ elasticsearch:
       rollover:
         max_size: 50GB
         max_age: 1d
-    
+
     warm_phase:
       duration: 7d
       actions:
         - shrink: 1  # 合并到1个分片
         - forcemerge: 1  # 段合并
-    
+
     cold_phase:
       duration: 30d
       actions:
         - allocate: # 迁移到冷节点
             require:
               data: cold
-    
+
     delete_phase:
       duration: 90d
 ```
@@ -612,10 +612,10 @@ storage:
     path: /prometheus
     retention.time: 30d  # 数据保留期
     retention.size: 50GB  # 最大存储
-    
+
     # 压缩
     wal-compression: true
-    
+
     # 块大小
     min-block-duration: 2h
     max-block-duration: 36h
@@ -641,19 +641,19 @@ data_retention:
     query_performance: excellent
     cost_per_gb: high
     use_case: 实时查询、故障排查
-  
+
   warm_storage:
     duration: 30d
     query_performance: good
     cost_per_gb: medium
     use_case: 趋势分析、审计
-  
+
   cold_storage:
     duration: 90d
     query_performance: acceptable
     cost_per_gb: low
     use_case: 合规、归档
-  
+
   archive:
     duration: 1y+
     query_performance: slow
@@ -674,16 +674,16 @@ cost_breakdown:
     - Agent/SDK CPU/内存开销
     - 网络带宽
     - Collector资源
-  
+
   数据传输:
     - 出站流量费用
     - 跨区域传输
-  
+
   数据存储:
     - 存储容量
     - IOPS
     - 备份
-  
+
   数据查询:
     - 查询计算资源
     - 索引维护
@@ -744,16 +744,16 @@ impl CostMetrics {
         let spans_per_month = self.spans_ingested.get() * 30.0 * 86400.0;
         let bytes_per_month = self.bytes_stored.get() * 30.0;
         let queries_per_month = self.query_count.get() * 30.0;
-        
+
         // 假设价格(示例)
         let cost_per_million_spans = 5.0;  // $5/百万Spans
         let cost_per_gb_storage = 0.10;  // $0.10/GB/月
         let cost_per_query = 0.001;  // $0.001/查询
-        
+
         let ingestion_cost = (spans_per_month / 1_000_000.0) * cost_per_million_spans;
         let storage_cost = (bytes_per_month / 1_000_000_000.0) * cost_per_gb_storage;
         let query_cost = queries_per_month * cost_per_query;
-        
+
         ingestion_cost + storage_cost + query_cost
     }
 }
@@ -772,17 +772,17 @@ collector_metrics:
     - otelcol_receiver_accepted_spans
     - otelcol_exporter_sent_spans
     - rate(otelcol_receiver_accepted_spans[1m])
-  
+
   latency:
     - otelcol_processor_batch_batch_send_size
     - otelcol_processor_batch_batch_send_size_bytes
     - otelcol_exporter_send_failed_spans
-  
+
   resources:
     - process_cpu_seconds_total
     - process_resident_memory_bytes
     - go_goroutines (Go Collector)
-  
+
   health:
     - otelcol_receiver_refused_spans
     - otelcol_exporter_send_failed_spans
@@ -837,7 +837,7 @@ groups:
           severity: warning
         annotations:
           summary: "Collector吞吐量下降50%"
-      
+
       # Span拒绝率高
       - alert: SpanRefusalHigh
         expr: |
@@ -848,7 +848,7 @@ groups:
           severity: critical
         annotations:
           summary: "Span拒绝率 > 1%"
-      
+
       # 导出失败率高
       - alert: ExporterFailureHigh
         expr: |
@@ -859,7 +859,7 @@ groups:
           severity: critical
         annotations:
           summary: "导出失败率 > 5%"
-      
+
       # CPU使用率高
       - alert: CollectorCPUHigh
         expr: |
@@ -869,7 +869,7 @@ groups:
           severity: warning
         annotations:
           summary: "Collector CPU > 80%"
-      
+
       # 内存使用率高
       - alert: CollectorMemoryHigh
         expr: |
@@ -895,26 +895,26 @@ checklist:
     □ 属性白名单(避免高基数)
     □ SDK资源限制
     □ 使用连接池
-  
+
   Collector层:
     □ 批处理配置优化
     □ 内存限制器启用
     □ 队列大小合理
     □ 处理器链精简
     □ 资源充足(CPU/内存)
-  
+
   传输层:
     □ 启用压缩(gzip/snappy)
     □ 使用gRPC(生产环境)
     □ 连接复用
     □ 本地缓冲
-  
+
   存储层:
     □ 索引优化(ES)
     □ 数据分层
     □ 保留期合理
     □ 定期清理
-  
+
   成本层:
     □ 智能采样
     □ 属性精简
@@ -964,17 +964,17 @@ continuous_optimization:
     - 监控关键指标
     - 检查告警
     - 查看成本
-  
+
   weekly:
     - 分析性能趋势
     - 识别异常模式
     - 优化配置
-  
+
   monthly:
     - 全面性能审计
     - 成本优化
     - 容量规划
-  
+
   quarterly:
     - 架构评审
     - 技术升级

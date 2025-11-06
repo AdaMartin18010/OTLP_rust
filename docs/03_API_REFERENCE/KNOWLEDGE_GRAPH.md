@@ -79,7 +79,7 @@ graph TB
 
 ### 1.2 API分层
 
-```
+```text
 Layer 4: 应用API
 └─ Tracer.start(), Span.end()
 
@@ -126,7 +126,7 @@ sequenceDiagram
 
 ### 2.2 API依赖关系
 
-```
+```text
 核心链路:
 TracerProvider.builder()
   → .with_endpoint()
@@ -152,7 +152,7 @@ Exporter.export()
 
 ### 3.1 API概念列表
 
-```
+```text
 TracerProvider (8个方法):
 ├─ builder() - 创建构建器
 ├─ with_endpoint() - 设置端点

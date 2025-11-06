@@ -3,12 +3,23 @@ name = "otlp"
 version = "0.1.0"
 edition = "2024"
 resolver = "3"
-rust-version = "1.90"
+rust-version = "1.91"
 authors = ["Rust OTLP Team"]
-description = "OpenTelemetry Protocol (OTLP) implementation with Rust 1.90+ features"
+description = "OpenTelemetry Protocol (OTLP) implementation with Rust 1.91+ features"
 license = "MIT OR Apache-2.0"
-keywords = ["opentelemetry", "otlp", "observability", "telemetry", "async", "grpc"]
-categories = ["development-tools::debugging", "network-programming", "asynchronous"]
+keywords = [
+  "opentelemetry",
+  "otlp",
+  "observability",
+  "telemetry",
+  "async",
+  "grpc",
+]
+categories = [
+  "development-tools::debugging",
+  "network-programming",
+  "asynchronous",
+]
 
 [dependencies]
 # OpenTelemetry核心依赖（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
@@ -32,18 +43,18 @@ reqwest = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 prost-types = { workspace = true }
-bincode = { workspace = true }  # 使用工作区版本
+bincode = { workspace = true }     # 使用工作区版本
 
 # 并发和同步
 parking_lot = { workspace = true }
 crossbeam = { workspace = true }
-dashmap = { workspace = true }  # 使用工作区版本
+dashmap = { workspace = true }     # 使用工作区版本
 
 # 压缩算法（使用稳定版本 - 2025-10-26更新）
-flate2 = "1.1.5"               # gzip压缩 (更新: 1.1.4 -> 1.1.5)
-brotli = "8.0.2"               # Brotli压缩
-zstd = "0.13.3"                # Zstandard压缩
-lz4_flex = "0.11.5"            # LZ4压缩
+flate2 = "1.1.5"    # gzip压缩 (更新: 1.1.4 -> 1.1.5)
+brotli = "8.0.2"    # Brotli压缩
+zstd = "0.13.3"     # Zstandard压缩
+lz4_flex = "0.11.5" # LZ4压缩
 
 # 异步trait
 async-trait = { workspace = true, optional = true }
@@ -55,7 +66,7 @@ num_cpus = { workspace = true }
 rand = { workspace = true }
 
 # 加密和哈希
-sha2 = { workspace = true }    # 使用工作区版本
+sha2 = { workspace = true } # 使用工作区版本
 
 # 错误处理和日志
 anyhow = { workspace = true }
@@ -73,8 +84,13 @@ chrono = { workspace = true }
 uuid = { workspace = true }
 url = { workspace = true }
 bytes = { workspace = true }
-hex = { workspace = true }     # 使用工作区版本
-async-compression = { version = "0.4.32", features = ["tokio", "zstd", "gzip", "brotli"] }
+hex = { workspace = true } # 使用工作区版本
+async-compression = { version = "0.4.32", features = [
+  "tokio",
+  "zstd",
+  "gzip",
+  "brotli",
+] }
 
 # Profiling依赖
 backtrace = { version = "0.3", optional = true }
@@ -106,7 +122,12 @@ full = ["async", "grpc", "http", "monitoring", "backtrace"]
 
 # 核心功能特性
 async = ["tokio/full", "async-trait"]
-grpc = ["tonic", "prost", "opentelemetry-proto", "opentelemetry-proto/gen-tonic"]
+grpc = [
+  "tonic",
+  "prost",
+  "opentelemetry-proto",
+  "opentelemetry-proto/gen-tonic",
+]
 http = ["reqwest", "hyper"]
 
 # 监控和可观测性特性
@@ -133,3 +154,7 @@ path = "examples/enhanced_monitoring_demo.rs"
 [[example]]
 name = "k8s_complete_deployment_demo"
 path = "examples/k8s_complete_deployment_demo.rs"
+
+# 2025年技术趋势对齐示例
+# 注意: 示例文件位于项目根目录的examples/目录
+# 如需运行，请使用: cargo run --example <name> --manifest-path Cargo.toml

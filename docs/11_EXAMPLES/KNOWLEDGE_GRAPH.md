@@ -40,7 +40,7 @@ graph TD
 
 ## 🔗 示例依赖关系
 
-```
+```text
 01_hello_otlp
   └─ 基础: TracerProvider, Tracer, Span
 

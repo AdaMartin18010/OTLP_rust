@@ -255,7 +255,7 @@ c12_model 模型体系
 // 操作语义 → 指称语义
 ⟨e, ρ⟩ ⇓ v  ⟺  ⟦e⟧ρ = v
 
-// 指称语义 → 公理语义  
+// 指称语义 → 公理语义
 ⟦S⟧σ = σ'  ⟺  {wp(S, Q)} S {Q} ∧ σ' ⊨ Q
 ```
 
@@ -304,7 +304,7 @@ async fn async_func(x: i32) -> i32 {
 // Actor → CSP
 // Actor 的消息传递可以用 CSP 的通道实现
 
-// CSP → Actor  
+// CSP → Actor
 // CSP 的通道可以封装在 Actor 中
 ```
 
@@ -361,7 +361,7 @@ Prim ←────┴─ 最小生成树
 **定理 5.1**: 分布式系统最多只能同时满足 CAP 中的两个:
 
 - C (Consistency): 一致性
-- A (Availability): 可用性  
+- A (Availability): 可用性
 - P (Partition Tolerance): 分区容错
 
 ```text
@@ -509,7 +509,7 @@ CAP + Raft → Consistent Distributed System
 
 ```text
 选择模型:
-├── 需要形式化证明? 
+├── 需要形式化证明?
 │   ├── 是 → 语义模型 + 形式化方法
 │   └── 否 → 继续
 ├── 需要高并发?
@@ -517,7 +517,7 @@ CAP + Raft → Consistent Distributed System
 │   └── 否 → 继续
 ├── 需要分布式?
 │   ├── 是 → 分布式模型 + 共识算法
-│   └── 否 → 继续  
+│   └── 否 → 继续
 ├── 需要高性能计算?
 │   ├── 是 → 算法模型 + 并行模型
 │   └── 否 → 基础模型

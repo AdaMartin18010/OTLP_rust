@@ -1,7 +1,7 @@
 # OpAMP灰度发布与回滚策略完整指南
 
-> **版本**: 2.0  
-> **日期**: 2025年10月17日  
+> **版本**: 2.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -40,7 +40,7 @@ OpAMP是OpenTelemetry的**控制面协议**，用于远程管理和配置Collect
 │ OpAMP Server│ ◄──────────────────────── │  Collector   │
 │  (Control)  │                            │   Agent 1    │
 └─────────────┘                            └──────────────┘
-      │                                     
+      │
       │          OpAMP协议                  ┌──────────────┐
       └────────────────────────────────────►│  Collector   │
                                             │   Agent 2    │
@@ -75,15 +75,15 @@ thresholds:
   failure_rate:
     warning: 0.1%
     critical: 0.5%
-    
+
   cpu_increase:
     warning: 5%
     critical: 10%
-    
+
   latency_p95:
     warning: 50ms
     critical: 100ms
-    
+
   error_rate:
     warning: 10 errors/min
     critical: 50 errors/min
@@ -105,19 +105,19 @@ selectors:
     labels:
       env: canary
       version: ">=2.0.0"
-  
+
   # 按区域选择
   - name: us-west
     labels:
       region: us-west
       datacenter: dc1
-  
+
   # 按租户选择
   - name: tenant-a
     labels:
       tenant: tenant-a
       tier: premium
-  
+
   # 组合选择
   - name: prod-us-west
     labels:
@@ -135,7 +135,7 @@ selectors:
     capabilities:
       - transform_processor
       - ottl_version: ">=1.0"
-  
+
   - name: profiles-capable
     capabilities:
       - profiles_receiver
@@ -167,7 +167,7 @@ phases:
       - metric: latency_p95
         operator: "<"
         threshold: 50     # 50ms
-  
+
   - name: phase2_staging
     description: "预生产验证"
     selector:
@@ -183,7 +183,7 @@ phases:
       - metric: error_count
         operator: "<"
         threshold: 10
-  
+
   - name: phase3_production
     description: "生产环境全量"
     selector:
@@ -412,7 +412,7 @@ extensions:
       endpoint: wss://opamp-server:4320
       headers:
         Authorization: "Bearer ${JWT_TOKEN}"
-    
+
 auth_config:
   jwt:
     issuer: "opamp-auth-server"
@@ -429,7 +429,7 @@ extensions:
   opamp:
     server:
       endpoint: wss://opamp-server:4320
-    
+
     oidc:
       issuer_url: https://auth.company.com
       client_id: opamp-collector
@@ -487,19 +487,19 @@ sequenceDiagram
     participant OpAMP_Server
     participant Collector_Agent
     participant Prometheus
-    
+
     Admin->>OpAMP_Server: 上传新配置
     OpAMP_Server->>OpAMP_Server: 计算ConfigHash
     OpAMP_Server->>OpAMP_Server: 签名配置
-    
+
     OpAMP_Server->>Collector_Agent: 推送配置(WebSocket)
     Collector_Agent->>Collector_Agent: 验证签名
     Collector_Agent->>Collector_Agent: 应用配置
     Collector_Agent->>OpAMP_Server: 确认应用(ACK)
-    
+
     Collector_Agent->>Prometheus: 上报指标
     OpAMP_Server->>Prometheus: 查询Agent健康状态
-    
+
     alt 配置正常
         OpAMP_Server->>Admin: 通知成功
     else 配置异常
@@ -518,7 +518,7 @@ sequenceDiagram
 # auto-rollback-config.yaml
 rollback:
   enabled: true
-  
+
   triggers:
     # 失败率触发
     - name: high_failure_rate
@@ -526,29 +526,29 @@ rollback:
         rate(otelcol_exporter_send_failed_spans[5m]) > 0.001
       for: 5m
       action: rollback
-      
+
     # CPU异常触发
     - name: cpu_spike
       condition: |
-        (rate(process_cpu_seconds_total[5m]) - 
+        (rate(process_cpu_seconds_total[5m]) -
          avg_over_time(rate(process_cpu_seconds_total[5m])[7d:5m])) > 0.1
       for: 5m
       action: rollback
-      
+
     # 内存泄漏触发
     - name: memory_leak
       condition: |
         deriv(process_resident_memory_bytes[10m]) > 10485760  # 10MB/min增长
       for: 10m
       action: rollback
-      
+
     # 错误日志触发
     - name: error_spike
       condition: |
         rate(log_messages{level="error"}[5m]) > 10
       for: 3m
       action: rollback
-  
+
   # 回滚策略
   strategy:
     method: immediate  # immediate | gradual
@@ -596,12 +596,12 @@ while true; do
   # 检查所有Agent是否已回滚
   current_agents=$(curl -s http://opamp-server:8080/api/v1/agents | \
     jq -r --arg hash "$CONFIG_HASH" '.agents[] | select(.config_hash != $hash) | .id')
-  
+
   if [ -z "$current_agents" ]; then
     echo "✓ 所有Agent已回滚"
     break
   fi
-  
+
   # 超时检查
   current_time=$(date +%s)
   if [ $((current_time - start_time)) -gt $TIMEOUT ]; then
@@ -609,7 +609,7 @@ while true; do
     echo "未完成的Agent: $current_agents"
     exit 1
   fi
-  
+
   echo "等待回滚完成... (剩余Agent: $(echo $current_agents | wc -w))"
   sleep 5
 done
@@ -629,12 +629,12 @@ extensions:
   opamp:
     server:
       endpoint: wss://opamp-server:4320
-    
+
     certificate_rotation:
       enabled: true
       check_interval: 24h
       renewal_threshold: 168h  # 7天前开始续期
-      
+
       # 证书来源
       cert_provider:
         type: cert-manager  # cert-manager | vault | acme
@@ -678,8 +678,8 @@ spec:
 opamp_server_connected_agents
 
 # 配置下发成功率
-rate(opamp_config_apply_success_total[5m]) 
-/ 
+rate(opamp_config_apply_success_total[5m])
+/
 rate(opamp_config_apply_total[5m])
 
 # 配置下发延迟
@@ -703,18 +703,18 @@ groups:
           severity: critical
         annotations:
           summary: "OpAMP Server不可用"
-          
+
       - alert: OpAMPHighConfigFailureRate
         expr: |
-          rate(opamp_config_apply_fail_total[5m]) 
-          / 
+          rate(opamp_config_apply_fail_total[5m])
+          /
           rate(opamp_config_apply_total[5m]) > 0.01
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: "OpAMP配置应用失败率过高"
-          
+
       - alert: OpAMPFrequentRollbacks
         expr: rate(opamp_rollback_total[1h]) > 2
         labels:

@@ -1,7 +1,7 @@
 # OpAMP部署完整指南
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -222,11 +222,11 @@ spec:
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
-  
+
   selector:
     matchLabels:
       app: opamp-server
-  
+
   template:
     metadata:
       labels:
@@ -243,7 +243,7 @@ spec:
                     values:
                       - opamp-server
               topologyKey: kubernetes.io/hostname
-      
+
       containers:
         - name: opamp-server
           image: opamp-server:v1.0.0
@@ -252,21 +252,21 @@ spec:
               name: opamp-ws
             - containerPort: 4321
               name: opamp-http
-          
+
           livenessProbe:
             httpGet:
               path: /health
               port: 4321
             initialDelaySeconds: 10
             periodSeconds: 10
-          
+
           readinessProbe:
             httpGet:
               path: /ready
               port: 4321
             initialDelaySeconds: 5
             periodSeconds: 5
-          
+
           resources:
             requests:
               cpu: "500m"
@@ -320,7 +320,7 @@ spec:
   selector:
     matchLabels:
       app: opamp-postgres
-  
+
   template:
     metadata:
       labels:
@@ -342,11 +342,11 @@ spec:
                 secretKeyRef:
                   name: opamp-db-secret
                   key: password
-          
+
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
-  
+
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -390,11 +390,11 @@ server:
   websocket:
     endpoint: 0.0.0.0:4320
     max_connections: 10000
-  
+
   # HTTP端点
   http:
     endpoint: 0.0.0.0:4321
-  
+
   # TLS配置
   tls:
     enabled: true
@@ -414,7 +414,7 @@ storage:
     type: s3
     bucket: opamp-configs
     region: us-east-1
-  
+
   # 包存储
   packages:
     type: s3
@@ -432,7 +432,7 @@ policies:
   config_update:
     approval_required: true
     rollback_on_error: true
-  
+
   # 包更新策略
   package_update:
     approval_required: true
@@ -479,10 +479,10 @@ extensions:
           ca_file: /certs/ca.crt
           cert_file: /certs/client.crt
           key_file: /certs/client.key
-    
+
     # Agent标识
     instance_uid: ${INSTANCE_UID}
-    
+
     # 能力声明
     capabilities:
       - ReportsEffectiveConfig
@@ -491,7 +491,7 @@ extensions:
       - ReportsRemoteConfig
       - AcceptsPackages
       - ReportsPackageStatuses
-    
+
     # 本地配置(初始)
     own_telemetry:
       logs_endpoint: ${OPAMP_LOGS_ENDPOINT}
@@ -518,18 +518,18 @@ exporters:
 
 service:
   extensions: [opamp]
-  
+
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
       exporters: [otlp]
-    
+
     metrics:
       receivers: [otlp]
       processors: [batch]
       exporters: [otlp]
-    
+
     logs:
       receivers: [otlp]
       processors: [batch]
@@ -625,7 +625,7 @@ spec:
               name: http
             - containerPort: 8888
               name: metrics
-          
+
           env:
             - name: DB_USER
               valueFrom:
@@ -637,27 +637,27 @@ spec:
                 secretKeyRef:
                   name: opamp-db
                   key: password
-          
+
           volumeMounts:
             - name: config
               mountPath: /etc/opamp
             - name: tls
               mountPath: /certs
-          
+
           livenessProbe:
             httpGet:
               path: /health
               port: 4321
             initialDelaySeconds: 10
             periodSeconds: 10
-          
+
           readinessProbe:
             httpGet:
               path: /ready
               port: 4321
             initialDelaySeconds: 5
             periodSeconds: 5
-          
+
           resources:
             requests:
               cpu: 500m
@@ -665,7 +665,7 @@ spec:
             limits:
               cpu: 2000m
               memory: 2Gi
-      
+
       volumes:
         - name: config
           configMap:
@@ -728,11 +728,11 @@ spec:
         app: otel-collector
     spec:
       serviceAccountName: otel-collector
-      
+
       containers:
         - name: otel-collector
           image: otel/opentelemetry-collector-contrib:0.89.0
-          
+
           env:
             - name: POD_NAME
               valueFrom:
@@ -753,7 +753,7 @@ spec:
                 secretKeyRef:
                   name: opamp-token
                   key: token
-          
+
           ports:
             - containerPort: 4317
               hostPort: 4317
@@ -761,13 +761,13 @@ spec:
             - containerPort: 4318
               hostPort: 4318
               name: otlp-http
-          
+
           volumeMounts:
             - name: config
               mountPath: /etc/otelcol
             - name: tls
               mountPath: /certs
-          
+
           resources:
             requests:
               cpu: 200m
@@ -775,7 +775,7 @@ spec:
             limits:
               cpu: 1000m
               memory: 1Gi
-      
+
       volumes:
         - name: config
           configMap:
@@ -869,17 +869,17 @@ spec:
       type: string
       required: true
       enum: [dev, staging, prod]
-    
+
     - name: backend_endpoint
       type: string
       required: true
-    
+
     - name: sampling_rate
       type: float
       default: 0.1
       min: 0.01
       max: 1.0
-  
+
   # 配置内容
   config:
     receivers:
@@ -887,7 +887,7 @@ spec:
         protocols:
           grpc:
             endpoint: 0.0.0.0:4317
-    
+
     processors:
       # 环境标签
       attributes:
@@ -895,20 +895,20 @@ spec:
           - key: deployment.environment
             value: "{{.environment}}"
             action: upsert
-      
+
       # 采样
       probabilistic_sampler:
         sampling_percentage: "{{.sampling_rate}}"
-      
+
       batch:
         timeout: 1s
-    
+
     exporters:
       otlp:
         endpoint: "{{.backend_endpoint}}"
         tls:
           insecure: false
-    
+
     service:
       pipelines:
         traces:
@@ -934,35 +934,35 @@ spec:
       success_criteria:
         error_rate_threshold: 0.01
         health_check_pass_rate: 0.99
-    
+
     - name: pilot
       percentage: 20
       duration: 1h
       success_criteria:
         error_rate_threshold: 0.01
         health_check_pass_rate: 0.99
-    
+
     - name: rollout
       percentage: 100
       duration: 2h
       success_criteria:
         error_rate_threshold: 0.01
         health_check_pass_rate: 0.99
-  
+
   # 失败策略
   failure_policy:
     action: rollback
     notification:
       - slack
       - email
-  
+
   # 目标选择
   target_selector:
     # 按标签选择
     labels:
       region: us-east-1
       tier: production
-    
+
     # 按Agent ID选择
     agent_ids:
       - agent-001
@@ -1006,25 +1006,25 @@ openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key \
 # 自动证书轮换配置
 certificate_rotation:
   enabled: true
-  
+
   # 轮换策略
   strategy:
     # 提前轮换时间
     rotation_before_expiry: 720h  # 30天
-    
+
     # 检查间隔
     check_interval: 24h
-  
+
   # 证书来源
   provider:
     type: cert-manager  # 或 vault, aws-acm
-    
+
     # cert-manager配置
     cert_manager:
       issuer: letsencrypt-prod
       dns_names:
         - opamp-server.example.com
-      
+
   # 轮换通知
   notifications:
     - type: slack
@@ -1045,16 +1045,16 @@ auth:
   jwt:
     # 签名密钥
     secret_key_file: /secrets/jwt-key
-    
+
     # JWT参数
     issuer: opamp-server.example.com
     audience: opamp-agents
     expiration: 24h
-    
+
     # 刷新策略
     refresh_enabled: true
     refresh_before_expiry: 1h
-    
+
     # Claims要求
     required_claims:
       - sub  # Agent ID
@@ -1070,7 +1070,7 @@ import (
     "context"
     "crypto/tls"
     "time"
-    
+
     "github.com/golang-jwt/jwt/v5"
     "go.opentelemetry.io/collector/extension/opamp"
 )
@@ -1084,27 +1084,27 @@ func createOpAMPClient() *opamp.Client {
         "iss": "opamp-server.example.com",
         "aud": "opamp-agents",
     })
-    
+
     tokenString, _ := token.SignedString([]byte("secret-key"))
-    
+
     // 配置客户端
     cfg := opamp.ClientConfig{
         ServerURL: "wss://opamp-server.example.com:4320/v1/opamp",
-        
+
         // 认证头
         Headers: map[string]string{
             "Authorization": "Bearer " + tokenString,
         },
-        
+
         // TLS配置
         TLSConfig: &tls.Config{
             InsecureSkipVerify: false,
             MinVersion:         tls.VersionTLS13,
         },
-        
+
         InstanceUID: "agent-001",
     }
-    
+
     client := opamp.NewClient(cfg)
     return client
 }
@@ -1122,11 +1122,11 @@ auth:
     redis:
       endpoint: redis:6379
       db: 0
-    
+
     # Key格式
     prefix: opamp_
     length: 32
-    
+
     # 过期策略
     expiration: 90d
     rotation_warning: 30d
@@ -1197,7 +1197,7 @@ groups:
       # Agent大量断连
       - alert: OpAMPAgentDisconnected
         expr: |
-          rate(opamp_server_connected_agents[5m]) < 
+          rate(opamp_server_connected_agents[5m]) <
           0.95 * rate(opamp_server_connected_agents[1h] offset 1h)
         for: 5m
         labels:
@@ -1205,7 +1205,7 @@ groups:
         annotations:
           summary: "大量Agent断连"
           description: "过去5分钟Agent断连超过5%"
-      
+
       # 配置更新失败率高
       - alert: OpAMPConfigUpdateFailureHigh
         expr: |
@@ -1217,11 +1217,11 @@ groups:
         annotations:
           summary: "配置更新失败率过高"
           description: "配置更新失败率 > 5%"
-      
+
       # 配置更新延迟高
       - alert: OpAMPConfigUpdateLatencyHigh
         expr: |
-          histogram_quantile(0.95, 
+          histogram_quantile(0.95,
             rate(opamp_server_config_update_duration_seconds_bucket[5m])
           ) > 5
         for: 10m
@@ -1384,18 +1384,18 @@ watch -n 1 'curl -s http://opamp-server:4321/metrics | grep opamp_server_connect
 server:
   # 连接池大小
   max_connections: 10000
-  
+
   # 消息批处理
   batching:
     enabled: true
     max_batch_size: 100
     timeout: 1s
-  
+
   # 压缩
   compression:
     enabled: true
     algorithm: gzip
-  
+
   # 缓存
   caching:
     config_cache_ttl: 5m
@@ -1407,7 +1407,7 @@ database:
   max_open_conns: 100
   max_idle_conns: 10
   conn_max_lifetime: 1h
-  
+
   # 索引
   indexes:
     - agent_id
@@ -1419,7 +1419,7 @@ extensions:
   opamp:
     # 心跳间隔
     heartbeat_interval: 30s
-    
+
     # 重连策略
     retry:
       initial_interval: 1s

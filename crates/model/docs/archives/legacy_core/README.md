@@ -2,7 +2,7 @@
 
 > **建模基础理论和核心概念**
 
-**最后更新**: 2025-10-19  
+**最后更新**: 2025-10-19
 **适用版本**: Rust 1.90+
 
 ---
@@ -306,26 +306,26 @@ trait Shape {
 
 ### 初学者
 
-→ [建模概述](./modeling-overview.md)  
-→ [快速开始](../tutorials/quick-start.md)  
+→ [建模概述](./modeling-overview.md)
+→ [快速开始](../tutorials/quick-start.md)
 → [示例代码](../examples/)
 
 ### 进阶学习
 
-→ [算法模型](./algorithm-models.md)  
-→ [并发模型](../concurrency/)  
+→ [算法模型](./algorithm-models.md)
+→ [并发模型](../concurrency/)
 → [分布式系统](../distributed/)
 
 ### 深入研究
 
-→ [形式化方法](../formal/)  
-→ [高级主题](../advanced/)  
+→ [形式化方法](../formal/)
+→ [高级主题](../advanced/)
 → [领域应用](../domain/)
 
 ---
 
-**核心概念维护**: 项目维护团队  
-**最后更新**: 2025-10-19  
+**核心概念维护**: 项目维护团队
+**最后更新**: 2025-10-19
 **反馈**: [GitHub Issues](https://github.com/rust-lang/rust-lang/issues)
 
 ---
