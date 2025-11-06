@@ -1,29 +1,30 @@
 ﻿# C11 Middlewares 知识图谱与概念关系（增强版）
 
-> **文档定位**: Rust 1.90 中间件技术的完整知识体系  
-> **创建日期**: 2025-10-20  
-> **适用版本**: Rust 1.90+ | Edition 2024  
+> **文档定位**: Rust 1.90 中间件技术的完整知识体系
+> **创建日期**: 2025-10-20
+> **适用版本**: Rust 1.90+ | Edition 2024
 > **文档类型**: 理论知识图谱 + 概念关系 + 可视化
 
 ---
 
 ## 📋 目录
+
 - [C11 Middlewares 知识图谱与概念关系（增强版）](#c11-middlewares-知识图谱与概念关系增强版)
-  - [📊 目录](#-目录)
-  - [1. 核心概念知识图谱](#1-核心概念知识图谱)
+  - [📋 目录](#-目录)
+  - [📖 核心概念知识图谱](#-核心概念知识图谱)
     - [中间件体系总览](#中间件体系总览)
     - [消息队列生态](#消息队列生态)
     - [数据库中间件](#数据库中间件)
     - [网络代理中间件](#网络代理中间件)
     - [高性能 I/O 与数据技术](#高性能-io-与数据技术)
-  - [2. 概念属性矩阵](#2-概念属性矩阵)
+  - [📝 概念属性矩阵](#-概念属性矩阵)
     - [消息队列对比](#消息队列对比)
     - [数据库中间件对比](#数据库中间件对比)
     - [代理服务器对比](#代理服务器对比)
-  - [3. 技术演化与学习路径](#3-技术演化与学习路径)
+  - [🔍 技术演化与学习路径](#-技术演化与学习路径)
     - [中间件技术演化](#中间件技术演化)
     - [学习路径](#学习路径)
-  - [4. 总结与索引](#4-总结与索引)
+  - [🔧 总结与索引](#-总结与索引)
     - [快速查找](#快速查找)
     - [相关文档](#相关文档)
   - [返回导航](#返回导航)
@@ -37,42 +38,42 @@
 ```mermaid
 graph TB
     Middleware[中间件体系]
-    
+
     Middleware --> MQ[消息队列]
     Middleware --> DB[数据库中间件]
     Middleware --> Proxy[网络代理]
     Middleware --> Cache[缓存中间件]
-    
+
     MQ --> Kafka[Apache Kafka]
     MQ --> RabbitMQ[RabbitMQ]
     MQ --> Pulsar[Apache Pulsar]
     MQ --> NATS[NATS]
-    
+
     DB --> MySQL[MySQL客户端]
     DB --> PostgreSQL[PostgreSQL客户端]
     DB --> Redis_Client[Redis客户端]
     DB --> ClickHouse[ClickHouse]
-    
+
     Proxy --> Pingora[Cloudflare Pingora]
     Proxy --> Nginx[Nginx替代]
     Proxy --> Envoy[Envoy集成]
-    
+
     Cache --> Redis_Cache[Redis缓存]
     Cache --> Memcached[Memcached]
     Cache --> LocalCache[本地缓存]
-    
+
     Kafka --> KafkaProducer[Producer API]
     Kafka --> KafkaConsumer[Consumer API]
     Kafka --> KafkaStreams[Streams API]
-    
+
     Redis_Client --> RedisAsync[异步Redis]
     Redis_Client --> RedisCluster[集群模式]
     Redis_Client --> RedisPipeline[管道优化]
-    
+
     Pingora --> PingoraHTTP[HTTP代理]
     Pingora --> PingoraLB[负载均衡]
     Pingora --> PingoraTLS[TLS终止]
-    
+
     style Middleware fill:#e1f5ff
     style MQ fill:#fff3e0
     style DB fill:#f3e5f5
@@ -86,23 +87,23 @@ graph TB
 graph LR
     Producer[生产者] -->|发送消息| Broker[消息代理]
     Broker -->|分发消息| Consumer[消费者]
-    
+
     Broker --> Topic[Topic]
     Topic --> Partition1[Partition 0]
     Topic --> Partition2[Partition 1]
     Topic --> PartitionN[Partition N]
-    
+
     Partition1 --> Replica1A[Replica 1]
     Partition1 --> Replica1B[Replica 2]
-    
+
     Consumer --> ConsumerGroup[Consumer Group]
     ConsumerGroup --> Consumer1[Consumer 1]
     ConsumerGroup --> Consumer2[Consumer 2]
-    
+
     Broker --> ZK[ZooKeeper/KRaft]
     ZK --> Metadata[元数据管理]
     ZK --> Leader[Leader选举]
-    
+
     style Producer fill:#bbdefb
     style Consumer fill:#c8e6c9
     style Broker fill:#ffccbc
@@ -114,29 +115,29 @@ graph LR
 ```mermaid
 graph TB
     App[应用层]
-    
+
     App --> Pool[连接池]
     Pool --> Primary[主库]
     Pool --> Replica1[从库1]
     Pool --> Replica2[从库2]
-    
+
     App --> ORM[ORM层]
     ORM --> SQLx[SQLx]
     ORM --> Diesel[Diesel]
     ORM --> SeaORM[SeaORM]
-    
+
     App --> Cache_Layer[缓存层]
     Cache_Layer --> LocalCache_DB[本地缓存]
     Cache_Layer --> Redis_DB[Redis缓存]
-    
+
     Primary --> Replication[主从复制]
     Replication --> Replica1
     Replication --> Replica2
-    
+
     SQLx --> AsyncRuntime[异步运行时]
     AsyncRuntime --> Tokio_DB[Tokio]
     AsyncRuntime --> AsyncStd[async-std]
-    
+
     style App fill:#e3f2fd
     style Pool fill:#fff3e0
     style ORM fill:#f3e5f5
@@ -148,28 +149,28 @@ graph TB
 ```mermaid
 graph TB
     Client[客户端请求]
-    
+
     Client --> LB[负载均衡器]
     LB --> Pingora_Proxy[Pingora代理]
-    
+
     Pingora_Proxy --> HealthCheck[健康检查]
     Pingora_Proxy --> RateLimiter[限流器]
     Pingora_Proxy --> TLS_Handler[TLS处理]
     Pingora_Proxy --> Cache_Proxy[缓存层]
-    
+
     HealthCheck --> Backend1[后端服务1]
     HealthCheck --> Backend2[后端服务2]
     HealthCheck --> Backend3[后端服务3]
-    
+
     RateLimiter --> TokenBucket[令牌桶]
     RateLimiter --> LeakyBucket[漏桶]
-    
+
     TLS_Handler --> Cert[证书管理]
     TLS_Handler --> ALPN[ALPN协议]
-    
+
     Cache_Proxy --> CDN[CDN缓存]
     Cache_Proxy --> EdgeCache[边缘缓存]
-    
+
     style Client fill:#e1f5ff
     style Pingora_Proxy fill:#fff3e0
     style HealthCheck fill:#e8f5e9
@@ -181,45 +182,45 @@ graph TB
 ```mermaid
 graph TB
     HighPerf[高性能技术]
-    
+
     HighPerf --> IOModels[I/O模型]
     HighPerf --> DataFormats[数据格式]
-    
+
     IOModels --> Traditional[传统I/O]
     IOModels --> Modern[现代I/O]
-    
+
     Traditional --> Blocking[阻塞I/O]
     Traditional --> Epoll[epoll/kqueue]
-    
+
     Modern --> IoUring[io_uring]
     IoUring --> TokioUring[tokio-uring]
     IoUring --> Monoio[Monoio]
     IoUring --> Glommio[Glommio]
-    
+
     IoUring --> Features[核心特性]
     Features --> ZeroCopy[零拷贝]
     Features --> Batch[批量操作]
     Features --> DirectIO[直接I/O]
     Features --> RegBuffers[注册缓冲区]
-    
+
     DataFormats --> Traditional_Data[传统格式]
     DataFormats --> Modern_Data[现代格式]
-    
+
     Traditional_Data --> JSON_Format[JSON]
     Traditional_Data --> Protobuf[Protocol Buffers]
     Traditional_Data --> MessagePack[MessagePack]
-    
+
     Modern_Data --> Arrow[Apache Arrow]
     Arrow --> Columnar[列式存储]
     Arrow --> ArrowFlight[Arrow Flight]
     Arrow --> SIMD[SIMD支持]
     Arrow --> IPC[零拷贝IPC]
-    
+
     Arrow --> Integration[中间件集成]
     Integration --> KafkaArrow[Kafka + Arrow]
     Integration --> DBArrow[数据库 + Arrow]
     Integration --> CacheArrow[缓存 + Arrow]
-    
+
     style HighPerf fill:#e1f5ff
     style IOModels fill:#fff3e0
     style DataFormats fill:#f3e5f5
@@ -304,26 +305,26 @@ graph TB
 ```mermaid
 timeline
     title 中间件技术演化历程
-    
+
     2005-2010 : 传统消息队列
               : RabbitMQ诞生
               : ActiveMQ主导
-    
+
     2011-2015 : 大数据时代
               : Apache Kafka发布
               : Redis流行
               : Nginx主导
-    
+
     2016-2020 : 云原生时代
               : Pulsar发布
               : Envoy服务网格
               : gRPC崛起
-    
+
     2021-2024 : Rust生态爆发
               : SQLx成熟
               : Pingora开源
               : async生态完善
-    
+
     2024+ : 现代化重构
           : Pingora替代Nginx
           : Rust中间件生态
@@ -335,32 +336,32 @@ timeline
 ```mermaid
 graph TD
     Start[开始学习]
-    
+
     Start --> Basic[基础知识]
     Basic --> Tokio[异步运行时]
     Basic --> Protocols[网络协议]
     Basic --> Concurrency[并发模型]
-    
+
     Tokio --> MQ_Learn[消息队列]
     MQ_Learn --> Kafka_Learn[Kafka实践]
     MQ_Learn --> RabbitMQ_Learn[RabbitMQ实践]
-    
+
     Protocols --> DB_Learn[数据库中间件]
     DB_Learn --> SQLx_Learn[SQLx实践]
     DB_Learn --> Redis_Learn[Redis实践]
-    
+
     Concurrency --> Proxy_Learn[代理服务器]
     Proxy_Learn --> Pingora_Learn[Pingora实践]
     Proxy_Learn --> LoadBalancer[负载均衡]
-    
+
     Kafka_Learn --> Advanced[高级主题]
     SQLx_Learn --> Advanced
     Pingora_Learn --> Advanced
-    
+
     Advanced --> Distributed[分布式系统]
     Advanced --> Performance[性能优化]
     Advanced --> Production[生产部署]
-    
+
     style Start fill:#e1f5ff
     style Advanced fill:#fff3e0
     style Production fill:#c8e6c9
@@ -427,9 +428,9 @@ graph TD
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025-10-20  
-**维护者**: Rust-lang项目组  
+**文档版本**: v1.0
+**最后更新**: 2025-10-20
+**维护者**: Rust-lang项目组
 **反馈**: 欢迎通过Issue提供建议
 
 ---

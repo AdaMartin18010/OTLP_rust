@@ -1,8 +1,8 @@
 # 图灵可计算性与并发并行模型分析
 
-**版本**: 1.0  
-**日期**: 2025年10月26日  
-**主题**: 图灵机、λ演算、进程代数、并发模型、形式化验证  
+**版本**: 1.0
+**日期**: 2025年10月26日
+**主题**: 图灵机、λ演算、进程代数、并发模型、形式化验证
 **状态**: 🟢 活跃维护
 
 > **简介**: 图灵可计算性与并发模型 - 可计算性理论、进程代数和Actor模型的完整分析。
@@ -131,35 +131,35 @@ impl TuringMachine {
     /// 单步执行
     pub fn step(&self, config: &Configuration) -> Option<Configuration> {
         let mut span = self.tracer.as_ref()?.start("tm_step");
-        
+
         // 读取当前符号
         let current_symbol = config.right_tape.first()
             .copied()
             .unwrap_or(Symbol::Blank);
-        
+
         span.set_attribute("state", format!("{:?}", config.state));
         span.set_attribute("symbol", format!("{:?}", current_symbol));
         span.set_attribute("position", config.head_position.to_string());
-        
+
         // 查找转移
-        let (new_state, write_symbol, direction) = 
+        let (new_state, write_symbol, direction) =
             self.delta.get(&(config.state, current_symbol))?;
-        
+
         span.set_attribute("new_state", format!("{:?}", new_state));
         span.set_attribute("write_symbol", format!("{:?}", write_symbol));
         span.set_attribute("direction", format!("{:?}", direction));
-        
+
         // 执行转移
         let mut new_config = config.clone();
         new_config.state = *new_state;
-        
+
         // 写入符号
         if !new_config.right_tape.is_empty() {
             new_config.right_tape[0] = *write_symbol;
         } else {
             new_config.right_tape.push(*write_symbol);
         }
-        
+
         // 移动读写头
         match direction {
             Direction::Right => {
@@ -183,10 +183,10 @@ impl TuringMachine {
                 }
             }
         }
-        
+
         Some(new_config)
     }
-    
+
     /// 运行图灵机
     pub fn run(&self, input: &[Symbol]) -> Result<bool> {
         let mut config = Configuration {
@@ -195,38 +195,38 @@ impl TuringMachine {
             right_tape: input.to_vec(),
             head_position: 0,
         };
-        
+
         let mut steps = 0;
         const MAX_STEPS: usize = 100000;
-        
+
         let mut trace_span = self.tracer.as_ref()
             .map(|t| t.start("tm_run"));
-        
-        while config.state != self.accept_state && 
+
+        while config.state != self.accept_state &&
               config.state != self.reject_state {
             if steps >= MAX_STEPS {
                 return Err(anyhow!("TM exceeded maximum steps"));
             }
-            
+
             config = self.step(&config)
                 .ok_or_else(|| anyhow!("No transition defined"))?;
-            
+
             steps += 1;
         }
-        
+
         if let Some(ref mut span) = trace_span {
             span.set_attribute("steps", steps.to_string());
-            span.set_attribute("accepted", 
+            span.set_attribute("accepted",
                 (config.state == self.accept_state).to_string());
         }
-        
+
         Ok(config.state == self.accept_state)
     }
-    
+
     /// 构建识别 {0ⁿ1ⁿ | n ≥ 0} 的图灵机
     pub fn build_0n1n_recognizer(tracer: Option<Tracer>) -> Self {
         let mut delta = HashMap::new();
-        
+
         let q0 = State(0); // 初始状态
         let q1 = State(1); // 标记 0
         let q2 = State(2); // 寻找 1
@@ -234,23 +234,23 @@ impl TuringMachine {
         let q4 = State(4); // 返回开头
         let q_accept = State(5);
         let q_reject = State(6);
-        
+
         // q0: 检查是否全是空白（接受）或开始标记
         delta.insert((q0, Symbol::Blank), (q_accept, Symbol::Blank, Direction::Right));
         delta.insert((q0, Symbol::Zero), (q1, Symbol::Custom('X'), Direction::Right));
         delta.insert((q0, Symbol::Custom('X')), (q0, Symbol::Custom('X'), Direction::Right));
-        
+
         // q1: 跳过已标记的 0 和未标记的 0
         delta.insert((q1, Symbol::Zero), (q1, Symbol::Zero, Direction::Right));
         delta.insert((q1, Symbol::One), (q2, Symbol::Custom('Y'), Direction::Left));
         delta.insert((q1, Symbol::Custom('Y')), (q1, Symbol::Custom('Y'), Direction::Right));
-        
+
         // q2: 返回开头
         delta.insert((q2, Symbol::Zero), (q2, Symbol::Zero, Direction::Left));
         delta.insert((q2, Symbol::Custom('X')), (q2, Symbol::Custom('X'), Direction::Left));
         delta.insert((q2, Symbol::Custom('Y')), (q2, Symbol::Custom('Y'), Direction::Left));
         delta.insert((q2, Symbol::Blank), (q0, Symbol::Blank, Direction::Right));
-        
+
         Self {
             states: [q0, q1, q2, q3, q4, q_accept, q_reject].iter().copied().collect(),
             input_alphabet: [Symbol::Zero, Symbol::One].iter().copied().collect(),
@@ -341,7 +341,7 @@ impl LambdaTerm {
             }
         }
     }
-    
+
     /// 替换 [x := N]
     pub fn substitute(&self, var: &str, term: &LambdaTerm) -> LambdaTerm {
         match self {
@@ -383,7 +383,7 @@ impl LambdaTerm {
             }
         }
     }
-    
+
     fn fresh_var(&self, base: &str) -> String {
         let mut counter = 0;
         let fv = self.free_vars();
@@ -395,7 +395,7 @@ impl LambdaTerm {
             counter += 1;
         }
     }
-    
+
     /// β-归约（一步）
     pub fn beta_reduce_once(&self) -> Option<LambdaTerm> {
         match self {
@@ -427,7 +427,7 @@ impl LambdaTerm {
             LambdaTerm::Var(_) => None,
         }
     }
-    
+
     /// 归约到范式
     pub fn normalize(&self, max_steps: usize) -> Result<LambdaTerm> {
         let mut current = self.clone();
@@ -460,7 +460,7 @@ impl LambdaTerm {
             }),
         }
     }
-    
+
     /// Church 加法: λm.λn.λf.λx.m f (n f x)
     pub fn church_add() -> Self {
         LambdaTerm::Abs {
@@ -567,7 +567,7 @@ impl RecursiveFunction for Composition {
             .iter()
             .map(|f| f.eval(args))
             .collect();
-        
+
         self.outer.eval(&inner_results?)
     }
 }
@@ -583,10 +583,10 @@ impl RecursiveFunction for PrimitiveRecursion {
         if args.is_empty() {
             return Err(anyhow!("PrimitiveRecursion expects at least 1 argument"));
         }
-        
+
         let n = args[0];
         let rest = &args[1..];
-        
+
         if n == 0 {
             self.base.eval(rest)
         } else {
@@ -712,23 +712,23 @@ impl LabeledTransitionSystem {
     pub fn transitions(&self, process: &Process) -> Vec<(Action, Process)> {
         let mut span = self.tracer.as_ref()
             .map(|t| t.start("lts_transitions"));
-        
+
         let result = match process {
             Process::Nil => Vec::new(),
-            
+
             Process::Prefix { action, continuation } => {
                 vec![(action.clone(), (**continuation).clone())]
             }
-            
+
             Process::Choice(p, q) => {
                 let mut trans = self.transitions(p);
                 trans.extend(self.transitions(q));
                 trans
             }
-            
+
             Process::Parallel(p, q) => {
                 let mut trans = Vec::new();
-                
+
                 // P 的转移
                 for (alpha, p_prime) in self.transitions(p) {
                     if alpha != Action::Tau {
@@ -738,7 +738,7 @@ impl LabeledTransitionSystem {
                         ));
                     }
                 }
-                
+
                 // Q 的转移
                 for (beta, q_prime) in self.transitions(q) {
                     if beta != Action::Tau {
@@ -748,7 +748,7 @@ impl LabeledTransitionSystem {
                         ));
                     }
                 }
-                
+
                 // 通信
                 for (alpha, p_prime) in self.transitions(p) {
                     for (beta, q_prime) in self.transitions(q) {
@@ -763,10 +763,10 @@ impl LabeledTransitionSystem {
                         }
                     }
                 }
-                
+
                 trans
             }
-            
+
             Process::Restriction { process, restricted } => {
                 self.transitions(process)
                     .into_iter()
@@ -786,7 +786,7 @@ impl LabeledTransitionSystem {
                     })
                     .collect()
             }
-            
+
             Process::Constant(name) => {
                 if let Some(def) = self.definitions.get(name) {
                     self.transitions(def)
@@ -795,31 +795,31 @@ impl LabeledTransitionSystem {
                 }
             }
         };
-        
+
         if let Some(ref mut span) = span {
             span.set_attribute("process", format!("{:?}", process));
             span.set_attribute("transitions_count", result.len().to_string());
         }
-        
+
         result
     }
-    
+
     /// 检查互模拟 (Bisimulation)
     pub fn is_bisimilar(&self, p: &Process, q: &Process) -> bool {
         // 简化实现：使用 BFS 检查
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();
         queue.push_back((p.clone(), q.clone()));
-        
+
         while let Some((p1, q1)) = queue.pop_front() {
             if visited.contains(&(p1.clone(), q1.clone())) {
                 continue;
             }
             visited.insert((p1.clone(), q1.clone()));
-            
+
             let p1_trans = self.transitions(&p1);
             let q1_trans = self.transitions(&q1);
-            
+
             // 检查 P 的每个转移是否能被 Q 匹配
             for (alpha, p_prime) in &p1_trans {
                 let matched = q1_trans.iter().any(|(beta, q_prime)| {
@@ -828,12 +828,12 @@ impl LabeledTransitionSystem {
                         true
                     }
                 });
-                
+
                 if !matched {
                     return false;
                 }
             }
-            
+
             // 反向检查
             for (beta, q_prime) in &q1_trans {
                 let matched = p1_trans.iter().any(|(alpha, p_prime)| {
@@ -842,13 +842,13 @@ impl LabeledTransitionSystem {
                         true
                     }
                 });
-                
+
                 if !matched {
                     return false;
                 }
             }
         }
-        
+
         true
     }
 }
@@ -901,82 +901,82 @@ impl PetriNet {
                 .get(&(place.clone(), transition.to_string()))
                 .copied()
                 .unwrap_or(0);
-            
+
             let available = self.marking.get(place).copied().unwrap_or(0);
-            
+
             if available < required {
                 return false;
             }
         }
         true
     }
-    
+
     /// 触发变迁
     pub fn fire(&mut self, transition: &str) -> Result<()> {
         let mut span = self.tracer.as_ref()
             .map(|t| t.start("petri_net_fire"));
-        
+
         if !self.is_enabled(transition) {
             return Err(anyhow!("Transition {} is not enabled", transition));
         }
-        
+
         // 消耗输入 tokens
         for place in &self.places {
             let consumed = self.input_arcs
                 .get(&(place.clone(), transition.to_string()))
                 .copied()
                 .unwrap_or(0);
-            
+
             if consumed > 0 {
                 *self.marking.entry(place.clone()).or_insert(0) -= consumed;
             }
         }
-        
+
         // 生成输出 tokens
         for place in &self.places {
             let produced = self.output_arcs
                 .get(&(transition.to_string(), place.clone()))
                 .copied()
                 .unwrap_or(0);
-            
+
             if produced > 0 {
                 *self.marking.entry(place.clone()).or_insert(0) += produced;
             }
         }
-        
+
         if let Some(ref mut span) = span {
             span.set_attribute("transition", transition);
             span.set_attribute("marking", format!("{:?}", self.marking));
         }
-        
+
         Ok(())
     }
-    
+
     /// 可达性分析
     pub fn reachability_graph(&self) -> ReachabilityGraph {
         let mut graph = ReachabilityGraph {
             states: HashMap::new(),
             edges: Vec::new(),
         };
-        
+
         let initial_marking = self.marking.clone();
         let mut queue = VecDeque::new();
         queue.push_back(initial_marking.clone());
         graph.states.insert(initial_marking.clone(), 0);
-        
+
         let mut state_counter = 1;
-        
+
         while let Some(marking) = queue.pop_front() {
             let current_state = graph.states[&marking];
-            
+
             // 尝试所有可能的变迁
             for transition in &self.transitions {
                 let mut temp_net = self.clone();
                 temp_net.marking = marking.clone();
-                
+
                 if temp_net.fire(transition).is_ok() {
                     let new_marking = temp_net.marking;
-                    
+
                     let new_state = if let Some(&existing) = graph.states.get(&new_marking) {
                         existing
                     } else {
@@ -986,12 +986,12 @@ impl PetriNet {
                         queue.push_back(new_marking.clone());
                         id
                     };
-                    
+
                     graph.edges.push((current_state, transition.clone(), new_state));
                 }
             }
         }
-        
+
         graph
     }
 }
@@ -1047,7 +1047,7 @@ pub trait Message: Send + 'static {}
 #[async_trait::async_trait]
 pub trait Actor: Send + 'static {
     type Message: Message;
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>);
 }
 
@@ -1083,22 +1083,22 @@ impl<A: Actor> ActorAddress<A> {
     /// 启动 Actor
     pub fn spawn(mut actor: A, tracer: Option<Tracer>) -> Self {
         let (tx, mut rx) = mpsc::unbounded_channel();
-        
+
         tokio::spawn(async move {
             let address = ActorAddress { sender: tx.clone() };
             let mut ctx = ActorContext { address, tracer };
-            
+
             while let Some(msg) = rx.recv().await {
                 let _span = ctx.tracer.as_ref()
                     .map(|t| t.start("actor_handle_message"));
-                
+
                 actor.handle(msg, &mut ctx).await;
             }
         });
-        
+
         Self { sender: tx }
     }
-    
+
     /// 发送消息
     pub fn send(&self, msg: A::Message) -> Result<()> {
         self.sender.send(msg)
@@ -1122,12 +1122,12 @@ impl Message for CounterMessage {}
 #[async_trait::async_trait]
 impl Actor for Counter {
     type Message = CounterMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>) {
         if let Some(ref tracer) = ctx.tracer {
             let mut span = tracer.start("counter_handle");
             span.set_attribute("count", self.count.to_string());
-            
+
             match msg {
                 CounterMessage::Increment => {
                     span.set_attribute("operation", "increment");
@@ -1195,20 +1195,20 @@ pub struct TracedFuture<F> {
 
 impl<F: Future> Future for TracedFuture<F> {
     type Output = F::Output;
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         // 安全性：我们不移动 inner
         let this = unsafe { self.get_unchecked_mut() };
-        
+
         if this.span.is_none() {
             let mut span = this.tracer.start(&this.name);
             span.set_attribute("future.state", "pending");
             this.span = Some(span);
         }
-        
+
         // 安全性：重新 pin inner
         let inner = unsafe { Pin::new_unchecked(&mut this.inner) };
-        
+
         match inner.poll(cx) {
             Poll::Pending => {
                 if let Some(ref mut span) = this.span {
@@ -1245,7 +1245,7 @@ pub trait FutureExt: Future + Sized {
             span: None,
         }
     }
-    
+
     /// and_then: Future<T> → (T → Future<U>) → Future<U>
     fn traced_and_then<U, F, Fut>(self, f: F, tracer: Tracer) -> TracedAndThen<Self, F, Fut>
     where
@@ -1278,28 +1278,28 @@ where
     F: FnOnce(Fut::Output) -> U,
 {
     type Output = U;
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = unsafe { self.get_unchecked_mut() };
-        
+
         if this.span.is_none() {
             let mut span = this.tracer.start("future_map");
             span.set_attribute("combinator", "map");
             this.span = Some(span);
         }
-        
+
         let future = unsafe { Pin::new_unchecked(&mut this.future) };
-        
+
         match future.poll(cx) {
             Poll::Pending => Poll::Pending,
             Poll::Ready(output) => {
                 let f = this.f.take().expect("polled after ready");
                 let result = f(output);
-                
+
                 if let Some(ref mut span) = this.span {
                     span.set_attribute("state", "mapped");
                 }
-                
+
                 Poll::Ready(result)
             }
         }
@@ -1325,16 +1325,16 @@ where
     Fut2: Future,
 {
     type Output = Fut2::Output;
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = unsafe { self.get_unchecked_mut() };
-        
+
         if this.span.is_none() {
             let mut span = this.tracer.start("future_and_then");
             span.set_attribute("combinator", "and_then");
             this.span = Some(span);
         }
-        
+
         loop {
             match &mut this.state {
                 AndThenState::First { future, f } => {
@@ -1345,7 +1345,7 @@ where
                             let f = f.take().expect("polled after ready");
                             let second = f(output);
                             this.state = AndThenState::Second(second);
-                            
+
                             if let Some(ref mut span) = this.span {
                                 span.add_event("first_ready", vec![]);
                             }
@@ -1358,11 +1358,11 @@ where
                         Poll::Pending => return Poll::Pending,
                         Poll::Ready(output) => {
                             this.state = AndThenState::Done;
-                            
+
                             if let Some(ref mut span) = this.span {
                                 span.add_event("second_ready", vec![]);
                             }
-                            
+
                             return Poll::Ready(output);
                         }
                     }
@@ -1395,7 +1395,7 @@ impl ConcurrencyTracer {
     {
         let mut span = self.tracer.start("parallel_execution");
         span.set_attribute("task_count", tasks.len().to_string());
-        
+
         let handles: Vec<_> = tasks
             .into_iter()
             .enumerate()
@@ -1404,24 +1404,24 @@ impl ConcurrencyTracer {
                 tokio::spawn(async move {
                     let mut task_span = tracer.start(format!("task_{}", i));
                     task_span.set_attribute("task_id", i.to_string());
-                    
+
                     let result = task.await;
-                    
+
                     task_span.set_attribute("completed", "true");
                     result
                 })
             })
             .collect();
-        
+
         let mut results = Vec::new();
         for handle in handles {
             results.push(handle.await.unwrap());
         }
-        
+
         span.set_attribute("all_completed", "true");
         results
     }
-    
+
     /// 追踪竞争条件
     pub async fn detect_race_condition<F1, F2, T1, T2>(
         &self,
@@ -1435,14 +1435,14 @@ impl ConcurrencyTracer {
         T2: Send + 'static,
     {
         let mut span = self.tracer.start("race_detection");
-        
+
         let start = std::time::Instant::now();
-        
+
         let (r1, r2) = tokio::join!(task1, task2);
-        
+
         let duration = start.elapsed();
         span.set_attribute("duration_ms", duration.as_millis().to_string());
-        
+
         (r1, r2)
     }
 }

@@ -18,16 +18,16 @@ pub struct AdaptiveSamplingAlgorithm {
     // 采样率控制
     base_sampling_rate: f64,
     current_sampling_rate: AtomicU64,
-    
+
     // 性能指标
     target_latency: Duration,
     current_latency: AtomicU64,
     error_rate: AtomicU64,
-    
+
     // 历史数据
     latency_history: VecDeque<Duration>,
     throughput_history: VecDeque<u64>,
-    
+
     // 调整参数
     adjustment_factor: f64,
     min_sampling_rate: f64,
@@ -54,18 +54,18 @@ impl AdaptiveSamplingAlgorithm {
             max_sampling_rate: max_rate,
         }
     }
-    
+
     /// 决定是否采样
     pub fn should_sample(&self, trace_id: &str) -> bool {
         let current_rate = self.current_sampling_rate.load(Ordering::Acquire) as f64 / 1000.0;
-        
+
         // 基于trace_id的确定性采样
         let hash = self.hash_trace_id(trace_id);
         let threshold = (hash % 1000) as f64 / 1000.0;
-        
+
         threshold < current_rate
     }
-    
+
     /// 更新性能指标并调整采样率
     pub fn update_metrics(&mut self, latency: Duration, success: bool) {
         // 更新延迟历史
@@ -73,24 +73,24 @@ impl AdaptiveSamplingAlgorithm {
         if self.latency_history.len() > 100 {
             self.latency_history.pop_front();
         }
-        
+
         // 更新错误率
         if !success {
             self.error_rate.fetch_add(1, Ordering::Relaxed);
         }
-        
+
         // 计算平均延迟
         let avg_latency = self.calculate_average_latency();
-        
+
         // 自适应调整采样率
         self.adjust_sampling_rate(avg_latency);
     }
-    
+
     fn adjust_sampling_rate(&self, avg_latency: Duration) {
         let current_rate = self.current_sampling_rate.load(Ordering::Acquire) as f64 / 1000.0;
         let target_latency_ms = self.target_latency.as_millis() as f64;
         let avg_latency_ms = avg_latency.as_millis() as f64;
-        
+
         let ratio = avg_latency_ms / target_latency_ms;
         let adjustment = if ratio > 1.2 {
             // 延迟过高，降低采样率
@@ -101,31 +101,31 @@ impl AdaptiveSamplingAlgorithm {
         } else {
             0.0
         };
-        
+
         let new_rate = (current_rate + adjustment)
             .max(self.min_sampling_rate)
             .min(self.max_sampling_rate);
-        
+
         self.current_sampling_rate.store(
             (new_rate * 1000.0) as u64,
             Ordering::Release
         );
     }
-    
+
     fn hash_trace_id(&self, trace_id: &str) -> u64 {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         trace_id.hash(&mut hasher);
         hasher.finish()
     }
-    
+
     fn calculate_average_latency(&self) -> Duration {
         if self.latency_history.is_empty() {
             return self.target_latency;
         }
-        
+
         let total: Duration = self.latency_history.iter().sum();
         total / self.latency_history.len() as u32
     }
@@ -171,12 +171,12 @@ impl TimeWindowAggregator {
             current_window: Arc::new(RwLock::new(0)),
         }
     }
-    
+
     /// 添加数据到当前窗口
     pub async fn add_data(&self, data: &TelemetryData) -> Result<(), OtlpError> {
         let window_id = self.get_current_window_id().await;
         let mut windows = self.windows.write().await;
-        
+
         let window = windows.entry(window_id).or_insert_with(|| {
             let now = Instant::now();
             AggregationWindow {
@@ -187,41 +187,41 @@ impl TimeWindowAggregator {
                 error_count: 0,
             }
         });
-        
+
         // 更新窗口数据
         window.trace_count += 1;
         if data.is_error() {
             window.error_count += 1;
         }
-        
+
         // 更新指标
         self.update_metrics(window, data).await;
-        
+
         Ok(())
     }
-    
+
     /// 获取聚合结果
     pub async fn get_aggregated_data(&self, window_id: u64) -> Option<AggregationWindow> {
         let windows = self.windows.read().await;
         windows.get(&window_id).cloned()
     }
-    
+
     /// 清理过期窗口
     pub async fn cleanup_expired_windows(&self) {
         let now = Instant::now();
         let mut windows = self.windows.write().await;
-        
+
         windows.retain(|_, window| {
             window.end_time > now
         });
     }
-    
+
     async fn get_current_window_id(&self) -> u64 {
         let now = Instant::now();
         let window_start = now.duration_since(Instant::now() - self.window_size);
         (window_start.as_secs() / self.window_size.as_secs()) as u64
     }
-    
+
     async fn update_metrics(&self, window: &mut AggregationWindow, data: &TelemetryData) {
         // 更新延迟指标
         if let Some(latency) = data.get_latency() {
@@ -243,7 +243,7 @@ impl TimeWindowAggregator {
                 }
             }
         }
-        
+
         // 更新错误率指标
         let error_rate_key = "error_rate".to_string();
         let error_rate = if window.trace_count > 0 {
@@ -253,7 +253,7 @@ impl TimeWindowAggregator {
         };
         window.metrics.insert(error_rate_key, MetricValue::Gauge(error_rate));
     }
-    
+
     fn get_histogram_bucket(&self, latency: Duration) -> usize {
         let ms = latency.as_millis() as usize;
         match ms {
@@ -307,7 +307,7 @@ pub enum HealthStatus {
 impl WeightedRoundRobinBalancer {
     pub fn new(endpoints: Vec<LoadBalancerEndpoint>) -> Self {
         let weights: Vec<u32> = endpoints.iter().map(|e| e.weight).collect();
-        
+
         Self {
             endpoints,
             current_index: AtomicUsize::new(0),
@@ -315,35 +315,35 @@ impl WeightedRoundRobinBalancer {
             current_weight: AtomicUsize::new(0),
         }
     }
-    
+
     /// 选择下一个端点
     pub fn select_endpoint(&self) -> Option<&LoadBalancerEndpoint> {
         let mut attempts = 0;
         let max_attempts = self.endpoints.len();
-        
+
         while attempts < max_attempts {
             let index = self.get_next_index();
             let endpoint = &self.endpoints[index];
-            
+
             // 检查端点健康状态
             if matches!(endpoint.health_status, HealthStatus::Healthy) {
                 return Some(endpoint);
             }
-            
+
             attempts += 1;
         }
-        
+
         // 如果没有健康端点，返回第一个
         self.endpoints.first()
     }
-    
+
     /// 更新端点健康状态
     pub fn update_endpoint_health(&mut self, index: usize, success: bool, response_time: Duration) {
         if let Some(endpoint) = self.endpoints.get_mut(index) {
             if success {
                 endpoint.success_count += 1;
                 endpoint.response_time = response_time;
-                
+
                 // 根据响应时间调整健康状态
                 if response_time < Duration::from_millis(100) {
                     endpoint.health_status = HealthStatus::Healthy;
@@ -354,7 +354,7 @@ impl WeightedRoundRobinBalancer {
                 }
             } else {
                 endpoint.error_count += 1;
-                
+
                 // 错误率过高标记为不健康
                 let total_requests = endpoint.success_count + endpoint.error_count;
                 if total_requests > 10 {
@@ -366,7 +366,7 @@ impl WeightedRoundRobinBalancer {
             }
         }
     }
-    
+
     fn get_next_index(&self) -> usize {
         let current = self.current_index.load(Ordering::Acquire);
         let next = (current + 1) % self.endpoints.len();
@@ -391,12 +391,12 @@ pub struct HashRingNode {
 impl ConsistentHashBalancer {
     pub fn new(endpoints: Vec<LoadBalancerEndpoint>, virtual_nodes: u32) -> Self {
         let mut ring = Vec::new();
-        
+
         for (i, endpoint) in endpoints.iter().enumerate() {
             for j in 0..virtual_nodes {
                 let virtual_id = i as u32 * virtual_nodes + j;
                 let hash = self.hash(&format!("{}:{}", endpoint.url, virtual_id));
-                
+
                 ring.push(HashRingNode {
                     hash,
                     endpoint: endpoint.clone(),
@@ -404,33 +404,33 @@ impl ConsistentHashBalancer {
                 });
             }
         }
-        
+
         ring.sort_by_key(|node| node.hash);
-        
+
         Self { ring, virtual_nodes }
     }
-    
+
     /// 根据键选择端点
     pub fn select_endpoint(&self, key: &str) -> Option<&LoadBalancerEndpoint> {
         let hash = self.hash(key);
-        
+
         // 找到第一个hash值大于等于key hash的节点
         for node in &self.ring {
             if node.hash >= hash && matches!(node.endpoint.health_status, HealthStatus::Healthy) {
                 return Some(&node.endpoint);
             }
         }
-        
+
         // 如果没有找到，返回第一个健康节点
         self.ring.iter()
             .find(|node| matches!(node.endpoint.health_status, HealthStatus::Healthy))
             .map(|node| &node.endpoint)
     }
-    
+
     fn hash(&self, input: &str) -> u64 {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         input.hash(&mut hasher);
         hasher.finish()
@@ -464,13 +464,13 @@ impl DataProcessingStrategyManager {
             strategies: Vec::new(),
         }
     }
-    
+
     pub fn add_strategy(&mut self, strategy: Arc<dyn DataProcessingStrategy>) {
         self.strategies.push(strategy);
         // 按优先级排序
         self.strategies.sort_by_key(|s| s.get_priority());
     }
-    
+
     pub async fn process_data(&self, mut data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         for strategy in &self.strategies {
             data = strategy.process(data).await?;
@@ -504,11 +504,11 @@ impl DataProcessingStrategy for DataValidationStrategy {
         }
         Ok(data)
     }
-    
+
     fn get_name(&self) -> &str {
         "DataValidationStrategy"
     }
-    
+
     fn get_priority(&self) -> u32 {
         1 // 最高优先级
     }
@@ -534,11 +534,11 @@ impl DataProcessingStrategy for DataCompressionStrategy {
             CompressionAlgorithm::Zstd => self.compress_zstd(data).await,
         }
     }
-    
+
     fn get_name(&self) -> &str {
         "DataCompressionStrategy"
     }
-    
+
     fn get_priority(&self) -> u32 {
         3 // 较低优先级
     }
@@ -549,12 +549,12 @@ impl DataCompressionStrategy {
         // 实现gzip压缩
         Ok(data)
     }
-    
+
     async fn compress_brotli(&self, data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         // 实现brotli压缩
         Ok(data)
     }
-    
+
     async fn compress_zstd(&self, data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         // 实现zstd压缩
         Ok(data)
@@ -596,39 +596,39 @@ impl OtlpEventBus {
             listeners: Vec::new(),
         }
     }
-    
+
     pub fn subscribe(&mut self, listener: Arc<dyn OtlpEventListener>) {
         self.listeners.push(listener);
     }
-    
+
     pub async fn publish_trace(&self, trace: TraceData) {
         let _ = self.trace_sender.send(trace.clone());
-        
+
         // 通知所有监听器
         for listener in &self.listeners {
             listener.on_trace_created(&trace).await;
         }
     }
-    
+
     pub async fn publish_metric(&self, metric: MetricData) {
         let _ = self.metric_sender.send(metric.clone());
-        
+
         for listener in &self.listeners {
             listener.on_metric_updated(&metric).await;
         }
     }
-    
+
     pub async fn publish_log(&self, log: LogData) {
         let _ = self.log_sender.send(log.clone());
-        
+
         for listener in &self.listeners {
             listener.on_log_generated(&log).await;
         }
     }
-    
+
     pub async fn publish_error(&self, error: OtlpError) {
         let _ = self.error_sender.send(error.clone());
-        
+
         for listener in &self.listeners {
             listener.on_error_occurred(&error).await;
         }
@@ -652,17 +652,17 @@ impl OtlpEventListener for PerformanceMonitoringListener {
         // 记录追踪创建事件
         self.metrics.record_trace_created();
     }
-    
+
     async fn on_metric_updated(&self, metric: &MetricData) {
         // 记录指标更新事件
         self.metrics.record_metric_updated();
     }
-    
+
     async fn on_log_generated(&self, log: &LogData) {
         // 记录日志生成事件
         self.metrics.record_log_generated();
     }
-    
+
     async fn on_error_occurred(&self, error: &OtlpError) {
         // 记录错误事件
         self.metrics.record_error();
@@ -767,7 +767,7 @@ impl MemoryPoolAllocator {
     pub fn new(pool_size: usize, block_size: usize) -> Self {
         let total_blocks = pool_size / block_size;
         let mut free_blocks = Vec::with_capacity(total_blocks);
-        
+
         // 预分配内存块
         unsafe {
             let layout = Layout::from_size_align(block_size, 8).unwrap();
@@ -778,7 +778,7 @@ impl MemoryPoolAllocator {
                 }
             }
         }
-        
+
         Self {
             pool_size,
             block_size,
@@ -787,7 +787,7 @@ impl MemoryPoolAllocator {
             total_blocks,
         }
     }
-    
+
     pub fn allocate(&mut self) -> Option<*mut u8> {
         if let Some(ptr) = self.free_blocks.pop() {
             self.allocated_blocks.fetch_add(1, Ordering::Relaxed);
@@ -796,16 +796,16 @@ impl MemoryPoolAllocator {
             None
         }
     }
-    
+
     pub fn deallocate(&mut self, ptr: *mut u8) {
         self.free_blocks.push(ptr);
         self.allocated_blocks.fetch_sub(1, Ordering::Relaxed);
     }
-    
+
     pub fn get_usage_stats(&self) -> MemoryUsageStats {
         let allocated = self.allocated_blocks.load(Ordering::Relaxed);
         let free = self.total_blocks - allocated;
-        
+
         MemoryUsageStats {
             total_blocks: self.total_blocks,
             allocated_blocks: allocated,
@@ -859,30 +859,30 @@ where
             access_order: Arc::new(RwLock::new(Vec::new())),
         }
     }
-    
+
     pub async fn get(&self, key: &K) -> Option<V> {
         let mut cache = self.cache.write().await;
         let mut access_order = self.access_order.write().await;
-        
+
         if let Some(entry) = cache.get_mut(key) {
             // 更新访问信息
             entry.last_accessed = Instant::now();
             entry.access_count += 1;
-            
+
             // 更新访问顺序
             access_order.retain(|k| k != key);
             access_order.push(key.clone());
-            
+
             Some(entry.value.clone())
         } else {
             None
         }
     }
-    
+
     pub async fn put(&self, key: K, value: V) {
         let mut cache = self.cache.write().await;
         let mut access_order = self.access_order.write().await;
-        
+
         // 如果缓存已满，移除最久未使用的项
         if cache.len() >= self.capacity {
             if let Some(oldest_key) = access_order.first().cloned() {
@@ -890,7 +890,7 @@ where
                 access_order.remove(0);
             }
         }
-        
+
         // 添加新项
         let entry = CacheEntry {
             value,
@@ -898,15 +898,15 @@ where
             last_accessed: Instant::now(),
             access_count: 1,
         };
-        
+
         cache.insert(key.clone(), entry);
         access_order.push(key);
     }
-    
+
     pub async fn remove(&self, key: &K) -> Option<V> {
         let mut cache = self.cache.write().await;
         let mut access_order = self.access_order.write().await;
-        
+
         if let Some(entry) = cache.remove(key) {
             access_order.retain(|k| k != key);
             Some(entry.value)
@@ -914,31 +914,31 @@ where
             None
         }
     }
-    
+
     pub async fn clear(&self) {
         let mut cache = self.cache.write().await;
         let mut access_order = self.access_order.write().await;
-        
+
         cache.clear();
         access_order.clear();
     }
-    
+
     pub async fn size(&self) -> usize {
         let cache = self.cache.read().await;
         cache.len()
     }
-    
+
     pub async fn get_stats(&self) -> CacheStats {
         let cache = self.cache.read().await;
         let access_order = self.access_order.read().await;
-        
+
         let total_accesses: u64 = cache.values().map(|entry| entry.access_count).sum();
         let avg_access_count = if cache.is_empty() {
             0.0
         } else {
             total_accesses as f64 / cache.len() as f64
         };
-        
+
         CacheStats {
             size: cache.len(),
             capacity: self.capacity,
@@ -975,11 +975,11 @@ pub struct OtlpProcessingSystem {
     load_balancer: WeightedRoundRobinBalancer,
     aggregator: TimeWindowAggregator,
     cache: LruCache<String, TelemetryData>,
-    
+
     // 通道
     input_receiver: mpsc::UnboundedReceiver<TelemetryData>,
     output_sender: mpsc::UnboundedSender<ProcessedData>,
-    
+
     // 配置
     config: SystemConfig,
 }
@@ -998,17 +998,17 @@ impl OtlpProcessingSystem {
         // 创建通道
         let (input_sender, input_receiver) = mpsc::unbounded_channel();
         let (output_sender, output_receiver) = mpsc::unbounded_channel();
-        
+
         // 创建策略管理器
         let mut strategy_manager = DataProcessingStrategyManager::new();
         strategy_manager.add_strategy(Arc::new(DataValidationStrategy::new()));
         strategy_manager.add_strategy(Arc::new(DataCompressionStrategy::new(
             CompressionAlgorithm::Gzip
         )));
-        
+
         // 创建事件总线
         let event_bus = OtlpEventBus::new();
-        
+
         // 创建负载均衡器
         let endpoints = vec![
             LoadBalancerEndpoint {
@@ -1021,13 +1021,13 @@ impl OtlpProcessingSystem {
             },
         ];
         let load_balancer = WeightedRoundRobinBalancer::new(endpoints);
-        
+
         // 创建聚合器
         let aggregator = TimeWindowAggregator::new(config.aggregation_window);
-        
+
         // 创建缓存
         let cache = LruCache::new(config.cache_capacity);
-        
+
         Ok(Self {
             strategy_manager,
             event_bus,
@@ -1039,7 +1039,7 @@ impl OtlpProcessingSystem {
             config,
         })
     }
-    
+
     /// 启动处理系统
     pub async fn start(&mut self) -> Result<(), OtlpError> {
         let mut receiver = std::mem::replace(&mut self.input_receiver, mpsc::unbounded_channel().1);
@@ -1049,7 +1049,7 @@ impl OtlpProcessingSystem {
         let aggregator = self.aggregator.clone();
         let cache = self.cache.clone();
         let config = self.config.clone();
-        
+
         // 启动处理协程
         tokio::spawn(async move {
             while let Some(data) = receiver.recv().await {
@@ -1058,13 +1058,13 @@ impl OtlpProcessingSystem {
                     Ok(processed_data) => {
                         // 发布事件
                         event_bus.publish_trace(processed_data.clone().into()).await;
-                        
+
                         // 添加到聚合器
                         aggregator.add_data(&processed_data).await.unwrap();
-                        
+
                         // 缓存结果
                         cache.put(processed_data.get_id(), processed_data.clone()).await;
-                        
+
                         // 发送到输出
                         let result = ProcessedData {
                             data: processed_data,
@@ -1078,10 +1078,10 @@ impl OtlpProcessingSystem {
                 }
             }
         });
-        
+
         Ok(())
     }
-    
+
     /// 发送数据到系统
     pub async fn send_data(&self, data: TelemetryData) -> Result<(), OtlpError> {
         // 这里需要重新获取sender，为了简化示例，我们假设有全局访问
@@ -1116,4 +1116,4 @@ impl OtlpProcessingSystem {
 
 ---
 
-*本文档为OTLP算法与设计模式提供了全面的技术分析和实践指导，适用于构建企业级的可观测性系统。*
+_本文档为OTLP算法与设计模式提供了全面的技术分析和实践指导，适用于构建企业级的可观测性系统。_

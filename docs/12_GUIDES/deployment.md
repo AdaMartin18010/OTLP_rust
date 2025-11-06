@@ -1,7 +1,7 @@
 # 🚀 部署指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 部署指南 - 从本地开发到生产环境的完整部署方案，包括Docker、Kubernetes等。
@@ -127,7 +127,7 @@ processors:
   batch:
     timeout: 1s
     send_batch_size: 1024
-  
+
   memory_limiter:
     check_interval: 1s
     limit_mib: 512
@@ -135,7 +135,7 @@ processors:
 exporters:
   logging:
     loglevel: debug
-  
+
   prometheus:
     endpoint: "0.0.0.0:8889"
 
@@ -145,12 +145,12 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [logging]
-    
+
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [logging, prometheus]
-    
+
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
@@ -459,23 +459,23 @@ data:
     server:
       host: "0.0.0.0"
       port: 8080
-    
+
     otlp:
       endpoint: "http://otel-collector.observability.svc.cluster.local:4317"
       service_name: "otlp-app"
       compression: "gzip"
       timeout: 30s
-      
+
       batch:
         max_size: 1000
         timeout: 5s
         max_queue_size: 10000
-      
+
       retry:
         max_attempts: 3
         initial_interval: 100ms
         max_interval: 5s
-    
+
     logging:
       level: "info"
       format: "json"
@@ -577,7 +577,7 @@ pub fn create_production_config() -> OtlpConfig {
             .unwrap_or_else(|_| "production-app".to_string()),
         service_version: env!("CARGO_PKG_VERSION").to_string(),
         environment: "production".to_string(),
-        
+
         // 传输配置
         transport: TransportConfig {
             protocol: TransportProtocol::Grpc,
@@ -590,7 +590,7 @@ pub fn create_production_config() -> OtlpConfig {
                 verify_server: true,
             }),
         },
-        
+
         // 连接配置
         connection: ConnectionConfig {
             connect_timeout: Duration::from_secs(10),
@@ -599,7 +599,7 @@ pub fn create_production_config() -> OtlpConfig {
             max_connections: 200,
             max_idle_connections: 100,
         },
-        
+
         // 批处理配置
         batch: BatchConfig {
             max_batch_size: 2000,
@@ -607,7 +607,7 @@ pub fn create_production_config() -> OtlpConfig {
             max_queue_size: 50000,
             strategy: BatchStrategy::Hybrid,
         },
-        
+
         // 重试配置
         retry: RetryConfig {
             max_attempts: 3,
@@ -621,7 +621,7 @@ pub fn create_production_config() -> OtlpConfig {
                 ErrorType::Unavailable,
             ],
         },
-        
+
         // 监控配置
         monitoring: MonitoringConfig {
             enable_metrics: true,
@@ -629,7 +629,7 @@ pub fn create_production_config() -> OtlpConfig {
             enable_health_check: true,
             health_check_interval: Duration::from_secs(30),
         },
-        
+
         // 安全配置
         security: SecurityConfig {
             enable_authentication: true,
@@ -695,16 +695,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: 1.90
           override: true
-      
+
       - name: Run tests
         run: cargo test --all-features
-      
+
       - name: Run clippy
         run: cargo clippy -- -D warnings
 
@@ -716,20 +716,20 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Log in to Container Registry
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
@@ -744,15 +744,15 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
-      
+
       - name: Configure kubectl
         run: |
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
           export KUBECONFIG=./kubeconfig
-      
+
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/
@@ -818,7 +818,7 @@ groups:
         annotations:
           summary: "High error rate detected"
           description: "Error rate is {{ $value }} for {{ $labels.instance }}"
-      
+
       - alert: HighResponseTime
         expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 1
         for: 10m
@@ -827,7 +827,7 @@ groups:
         annotations:
           summary: "High response time detected"
           description: "P99 response time is {{ $value }}s for {{ $labels.instance }}"
-      
+
       - alert: PodNotReady
         expr: kube_pod_status_phase{namespace="observability",pod=~"otlp-app-.*",phase!="Running"} == 1
         for: 5m
@@ -886,5 +886,5 @@ kubectl rollout undo deployment/otlp-app --to-revision=2 -n observability
 
 ---
 
-*最后更新: 2025年10月20日*  
-*版本: 1.0.0*
+_最后更新: 2025年10月20日_
+_版本: 1.0.0_

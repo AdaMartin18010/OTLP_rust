@@ -56,7 +56,7 @@ Rust 1.85.0 和 Rust 2024 Edition 的形式化验证框架是基于类型理论�
 (* Coq 形式化定义 *)
 Inductive OwnershipState : Type :=
   | Owned : Value -> OwnershipState
-  | Borrowed : Reference -> OwnershipState  
+  | Borrowed : Reference -> OwnershipState
   | Moved : Value -> OwnershipState
   | Dropped : OwnershipState.
 
@@ -114,7 +114,7 @@ Definition lifetime_ordering (l1 l2 : Lifetime) : Prop :=
   | _, Static => False
   | Local n1, Local n2 => n1 <= n2
   | Parameter n1, Parameter n2 => n1 <= n2
-  | Derived l1a l1b, Derived l2a l2b => 
+  | Derived l1a l1b, Derived l2a l2b =>
       lifetime_ordering l1a l2a /\ lifetime_ordering l1b l2b
   | _, _ => False
   end.
@@ -227,7 +227,7 @@ Inductive PollResult (T : Type) : Type :=
 
 ```coq
 Definition async_function_semantics (f : A -> Future B) : A -> B :=
-  fun a => 
+  fun a =>
     match f a with
     | Ready b => b
     | Pending => (* 等待完成 *)
@@ -262,7 +262,7 @@ Inductive MemoryEvent : Type :=
 
 Definition happens_before (e1 e2 : MemoryEvent) : Prop :=
   (* 定义 happens-before 关系 *)
-  program_order e1 e2 \/ 
+  program_order e1 e2 \/
   synchronization_order e1 e2 \/
   transitivity e1 e2.
 ```
@@ -332,7 +332,7 @@ fn square(x: i32) -> i32 {
 fn find_max_index(x: &[i32]) -> usize {
     let mut max_idx = 0;
     let mut i = 1;
-    
+
     while i < x.len() {
         body_invariant!(i < x.len() && max_idx < x.len());
         if x[i] > x[max_idx] {
@@ -340,7 +340,7 @@ fn find_max_index(x: &[i32]) -> usize {
         }
         i += 1;
     }
-    
+
     max_idx
 }
 ```
@@ -362,13 +362,13 @@ fn factorial(n: Int) -> Int {
 fn factorial_impl(n: u32) -> u32 {
     let mut acc = 1;
     let mut i = 0;
-    
+
     while i < n {
         body_invariant!(acc == factorial(i) && i <= n);
         acc *= i + 1;
         i += 1;
     }
-    
+
     acc
 }
 ```
@@ -421,4 +421,4 @@ Rust 1.85.0 和 Rust 2024 Edition 的形式化验证框架为构建安全、可�
 
 ---
 
--*本文档基于 Rust 1.85.0 和 Rust 2024 Edition 的形式化验证理论，将持续更新以反映最新的验证技术和工具发展。最后更新：2025年9月28日*-
+-_本文档基于 Rust 1.85.0 和 Rust 2024 Edition 的形式化验证理论，将持续更新以反映最新的验证技术和工具发展。最后更新：2025年9月28日_-

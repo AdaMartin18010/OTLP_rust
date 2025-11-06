@@ -1,8 +1,8 @@
 # Rate Limiter API 完整文档
 
-**Crate:** c13_reliability  
-**模块:** rate_limiter  
-**Rust 版本:** 1.90.0  
+**Crate:** c13_reliability
+**模块:** rate_limiter
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -155,6 +155,7 @@ pub fn new(capacity: u64, refill_rate: u64) -> Self
 ```
 
 **参数:**
+
 - `capacity`: 桶的最大容量
 - `refill_rate`: 每秒补充的令牌数
 
@@ -172,9 +173,11 @@ pub async fn try_acquire(&self, tokens: u64) -> RateLimitResult
 ```
 
 **参数:**
+
 - `tokens`: 需要获取的令牌数
 
 **返回:**
+
 - `Allowed`: 成功获取令牌
 - `RateLimited`: 令牌不足，需要等待
 
@@ -232,6 +235,7 @@ pub fn new(capacity: usize, leak_rate: Duration) -> Self
 ```
 
 **参数:**
+
 - `capacity`: 桶的最大容量
 - `leak_rate`: 漏出速率（每个请求间隔）
 
@@ -252,6 +256,7 @@ pub async fn try_add(&self) -> RateLimitResult
 ```
 
 **返回:**
+
 - `Allowed`: 请求已加入队列
 - `Rejected`: 桶已满，拒绝请求
 
@@ -306,6 +311,7 @@ pub fn new(window_size: Duration, max_requests: u64) -> Self
 ```
 
 **参数:**
+
 - `window_size`: 时间窗口大小
 - `max_requests`: 窗口内最大请求数
 
@@ -374,6 +380,7 @@ pub fn new(window_size: Duration, max_requests: usize) -> Self
 ```
 
 **参数:**
+
 - `window_size`: 滑动窗口大小
 - `max_requests`: 窗口内最大请求数
 
@@ -458,6 +465,7 @@ pub async fn check_limit_with_metadata(
 ```
 
 **参数:**
+
 - `metadata`: 请求元数据（用户ID、IP等）
 
 **示例:**
@@ -841,7 +849,7 @@ async fn cleanup_expired_logs(limiter: &SlidingWindowLimiter) {
     let mut logs = limiter.requests.lock().await;
     let now = Instant::now();
     let window_size = limiter.window_size;
-    
+
     // 移除过期日志
     logs.retain(|log| now.duration_since(*log) < window_size);
 }
@@ -884,13 +892,13 @@ let limiter = Arc::new(Mutex::new(limiter));
 - ✅ 常见问题的故障排除方案
 
 **下一步推荐:**
+
 - 阅读 [Retry Strategy API](./retry_strategy_api.md)
 - 参考 [Circuit Breaker API](./circuit_breaker_api.md)
 - 查看 [完整示例代码](../../examples/rate_limiter_complete_impl.rs)
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **代码覆盖率:** 100%
-

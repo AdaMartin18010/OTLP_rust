@@ -1,8 +1,8 @@
 # 📊 OTLP Crate 使用指南
 
-**版本**: 1.0  
-**定位**: Rust的OTLP全面梳理、通用封装和惯用法  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**定位**: Rust的OTLP全面梳理、通用封装和惯用法
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Crate 使用指南 - Rust OTLP 实现的完整指南，包括信号处理、传输和优化。
@@ -141,32 +141,32 @@ async fn main() -> Result<()> {
         .with_compression(CompressionType::Gzip)
         .with_timeout(Duration::from_secs(5))
         .build()?;
-    
+
     // 2. 发送 Trace
     let span = Span::builder("my_operation")
         .with_attribute("service.name", "my-service")
         .with_attribute("http.method", "GET")
         .build();
-    
+
     client.send_trace(vec![span]).await?;
-    
+
     // 3. 发送 Metric
     let metric = Metric::counter("requests_total")
         .with_value(1.0)
         .with_attribute("status", "success")
         .build();
-    
+
     client.send_metric(vec![metric]).await?;
-    
+
     // 4. 发送 Log
     let log = LogRecord::builder()
         .with_severity(Severity::Info)
         .with_body("Application started")
         .with_attribute("version", "1.0.0")
         .build();
-    
+
     client.send_log(vec![log]).await?;
-    
+
     Ok(())
 }
 ```
@@ -587,7 +587,7 @@ let compressor = TraceCompressor::builder()
 let compressed = compressor.compress(&trace_data)?;
 println!("Original size: {} bytes", trace_data.len());
 println!("Compressed size: {} bytes", compressed.len());
-println!("Compression ratio: {:.2}x", 
+println!("Compression ratio: {:.2}x",
     trace_data.len() as f64 / compressed.len() as f64);
 
 // 解压缩
@@ -826,56 +826,56 @@ async fn main() -> Result<()> {
             buffer_size: 4096,
         })
         .build()?;
-    
+
     // 2. 创建Tracer (使用语义约定)
     let tracer = client.create_tracer("my-service");
-    
+
     // 3. 发送HTTP请求 (完整追踪)
     let span = tracer.start_span("http_request");
-    
+
     // 添加HTTP语义约定
     let http_attrs = HttpAttributes::builder()
         .method(HttpMethod::GET)
         .url("https://api.example.com/users")
         .status_code(200)
         .build();
-    
+
     span.set_attributes(http_attrs.into_iter());
-    
+
     // 4. 数据库查询 (子Span)
     let db_span = tracer.start_span_with_parent("db_query", &span);
-    
+
     let db_attrs = DatabaseAttributes::builder()
         .system(DatabaseSystem::PostgreSQL)
         .statement("SELECT * FROM users")
         .build();
-    
+
     db_span.set_attributes(db_attrs.into_iter());
     db_span.end();
-    
+
     // 5. 记录指标
     let meter = client.create_meter("my-service");
-    
+
     meter.counter("http_requests_total")
         .add(1, &[("status", "200")]);
-    
+
     meter.histogram("http_request_duration_seconds")
         .record(0.123, &[("endpoint", "/users")]);
-    
+
     // 6. 记录日志
     let logger = client.create_logger("my-service");
-    
+
     logger.info("Request completed", &[
         ("user_id", "123"),
         ("duration_ms", "123"),
     ]);
-    
+
     // 7. 结束Span
     span.end();
-    
+
     // 8. 刷新数据
     client.force_flush().await?;
-    
+
     Ok(())
 }
 ```
@@ -1030,6 +1030,6 @@ cargo run --example comprehensive_usage
 
 ---
 
-**最后更新**: 2025年10月26日  
-**文档版本**: v1.0.0  
+**最后更新**: 2025年10月26日
+**文档版本**: v1.0.0
 **维护状态**: 🔄 持续维护中

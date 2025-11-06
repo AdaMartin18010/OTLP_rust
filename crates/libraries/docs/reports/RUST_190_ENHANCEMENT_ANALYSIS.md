@@ -1,8 +1,9 @@
 ﻿# c11_libraries Rust 1.90 特性对标与优化分析报告
 
 ## 📋 目录
+
 - [c11\_libraries Rust 1.90 特性对标与优化分析报告](#c11_libraries-rust-190-特性对标与优化分析报告)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [📊 系统环境检查](#-系统环境检查)
   - [🚀 Rust 1.90 核心新特性分析](#-rust-190-核心新特性分析)
     - [1. 显式推断的常量泛型参数 (generic\_arg\_infer)](#1-显式推断的常量泛型参数-generic_arg_infer)
@@ -109,7 +110,7 @@ impl MiddlewareType {
     pub fn is_redis(&self) -> bool {
         matches!(self, MiddlewareType::Redis(_))
     }
-    
+
     // 避免直接比较函数指针
     // pub fn is_same_type(&self, other: &Self) -> bool {
     //     std::ptr::eq(self, other) // 使用地址比较而非函数指针比较
@@ -186,13 +187,13 @@ impl<const POOL_SIZE: usize> RedisConfig<POOL_SIZE> {
 pub enum MiddlewareError {
     #[error("Redis error: {0}")]
     Redis(#[from] redis::RedisError),
-    
+
     #[error("Postgres error: {0}")]
     Postgres(#[from] tokio_postgres::Error),
-    
+
     #[error("Configuration error: {message}")]
     Configuration { message: String, line: u32 },
-    
+
     #[error("Timeout after {duration}ms")]
     Timeout { duration: u64 },
 }
@@ -219,7 +220,7 @@ pub trait AsyncMiddleware {
     async fn connect(&self) -> Result<Self::Connection>;
     async fn execute(&self, operation: Operation) -> Result<Vec<u8>>;
     async fn batch_execute(&self, operations: Vec<Operation>) -> Result<Vec<Vec<u8>>>;
-    
+
     // 使用 GAT (Generic Associated Types)
     type Connection<'a>: Send + Sync + 'a;
     type Error: std::error::Error + Send + Sync + 'static;
@@ -242,7 +243,7 @@ impl<const CAPACITY: usize> MessageBuffer<CAPACITY> {
             len: 0,
         }
     }
-    
+
     // 使用 const 泛型推断
     pub fn with_size(size: usize) -> MessageBuffer<{ size }> {
         MessageBuffer::new()

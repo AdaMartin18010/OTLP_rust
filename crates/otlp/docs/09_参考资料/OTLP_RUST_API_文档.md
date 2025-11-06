@@ -6,6 +6,7 @@
 该项目是一个基于Rust 1.90的OpenTelemetry协议实现，提供了完整的遥测数据收集、处理和传输功能。
 
 ## 📋 目录
+
 1. [核心API](#核心api)
 2. [错误处理系统](#错误处理系统)
 3. [机器学习集成](#机器学习集成)
@@ -185,7 +186,7 @@ async fn handle_operation() -> Result<()> {
         Err(error) => {
             // 记录错误
             tracing::error!("操作失败: {}", error);
-            
+
             // 检查错误类型和严重程度
             match error.category() {
                 ErrorCategory::Network => {
@@ -438,14 +439,14 @@ async fn robust_operation() -> Result<()> {
             Ok(result) => return Ok(result),
             Err(error) => {
                 retry_count += 1;
-                
+
                 // 检查错误类型和可重试性
                 if error.is_retryable() && retry_count <= max_retries {
                     let delay = Duration::from_millis(1000 * retry_count);
                     tokio::time::sleep(delay).await;
                     continue;
                 }
-                
+
                 // 记录错误信息
                 tracing::error!(
                     "操作失败 (尝试 {}/{}): {}",
@@ -453,12 +454,12 @@ async fn robust_operation() -> Result<()> {
                     max_retries,
                     error
                 );
-                
+
                 // 获取恢复建议
                 if let Some(suggestion) = error.recovery_suggestion() {
                     tracing::info!("恢复建议: {}", suggestion);
                 }
-                
+
                 return Err(error);
             }
         }
@@ -473,26 +474,26 @@ use otlp::ml_error_prediction::{MLErrorPrediction, SystemContext};
 
 async fn predictive_monitoring() -> Result<()> {
     let ml_system = MLErrorPrediction::new(MLPredictionConfig::default())?;
-    
+
     // 模拟系统监控循环
     loop {
         let context = collect_system_context().await;
         let prediction = ml_system.predict_error_probability(&context).await?;
-        
+
         if prediction.probability > 0.8 {
             tracing::warn!(
                 "高错误概率预警: {:.2}% (置信度: {:.2}%)",
                 prediction.probability * 100.0,
                 prediction.confidence * 100.0
             );
-            
+
             // 执行预防措施
             for action in prediction.recommended_actions {
                 tracing::info!("执行预防措施: {}", action.description);
                 execute_preventive_action(&action).await?;
             }
         }
-        
+
         tokio::time::sleep(Duration::from_secs(60)).await;
     }
 }

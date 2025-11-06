@@ -1,9 +1,9 @@
 ﻿# OTLP Rust 1.90特性更新指南 - 2025年10月
 
-**版本**: 1.0  
-**发布日期**: 2025年10月28日  
-**Rust版本**: 1.90.0  
-**OpenTelemetry版本**: 0.31.0  
+**版本**: 1.0
+**发布日期**: 2025年10月28日
+**Rust版本**: 1.90.0
+**OpenTelemetry版本**: 0.31.0
 **状态**: ✅ 生产就绪
 
 ---
@@ -30,12 +30,14 @@
 本次更新全面整合Rust 1.90和OpenTelemetry 0.31.0的最新特性，带来显著的性能提升和功能增强：
 
 **性能提升**:
+
 - 🚀 编译速度提升 43% (LLD链接器)
 - 🚀 OTLP数据导出吞吐量 +20%
 - 🚀 内存占用降低 15%
 - 🚀 延迟P99 < 35ms
 
 **功能增强**:
+
 - ✨ 工作区一键发布
 - ✨ Const API编译期优化
 - ✨ OTLP 1.3.0规范完全支持
@@ -58,6 +60,7 @@
 ### 2.1 LLD链接器加速
 
 #### 验证LLD启用
+
 ```bash
 # 检查LLD链接器
 rustc -C help | grep lld
@@ -71,6 +74,7 @@ time cargo build --release -p otlp
 ```
 
 #### 强制启用LLD（非Linux x86_64平台）
+
 ```toml
 # .cargo/config.toml
 [target.x86_64-unknown-linux-gnu]
@@ -87,6 +91,7 @@ linker = "ld64.lld"
 ### 2.2 Const API优化
 
 #### OTLP配置常量化
+
 ```rust
 // src/config.rs
 use std::time::Duration;
@@ -95,13 +100,13 @@ use std::time::Duration;
 pub mod batch_config {
     pub const MAX_QUEUE_SIZE: usize = 4096;
     pub const MAX_BATCH_SIZE: usize = 512;
-    
+
     // Rust 1.90: const浮点运算
     pub const TIMEOUT_MS: f64 = 100.0_f64;
     pub const TIMEOUT_FLOOR: f64 = TIMEOUT_MS.floor(); // 100.0
-    
+
     // const Duration计算
-    pub const TIMEOUT_DURATION: Duration = 
+    pub const TIMEOUT_DURATION: Duration =
         Duration::from_millis(TIMEOUT_MS as u64);
 }
 
@@ -121,6 +126,7 @@ pub const ADJUSTED_CAPACITY: u32 = {
 ```
 
 #### 性能关键路径优化
+
 ```rust
 // src/exporter/batch.rs
 use crate::config::batch_config::*;
@@ -141,7 +147,7 @@ impl BatchExporter {
             timeout: TIMEOUT_DURATION,
         }
     }
-    
+
     #[inline(always)]
     pub const fn max_capacity() -> usize {
         MAX_QUEUE_SIZE
@@ -152,6 +158,7 @@ impl BatchExporter {
 ### 2.3 工作区管理
 
 #### 一键发布
+
 ```bash
 # 发布所有crate（按依赖顺序）
 cargo publish --workspace
@@ -165,6 +172,7 @@ cargo test --workspace
 ```
 
 #### 工作区依赖统一
+
 ```toml
 # Cargo.toml
 [workspace]
@@ -189,6 +197,7 @@ tokio = { workspace = true }
 ### 3.1 版本升级
 
 #### 更新依赖
+
 ```bash
 # 批量更新OpenTelemetry
 cargo update -p opentelemetry
@@ -202,6 +211,7 @@ cargo tree | grep opentelemetry
 ```
 
 #### Cargo.toml配置
+
 ```toml
 [dependencies]
 # OpenTelemetry核心 - 统一使用0.31.0
@@ -221,6 +231,7 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json"] }
 ### 3.2 OTLP导出器配置
 
 #### HTTP/JSON导出器
+
 ```rust
 // src/exporter/otlp_http.rs
 use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
@@ -234,12 +245,12 @@ pub fn init_otlp_http_exporter(endpoint: &str) -> Result<(), Box<dyn std::error:
         .with_timeout(Duration::from_secs(10))
         .with_protocol(opentelemetry_otlp::Protocol::HttpJson) // JSON编码
         .build()?;
-    
+
     let batch_config = opentelemetry_sdk::trace::BatchConfig::default()
         .with_max_queue_size(4096)
         .with_max_export_batch_size(512)
         .with_scheduled_delay(Duration::from_millis(100));
-    
+
     let tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
         .with_batch_exporter(exporter, Tokio)
         .with_config(
@@ -247,7 +258,7 @@ pub fn init_otlp_http_exporter(endpoint: &str) -> Result<(), Box<dyn std::error:
                 .with_resource(create_resource())
         )
         .build();
-    
+
     opentelemetry::global::set_tracer_provider(tracer_provider);
     Ok(())
 }
@@ -255,7 +266,7 @@ pub fn init_otlp_http_exporter(endpoint: &str) -> Result<(), Box<dyn std::error:
 fn create_resource() -> opentelemetry_sdk::Resource {
     use opentelemetry::KeyValue;
     use opentelemetry_sdk::Resource;
-    
+
     Resource::new(vec![
         KeyValue::new("service.name", "otlp-rust"),
         KeyValue::new("service.version", "2.1.0"),
@@ -268,6 +279,7 @@ fn create_resource() -> opentelemetry_sdk::Resource {
 ```
 
 #### gRPC导出器
+
 ```rust
 // src/exporter/otlp_grpc.rs
 use tonic::transport::ClientTlsConfig;
@@ -279,11 +291,11 @@ pub fn init_otlp_grpc_exporter(endpoint: &str) -> Result<(), Box<dyn std::error:
         .with_timeout(Duration::from_secs(10))
         .with_tls_config(ClientTlsConfig::new().with_webpki_roots())
         .build()?;
-    
+
     let tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
         .with_batch_exporter(exporter, Tokio)
         .build();
-    
+
     opentelemetry::global::set_tracer_provider(tracer_provider);
     Ok(())
 }
@@ -292,6 +304,7 @@ pub fn init_otlp_grpc_exporter(endpoint: &str) -> Result<(), Box<dyn std::error:
 ### 3.3 三大信号集成
 
 #### Traces（追踪）
+
 ```rust
 use tracing::{info, instrument, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -309,29 +322,30 @@ pub async fn process_request(
     data: Vec<u8>,
 ) -> Result<Response, Error> {
     let span = Span::current();
-    
+
     // 添加自定义属性
     span.set_attribute("custom.field", "value");
-    
+
     // 记录事件
     span.add_event("processing_started", vec![
         KeyValue::new("timestamp", Utc::now().to_rfc3339()),
     ]);
-    
+
     info!("Processing OTLP data");
-    
+
     // 业务逻辑
     let result = parse_and_validate(&data).await?;
-    
+
     span.add_event("processing_completed", vec![
         KeyValue::new("result_size", result.len() as i64),
     ]);
-    
+
     Ok(Response::new(result))
 }
 ```
 
 #### Metrics（指标）
+
 ```rust
 use opentelemetry::metrics::{Counter, Histogram, Meter};
 use opentelemetry::KeyValue;
@@ -350,26 +364,26 @@ impl OtlpMetrics {
                 .with_description("Total OTLP requests")
                 .with_unit("1")
                 .build(),
-            
+
             latency_histogram: meter
                 .f64_histogram("otlp.request.duration")
                 .with_description("Request latency distribution")
                 .with_unit("ms")
                 .build(),
-            
+
             active_connections: meter
                 .i64_up_down_counter("otlp.connections.active")
                 .with_description("Active connections")
                 .build(),
         }
     }
-    
+
     pub fn record_request(&self, status: &str, latency_ms: f64) {
         let labels = &[
             KeyValue::new("status", status.to_string()),
             KeyValue::new("protocol", "http"),
         ];
-        
+
         self.request_counter.add(1, labels);
         self.latency_histogram.record(latency_ms, labels);
     }
@@ -377,6 +391,7 @@ impl OtlpMetrics {
 ```
 
 #### Logs（日志）
+
 ```rust
 use tracing::{error, info, warn};
 use tracing_subscriber::layer::SubscriberExt;
@@ -385,18 +400,18 @@ use tracing_subscriber::util::SubscriberInitExt;
 pub fn init_logging() -> Result<(), Box<dyn std::error::Error>> {
     let telemetry_layer = tracing_opentelemetry::layer()
         .with_tracer(opentelemetry::global::tracer("otlp-rust"));
-    
+
     let fmt_layer = tracing_subscriber::fmt::layer()
         .json()
         .with_current_span(true)
         .with_span_list(true);
-    
+
     tracing_subscriber::registry()
         .with(telemetry_layer)
         .with(fmt_layer)
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
-    
+
     Ok(())
 }
 
@@ -409,7 +424,7 @@ async fn handle_request(req: Request) {
         path = %req.path,
         "Handling request"
     );
-    
+
     match process(req).await {
         Ok(resp) => {
             info!(status = 200, "Request successful");
@@ -439,20 +454,20 @@ impl ZeroCopyExporter {
     pub async fn export_spans(&mut self, spans: &[Span]) -> Result<(), Error> {
         // 直接序列化到BytesMut，避免中间拷贝
         self.buffer.clear();
-        
+
         for span in spans {
             span.encode_to_vec(&mut self.buffer)?;
         }
-        
+
         // 转换为Bytes，共享底层内存
         let data: Bytes = self.buffer.clone().freeze();
-        
+
         // 发送时无需拷贝
         self.send_data(data).await?;
-        
+
         Ok(())
     }
-    
+
     async fn send_data(&self, data: Bytes) -> Result<(), Error> {
         // data可以被clone多次，不会复制底层数据
         let data_clone = data.clone();
@@ -477,14 +492,14 @@ pub struct BatchProcessor {
 impl BatchProcessor {
     pub fn new(batch_size: usize, flush_interval: Duration) -> Self {
         let (tx, rx) = mpsc::channel(batch_size * 2);
-        
+
         tokio::spawn(async move {
             Self::process_loop(rx, batch_size, flush_interval).await;
         });
-        
+
         Self { tx, batch_size, flush_interval }
     }
-    
+
     async fn process_loop(
         mut rx: mpsc::Receiver<Span>,
         batch_size: usize,
@@ -492,12 +507,12 @@ impl BatchProcessor {
     ) {
         let mut batch = Vec::with_capacity(batch_size);
         let mut flush_timer = interval(flush_interval);
-        
+
         loop {
             tokio::select! {
                 Some(span) = rx.recv() => {
                     batch.push(span);
-                    
+
                     if batch.len() >= batch_size {
                         Self::flush_batch(&mut batch).await;
                     }
@@ -510,7 +525,7 @@ impl BatchProcessor {
             }
         }
     }
-    
+
     async fn flush_batch(batch: &mut Vec<Span>) {
         // 批量导出
         if let Err(e) = export_spans(batch).await {
@@ -541,7 +556,7 @@ impl ArenaAllocator {
             span
         })
     }
-    
+
     pub fn reset(&self) {
         ARENA.with(|arena| {
             arena.borrow_mut().reset();
@@ -552,12 +567,12 @@ impl ArenaAllocator {
 // 使用示例
 async fn process_batch(spans: Vec<SpanData>) {
     let allocator = ArenaAllocator;
-    
+
     for data in spans {
         let span = allocator.alloc_span(data);
         process_span(span).await;
     }
-    
+
     // 批量释放内存
     allocator.reset();
 }
@@ -570,6 +585,7 @@ async fn process_batch(spans: Vec<SpanData>) {
 ### 5.1 服务发现集成
 
 #### Consul集成
+
 ```rust
 // src/discovery/consul.rs
 use consul::Client;
@@ -585,29 +601,29 @@ impl ConsulServiceDiscovery {
         let client = Client::new(consul_addr).await?;
         Ok(Self { client, service_name })
     }
-    
+
     pub async fn register(&self, addr: SocketAddr) -> Result<(), Error> {
         self.client.agent().service_register(
             &self.service_name,
             addr.port(),
             vec!["otlp", "rust", "observability"],
         ).await?;
-        
+
         // 注册健康检查
         self.client.agent().check_register(
             &format!("{}-health", self.service_name),
             &format!("http://{}:{}/health", addr.ip(), addr.port()),
             Duration::from_secs(10),
         ).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn discover(&self) -> Result<Vec<SocketAddr>, Error> {
         let services = self.client.health()
             .service(&self.service_name, None, true)
             .await?;
-        
+
         Ok(services.iter()
             .filter_map(|s| {
                 let addr = format!("{}:{}", s.service.address, s.service.port);
@@ -653,7 +669,7 @@ impl CircuitBreaker {
             timeout,
         }
     }
-    
+
     pub async fn call<F, T, E>(&self, f: F) -> Result<T, E>
     where
         F: Future<Output = Result<T, E>>,
@@ -668,7 +684,7 @@ impl CircuitBreaker {
             }
             _ => {}
         }
-        
+
         match f.await {
             Ok(result) => {
                 self.on_success();
@@ -680,30 +696,30 @@ impl CircuitBreaker {
             }
         }
     }
-    
+
     fn on_success(&self) {
         let state = self.get_state();
-        
+
         if state == CircuitState::HalfOpen {
             self.close();
         }
-        
+
         self.success_count.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     fn on_failure(&self) {
         let failures = self.failure_count.fetch_add(1, Ordering::Relaxed) + 1;
-        
+
         self.last_failure_time.store(
             Instant::now().elapsed().as_millis() as u64,
             Ordering::Relaxed,
         );
-        
+
         if failures >= self.threshold {
             self.open();
         }
     }
-    
+
     fn get_state(&self) -> CircuitState {
         match self.state.load(Ordering::Relaxed) {
             0 => CircuitState::Closed,
@@ -712,28 +728,28 @@ impl CircuitBreaker {
             _ => CircuitState::Closed,
         }
     }
-    
+
     fn open(&self) {
         self.state.store(CircuitState::Open as u8, Ordering::Relaxed);
         tracing::warn!("Circuit breaker opened");
     }
-    
+
     fn close(&self) {
         self.state.store(CircuitState::Closed as u8, Ordering::Relaxed);
         self.failure_count.store(0, Ordering::Relaxed);
         self.success_count.store(0, Ordering::Relaxed);
         tracing::info!("Circuit breaker closed");
     }
-    
+
     fn half_open(&self) {
         self.state.store(CircuitState::HalfOpen as u8, Ordering::Relaxed);
         tracing::info!("Circuit breaker half-open");
     }
-    
+
     fn should_attempt_reset(&self) -> bool {
         let last_failure = self.last_failure_time.load(Ordering::Relaxed);
         let now = Instant::now().elapsed().as_millis() as u64;
-        
+
         now - last_failure >= self.timeout.as_millis() as u64
     }
 }
@@ -772,10 +788,10 @@ impl RateLimiter {
             per,
         }
     }
-    
+
     pub async fn acquire(&self) -> RateLimitGuard {
         let permit = self.semaphore.clone().acquire_owned().await.unwrap();
-        
+
         // 启动定时器归还permit
         let sem = self.semaphore.clone();
         let duration = self.per;
@@ -783,7 +799,7 @@ impl RateLimiter {
             tokio::time::sleep(duration).await;
             drop(permit);
         });
-        
+
         RateLimitGuard { _inner: () }
     }
 }
@@ -810,6 +826,7 @@ pub async fn export_with_rate_limit(
 ### 6.1 Kubernetes配置
 
 #### Deployment
+
 ```yaml
 # k8s/otlp-deployment.yaml
 apiVersion: apps/v1
@@ -880,6 +897,7 @@ spec:
 ```
 
 #### Service
+
 ```yaml
 # k8s/otlp-service.yaml
 apiVersion: v1
@@ -906,6 +924,7 @@ spec:
 ### 6.2 Istio集成
 
 #### VirtualService
+
 ```yaml
 # istio/otlp-virtualservice.yaml
 apiVersion: networking.istio.io/v1beta1
@@ -936,6 +955,7 @@ spec:
 ```
 
 #### DestinationRule
+
 ```yaml
 # istio/otlp-destinationrule.yaml
 apiVersion: networking.istio.io/v1beta1
@@ -975,6 +995,7 @@ spec:
 ### 7.1 分布式追踪
 
 #### Context传播
+
 ```rust
 use opentelemetry::propagation::{Extractor, Injector};
 use opentelemetry::global;
@@ -983,13 +1004,13 @@ use std::collections::HashMap;
 // HTTP Header注入
 pub fn inject_trace_context(headers: &mut HashMap<String, String>) {
     struct HeaderInjector<'a>(&'a mut HashMap<String, String>);
-    
+
     impl<'a> Injector for HeaderInjector<'a> {
         fn set(&mut self, key: &str, value: String) {
             self.0.insert(key.to_string(), value);
         }
     }
-    
+
     let propagator = global::get_text_map_propagator(|propagator| {
         propagator.inject_context(
             &tracing::Span::current().context(),
@@ -1001,17 +1022,17 @@ pub fn inject_trace_context(headers: &mut HashMap<String, String>) {
 // HTTP Header提取
 pub fn extract_trace_context(headers: &HashMap<String, String>) -> Context {
     struct HeaderExtractor<'a>(&'a HashMap<String, String>);
-    
+
     impl<'a> Extractor for HeaderExtractor<'a> {
         fn get(&self, key: &str) -> Option<&str> {
             self.0.get(key).map(|v| v.as_str())
         }
-        
+
         fn keys(&self) -> Vec<&str> {
             self.0.keys().map(|k| k.as_str()).collect()
         }
     }
-    
+
     global::get_text_map_propagator(|propagator| {
         propagator.extract(&HeaderExtractor(headers))
     })
@@ -1039,35 +1060,35 @@ impl CustomMetrics {
                 .with_description("Span export duration")
                 .with_unit("ms")
                 .build(),
-            
+
             span_export_size: meter
                 .u64_histogram("otlp.span.export.size")
                 .with_description("Number of spans exported")
                 .with_unit("1")
                 .build(),
-            
+
             active_exporters: meter
                 .i64_up_down_counter("otlp.exporters.active")
                 .with_description("Active exporters")
                 .build(),
-            
+
             export_errors: meter
                 .u64_counter("otlp.export.errors.total")
                 .with_description("Total export errors")
                 .build(),
         }
     }
-    
+
     pub fn record_export(&self, duration_ms: f64, span_count: u64, success: bool) {
         let status = if success { "success" } else { "error" };
         let labels = &[
             KeyValue::new("status", status),
             KeyValue::new("exporter", "otlp"),
         ];
-        
+
         self.span_export_duration.record(duration_ms, labels);
         self.span_export_size.record(span_count, labels);
-        
+
         if !success {
             self.export_errors.add(1, labels);
         }
@@ -1092,19 +1113,19 @@ pub fn load_client_config(
     ca_cert_path: &str,
 ) -> Result<ClientConfig, Box<dyn std::error::Error>> {
     let mut root_store = RootCertStore::empty();
-    
+
     // 加载CA证书
     let ca_file = File::open(ca_cert_path)?;
     let mut ca_reader = BufReader::new(ca_file);
-    
+
     for cert in certs(&mut ca_reader) {
         root_store.add(cert?)?;
     }
-    
+
     let config = ClientConfig::builder()
         .with_root_certificates(root_store)
         .with_no_client_auth();
-    
+
     Ok(config)
 }
 
@@ -1117,17 +1138,17 @@ pub fn load_server_config(
     let mut cert_reader = BufReader::new(cert_file);
     let certs = certs(&mut cert_reader)
         .collect::<Result<Vec<_>, _>>()?;
-    
+
     // 加载私钥
     let key_file = File::open(key_path)?;
     let mut key_reader = BufReader::new(key_file);
     let keys = pkcs8_private_keys(&mut key_reader)
         .collect::<Result<Vec<_>, _>>()?;
-    
+
     let config = ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(certs, keys[0].clone_key())?;
-    
+
     Ok(config)
 }
 ```
@@ -1159,7 +1180,7 @@ impl JwtAuth {
             decoding_key: DecodingKey::from_secret(secret),
         }
     }
-    
+
     pub fn create_token(&self, user_id: &str, roles: Vec<String>) -> Result<String, Error> {
         let now = chrono::Utc::now().timestamp() as usize;
         let claims = Claims {
@@ -1168,11 +1189,11 @@ impl JwtAuth {
             iat: now,
             roles,
         };
-        
+
         encode(&Header::default(), &claims, &self.encoding_key)
             .map_err(Into::into)
     }
-    
+
     pub fn verify_token(&self, token: &str) -> Result<Claims, Error> {
         decode::<Claims>(token, &self.decoding_key, &Validation::default())
             .map(|data| data.claims)
@@ -1192,10 +1213,10 @@ pub async fn jwt_middleware(
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "))
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     let claims = auth.verify_token(token)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
-    
+
     req.extensions_mut().insert(claims);
     Ok(next.run(req).await)
 }
@@ -1208,6 +1229,7 @@ pub async fn jwt_middleware(
 ### 9.1 从旧版本迁移
 
 #### 步骤1：更新依赖
+
 ```bash
 # 备份当前Cargo.lock
 cp Cargo.lock Cargo.lock.backup
@@ -1224,6 +1246,7 @@ cargo test
 ```
 
 #### 步骤2：代码适配
+
 ```rust
 // 旧代码 (OpenTelemetry 0.22)
 use opentelemetry::sdk::export::trace::stdout;
@@ -1242,6 +1265,7 @@ opentelemetry::global::set_tracer_provider(provider);
 ```
 
 #### 步骤3：配置更新
+
 ```toml
 # 旧配置
 [dependencies]
@@ -1277,6 +1301,7 @@ ps aux | grep otlp-server
 ### 10.1 常见问题
 
 #### 问题1：LLD链接器未启用
+
 ```bash
 # 检查
 rustc -C help | grep lld
@@ -1291,6 +1316,7 @@ cargo build --release
 ```
 
 #### 问题2：OpenTelemetry版本冲突
+
 ```bash
 # 检查版本
 cargo tree | grep opentelemetry
@@ -1303,6 +1329,7 @@ opentelemetry-otlp = "0.31.0"
 ```
 
 #### 问题3：追踪数据未导出
+
 ```rust
 // 检查日志
 RUST_LOG=opentelemetry=debug cargo run
@@ -1358,8 +1385,7 @@ Rust: 1.90.0
 
 ---
 
-**文档版本**: 1.0  
-**作者**: OTLP Rust团队  
-**最后更新**: 2025年10月28日  
-**联系方式**: tech@otlp-rust.io
-
+**文档版本**: 1.0
+**作者**: OTLP Rust团队
+**最后更新**: 2025年10月28日
+**联系方式**: <tech@otlp-rust.io>

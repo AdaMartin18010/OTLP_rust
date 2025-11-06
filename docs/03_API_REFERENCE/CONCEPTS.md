@@ -1,7 +1,7 @@
 ﻿# API核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -22,6 +22,7 @@
 #### 定义
 
 **形式化定义**: Span s = (id, parent_id, name, start_time, end_time, attrs, events)，其中：
+
 - id: 唯一标识符, id ∈ SpanId
 - parent_id: 父Span标识, parent_id ∈ SpanId ∪ {null}
 - name: 操作名称
@@ -73,21 +74,21 @@ pub async fn handle_request(tracer: &impl Tracer) -> Result<()> {
         .span_builder("handle_request")
         .with_kind(SpanKind::Server)
         .start(tracer);
-    
+
     // 设置属性
     span.set_attribute(KeyValue::new("http.method", "POST"));
     span.set_attribute(KeyValue::new("http.url", "/api/v1/traces"));
     span.set_attribute(KeyValue::new("http.status_code", 200));
-    
+
     // 记录事件
     span.add_event(
         "validation_complete",
         vec![KeyValue::new("record_count", 100)],
     );
-    
+
     // 执行业务逻辑
     let result = process_data().await;
-    
+
     // 根据结果设置状态
     match result {
         Ok(_) => span.set_status(Status::Ok),
@@ -96,36 +97,36 @@ pub async fn handle_request(tracer: &impl Tracer) -> Result<()> {
             span.record_error(&e);
         }
     }
-    
+
     result
 }
 
 // 嵌套Span
 async fn process_data() -> Result<()> {
     let tracer = global::tracer("otlp-service");
-    
+
     // 子Span1: 数据库查询
     {
         let _span = tracer
             .span_builder("db_query")
             .with_kind(SpanKind::Client)
             .start(&tracer);
-        
+
         // 执行查询...
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
-    
+
     // 子Span2: 数据处理
     {
         let _span = tracer
             .span_builder("data_processing")
             .with_kind(SpanKind::Internal)
             .start(&tracer);
-        
+
         // 处理数据...
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
-    
+
     Ok(())
 }
 
@@ -162,6 +163,7 @@ Trace ID: 4bf92f3577b34da6a3ce929d0e0e4736
 #### 定义
 
 **形式化定义**: Resource r = {(k₁, v₁), (k₂, v₂), ..., (kₙ, vₙ)}，其中：
+
 - kᵢ: 属性键（如service.name）
 - vᵢ: 属性值
 - Resource标识信号源的实体
@@ -212,18 +214,18 @@ pub fn create_resource() -> Resource {
         KeyValue::new(semconv::resource::SERVICE_NAME, "otlp-receiver"),
         KeyValue::new(semconv::resource::SERVICE_VERSION, "1.0.0"),
         KeyValue::new(semconv::resource::SERVICE_NAMESPACE, "production"),
-        
+
         // 部署信息
         KeyValue::new(semconv::resource::DEPLOYMENT_ENVIRONMENT, "prod"),
-        
+
         // 主机信息
         KeyValue::new(semconv::resource::HOST_NAME, "otlp-host-01"),
         KeyValue::new(semconv::resource::HOST_ARCH, "x86_64"),
-        
+
         // 容器信息（如果在容器中）
         KeyValue::new(semconv::resource::CONTAINER_NAME, "otlp-receiver-7d8f"),
         KeyValue::new(semconv::resource::CONTAINER_ID, "abc123def456"),
-        
+
         // Kubernetes信息（如果在K8s中）
         KeyValue::new(semconv::resource::K8S_POD_NAME, "otlp-receiver-7d8f4b-xyz"),
         KeyValue::new(semconv::resource::K8S_NAMESPACE_NAME, "observability"),
@@ -236,7 +238,7 @@ use opentelemetry::sdk::trace::{TracerProvider, Config};
 
 pub fn init_tracer() -> TracerProvider {
     let resource = create_resource();
-    
+
     TracerProvider::builder()
         .with_config(
             Config::default()
@@ -275,12 +277,12 @@ pub fn init_tracer() -> TracerProvider {
 */
 
 // 查询时的作用
-// SELECT * FROM traces 
+// SELECT * FROM traces
 // WHERE resource.service_name = 'otlp-receiver'
 //   AND resource.deployment_environment = 'prod'
 
 // 聚合时的作用
-// SELECT avg(duration) 
+// SELECT avg(duration)
 // FROM spans
 // GROUP BY resource.service_name, resource.k8s_pod_name
 ```
@@ -294,6 +296,7 @@ pub fn init_tracer() -> TracerProvider {
 #### 定义
 
 **形式化定义**: Batch B = {s₁, s₂, ..., sₙ}，优化目标：
+
 - 最小化网络调用: minimize(calls)
 - 最大化吞吐量: maximize(throughput)
 - 约束: size(B) ≤ max_batch_size ∧ age(B) ≤ max_age
@@ -353,36 +356,36 @@ impl<T> BatchProcessor<T> {
             sender,
         }
     }
-    
+
     // 添加项到批次
     pub async fn add(&mut self, item: T) -> Result<()> {
         self.buffer.push(item);
-        
+
         // 达到批次大小立即发送
         if self.buffer.len() >= self.max_batch_size {
             self.flush().await?;
         }
-        
+
         Ok(())
     }
-    
+
     // 刷新批次
     pub async fn flush(&mut self) -> Result<()> {
         if self.buffer.is_empty() {
             return Ok(());
         }
-        
+
         let batch = std::mem::replace(
             &mut self.buffer,
             Vec::with_capacity(self.max_batch_size)
         );
-        
+
         self.sender.send(batch).await
             .map_err(|_| Error::ChannelClosed)?;
-        
+
         Ok(())
     }
-    
+
     // 定时刷新循环
     pub async fn run_timer(&mut self) {
         loop {
@@ -439,11 +442,11 @@ impl<T> AdaptiveBatchProcessor<T> {
     pub fn adjust_batch_size(&mut self, latency: Duration) {
         if latency > self.latency_target {
             // 延迟过高，减小批次
-            self.current_batch_size = 
+            self.current_batch_size =
                 (self.current_batch_size * 90 / 100).max(self.min_batch_size);
         } else {
             // 延迟正常，增大批次
-            self.current_batch_size = 
+            self.current_batch_size =
                 (self.current_batch_size * 110 / 100).min(self.max_batch_size);
         }
     }
@@ -459,6 +462,7 @@ impl<T> AdaptiveBatchProcessor<T> {
 #### 定义
 
 **形式化定义**: Stream S = (messages, state)，其中：
+
 - messages: 消息序列 [m₁, m₂, ..., mₙ]
 - state ∈ {OPEN, CLOSED, ERROR}
 - 支持双向流: client ↔ server
@@ -514,12 +518,12 @@ impl TraceService for OtlpTraceService {
         request: Request<ExportTraceServiceRequest>,
     ) -> Result<Response<ExportTraceServiceResponse>, Status> {
         let req = request.into_inner();
-        
+
         // 处理traces
         for resource_span in req.resource_spans {
             self.process_resource_spans(resource_span).await?;
         }
-        
+
         Ok(Response::new(ExportTraceServiceResponse::default()))
     }
 }
@@ -548,15 +552,15 @@ impl StreamingOtlpClient {
                 yield request;
             }
         };
-        
+
         // 发送流
         let response = self.client
             .export_stream(Request::new(stream))
             .await?;
-        
+
         // 处理响应
         println!("Exported: {:?}", response.into_inner());
-        
+
         Ok(())
     }
 }
@@ -609,6 +613,7 @@ pub fn create_grpc_server() -> Result<Server> {
 #### 定义
 
 **形式化定义**: 数据传输路径 P，拷贝次数 c(P) = 0
+
 - 传统: 内核缓冲区 → 用户空间 → 内核缓冲区 (c=2)
 - Zero-Copy: 内核缓冲区 → 内核缓冲区 (c=0)
 
@@ -652,10 +657,10 @@ pub async fn traditional_send(socket: &mut TcpStream, data: &[u8]) -> Result<()>
     // 拷贝1: data → buffer
     let mut buffer = Vec::with_capacity(data.len());
     buffer.extend_from_slice(data);
-    
+
     // 拷贝2: buffer → kernel
     socket.write_all(&buffer).await?;
-    
+
     Ok(())
     // 总拷贝: 2次
 }
@@ -664,7 +669,7 @@ pub async fn traditional_send(socket: &mut TcpStream, data: &[u8]) -> Result<()>
 pub async fn zero_copy_send(socket: &mut TcpStream, data: Bytes) -> Result<()> {
     // 直接传输，无拷贝
     socket.write_all(&data).await?;
-    
+
     Ok(())
     // 总拷贝: 0次
 }
@@ -688,7 +693,7 @@ impl ZeroCopyBuffer {
             len: self.len,
         }
     }
-    
+
     // 切片也不拷贝数据
     pub fn slice(&self, begin: usize, end: usize) -> Self {
         Self {
@@ -710,7 +715,7 @@ impl SpanBuffer {
         let span = protobuf::Message::parse_from_bytes(&self.data)?;
         Ok(span)
     }
-    
+
     // 传递给下游也不拷贝
     pub fn forward(&self, sender: &mut Sender) -> Result<()> {
         sender.send(self.data.clone())?;  // 仅拷贝指针
@@ -746,7 +751,7 @@ pub async fn vectored_write(
         .iter()
         .map(|b| IoSlice::new(&b[..]))
         .collect();
-    
+
     socket.write_vectored(&iovecs).await?;
     Ok(())
     // 避免了合并缓冲区的拷贝
@@ -765,8 +770,8 @@ pub async fn vectored_write(
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
 **最后更新**: 2025-10-28
 **维护团队**: OTLP_rust API团队
 

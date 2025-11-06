@@ -1,7 +1,7 @@
 # eBPF实践完整指南
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -182,18 +182,18 @@ zero_instrumentation:
     - Database查询追踪
     - Redis操作追踪
     - Kafka消息追踪
-  
+
   metrics:
     - 请求速率、延迟、错误率
     - TCP连接数、重传率
     - 文件I/O吞吐量
     - 内存分配统计
-  
+
   logs:
     - 系统调用日志
     - 安全事件(如execve)
     - 网络连接日志
-  
+
   profiles:
     - CPU火焰图
     - Off-CPU分析
@@ -246,23 +246,23 @@ int BPF_KPROBE(ssl_write_entry, void *ssl, const void *buf, int num)
 {
     __u64 tid = bpf_get_current_pid_tgid();
     __u64 ts = bpf_ktime_get_ns();
-    
+
     struct http_request req = {};
     req.timestamp_ns = ts;
     req.pid = tid >> 32;
     req.tid = tid;
-    
+
     // 解析HTTP请求头
     char line[512];
     bpf_probe_read_user(&line, sizeof(line), buf);
-    
+
     // 提取方法(GET/POST/...)
     if (line[0] == 'G' && line[1] == 'E' && line[2] == 'T') {
         __builtin_memcpy(req.method, "GET", 4);
     } else if (line[0] == 'P' && line[1] == 'O' && line[2] == 'S' && line[3] == 'T') {
         __builtin_memcpy(req.method, "POST", 5);
     }
-    
+
     // 提取路径
     // 简化示例,实际需要完整的HTTP解析
     char *path_start = line + 4;  // 跳过"GET "
@@ -270,10 +270,10 @@ int BPF_KPROBE(ssl_write_entry, void *ssl, const void *buf, int num)
     for (; i < 255 && path_start[i] != ' '; i++) {
         req.path[i] = path_start[i];
     }
-    
+
     // 保存请求开始状态
     bpf_map_update_elem(&active_requests, &tid, &req, BPF_ANY);
-    
+
     return 0;
 }
 
@@ -282,22 +282,22 @@ SEC("uretprobe/SSL_write")
 int BPF_KRETPROBE(ssl_write_exit, int ret)
 {
     __u64 tid = bpf_get_current_pid_tgid();
-    
+
     struct http_request *req = bpf_map_lookup_elem(&active_requests, &tid);
     if (!req) {
         return 0;
     }
-    
+
     // 计算延迟
     __u64 now = bpf_ktime_get_ns();
     req->duration_ns = now - req->timestamp_ns;
-    
+
     // 发送完成的请求到用户空间
     bpf_ringbuf_output(&completed_requests, req, sizeof(*req), 0);
-    
+
     // 清理
     bpf_map_delete_elem(&active_requests, &tid);
-    
+
     return 0;
 }
 
@@ -332,42 +332,42 @@ impl EbpfHttpTracer {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         // 加载eBPF程序
         let mut bpf = Bpf::load_file("http_trace.bpf.o")?;
-        
+
         // Attach uprobe到SSL_write
         let program: &mut UProbe = bpf.program_mut("ssl_write_entry").unwrap().try_into()?;
         program.load()?;
         program.attach(Some("SSL_write"), 0, "/usr/lib/libssl.so.3", None)?;
-        
+
         // Attach uretprobe
         let program: &mut UProbe = bpf.program_mut("ssl_write_exit").unwrap().try_into()?;
         program.load()?;
         program.attach(Some("SSL_write"), 0, "/usr/lib/libssl.so.3", None)?;
-        
+
         Ok(Self { bpf })
     }
-    
+
     pub async fn collect_traces(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // 读取Ring Buffer
         let mut ring_buf = RingBuf::try_from(
             self.bpf.map_mut("completed_requests").unwrap()
         )?;
-        
+
         loop {
             // 轮询事件
             if let Some(data) = ring_buf.next() {
                 let req: HttpRequest = unsafe {
                     std::ptr::read(data.as_ptr() as *const HttpRequest)
                 };
-                
+
                 // 转换为OTLP Span
                 let span = self.http_request_to_span(req);
-                
+
                 // 发送到Collector
                 self.send_span(span).await?;
             }
         }
     }
-    
+
     fn http_request_to_span(&self, req: HttpRequest) -> Span {
         let method = String::from_utf8_lossy(&req.method)
             .trim_end_matches('\0')
@@ -375,7 +375,7 @@ impl EbpfHttpTracer {
         let path = String::from_utf8_lossy(&req.path)
             .trim_end_matches('\0')
             .to_string();
-        
+
         Span {
             trace_id: generate_trace_id(),
             span_id: generate_span_id(),
@@ -449,14 +449,14 @@ int BPF_KPROBE(mysql_query, void *mysql, const char *query, unsigned long length
     // 捕获MySQL查询
     __u64 tid = bpf_get_current_pid_tgid();
     __u64 ts = bpf_ktime_get_ns();
-    
+
     struct db_query q = {};
     q.timestamp_ns = ts;
     q.pid = tid >> 32;
-    
+
     // 复制SQL语句(限制长度)
     bpf_probe_read_user_str(q.statement, sizeof(q.statement), query);
-    
+
     bpf_map_update_elem(&active_queries, &tid, &q, BPF_ANY);
     return 0;
 }
@@ -499,7 +499,7 @@ int trace_tcp_state(struct trace_event_raw_inet_sock_set_state *ctx)
 {
     if (ctx->newstate == TCP_ESTABLISHED) {
         __u32 dport = ctx->dport;
-        
+
         struct tcp_metrics *m = bpf_map_lookup_elem(&tcp_stats, &dport);
         if (m) {
             __sync_fetch_and_add(&m->connections_total, 1);
@@ -518,7 +518,7 @@ int BPF_KPROBE(tcp_retransmit, struct sock *sk)
     __u16 dport = sk->__sk_common.skc_dport;
     dport = bpf_ntohs(dport);
     __u32 port = dport;
-    
+
     struct tcp_metrics *m = bpf_map_lookup_elem(&tcp_stats, &port);
     if (m) {
         __sync_fetch_and_add(&m->retransmits, 1);
@@ -533,9 +533,9 @@ pub async fn collect_tcp_metrics(&mut self) -> Result<Vec<Metric>, Box<dyn std::
     let tcp_stats: HashMap<_, _, _> = HashMap::try_from(
         self.bpf.map("tcp_stats").unwrap()
     )?;
-    
+
     let mut metrics = Vec::new();
-    
+
     for (port, stats) in tcp_stats.iter() {
         metrics.push(Metric {
             name: "tcp.connections.total".to_string(),
@@ -559,7 +559,7 @@ pub async fn collect_tcp_metrics(&mut self) -> Result<Vec<Metric>, Box<dyn std::
                 is_monotonic: true,
             })),
         });
-        
+
         metrics.push(Metric {
             name: "tcp.retransmits.total".to_string(),
             unit: "packets".to_string(),
@@ -583,7 +583,7 @@ pub async fn collect_tcp_metrics(&mut self) -> Result<Vec<Metric>, Box<dyn std::
             })),
         });
     }
-    
+
     Ok(metrics)
 }
 ```
@@ -607,7 +607,7 @@ int trace_read_entry(struct trace_event_raw_sys_enter *ctx)
 {
     __u64 tid = bpf_get_current_pid_tgid();
     __u64 ts = bpf_ktime_get_ns();
-    
+
     bpf_map_update_elem(&io_start, &tid, &ts, BPF_ANY);
     return 0;
 }
@@ -617,18 +617,18 @@ int trace_read_exit(struct trace_event_raw_sys_exit *ctx)
 {
     __u64 tid = bpf_get_current_pid_tgid();
     __u64 *start_ts = bpf_map_lookup_elem(&io_start, &tid);
-    
+
     if (start_ts) {
         __u64 latency = bpf_ktime_get_ns() - *start_ts;
         __u32 pid = tid >> 32;
-        
+
         struct io_stats *stats = bpf_map_lookup_elem(&io_metrics, &pid);
         if (stats) {
             __sync_fetch_and_add(&stats->read_count, 1);
             __sync_fetch_and_add(&stats->read_bytes, ctx->ret);
             __sync_fetch_and_add(&stats->read_latency_us, latency / 1000);
         }
-        
+
         bpf_map_delete_elem(&io_start, &tid);
     }
     return 0;
@@ -656,23 +656,23 @@ SEC("tracepoint/raw_syscalls/sys_enter")
 int trace_sys_enter(struct trace_event_raw_sys_enter *ctx)
 {
     __u32 pid = bpf_get_current_pid_tgid() >> 32;
-    
+
     // 只记录特定进程或特定系统调用
     if (pid != target_pid && target_pid != 0) {
         return 0;
     }
-    
+
     struct syscall_event event = {};
     event.timestamp_ns = bpf_ktime_get_ns();
     event.pid = pid;
     event.syscall_nr = ctx->id;
     bpf_get_current_comm(&event.comm, sizeof(event.comm));
-    
+
     // 复制参数
     for (int i = 0; i < 6; i++) {
         event.args[i] = ctx->args[i];
     }
-    
+
     bpf_ringbuf_output(&events, &event, sizeof(event), 0);
     return 0;
 }
@@ -690,14 +690,14 @@ int trace_execve(struct trace_event_raw_sys_enter *ctx)
 {
     char filename[256];
     bpf_probe_read_user_str(filename, sizeof(filename), (void *)ctx->args[0]);
-    
+
     struct audit_log log = {
         .type = AUDIT_EXEC,
         .timestamp_ns = bpf_ktime_get_ns(),
         .pid = bpf_get_current_pid_tgid() >> 32,
     };
     __builtin_memcpy(log.data, filename, sizeof(filename));
-    
+
     bpf_ringbuf_output(&audit_events, &log, sizeof(log), 0);
     return 0;
 }
@@ -744,12 +744,12 @@ SEC("perf_event")
 int do_perf_event(struct bpf_perf_event_data *ctx)
 {
     __u32 pid = bpf_get_current_pid_tgid() >> 32;
-    
+
     // 只采样特定进程
     if (target_pid != 0 && pid != target_pid) {
         return 0;
     }
-    
+
     // 获取调用栈
     __u32 stack_id = bpf_get_stackid(ctx, &stack_traces, BPF_F_USER_STACK);
     if (stack_id >= 0) {
@@ -762,7 +762,7 @@ int do_perf_event(struct bpf_perf_event_data *ctx)
             bpf_map_update_elem(&stack_counts, &stack_id, &new_count, BPF_ANY);
         }
     }
-    
+
     return 0;
 }
 ```
@@ -773,23 +773,23 @@ pub fn generate_pprof_profile(&self) -> Result<Vec<u8>, Box<dyn std::error::Erro
     let stack_traces: StackTraceMap = StackTraceMap::try_from(
         self.bpf.map("stack_traces").unwrap()
     )?;
-    
+
     let stack_counts: HashMap<u32, u64> = HashMap::try_from(
         self.bpf.map("stack_counts").unwrap()
     )?;
-    
+
     let mut profile = pprof::Profile::default();
-    
+
     // 构建pprof Profile
     for (stack_id, count) in stack_counts.iter() {
         if let Ok(stack) = stack_traces.get(stack_id, 0) {
             let mut locations = Vec::new();
-            
+
             // 解析调用栈地址
             for addr in stack.frames() {
                 // 地址 -> 函数名 (需要符号表)
                 let function_name = resolve_symbol(addr)?;
-                
+
                 locations.push(pprof::Location {
                     id: addr as u64,
                     address: addr as u64,
@@ -800,7 +800,7 @@ pub fn generate_pprof_profile(&self) -> Result<Vec<u8>, Box<dyn std::error::Erro
                     ..Default::default()
                 });
             }
-            
+
             profile.sample.push(pprof::Sample {
                 location_id: locations.iter().map(|l| l.id).collect(),
                 value: vec![*count as i64],
@@ -808,11 +808,11 @@ pub fn generate_pprof_profile(&self) -> Result<Vec<u8>, Box<dyn std::error::Erro
             });
         }
     }
-    
+
     // 序列化为protobuf
     let mut buf = Vec::new();
     profile.write_to_vec(&mut buf)?;
-    
+
     Ok(buf)
 }
 ```
@@ -829,33 +829,33 @@ int trace_sched_switch(struct trace_event_raw_sched_switch *ctx)
     __u64 ts = bpf_ktime_get_ns();
     __u32 prev_pid = ctx->prev_pid;
     __u32 next_pid = ctx->next_pid;
-    
+
     // prev线程被切换出去(开始阻塞)
     if (prev_pid != 0) {
         bpf_map_update_elem(&block_start, &prev_pid, &ts, BPF_ANY);
     }
-    
+
     // next线程被切换进来(结束阻塞)
     if (next_pid != 0) {
         __u64 *start_ts = bpf_map_lookup_elem(&block_start, &next_pid);
         if (start_ts) {
             __u64 block_time = ts - *start_ts;
-            
+
             // 记录阻塞时间和调用栈
             __u32 stack_id = bpf_get_stackid(ctx, &stack_traces, BPF_F_USER_STACK);
-            
+
             struct block_event event = {
                 .pid = next_pid,
                 .duration_ns = block_time,
                 .stack_id = stack_id,
             };
-            
+
             bpf_ringbuf_output(&block_events, &event, sizeof(event), 0);
-            
+
             bpf_map_delete_elem(&block_start, &next_pid);
         }
     }
-    
+
     return 0;
 }
 ```
@@ -873,7 +873,7 @@ receivers:
   ebpf:
     # 配置
     endpoint: 0.0.0.0:4317
-    
+
     # Traces
     traces:
       protocols:
@@ -881,36 +881,36 @@ receivers:
         - grpc
         - mysql
         - redis
-      
+
       # 过滤
       filters:
         - min_duration: 100ms
         - http_status: ">=400"
-    
+
     # Metrics
     metrics:
       tcp_connections: true
       tcp_retransmits: true
       file_io: true
       syscalls: false  # 高开销,按需启用
-    
+
     # Logs
     logs:
       security_audit: true
       syscalls: false
-      
+
       # 审计规则
       audit_rules:
         - execve
         - unlink
         - setuid
-    
+
     # Profiles
     profiles:
       cpu_sampling_rate: 100  # Hz
       collect_interval: 60s
       target_pids: []  # 空=所有进程
-    
+
     # 资源限制
     resource_limits:
       max_memory_mb: 500
@@ -920,7 +920,7 @@ processors:
   batch:
     timeout: 10s
     send_batch_size: 1024
-  
+
   # 添加环境标签
   resource:
     attributes:
@@ -941,17 +941,17 @@ service:
       receivers: [ebpf]
       processors: [batch, resource]
       exporters: [otlp]
-    
+
     metrics:
       receivers: [ebpf]
       processors: [batch, resource]
       exporters: [otlp]
-    
+
     logs:
       receivers: [ebpf]
       processors: [batch, resource]
       exporters: [otlp]
-    
+
     profiles:
       receivers: [ebpf]
       processors: [batch, resource]
@@ -978,12 +978,12 @@ spec:
     spec:
       hostNetwork: true
       hostPID: true
-      
+
       # 需要特权模式加载eBPF程序
       containers:
         - name: collector
           image: otel/opentelemetry-collector-contrib:0.89.0-ebpf
-          
+
           securityContext:
             privileged: true
             capabilities:
@@ -991,7 +991,7 @@ spec:
                 - SYS_ADMIN
                 - SYS_RESOURCE
                 - NET_ADMIN
-          
+
           volumeMounts:
             - name: config
               mountPath: /etc/otelcol
@@ -1002,7 +1002,7 @@ spec:
               mountPath: /sys/kernel/debug
             - name: bpffs
               mountPath: /sys/fs/bpf
-          
+
           resources:
             requests:
               cpu: 200m
@@ -1010,7 +1010,7 @@ spec:
             limits:
               cpu: 1000m
               memory: 512Mi
-      
+
       volumes:
         - name: config
           configMap:
@@ -1033,7 +1033,7 @@ spec:
 kernel_requirements:
   minimum_version: "4.19"  # 基础eBPF支持
   recommended_version: "5.10"  # BTF、CO-RE支持
-  
+
   # 必需的内核配置
   required_configs:
     - CONFIG_BPF=y
@@ -1044,7 +1044,7 @@ kernel_requirements:
     - CONFIG_KPROBES=y
     - CONFIG_UPROBES=y
     - CONFIG_TRACEPOINTS=y
-  
+
   # 推荐的内核配置
   recommended_configs:
     - CONFIG_DEBUG_INFO_BTF=y  # BTF类型信息
@@ -1071,20 +1071,20 @@ performance_tuning:
     hash_maps: 10240  # 根据预期并发调整
     ring_buffers: 256KB  # 事件缓冲区大小
     stack_traces: 10000  # 调用栈缓存
-  
+
   # 2. 采样策略
   sampling:
     cpu_profile_rate: 100Hz  # 不要超过100Hz
     trace_sampling: 1%  # 高流量场景降低采样
     metric_aggregation: 10s  # 本地聚合减少开销
-  
+
   # 3. 过滤规则
   filtering:
     # 在eBPF程序中过滤,减少用户空间开销
     - exclude_internal_traffic: true
     - min_duration: 100ms
     - http_methods: [GET, POST, PUT, DELETE]
-  
+
   # 4. 资源限制
   resource_limits:
     max_cpu_percent: 5
@@ -1112,19 +1112,19 @@ security:
       - CAP_BPF
       - CAP_PERFMON
       - CAP_NET_ADMIN
-  
+
   # 2. 验证器限制
   verifier:
     max_instructions: 1000000
     stack_size: 512
     complexity_limit: 1000000
-  
+
   # 3. 数据脱敏
   data_sanitization:
     - remove_sensitive_args: true
     - hash_user_data: true
     - truncate_large_payloads: true
-  
+
   # 4. 审计日志
   audit:
     log_ebpf_loads: true
@@ -1195,26 +1195,26 @@ production_checklist:
     □ BTF支持(CO-RE)
     □ 符号表准备(用户空间调用栈解析)
     □ 性能基线测试
-  
+
   部署配置:
     □ 采样率合理(<5% CPU开销)
     □ Map大小合理
     □ 过滤规则生效
     □ 资源限制配置
     □ 数据脱敏规则
-  
+
   监控告警:
     □ eBPF程序健康监控
     □ 性能开销告警
     □ 事件丢失告警
     □ 内存使用告警
-  
+
   灰度发布:
     □ 少量节点试点
     □ 性能对比测试
     □ 逐步扩大范围
     □ 回滚预案
-  
+
   运维文档:
     □ 部署文档
     □ 故障排查手册

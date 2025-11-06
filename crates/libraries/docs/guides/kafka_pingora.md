@@ -1,7 +1,7 @@
 ﻿# Kafka 与 Pingora 集成实战指南
 
-> **适用版本**: Rust 1.75+ (推荐 1.90+)  
-> **更新日期**: 2025-10-24  
+> **适用版本**: Rust 1.75+ (推荐 1.90+)
+> **更新日期**: 2025-10-24
 > **难度级别**: 中级到高级
 
 本指南详细介绍如何在 Rust 中使用 Kafka 进行消息队列处理，以及使用 Pingora 构建高性能代理服务。
@@ -9,8 +9,9 @@
 ---
 
 ## 📋 目录
+
 - [Kafka 与 Pingora 集成实战指南](#kafka-与-pingora-集成实战指南)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [Kafka 完整实战](#kafka-完整实战)
     - [核心概念](#核心概念)
     - [快速开始](#快速开始)
@@ -190,23 +191,23 @@ fn create_optimized_producer() -> anyhow::Result<FutureProducer> {
         // 基础配置
         .set("bootstrap.servers", "localhost:9092")
         .set("client.id", "rust-producer-01")
-        
+
         // 可靠性配置
         .set("enable.idempotence", "true")  // 幂等性生产者
         .set("acks", "all")                  // 等待所有副本确认
         .set("retries", "10")                // 重试次数
         .set("max.in.flight.requests.per.connection", "5")
-        
+
         // 性能配置
         .set("compression.type", "zstd")     // 压缩 (lz4/zstd/snappy)
         .set("batch.size", "32768")          // 批量大小 32KB
         .set("linger.ms", "10")              // 延迟发送 10ms
         .set("buffer.memory", "67108864")    // 缓冲区 64MB
-        
+
         // 超时配置
         .set("request.timeout.ms", "30000")  // 请求超时 30s
         .set("message.timeout.ms", "300000") // 消息超时 5min
-        
+
         .create()?;
 
     Ok(producer)
@@ -223,14 +224,14 @@ use tokio::time::Instant;
 async fn batch_send_example(producer: &FutureProducer) -> anyhow::Result<()> {
     let start = Instant::now();
     let batch_size = 10000;
-    
+
     // 并发发送（利用内部批处理）
     let mut handles = vec![];
-    
+
     for i in 0..batch_size {
         let key = format!("key-{}", i);
         let value = format!("message-{}", i);
-        
+
         let handle = producer.send(
             FutureRecord::to("test-topic")
                 .key(&key)
@@ -238,10 +239,10 @@ async fn batch_send_example(producer: &FutureProducer) -> anyhow::Result<()> {
                 .partition(i % 3), // 手动指定分区
             Duration::from_secs(0),
         );
-        
+
         handles.push(handle);
     }
-    
+
     // 等待所有消息发送完成
     for (i, handle) in handles.into_iter().enumerate() {
         match handle.await {
@@ -249,12 +250,12 @@ async fn batch_send_example(producer: &FutureProducer) -> anyhow::Result<()> {
             Err((e, _)) => eprintln!("消息 {} 发送失败: {:?}", i, e),
         }
     }
-    
+
     let elapsed = start.elapsed();
     let throughput = batch_size as f64 / elapsed.as_secs_f64();
-    println!("发送 {} 条消息，耗时 {:?}，吞吐量: {:.0} msg/s", 
+    println!("发送 {} 条消息，耗时 {:?}，吞吐量: {:.0} msg/s",
              batch_size, elapsed, throughput);
-    
+
     Ok(())
 }
 ```
@@ -279,7 +280,7 @@ async fn send_with_custom_partition(
     message: &str,
 ) -> anyhow::Result<()> {
     let partition = partition_by_user_id(user_id, 3);
-    
+
     producer.send(
         FutureRecord::to("user-events")
             .key(user_id)
@@ -288,7 +289,7 @@ async fn send_with_custom_partition(
         Duration::from_secs(0),
     ).await
     .map_err(|(e, _)| e)?;
-    
+
     Ok(())
 }
 ```
@@ -309,7 +310,7 @@ async fn send_with_retry(
 ) -> anyhow::Result<()> {
     let mut retry_count = 0;
     let mut delay_ms = 100;
-    
+
     loop {
         match producer.send(
             FutureRecord::to(topic)
@@ -326,11 +327,11 @@ async fn send_with_retry(
             Err((e, _)) => {
                 retry_count += 1;
                 if retry_count >= max_retries {
-                    return Err(anyhow::anyhow!("发送失败，已重试 {} 次: {:?}", 
+                    return Err(anyhow::anyhow!("发送失败，已重试 {} 次: {:?}",
                                                retry_count, e));
                 }
-                
-                println!("发送失败，{} ms 后重试 ({}/{}): {:?}", 
+
+                println!("发送失败，{} ms 后重试 ({}/{}): {:?}",
                         delay_ms, retry_count, max_retries, e);
                 sleep(Duration::from_millis(delay_ms)).await;
                 delay_ms = (delay_ms * 2).min(5000); // 指数退避，最大5秒
@@ -356,21 +357,21 @@ fn create_optimized_consumer(group_id: &str) -> anyhow::Result<StreamConsumer> {
         .set("bootstrap.servers", "localhost:9092")
         .set("group.id", group_id)
         .set("client.id", "rust-consumer-01")
-        
+
         // 偏移量管理
         .set("enable.auto.commit", "false")  // 手动提交偏移量
         .set("auto.offset.reset", "earliest") // earliest/latest/none
-        
+
         // 性能配置
         .set("fetch.min.bytes", "10240")     // 最小拉取 10KB
         .set("fetch.max.wait.ms", "500")     // 最大等待 500ms
         .set("max.partition.fetch.bytes", "1048576") // 单分区最大 1MB
-        
+
         // 会话与心跳
         .set("session.timeout.ms", "10000")  // 会话超时 10s
         .set("heartbeat.interval.ms", "3000") // 心跳间隔 3s
         .set("max.poll.interval.ms", "300000") // 最大轮询间隔 5min
-        
+
         .create()?;
 
     Ok(consumer)
@@ -386,22 +387,22 @@ use rdkafka::TopicPartitionList;
 
 async fn consume_with_manual_commit(consumer: StreamConsumer) -> anyhow::Result<()> {
     consumer.subscribe(&["orders"])?;
-    
+
     let mut message_count = 0;
     let commit_interval = 100; // 每100条消息提交一次
-    
+
     loop {
         match consumer.recv().await {
             Ok(message) => {
                 // 处理消息
                 process_message(&message)?;
-                
+
                 message_count += 1;
-                
+
                 // 定期提交偏移量
                 if message_count % commit_interval == 0 {
                     consumer.commit_message(&message, rdkafka::consumer::CommitMode::Async)?;
-                    println!("已提交偏移量: partition={}, offset={}", 
+                    println!("已提交偏移量: partition={}, offset={}",
                             message.partition(), message.offset());
                 }
             }
@@ -417,12 +418,12 @@ fn process_message(message: &rdkafka::message::BorrowedMessage) -> anyhow::Resul
     let payload = message.payload_view::<str>()
         .ok_or(anyhow::anyhow!("空消息"))?
         .map_err(|_| anyhow::anyhow!("UTF-8 解析失败"))?;
-    
+
     println!("处理消息: {}", payload);
-    
+
     // 业务逻辑处理
     // ...
-    
+
     Ok(())
 }
 ```
@@ -440,15 +441,15 @@ async fn concurrent_consumer(
     concurrency: usize,
 ) -> anyhow::Result<()> {
     consumer.subscribe(&["orders"])?;
-    
+
     let semaphore = Arc::new(Semaphore::new(concurrency));
-    
+
     loop {
         match consumer.recv().await {
             Ok(message) => {
                 let permit = semaphore.clone().acquire_owned().await?;
                 let payload = message.payload().unwrap().to_vec();
-                
+
                 // 并发处理消息
                 tokio::spawn(async move {
                     if let Err(e) = process_message_async(&payload).await {
@@ -490,7 +491,7 @@ async fn idempotent_producer_example() -> anyhow::Result<()> {
         .set("acks", "all")
         .set("max.in.flight.requests.per.connection", "5")
         .create()?;
-    
+
     // 即使网络抖动导致重试，也不会产生重复消息
     for i in 0..1000 {
         producer.send(
@@ -500,7 +501,7 @@ async fn idempotent_producer_example() -> anyhow::Result<()> {
             Duration::from_secs(5),
         ).await.map_err(|(e, _)| e)?;
     }
-    
+
     println!("所有消息已发送（无重复）");
     Ok(())
 }
@@ -518,13 +519,13 @@ async fn transactional_producer_example() -> anyhow::Result<()> {
         .set("transactional.id", "my-transactional-id-001")
         .set("enable.idempotence", "true")
         .create()?;
-    
+
     // 初始化事务
     producer.init_transactions(Duration::from_secs(30))?;
-    
+
     // 开始事务
     producer.begin_transaction()?;
-    
+
     match send_batch(&producer).await {
         Ok(_) => {
             // 提交事务
@@ -537,7 +538,7 @@ async fn transactional_producer_example() -> anyhow::Result<()> {
             eprintln!("事务回滚: {:?}", e);
         }
     }
-    
+
     Ok(())
 }
 
@@ -628,17 +629,17 @@ async fn create_secure_producer() -> anyhow::Result<FutureProducer> {
     let producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", "kafka.example.com:9093")
         .set("security.protocol", "SSL")
-        
+
         // CA 证书
         .set("ssl.ca.location", "/path/to/ca-cert.pem")
-        
+
         // 客户端证书（双向 TLS）
         .set("ssl.certificate.location", "/path/to/client-cert.pem")
         .set("ssl.key.location", "/path/to/client-key.pem")
         .set("ssl.key.password", "key-password")
-        
+
         .create()?;
-    
+
     Ok(producer)
 }
 ```
@@ -706,11 +707,11 @@ pub struct MyProxy {
 #[async_trait]
 impl ProxyHttp for MyProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -729,14 +730,14 @@ impl ProxyHttp for MyProxy {
 async fn main() {
     let mut server = Server::new(None).unwrap();
     server.bootstrap();
-    
+
     let proxy = MyProxy {
         upstream: "127.0.0.1:8080".to_string(),
     };
-    
+
     let mut service = HttpProxy::new(proxy, None);
     service.add_tcp("0.0.0.0:6188");
-    
+
     server.add_service(service);
     server.run_forever();
 }
@@ -753,18 +754,18 @@ pub struct RoutingProxy;
 #[async_trait]
 impl ProxyHttp for RoutingProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         session: &mut Session,
         _ctx: &mut Self::CTX,
     ) -> Result<Box<HttpPeer>> {
         let path = session.req_header().uri.path();
-        
+
         let upstream = if path.starts_with("/api") {
             "127.0.0.1:8080"  // API 服务
         } else if path.starts_with("/static") {
@@ -772,7 +773,7 @@ impl ProxyHttp for RoutingProxy {
         } else {
             "127.0.0.1:8082"  // 默认服务
         };
-        
+
         let peer = Box::new(HttpPeer::new(
             upstream.parse()?,
             false,
@@ -780,7 +781,7 @@ impl ProxyHttp for RoutingProxy {
         ));
         Ok(peer)
     }
-    
+
     async fn request_filter(
         &self,
         session: &mut Session,
@@ -790,7 +791,7 @@ impl ProxyHttp for RoutingProxy {
         session
             .req_header_mut()
             .insert_header("X-Proxy", "Pingora")?;
-        
+
         Ok(false)
     }
 }
@@ -819,9 +820,9 @@ impl LoadBalancedProxy {
             Backend::new("127.0.0.1:8081").unwrap(),
             Backend::new("127.0.0.1:8082").unwrap(),
         ];
-        
+
         let backends = Arc::new(LoadBalancer::from_backends(upstreams));
-        
+
         Self { lb: backends }
     }
 }
@@ -829,11 +830,11 @@ impl LoadBalancedProxy {
 #[async_trait]
 impl ProxyHttp for LoadBalancedProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -842,7 +843,7 @@ impl ProxyHttp for LoadBalancedProxy {
         let upstream = self.lb
             .select(b"", 256)  // 选择一个后端
             .unwrap();
-        
+
         let peer = Box::new(HttpPeer::new(
             upstream.addr,
             false,
@@ -862,12 +863,12 @@ use std::time::Duration;
 
 async fn setup_health_checks(backends: Vec<Backend>) {
     let check_freq = Duration::from_secs(10);
-    
+
     for backend in backends {
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(check_freq).await;
-                
+
                 match health_check::http_health_check(&backend.addr, "/health").await {
                     Ok(true) => {
                         println!("后端 {} 健康", backend.addr);
@@ -912,20 +913,20 @@ impl RateLimitMiddleware {
             window,
         }
     }
-    
+
     fn check_rate_limit(&self, client_ip: &str) -> bool {
         let mut counters = self.counters.lock().unwrap();
         let now = Instant::now();
-        
+
         let entry = counters.entry(client_ip.to_string())
             .or_insert((0, now));
-        
+
         // 检查窗口是否过期
         if now.duration_since(entry.1) > self.window {
             entry.0 = 0;
             entry.1 = now;
         }
-        
+
         entry.0 += 1;
         entry.0 <= self.max_requests
     }
@@ -934,11 +935,11 @@ impl RateLimitMiddleware {
 #[async_trait]
 impl ProxyHttp for RateLimitMiddleware {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn request_filter(
         &self,
         session: &mut Session,
@@ -947,17 +948,17 @@ impl ProxyHttp for RateLimitMiddleware {
         let client_ip = session.client_addr()
             .map(|addr| addr.to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        
+
         if !self.check_rate_limit(&client_ip) {
             // 返回 429 Too Many Requests
             let resp = ResponseHeader::build(429, None)?;
             session.write_response_header(Box::new(resp)).await?;
             return Ok(true);  // 中断请求
         }
-        
+
         Ok(false)  // 继续处理
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -984,7 +985,7 @@ pub struct CircuitBreaker {
     failure_count: Arc<AtomicU32>,
     success_count: Arc<AtomicU32>,
     last_failure_time: Arc<AtomicU64>,
-    
+
     failure_threshold: u32,
     success_threshold: u32,
     timeout: Duration,
@@ -1001,29 +1002,29 @@ impl CircuitBreaker {
             timeout,
         }
     }
-    
+
     fn is_open(&self) -> bool {
         let failures = self.failure_count.load(Ordering::Relaxed);
         if failures < self.failure_threshold {
             return false;
         }
-        
+
         let last_fail = self.last_failure_time.load(Ordering::Relaxed);
         let now = Instant::now().duration_since(Instant::now()).as_secs();
-        
+
         now - last_fail < self.timeout.as_secs()
     }
-    
+
     fn record_success(&self) {
         self.success_count.fetch_add(1, Ordering::Relaxed);
-        
+
         if self.success_count.load(Ordering::Relaxed) >= self.success_threshold {
             // 关闭熔断器
             self.failure_count.store(0, Ordering::Relaxed);
             self.success_count.store(0, Ordering::Relaxed);
         }
     }
-    
+
     fn record_failure(&self) {
         self.failure_count.fetch_add(1, Ordering::Relaxed);
         let now = Instant::now().duration_since(Instant::now()).as_secs();
@@ -1213,7 +1214,7 @@ lazy_static::lazy_static! {
         "kafka_messages_sent_total",
         "Total number of messages sent to Kafka"
     ).unwrap();
-    
+
     static ref KAFKA_SEND_DURATION: Histogram = register_histogram!(
         "kafka_send_duration_seconds",
         "Time spent sending messages to Kafka"
@@ -1226,15 +1227,15 @@ async fn send_with_metrics(
     message: &str,
 ) -> anyhow::Result<()> {
     let timer = KAFKA_SEND_DURATION.start_timer();
-    
+
     producer.send(
         FutureRecord::to(topic).payload(message),
         Duration::from_secs(5),
     ).await.map_err(|(e, _)| e)?;
-    
+
     KAFKA_MESSAGES_SENT.inc();
     timer.observe_duration();
-    
+
     Ok(())
 }
 ```
@@ -1264,7 +1265,7 @@ lazy_static::lazy_static! {
         "pingora_requests_total",
         "Total number of proxy requests"
     ).unwrap();
-    
+
     static ref PROXY_DURATION: Histogram = register_histogram!(
         "pingora_request_duration_seconds",
         "Request duration in seconds"
@@ -1375,11 +1376,11 @@ impl ProxyHttp for ResilientProxy {
             false,
             "".to_string(),
         );
-        
+
         // 设置超时
         peer.options.connection_timeout = Some(Duration::from_secs(5));
         peer.options.read_timeout = Some(Duration::from_secs(30));
-        
+
         Ok(Box::new(peer))
     }
 }
@@ -1422,7 +1423,7 @@ impl ProxyHttp for ProfilingProxy {
         ctx.start_time = Some(Instant::now());
         Ok(false)
     }
-    
+
     async fn response_filter(
         &self,
         _session: &mut Session,
@@ -1479,6 +1480,6 @@ impl ProxyHttp for ProfilingProxy {
 
 ---
 
-**更新日期**: 2025-10-24  
-**文档版本**: 1.0  
+**更新日期**: 2025-10-24
+**文档版本**: 1.0
 **反馈**: 如有问题或建议，欢迎提 Issue

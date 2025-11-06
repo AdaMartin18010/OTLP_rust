@@ -46,7 +46,7 @@
 graph TD
     A[端到端测试] --> B[集成测试]
     B --> C[单元测试]
-    
+
     A --> A1[少量测试<br/>高价值<br/>慢执行]
     B --> B1[中等数量<br/>中等价值<br/>中等执行速度]
     C --> C1[大量测试<br/>基础价值<br/>快执行]
@@ -180,7 +180,7 @@ pub trait Transport {
 #[tokio::test]
 async fn test_mock_transport() {
     let mut mock_transport = MockTransport::new();
-    
+
     mock_transport
         .expect_send_traces()
         .times(1)
@@ -188,7 +188,7 @@ async fn test_mock_transport() {
 
     let client = OtlpClient::new(mock_transport);
     let result = client.send_trace(create_test_trace()).await;
-    
+
     assert!(result.is_ok());
 }
 
@@ -217,7 +217,7 @@ proptest! {
         let error = create_error(error_type, &message);
         let serialized = serde_json::to_string(&error).unwrap();
         let deserialized: OtlpError = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(error.category(), deserialized.category());
         assert_eq!(error.severity(), deserialized.severity());
     }
@@ -230,11 +230,11 @@ proptest! {
         )
     ) {
         let span = SpanData::new("test_span");
-        
+
         for (key, value) in attributes {
             span.set_attribute(&key, &value);
         }
-        
+
         // 验证属性数量限制
         assert!(span.attributes().len() <= 128);
     }
@@ -254,15 +254,15 @@ use testcontainers::images::generic::GenericImage;
 struct OtlpCollectorImage;
 impl Image for OtlpCollectorImage {
     type Args = ();
-    
+
     fn name(&self) -> String {
         "otel/opentelemetry-collector".to_string()
     }
-    
+
     fn tag(&self) -> String {
         "latest".to_string()
     }
-    
+
     fn ready_conditions(&self) -> Vec<testcontainers::core::WaitFor> {
         vec![
             testcontainers::core::WaitFor::message_on_stdout("Everything is ready"),
@@ -275,10 +275,10 @@ async fn test_client_collector_integration() {
     let docker = Docker::new();
     let collector_image = OtlpCollectorImage;
     let collector = docker.run(collector_image);
-    
+
     let collector_port = collector.get_host_port(4317).unwrap();
     let endpoint = format!("http://localhost:{}", collector_port);
-    
+
     let client = OtlpClientBuilder::new()
         .with_endpoint(&endpoint)
         .build()
@@ -289,14 +289,14 @@ async fn test_client_collector_integration() {
     let span = client.start_span("integration_test", |span| {
         span.set_attribute("test", "integration");
     });
-    
+
     client.record_metric("test_metric", 1.0, vec![("test", "integration")]).await.unwrap();
-    
+
     span.end();
-    
+
     // 验证数据发送成功
     tokio::time::sleep(Duration::from_secs(1)).await;
-    
+
     // 这里可以添加验证逻辑，比如检查collector是否收到了数据
 }
 ```
@@ -321,15 +321,15 @@ async fn test_batch_processing_integration() {
             trace_id: format!("trace-{}", i),
             spans: vec![SpanData::new("test_span")],
         };
-        
+
         batch_processor.add_trace(trace_data).await.unwrap();
     }
 
     // 等待处理完成
     tokio::time::sleep(Duration::from_secs(2)).await;
-    
+
     batch_processor.stop().await.unwrap();
-    
+
     // 验证所有数据都被处理
     let stats = batch_processor.get_stats().await.unwrap();
     assert_eq!(stats.processed_traces, 1000);
@@ -343,7 +343,7 @@ async fn test_batch_processing_integration() {
 #[tokio::test]
 async fn test_cluster_consensus_integration() {
     let mut cluster_nodes = Vec::new();
-    
+
     // 创建3个集群节点
     for i in 0..3 {
         let config = ClusterConfig {
@@ -352,7 +352,7 @@ async fn test_cluster_consensus_integration() {
             consensus_algorithm: ConsensusAlgorithm::Raft,
             ..Default::default()
         };
-        
+
         let mut node = ClusterManager::new(config).await.unwrap();
         node.start().await.unwrap();
         cluster_nodes.push(node);
@@ -360,23 +360,23 @@ async fn test_cluster_consensus_integration() {
 
     // 等待集群形成
     tokio::time::sleep(Duration::from_secs(5)).await;
-    
+
     // 验证集群状态
     for node in &cluster_nodes {
         let status = node.get_status().await.unwrap();
         assert_eq!(status.cluster_size, 3);
         assert!(status.leader.is_some());
     }
-    
+
     // 测试提案提交
     let proposal = Proposal {
         id: "test-proposal".to_string(),
         data: "test data".to_string(),
     };
-    
+
     let result = cluster_nodes[0].propose(proposal).await.unwrap();
     assert!(result.committed);
-    
+
     // 清理
     for mut node in cluster_nodes {
         node.stop().await.unwrap();
@@ -395,7 +395,7 @@ use otlp::{OtlpClient, BenchmarkRunner};
 
 fn benchmark_trace_sending(c: &mut Criterion) {
     let mut group = c.benchmark_group("trace_sending");
-    
+
     for concurrency in [1, 10, 50, 100].iter() {
         group.bench_with_input(
             BenchmarkId::new("concurrent_traces", concurrency),
@@ -408,20 +408,20 @@ fn benchmark_trace_sending(c: &mut Criterion) {
                             duration: Duration::from_secs(10),
                             ..Default::default()
                         };
-                        
+
                         let runner = BenchmarkRunner::new(config);
                         runner.run_benchmark().await
                     });
             },
         );
     }
-    
+
     group.finish();
 }
 
 fn benchmark_batch_processing(c: &mut Criterion) {
     let mut group = c.benchmark_group("batch_processing");
-    
+
     for batch_size in [1, 10, 100, 1000, 10000].iter() {
         group.bench_with_input(
             BenchmarkId::new("batch_size", batch_size),
@@ -433,19 +433,19 @@ fn benchmark_batch_processing(c: &mut Criterion) {
                             max_batch_size: batch_size,
                             ..Default::default()
                         });
-                        
+
                         processor.start().await.unwrap();
-                        
+
                         for i in 0..batch_size {
                             processor.add_trace(create_test_trace(i)).await.unwrap();
                         }
-                        
+
                         processor.stop().await.unwrap();
                     });
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -466,7 +466,7 @@ async fn test_memory_usage_under_load() {
         .unwrap();
 
     let initial_memory = get_memory_usage();
-    
+
     // 发送大量数据
     for i in 0..100000 {
         let span = client.start_span("memory_test", |span| {
@@ -474,10 +474,10 @@ async fn test_memory_usage_under_load() {
         });
         span.end();
     }
-    
+
     let final_memory = get_memory_usage();
     let memory_increase = final_memory - initial_memory;
-    
+
     // 验证内存增长在合理范围内
     assert!(memory_increase < 100 * 1024 * 1024); // 100MB
 }
@@ -504,9 +504,9 @@ async fn test_high_concurrency_stress() {
 
     let concurrency = 1000;
     let iterations = 100;
-    
+
     let start_time = Instant::now();
-    
+
     let handles: Vec<_> = (0..concurrency)
         .map(|i| {
             let client = Arc::clone(&client);
@@ -526,17 +526,17 @@ async fn test_high_concurrency_stress() {
     for handle in handles {
         handle.await.unwrap();
     }
-    
+
     let duration = start_time.elapsed();
     let total_operations = concurrency * iterations;
     let ops_per_second = total_operations as f64 / duration.as_secs_f64();
-    
+
     println!("压力测试结果:");
     println!("并发数: {}", concurrency);
     println!("总操作数: {}", total_operations);
     println!("持续时间: {:?}", duration);
     println!("吞吐量: {:.2} ops/sec", ops_per_second);
-    
+
     // 验证性能指标
     assert!(ops_per_second > 10000.0); // 至少10000 ops/sec
 }
@@ -564,19 +564,19 @@ async fn test_memory_stress() {
             spans: vec![SpanData::new("stress_span")
                 .with_attribute("data", "x".repeat(1000))], // 1KB数据
         };
-        
+
         match batch_processor.add_trace(trace_data).await {
             Ok(_) => sent_count += 1,
             Err(_) => break, // 达到内存限制
         }
-        
+
         if sent_count % 1000 == 0 {
             println!("已发送 {} 条数据", sent_count);
         }
     }
-    
+
     batch_processor.stop().await.unwrap();
-    
+
     println!("内存压力测试完成，共发送 {} 条数据", sent_count);
     assert!(sent_count > 50000); // 至少发送50000条数据
 }
@@ -600,12 +600,12 @@ fn test_malicious_input_handling() {
 
     for malicious_input in malicious_inputs {
         let span = SpanData::new("security_test");
-        
+
         // 测试属性设置
         let result = std::panic::catch_unwind(|| {
             span.set_attribute("malicious", malicious_input);
         });
-        
+
         // 应该不会panic，而是安全地处理输入
         assert!(result.is_ok());
     }
@@ -622,7 +622,7 @@ fn test_sql_injection_prevention() {
     for injection in sql_injection_attempts {
         // 测试数据查询功能
         let result = query_traces_by_attribute("user", injection);
-        
+
         // 应该返回空结果或错误，而不是执行恶意SQL
         assert!(result.is_err() || result.unwrap().is_empty());
     }
@@ -647,7 +647,7 @@ async fn test_authentication_bypass_attempts() {
 
     // 尝试发送数据
     let result = auth_client.send_trace(create_test_trace()).await;
-    
+
     // 应该被拒绝
     assert!(result.is_err());
     assert!(result.unwrap_err().is_auth_error());
@@ -668,7 +668,7 @@ async fn test_authorization_checks() {
 
     // 尝试执行需要写权限的操作
     let result = user_client.send_trace(create_test_trace()).await;
-    
+
     // 应该被拒绝
     assert!(result.is_err());
     assert!(result.unwrap_err().is_permission_denied());
@@ -704,19 +704,19 @@ async fn test_network_partition_handling() {
 
     // 模拟网络分区
     simulate_network_partition().await;
-    
+
     // 尝试发送数据
     let result = client.send_trace(create_test_trace()).await;
-    
+
     // 应该触发熔断器
     assert!(result.is_err());
-    
+
     // 恢复网络
     restore_network().await;
-    
+
     // 等待熔断器恢复
     tokio::time::sleep(Duration::from_secs(35)).await;
-    
+
     // 再次尝试发送
     let result = client.send_trace(create_test_trace()).await;
     assert!(result.is_ok());
@@ -739,7 +739,7 @@ async fn restore_network() {
 #[tokio::test]
 async fn test_cluster_node_failure() {
     let mut cluster_nodes = Vec::new();
-    
+
     // 创建5个节点的集群
     for i in 0..5 {
         let config = ClusterConfig {
@@ -747,7 +747,7 @@ async fn test_cluster_node_failure() {
             cluster_size: 5,
             ..Default::default()
         };
-        
+
         let mut node = ClusterManager::new(config).await.unwrap();
         node.start().await.unwrap();
         cluster_nodes.push(node);
@@ -755,30 +755,30 @@ async fn test_cluster_node_failure() {
 
     // 等待集群稳定
     tokio::time::sleep(Duration::from_secs(10)).await;
-    
+
     // 模拟节点故障
     let failed_node = cluster_nodes.remove(2); // 移除中间节点
     failed_node.stop().await.unwrap();
-    
+
     // 等待故障检测
     tokio::time::sleep(Duration::from_secs(5)).await;
-    
+
     // 验证集群仍然可用
     for node in &cluster_nodes {
         let status = node.get_status().await.unwrap();
         assert_eq!(status.cluster_size, 4);
         assert!(status.leader.is_some());
     }
-    
+
     // 测试数据操作
     let proposal = Proposal {
         id: "post-failure-proposal".to_string(),
         data: "test data".to_string(),
     };
-    
+
     let result = cluster_nodes[0].propose(proposal).await.unwrap();
     assert!(result.committed);
-    
+
     // 清理
     for mut node in cluster_nodes {
         node.stop().await.unwrap();
@@ -805,13 +805,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.90.0
         components: rustfmt, clippy
-        
+
     - name: Cache dependencies
       uses: actions/cache@v3
       with:
@@ -820,21 +820,21 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        
+
     - name: Run unit tests
       run: cargo test --lib
-      
+
     - name: Run integration tests
       run: cargo test --test '*'
-      
+
     - name: Run security tests
       run: cargo test --test security_*
-      
+
     - name: Generate coverage report
       run: |
         cargo install cargo-tarpaulin
         cargo tarpaulin --out Html --output-dir coverage/
-        
+
     - name: Upload coverage
       uses: codecov/codecov-action@v3
       with:
@@ -844,15 +844,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.90.0
-        
+
     - name: Run benchmarks
       run: cargo bench
-      
+
     - name: Performance regression check
       run: |
         # 检查性能回归
@@ -862,14 +862,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup test environment
       run: |
         docker-compose up -d
-        
+
     - name: Run chaos tests
       run: cargo test --test chaos_*
-      
+
     - name: Cleanup
       run: docker-compose down
 ```
@@ -918,7 +918,7 @@ impl TestReporter {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     pub async fn generate_report(&self, results: TestResults) -> Result<(), Box<dyn std::error::Error>> {
         let report = TestReport {
             timestamp: chrono::Utc::now().to_rfc3339(),
@@ -927,17 +927,17 @@ impl TestReporter {
             coverage: self.get_coverage_info().await?,
             performance: self.get_performance_metrics().await?,
         };
-        
+
         let json = serde_json::to_string_pretty(&report)?;
         let mut file = File::create("test_report.json")?;
         file.write_all(json.as_bytes())?;
-        
+
         // 生成HTML报告
         self.generate_html_report(&report).await?;
-        
+
         Ok(())
     }
-    
+
     async fn get_coverage_info(&self) -> Result<CoverageInfo, Box<dyn std::error::Error>> {
         // 获取覆盖率信息的实现
         Ok(CoverageInfo {
@@ -946,7 +946,7 @@ impl TestReporter {
             function_coverage: 95.1,
         })
     }
-    
+
     async fn get_performance_metrics(&self) -> Result<PerformanceMetrics, Box<dyn std::error::Error>> {
         // 获取性能指标的实现
         Ok(PerformanceMetrics {
@@ -955,7 +955,7 @@ impl TestReporter {
             memory_usage: 2156.0,
         })
     }
-    
+
     async fn generate_html_report(&self, report: &TestReport) -> Result<(), Box<dyn std::error::Error>> {
         let html = format!(r#"
 <!DOCTYPE html>
@@ -976,7 +976,7 @@ impl TestReporter {
         <h1>OTLP Rust Test Report</h1>
         <p>Generated at: {}</p>
     </div>
-    
+
     <div class="section">
         <h2>Test Results</h2>
         <div class="metric">Total: {}</div>
@@ -984,14 +984,14 @@ impl TestReporter {
         <div class="metric failure">Failed: {}</div>
         <div class="metric">Duration: {:.2}s</div>
     </div>
-    
+
     <div class="section">
         <h2>Coverage</h2>
         <div class="metric">Line Coverage: {:.1}%</div>
         <div class="metric">Branch Coverage: {:.1}%</div>
         <div class="metric">Function Coverage: {:.1}%</div>
     </div>
-    
+
     <div class="section">
         <h2>Performance</h2>
         <div class="metric">Throughput: {:.0} ops/sec</div>
@@ -1013,10 +1013,10 @@ impl TestReporter {
             report.performance.latency_p99,
             report.performance.memory_usage
         );
-        
+
         let mut file = File::create("test_report.html")?;
         file.write_all(html.as_bytes())?;
-        
+
         Ok(())
     }
 }
@@ -1104,7 +1104,7 @@ impl TestDataFactory {
                 .with_attribute("test_id", id)],
         }
     }
-    
+
     pub fn create_metric(name: &str, value: f64) -> MetricData {
         MetricData {
             name: name.to_string(),
@@ -1112,7 +1112,7 @@ impl TestDataFactory {
             labels: vec![("test", "true")],
         }
     }
-    
+
     pub fn create_log(level: LogLevel, message: &str) -> LogData {
         LogData {
             level,
@@ -1138,7 +1138,7 @@ impl TestConfigFactory {
             ..Default::default()
         }
     }
-    
+
     pub fn create_batch_config() -> BatchConfig {
         BatchConfig {
             max_batch_size: 100,
@@ -1162,40 +1162,40 @@ pub struct TestEnvironment {
 impl TestEnvironment {
     pub async fn setup() -> Result<Self, Box<dyn std::error::Error>> {
         let docker = Docker::new();
-        
+
         // 启动OTLP收集器
         let collector = docker.run(OtlpCollectorImage);
-        
+
         // 启动数据库
         let database = docker.run(PostgresImage::default());
-        
+
         // 启动Redis
         let redis = docker.run(RedisImage::default());
-        
+
         // 等待服务启动
         tokio::time::sleep(Duration::from_secs(10)).await;
-        
+
         Ok(TestEnvironment {
             collector: Some(collector),
             database: Some(database),
             redis: Some(redis),
         })
     }
-    
+
     pub async fn cleanup(self) -> Result<(), Box<dyn std::error::Error>> {
         // 清理资源
         if let Some(collector) = self.collector {
             collector.stop().await?;
         }
-        
+
         if let Some(database) = self.database {
             database.stop().await?;
         }
-        
+
         if let Some(redis) = self.redis {
             redis.stop().await?;
         }
-        
+
         Ok(())
     }
 }
@@ -1204,10 +1204,10 @@ impl TestEnvironment {
 #[tokio::test]
 async fn test_with_environment() {
     let env = TestEnvironment::setup().await.unwrap();
-    
+
     // 执行测试
     // ...
-    
+
     env.cleanup().await.unwrap();
 }
 ```

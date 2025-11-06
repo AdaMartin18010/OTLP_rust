@@ -1,7 +1,7 @@
 # OTLP 客户端使用指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 客户端完整使用指南 - 从基础使用到高级功能和最佳实践。
@@ -16,16 +16,32 @@
   - [🚀 快速开始](#-快速开始)
     - [1. 安装依赖](#1-安装依赖)
     - [2. 基础使用](#2-基础使用)
-    - [3. 发送遥测数据](#3-发送遥测数据)
-  - [📊 数据类型](#-数据类型)
-  - [🔧 配置选项](#-配置选项)
-  - [⚡ 高级功能](#-高级功能)
-  - [💡 使用示例](#-使用示例)
-  - [🛡️ 错误处理](#️-错误处理)
-  - [📈 性能优化](#-性能优化)
-  - [🔍 故障排查](#-故障排查)
-  - [💡 最佳实践](#-最佳实践)
-  - [📚 参考资源](#-参考资源)
+  - [配置选项](#配置选项)
+    - [基本配置](#基本配置)
+    - [高级配置](#高级配置)
+  - [数据收集](#数据收集)
+    - [追踪数据 (Traces)](#追踪数据-traces)
+    - [指标数据 (Metrics)](#指标数据-metrics)
+    - [日志数据 (Logs)](#日志数据-logs)
+  - [性能优化](#性能优化)
+    - [批量处理](#批量处理)
+    - [连接池优化](#连接池优化)
+    - [压缩优化](#压缩优化)
+  - [错误处理](#错误处理)
+    - [基本错误处理](#基本错误处理)
+    - [重试机制](#重试机制)
+  - [监控和统计](#监控和统计)
+    - [获取客户端统计信息](#获取客户端统计信息)
+    - [健康检查](#健康检查)
+  - [最佳实践](#最佳实践)
+    - [1. 合理设置批处理大小](#1-合理设置批处理大小)
+    - [2. 使用适当的压缩算法](#2-使用适当的压缩算法)
+    - [3. 设置合理的超时时间](#3-设置合理的超时时间)
+    - [4. 监控客户端状态](#4-监控客户端状态)
+    - [5. 优雅关闭](#5-优雅关闭)
+  - [故障排除](#故障排除)
+    - [常见问题](#常见问题)
+    - [调试技巧](#调试技巧)
 
 ---
 
@@ -70,21 +86,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_http_transport()
         .build()
         .await?;
-    
+
     // 创建追踪器
     let tracer = client.tracer("my-component");
     let span = tracer.start("my-operation");
-    
+
     // 添加属性
     span.set_attribute("user.id", "12345");
     span.set_attribute("operation.type", "database");
-    
+
     // 执行业务逻辑
     // ...
-    
+
     // 结束 span
     drop(span);
-    
+
     Ok(())
 }
 ```
@@ -102,14 +118,14 @@ let client = EnhancedOtlpClient::builder()
     .with_endpoint("http://localhost:4317")
     .with_service_name("my-service")
     .with_service_version("1.0.0")
-    
+
     // 超时配置
     .with_connect_timeout(Duration::from_secs(5))
     .with_request_timeout(Duration::from_secs(30))
-    
+
     // 传输协议
     .with_http_transport()  // 或 .with_grpc_transport()
-    
+
     .build()
     .await?;
 ```
@@ -164,7 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_endpoint("http://localhost:4317")
         .build()
         .await?;
-    
+
     // 创建追踪数据
     let trace_data = TraceData {
         trace_id: "trace-123".to_string(),
@@ -187,10 +203,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         events: vec![],
         links: vec![],
     };
-    
+
     // 导出追踪数据
     client.export_traces(vec![trace_data]).await?;
-    
+
     Ok(())
 }
 ```
@@ -208,7 +224,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_endpoint("http://localhost:4317")
         .build()
         .await?;
-    
+
     // 创建指标数据
     let metric_data = MetricData {
         name: "request_count".to_string(),
@@ -223,10 +239,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         ],
     };
-    
+
     // 导出指标数据
     client.export_metrics(vec![metric_data]).await?;
-    
+
     Ok(())
 }
 ```
@@ -244,7 +260,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_endpoint("http://localhost:4317")
         .build()
         .await?;
-    
+
     // 创建日志数据
     let log_data = LogData {
         timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos() as u64,
@@ -258,10 +274,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         resource: None,
     };
-    
+
     // 导出日志数据
     client.export_logs(vec![log_data]).await?;
-    
+
     Ok(())
 }
 ```
@@ -284,21 +300,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         max_queue_size: 10000,      // 最大队列大小
         strategy: BatchStrategy::Hybrid,  // 混合策略
     };
-    
+
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
         .with_batch_config(batch_config)
         .build()
         .await?;
-    
+
     // 批量发送数据
     let mut traces = Vec::new();
     for i in 0..1000 {
         traces.push(create_trace_data(i));
     }
-    
+
     client.export_traces(traces).await?;
-    
+
     Ok(())
 }
 ```
@@ -345,7 +361,7 @@ async fn main() -> Result<(), OtlpError> {
         .with_endpoint("http://localhost:4317")
         .build()
         .await?;
-    
+
     match client.export_traces(vec![]).await {
         Ok(_) => println!("数据导出成功"),
         Err(e) => {
@@ -356,7 +372,7 @@ async fn main() -> Result<(), OtlpError> {
             }
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -377,16 +393,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         randomization_factor: 0.1,
         retryable_errors: vec![ErrorType::Network, ErrorType::Timeout],
     };
-    
+
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
         .with_retry_config(retry_config)
         .build()
         .await?;
-    
+
     // 客户端会自动重试失败的操作
     client.export_traces(vec![]).await?;
-    
+
     Ok(())
 }
 ```
@@ -404,7 +420,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_endpoint("http://localhost:4317")
         .build()
         .await?;
-    
+
     // 获取统计信息
     let stats = client.stats();
     println!("发送的追踪数量: {}", stats.traces_sent);
@@ -414,7 +430,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("平均响应时间: {:?}", stats.avg_response_time);
     println!("当前连接数: {}", stats.active_connections);
     println!("队列大小: {}", stats.queue_size);
-    
+
     Ok(())
 }
 ```
@@ -430,16 +446,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_endpoint("http://localhost:4317")
         .build()
         .await?;
-    
+
     // 执行健康检查
     let health = client.health_check().await?;
     println!("整体健康状态: {:?}", health.status);
-    
+
     for check in health.checks {
-        println!("检查项目: {}, 状态: {:?}, 消息: {:?}", 
+        println!("检查项目: {}, 状态: {:?}, 消息: {:?}",
                 check.name, check.status, check.message);
     }
-    
+
     Ok(())
 }
 ```
@@ -507,7 +523,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_endpoint("http://localhost:4317")
         .build()
         .await?;
-    
+
     // 监听关闭信号
     tokio::select! {
         _ = signal::ctrl_c() => {
@@ -522,7 +538,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         } => {}
     }
-    
+
     Ok(())
 }
 ```
@@ -560,23 +576,23 @@ use tracing::{info, error, debug};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
-    
+
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
         .build()
         .await?;
-    
+
     info!("OTLP 客户端初始化完成");
-    
+
     match client.export_traces(vec![]).await {
         Ok(_) => info!("数据导出成功"),
         Err(e) => error!("数据导出失败: {}", e),
     }
-    
+
     Ok(())
 }
 ```
 
 ---
 
-*本文档最后更新: 2025年10月20日*-
+_本文档最后更新: 2025年10月20日_-

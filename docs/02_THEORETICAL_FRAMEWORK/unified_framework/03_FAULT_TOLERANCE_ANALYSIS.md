@@ -1,8 +1,8 @@
 ﻿# OTLP 统一理论框架 - 第三部分
 
-**版本**: 2.0  
-**创建日期**: 2025年10月26日  
-**前置**: 第一、二部分  
+**版本**: 2.0
+**创建日期**: 2025年10月26日
+**前置**: 第一、二部分
 **状态**: 🟢 活跃维护
 
 > **简介**: 统一理论框架第三部分 - 容错、排错、监测、控制、分析和故障定位。
@@ -10,8 +10,9 @@
 ---
 
 ## 📋 目录
+
 - [OTLP 统一理论框架 - 第三部分](#otlp-统一理论框架---第三部分)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [第五部分: 容错、排错、监测、控制、分析、定位](#第五部分-容错排错监测控制分析定位)
     - [5.1 故障模型与分类](#51-故障模型与分类)
       - [5.1.1 故障层次结构](#511-故障层次结构)
@@ -152,16 +153,16 @@ impl FailureDetector {
     pub async fn monitor(&self, nodes: Vec<NodeId>) -> Result<(), OtlpError> {
         let mut span = self.tracer.start_span("failure_detection");
         span.set_attribute("monitored_nodes", nodes.len() as i64);
-        
+
         loop {
             for node in &nodes {
                 let last_hb = self.last_heartbeat.read().await.get(node).copied();
-                
+
                 match last_hb {
                     Some(time) if time.elapsed() > self.heartbeat_timeout => {
                         // 超时,怀疑故障
                         self.suspects.write().await.insert(*node);
-                        
+
                         span.add_event("node_suspected", vec![
                             ("node_id", node.to_string().into()),
                             ("elapsed_ms", time.elapsed().as_millis().to_string().into()),
@@ -176,30 +177,30 @@ impl FailureDetector {
                     }
                 }
             }
-            
+
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
-    
+
     /// 接收心跳
     pub async fn receive_heartbeat(&self, node: NodeId) {
         let mut span = self.tracer.start_span("heartbeat_received");
         span.set_attribute("node_id", node.to_string());
-        
+
         // 更新最后心跳时间
         self.last_heartbeat.write().await.insert(node, Instant::now());
-        
+
         // 从怀疑列表移除
         if self.suspects.write().await.remove(&node) {
             span.add_event("node_recovered", vec![]);
         }
     }
-    
+
     /// 查询是否怀疑某个节点
     pub async fn is_suspected(&self, node: NodeId) -> bool {
         self.suspects.read().await.contains(&node)
     }
-    
+
     /// 获取所有存活节点
     pub async fn alive_nodes(&self, all_nodes: &[NodeId]) -> Vec<NodeId> {
         let suspects = self.suspects.read().await;
@@ -223,21 +224,21 @@ impl AdaptiveFailureDetector {
     fn calculate_phi(&self, time_since_last: Duration) -> f64 {
         let mean = self.mean_interval();
         let std_dev = self.std_deviation();
-        
+
         let prob = normal_cdf((time_since_last.as_secs_f64() - mean) / std_dev);
         -f64::log10(1.0 - prob)
     }
-    
+
     /// 判断是否故障
     pub async fn is_failed(&self, node: NodeId) -> bool {
         let last_hb = get_last_heartbeat(node);
         let phi = self.calculate_phi(last_hb.elapsed());
-        
+
         let mut span = self.tracer.start_span("adaptive_failure_detection");
         span.set_attribute("node_id", node.to_string());
         span.set_attribute("phi_value", phi);
         span.set_attribute("threshold", self.phi_threshold);
-        
+
         phi > self.phi_threshold
     }
 }
@@ -320,15 +321,15 @@ impl StateMachineReplicationTracer {
         span.set_attribute("state_before", state_before.hash());
         span.set_attribute("state_after", state_after.hash());
         span.set_attribute("output", output.to_string());
-        
+
         // 记录状态变化
         span.add_event("state_changed", vec![
             ("changed_fields", state_diff(state_before, state_after).into()),
         ]);
-        
+
         Ok(())
     }
-    
+
     /// 验证副本一致性
     pub async fn verify_consistency(
         &self,
@@ -336,18 +337,18 @@ impl StateMachineReplicationTracer {
     ) -> Result<ConsistencyReport, OtlpError> {
         let mut span = self.tracer.start_span("verify_replication_consistency");
         span.set_attribute("replica_count", replicas.len() as i64);
-        
+
         // 收集所有副本的状态
         let mut states = Vec::new();
         for replica in replicas {
             let state = get_replica_state(*replica).await?;
             states.push((replica, state));
         }
-        
+
         // 比较状态哈希
         let mut consistent = true;
         let first_hash = states[0].1.hash();
-        
+
         for (replica, state) in &states {
             let hash = state.hash();
             if hash != first_hash {
@@ -359,9 +360,9 @@ impl StateMachineReplicationTracer {
                 ]);
             }
         }
-        
+
         span.set_attribute("consistent", consistent);
-        
+
         Ok(ConsistencyReport { consistent, states })
     }
 }
@@ -381,25 +382,25 @@ impl ErasureCodingTracer {
         span.set_attribute("n", self.n as i64);
         span.set_attribute("k", self.k as i64);
         span.set_attribute("redundancy_ratio", ((self.n - self.k) as f64 / self.k as f64));
-        
+
         let encoder = ReedSolomon::new(self.k, self.n - self.k)?;
         let blocks = encoder.encode(data)?;
-        
+
         span.set_attribute("block_count", blocks.len() as i64);
         Ok(blocks)
     }
-    
+
     /// 解码数据 (可容忍最多n-k个块丢失)
     pub async fn decode(&self, blocks: Vec<Option<Block>>) -> Result<Vec<u8>, OtlpError> {
         let mut span = self.tracer.start_span("erasure_decode");
-        
+
         let available = blocks.iter().filter(|b| b.is_some()).count();
         let missing = blocks.len() - available;
-        
+
         span.set_attribute("total_blocks", blocks.len() as i64);
         span.set_attribute("available_blocks", available as i64);
         span.set_attribute("missing_blocks", missing as i64);
-        
+
         if available < self.k {
             span.add_event("decode_failed", vec![
                 ("reason", "insufficient_blocks".into()),
@@ -408,10 +409,10 @@ impl ErasureCodingTracer {
             ]);
             return Err(OtlpError::InsufficientBlocks);
         }
-        
+
         let decoder = ReedSolomon::new(self.k, self.n - self.k)?;
         let data = decoder.reconstruct(&blocks)?;
-        
+
         span.set_attribute("decoded_size", data.len() as i64);
         Ok(data)
     }
@@ -445,7 +446,7 @@ delay_function: ℕ → Duration
 should_retry: Error → Bool
 
 retry_execution: (RetryPolicy, Operation) → Result
-retry_execution(policy, op) = 
+retry_execution(policy, op) =
   attempt(op, 0, policy)
 
 attempt(op, n, policy) =
@@ -494,16 +495,16 @@ impl RetryPolicy {
     pub fn delay(&self, attempt: usize) -> Duration {
         let mut delay = self.base_delay.as_millis() as f64
             * self.backoff_factor.powi(attempt as i32);
-        
+
         if self.jitter {
             let jitter = rand::thread_rng().gen_range(-0.5..=0.5);
             delay *= 1.0 + jitter;
         }
-        
+
         let delay = Duration::from_millis(delay as u64);
         delay.min(self.max_delay)
     }
-    
+
     /// 判断错误是否可重试
     pub fn is_retryable(&self, error: &OtlpError) -> bool {
         match error {
@@ -525,18 +526,18 @@ impl IntelligentRetrier {
     {
         let mut span = self.tracer.start_span("retry_execution");
         span.set_attribute("max_attempts", self.policy.max_attempts as i64);
-        
+
         for attempt in 0..self.policy.max_attempts {
             // 检查重试预算
             if !self.retry_budget.write().await.can_retry() {
                 span.add_event("retry_budget_exceeded", vec![]);
                 return Err(OtlpError::RetryBudgetExceeded);
             }
-            
+
             span.add_event("attempt_started", vec![
                 ("attempt_number", (attempt + 1).to_string().into()),
             ]);
-            
+
             match operation().await {
                 Ok(result) => {
                     span.set_attribute("attempts_used", (attempt + 1) as i64);
@@ -545,38 +546,38 @@ impl IntelligentRetrier {
                 }
                 Err(e) => {
                     let error: OtlpError = e.into();
-                    
+
                     span.add_event("attempt_failed", vec![
                         ("attempt", (attempt + 1).to_string().into()),
                         ("error", error.to_string().into()),
                     ]);
-                    
+
                     // 检查是否可重试
                     if !self.policy.is_retryable(&error) {
                         span.add_event("error_not_retryable", vec![]);
                         return Err(error);
                     }
-                    
+
                     // 最后一次尝试失败
                     if attempt == self.policy.max_attempts - 1 {
                         span.add_event("max_attempts_reached", vec![]);
                         return Err(error);
                     }
-                    
+
                     // 计算退避延迟
                     let delay = self.policy.delay(attempt);
                     span.add_event("backing_off", vec![
                         ("delay_ms", delay.as_millis().to_string().into()),
                     ]);
-                    
+
                     // 消耗重试预算
                     self.retry_budget.write().await.consume();
-                    
+
                     tokio::time::sleep(delay).await;
                 }
             }
         }
-        
+
         Err(OtlpError::MaxRetriesExceeded)
     }
 }
@@ -592,18 +593,18 @@ impl RetryBudget {
     pub fn can_retry(&self) -> bool {
         let total = self.total_requests.load(Ordering::Relaxed);
         let retries = self.retry_requests.load(Ordering::Relaxed);
-        
+
         if total == 0 {
             return true;
         }
-        
+
         (retries as f64 / total as f64) < self.max_retry_ratio
     }
-    
+
     pub fn consume(&self) {
         self.retry_requests.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     pub fn record_request(&self) {
         self.total_requests.fetch_add(1, Ordering::Relaxed);
     }
@@ -697,11 +698,11 @@ impl CircuitBreaker {
         F: FnOnce() -> Future<Output = Result<T, OtlpError>>,
     {
         let mut span = self.tracer.start_span("circuit_breaker_call");
-        
+
         // 检查当前状态
         let state = self.state.read().await.clone();
         span.set_attribute("circuit_state", format!("{:?}", state));
-        
+
         match state {
             CircuitState::Open { opened_at } => {
                 // 检查是否该转换到半开状态
@@ -719,7 +720,7 @@ impl CircuitBreaker {
                     return Err(OtlpError::CircuitBreakerOpen);
                 }
             }
-            
+
             CircuitState::HalfOpen { allowed_requests } => {
                 if allowed_requests >= self.config.half_open_max_requests {
                     // 半开状态下请求数已达上限
@@ -729,22 +730,22 @@ impl CircuitBreaker {
                     ]);
                     return Err(OtlpError::CircuitBreakerOpen);
                 }
-                
+
                 // 允许请求通过
                 *self.state.write().await = CircuitState::HalfOpen {
                     allowed_requests: allowed_requests + 1,
                 };
             }
-            
+
             CircuitState::Closed => {
                 // 正常状态,请求通过
             }
         }
-        
+
         // 执行操作
         self.metrics.total_requests.fetch_add(1, Ordering::Relaxed);
         let result = operation().await;
-        
+
         match result {
             Ok(value) => {
                 self.on_success().await;
@@ -760,11 +761,11 @@ impl CircuitBreaker {
             }
         }
     }
-    
+
     /// 成功回调
     async fn on_success(&self) {
         self.metrics.successful_requests.fetch_add(1, Ordering::Relaxed);
-        
+
         let mut state = self.state.write().await;
         match *state {
             CircuitState::HalfOpen { .. } => {
@@ -776,14 +777,14 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     /// 失败回调
     async fn on_failure(&self) {
         self.metrics.failed_requests.fetch_add(1, Ordering::Relaxed);
-        
+
         let mut state = self.state.write().await;
         let should_open = self.should_open_circuit();
-        
+
         match *state {
             CircuitState::Closed if should_open => {
                 *state = CircuitState::Open { opened_at: Instant::now() };
@@ -801,30 +802,30 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     fn should_open_circuit(&self) -> bool {
         let total = self.metrics.total_requests.load(Ordering::Relaxed);
         let failed = self.metrics.failed_requests.load(Ordering::Relaxed);
-        
+
         if total < 10 {
             // 样本量太小
             return false;
         }
-        
+
         failed >= self.config.failure_threshold as u64
     }
-    
+
     fn failure_rate(&self) -> f64 {
         let total = self.metrics.total_requests.load(Ordering::Relaxed);
         let failed = self.metrics.failed_requests.load(Ordering::Relaxed);
-        
+
         if total == 0 {
             0.0
         } else {
             failed as f64 / total as f64
         }
     }
-    
+
     async fn transition_to_half_open(&self) {
         *self.state.write().await = CircuitState::HalfOpen { allowed_requests: 0 };
     }
@@ -840,14 +841,14 @@ impl CircuitBreaker {
 
 1. 基于阈值:
    anomaly(x) ⟺ x > μ + k×σ
-   
+
    μ: 均值
    σ: 标准差
    k: 阈值倍数(通常k=3)
 
 2. 四分位距(IQR):
    anomaly(x) ⟺ x < Q₁ - 1.5×IQR ∨ x > Q₃ + 1.5×IQR
-   
+
    Q₁: 第一四分位数
    Q₃: 第三四分位数
    IQR = Q₃ - Q₁
@@ -914,23 +915,23 @@ impl AnomalyDetector {
         let mut span = self.tracer.start_span("statistical_anomaly_detection");
         span.set_attribute("metric_count", metrics.len() as i64);
         span.set_attribute("window_size", config.window_size as i64);
-        
+
         let mut anomalies = Vec::new();
-        
+
         for i in config.window_size..metrics.len() {
             let window = &metrics[i - config.window_size..i];
-            
+
             // 计算统计量
             let mean = window.iter().sum::<f64>() / window.len() as f64;
             let variance = window.iter()
                 .map(|x| (x - mean).powi(2))
                 .sum::<f64>() / window.len() as f64;
             let std_dev = variance.sqrt();
-            
+
             // Z-Score检测
             let current = metrics[i];
             let z_score = (current - mean) / std_dev;
-            
+
             if z_score.abs() > config.threshold_factor {
                 anomalies.push(Anomaly {
                     index: i,
@@ -939,7 +940,7 @@ impl AnomalyDetector {
                     deviation: z_score,
                     severity: Self::calculate_severity(z_score),
                 });
-                
+
                 span.add_event("anomaly_detected", vec![
                     ("index", i.to_string().into()),
                     ("value", current.to_string().into()),
@@ -947,11 +948,11 @@ impl AnomalyDetector {
                 ]);
             }
         }
-        
+
         span.set_attribute("anomaly_count", anomalies.len() as i64);
         anomalies
     }
-    
+
     /// 使用Isolation Forest
     pub async fn detect_ml(
         &self,
@@ -959,16 +960,16 @@ impl AnomalyDetector {
     ) -> Vec<Anomaly> {
         let mut span = self.tracer.start_span("ml_anomaly_detection");
         span.set_attribute("sample_count", features.len() as i64);
-        
+
         // 训练Isolation Forest
         let forest = IsolationForest::new(100, 256);  // 100棵树,样本大小256
         forest.fit(features);
-        
+
         // 预测异常分数
         let mut anomalies = Vec::new();
         for (i, feature_vec) in features.iter().enumerate() {
             let anomaly_score = forest.anomaly_score(feature_vec);
-            
+
             if anomaly_score > 0.5 {  // 阈值
                 anomalies.push(Anomaly {
                     index: i,
@@ -979,11 +980,11 @@ impl AnomalyDetector {
                 });
             }
         }
-        
+
         span.set_attribute("anomaly_count", anomalies.len() as i64);
         anomalies
     }
-    
+
     fn calculate_severity(score: f64) -> Severity {
         match score.abs() {
             s if s > 5.0 => Severity::Critical,
@@ -1006,29 +1007,29 @@ impl MultiDimensionalAnomalyDetector {
         data: &[Vec<f64>],
     ) -> Vec<Anomaly> {
         let mut span = self.tracer.start_span("mahalanobis_anomaly_detection");
-        
+
         // 计算均值向量
         let mean = self.calculate_mean(data);
-        
+
         // 计算协方差矩阵
         let covariance = self.calculate_covariance(data, &mean);
-        
+
         // 计算逆矩阵
         let inv_cov = covariance.try_inverse()
             .ok_or(OtlpError::SingularMatrix)?;
-        
+
         let mut anomalies = Vec::new();
-        
+
         for (i, point) in data.iter().enumerate() {
             // 计算马氏距离
             let diff = DVector::from_vec(
                 point.iter().zip(&mean).map(|(x, m)| x - m).collect()
             );
             let distance = (&diff.transpose() * &inv_cov * &diff)[(0, 0)].sqrt();
-            
+
             // 卡方分布检验
             let threshold = chi_squared_quantile(point.len(), 0.95);
-            
+
             if distance > threshold {
                 anomalies.push(Anomaly {
                     index: i,
@@ -1039,7 +1040,7 @@ impl MultiDimensionalAnomalyDetector {
                 });
             }
         }
-        
+
         span.set_attribute("anomaly_count", anomalies.len() as i64);
         Ok(anomalies)
     }
@@ -1077,7 +1078,7 @@ P: 概率分布
 
 do-演算:
   P(Y | do(X=x)) ≠ P(Y | X=x)
-  
+
   do(X=x): 干预,强制设置X=x
   观察 vs 干预
 
@@ -1112,9 +1113,9 @@ impl RootCauseAnalyzer {
     pub async fn build_causal_graph(&self, trace: &Trace) -> CausalGraph {
         let mut span = self.tracer.start_span("build_causal_graph");
         span.set_attribute("span_count", trace.spans.len() as i64);
-        
+
         let mut graph = CausalGraph::new();
-        
+
         // 添加所有span作为节点
         for span in &trace.spans {
             graph.add_node(span.span_id, SpanNode {
@@ -1125,7 +1126,7 @@ impl RootCauseAnalyzer {
                 attributes: span.attributes.clone(),
             });
         }
-        
+
         // 添加因果边
         for span in &trace.spans {
             // Parent-child: 明确的因果关系
@@ -1137,7 +1138,7 @@ impl RootCauseAnalyzer {
                     1.0,  // 确定性
                 );
             }
-            
+
             // 同步调用: 强因果关系
             for link in &span.links {
                 graph.add_edge(
@@ -1147,7 +1148,7 @@ impl RootCauseAnalyzer {
                     0.9,  // 高度相关
                 );
             }
-            
+
             // 时序关系: 弱因果关系
             for other in &trace.spans {
                 if span.span_id != other.span_id &&
@@ -1166,11 +1167,11 @@ impl RootCauseAnalyzer {
                 }
             }
         }
-        
+
         span.set_attribute("edge_count", graph.edge_count() as i64);
         graph
     }
-    
+
     /// 找到故障的根因
     pub async fn find_root_cause(
         &self,
@@ -1179,26 +1180,26 @@ impl RootCauseAnalyzer {
     ) -> Vec<RootCause> {
         let mut span = self.tracer.start_span("root_cause_analysis");
         span.set_attribute("failure_span", failure_span.to_string());
-        
+
         // 构建因果图
         let causal_graph = self.build_causal_graph(trace).await;
-        
+
         // 找到所有祖先节点(潜在根因)
         let ancestors = causal_graph.ancestors(failure_span);
-        
+
         span.set_attribute("potential_causes", ancestors.len() as i64);
-        
+
         // 评分每个潜在根因
         let mut candidates = Vec::new();
         for ancestor_id in ancestors {
             let ancestor_span = trace.find_span(ancestor_id)?;
-            
+
             let score = self.score_root_cause(
                 ancestor_span,
                 failure_span,
                 &causal_graph,
             );
-            
+
             candidates.push(RootCause {
                 span_id: ancestor_id,
                 span: ancestor_span.clone(),
@@ -1206,10 +1207,10 @@ impl RootCauseAnalyzer {
                 explanation: self.explain_causation(ancestor_span, failure_span),
             });
         }
-        
+
         // 按置信度排序
         candidates.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
-        
+
         // 记录前3个根因
         for (i, cause) in candidates.iter().take(3).enumerate() {
             span.add_event("root_cause_candidate", vec![
@@ -1219,10 +1220,10 @@ impl RootCauseAnalyzer {
                 ("span_name", cause.span.name.clone().into()),
             ]);
         }
-        
+
         Ok(candidates)
     }
-    
+
     /// 评分根因候选
     fn score_root_cause(
         &self,
@@ -1231,54 +1232,54 @@ impl RootCauseAnalyzer {
         graph: &CausalGraph,
     ) -> f64 {
         let mut score = 0.0;
-        
+
         // 1. 时序得分: 原因必须先于结果
         if cause_span.end_time < effect_span.start_time {
             score += 0.3;
         }
-        
+
         // 2. 因果路径强度
         let path_strength = graph.path_strength(cause_span.span_id, effect_span);
         score += 0.4 * path_strength;
-        
+
         // 3. 错误传播
         if cause_span.status == SpanStatus::Error {
             score += 0.3;
         }
-        
+
         // 4. 异常属性
         if self.has_abnormal_attributes(cause_span) {
             score += 0.2;
         }
-        
+
         score.min(1.0)
     }
-    
+
     /// 计算两个span的相关性
     fn calculate_correlation(&self, span1: &Span, span2: &Span) -> f64 {
         let mut correlation = 0.0;
-        
+
         // 检查共同属性
         let common_keys: HashSet<_> = span1.attributes.keys()
             .filter(|k| span2.attributes.contains_key(*k))
             .collect();
-        
+
         correlation += 0.3 * (common_keys.len() as f64 / span1.attributes.len().max(1) as f64);
-        
+
         // 检查service关系
         if same_service(span1, span2) {
             correlation += 0.3;
         }
-        
+
         // 检查时序接近性
         let time_gap = (span2.start_time - span1.end_time).as_millis() as f64;
         correlation += 0.2 * (-time_gap / 1000.0).exp();  // 指数衰减
-        
+
         // 检查错误传播
         if span1.status == SpanStatus::Error && span2.status == SpanStatus::Error {
             correlation += 0.2;
         }
-        
+
         correlation.min(1.0)
     }
 }
@@ -1299,40 +1300,40 @@ impl ProgramSlicer {
         let mut span = self.tracer.start_span("backward_slice");
         span.set_attribute("target_span", target_span.to_string());
         span.set_attribute("variable", variable);
-        
+
         let mut slice = Vec::new();
         let mut worklist = vec![target_span];
         let mut visited = HashSet::new();
-        
+
         while let Some(current) = worklist.pop() {
             if visited.contains(&current) {
                 continue;
             }
             visited.insert(current);
-            
+
             let current_span = trace.find_span(current)?;
-            
+
             // 检查当前span是否写入目标变量
             if writes_variable(current_span, variable) {
                 slice.push(current);
-                
+
                 // 添加所有读取的变量到工作列表
                 for read_var in reads_variables(current_span) {
                     let defs = find_definitions(trace, current, &read_var);
                     worklist.extend(defs);
                 }
             }
-            
+
             // 添加前驱节点
             if let Some(parent) = current_span.parent_span_id {
                 worklist.push(parent);
             }
         }
-        
+
         span.set_attribute("slice_size", slice.len() as i64);
         Ok(slice)
     }
-    
+
     /// 计算前向切片(找到受某个点影响的所有语句)
     pub async fn forward_slice(
         &self,
@@ -1343,23 +1344,23 @@ impl ProgramSlicer {
         let mut span = self.tracer.start_span("forward_slice");
         span.set_attribute("source_span", source_span.to_string());
         span.set_attribute("variable", variable);
-        
+
         let mut slice = Vec::new();
         let mut worklist = vec![(source_span, variable.to_string())];
         let mut visited = HashSet::new();
-        
+
         while let Some((current, var)) = worklist.pop() {
             if visited.contains(&(current, var.clone())) {
                 continue;
             }
             visited.insert((current, var.clone()));
-            
+
             let current_span = trace.find_span(current)?;
-            
+
             // 检查当前span是否使用该变量
             if reads_variable(current_span, &var) {
                 slice.push(current);
-                
+
                 // 添加所有写入的变量到工作列表
                 for write_var in writes_variables(current_span) {
                     let uses = find_uses(trace, current, &write_var);
@@ -1368,13 +1369,13 @@ impl ProgramSlicer {
                     }
                 }
             }
-            
+
             // 添加后继节点
             for child in children(trace, current) {
                 worklist.push((child, var.clone()));
             }
         }
-        
+
         span.set_attribute("slice_size", slice.len() as i64);
         Ok(slice)
     }

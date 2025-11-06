@@ -241,7 +241,7 @@ impl CompilerMaturity {
     pub fn rust_190_features() -> Self {
         Self {
             optimization_levels: vec![
-                "O0".to_string(), "O1".to_string(), "O2".to_string(), 
+                "O0".to_string(), "O1".to_string(), "O2".to_string(),
                 "O3".to_string(), "Os".to_string(), "Oz".to_string()
             ],
             target_platforms: 89,
@@ -624,7 +624,7 @@ impl EcosystemMaturityScore {
         let enterprise_adoption = 75.0;
         let educational_support = 78.0;
         let standards_development = 80.0;
-        
+
         let overall_score = (
             library_ecosystem * 0.25 +
             toolchain_maturity * 0.20 +
@@ -633,7 +633,7 @@ impl EcosystemMaturityScore {
             educational_support * 0.10 +
             standards_development * 0.10
         );
-        
+
         Self {
             library_ecosystem,
             toolchain_maturity,
@@ -1040,4 +1040,4 @@ Rust 1.85.0 和 Rust 2024 Edition 生态系统已经具备了成为主流编程�
 
 ---
 
--*本报告基于 2025 年的最新数据和分析，将持续更新以反映 Rust 生态系统的最新发展。最后更新：2025年9月28日*-
+-_本报告基于 2025 年的最新数据和分析，将持续更新以反映 Rust 生态系统的最新发展。最后更新：2025年9月28日_-

@@ -1,6 +1,7 @@
 ﻿# OTLP Rust 安全配置和最佳实践指南
 
 ## 📋 目录
+
 1. [安全概述](#安全概述)
 2. [身份认证](#身份认证)
 3. [授权控制](#授权控制)
@@ -20,11 +21,11 @@ graph TD
     A[外部威胁] --> B[网络攻击]
     A --> C[恶意客户端]
     A --> D[数据泄露]
-    
+
     E[内部威胁] --> F[权限滥用]
     E --> G[数据篡改]
     E --> H[配置错误]
-    
+
     I[系统威胁] --> J[内存攻击]
     I --> K[缓冲区溢出]
     I --> L[注入攻击]
@@ -66,25 +67,25 @@ impl JwtAuthProvider {
     pub fn new(secret: &str) -> Self {
         let encoding_key = EncodingKey::from_secret(secret.as_ref());
         let decoding_key = DecodingKey::from_secret(secret.as_ref());
-        
+
         let mut validation = Validation::new(Algorithm::HS256);
         validation.leeway = 30; // 30秒容差
         validation.validate_exp = true;
         validation.validate_iat = true;
-        
+
         Self {
             encoding_key,
             decoding_key,
             validation,
         }
     }
-    
+
     pub fn generate_token(&self, user_id: &str, roles: Vec<String>) -> Result<String, AuthError> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs() as usize;
-        
+
         let claims = Claims {
             sub: user_id.to_string(),
             exp: now + 3600, // 1小时过期
@@ -93,15 +94,15 @@ impl JwtAuthProvider {
             aud: "otlp-clients".to_string(),
             roles,
         };
-        
+
         encode(&Header::default(), &claims, &self.encoding_key)
             .map_err(|_| AuthError::TokenGenerationFailed)
     }
-    
+
     pub fn validate_token(&self, token: &str) -> Result<Claims, AuthError> {
         let token_data = decode::<Claims>(token, &self.decoding_key, &self.validation)
             .map_err(|_| AuthError::InvalidToken)?;
-        
+
         Ok(token_data.claims)
     }
 }
@@ -132,17 +133,17 @@ impl OAuth2AuthProvider {
             Url::parse(&auth_url)?,
             Some(Url::parse(&token_url)?),
         );
-        
+
         Ok(Self { client })
     }
-    
+
     pub async fn authenticate(&self, code: &str) -> Result<TokenResponse, AuthError> {
         let token_result = self.client
             .exchange_code(oauth2::AuthorizationCode::new(code.to_string()))
             .request_async(async_http_client)
             .await
             .map_err(|_| AuthError::AuthenticationFailed)?;
-        
+
         Ok(token_result)
     }
 }
@@ -174,17 +175,17 @@ impl MtlsAuthProvider {
             .into_iter()
             .map(Certificate)
             .collect();
-        
+
         let key_file = File::open(server_key_path)?;
         let mut key_reader = BufReader::new(key_file);
         let mut keys = pkcs8_private_keys(&mut key_reader)?;
-        
+
         if keys.is_empty() {
             return Err(AuthError::NoPrivateKey);
         }
-        
+
         let private_key = PrivateKey(keys.remove(0));
-        
+
         // 配置服务器
         let server_config = ServerConfig::builder()
             .with_safe_defaults()
@@ -193,14 +194,14 @@ impl MtlsAuthProvider {
             ))
             .with_single_cert(cert_chain, private_key)
             .map_err(|_| AuthError::ServerConfigFailed)?;
-        
+
         // 配置客户端
         let client_config = ClientConfig::builder()
             .with_safe_defaults()
             .with_root_certificates(load_ca_certificates(ca_cert_path)?)
             .with_client_auth_cert(cert_chain, private_key)
             .map_err(|_| AuthError::ClientConfigFailed)?;
-        
+
         Ok(Self {
             server_config,
             client_config,
@@ -213,11 +214,11 @@ fn load_ca_certificates(path: &str) -> Result<rustls::RootCertStore, AuthError> 
     let cert_file = File::open(path)?;
     let mut cert_reader = BufReader::new(cert_file);
     let certs = certs(&mut cert_reader)?;
-    
+
     for cert in certs {
         root_store.add(&Certificate(cert))?;
     }
-    
+
     Ok(root_store)
 }
 ```
@@ -264,7 +265,7 @@ pub struct RbacProvider {
 impl RbacProvider {
     pub fn new() -> Self {
         let mut roles = HashMap::new();
-        
+
         // 定义角色
         roles.insert("admin".to_string(), Role {
             name: "admin".to_string(),
@@ -279,7 +280,7 @@ impl RbacProvider {
                 Permission::ManageUsers,
             ],
         });
-        
+
         roles.insert("operator".to_string(), Role {
             name: "operator".to_string(),
             permissions: vec![
@@ -288,7 +289,7 @@ impl RbacProvider {
                 Permission::ReadLogs,
             ],
         });
-        
+
         roles.insert("writer".to_string(), Role {
             name: "writer".to_string(),
             permissions: vec![
@@ -297,19 +298,19 @@ impl RbacProvider {
                 Permission::WriteLogs,
             ],
         });
-        
+
         Self {
             roles,
             users: HashMap::new(),
         }
     }
-    
+
     pub fn check_permission(&self, user_id: &str, permission: &Permission) -> bool {
         if let Some(user) = self.users.get(user_id) {
             if !user.is_active {
                 return false;
             }
-            
+
             for role_name in &user.roles {
                 if let Some(role) = self.roles.get(role_name) {
                     if role.permissions.contains(permission) {
@@ -318,14 +319,14 @@ impl RbacProvider {
                 }
             }
         }
-        
+
         false
     }
-    
+
     pub fn add_user(&mut self, user: User) {
         self.users.insert(user.id.clone(), user);
     }
-    
+
     pub fn add_role(&mut self, role: Role) {
         self.roles.insert(role.name.clone(), role);
     }
@@ -386,14 +387,14 @@ impl AbacProvider {
             policies: Vec::new(),
         }
     }
-    
+
     pub fn add_policy(&mut self, policy: Policy) {
         self.policies.push(policy);
     }
-    
+
     pub fn evaluate(&self, user_attrs: &[Attribute], resource_attrs: &[Attribute]) -> bool {
         let mut allow_result = false;
-        
+
         for policy in &self.policies {
             if self.matches_policy(policy, user_attrs, resource_attrs) {
                 match policy.effect {
@@ -402,22 +403,22 @@ impl AbacProvider {
                 }
             }
         }
-        
+
         allow_result
     }
-    
+
     fn matches_policy(&self, policy: &Policy, user_attrs: &[Attribute], resource_attrs: &[Attribute]) -> bool {
         for condition in &policy.conditions {
             let attr_value = self.get_attribute_value(&condition.attribute, user_attrs, resource_attrs);
-            
+
             if !self.evaluate_condition(attr_value, &condition.operator, &condition.value) {
                 return false;
             }
         }
-        
+
         true
     }
-    
+
     fn get_attribute_value(&self, attr_name: &str, user_attrs: &[Attribute], resource_attrs: &[Attribute]) -> Option<&serde_json::Value> {
         // 首先在用户属性中查找
         for attr in user_attrs {
@@ -425,23 +426,23 @@ impl AbacProvider {
                 return Some(&attr.value);
             }
         }
-        
+
         // 然后在资源属性中查找
         for attr in resource_attrs {
             if attr.name == attr_name {
                 return Some(&attr.value);
             }
         }
-        
+
         None
     }
-    
+
     fn evaluate_condition(&self, attr_value: Option<&serde_json::Value>, operator: &ConditionOperator, condition_value: &serde_json::Value) -> bool {
         let attr_value = match attr_value {
             Some(v) => v,
             None => return false,
         };
-        
+
         match operator {
             ConditionOperator::Equals => attr_value == condition_value,
             ConditionOperator::NotEquals => attr_value != condition_value,
@@ -515,10 +516,10 @@ impl TlsConfig {
     ) -> Result<Self, SecurityError> {
         // 加载证书链
         let cert_chain = load_certificate_chain(cert_path)?;
-        
+
         // 加载私钥
         let private_key = load_private_key(key_path)?;
-        
+
         // 配置服务器
         let server_config = if let Some(ca_path) = ca_path {
             // 客户端证书验证
@@ -536,7 +537,7 @@ impl TlsConfig {
                 .with_single_cert(cert_chain.clone(), private_key.clone())
                 .map_err(|_| SecurityError::ServerConfigFailed)?
         };
-        
+
         // 配置客户端
         let client_config = if let Some(ca_path) = ca_path {
             let root_store = load_ca_certificates(ca_path)?;
@@ -551,7 +552,7 @@ impl TlsConfig {
                 .with_root_certificates(load_ca_certificates(ca_path.unwrap_or("ca.pem"))?)
                 .with_no_client_auth()
         };
-        
+
         Ok(Self {
             server_config,
             client_config,
@@ -563,7 +564,7 @@ fn load_certificate_chain(path: &str) -> Result<Vec<Certificate>, SecurityError>
     let cert_file = File::open(path)?;
     let mut cert_reader = BufReader::new(cert_file);
     let certs = certs(&mut cert_reader)?;
-    
+
     Ok(certs.into_iter().map(Certificate).collect())
 }
 
@@ -571,11 +572,11 @@ fn load_private_key(path: &str) -> Result<PrivateKey, SecurityError> {
     let key_file = File::open(path)?;
     let mut key_reader = BufReader::new(key_file);
     let mut keys = pkcs8_private_keys(&mut key_reader)?;
-    
+
     if keys.is_empty() {
         return Err(SecurityError::NoPrivateKey);
     }
-    
+
     Ok(PrivateKey(keys.remove(0)))
 }
 ```
@@ -596,42 +597,42 @@ impl EncryptionProvider {
         if key.len() != 32 {
             return Err(SecurityError::InvalidKeyLength);
         }
-        
+
         let key = Key::from_slice(key);
         let cipher = Aes256Gcm::new(key);
-        
+
         Ok(Self { cipher })
     }
-    
+
     pub fn encrypt(&self, plaintext: &[u8]) -> Result<Vec<u8>, SecurityError> {
         let mut nonce_bytes = [0u8; 12];
         thread_rng().fill_bytes(&mut nonce_bytes);
         let nonce = Nonce::from_slice(&nonce_bytes);
-        
+
         let ciphertext = self.cipher
             .encrypt(nonce, plaintext)
             .map_err(|_| SecurityError::EncryptionFailed)?;
-        
+
         // 将nonce和密文组合
         let mut result = Vec::new();
         result.extend_from_slice(&nonce_bytes);
         result.extend_from_slice(&ciphertext);
-        
+
         Ok(result)
     }
-    
+
     pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, SecurityError> {
         if ciphertext.len() < 12 {
             return Err(SecurityError::InvalidCiphertext);
         }
-        
+
         let (nonce_bytes, encrypted_data) = ciphertext.split_at(12);
         let nonce = Nonce::from_slice(nonce_bytes);
-        
+
         let plaintext = self.cipher
             .decrypt(nonce, encrypted_data)
             .map_err(|_| SecurityError::DecryptionFailed)?;
-        
+
         Ok(plaintext)
     }
 }
@@ -653,40 +654,40 @@ pub struct DataMasker {
 impl DataMasker {
     pub fn new() -> Self {
         let mut patterns = Vec::new();
-        
+
         // 信用卡号
         patterns.push(Regex::new(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b").unwrap());
-        
+
         // 邮箱
         patterns.push(Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b").unwrap());
-        
+
         // 手机号
         patterns.push(Regex::new(r"\b1[3-9]\d{9}\b").unwrap());
-        
+
         // 身份证号
         patterns.push(Regex::new(r"\b\d{17}[\dXx]\b").unwrap());
-        
+
         let mut sensitive_fields = HashSet::new();
         sensitive_fields.insert("password".to_string());
         sensitive_fields.insert("token".to_string());
         sensitive_fields.insert("secret".to_string());
         sensitive_fields.insert("key".to_string());
-        
+
         Self {
             sensitive_patterns: patterns,
             sensitive_fields,
         }
     }
-    
+
     pub fn mask_trace(&self, trace: &mut TraceData) {
         for span in &mut trace.spans {
             self.mask_span(span);
         }
     }
-    
+
     pub fn mask_span(&self, span: &mut SpanData) {
         let mut masked_attributes = Vec::new();
-        
+
         for (key, value) in span.attributes() {
             if self.is_sensitive_field(key) {
                 masked_attributes.push((key.clone(), self.mask_value(value)));
@@ -696,14 +697,14 @@ impl DataMasker {
                 masked_attributes.push((key.clone(), value.clone()));
             }
         }
-        
+
         span.set_attributes(masked_attributes);
     }
-    
+
     fn is_sensitive_field(&self, field_name: &str) -> bool {
         self.sensitive_fields.contains(field_name.to_lowercase().as_str())
     }
-    
+
     fn mask_value(&self, value: &str) -> String {
         if value.len() <= 4 {
             "*".repeat(value.len())
@@ -711,18 +712,18 @@ impl DataMasker {
             format!("{}***{}", &value[..2], &value[value.len()-2..])
         }
     }
-    
+
     fn mask_patterns(&self, value: &str) -> Option<String> {
         let mut masked_value = value.to_string();
         let mut found_sensitive = false;
-        
+
         for pattern in &self.sensitive_patterns {
             if pattern.is_match(value) {
                 masked_value = pattern.replace_all(&masked_value, "***MASKED***").to_string();
                 found_sensitive = true;
             }
         }
-        
+
         if found_sensitive {
             Some(masked_value)
         } else {
@@ -754,28 +755,28 @@ impl DataEncryption {
     pub fn new() -> Result<Self, SecurityError> {
         let encryption_provider = EncryptionProvider::new(&generate_key())?;
         let key_manager = KeyManager::new()?;
-        
+
         Ok(Self {
             encryption_provider,
             key_manager,
         })
     }
-    
+
     pub fn encrypt_data<T: Serialize>(&self, data: &T) -> Result<EncryptedData, SecurityError> {
         let serialized = serde_json::to_vec(data)?;
         let encrypted_content = self.encryption_provider.encrypt(&serialized)?;
-        
+
         Ok(EncryptedData {
             encrypted_content,
             encryption_key_id: "default".to_string(),
             algorithm: "AES-256-GCM".to_string(),
         })
     }
-    
+
     pub fn decrypt_data<T: Deserialize>(&self, encrypted_data: &EncryptedData) -> Result<T, SecurityError> {
         let decrypted_content = self.encryption_provider.decrypt(&encrypted_data.encrypted_content)?;
         let deserialized: T = serde_json::from_slice(&decrypted_content)?;
-        
+
         Ok(deserialized)
     }
 }
@@ -814,11 +815,11 @@ impl FirewallConfig {
     pub fn new() -> Self {
         let mut allowed_ips = HashSet::new();
         allowed_ips.insert(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
-        
+
         let mut allowed_ports = HashSet::new();
         allowed_ports.insert(4317); // gRPC
         allowed_ports.insert(4318); // HTTP
-        
+
         Self {
             allowed_ips,
             blocked_ips: HashSet::new(),
@@ -826,33 +827,33 @@ impl FirewallConfig {
             rate_limits: HashMap::new(),
         }
     }
-    
+
     pub fn allow_ip(&mut self, ip: IpAddr) {
         self.allowed_ips.insert(ip);
         self.blocked_ips.remove(&ip);
     }
-    
+
     pub fn block_ip(&mut self, ip: IpAddr) {
         self.blocked_ips.insert(ip);
         self.allowed_ips.remove(&ip);
     }
-    
+
     pub fn is_allowed(&self, ip: IpAddr, port: u16) -> bool {
         if self.blocked_ips.contains(&ip) {
             return false;
         }
-        
+
         if !self.allowed_ips.contains(&ip) {
             return false;
         }
-        
+
         if !self.allowed_ports.contains(&port) {
             return false;
         }
-        
+
         true
     }
-    
+
     pub fn check_rate_limit(&mut self, ip: IpAddr) -> bool {
         let now = std::time::Instant::now();
         let rate_limit = self.rate_limits.entry(ip).or_insert(RateLimit {
@@ -861,13 +862,13 @@ impl FirewallConfig {
             window_start: now,
             request_count: 0,
         });
-        
+
         // 重置窗口
         if now.duration_since(rate_limit.window_start).as_secs() >= 60 {
             rate_limit.window_start = now;
             rate_limit.request_count = 0;
         }
-        
+
         // 检查速率限制
         if rate_limit.request_count >= rate_limit.requests_per_minute {
             false
@@ -905,7 +906,7 @@ impl DdosProtection {
             suspicious_ips: HashSet::new(),
         }
     }
-    
+
     pub fn check_request(&mut self, ip: IpAddr) -> DdosAction {
         let now = Instant::now();
         let counter = self.request_counts.entry(ip).or_insert(RequestCounter {
@@ -914,7 +915,7 @@ impl DdosProtection {
             is_blocked: false,
             block_until: None,
         });
-        
+
         // 检查是否在阻塞期
         if let Some(block_until) = counter.block_until {
             if now < block_until {
@@ -927,24 +928,24 @@ impl DdosProtection {
                 counter.window_start = now;
             }
         }
-        
+
         // 重置窗口
         if now.duration_since(counter.window_start).as_secs() >= 60 {
             counter.window_start = now;
             counter.count = 0;
         }
-        
+
         counter.count += 1;
-        
+
         // 检查阈值
         if counter.count > 1000 {
             // 标记为可疑IP
             self.suspicious_ips.insert(ip);
-            
+
             // 阻塞5分钟
             counter.is_blocked = true;
             counter.block_until = Some(now + Duration::from_secs(300));
-            
+
             DdosAction::Block
         } else if counter.count > 500 {
             // 限制速率
@@ -985,32 +986,32 @@ impl MemoryProtection {
             current_memory_usage: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
         }
     }
-    
+
     pub fn check_memory_usage(&self) -> Result<(), SecurityError> {
         if !self.is_enabled.load(Ordering::Relaxed) {
             return Ok(());
         }
-        
+
         let current = self.current_memory_usage.load(Ordering::Relaxed);
         if current > self.max_memory_usage {
             return Err(SecurityError::MemoryLimitExceeded);
         }
-        
+
         Ok(())
     }
-    
+
     pub fn allocate_memory(&self, size: usize) -> Result<(), SecurityError> {
         self.check_memory_usage()?;
-        
+
         let current = self.current_memory_usage.fetch_add(size, Ordering::Relaxed);
         if current + size > self.max_memory_usage {
             self.current_memory_usage.fetch_sub(size, Ordering::Relaxed);
             return Err(SecurityError::MemoryLimitExceeded);
         }
-        
+
         Ok(())
     }
-    
+
     pub fn deallocate_memory(&self, size: usize) {
         self.current_memory_usage.fetch_sub(size, Ordering::Relaxed);
     }
@@ -1032,29 +1033,29 @@ pub struct InputValidator {
 impl InputValidator {
     pub fn new() -> Self {
         let mut dangerous_patterns = Vec::new();
-        
+
         // SQL注入模式
         dangerous_patterns.push(Regex::new(r"(?i)(union|select|insert|update|delete|drop|create|alter)").unwrap());
-        
+
         // XSS模式
         dangerous_patterns.push(Regex::new(r"(?i)<script|javascript:|onload=|onerror=").unwrap());
-        
+
         // 路径遍历模式
         dangerous_patterns.push(Regex::new(r"\.\./|\.\.\\|\.\.%2f|\.\.%5c").unwrap());
-        
+
         Self {
             max_string_length: 10000,
             allowed_characters: HashSet::new(), // 空集合表示允许所有字符
             dangerous_patterns,
         }
     }
-    
+
     pub fn validate_string(&self, input: &str) -> Result<(), SecurityError> {
         // 检查长度
         if input.len() > self.max_string_length {
             return Err(SecurityError::InputTooLong);
         }
-        
+
         // 检查字符集
         if !self.allowed_characters.is_empty() {
             for ch in input.chars() {
@@ -1063,30 +1064,30 @@ impl InputValidator {
                 }
             }
         }
-        
+
         // 检查危险模式
         for pattern in &self.dangerous_patterns {
             if pattern.is_match(input) {
                 return Err(SecurityError::DangerousPattern);
             }
         }
-        
+
         Ok(())
     }
-    
+
     pub fn sanitize_string(&self, input: &str) -> String {
         let mut sanitized = input.to_string();
-        
+
         // 移除危险模式
         for pattern in &self.dangerous_patterns {
             sanitized = pattern.replace_all(&sanitized, "").to_string();
         }
-        
+
         // 截断长度
         if sanitized.len() > self.max_string_length {
             sanitized.truncate(self.max_string_length);
         }
-        
+
         sanitized
     }
 }
@@ -1140,19 +1141,19 @@ impl SecurityMonitor {
             max_events,
         }
     }
-    
+
     pub fn record_event(&mut self, event: SecurityEvent) {
         self.events.push(event);
-        
+
         // 限制事件数量
         if self.events.len() > self.max_events {
             self.events.remove(0);
         }
-        
+
         // 检查是否需要告警
         self.check_alerts();
     }
-    
+
     pub fn get_events(&self, filter: Option<SecurityEventFilter>) -> Vec<SecurityEvent> {
         if let Some(filter) = filter {
             self.events.iter()
@@ -1163,7 +1164,7 @@ impl SecurityMonitor {
             self.events.clone()
         }
     }
-    
+
     fn check_alerts(&self) {
         // 检查最近的高严重性事件
         let recent_critical_events: Vec<_> = self.events.iter()
@@ -1172,13 +1173,13 @@ impl SecurityMonitor {
                 event.timestamp.elapsed().unwrap_or_default().as_secs() < 300 // 5分钟内
             })
             .collect();
-        
+
         if recent_critical_events.len() > 5 {
             // 发送告警
             self.send_alert("Multiple critical security events detected");
         }
     }
-    
+
     fn send_alert(&self, message: &str) {
         // 发送告警的实现
         println!("SECURITY ALERT: {}", message);

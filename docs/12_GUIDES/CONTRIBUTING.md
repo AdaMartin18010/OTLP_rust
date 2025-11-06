@@ -1,7 +1,7 @@
 # 🤝 OTLP Rust 贡献指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 贡献指南 - 如何向 OTLP Rust 项目贡献代码、文档和测试的完整指南。
@@ -135,22 +135,22 @@ git commit -m "docs(api): update client documentation"
 fn process_telemetry_data() -> Result<(), Error> {
     // 使用有意义的变量名
     let telemetry_items = vec![];
-    
+
     // 使用Result进行错误处理
     let result = process_items(telemetry_items)?;
-    
+
     Ok(result)
 }
 
 // 使用文档注释
 /// 处理遥测数据
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `data` - 遥测数据向量
-/// 
+///
 /// # Returns
-/// 
+///
 /// 处理结果或错误
 pub async fn process_telemetry_data(
     data: Vec<TelemetryData>
@@ -172,10 +172,10 @@ use anyhow::{Context, Result};
 fn process_data() -> Result<()> {
     let data = read_file("data.json")
         .context("Failed to read data file")?;
-    
+
     let parsed = serde_json::from_str(&data)
         .context("Failed to parse JSON data")?;
-    
+
     Ok(parsed)
 }
 ```
@@ -186,20 +186,20 @@ fn process_data() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_functionality() {
         // 准备测试数据
         let test_data = create_test_data();
-        
+
         // 执行测试
         let result = process_data(test_data).await;
-        
+
         // 验证结果
         assert!(result.is_ok());
         assert_eq!(result.unwrap().count, 10);
     }
-    
+
     #[test]
     fn test_edge_cases() {
         // 测试边界情况
@@ -263,24 +263,24 @@ open coverage/tarpaulin-report.html
 
 ```rust
 /// 处理遥测数据的核心函数
-/// 
+///
 /// 这个函数负责将输入的遥测数据转换为OTLP格式，
 /// 并进行必要的验证和处理。
-/// 
+///
 /// # 参数
-/// 
+///
 /// * `data` - 输入的遥测数据
 /// * `config` - 处理配置
-/// 
+///
 /// # 返回值
-/// 
+///
 /// 返回处理后的数据或错误信息
-/// 
+///
 /// # 示例
-/// 
+///
 /// ```rust
 /// use otlp::{process_telemetry_data, TelemetryData};
-/// 
+///
 /// let data = vec![TelemetryData::trace("test")];
 /// let result = process_telemetry_data(data).await?;
 /// ```
@@ -387,5 +387,5 @@ pub async fn process_telemetry_data(
 
 **感谢您的贡献！** 🙏
 
-**最后更新**: 2025年1月  
+**最后更新**: 2025年1月
 **维护者**: OTLP Rust Team

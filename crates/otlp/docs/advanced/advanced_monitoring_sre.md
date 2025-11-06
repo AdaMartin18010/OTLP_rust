@@ -1,36 +1,39 @@
 # 高级监控和 SRE 实践完整指南
 
-**Crate:** c10_otlp  
-**主题:** Advanced Monitoring & SRE Practices  
-**Rust 版本:** 1.90.0  
+**Crate:** c10_otlp
+**主题:** Advanced Monitoring & SRE Practices
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
 
 ## 📋 目录
 
-- [高级监控和 SRE 完整指南](#高级监控和-sre-实践完整指南)
+- [高级监控和 SRE 实践完整指南](#高级监控和-sre-实践完整指南)
   - [📋 目录](#-目录)
-  - [🎯 高级监控概述](#sre-概述)
+  - [SRE 概述](#sre-概述)
     - [SRE 的核心理念](#sre-的核心理念)
     - [SRE vs DevOps](#sre-vs-devops)
-  - [📊 SLI/SLO/SLA](#slislosla-设计)
+  - [SLI/SLO/SLA 设计](#slislosla-设计)
     - [1. SLI (Service Level Indicator)](#1-sli-service-level-indicator)
+      - [定义 SLI](#定义-sli)
     - [2. SLO (Service Level Objective)](#2-slo-service-level-objective)
+      - [定义 SLO](#定义-slo)
     - [3. SLA (Service Level Agreement)](#3-sla-service-level-agreement)
-  - [💰 错误预算](#错误预算管理)
+      - [定义 SLA](#定义-sla)
+  - [错误预算管理](#错误预算管理)
     - [错误预算实现](#错误预算实现)
-  - [📞 On-Call 管理](#on-call-最佳实践)
+  - [On-Call 最佳实践](#on-call-最佳实践)
     - [On-Call 轮换系统](#on-call-轮换系统)
-  - [📖 Runbook 自动化](#runbook-编写)
+  - [Runbook 编写](#runbook-编写)
     - [Runbook 模板](#runbook-模板)
-  - [🔍 根因分析](#根因分析)
+  - [根因分析](#根因分析)
     - [5 Whys 方法](#5-whys-方法)
-  - [📈 容量规划](#容量规划)
+  - [容量规划](#容量规划)
     - [容量规划实现](#容量规划实现)
-  - [⚡ 性能工程](#性能工程)
+  - [性能工程](#性能工程)
     - [性能预算](#性能预算)
-  - [📚 总结](#总结)
+  - [总结](#总结)
     - [SRE 清单](#sre-清单)
     - [最佳实践](#最佳实践)
 
@@ -84,19 +87,19 @@ pub enum SLI {
         successful_requests: u64,
         total_requests: u64,
     },
-    
+
     /// 延迟：P99 延迟 < 阈值
     Latency {
         p99_latency_ms: f64,
         threshold_ms: f64,
     },
-    
+
     /// 错误率：错误请求 / 总请求
     ErrorRate {
         error_requests: u64,
         total_requests: u64,
     },
-    
+
     /// 吞吐量：每秒请求数
     Throughput {
         requests_per_second: f64,
@@ -114,7 +117,7 @@ impl SLI {
                     *successful_requests as f64 / *total_requests as f64
                 }
             }
-            
+
             SLI::Latency { p99_latency_ms, threshold_ms } => {
                 if *p99_latency_ms <= *threshold_ms {
                     1.0
@@ -122,7 +125,7 @@ impl SLI {
                     threshold_ms / p99_latency_ms
                 }
             }
-            
+
             SLI::ErrorRate { error_requests, total_requests } => {
                 if *total_requests == 0 {
                     1.0
@@ -130,14 +133,14 @@ impl SLI {
                     1.0 - (*error_requests as f64 / *total_requests as f64)
                 }
             }
-            
+
             SLI::Throughput { requests_per_second } => {
                 // 归一化到 0-1 范围
                 (*requests_per_second / 1000.0).min(1.0)
             }
         }
     }
-    
+
     /// 是否符合目标
     pub fn meets_target(&self, target: f64) -> bool {
         self.value() >= target
@@ -150,7 +153,7 @@ fn calculate_availability_sli(
     failed_requests: u64,
 ) -> SLI {
     let successful_requests = total_requests - failed_requests;
-    
+
     SLI::Availability {
         successful_requests,
         total_requests,
@@ -169,19 +172,19 @@ fn calculate_availability_sli(
 pub struct SLO {
     /// SLO 名称
     pub name: String,
-    
+
     /// SLI 类型
     pub sli_type: SLIType,
-    
+
     /// 目标值 (例如 99.9% = 0.999)
     pub target: f64,
-    
+
     /// 时间窗口 (例如 30 天)
     pub window: Duration,
-    
+
     /// 当前状态
     pub current_value: f64,
-    
+
     /// 剩余错误预算
     pub error_budget_remaining: f64,
 }
@@ -204,27 +207,27 @@ impl SLO {
             error_budget_remaining: 1.0 - target,
         }
     }
-    
+
     /// 更新 SLO 状态
     pub fn update(&mut self, sli_value: f64) {
         self.current_value = sli_value;
-        
+
         // 计算剩余错误预算
         let allowed_failures = 1.0 - self.target;
         let actual_failures = 1.0 - sli_value;
         self.error_budget_remaining = (allowed_failures - actual_failures) / allowed_failures;
     }
-    
+
     /// 是否符合 SLO
     pub fn is_compliant(&self) -> bool {
         self.current_value >= self.target
     }
-    
+
     /// 错误预算是否耗尽
     pub fn is_error_budget_exhausted(&self) -> bool {
         self.error_budget_remaining <= 0.0
     }
-    
+
     /// 获取告警级别
     pub fn alert_level(&self) -> AlertLevel {
         if self.error_budget_remaining <= 0.0 {
@@ -252,7 +255,7 @@ async fn monitor_slo(
     // 1. 查询最近一小时的请求
     let stats = sqlx::query!(
         r#"
-        SELECT 
+        SELECT
             COUNT(*) as total,
             COUNT(*) FILTER (WHERE status < 500) as successful
         FROM requests
@@ -261,16 +264,16 @@ async fn monitor_slo(
     )
     .fetch_one(pool)
     .await?;
-    
+
     // 2. 计算 SLI
     let sli = SLI::Availability {
         successful_requests: stats.successful.unwrap_or(0) as u64,
         total_requests: stats.total.unwrap_or(0) as u64,
     };
-    
+
     // 3. 更新 SLO
     slo.update(sli.value());
-    
+
     // 4. 检查告警
     match slo.alert_level() {
         AlertLevel::Critical => {
@@ -290,7 +293,7 @@ async fn monitor_slo(
         }
         AlertLevel::Ok => {}
     }
-    
+
     Ok(())
 }
 ```
@@ -306,16 +309,16 @@ async fn monitor_slo(
 pub struct SLA {
     /// SLA 名称
     pub name: String,
-    
+
     /// 承诺的可用性 (例如 99.9%)
     pub committed_availability: f64,
-    
+
     /// 测量窗口 (通常为月度)
     pub measurement_window: Duration,
-    
+
     /// 违反 SLA 的后果
     pub penalties: Vec<SLAPenalty>,
-    
+
     /// 当前合规性
     pub compliance_status: ComplianceStatus,
 }
@@ -324,7 +327,7 @@ pub struct SLA {
 pub struct SLAPenalty {
     /// 可用性阈值
     pub threshold: f64,
-    
+
     /// 信用返还百分比
     pub credit_percentage: f64,
 }
@@ -349,7 +352,7 @@ impl SLA {
                 .map(|p| p.credit_percentage)
                 .max_by(|a, b| a.partial_cmp(b).unwrap())
                 .unwrap_or(0.0);
-            
+
             self.compliance_status = ComplianceStatus::Violated {
                 credit_percentage: credit,
             };
@@ -398,10 +401,10 @@ pub struct ErrorBudgetManager {
 pub struct BurnRateAlert {
     /// 燃烧率阈值 (例如 10x 表示错误预算以 10 倍速度消耗)
     pub threshold: f64,
-    
+
     /// 窗口期
     pub window: Duration,
-    
+
     /// 告警级别
     pub severity: AlertSeverity,
 }
@@ -439,7 +442,7 @@ impl ErrorBudgetManager {
             ],
         }
     }
-    
+
     /// 计算错误预算燃烧率
     pub fn calculate_burn_rate(
         &self,
@@ -448,10 +451,10 @@ impl ErrorBudgetManager {
     ) -> f64 {
         // 实际错误率
         let actual_error_rate = 1.0 - slo.current_value;
-        
+
         // 允许的错误率
         let allowed_error_rate = 1.0 - slo.target;
-        
+
         // 燃烧率 = 实际错误率 / 允许的错误率
         if allowed_error_rate > 0.0 {
             actual_error_rate / allowed_error_rate
@@ -459,18 +462,18 @@ impl ErrorBudgetManager {
             0.0
         }
     }
-    
+
     /// 检查燃烧率告警
     pub async fn check_burn_rate_alerts(
         &self,
         slo_name: &str,
     ) -> Vec<BurnRateAlertTriggered> {
         let mut triggered = Vec::new();
-        
+
         if let Some(slo) = self.slos.get(slo_name) {
             for alert in &self.burn_rate_alerts {
                 let burn_rate = self.calculate_burn_rate(slo, alert.window);
-                
+
                 if burn_rate >= alert.threshold {
                     triggered.push(BurnRateAlertTriggered {
                         slo_name: slo_name.to_string(),
@@ -482,7 +485,7 @@ impl ErrorBudgetManager {
                 }
             }
         }
-        
+
         triggered
     }
 }
@@ -510,13 +513,13 @@ use chrono::{DateTime, Utc, Duration as ChronoDuration};
 pub struct OnCallSchedule {
     /// 值班人员列表
     pub engineers: Vec<Engineer>,
-    
+
     /// 轮换周期 (例如 7 天)
     pub rotation_period: Duration,
-    
+
     /// 当前值班人员索引
     pub current_index: usize,
-    
+
     /// 上次轮换时间
     pub last_rotation: DateTime<Utc>,
 }
@@ -534,19 +537,19 @@ impl OnCallSchedule {
     pub fn current_on_call(&self) -> &Engineer {
         &self.engineers[self.current_index]
     }
-    
+
     pub fn next_on_call(&self) -> &Engineer {
         let next_index = (self.current_index + 1) % self.engineers.len();
         &self.engineers[next_index]
     }
-    
+
     pub fn should_rotate(&self) -> bool {
         let now = Utc::now();
         let elapsed = now.signed_duration_since(self.last_rotation);
-        
+
         elapsed >= ChronoDuration::from_std(self.rotation_period).unwrap()
     }
-    
+
     pub fn rotate(&mut self) {
         self.current_index = (self.current_index + 1) % self.engineers.len();
         self.last_rotation = Utc::now();
@@ -561,7 +564,7 @@ pub struct AlertRouter {
 impl AlertRouter {
     pub async fn send_alert(&self, alert: &Alert) -> Result<()> {
         let on_call = self.schedule.current_on_call();
-        
+
         match alert.severity {
             AlertSeverity::Page => {
                 // 立即通知：电话 + SMS + Email
@@ -579,7 +582,7 @@ impl AlertRouter {
                 self.send_email(&on_call.email, alert).await?;
             }
         }
-        
+
         Ok(())
     }
 }
@@ -605,22 +608,22 @@ pub struct Alert {
 pub struct Runbook {
     /// 告警名称
     pub alert_name: String,
-    
+
     /// 描述
     pub description: String,
-    
+
     /// 影响
     pub impact: String,
-    
+
     /// 诊断步骤
     pub diagnosis_steps: Vec<DiagnosisStep>,
-    
+
     /// 修复步骤
     pub remediation_steps: Vec<RemediationStep>,
-    
+
     /// 升级路径
     pub escalation_path: Vec<EscalationContact>,
-    
+
     /// 相关文档链接
     pub related_docs: Vec<String>,
 }
@@ -655,7 +658,7 @@ fn create_high_latency_runbook() -> Runbook {
         alert_name: "HighAPILatency".to_string(),
         description: "API 响应时间超过 500ms".to_string(),
         impact: "用户体验下降，可能导致超时".to_string(),
-        
+
         diagnosis_steps: vec![
             DiagnosisStep {
                 step_number: 1,
@@ -676,7 +679,7 @@ fn create_high_latency_runbook() -> Runbook {
                 expected_output: Some("< 80%".to_string()),
             },
         ],
-        
+
         remediation_steps: vec![
             RemediationStep {
                 step_number: 1,
@@ -691,7 +694,7 @@ fn create_high_latency_runbook() -> Runbook {
                 rollback_command: None,
             },
         ],
-        
+
         escalation_path: vec![
             EscalationContact {
                 level: 1,
@@ -712,7 +715,7 @@ fn create_high_latency_runbook() -> Runbook {
                 escalate_after: Duration::from_secs(60 * 60),
             },
         ],
-        
+
         related_docs: vec![
             "https://wiki.example.com/api-architecture".to_string(),
             "https://wiki.example.com/database-troubleshooting".to_string(),
@@ -735,19 +738,19 @@ pub struct RootCauseAnalysis {
     pub occurred_at: DateTime<Utc>,
     pub detected_at: DateTime<Utc>,
     pub resolved_at: Option<DateTime<Utc>>,
-    
+
     /// 事件时间线
     pub timeline: Vec<TimelineEvent>,
-    
+
     /// 5 个为什么
     pub five_whys: Vec<WhyStep>,
-    
+
     /// 根本原因
     pub root_cause: String,
-    
+
     /// 纠正措施
     pub corrective_actions: Vec<CorrectiveAction>,
-    
+
     /// 预防措施
     pub preventive_actions: Vec<PreventiveAction>,
 }
@@ -798,7 +801,7 @@ fn create_rca() -> RootCauseAnalysis {
         occurred_at: Utc::now() - ChronoDuration::hours(2),
         detected_at: Utc::now() - ChronoDuration::hours(2) + ChronoDuration::minutes(5),
         resolved_at: Some(Utc::now() - ChronoDuration::hours(1) + ChronoDuration::minutes(30)),
-        
+
         timeline: vec![
             TimelineEvent {
                 timestamp: Utc::now() - ChronoDuration::hours(2),
@@ -816,7 +819,7 @@ fn create_rca() -> RootCauseAnalysis {
                 actor: "John Doe".to_string(),
             },
         ],
-        
+
         five_whys: vec![
             WhyStep {
                 step: 1,
@@ -844,9 +847,9 @@ fn create_rca() -> RootCauseAnalysis {
                 answer: "缺少内存压力测试".to_string(),
             },
         ],
-        
+
         root_cause: "缺少内存压力测试导致内存泄漏bug未被发现".to_string(),
-        
+
         corrective_actions: vec![
             CorrectiveAction {
                 description: "回滚到 v1.1.9".to_string(),
@@ -861,7 +864,7 @@ fn create_rca() -> RootCauseAnalysis {
                 status: ActionStatus::InProgress,
             },
         ],
-        
+
         preventive_actions: vec![
             PreventiveAction {
                 description: "添加内存压力测试到 CI/CD".to_string(),
@@ -910,48 +913,48 @@ impl CapacityPlanner {
                 .collect::<Vec<_>>(),
             days_ahead
         );
-        
+
         let memory_forecast = self.linear_regression_forecast(
             &self.usage_history.iter()
                 .map(|d| d.memory_usage)
                 .collect::<Vec<_>>(),
             days_ahead
         );
-        
+
         ForecastResult {
             forecast_date: Utc::now() + ChronoDuration::days(days_ahead as i64),
             predicted_cpu_usage: cpu_forecast,
             predicted_memory_usage: memory_forecast,
         }
     }
-    
+
     fn linear_regression_forecast(&self, data: &[f64], days_ahead: u32) -> f64 {
         if data.is_empty() {
             return 0.0;
         }
-        
+
         // 简单线性回归
         let n = data.len() as f64;
         let x_mean = (n - 1.0) / 2.0;
         let y_mean = data.iter().sum::<f64>() / n;
-        
+
         let mut numerator = 0.0;
         let mut denominator = 0.0;
-        
+
         for (i, &y) in data.iter().enumerate() {
             let x = i as f64;
             numerator += (x - x_mean) * (y - y_mean);
             denominator += (x - x_mean) * (x - x_mean);
         }
-        
+
         let slope = numerator / denominator;
         let intercept = y_mean - slope * x_mean;
-        
+
         // 预测
         let future_x = n - 1.0 + days_ahead as f64;
         slope * future_x + intercept
     }
-    
+
     /// 计算所需容量
     pub fn calculate_required_capacity(
         &self,
@@ -959,13 +962,13 @@ impl CapacityPlanner {
         target_utilization: f64,
     ) -> u32 {
         let forecast_30_days = self.forecast(30);
-        
+
         let max_usage = forecast_30_days.predicted_cpu_usage
             .max(forecast_30_days.predicted_memory_usage);
-        
+
         // 考虑峰值和缓冲
         let required_capacity = (max_usage / target_utilization * 1.2) as u32;
-        
+
         required_capacity.max(current_capacity)
     }
 }
@@ -989,13 +992,13 @@ pub struct ForecastResult {
 pub struct PerformanceBudget {
     /// 页面加载时间预算 (ms)
     pub page_load_time: f64,
-    
+
     /// API 响应时间预算 (ms)
     pub api_response_time: f64,
-    
+
     /// 首次内容绘制预算 (ms)
     pub first_contentful_paint: f64,
-    
+
     /// 总页面大小预算 (KB)
     pub total_page_size: f64,
 }
@@ -1003,7 +1006,7 @@ pub struct PerformanceBudget {
 impl PerformanceBudget {
     pub fn check_compliance(&self, metrics: &PerformanceMetrics) -> Vec<BudgetViolation> {
         let mut violations = Vec::new();
-        
+
         if metrics.page_load_time > self.page_load_time {
             violations.push(BudgetViolation {
                 metric: "page_load_time".to_string(),
@@ -1012,7 +1015,7 @@ impl PerformanceBudget {
                 overage: metrics.page_load_time - self.page_load_time,
             });
         }
-        
+
         if metrics.api_response_time > self.api_response_time {
             violations.push(BudgetViolation {
                 metric: "api_response_time".to_string(),
@@ -1021,7 +1024,7 @@ impl PerformanceBudget {
                 overage: metrics.api_response_time - self.api_response_time,
             });
         }
-        
+
         violations
     }
 }
@@ -1067,6 +1070,6 @@ pub struct BudgetViolation {
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日

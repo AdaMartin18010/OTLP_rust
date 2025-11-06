@@ -104,7 +104,7 @@ impl TraceBuilder {
         self.data = self.data.with_attribute(key, value);
         self
     }
-    
+
     pub async fn finish(self) -> Result<ExportResult> {
         let data = self.data.finish();
         self.client.send(data).await
@@ -260,7 +260,7 @@ pub trait MetricsObserver: Send + Sync {
 impl MetricsCollector {
     pub async fn collect_metrics(&self) -> ClientMetrics {
         let mut metrics = self.metrics.read().await.clone();
-        
+
         // 更新运行时间
         if let Some(start_time) = metrics.start_time {
             metrics.uptime = start_time.elapsed();
@@ -303,7 +303,7 @@ impl OtlpClient {
         let data = TelemetryData::trace(name);
         Ok(TraceBuilder::new(self.clone(), data))
     }
-    
+
     pub async fn send_batch(&self, data: Vec<TelemetryData>) -> Result<ExportResult> {
         if data.is_empty() {
             return Ok(ExportResult::success(0, Duration::ZERO));
@@ -316,7 +316,7 @@ impl OtlpClient {
         let futures: Vec<_> = data.into_iter()
             .map(|item| self.process_single_item(item))
             .collect();
-        
+
         let results = futures::future::join_all(futures).await;
         self.aggregate_results(results)
     }
@@ -332,7 +332,7 @@ where
     F: Fn() -> Pin<Box<dyn Future<Output = Result<T>> + Send>>,
 {
     let mut delay = config.initial_retry_delay;
-    
+
     for attempt in 0..=config.max_retries {
         match operation().await {
             Ok(result) => return Ok(result),
@@ -424,7 +424,7 @@ impl OtlpClient {
         }
         Ok(())
     }
-    
+
     async fn update_metrics(&self, count: usize) {
         let mut metrics = self.metrics.write().await;
         metrics.total_data_sent += count as u64;
@@ -448,7 +448,7 @@ impl AtomicMetrics {
     pub fn increment_sent(&self, count: u64) {
         self.total_sent.fetch_add(count, Ordering::Relaxed);
     }
-    
+
     pub fn get_total_sent(&self) -> u64 {
         self.total_sent.load(Ordering::Relaxed)
     }
@@ -484,18 +484,18 @@ impl OtlpClient {
     pub async fn send(&self, data: TelemetryData) -> Result<ExportResult> {
         // 1. 数据验证（同步）
         data.validate()?;
-        
+
         // 2. 数据处理（异步）
         if let Some(processor) = self.processor.read().await.as_ref() {
             processor.process(data.clone()).await?;
         }
-        
+
         // 3. 数据导出（异步）
         let result = self.exporter.export_single(data).await?;
-        
+
         // 4. 指标更新（异步）
         self.update_export_metrics(&result).await;
-        
+
         Ok(result)
     }
 }
@@ -562,13 +562,13 @@ impl OtlpClientFactory {
     pub async fn create_with_config(config: OtlpConfig) -> Result<OtlpClient> {
         // 1. 创建传输层
         let transport = TransportFactory::create(config.clone()).await?;
-        
+
         // 2. 创建导出器
         let exporter = OtlpExporter::new_with_transport(transport, config.clone());
-        
+
         // 3. 创建处理器
         let processor = OtlpProcessor::new(config.processing_config());
-        
+
         // 4. 创建客户端
         Ok(OtlpClient::new_with_components(config, exporter, processor).await?)
     }
@@ -611,9 +611,9 @@ impl OtlpClient {
         };
 
         // 等待所有初始化完成
-        let (exporter_result, processor_result) = 
+        let (exporter_result, processor_result) =
             tokio::join!(exporter_init, processor_init);
-        
+
         exporter_result?;
         let processor = processor_result?;
 
@@ -628,7 +628,7 @@ impl OtlpClient {
         *is_initialized = true;
         Ok(())
     }
-    
+
     /// 启动后台任务
     async fn start_background_tasks(&self) {
         self.start_metrics_update_task().await;
@@ -708,32 +708,32 @@ impl OtlpConfig {
         self.endpoint = endpoint.into();
         self
     }
-    
+
     pub fn with_protocol(mut self, protocol: TransportProtocol) -> Self {
         self.protocol = protocol;
         self
     }
-    
+
     pub fn with_service(mut self, name: impl Into<String>, version: impl Into<String>) -> Self {
         self.service_name = name.into();
         self.service_version = version.into();
         self
     }
-    
+
     /// 同步验证
     pub fn validate(&self) -> Result<()> {
         if self.endpoint.is_empty() {
             return Err(OtlpError::configuration("Endpoint cannot be empty"));
         }
-        
+
         if self.service_name.is_empty() {
             return Err(OtlpError::configuration("Service name cannot be empty"));
         }
-        
+
         if self.request_timeout.as_secs() == 0 {
             return Err(OtlpError::configuration("Request timeout must be greater than 0"));
         }
-        
+
         Ok(())
     }
 }
@@ -767,7 +767,7 @@ impl TelemetryData {
         }
         self
     }
-    
+
     pub fn with_numeric_attribute(mut self, key: impl Into<String>, value: f64) -> Self {
         match &mut self.content {
             TelemetryContent::Trace(trace_data) => {
@@ -812,26 +812,26 @@ pub struct ConnectionPool {
 impl ConnectionPool {
     pub async fn get_connection(&self) -> Result<Connection> {
         let mut connections = self.connections.write().await;
-        
+
         // 尝试复用现有连接
         while let Some(connection) = connections.pop() {
             if connection.is_healthy().await {
                 return Ok(connection);
             }
         }
-        
+
         // 创建新连接
         if connections.len() < self.max_connections {
             let connection = Connection::new().await?;
             return Ok(connection);
         }
-        
+
         // 等待连接可用
         drop(connections);
         tokio::time::sleep(Duration::from_millis(100)).await;
         self.get_connection().await
     }
-    
+
     pub async fn return_connection(&self, connection: Connection) {
         let mut connections = self.connections.write().await;
         if connections.len() < self.max_connections {
@@ -857,13 +857,13 @@ impl AsyncBatchProcessor {
         let batch_size = self.batch_size;
         let flush_interval = self.flush_interval;
         let sender = self.sender.clone();
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(flush_interval);
-            
+
             loop {
                 interval.tick().await;
-                
+
                 let batch = {
                     let mut queue_guard = queue.write().await;
                     if queue_guard.len() >= batch_size {
@@ -876,13 +876,13 @@ impl AsyncBatchProcessor {
                         continue;
                     }
                 };
-                
+
                 if !batch.is_empty() {
                     let _ = sender.send(batch);
                 }
             }
         });
-        
+
         Ok(())
     }
 }
@@ -905,20 +905,20 @@ impl ZeroCopyBuffer {
             offset: 0,
         }
     }
-    
+
     pub fn write_slice(&mut self, slice: &[u8]) {
         if self.offset + slice.len() > self.data.capacity() {
             self.data.reserve(slice.len());
         }
-        
+
         self.data.extend_from_slice(slice);
         self.offset += slice.len();
     }
-    
+
     pub fn as_slice(&self) -> &[u8] {
         &self.data[..self.offset]
     }
-    
+
     pub fn clear(&mut self) {
         self.data.clear();
         self.offset = 0;
@@ -946,10 +946,10 @@ impl<T> ObjectPool<T> {
             max_size,
         }
     }
-    
+
     pub async fn get(&self) -> PooledObject<T> {
         let mut objects = self.objects.write().await;
-        
+
         if let Some(obj) = objects.pop() {
             PooledObject::new(obj, self.objects.clone())
         } else {
@@ -971,11 +971,11 @@ impl<T> PooledObject<T> {
             pool,
         }
     }
-    
+
     pub fn as_ref(&self) -> &T {
         self.object.as_ref().unwrap()
     }
-    
+
     pub fn as_mut(&mut self) -> &mut T {
         self.object.as_mut().unwrap()
     }
@@ -1009,22 +1009,22 @@ impl<T> Drop for PooledObject<T> {
 pub enum OtlpError {
     #[error("Transport error: {0}")]
     Transport(#[from] TransportError),
-    
+
     #[error("Configuration error: {0}")]
     Configuration(#[from] ConfigurationError),
-    
+
     #[error("Processing error: {0}")]
     Processing(#[from] ProcessingError),
-    
+
     #[error("Concurrency error: {0}")]
     Concurrency(String),
-    
+
     #[error("Batch processing error: {0}")]
     BatchProcessing(String),
-    
+
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 }
@@ -1033,11 +1033,11 @@ impl OtlpError {
     pub fn concurrency(msg: impl Into<String>) -> Self {
         Self::Concurrency(msg.into())
     }
-    
+
     pub fn batch_processing(msg: impl Into<String>) -> Self {
         Self::BatchProcessing(msg.into())
     }
-    
+
     pub fn is_retryable(&self) -> bool {
         match self {
             Self::Transport(_) | Self::Network(_) => true,
@@ -1065,7 +1065,7 @@ impl RetryConfig {
         F: Fn() -> Pin<Box<dyn Future<Output = Result<T>> + Send>>,
     {
         let mut delay = self.initial_retry_delay;
-        
+
         for attempt in 0..=self.max_retries {
             match operation().await {
                 Ok(result) => return Ok(result),
@@ -1078,7 +1078,7 @@ impl RetryConfig {
                     } else {
                         tokio::time::sleep(delay).await;
                     }
-                    
+
                     delay = std::cmp::min(
                         Duration::from_millis(
                             (delay.as_millis() as f64 * self.retry_delay_multiplier) as u64
@@ -1118,7 +1118,7 @@ impl CircuitBreaker {
         F: Fn() -> Pin<Box<dyn Future<Output = Result<T>> + Send>>,
     {
         let state = self.state.read().await.clone();
-        
+
         match state {
             CircuitState::Closed => {
                 match operation().await {
@@ -1149,7 +1149,7 @@ impl CircuitBreaker {
             }
         }
     }
-    
+
     async fn record_success(&self) {
         let mut state = self.state.write().await;
         match *state {
@@ -1159,7 +1159,7 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     async fn record_failure(&self) {
         let mut state = self.state.write().await;
         match *state {
@@ -1167,7 +1167,7 @@ impl CircuitBreaker {
                 // 检查是否达到失败阈值
                 // 这里需要维护失败计数
                 *state = CircuitState::Open;
-                
+
                 // 启动恢复定时器
                 let state_clone = self.state.clone();
                 let recovery_timeout = self.recovery_timeout;
@@ -1222,7 +1222,7 @@ pub struct MetricsCollector {
 impl MetricsCollector {
     pub async fn record_operation(&self, operation: &str, duration: Duration, success: bool) {
         let mut metrics = self.metrics.write().await;
-        
+
         match operation {
             "send_trace" => {
                 metrics.trace_operations += 1;
@@ -1258,13 +1258,13 @@ impl OtlpClient {
     pub fn enable_debug(&mut self) {
         self.config.debug = true;
     }
-    
+
     async fn debug_log(&self, message: &str) {
         if self.config.debug {
             println!("[OTLP DEBUG] {}", message);
         }
     }
-    
+
     async fn debug_telemetry_data(&self, data: &TelemetryData) {
         if self.config.debug {
             println!("[OTLP DEBUG] Sending data: {:?}", data);
@@ -1331,7 +1331,7 @@ impl OtlpClient {
 
 ---
 
-**最后更新**: 2025年1月  
-**维护者**: Rust OTLP Team  
-**版本**: 0.1.0  
+**最后更新**: 2025年1月
+**维护者**: Rust OTLP Team
+**版本**: 0.1.0
 **Rust版本**: 1.90+

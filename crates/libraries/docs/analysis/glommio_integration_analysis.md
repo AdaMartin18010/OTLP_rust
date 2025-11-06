@@ -117,11 +117,11 @@ glommio = ["glommio", "glommio-util"]
 #[cfg(feature = "glommio")]
 pub mod glommio_runtime {
     use glommio::prelude::*;
-    
+
     pub struct GlommioExecutor {
         executor: LocalExecutor,
     }
-    
+
     impl GlommioExecutor {
         pub fn new() -> Self {
             let executor = LocalExecutorBuilder::new()
@@ -129,7 +129,7 @@ pub mod glommio_runtime {
                 .unwrap();
             Self { executor }
         }
-        
+
         pub async fn run<F, R>(&self, future: F) -> R
         where
             F: Future<Output = R> + Send + 'static,
@@ -146,12 +146,12 @@ pub mod glommio_runtime {
 // 运行时抽象 trait
 pub trait AsyncRuntime {
     type JoinHandle<T>;
-    
+
     fn spawn<F, T>(&self, future: F) -> Self::JoinHandle<T>
     where
         F: Future<Output = T> + Send + 'static,
         T: Send + 'static;
-    
+
     fn block_on<F, T>(&self, future: F) -> T
     where
         F: Future<Output = T>;
@@ -161,7 +161,7 @@ pub trait AsyncRuntime {
 #[cfg(feature = "tokio")]
 impl AsyncRuntime for TokioRuntime {
     type JoinHandle<T> = tokio::task::JoinHandle<T>;
-    
+
     fn spawn<F, T>(&self, future: F) -> Self::JoinHandle<T>
     where
         F: Future<Output = T> + Send + 'static,
@@ -169,7 +169,7 @@ impl AsyncRuntime for TokioRuntime {
     {
         tokio::spawn(future)
     }
-    
+
     fn block_on<F, T>(&self, future: F) -> T
     where
         F: Future<Output = T>,
@@ -182,7 +182,7 @@ impl AsyncRuntime for TokioRuntime {
 #[cfg(feature = "glommio")]
 impl AsyncRuntime for GlommioRuntime {
     type JoinHandle<T> = glommio::task::JoinHandle<T>;
-    
+
     fn spawn<F, T>(&self, future: F) -> Self::JoinHandle<T>
     where
         F: Future<Output = T> + Send + 'static,
@@ -190,7 +190,7 @@ impl AsyncRuntime for GlommioRuntime {
     {
         glommio::task::spawn_local(future)
     }
-    
+
     fn block_on<F, T>(&self, future: F) -> T
     where
         F: Future<Output = T>,
@@ -223,11 +223,11 @@ impl AsyncConnection for GlommioTcpConnection {
     async fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.stream.read(buf).await.map_err(Into::into)
     }
-    
+
     async fn write(&mut self, buf: &[u8]) -> Result<usize> {
         self.stream.write(buf).await.map_err(Into::into)
     }
-    
+
     async fn close(self) -> Result<()> {
         self.stream.close().await.map_err(Into::into)
     }
@@ -262,12 +262,12 @@ where
         // 连接获取逻辑
         Ok(self.connections[0].clone())
     }
-    
+
     async fn put(&self, _conn: T) -> Result<()> {
         // 连接归还逻辑
         Ok(())
     }
-    
+
     fn size(&self) -> usize {
         self.connections.len()
     }
@@ -291,23 +291,23 @@ impl RuntimeBenchmarker {
     pub async fn compare_runtimes(&mut self) -> BenchmarkComparison {
         // Tokio 基准测试
         let tokio_result = self.run_tokio_benchmark().await;
-        
+
         // Glommio 基准测试
         let glommio_result = self.run_glommio_benchmark().await;
-        
+
         BenchmarkComparison {
             tokio: tokio_result,
             glommio: glommio_result,
             improvement: self.calculate_improvement(&tokio_result, &glommio_result),
         }
     }
-    
+
     async fn run_tokio_benchmark(&self) -> BenchmarkResult {
         #[cfg(feature = "tokio")]
         {
             let start = Instant::now();
             let mut handles = Vec::new();
-            
+
             for _ in 0..10000 {
                 let handle = tokio::spawn(async {
                     // 模拟中间件操作
@@ -315,11 +315,11 @@ impl RuntimeBenchmarker {
                 });
                 handles.push(handle);
             }
-            
+
             for handle in handles {
                 handle.await.unwrap();
             }
-            
+
             BenchmarkResult {
                 duration: start.elapsed(),
                 throughput: 10000.0 / start.elapsed().as_secs_f64(),
@@ -327,13 +327,13 @@ impl RuntimeBenchmarker {
             }
         }
     }
-    
+
     async fn run_glommio_benchmark(&self) -> BenchmarkResult {
         #[cfg(feature = "glommio")]
         {
             let start = Instant::now();
             let mut handles = Vec::new();
-            
+
             for _ in 0..10000 {
                 let handle = glommio::task::spawn_local(async {
                     // 模拟中间件操作
@@ -341,11 +341,11 @@ impl RuntimeBenchmarker {
                 });
                 handles.push(handle);
             }
-            
+
             for handle in handles {
                 handle.await.unwrap();
             }
-            
+
             BenchmarkResult {
                 duration: start.elapsed(),
                 throughput: 10000.0 / start.elapsed().as_secs_f64(),
@@ -366,35 +366,35 @@ impl MiddlewareBenchmarker {
     pub async fn test_redis_performance(&self) -> RedisBenchmarkResult {
         // Redis 操作性能测试
         let mut redis_client = RedisClient::new().await?;
-        
+
         let start = Instant::now();
         let mut operations = 0;
-        
+
         for _ in 0..10000 {
             redis_client.set("key", "value").await?;
             redis_client.get("key").await?;
             operations += 2;
         }
-        
+
         RedisBenchmarkResult {
             operations_per_second: operations as f64 / start.elapsed().as_secs_f64(),
             average_latency: self.calculate_average_latency(),
             memory_usage: self.get_memory_usage(),
         }
     }
-    
+
     pub async fn test_database_performance(&self) -> DatabaseBenchmarkResult {
         // 数据库操作性能测试
         let mut db_client = DatabaseClient::new().await?;
-        
+
         let start = Instant::now();
         let mut queries = 0;
-        
+
         for i in 0..1000 {
             db_client.execute_query(&format!("SELECT * FROM users WHERE id = {}", i)).await?;
             queries += 1;
         }
-        
+
         DatabaseBenchmarkResult {
             queries_per_second: queries as f64 / start.elapsed().as_secs_f64(),
             average_query_time: self.calculate_average_query_time(),
@@ -516,7 +516,7 @@ impl MiddlewareBenchmarker {
 
 ---
 
-**报告生成时间**: 2025年9月28日  
-**分析状态**: 已完成  
-**建议状态**: 强烈推荐集成  
+**报告生成时间**: 2025年9月28日
+**分析状态**: 已完成
+**建议状态**: 强烈推荐集成
 **下一步**: 开始阶段 1 的基础集成工作

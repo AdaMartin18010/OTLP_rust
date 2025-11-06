@@ -25,16 +25,16 @@ impl ExecutionFlowClassifier {
             OperationType::Batch => ExecutionFlowType::Batch,
         }
     }
-    
+
     pub async fn organize_execution_flow(&self, operations: Vec<Operation>) -> Result<ExecutionPlan, OtlpError> {
         let mut execution_plan = ExecutionPlan::new();
-        
+
         for operation in operations {
             let flow_type = self.classify_execution_flow(&operation);
             let flow_stage = self.flow_organizer.create_flow_stage(operation, flow_type);
             execution_plan.add_stage(flow_stage);
         }
-        
+
         Ok(execution_plan)
     }
 }
@@ -53,32 +53,32 @@ pub struct ExecutionFlowMonitor {
 impl ExecutionFlowMonitor {
     pub async fn monitor_execution_flow(&self, execution_id: &str) -> Result<(), OtlpError> {
         let flow_context = self.flow_tracker.start_tracking(execution_id).await?;
-        
+
         // 记录执行开始
         self.flow_logger.log_execution_start(&flow_context).await?;
-        
+
         // 监控执行过程
         let mut interval = tokio::time::interval(Duration::from_millis(100));
         loop {
             interval.tick().await;
-            
+
             let flow_status = self.flow_tracker.get_flow_status(execution_id).await?;
-            
+
             if flow_status.is_completed() {
                 break;
             }
-            
+
             // 记录执行状态
             self.flow_logger.log_execution_status(&flow_status).await?;
-            
+
             // 分析性能
             self.performance_analyzer.analyze_performance(&flow_status).await?;
         }
-        
+
         // 记录执行结束
         let final_status = self.flow_tracker.get_flow_status(execution_id).await?;
         self.flow_logger.log_execution_end(&final_status).await?;
-        
+
         Ok(())
     }
 }
@@ -106,40 +106,40 @@ impl ControlFlowGraph {
             exit_node: NodeId::new(),
         }
     }
-    
+
     pub fn add_node(&mut self, node: ControlNode) -> NodeId {
         let node_id = node.id;
         self.nodes.insert(node_id, node);
         node_id
     }
-    
+
     pub fn add_edge(&mut self, from: NodeId, to: NodeId, condition: Option<ControlCondition>) {
         let edge = Edge {
             from,
             to,
             condition,
         };
-        
+
         self.edges.entry(from)
             .or_insert_with(Vec::new)
             .push(edge);
     }
-    
+
     pub async fn execute_control_flow(&self, input: ControlInput) -> Result<ControlOutput, OtlpError> {
         let mut current_node = self.entry_node;
         let mut execution_context = ExecutionContext::new(input);
-        
+
         while current_node != self.exit_node {
             let node = self.nodes.get(&current_node)
                 .ok_or_else(|| OtlpError::NodeNotFound(current_node))?;
-            
+
             // 执行当前节点
             let node_result = self.execute_node(node, &mut execution_context).await?;
-            
+
             // 选择下一个节点
             current_node = self.select_next_node(current_node, &node_result, &execution_context)?;
         }
-        
+
         Ok(ControlOutput::from_context(execution_context))
     }
 }
@@ -164,13 +164,13 @@ impl ControlFlowLogger {
             context: self.flow_tracker.get_current_context().await?,
             metadata: HashMap::new(),
         };
-        
+
         self.logger.log(log_entry).await?;
         self.decision_recorder.record_decision(decision).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn log_control_flow_transition(&self, transition: &ControlTransition) -> Result<(), OtlpError> {
         let log_entry = LogEntry {
             timestamp: Utc::now(),
@@ -179,9 +179,9 @@ impl ControlFlowLogger {
             context: self.flow_tracker.get_current_context().await?,
             metadata: HashMap::new(),
         };
-        
+
         self.logger.log(log_entry).await?;
-        
+
         Ok(())
     }
 }
@@ -209,43 +209,43 @@ impl DataFlowPipeline {
             flow_controller: FlowController::new(),
         }
     }
-    
+
     pub fn add_stage(&mut self, stage: DataFlowStage) -> StageId {
         let stage_id = stage.id;
         self.stages.push(stage);
         stage_id
     }
-    
+
     pub fn connect_stages(&mut self, from: StageId, to: StageId, connector: StageConnector) {
         self.stage_connectors.push(connector);
     }
-    
+
     pub async fn process_data_flow(&mut self, input_data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         let mut current_data = input_data;
-        
+
         for stage in &self.stages {
             // 记录数据流开始
             self.flow_controller.log_data_flow_start(stage.id, &current_data).await?;
-            
+
             // 处理数据
             let start_time = Instant::now();
             current_data = stage.process(current_data).await?;
             let processing_time = start_time.elapsed();
-            
+
             // 记录数据流处理
             self.flow_controller.log_data_processing(
                 stage.id,
                 current_data.size(),
                 processing_time
             ).await?;
-            
+
             // 缓冲数据
             self.data_buffer.store_intermediate_data(stage.id, current_data.clone()).await?;
         }
-        
+
         // 记录数据流结束
         self.flow_controller.log_data_flow_end(&current_data).await?;
-        
+
         Ok(current_data)
     }
 }
@@ -264,35 +264,35 @@ pub struct DataFlowMonitor {
 impl DataFlowMonitor {
     pub async fn monitor_data_flow(&self, flow_id: &str) -> Result<(), OtlpError> {
         let mut flow_context = self.flow_metrics.start_monitoring(flow_id).await?;
-        
+
         loop {
             let flow_status = self.flow_metrics.get_flow_status(flow_id).await?;
-            
+
             if flow_status.is_completed() {
                 break;
             }
-            
+
             // 记录性能指标
             self.performance_tracker.record_metrics(&flow_status).await?;
-            
+
             // 检测异常
             if self.anomaly_detector.detect_anomaly(&flow_status).await? {
                 self.handle_anomaly(flow_id, &flow_status).await?;
             }
-            
+
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
-        
+
         Ok(())
     }
-    
+
     async fn handle_anomaly(&self, flow_id: &str, status: &FlowStatus) -> Result<(), OtlpError> {
         // 记录异常
         self.flow_metrics.record_anomaly(flow_id, status).await?;
-        
+
         // 触发告警
         // ...
-        
+
         Ok(())
     }
 }
@@ -318,31 +318,31 @@ impl LayeredLogOrganizer {
             log_aggregator: LogAggregator::new(),
         }
     }
-    
+
     pub fn add_log_layer(&mut self, layer: LogLayer) {
         self.log_layers.push(layer);
     }
-    
+
     pub async fn organize_logs(&self, logs: Vec<LogEntry>) -> Result<OrganizedLogs, OtlpError> {
         let mut organized_logs = OrganizedLogs::new();
-        
+
         for log in logs {
             // 确定日志层级
             let layer = self.determine_log_layer(&log);
-            
+
             // 添加到对应层级
             organized_logs.add_to_layer(layer, log);
         }
-        
+
         // 协调各层级
         self.layer_coordinator.coordinate_layers(&mut organized_logs).await?;
-        
+
         // 聚合日志
         let aggregated_logs = self.log_aggregator.aggregate(organized_logs).await?;
-        
+
         Ok(aggregated_logs)
     }
-    
+
     fn determine_log_layer(&self, log: &LogEntry) -> LogLayerType {
         match log.level {
             LogLevel::Error => LogLayerType::Error,
@@ -368,18 +368,18 @@ pub struct TemporalLogOrganizer {
 impl TemporalLogOrganizer {
     pub async fn organize_by_time(&self, logs: Vec<LogEntry>) -> Result<TemporalLogs, OtlpError> {
         let mut temporal_logs = TemporalLogs::new();
-        
+
         for log in logs {
             // 确定时间窗口
             let window = self.window_manager.get_window_for_timestamp(log.timestamp);
-            
+
             // 添加到时间窗口
             temporal_logs.add_to_window(window, log);
         }
-        
+
         // 分析时序模式
         self.temporal_analyzer.analyze_patterns(&temporal_logs).await?;
-        
+
         Ok(temporal_logs)
     }
 }
@@ -405,28 +405,28 @@ impl MonitoringMetricsOrganizer {
             alert_manager: AlertManager::new(),
         }
     }
-    
+
     pub fn add_metric_category(&mut self, category: MetricCategory) {
         self.metric_categories.insert(category.name.clone(), category);
     }
-    
+
     pub async fn organize_metrics(&self, metrics: Vec<Metric>) -> Result<OrganizedMetrics, OtlpError> {
         let mut organized_metrics = OrganizedMetrics::new();
-        
+
         for metric in metrics {
             // 确定指标类别
             let category = self.determine_metric_category(&metric);
-            
+
             // 添加到对应类别
             organized_metrics.add_to_category(category, metric);
         }
-        
+
         // 聚合指标
         let aggregated_metrics = self.metric_aggregator.aggregate(organized_metrics).await?;
-        
+
         // 检查告警条件
         self.alert_manager.check_alerts(&aggregated_metrics).await?;
-        
+
         Ok(aggregated_metrics)
     }
 }
@@ -446,13 +446,13 @@ impl MonitoringDashboardOrganizer {
     pub async fn organize_dashboard(&self, dashboard_id: &str) -> Result<(), OtlpError> {
         let dashboard = self.dashboards.get(dashboard_id)
             .ok_or_else(|| OtlpError::DashboardNotFound(dashboard_id.to_string()))?;
-        
+
         // 组织小部件
         let organized_widgets = self.widget_organizer.organize_widgets(&dashboard.widgets).await?;
-        
+
         // 管理布局
         self.layout_manager.arrange_layout(organized_widgets).await?;
-        
+
         Ok(())
     }
 }

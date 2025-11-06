@@ -1,7 +1,7 @@
 # 文档索引
 
-**版本**: 2.0  
-**最后更新**: 2025年10月26日  
+**版本**: 2.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 项目主文档索引 - 完整的文档导航、分类和学习路径。
@@ -19,18 +19,33 @@
   - [🚀 快速开始](#-快速开始-1)
   - [📚 编号目录体系（主要文档结构）](#-编号目录体系主要文档结构)
   - [📖 指南文档 (`guides/`) - 快速参考](#-指南文档-guides---快速参考)
-  - [🏛️ 架构和设计](#️-架构和设计)
-  - [🔬 理论框架](#-理论框架)
-  - [📚 API 和参考](#-api-和参考)
-  - [🛠️ 开发和贡献](#️-开发和贡献)
-  - [📊 分析和报告](#-分析和报告)
-  - [🗺️ 学习路径](#️-学习路径)
-    - [初学者路径](#初学者路径)
-    - [开发者路径](#开发者路径)
-    - [架构师路径](#架构师路径)
-    - [研究者路径](#研究者路径)
-  - [📚 文档质量](#-文档质量)
+  - [📊 报告归档 (`reports/`)](#-报告归档-reports)
+    - [2025年10月报告 (`reports/2025-10/`)](#2025年10月报告-reports2025-10)
+    - [历史报告 (`reports/archived/`)](#历史报告-reportsarchived)
+    - [2025年9月报告 (`reports/2025-09/`)](#2025年9月报告-reports2025-09)
+    - [2025年1月报告 (`reports/2025-01/`)](#2025年1月报告-reports2025-01)
+  - [🔧 技术文档 (`technical/`)](#-技术文档-technical)
+    - [架构文档 (`technical/architecture/`)](#架构文档-technicalarchitecture)
+    - [Rust 1.90 (`technical/rust-1.90/`)](#rust-190-technicalrust-190)
+    - [OTLP 标准 (`technical/otlp-standards/`)](#otlp-标准-technicalotlp-standards)
+  - [📅 规划文档 (`planning/`)](#-规划文档-planning)
+    - [路线图 (`planning/roadmaps/`)](#路线图-planningroadmaps)
+    - [行动计划 (`planning/action-plans/`)](#行动计划-planningaction-plans)
+  - [🔬 基准测试 (`../benchmarks/`)](#-基准测试-benchmarks)
+    - [测试结果 (`benchmarks/results/`)](#测试结果-benchmarksresults)
+    - [测试计划 (`benchmarks/plans/`)](#测试计划-benchmarksplans)
+  - [🐳 Docker 配置 (`../docker/`)](#-docker-配置-docker)
+  - [📜 脚本工具 (`../scripts/`)](#-脚本工具-scripts)
+    - [工具脚本 (`scripts/utils/`)](#工具脚本-scriptsutils)
+  - [📚 参考资料 (`08_REFERENCE/`)](#-参考资料-08_reference)
+  - [🛠️ 实现指南 (`05_IMPLEMENTATION/`)](#️-实现指南-05_implementation)
+  - [🔍 查找文档建议](#-查找文档建议)
+    - [按时间查找](#按时间查找)
+    - [按类型查找](#按类型查找)
+    - [按主题查找](#按主题查找)
+  - [📝 命名规范](#-命名规范)
   - [🔗 相关资源](#-相关资源)
+  - [💡 维护说明](#-维护说明)
 
 ---
 
@@ -251,6 +266,7 @@
 | [otlp_arrow_configuration_guide.md](05_IMPLEMENTATION/otlp_arrow_configuration_guide.md) | 🚀 OTLP/Arrow 配置指南 (430 行) - NEW! |
 
 **核心内容**:
+
 - Profile 数据采集与导出 | CPU/内存/锁分析 | 持续性能分析
 - Event vs Logs 对比 | 结构化事件处理 | 业务事件跟踪
 - Apache Arrow 集成 | 列式内存格式 | 零拷贝优化
@@ -304,5 +320,5 @@
 2. 调整目录结构
 3. 每月归档时
 
-**维护责任**: 项目维护者  
+**维护责任**: 项目维护者
 **更新频率**: 每月或重大变更时

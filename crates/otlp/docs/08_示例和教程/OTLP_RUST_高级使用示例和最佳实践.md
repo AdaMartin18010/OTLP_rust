@@ -1,6 +1,7 @@
 ﻿# OTLP Rust 高级使用示例和最佳实践
 
 ## 📋 目录
+
 1. [高级配置示例](#高级配置示例)
 2. [分布式系统集成](#分布式系统集成)
 3. [机器学习错误预测实战](#机器学习错误预测实战)
@@ -54,17 +55,17 @@ use tokio::time::{interval, Duration};
 
 async fn dynamic_config_example() -> Result<(), Box<dyn std::error::Error>> {
     let mut config_manager = ConfigManager::new("config/production.toml")?;
-    
+
     // 启动配置监听
     let mut interval = interval(Duration::from_secs(30));
     loop {
         interval.tick().await;
-        
+
         // 检查配置文件更新
         if config_manager.has_changes()? {
             println!("配置文件已更新，重新加载...");
             config_manager.reload()?;
-            
+
             // 通知相关组件更新配置
             config_manager.notify_subscribers().await?;
         }
@@ -171,7 +172,7 @@ async fn distributed_tracing_example() -> Result<(), Box<dyn std::error::Error>>
 
     // 传递追踪上下文
     let trace_context = root_span.context();
-    
+
     // 调用用户服务
     let user_info = call_user_service(&trace_context, "67890").await?;
     root_span.set_attribute("user.name", user_info.name);
@@ -208,7 +209,7 @@ async fn call_user_service(
         .await?;
 
     let user_info: UserInfo = response.json().await?;
-    
+
     span.set_attribute("user.name", &user_info.name);
     span.end();
 
@@ -275,9 +276,9 @@ impl CustomFeatureExtractor {
     fn update_cache(&mut self, metrics: &SystemMetrics) {
         let key = format!("{}", metrics.timestamp.timestamp());
         let entry = self.feature_cache.entry(key).or_insert_with(Vec::new);
-        
+
         entry.push(metrics.cpu_usage);
-        
+
         // 保持窗口大小
         if entry.len() > 10 {
             entry.remove(0);
@@ -320,19 +321,19 @@ async fn ml_prediction_example() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         // 收集系统指标
         let metrics = collect_system_metrics().await?;
-        
+
         // 提取特征
         let features = feature_extractor.extract_features(&metrics);
-        
+
         // 进行预测
         let prediction = predictor.predict(&features).await?;
-        
+
         // 处理预测结果
         if prediction.confidence > 0.8 && prediction.error_probability > 0.7 {
-            println!("高风险预警: 错误概率 {:.2}%, 置信度 {:.2}%", 
-                prediction.error_probability * 100.0, 
+            println!("高风险预警: 错误概率 {:.2}%, 置信度 {:.2}%",
+                prediction.error_probability * 100.0,
                 prediction.confidence * 100.0);
-            
+
             // 触发预防措施
             trigger_preventive_measures(&prediction).await?;
         }
@@ -465,7 +466,7 @@ async fn adaptive_scheduling_example() -> Result<(), Box<dyn std::error::Error>>
 
         // 使用负载均衡器选择节点
         let selected_node = load_balancer.select_node(&task.requirements).await?;
-        
+
         // 调度任务
         scheduler.schedule_task_to_node(task, selected_node).await?;
 
@@ -504,10 +505,10 @@ async fn connection_pool_optimization() -> Result<(), Box<dyn std::error::Error>
         let pool = connection_pool.clone();
         let handle = tokio::spawn(async move {
             let connection = pool.get_connection().await?;
-            
+
             // 执行OTLP请求
             let result = connection.send_trace_data(&create_sample_trace()).await?;
-            
+
             pool.return_connection(connection);
             Ok::<_, Box<dyn std::error::Error>>(result)
         });
@@ -551,7 +552,7 @@ async fn batch_processing_optimization() -> Result<(), Box<dyn std::error::Error
             for j in 0..100 {
                 let trace_data = create_sample_trace();
                 batch_processor.add_trace(trace_data).await?;
-                
+
                 tokio::time::sleep(Duration::from_millis(10)).await;
             }
             Ok::<_, Box<dyn std::error::Error>>(())

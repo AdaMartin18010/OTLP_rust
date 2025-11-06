@@ -130,7 +130,7 @@ impl Account for BankAccount {
     fn deposit(&mut self, amount: f64) {
         self.balance += amount;
     }
-    
+
     fn withdraw(&mut self, amount: f64) -> Result<(), String> {
         if self.balance >= amount {
             self.balance -= amount;
@@ -139,7 +139,7 @@ impl Account for BankAccount {
             Err("Insufficient funds".to_string())
         }
     }
-    
+
     fn balance(&self) -> f64 {
         self.balance
     }
@@ -265,7 +265,7 @@ mod presentation {
     pub struct ApiController {
         business: super::business::BusinessService,
     }
-    
+
     impl ApiController {
         pub fn handle_request(&self, req: Request) -> Response {
             let result = self.business.process(req.data);
@@ -279,14 +279,14 @@ mod business {
     pub struct BusinessService {
         repository: super::persistence::Repository,
     }
-    
+
     impl BusinessService {
         pub fn process(&self, data: Data) -> Result<Output> {
             // 业务逻辑
             let validated = self.validate(data)?;
             self.repository.save(validated)
         }
-        
+
         fn validate(&self, data: Data) -> Result<ValidatedData> {
             // 验证逻辑
             Ok(ValidatedData::from(data))
@@ -299,12 +299,12 @@ mod persistence {
     pub struct Repository {
         db: Database,
     }
-    
+
     impl Repository {
         pub fn save(&self, data: ValidatedData) -> Result<Output> {
             self.db.execute("INSERT INTO ...", data)
         }
-        
+
         pub fn find(&self, id: Id) -> Result<Output> {
             self.db.query("SELECT * FROM ...", id)
         }
@@ -379,7 +379,7 @@ impl RepositoryPort for PostgresAdapter {
         // PostgreSQL特定实现
         Ok(())
     }
-    
+
     fn find(&self, id: Id) -> Result<Data> {
         // PostgreSQL特定实现
         Ok(Data::default())
@@ -539,16 +539,16 @@ mod user_service {
     pub struct UserService {
         db: Database,
     }
-    
+
     impl UserService {
         pub async fn create_user(&self, req: CreateUserRequest) -> Result<User> {
             // 创建用户逻辑
             let user = User::new(req.name, req.email);
             self.db.save(&user).await?;
-            
+
             // 发布事件
             self.publish_event(UserCreated { id: user.id }).await?;
-            
+
             Ok(user)
         }
     }
@@ -560,16 +560,16 @@ mod order_service {
         db: Database,
         user_client: UserServiceClient,  // 跨服务调用
     }
-    
+
     impl OrderService {
         pub async fn create_order(&self, req: CreateOrderRequest) -> Result<Order> {
             // 验证用户(跨服务调用)
             let user = self.user_client.get_user(req.user_id).await?;
-            
+
             // 创建订单
             let order = Order::new(user.id, req.items);
             self.db.save(&order).await?;
-            
+
             Ok(order)
         }
     }
@@ -850,12 +850,12 @@ async fn process_order_async(order: Order) -> Result<()> {
     command_bus.publish(ProcessOrder {
         order_id: order.id,
     }).await?;
-    
+
     // 异步处理
     // 1. UserService处理验证
     // 2. PaymentService处理支付
     // 3. ReceiptService生成收据
-    
+
     Ok(())  // 立即返回
 }
 ```
@@ -881,7 +881,7 @@ impl UserRepository for PostgresUserRepository {
         // PostgreSQL特定实现
         todo!()
     }
-    
+
     fn save(&self, user: User) -> Result<()> {
         // PostgreSQL特定实现
         todo!()
@@ -911,11 +911,11 @@ impl<R: UserRepository> UserService<R> {
 fn create_user(name: String, email: String) -> Result<User> {
     let user = User::new(name, email);
     db.save(&user)?;
-    
+
     // 直接调用其他服务
     email_service.send_welcome_email(&user)?;
     analytics_service.track_signup(&user)?;
-    
+
     Ok(user)
 }
 
@@ -923,15 +923,15 @@ fn create_user(name: String, email: String) -> Result<User> {
 fn create_user_event_driven(name: String, email: String) -> Result<User> {
     let user = User::new(name, email);
     db.save(&user)?;
-    
+
     // 发布事件
     event_bus.publish(UserCreated {
         user_id: user.id,
         email: user.email.clone(),
     })?;
-    
+
     // 其他服务监听事件自行处理
-    
+
     Ok(user)
 }
 ```
@@ -954,7 +954,7 @@ struct UserService {
 struct UserService {
     email_service: EmailService,
     logger: Logger,
-    
+
     fn create_user(&self) { /* ... */ }
 }
 ```
@@ -1121,27 +1121,27 @@ impl ServerBuilder {
             max_connections: None,
         }
     }
-    
+
     fn host(mut self, host: impl Into<String>) -> Self {
         self.host = Some(host.into());
         self
     }
-    
+
     fn port(mut self, port: u16) -> Self {
         self.port = Some(port);
         self
     }
-    
+
     fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
-    
+
     fn max_connections(mut self, max: usize) -> Self {
         self.max_connections = Some(max);
         self
     }
-    
+
     fn build(self) -> Result<Server> {
         Ok(Server {
             host: self.host.ok_or("host is required")?,
@@ -1364,14 +1364,14 @@ struct DistributedSystem {
     // 命令端(写)
     command_service: CommandService,
     event_store: EventStore,
-    
+
     // 查询端(读)
     query_service: QueryService,
     read_db: ReadDatabase,
-    
+
     // 分布式共识
     raft: RaftProtocol,
-    
+
     // 服务网格
     service_mesh: ServiceMesh,
 }

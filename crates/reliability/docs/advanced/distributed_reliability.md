@@ -1,8 +1,8 @@
 ﻿# 分布式系统可靠性完整指南
 
-**Crate:** c13_reliability  
-**主题:** Distributed System Reliability  
-**Rust 版本:** 1.90.0  
+**Crate:** c13_reliability
+**主题:** Distributed System Reliability
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -11,31 +11,44 @@
 
 - [分布式系统可靠性完整指南](#分布式系统可靠性完整指南)
   - [📋 目录](#-目录)
-  - [分布式系统概述](#-分布式系统概述)
+  - [📍 分布式系统概述](#-分布式系统概述)
     - [分布式系统的挑战](#分布式系统的挑战)
     - [可靠性保证](#可靠性保证)
   - [🤝 共识算法](#-共识算法)
     - [1. Raft 共识算法](#1-raft-共识算法)
+      - [概念](#概念)
+      - [核心组件](#核心组件)
     - [2. Paxos 共识算法](#2-paxos-共识算法)
+      - [基本 Paxos](#基本-paxos)
   - [⏱️ 最终一致性](#️-最终一致性)
-    - [1. CRDT](#1-crdt-conflict-free-replicated-data-types)
-    - [2. 向量时钟](#2-向量时钟-vector-clock)
+    - [1. CRDT (Conflict-free Replicated Data Types)](#1-crdt-conflict-free-replicated-data-types)
+      - [G-Counter (增长型计数器)](#g-counter-增长型计数器)
+      - [PN-Counter (正负计数器)](#pn-counter-正负计数器)
+    - [2. 向量时钟 (Vector Clock)](#2-向量时钟-vector-clock)
+      - [实现](#实现)
   - [💳 分布式事务](#-分布式事务)
     - [1. 两阶段提交 (2PC)](#1-两阶段提交-2pc)
+      - [实现1](#实现1)
     - [2. Saga 模式](#2-saga-模式)
+      - [实现3](#实现3)
   - [🔒 分布式锁](#-分布式锁)
     - [1. Redis 分布式锁](#1-redis-分布式锁)
+      - [实现2](#实现2)
   - [🔍 故障检测和恢复](#-故障检测和恢复)
     - [1. 心跳机制](#1-心跳机制)
+      - [实现4](#实现4)
     - [2. 故障恢复策略](#2-故障恢复策略)
+      - [实现5](#实现5)
   - [🔄 数据复制](#-数据复制)
     - [1. 主从复制](#1-主从复制)
+      - [实现6](#实现6)
     - [2. 多主复制](#2-多主复制)
+      - [实现7](#实现7)
   - [⚖️ CAP 理论实践](#️-cap-理论实践)
     - [CAP 三角](#cap-三角)
-    - [1. CP 系统](#1-cp-系统-一致性--分区容错)
-    - [2. AP 系统](#2-ap-系统-可用性--分区容错)
-  - [📚 总结](#总结)
+    - [1. CP 系统 (一致性 + 分区容错)](#1-cp-系统-一致性--分区容错)
+    - [2. AP 系统 (可用性 + 分区容错)](#2-ap-系统-可用性--分区容错)
+  - [总结](#总结)
     - [分布式系统可靠性清单](#分布式系统可靠性清单)
     - [最佳实践](#最佳实践)
 
@@ -146,18 +159,18 @@ impl RaftNode {
     async fn start_election(&self) -> Result<bool> {
         let mut current_term = self.current_term.write().await;
         *current_term += 1;
-        
+
         *self.state.write().await = NodeState::Candidate;
         *self.voted_for.write().await = Some(self.id);
-        
+
         // 向所有节点发送投票请求
         let votes = self.request_votes(*current_term).await?;
-        
+
         // 需要过半数投票
         let majority = self.peers.len() / 2 + 1;
         Ok(votes >= majority)
     }
-    
+
     /// 请求投票
     async fn request_votes(&self, term: u64) -> Result<usize> {
         let last_log_index = self.log.read().await.len() as u64;
@@ -165,29 +178,29 @@ impl RaftNode {
             .last()
             .map(|e| e.term)
             .unwrap_or(0);
-        
+
         let mut votes = 1;  // 自己投给自己
-        
+
         for peer_id in &self.peers {
             if *peer_id == self.id {
                 continue;
             }
-            
+
             let request = RequestVoteRequest {
                 term,
                 candidate_id: self.id,
                 last_log_index,
                 last_log_term,
             };
-            
+
             if self.send_vote_request(*peer_id, request).await? {
                 votes += 1;
             }
         }
-        
+
         Ok(votes)
     }
-    
+
     /// 追加日志条目
     pub async fn append_entry(&self, command: Vec<u8>) -> Result<()> {
         // 只有 Leader 可以追加日志
@@ -195,45 +208,45 @@ impl RaftNode {
         if *state != NodeState::Leader {
             return Err(anyhow::anyhow!("Not a leader"));
         }
-        
+
         let term = *self.current_term.read().await;
         let mut log = self.log.write().await;
-        
+
         let entry = LogEntry {
             term,
             index: log.len() as u64 + 1,
             command,
         };
-        
+
         log.push(entry.clone());
-        
+
         // 复制到其他节点
         self.replicate_log(entry).await?;
-        
+
         Ok(())
     }
-    
+
     /// 复制日志到其他节点
     async fn replicate_log(&self, entry: LogEntry) -> Result<()> {
         let mut success_count = 1;  // 自己算一个
-        
+
         for peer_id in &self.peers {
             if *peer_id == self.id {
                 continue;
             }
-            
+
             if self.send_append_entries(*peer_id, vec![entry.clone()]).await? {
                 success_count += 1;
             }
         }
-        
+
         // 过半数成功才提交
         let majority = self.peers.len() / 2 + 1;
         if success_count >= majority {
             let mut commit_index = self.commit_index.write().await;
             *commit_index = entry.index;
         }
-        
+
         Ok(())
     }
 }
@@ -285,10 +298,10 @@ impl PaxosNode {
     pub async fn prepare(&self) -> Result<Proposal> {
         let mut proposal_number = self.proposal_number.write().await;
         *proposal_number += 1;
-        
+
         // 向所有 Acceptor 发送 Prepare 请求
         let promises = self.send_prepare_requests(*proposal_number).await?;
-        
+
         // 选择已接受提案中编号最大的值
         let value = promises
             .into_iter()
@@ -296,31 +309,31 @@ impl PaxosNode {
             .max_by_key(|p| p.number)
             .map(|p| p.value)
             .unwrap_or_else(|| self.generate_value());
-        
+
         Ok(Proposal {
             number: *proposal_number,
             value,
         })
     }
-    
+
     /// Phase 2a: Accept
     pub async fn accept(&self, proposal: Proposal) -> Result<bool> {
         // 向所有 Acceptor 发送 Accept 请求
         let accepts = self.send_accept_requests(proposal).await?;
-        
+
         // 过半数接受才算成功
         let majority = self.get_quorum_size();
         Ok(accepts >= majority)
     }
-    
+
     /// Phase 1b: Promise
     pub async fn handle_prepare(&self, n: u64) -> Result<PrepareResponse> {
         let mut promised = self.promised.write().await;
-        
+
         if n > *promised {
             *promised = n;
             let accepted = self.accepted.read().await.clone();
-            
+
             Ok(PrepareResponse {
                 promised: true,
                 accepted,
@@ -332,11 +345,11 @@ impl PaxosNode {
             })
         }
     }
-    
+
     /// Phase 2b: Accepted
     pub async fn handle_accept(&self, proposal: Proposal) -> Result<bool> {
         let promised = *self.promised.read().await;
-        
+
         if proposal.number >= promised {
             *self.accepted.write().await = Some(proposal);
             Ok(true)
@@ -374,20 +387,20 @@ impl GCounter {
     pub fn new(node_id: String) -> Self {
         let mut counters = HashMap::new();
         counters.insert(node_id.clone(), 0);
-        
+
         Self { node_id, counters }
     }
-    
+
     /// 增加计数
     pub fn increment(&mut self) {
         *self.counters.entry(self.node_id.clone()).or_insert(0) += 1;
     }
-    
+
     /// 获取总计数
     pub fn value(&self) -> u64 {
         self.counters.values().sum()
     }
-    
+
     /// 合并其他节点的状态
     pub fn merge(&mut self, other: &GCounter) {
         for (node_id, count) in &other.counters {
@@ -401,18 +414,18 @@ impl GCounter {
 async fn crdt_counter_example() {
     let mut counter1 = GCounter::new("node1".to_string());
     let mut counter2 = GCounter::new("node2".to_string());
-    
+
     // Node 1 增加
     counter1.increment();
     counter1.increment();
-    
+
     // Node 2 增加
     counter2.increment();
-    
+
     // 合并
     counter1.merge(&counter2);
     counter2.merge(&counter1);
-    
+
     // 两个节点的值相同
     assert_eq!(counter1.value(), 3);
     assert_eq!(counter2.value(), 3);
@@ -439,27 +452,27 @@ impl PNCounter {
             negative: HashMap::new(),
         }
     }
-    
+
     pub fn increment(&mut self) {
         *self.positive.entry(self.node_id.clone()).or_insert(0) += 1;
     }
-    
+
     pub fn decrement(&mut self) {
         *self.negative.entry(self.node_id.clone()).or_insert(0) += 1;
     }
-    
+
     pub fn value(&self) -> i64 {
         let pos: u64 = self.positive.values().sum();
         let neg: u64 = self.negative.values().sum();
         pos as i64 - neg as i64
     }
-    
+
     pub fn merge(&mut self, other: &PNCounter) {
         for (node_id, count) in &other.positive {
             let entry = self.positive.entry(node_id.clone()).or_insert(0);
             *entry = (*entry).max(*count);
         }
-        
+
         for (node_id, count) in &other.negative {
             let entry = self.negative.entry(node_id.clone()).or_insert(0);
             *entry = (*entry).max(*count);
@@ -488,12 +501,12 @@ impl VectorClock {
             clock: HashMap::new(),
         }
     }
-    
+
     /// 递增本地时钟
     pub fn increment(&mut self, node_id: &str) {
         *self.clock.entry(node_id.to_string()).or_insert(0) += 1;
     }
-    
+
     /// 合并两个向量时钟
     pub fn merge(&mut self, other: &VectorClock) {
         for (node_id, timestamp) in &other.clock {
@@ -501,27 +514,27 @@ impl VectorClock {
             *entry = (*entry).max(*timestamp);
         }
     }
-    
+
     /// 比较两个向量时钟
     pub fn partial_cmp(&self, other: &VectorClock) -> Option<Ordering> {
         let mut less = false;
         let mut greater = false;
-        
+
         let all_nodes: HashSet<_> = self.clock.keys()
             .chain(other.clock.keys())
             .collect();
-        
+
         for node_id in all_nodes {
             let self_ts = self.clock.get(node_id).copied().unwrap_or(0);
             let other_ts = other.clock.get(node_id).copied().unwrap_or(0);
-            
+
             match self_ts.cmp(&other_ts) {
                 Ordering::Less => less = true,
                 Ordering::Greater => greater = true,
                 Ordering::Equal => {}
             }
         }
-        
+
         match (less, greater) {
             (true, false) => Some(Ordering::Less),      // self < other
             (false, true) => Some(Ordering::Greater),   // self > other
@@ -529,7 +542,7 @@ impl VectorClock {
             (true, true) => None,                        // 并发
         }
     }
-    
+
     /// 判断是否并发
     pub fn concurrent_with(&self, other: &VectorClock) -> bool {
         self.partial_cmp(other).is_none()
@@ -540,21 +553,21 @@ impl VectorClock {
 async fn vector_clock_example() {
     let mut clock_a = VectorClock::new();
     let mut clock_b = VectorClock::new();
-    
+
     // Node A 的操作
     clock_a.increment("A");
     clock_a.increment("A");
-    
+
     // Node B 的操作
     clock_b.increment("B");
-    
+
     // 检查并发性
     assert!(clock_a.concurrent_with(&clock_b));
-    
+
     // B 同步 A 的状态
     clock_b.merge(&clock_a);
     clock_b.increment("B");
-    
+
     // 现在 B 的时钟比 A 更新
     assert_eq!(clock_b.partial_cmp(&clock_a), Some(Ordering::Greater));
 }
@@ -590,7 +603,7 @@ impl TwoPhaseCommitCoordinator {
     /// Phase 1: Prepare
     pub async fn prepare(&self) -> Result<Decision> {
         let mut votes = Vec::new();
-        
+
         for participant in &self.participants {
             match self.send_prepare(participant).await {
                 Ok(vote) => votes.push(vote),
@@ -600,7 +613,7 @@ impl TwoPhaseCommitCoordinator {
                 }
             }
         }
-        
+
         // 所有参与者都投票 Commit 才能提交
         if votes.iter().all(|v| matches!(v, Vote::Commit)) {
             Ok(Decision::Commit)
@@ -608,32 +621,32 @@ impl TwoPhaseCommitCoordinator {
             Ok(Decision::Abort)
         }
     }
-    
+
     /// Phase 2: Commit/Abort
     pub async fn finalize(&self, decision: Decision) -> Result<()> {
         for participant in &self.participants {
             self.send_decision(participant, decision.clone()).await?;
         }
-        
+
         Ok(())
     }
-    
+
     /// 完整的 2PC 流程
     pub async fn execute(&self) -> Result<()> {
         // Phase 1
         let decision = self.prepare().await?;
-        
+
         // Phase 2
         self.finalize(decision).await?;
-        
+
         Ok(())
     }
-    
+
     async fn send_prepare(&self, participant: &str) -> Result<Vote> {
         // 发送 Prepare 请求
         todo!()
     }
-    
+
     async fn send_decision(&self, participant: &str, decision: Decision) -> Result<()> {
         // 发送 Commit/Abort 决定
         todo!()
@@ -669,34 +682,34 @@ impl TwoPhaseCommitParticipant {
                     status: TransactionStatus::Prepared,
                     data: Vec::new(),
                 });
-                
+
                 Ok(Vote::Commit)
             }
             Err(_) => Ok(Vote::Abort),
         }
     }
-    
+
     pub async fn handle_commit(&self, tx_id: &str) -> Result<()> {
         // 提交事务
         self.commit_transaction(tx_id).await?;
-        
+
         let mut log = self.transaction_log.write().await;
         if let Some(state) = log.get_mut(tx_id) {
             state.status = TransactionStatus::Committed;
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn handle_abort(&self, tx_id: &str) -> Result<()> {
         // 回滚事务
         self.rollback_transaction(tx_id).await?;
-        
+
         let mut log = self.transaction_log.write().await;
         if let Some(state) = log.get_mut(tx_id) {
             state.status = TransactionStatus::Aborted;
         }
-        
+
         Ok(())
     }
 }
@@ -715,7 +728,7 @@ use async_trait::async_trait;
 pub trait SagaStep: Send + Sync {
     /// 执行步骤
     async fn execute(&self) -> Result<()>;
-    
+
     /// 补偿操作（回滚）
     async fn compensate(&self) -> Result<()>;
 }
@@ -728,16 +741,16 @@ impl Saga {
     pub fn new() -> Self {
         Self { steps: Vec::new() }
     }
-    
+
     pub fn add_step(mut self, step: Box<dyn SagaStep>) -> Self {
         self.steps.push(step);
         self
     }
-    
+
     /// 执行 Saga
     pub async fn execute(&self) -> Result<()> {
         let mut executed_steps = Vec::new();
-        
+
         for (i, step) in self.steps.iter().enumerate() {
             match step.execute().await {
                 Ok(_) => {
@@ -751,10 +764,10 @@ impl Saga {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 补偿（回滚）已执行的步骤
     async fn compensate(&self, executed_steps: &[usize]) -> Result<()> {
         // 反向补偿
@@ -764,7 +777,7 @@ impl Saga {
                 // 补偿失败是严重错误，需要人工介入
             }
         }
-        
+
         Ok(())
     }
 }
@@ -782,7 +795,7 @@ impl SagaStep for DebitAccountStep {
         // 扣款操作
         Ok(())
     }
-    
+
     async fn compensate(&self) -> Result<()> {
         println!("Crediting back {} to account {}", self.amount, self.account_id);
         // 补偿：退款
@@ -802,7 +815,7 @@ impl SagaStep for CreditAccountStep {
         // 入账操作
         Ok(())
     }
-    
+
     async fn compensate(&self) -> Result<()> {
         println!("Debiting {} from account {}", self.amount, self.account_id);
         // 补偿：扣款
@@ -820,7 +833,7 @@ async fn transfer_money_saga(from: String, to: String, amount: f64) -> Result<()
             account_id: to.clone(),
             amount,
         }));
-    
+
     saga.execute().await
 }
 ```
@@ -854,10 +867,10 @@ impl RedisDistributedLock {
             .arg(self.ttl_seconds)
             .query_async(&mut self.redis)
             .await?;
-        
+
         Ok(result)
     }
-    
+
     pub async fn release(&mut self) -> Result<()> {
         // 使用 Lua 脚本确保原子性
         let script = r#"
@@ -867,7 +880,7 @@ impl RedisDistributedLock {
                 return 0
             end
         "#;
-        
+
         redis::cmd("EVAL")
             .arg(script)
             .arg(1)
@@ -875,10 +888,10 @@ impl RedisDistributedLock {
             .arg(&self.value)
             .query_async(&mut self.redis)
             .await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn renew(&mut self) -> Result<bool> {
         // 续期锁
         let script = r#"
@@ -888,7 +901,7 @@ impl RedisDistributedLock {
                 return 0
             end
         "#;
-        
+
         let result: i32 = redis::cmd("EVAL")
             .arg(script)
             .arg(1)
@@ -897,7 +910,7 @@ impl RedisDistributedLock {
             .arg(self.ttl_seconds)
             .query_async(&mut self.redis)
             .await?;
-        
+
         Ok(result == 1)
     }
 }
@@ -913,17 +926,17 @@ impl LockGuard {
         if !lock.acquire().await? {
             return Err(anyhow::anyhow!("Failed to acquire lock"));
         }
-        
+
         // 启动自动续期任务
         let renew_interval = Duration::from_secs((lock.ttl_seconds / 2) as u64);
         let mut lock_clone = lock.clone();
-        
+
         let handle = tokio::spawn(async move {
             let mut interval = tokio::time::interval(renew_interval);
-            
+
             loop {
                 interval.tick().await;
-                
+
                 match lock_clone.renew().await {
                     Ok(true) => {}
                     Ok(false) => {
@@ -937,7 +950,7 @@ impl LockGuard {
                 }
             }
         });
-        
+
         Ok(Self {
             lock,
             renew_handle: Some(handle),
@@ -951,7 +964,7 @@ impl Drop for LockGuard {
         if let Some(handle) = self.renew_handle.take() {
             handle.abort();
         }
-        
+
         // 释放锁（异步操作在 Drop 中需要特殊处理）
         let mut lock = self.lock.clone();
         tokio::spawn(async move {
@@ -964,19 +977,19 @@ impl Drop for LockGuard {
 async fn use_distributed_lock() -> Result<()> {
     let redis_client = redis::Client::open("redis://127.0.0.1/")?;
     let connection = redis_client.get_async_connection().await?;
-    
+
     let lock = RedisDistributedLock {
         redis: connection,
         key: "my_resource_lock".to_string(),
         value: uuid::Uuid::new_v4().to_string(),
         ttl_seconds: 30,
     };
-    
+
     let guard = LockGuard::new(lock).await?;
-    
+
     // 在锁保护下执行操作
     critical_section().await?;
-    
+
     // guard 离开作用域时自动释放锁
     Ok(())
 }
@@ -1003,14 +1016,14 @@ pub struct HeartbeatMonitor {
 impl HeartbeatMonitor {
     pub async fn start_monitoring(&self) {
         let mut interval = interval(Duration::from_secs(1));
-        
+
         loop {
             interval.tick().await;
-            
+
             // 检查每个节点的心跳
             let now = Instant::now();
             let last_hb = self.last_heartbeat.read().await;
-            
+
             for peer in &self.peers {
                 if let Some(&last_time) = last_hb.get(peer) {
                     if now.duration_since(last_time) > self.timeout {
@@ -1021,19 +1034,19 @@ impl HeartbeatMonitor {
             }
         }
     }
-    
+
     pub async fn record_heartbeat(&self, node_id: &str) {
         let mut last_hb = self.last_heartbeat.write().await;
         last_hb.insert(node_id.to_string(), Instant::now());
     }
-    
+
     async fn handle_node_failure(&self, node_id: &str) {
         println!("Node {} failed!", node_id);
-        
+
         // 触发故障恢复流程
         self.initiate_failover(node_id).await;
     }
-    
+
     async fn initiate_failover(&self, failed_node: &str) {
         // 1. 从集群中移除失败节点
         // 2. 重新分配失败节点的工作
@@ -1058,38 +1071,38 @@ impl FailoverManager {
     /// 主节点故障转移
     pub async fn failover_primary(&self) -> Result<String> {
         let replicas = self.replicas.read().await;
-        
+
         if replicas.is_empty() {
             return Err(anyhow::anyhow!("No replicas available"));
         }
-        
+
         // 选择最合适的副本升级为主节点
         let new_primary = self.select_best_replica(&replicas).await?;
-        
+
         // 升级副本
         self.promote_replica(&new_primary).await?;
-        
+
         // 更新主节点
         *self.primary.write().await = Some(new_primary.clone());
-        
+
         // 通知其他节点
         self.notify_failover(&new_primary).await?;
-        
+
         Ok(new_primary)
     }
-    
+
     async fn select_best_replica(&self, replicas: &[String]) -> Result<String> {
         // 选择数据最新、延迟最低的副本
         // 简化版本：选择第一个
         Ok(replicas[0].clone())
     }
-    
+
     async fn promote_replica(&self, replica: &str) -> Result<()> {
         // 将副本升级为主节点
         println!("Promoting replica {} to primary", replica);
         Ok(())
     }
-    
+
     async fn notify_failover(&self, new_primary: &str) -> Result<()> {
         // 通知所有节点新的主节点
         println!("Notifying all nodes of new primary: {}", new_primary);
@@ -1139,19 +1152,19 @@ impl ReplicationMaster {
     pub async fn write(&self, data: Vec<u8>) -> Result<()> {
         // 1. 写入主节点
         let entry = self.create_replication_entry(Operation::Write, data).await?;
-        
+
         // 2. 添加到复制日志
         self.replication_log.write().await.push(entry.clone());
-        
+
         // 3. 异步复制到副本
         self.replicate_to_replicas(entry).await?;
-        
+
         Ok(())
     }
-    
+
     async fn replicate_to_replicas(&self, entry: ReplicationEntry) -> Result<()> {
         let replicas = self.replicas.read().await.clone();
-        
+
         // 并发复制到所有副本
         let tasks: Vec<_> = replicas.iter()
             .map(|replica| {
@@ -1162,25 +1175,25 @@ impl ReplicationMaster {
                 })
             })
             .collect();
-        
+
         // 等待所有复制完成
         for task in tasks {
             task.await??;
         }
-        
+
         Ok(())
     }
-    
+
     async fn replicate_to_replica(&self, replica_id: &str, entry: ReplicationEntry) -> Result<()> {
         // 发送复制数据到副本
         println!("Replicating entry {} to replica {}", entry.index, replica_id);
-        
+
         // 更新副本状态
         let mut replicas = self.replicas.write().await;
         if let Some(replica) = replicas.iter_mut().find(|r| r.id == replica_id) {
             replica.last_synced_index = entry.index;
         }
-        
+
         Ok(())
     }
 }
@@ -1212,28 +1225,28 @@ impl MultiMasterNode {
         // 1. 递增本地向量时钟
         let mut clock = self.vector_clock.write().await;
         clock.increment(&self.node_id);
-        
+
         // 2. 创建版本化值
         let versioned = VersionedValue {
             value: value.clone(),
             version: clock.clone(),
         };
-        
+
         // 3. 写入本地存储
         self.data_store.write().await.insert(key.clone(), versioned.clone());
-        
+
         // 4. 异步复制到其他主节点
         self.replicate_to_peers(key, versioned).await?;
-        
+
         Ok(())
     }
-    
+
     /// 读取数据
     pub async fn read(&self, key: &str) -> Result<Option<Vec<u8>>> {
         let store = self.data_store.read().await;
         Ok(store.get(key).map(|v| v.value.clone()))
     }
-    
+
     /// 处理来自其他节点的更新
     pub async fn handle_remote_write(
         &self,
@@ -1241,7 +1254,7 @@ impl MultiMasterNode {
         value: VersionedValue,
     ) -> Result<()> {
         let mut store = self.data_store.write().await;
-        
+
         match store.get(&key) {
             Some(local) => {
                 // 比较版本
@@ -1265,10 +1278,10 @@ impl MultiMasterNode {
                 store.insert(key, value);
             }
         }
-        
+
         Ok(())
     }
-    
+
     async fn resolve_conflict(
         &self,
         key: String,
@@ -1277,12 +1290,12 @@ impl MultiMasterNode {
     ) -> Result<()> {
         // 冲突解决策略：Last Write Wins (LWW)
         // 或者保存多个版本让应用层解决
-        
+
         println!("Conflict detected for key: {}", key);
-        
+
         // 简化：保存两个版本
         // 实际应用中可能需要更复杂的冲突解决策略
-        
+
         Ok(())
     }
 }
@@ -1320,25 +1333,25 @@ impl CPSystem {
     pub async fn write(&self, key: String, value: String) -> Result<()> {
         // 必须通过共识算法
         let command = serde_json::to_vec(&(key.clone(), value.clone()))?;
-        
+
         self.consensus.append_entry(command).await?;
-        
+
         // 等待提交
         self.wait_for_commit().await?;
-        
+
         // 应用到本地状态机
         self.data.write().await.insert(key, value);
-        
+
         Ok(())
     }
-    
+
     /// 强一致性读取
     pub async fn read(&self, key: &str) -> Result<Option<String>> {
         // 必须从 Leader 读取
         if !self.consensus.is_leader().await {
             return Err(anyhow::anyhow!("Not a leader"));
         }
-        
+
         Ok(self.data.read().await.get(key).cloned())
     }
 }
@@ -1360,22 +1373,22 @@ impl APSystem {
         // 立即写入本地
         let mut clock = self.vector_clock.write().await;
         clock.increment(&self.node_id);
-        
+
         let versioned = VersionedValue {
             value: value.into_bytes(),
             version: clock.clone(),
         };
-        
+
         self.local_data.write().await.insert(key.clone(), versioned.clone());
-        
+
         // 异步复制（不等待）
         tokio::spawn(async move {
             self.replicate_async(key, versioned).await.ok();
         });
-        
+
         Ok(())  // 立即返回
     }
-    
+
     /// 最终一致性读取
     pub async fn read(&self, key: &str) -> Result<Option<String>> {
         // 从本地读取（可能是旧数据）
@@ -1409,6 +1422,6 @@ impl APSystem {
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日

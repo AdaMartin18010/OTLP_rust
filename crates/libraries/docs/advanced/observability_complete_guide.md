@@ -1,8 +1,8 @@
 ﻿# 监控和可观测性完整指南
 
-**Crate:** c11_libraries  
-**主题:** Observability & Monitoring  
-**Rust 版本:** 1.90.0  
+**Crate:** c11_libraries
+**主题:** Observability & Monitoring
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -102,9 +102,9 @@ pub async fn init_observability() -> Result<()> {
             ]))
         )
         .install_batch(opentelemetry::runtime::Tokio)?;
-    
+
     global::set_tracer_provider(tracer);
-    
+
     // 2. 初始化指标
     let meter = opentelemetry_otlp::new_pipeline()
         .metrics(opentelemetry::runtime::Tokio)
@@ -114,9 +114,9 @@ pub async fn init_observability() -> Result<()> {
                 .with_endpoint("http://localhost:4317")
         )
         .build()?;
-    
+
     global::set_meter_provider(meter);
-    
+
     Ok(())
 }
 ```
@@ -154,10 +154,10 @@ pub fn init_logging() {
 )]
 pub async fn process_order(order: Order) -> Result<()> {
     info!("Processing order");
-    
+
     // 自动添加 span 上下文
     debug!(items_count = order.items.len(), "Order details");
-    
+
     match validate_order(&order).await {
         Ok(_) => info!("Order validated"),
         Err(e) => {
@@ -165,7 +165,7 @@ pub async fn process_order(order: Order) -> Result<()> {
             return Err(e);
         }
     }
-    
+
     info!("Order processed successfully");
     Ok(())
 }
@@ -208,16 +208,16 @@ impl LogLevelManager {
     pub fn new() -> (Self, impl tracing::Subscriber) {
         let filter = EnvFilter::try_from_default_env()
             .unwrap_or_else(|_| "info".into());
-        
+
         let (filter, handle) = reload::Layer::new(filter);
-        
+
         let subscriber = tracing_subscriber::registry()
             .with(filter)
             .with(tracing_subscriber::fmt::layer());
-        
+
         (Self { handle }, subscriber)
     }
-    
+
     pub fn set_level(&self, level: &str) -> Result<()> {
         let new_filter = EnvFilter::try_new(level)?;
         self.handle.reload(new_filter)?;
@@ -262,13 +262,13 @@ impl ElasticsearchLogger {
             "span_id": event.span_id,
             "fields": event.fields,
         });
-        
+
         let url = format!("{}/_doc", self.endpoint);
         self.client.post(&url)
             .json(&doc)
             .send()
             .await?;
-        
+
         Ok(())
     }
 }
@@ -319,13 +319,13 @@ lazy_static! {
         "http_requests_total",
         "Total number of HTTP requests"
     ).unwrap();
-    
+
     // Gauge: 可增可减的仪表
     static ref ACTIVE_CONNECTIONS: IntGauge = IntGauge::new(
         "active_connections",
         "Number of active connections"
     ).unwrap();
-    
+
     // Histogram: 直方图（用于响应时间等）
     static ref HTTP_REQUEST_DURATION: Histogram = Histogram::with_opts(
         HistogramOpts::new(
@@ -347,20 +347,20 @@ pub fn register_metrics(registry: &Registry) -> Result<()> {
 pub async fn handle_request() -> Result<Response> {
     // 增加请求计数
     HTTP_REQUESTS_TOTAL.inc();
-    
+
     // 增加活跃连接
     ACTIVE_CONNECTIONS.inc();
-    
+
     // 记录响应时间
     let timer = HTTP_REQUEST_DURATION.start_timer();
-    
+
     let response = process_request().await;
-    
+
     timer.observe_duration();
-    
+
     // 减少活跃连接
     ACTIVE_CONNECTIONS.dec();
-    
+
     response
 }
 ```
@@ -380,7 +380,7 @@ lazy_static! {
         Opts::new("http_requests_by_status", "HTTP requests by status code"),
         &["method", "endpoint", "status"]
     ).unwrap();
-    
+
     // 按端点分组的响应时间
     static ref ENDPOINT_DURATION: HistogramVec = HistogramVec::new(
         HistogramOpts::new(
@@ -389,7 +389,7 @@ lazy_static! {
         ),
         &["method", "endpoint"]
     ).unwrap();
-    
+
     // 订单金额
     static ref ORDER_AMOUNT: GaugeVec = GaugeVec::new(
         Opts::new("order_amount_total", "Total order amount"),
@@ -404,15 +404,15 @@ pub async fn metrics_middleware<B>(
 ) -> Response {
     let method = req.method().clone();
     let path = req.uri().path().to_string();
-    
+
     let timer = ENDPOINT_DURATION
         .with_label_values(&[method.as_str(), &path])
         .start_timer();
-    
+
     let response = next.run(req).await;
-    
+
     timer.observe_duration();
-    
+
     HTTP_REQUESTS_BY_STATUS
         .with_label_values(&[
             method.as_str(),
@@ -420,7 +420,7 @@ pub async fn metrics_middleware<B>(
             response.status().as_str(),
         ])
         .inc();
-    
+
     response
 }
 ```
@@ -446,10 +446,10 @@ async fn metrics_handler(
 ) -> Result<String> {
     let encoder = TextEncoder::new();
     let metric_families = registry.gather();
-    
+
     let mut buffer = Vec::new();
     encoder.encode(&metric_families, &mut buffer)?;
-    
+
     Ok(String::from_utf8(buffer)?)
 }
 ```
@@ -500,27 +500,27 @@ pub async fn create_user(
     user_data: CreateUserRequest,
 ) -> Result<User> {
     let tracer = global::tracer("my-service");
-    
+
     // 创建子 span
     let mut span = tracer
         .span_builder("validate_user")
         .with_kind(SpanKind::Internal)
         .start(&tracer);
-    
+
     // 添加属性
     span.set_attribute(KeyValue::new("user.email", user_data.email.clone()));
-    
+
     // 验证用户
     validate_user_data(&user_data).await?;
-    
+
     span.end();
-    
+
     // 另一个子 span
     let _db_span = tracer
         .span_builder("insert_user_db")
         .with_kind(SpanKind::Client)
         .start(&tracer);
-    
+
     let user = sqlx::query_as::<_, User>(
         "INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *"
     )
@@ -528,7 +528,7 @@ pub async fn create_user(
     .bind(&user_data.name)
     .fetch_one(pool)
     .await?;
-    
+
     Ok(user)
 }
 ```
@@ -563,7 +563,7 @@ impl<'a> Extractor for HeaderExtractor<'a> {
     fn get(&self, key: &str) -> Option<&str> {
         self.0.get(key).and_then(|v| v.to_str().ok())
     }
-    
+
     fn keys(&self) -> Vec<&str> {
         self.0.keys().map(|k| k.as_str()).collect()
     }
@@ -572,28 +572,28 @@ impl<'a> Extractor for HeaderExtractor<'a> {
 // 发送请求时注入上下文
 pub async fn call_downstream_service(url: &str) -> Result<Response> {
     use opentelemetry::global;
-    
+
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
-    
+
     // 注入当前追踪上下文
     let propagator = global::get_text_map_propagator(|propagator| {
         propagator.inject(&mut HeaderInjector(&mut headers))
     });
-    
+
     let response = client
         .get(url)
         .headers(headers)
         .send()
         .await?;
-    
+
     Ok(response)
 }
 
 // 接收请求时提取上下文
 pub async fn extract_trace_context(headers: &HeaderMap) -> Context {
     use opentelemetry::global;
-    
+
     global::get_text_map_propagator(|propagator| {
         propagator.extract(&HeaderExtractor(headers))
     })
@@ -621,9 +621,9 @@ pub fn init_jaeger_tracing() -> Result<()> {
                 .with_max_attributes_per_span(32)
         )
         .install_batch(opentelemetry::runtime::Tokio)?;
-    
+
     opentelemetry::global::set_tracer_provider(tracer);
-    
+
     Ok(())
 }
 ```
@@ -682,40 +682,40 @@ pub async fn health_check_handler(
 ) -> (StatusCode, Json<HealthResponse>) {
     let start_time = state.start_time;
     let uptime = start_time.elapsed().as_secs();
-    
+
     let mut checks = Vec::new();
-    
+
     // 1. 数据库健康检查
     checks.push(check_database_health(&state.pool).await);
-    
+
     // 2. Redis 健康检查
     checks.push(check_redis_health(&state.redis).await);
-    
+
     // 3. 外部服务健康检查
     checks.push(check_external_services().await);
-    
+
     // 确定整体状态
     let overall_status = determine_overall_status(&checks);
-    
+
     let response = HealthResponse {
         status: overall_status.clone(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         uptime_seconds: uptime,
         checks,
     };
-    
+
     let status_code = match overall_status {
         HealthStatus::Healthy => StatusCode::OK,
         HealthStatus::Degraded => StatusCode::OK,
         HealthStatus::Unhealthy => StatusCode::SERVICE_UNAVAILABLE,
     };
-    
+
     (status_code, Json(response))
 }
 
 async fn check_database_health(pool: &PgPool) -> HealthCheck {
     let start = Instant::now();
-    
+
     match sqlx::query("SELECT 1").fetch_one(pool).await {
         Ok(_) => HealthCheck {
             name: "database".to_string(),
@@ -754,7 +754,7 @@ pub async fn readiness_probe(
     if !state.is_ready() {
         return StatusCode::SERVICE_UNAVAILABLE;
     }
-    
+
     // 检查数据库连接
     if sqlx::query("SELECT 1")
         .fetch_one(&state.pool)
@@ -763,7 +763,7 @@ pub async fn readiness_probe(
     {
         return StatusCode::SERVICE_UNAVAILABLE;
     }
-    
+
     StatusCode::OK
 }
 
@@ -788,14 +788,14 @@ livenessProbe:
     port: 8080
   initialDelaySeconds: 10
   periodSeconds: 10
-  
+
 readinessProbe:
   httpGet:
     path: /health/ready
     port: 8080
   initialDelaySeconds: 5
   periodSeconds: 5
-  
+
 startupProbe:
   httpGet:
     path: /health/startup
@@ -830,11 +830,11 @@ groups:
         annotations:
           summary: "High error rate detected"
           description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.endpoint }}"
-      
+
       # 高响应时间告警
       - alert: HighLatency
         expr: |
-          histogram_quantile(0.99, 
+          histogram_quantile(0.99,
             rate(http_request_duration_seconds_bucket[5m])
           ) > 1.0
         for: 10m
@@ -843,7 +843,7 @@ groups:
         annotations:
           summary: "High latency detected"
           description: "P99 latency is {{ $value }}s for {{ $labels.endpoint }}"
-      
+
       # 数据库连接池耗尽
       - alert: DatabasePoolExhausted
         expr: |
@@ -878,13 +878,13 @@ impl AlertManager {
             "startsAt": alert.starts_at,
             "endsAt": alert.ends_at,
         }]);
-        
+
         self.client
             .post(&format!("{}/api/v1/alerts", self.endpoint))
             .json(&payload)
             .send()
             .await?;
-        
+
         Ok(())
     }
 }
@@ -906,7 +906,7 @@ pub async fn check_and_alert(state: &AppState) -> Result<()> {
             ends_at: None,
         }).await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -924,24 +924,24 @@ use pprof::ProfilerGuard;
 
 pub async fn profile_endpoint() -> Result<Vec<u8>> {
     let guard = ProfilerGuard::new(100)?;  // 100 Hz 采样
-    
+
     // 运行需要分析的代码
     heavy_computation().await;
-    
+
     // 生成报告
     let report = guard.report().build()?;
-    
+
     // 生成 flamegraph
     let mut body = Vec::new();
     report.flamegraph(&mut body)?;
-    
+
     Ok(body)
 }
 
 // HTTP 端点
 async fn profile_handler() -> Response {
     let svg = profile_endpoint().await.unwrap();
-    
+
     Response::builder()
         .header("Content-Type", "image/svg+xml")
         .body(Body::from(svg))
@@ -961,10 +961,10 @@ use jemalloc_ctl::{stats, epoch};
 
 pub async fn memory_stats_handler() -> Json<MemoryStats> {
     epoch::mib().unwrap().advance().unwrap();
-    
+
     let allocated = stats::allocated::mib().unwrap();
     let resident = stats::resident::mib().unwrap();
-    
+
     Json(MemoryStats {
         allocated_bytes: allocated.read().unwrap(),
         resident_bytes: resident.read().unwrap(),
@@ -985,53 +985,53 @@ use tower_http::trace::TraceLayer;
 pub async fn create_observable_server() -> Router {
     // 1. 初始化日志
     init_logging();
-    
+
     // 2. 初始化追踪
     init_jaeger_tracing().unwrap();
-    
+
     // 3. 初始化指标
     let registry = Arc::new(Registry::new());
     register_metrics(&registry).unwrap();
-    
+
     // 4. 创建应用状态
     let state = Arc::new(AppState {
         pool: create_pool().await.unwrap(),
         registry: registry.clone(),
         start_time: Instant::now(),
     });
-    
+
     // 5. 构建路由
     Router::new()
         // 业务端点
         .route("/users", get(list_users).post(create_user))
         .route("/users/:id", get(get_user))
-        
+
         // 可观测性端点
         .route("/metrics", get(metrics_handler))
         .route("/health", get(health_check_handler))
         .route("/health/live", get(liveness_probe))
         .route("/health/ready", get(readiness_probe))
         .route("/profile", get(profile_handler))
-        
+
         // 中间件
         .layer(TraceLayer::new_for_http())
         .layer(axum::middleware::from_fn(metrics_middleware))
-        
+
         .with_state(state)
 }
 
 #[tokio::main]
 async fn main() {
     let app = create_observable_server().await;
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await
         .unwrap();
-    
+
     println!("Server running on http://localhost:8080");
     println!("Metrics: http://localhost:8080/metrics");
     println!("Health: http://localhost:8080/health");
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 ```
@@ -1086,6 +1086,6 @@ async fn main() {
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日

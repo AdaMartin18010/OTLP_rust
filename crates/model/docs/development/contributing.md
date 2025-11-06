@@ -111,14 +111,14 @@
 
    ```rust
    /// 计算系统利用率
-   /// 
+   ///
    /// # 参数
    /// - `arrival_rate`: 到达率 λ
    /// - `service_rate`: 服务率 μ
-   /// 
+   ///
    /// # 返回
    /// 系统利用率，范围 [0, ∞)
-   /// 
+   ///
    /// # 示例
    /// ```
    /// use c12_model::MM1Queue;
@@ -154,7 +154,7 @@
 
    ```rust
    use c12_model::{ModelError, ErrorHandler, Result as ModelResult};
-   
+
    fn my_function() -> ModelResult<f64> {
        if condition {
            Err(ErrorHandler::validation_error("错误描述"))
@@ -324,5 +324,5 @@ Closes #123
 
 ---
 
-**最后更新**: 2025年1月  
+**最后更新**: 2025年1月
 **版本**: 0.2.0

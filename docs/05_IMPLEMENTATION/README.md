@@ -1,7 +1,7 @@
 # 🛠️ 实现指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 实现指南 - OTLP 2024-2025 新特性、Rust 1.90 特性应用、异步编程和性能优化。
@@ -295,7 +295,7 @@ impl OtlpClient {
             inner: Arc::new(inner),
         })
     }
-    
+
     /// 异步发送数据
     pub async fn send_trace(&self, operation: &str) -> Result<TraceBuilder, OtlpError> {
         let span = self.inner.create_span(operation).await?;
@@ -312,13 +312,13 @@ use std::future::Future;
 // 利用 Rust 1.90 改进的 Trait Solver
 pub trait AsyncTransport: Send + Sync {
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     async fn send(&self, data: &[u8]) -> Result<(), Self::Error>;
     async fn receive(&self) -> Result<Vec<u8>, Self::Error>;
 }
 
 // 自动推断复杂的 trait 约束
-impl<T> OtlpClient<T> 
+impl<T> OtlpClient<T>
 where
     T: AsyncTransport + Clone,
     T::Error: Into<OtlpError>,
@@ -377,7 +377,7 @@ impl<T> BatchProcessor<T> {
             max_size,
         }
     }
-    
+
     pub fn add(&mut self, item: T) -> Option<Vec<T>> {
         self.items.push(item);
         if self.items.len() >= self.max_size {
@@ -409,7 +409,7 @@ impl ZeroCopyBuffer {
             len: slice.len(),
         }
     }
-    
+
     pub fn as_slice(&self) -> &[u8] {
         unsafe {
             std::slice::from_raw_parts(self.data, self.len)
@@ -456,12 +456,12 @@ impl ConcurrentClient {
                 guard.send_single(item).await
             })
         }).collect();
-        
+
         // 等待所有任务完成
         for task in tasks {
             task.await??;
         }
-        
+
         Ok(())
     }
 }
@@ -476,7 +476,7 @@ impl ConcurrentClient {
 #[cfg(feature = "rust_1_90")]
 mod rust_1_90_features {
     use std::future::Future;
-    
+
     // Rust 1.90 特有功能
     pub async fn advanced_async_processing() {
         // 使用最新的异步特性
@@ -525,7 +525,7 @@ impl AsyncTaskManager {
             tasks: Vec::new(),
         })
     }
-    
+
     pub fn spawn_task<F>(&mut self, future: F)
     where
         F: Future<Output = ()> + Send + 'static,
@@ -558,7 +558,7 @@ where
     E: std::error::Error,
 {
     type Output = Result<T, E>;
-    
+
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         loop {
             match Pin::new(&mut self.future).poll(cx) {
@@ -604,7 +604,7 @@ impl AsyncDataProcessor {
     {
         let mut batch = Vec::with_capacity(self.batch_size);
         let mut timeout_future = tokio::time::sleep(self.timeout);
-        
+
         loop {
             tokio::select! {
                 item = stream.next() => {
@@ -629,12 +629,12 @@ impl AsyncDataProcessor {
                 }
             }
         }
-        
+
         // 处理剩余数据
         if !batch.is_empty() {
             processor(batch).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -660,14 +660,14 @@ impl ConcurrencyController {
             max_concurrent,
         }
     }
-    
+
     pub async fn execute<F, T>(&self, future: F) -> Result<T, OtlpError>
     where
         F: Future<Output = Result<T, OtlpError>>,
     {
         let _permit = self.semaphore.acquire().await
             .map_err(|_| OtlpError::ConcurrencyLimit)?;
-        
+
         future.await
     }
 }
@@ -687,28 +687,28 @@ use thiserror::Error;
 pub enum OtlpError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("gRPC error: {0}")]
     Grpc(#[from] tonic::Status),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     #[error("Configuration error: {0}")]
     Config(#[from] ConfigError),
-    
+
     #[error("Authentication error: {0}")]
     Auth(String),
-    
+
     #[error("Timeout error: {0}")]
     Timeout(String),
-    
+
     #[error("Batch processing error: {0}")]
     Batch(String),
-    
+
     #[error("Concurrency limit exceeded")]
     ConcurrencyLimit,
-    
+
     #[error("Custom error: {0}")]
     Custom(String),
 }
@@ -745,18 +745,18 @@ impl ErrorChain {
             errors: Vec::new(),
         }
     }
-    
+
     pub fn add_error<E>(&mut self, error: E)
     where
         E: Error + Send + Sync + 'static,
     {
         self.errors.push(Box::new(error));
     }
-    
+
     pub fn root_cause(&self) -> Option<&dyn Error> {
         self.errors.first().map(|e| e.as_ref())
     }
-    
+
     pub fn all_causes(&self) -> impl Iterator<Item = &dyn Error> {
         self.errors.iter().map(|e| e.as_ref())
     }
@@ -789,13 +789,13 @@ impl RetryStrategy {
             jitter: true,
         }
     }
-    
+
     pub async fn execute<F, T>(&self, mut operation: F) -> Result<T, OtlpError>
     where
         F: FnMut() -> Pin<Box<dyn Future<Output = Result<T, OtlpError>> + Send>>,
     {
         let mut last_error = None;
-        
+
         for attempt in 0..=self.max_retries {
             match operation().await {
                 Ok(result) => return Ok(result),
@@ -808,15 +808,15 @@ impl RetryStrategy {
                 }
             }
         }
-        
+
         Err(last_error.unwrap_or_else(|| OtlpError::Custom("Unknown error".to_string())))
     }
-    
+
     fn calculate_delay(&self, attempt: u32) -> Duration {
-        let delay = self.base_delay.as_millis() as f64 * 
+        let delay = self.base_delay.as_millis() as f64 *
                    self.backoff_multiplier.powi(attempt as i32);
         let delay = delay.min(self.max_delay.as_millis() as f64) as u64;
-        
+
         if self.jitter {
             let jitter = fastrand::u64(0..delay / 4);
             Duration::from_millis(delay + jitter)
@@ -847,10 +847,10 @@ impl ErrorMonitor {
             error_counts: std::sync::Mutex::new(std::collections::HashMap::new()),
         }
     }
-    
+
     pub fn record_error(&self, error: &OtlpError) {
         self.total_errors.fetch_add(1, Ordering::Relaxed);
-        
+
         let error_type = match error {
             OtlpError::Network(_) => "network",
             OtlpError::Grpc(_) => "grpc",
@@ -862,15 +862,15 @@ impl ErrorMonitor {
             OtlpError::ConcurrencyLimit => "concurrency",
             OtlpError::Custom(_) => "custom",
         };
-        
+
         let mut counts = self.error_counts.lock().unwrap();
         *counts.entry(error_type.to_string()).or_insert(0) += 1;
     }
-    
+
     pub fn get_error_stats(&self) -> ErrorStats {
         let total = self.total_errors.load(Ordering::Relaxed);
         let counts = self.error_counts.lock().unwrap().clone();
-        
+
         ErrorStats { total, counts }
     }
 }
@@ -887,31 +887,31 @@ impl ErrorMonitor {
 mod tests {
     use super::*;
     use tokio_test;
-    
+
     #[tokio::test]
     async fn test_client_creation() {
         let config = OtlpConfig::default()
             .with_endpoint("http://localhost:4317");
-        
+
         let client = OtlpClient::new(config).await;
         assert!(client.is_ok());
     }
-    
+
     #[tokio::test]
     async fn test_trace_sending() {
         let config = OtlpConfig::default()
             .with_endpoint("http://localhost:4317");
-        
+
         let client = OtlpClient::new(config).await.unwrap();
         let result = client.send_trace("test-operation").await;
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_config_validation() {
         let config = OtlpConfig::default()
             .with_endpoint("invalid-url");
-        
+
         assert!(config.validate().is_err());
     }
 }
@@ -926,27 +926,27 @@ mod tests {
 mod integration_tests {
     use super::*;
     use tokio_test;
-    
+
     #[tokio::test]
     async fn test_end_to_end_flow() {
         // 启动测试服务器
         let server = start_test_server().await;
-        
+
         // 创建客户端
         let config = OtlpConfig::default()
             .with_endpoint(&server.url());
-        
+
         let client = OtlpClient::new(config).await.unwrap();
-        
+
         // 发送测试数据
         let trace_data = TelemetryData::trace("integration-test");
         let result = client.send_trace_data(trace_data).await;
-        
+
         assert!(result.is_ok());
-        
+
         // 验证服务器接收到数据
         assert!(server.received_data().await);
-        
+
         // 清理
         server.shutdown().await;
     }
@@ -962,7 +962,7 @@ mod integration_tests {
 mod bench_tests {
     use super::*;
     use criterion::{black_box, criterion_group, criterion_main, Criterion};
-    
+
     fn bench_client_creation(c: &mut Criterion) {
         c.bench_function("client_creation", |b| {
             b.to_async(tokio::runtime::Runtime::new().unwrap())
@@ -972,17 +972,17 @@ mod bench_tests {
                 });
         });
     }
-    
+
     fn bench_data_serialization(c: &mut Criterion) {
         let data = TelemetryData::trace("benchmark-operation");
-        
+
         c.bench_function("data_serialization", |b| {
             b.iter(|| {
                 serde_json::to_string(black_box(&data))
             });
         });
     }
-    
+
     criterion_group!(benches, bench_client_creation, bench_data_serialization);
     criterion_main!(benches);
 }
@@ -996,18 +996,18 @@ mod bench_tests {
 #[cfg(test)]
 mod fuzz_tests {
     use super::*;
-    
+
     #[test]
     fn fuzz_config_parsing() {
         // 使用 quickcheck 进行属性测试
         use quickcheck::quickcheck;
-        
+
         fn prop_config_roundtrip(config: OtlpConfig) -> bool {
             let serialized = serde_json::to_string(&config).unwrap();
             let deserialized: OtlpConfig = serde_json::from_str(&serialized).unwrap();
             config == deserialized
         }
-        
+
         quickcheck(prop_config_roundtrip as fn(OtlpConfig) -> bool);
     }
 }
@@ -1036,14 +1036,14 @@ impl MemoryPool {
         for _ in 0..pool_size {
             pools.push(Vec::with_capacity(buffer_size));
         }
-        
+
         Self {
             pools: Arc::new(Mutex::new(pools)),
             pool_size,
             buffer_size,
         }
     }
-    
+
     pub async fn get_buffer(&self) -> Option<PooledBuffer> {
         let mut pools = self.pools.lock().await;
         pools.pop().map(|mut buffer| {
@@ -1090,25 +1090,25 @@ impl SimdProcessor {
         let mut result = Vec::with_capacity(data.len());
         let chunks = data.chunks_exact(4);
         let remainder = chunks.remainder();
-        
+
         for chunk in chunks {
             let a = _mm256_loadu_pd(chunk.as_ptr());
             let b = _mm256_set1_pd(2.0);
             let c = _mm256_mul_pd(a, b);
-            
+
             let mut output = [0.0; 4];
             _mm256_storeu_pd(output.as_mut_ptr(), c);
             result.extend_from_slice(&output);
         }
-        
+
         // 处理剩余元素
         for &value in remainder {
             result.push(value * 2.0);
         }
-        
+
         result
     }
-    
+
     #[cfg(not(target_arch = "x86_64"))]
     pub fn process_batch_simd(data: &[f64]) -> Vec<f64> {
         data.iter().map(|&x| x * 2.0).collect()
@@ -1133,7 +1133,7 @@ impl AsyncIoProcessor {
     pub fn new(buffer_size: usize) -> Self {
         Self { buffer_size }
     }
-    
+
     pub async fn process_stream<R, W>(
         &self,
         mut reader: R,
@@ -1144,16 +1144,16 @@ impl AsyncIoProcessor {
         W: AsyncWrite + Unpin,
     {
         let mut buffer = vec![0u8; self.buffer_size];
-        
+
         loop {
             let bytes_read = reader.read(&mut buffer).await?;
             if bytes_read == 0 {
                 break;
             }
-            
+
             writer.write_all(&buffer[..bytes_read]).await?;
         }
-        
+
         writer.flush().await?;
         Ok(())
     }
@@ -1181,22 +1181,22 @@ impl<T> ConnectionPool<T> {
             max_connections_per_host,
         }
     }
-    
+
     pub async fn get_connection(&self, host: &str) -> Option<PooledConnection<T>> {
         let mut connections = self.connections.write().await;
         let host_connections = connections.entry(host.to_string()).or_insert_with(Vec::new);
-        
+
         host_connections.pop().map(|conn| PooledConnection {
             connection: conn,
             host: host.to_string(),
             pool: Arc::clone(&self.connections),
         })
     }
-    
+
     pub async fn return_connection(&self, host: &str, connection: T) {
         let mut connections = self.connections.write().await;
         let host_connections = connections.entry(host.to_string()).or_insert_with(Vec::new);
-        
+
         if host_connections.len() < self.max_connections_per_host {
             host_connections.push(connection);
         }
@@ -1214,6 +1214,6 @@ impl<T> ConnectionPool<T> {
 
 ---
 
-**实现指南版本**: 1.0.0  
-**最后更新**: 2025年1月  
+**实现指南版本**: 1.0.0
+**最后更新**: 2025年1月
 **维护者**: OTLP Rust 实现团队

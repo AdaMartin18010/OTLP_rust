@@ -1,7 +1,7 @@
 ﻿# 示例知识图谱
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -20,14 +20,14 @@
 ```mermaid
 graph TD
     START([开始学习])
-    
+
     START --> E01[01_hello_otlp<br/>5分钟]
     E01 --> E02[02_simple_http<br/>10分钟]
     E02 --> E10[10_axum_integration<br/>30分钟]
     E10 --> E11[11_grpc_circuit_breaker<br/>45分钟]
     E11 --> E20[20_microservice_complete<br/>2小时]
     E20 --> MASTER([掌握])
-    
+
     style START fill:#f9f
     style MASTER fill:#6f9
 ```
@@ -66,7 +66,7 @@ graph TD
 
 ---
 
-**版本**: 2.0  
+**版本**: 2.0
 **创建日期**: 2025-10-28
 
 ---

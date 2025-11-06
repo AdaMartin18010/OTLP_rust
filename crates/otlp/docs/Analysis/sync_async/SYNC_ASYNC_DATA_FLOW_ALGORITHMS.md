@@ -29,21 +29,21 @@ impl AdaptiveBatchProcessor {
                 history.pop_front();
             }
         }
-        
+
         let current = self.current_batch_size.load(Ordering::Relaxed);
-        
+
         if actual_latency > self.target_latency {
             // 延迟过高，减少批大小
             let new_size = (current * 8) / 10;
             self.current_batch_size.store(
-                new_size.max(self.min_batch_size), 
+                new_size.max(self.min_batch_size),
                 Ordering::Relaxed
             );
         } else if actual_latency < self.target_latency / 2 {
             // 延迟很低，增加批大小
             let new_size = (current * 12) / 10;
             self.current_batch_size.store(
-                new_size.min(self.max_batch_size), 
+                new_size.min(self.max_batch_size),
                 Ordering::Relaxed
             );
         }
@@ -72,21 +72,21 @@ impl ExponentialBackoffRetry {
         E: std::fmt::Debug,
     {
         let mut delay = self.initial_delay;
-        
+
         for attempt in 0..=self.max_retries {
             match operation().await {
                 Ok(result) => return Ok(result),
                 Err(e) if attempt == self.max_retries => return Err(e),
                 Err(e) => {
                     tracing::warn!("操作失败，第{}次重试: {:?}", attempt + 1, e);
-                    
+
                     if self.jitter {
                         let jitter = rand::thread_rng().gen_range(0.0..1.0);
                         delay = Duration::from_millis(
                             (delay.as_millis() as f64 * (1.0 + jitter)) as u64
                         );
                     }
-                    
+
                     tokio::time::sleep(delay).await;
                     delay = Duration::from_millis(
                         (delay.as_millis() as f64 * self.multiplier) as u64
@@ -94,7 +94,7 @@ impl ExponentialBackoffRetry {
                 }
             }
         }
-        
+
         unreachable!()
     }
 }
@@ -121,32 +121,32 @@ impl AdaptiveCompressor {
     pub fn select_best_algorithm(&self, data_size: usize) -> CompressionAlgorithm {
         let mut best_algorithm = CompressionAlgorithm::None;
         let mut best_score = f64::MIN;
-        
+
         for algorithm in &self.algorithms {
             let metrics = self.performance_metrics
                 .get(algorithm)
                 .map(|m| m.value())
                 .unwrap_or_default();
-                
+
             let score = self.calculate_score(data_size, metrics);
-            
+
             if score > best_score {
                 best_score = score;
                 best_algorithm = algorithm.clone();
             }
         }
-        
+
         best_algorithm
     }
-    
+
     fn calculate_score(&self, data_size: usize, metrics: &CompressionMetrics) -> f64 {
         let compression_ratio = metrics.compression_ratio;
         let compression_speed = metrics.compression_speed;
         let decompression_speed = metrics.decompression_speed;
-        
+
         // 综合评分算法
-        compression_ratio * 0.4 + 
-        compression_speed * 0.3 + 
+        compression_ratio * 0.4 +
+        compression_speed * 0.3 +
         decompression_speed * 0.3
     }
 }
@@ -166,7 +166,7 @@ impl LoadBalancingStrategy for RoundRobinStrategy {
         if endpoints.is_empty() {
             return None;
         }
-        
+
         let index = self.current.fetch_add(1, Ordering::Relaxed) % endpoints.len();
         Some(&endpoints[index])
     }
@@ -191,30 +191,30 @@ impl WeightedRoundRobinStrategy {
             current: AtomicUsize::new(0),
         }
     }
-    
+
     fn select_endpoint(&self, endpoints: &[Endpoint]) -> Option<&Endpoint> {
         if endpoints.is_empty() {
             return None;
         }
-        
+
         let mut max_weight = 0;
         let mut selected_index = 0;
-        
+
         for (i, weight) in self.current_weights.iter().enumerate() {
             if *weight > max_weight {
                 max_weight = *weight;
                 selected_index = i;
             }
         }
-        
+
         // 更新权重
         self.current_weights[selected_index] -= 1;
-        
+
         // 如果所有权重都为0，重置
         if self.current_weights.iter().all(|&w| w == 0) {
             self.current_weights = self.weights.clone();
         }
-        
+
         Some(&endpoints[selected_index])
     }
 }
@@ -266,7 +266,7 @@ impl DataCollectionNode {
         self.config = config;
         Ok(())
     }
-    
+
     // 异步执行阶段
     pub async fn collect_data(&self, data: TelemetryData) -> Result<()> {
         let mut buffer = self.buffer.write().await;
@@ -287,12 +287,12 @@ pub struct DataProcessingNode {
 impl DataProcessingNode {
     pub async fn process_batch(&self, batch: Vec<TelemetryData>) -> Result<Vec<TelemetryData>> {
         let start_time = Instant::now();
-        
+
         let processed_batch = self.processor.process_batch(batch).await?;
-        
+
         let processing_time = start_time.elapsed();
         self.batch_processor.adjust_batch_size(processing_time);
-        
+
         Ok(processed_batch)
     }
 }
@@ -314,7 +314,7 @@ pub struct ObjectPool<T> {
 impl<T> ObjectPool<T> {
     pub async fn get(&self) -> PooledObject<T> {
         let mut objects = self.objects.lock().await;
-        
+
         if let Some(obj) = objects.pop() {
             PooledObject::new(obj, self.objects.clone())
         } else {
@@ -338,20 +338,20 @@ impl ZeroCopyBuffer {
     pub fn slice(&self, start: usize, end: usize) -> &[u8] {
         &self.data[start..end]
     }
-    
+
     pub fn split_at(&self, mid: usize) -> (Self, Self) {
         let left = Self {
             data: self.data.clone(),
             offset: self.offset,
             length: mid,
         };
-        
+
         let right = Self {
             data: self.data.clone(),
             offset: self.offset + mid,
             length: self.length - mid,
         };
-        
+
         (left, right)
     }
 }
@@ -371,7 +371,7 @@ pub struct ConnectionPool {
 impl ConnectionPool {
     pub async fn get_connection(&self) -> Result<PooledConnection> {
         let mut connections = self.connections.lock().await;
-        
+
         if let Some(conn) = connections.pop_front() {
             Ok(PooledConnection::new(conn, self.connections.clone()))
         } else {
@@ -398,13 +398,13 @@ pub struct PerformanceMetrics {
 impl PerformanceMetrics {
     pub fn record_request(&self, latency: Duration, success: bool) {
         self.total_requests.fetch_add(1, Ordering::Relaxed);
-        
+
         if success {
             self.successful_requests.fetch_add(1, Ordering::Relaxed);
         } else {
             self.failed_requests.fetch_add(1, Ordering::Relaxed);
         }
-        
+
         // 更新平均延迟
         let current_avg = self.average_latency.load(Ordering::Relaxed);
         let new_avg = (current_avg + latency.as_millis() as u64) / 2;
@@ -424,21 +424,21 @@ pub struct HealthChecker {
 impl HealthChecker {
     pub async fn run_health_checks(&self) -> HealthStatus {
         let mut results = Vec::new();
-        
+
         for check in &self.checks {
             let result = check.check().await;
             results.push((check.name().to_string(), result));
         }
-        
+
         let status = if results.iter().all(|(_, result)| result.is_healthy()) {
             HealthStatus::Healthy
         } else {
             HealthStatus::Unhealthy
         };
-        
+
         let mut current_status = self.status.write().await;
         *current_status = status.clone();
-        
+
         status
     }
 }
@@ -466,6 +466,6 @@ impl HealthChecker {
 
 ---
 
-**文档版本**: v1.0  
-**更新时间**: 2025年1月  
+**文档版本**: v1.0
+**更新时间**: 2025年1月
 **技术栈**: Rust 1.90 + OTLP v1.0

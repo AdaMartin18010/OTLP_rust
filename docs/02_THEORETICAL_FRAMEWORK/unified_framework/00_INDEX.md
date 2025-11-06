@@ -1,8 +1,8 @@
 ﻿# OTLP 统一理论框架：多维度系统性分析体系
 
-**版本**: 2.0  
-**创建日期**: 2025年10月26日  
-**文档类型**: 理论总纲  
+**版本**: 2.0
+**创建日期**: 2025年10月26日
+**文档类型**: 理论总纲
 **状态**: 🟢 活跃维护
 
 > **简介**: 统一理论框架索引 - 多维度系统性分析的完整导航和核心贡献。
@@ -76,14 +76,14 @@
 - **[Part 2: 并发理论与分布式系统](./OTLP_UNIFIED_THEORETICAL_FRAMEWORK_PART2.md)**
   - 图灵可计算性与并发并行理论
   - 分布式系统理论
-  
+
 - **[Part 3: 容错机制与故障分析](./OTLP_UNIFIED_THEORETICAL_FRAMEWORK_PART3.md)**
   - 容错、排错、监测、控制、分析、定位
-  
+
 - **[Part 4: Rust异步与多维度数据分析](./OTLP_UNIFIED_THEORETICAL_FRAMEWORK_PART4.md)**
   - Rust异步/并发模型与OTLP的转换关系
   - 分布式系统多维度数据分析与推理
-  
+
 - **[Part 5: 自动化运维与自适应控制](./OTLP_UNIFIED_THEORETICAL_FRAMEWORK_PART5.md)**
   - 自动化运维与自适应控制
   - 形式化验证与证明
@@ -106,7 +106,7 @@
 
 基础类型(Base Types):
 τ_base ::= String                    -- 字符串
-         | Int64                      -- 64位整数  
+         | Int64                      -- 64位整数
          | Float64                    -- 64位浮点数
          | Bool                       -- 布尔值
          | Timestamp                  -- 时间戳(ℝ⁺)
@@ -171,7 +171,7 @@ Metric = {
   attributes: Map[String, AttributeValue]
 }
 
-MetricData = Gauge[τ] 
+MetricData = Gauge[τ]
            | Sum[τ]
            | Histogram[τ]
            | ExponentialHistogram[τ]
@@ -202,7 +202,7 @@ Log = {
   Tr = P(Span)  -- Span集合的幂集
   其中满足约束:
     ∀tr ∈ Tr. well_formed(tr)
-    
+
   well_formed(tr) ⟺
     ∀s ∈ tr. s.trace_id = tr.id ∧
     acyclic(parent_relation(tr)) ∧
@@ -210,10 +210,10 @@ Log = {
 
 指标域(Metric Domain):
   M = MetricName × Timestamp × Value × Attributes
-  
+
   聚合函数:
   aggregate: List[M] × AggregationType → M
-  
+
 日志域(Log Domain):
   L = Timestamp × Severity × Message × Context
 
@@ -459,7 +459,7 @@ Edge = Unconditional(N, N)           -- 无条件跳转
 
 dom: N → P(N)
 
-n₁ ∈ dom(n₂) ⟺ 
+n₁ ∈ dom(n₂) ⟺
   ∀path from n_entry to n₂. n₁ ∈ path
 
 性质:
@@ -557,11 +557,11 @@ ControlDependency = {
 pub fn analyze_control_dependencies(trace: &Trace) -> Vec<ControlDependency> {
     let mut deps = Vec::new();
     let span_tree = build_span_tree(trace);
-    
+
     for span in &span_tree {
         if let Some(parent) = span.parent_span_id {
             let parent_span = find_span(trace, parent);
-            
+
             // 检查是否为条件分支
             if is_conditional(parent_span) {
                 deps.push(ControlDependency {
@@ -573,7 +573,7 @@ pub fn analyze_control_dependencies(trace: &Trace) -> Vec<ControlDependency> {
             }
         }
     }
-    
+
     deps
 }
 ```
@@ -674,19 +674,19 @@ impl ReachingDefinitionsAnalysis {
             self.in_sets.insert(span.span_id, HashSet::new());
             self.out_sets.insert(span.span_id, HashSet::new());
         }
-        
+
         // 迭代到不动点
         let mut changed = true;
         while changed {
             changed = false;
-            
+
             for span in &trace.spans {
                 // IN[n] = ⊔ OUT[p] for all predecessors p
                 let mut new_in = HashSet::new();
                 for pred_id in predecessors(trace, span.span_id) {
                     new_in.extend(self.out_sets[&pred_id].clone());
                 }
-                
+
                 // OUT[n] = GEN[n] ∪ (IN[n] - KILL[n])
                 let mut new_out = self.gen[&span.span_id].clone();
                 for def in &new_in {
@@ -694,7 +694,7 @@ impl ReachingDefinitionsAnalysis {
                         new_out.insert(def.clone());
                     }
                 }
-                
+
                 if self.in_sets[&span.span_id] != new_in ||
                    self.out_sets[&span.span_id] != new_out {
                     self.in_sets.insert(span.span_id, new_in);
@@ -703,7 +703,7 @@ impl ReachingDefinitionsAnalysis {
                 }
             }
         }
-        
+
         self.out_sets.clone()
     }
 }
@@ -900,7 +900,7 @@ find_critical_path: Trace → Path
 pub fn find_critical_path(trace: &Trace) -> Vec<SpanId> {
     let mut earliest_start = HashMap::new();
     let mut latest_finish = HashMap::new();
-    
+
     // 前向传播: 计算最早开始时间
     fn forward_pass(span: &Span, trace: &Trace, es: &mut HashMap<SpanId, u64>) {
         let mut max_pred_finish = 0;
@@ -909,12 +909,12 @@ pub fn find_critical_path(trace: &Trace) -> Vec<SpanId> {
             max_pred_finish = max_pred_finish.max(pred_span.end_time);
         }
         es.insert(span.span_id, max_pred_finish);
-        
+
         for child in children(trace, span.span_id) {
             forward_pass(find_span(trace, child), trace, es);
         }
     }
-    
+
     // 反向传播: 计算最晚完成时间
     fn backward_pass(span: &Span, trace: &Trace, lf: &mut HashMap<SpanId, u64>) {
         let mut min_succ_start = u64::MAX;
@@ -922,12 +922,12 @@ pub fn find_critical_path(trace: &Trace) -> Vec<SpanId> {
             min_succ_start = min_succ_start.min(lf[&succ] - duration(find_span(trace, succ)));
         }
         lf.insert(span.span_id, min_succ_start);
-        
+
         for parent in parents(trace, span.span_id) {
             backward_pass(find_span(trace, parent), trace, lf);
         }
     }
-    
+
     // 找到关键路径 (slack = 0的路径)
     let mut critical = Vec::new();
     for span_id in &trace.span_ids {
@@ -936,7 +936,7 @@ pub fn find_critical_path(trace: &Trace) -> Vec<SpanId> {
             critical.push(*span_id);
         }
     }
-    
+
     critical
 }
 
@@ -944,7 +944,7 @@ pub fn find_critical_path(trace: &Trace) -> Vec<SpanId> {
 
 concurrency_level: Trace × Timestamp → usize
 
-concurrency_level(trace, t) = 
+concurrency_level(trace, t) =
   |{s ∈ trace.spans | s.start_time ≤ t ≤ s.end_time}|
 
 平均并发度:
@@ -988,11 +988,11 @@ Span = {
   // 控制流信息
   parent_span_id: Option[SpanId],  -- 控制流父节点
   span_kind: SpanKind,             -- 控制流类型
-  
+
   // 数据流信息
   attributes: Map[String, Value],  -- 数据值
   events: List[Event],             -- 数据变化
-  
+
   // 执行流信息
   start_time: Timestamp,           -- 开始时刻
   end_time: Timestamp,             -- 结束时刻
@@ -1013,44 +1013,44 @@ impl TripleFlowAnalyzer {
     pub fn analyze(&self) -> FlowAnalysisResult {
         // 1. 从trace重建CFG
         let reconstructed_cfg = self.reconstruct_cfg();
-        
+
         // 2. 从attributes提取数据依赖
         let data_deps = self.extract_data_dependencies();
-        
+
         // 3. 对齐三个视角
         let aligned_model = self.align_three_flows();
-        
+
         // 4. 发现异常
         let anomalies = self.detect_flow_anomalies(&aligned_model);
-        
+
         FlowAnalysisResult {
             cfg: reconstructed_cfg,
             ddg: data_deps,
             anomalies,
         }
     }
-    
+
     fn detect_flow_anomalies(&self, model: &UnifiedFlowModel) -> Vec<FlowAnomaly> {
         let mut anomalies = Vec::new();
-        
+
         // 检测控制流异常
         for span in &self.trace.spans {
             // 死代码: CFG中存在但trace中未执行
             if !self.cfg.is_reachable(span) {
                 anomalies.push(FlowAnomaly::UnreachableCode(span.span_id));
             }
-            
+
             // 数据竞争: 并发写同一变量
             if let Some(race) = self.detect_data_race(span) {
                 anomalies.push(FlowAnomaly::DataRace(race));
             }
-            
+
             // 时序违规: 子span早于父span结束
             if span.end_time < parent_span(span).start_time {
                 anomalies.push(FlowAnomaly::TemporalViolation(span.span_id));
             }
         }
-        
+
         anomalies
     }
 }

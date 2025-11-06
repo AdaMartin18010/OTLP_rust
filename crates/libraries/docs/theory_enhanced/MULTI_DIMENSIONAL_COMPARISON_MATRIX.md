@@ -1,34 +1,35 @@
 ﻿# C11 Middlewares 多维矩阵对比分析
 
-> **文档定位**: Rust 1.90 中间件技术全方位对比  
-> **创建日期**: 2025-10-20  
-> **适用版本**: Rust 1.90+ | Edition 2024  
+> **文档定位**: Rust 1.90 中间件技术全方位对比
+> **创建日期**: 2025-10-20
+> **适用版本**: Rust 1.90+ | Edition 2024
 > **文档类型**: 技术对比 + 性能分析 + 选型指南
 
 ---
 
 ## 📋 目录
+
 - [C11 Middlewares 多维矩阵对比分析](#c11-middlewares-多维矩阵对比分析)
-  - [📊 目录](#-目录)
-  - [1. 消息队列深度对比](#1-消息队列深度对比)
+  - [📋 目录](#-目录)
+  - [📖 消息队列深度对比](#-消息队列深度对比)
     - [性能指标对比](#性能指标对比)
     - [可靠性对比](#可靠性对比)
-  - [2. 数据库客户端对比](#2-数据库客户端对比)
+  - [📝 数据库客户端对比](#-数据库客户端对比)
     - [ORM框架对比](#orm框架对比)
     - [连接池对比](#连接池对比)
-  - [3. 网络代理对比](#3-网络代理对比)
+  - [🔍 网络代理对比](#-网络代理对比)
     - [代理服务器特性](#代理服务器特性)
     - [负载均衡算法](#负载均衡算法)
-  - [4. I/O 运行时与高性能技术对比](#4-io-运行时与高性能技术对比)
+  - [🔧 I/O 运行时与高性能技术对比](#-io-运行时与高性能技术对比)
     - [4.1 异步 I/O 运行时对比](#41-异步-io-运行时对比)
     - [4.2 io\_uring 深度分析](#42-io_uring-深度分析)
     - [4.3 Apache Arrow 数据格式对比](#43-apache-arrow-数据格式对比)
-  - [5. 缓存中间件对比](#5-缓存中间件对比)
+  - [📊 缓存中间件对比](#-缓存中间件对比)
     - [缓存策略对比](#缓存策略对比)
-  - [5. 技术选型决策](#5-技术选型决策)
+  - [📊 技术选型决策](#-技术选型决策)
     - [按场景选型](#按场景选型)
     - [性能vs易用性](#性能vs易用性)
-  - [6. 总结与最佳实践](#6-总结与最佳实践)
+  - [🌟 总结与最佳实践](#-总结与最佳实践)
     - [黄金法则](#黄金法则)
     - [性能优化清单](#性能优化清单)
     - [相关文档](#相关文档)
@@ -378,11 +379,11 @@ fn create_arrow_batch() -> Result<RecordBatch> {
         Field::new("name", DataType::Utf8, false),
         Field::new("age", DataType::Int32, false),
     ]);
-    
+
     let id_array = Int32Array::from(vec![1, 2, 3, 4, 5]);
     let name_array = StringArray::from(vec!["Alice", "Bob", "Charlie", "David", "Eve"]);
     let age_array = Int32Array::from(vec![25, 30, 35, 28, 32]);
-    
+
     RecordBatch::try_new(
         Arc::new(schema),
         vec![
@@ -399,11 +400,11 @@ use arrow::compute::kernels::arithmetic::add;
 fn simd_computation() -> Result<()> {
     let a = Int32Array::from(vec![1, 2, 3, 4, 5]);
     let b = Int32Array::from(vec![10, 20, 30, 40, 50]);
-    
+
     // 自动使用 SIMD 指令加速
     let result = add(&a, &b)?;
     // 结果: [11, 22, 33, 44, 55]
-    
+
     Ok(())
 }
 
@@ -413,11 +414,11 @@ use arrow::ipc::writer::FileWriter;
 async fn zero_copy_transfer(batch: &RecordBatch) -> Result<()> {
     let file = File::create("data.arrow")?;
     let mut writer = FileWriter::try_new(file, &batch.schema())?;
-    
+
     // 零拷贝写入
     writer.write(batch)?;
     writer.finish()?;
-    
+
     Ok(())
 }
 
@@ -426,16 +427,16 @@ use arrow_flight::{FlightClient, Ticket};
 
 async fn arrow_flight_example() -> Result<()> {
     let mut client = FlightClient::new_from_socket(...).await?;
-    
+
     // 高效的流式传输
     let ticket = Ticket { ticket: b"data_id".to_vec() };
     let mut stream = client.do_get(ticket).await?;
-    
+
     while let Some(batch_result) = stream.next().await {
         let batch = batch_result?;
         // 处理批次数据（零拷贝）
     }
-    
+
     Ok(())
 }
 ```
@@ -484,15 +485,15 @@ async fn get_user(id: i64, cache: &Redis, db: &Pool) -> Result<User> {
     if let Some(user) = cache.get::<User>(&format!("user:{}", id)).await? {
         return Ok(user);
     }
-    
+
     // 2. 缓存未命中，从数据库查询
     let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = ?", id)
         .fetch_one(db)
         .await?;
-    
+
     // 3. 写入缓存
     cache.set(&format!("user:{}", id), &user, Some(3600)).await?;
-    
+
     Ok(user)
 }
 
@@ -502,10 +503,10 @@ async fn update_user(user: &User, cache: &Redis, db: &Pool) -> Result<()> {
     sqlx::query!("UPDATE users SET name = ? WHERE id = ?", user.name, user.id)
         .execute(db)
         .await?;
-    
+
     // 2. 再更新缓存
     cache.set(&format!("user:{}", user.id), user, Some(3600)).await?;
-    
+
     Ok(())
 }
 ```
@@ -534,25 +535,25 @@ quadrantChart
     title 中间件选型矩阵
     x-axis 易用性低 --> 易用性高
     y-axis 性能低 --> 性能高
-    
+
     quadrant-1 理想选择
     quadrant-2 性能优先
     quadrant-3 需改进
     quadrant-4 快速开发
-    
+
     Pingora: [0.8, 0.95]
     NATS: [0.85, 0.98]
     SQLx: [0.75, 0.92]
     Redis: [0.9, 0.85]
-    
+
     Kafka: [0.4, 0.9]
     Envoy: [0.35, 0.85]
     Diesel: [0.5, 0.88]
-    
+
     SeaORM: [0.85, 0.82]
     RabbitMQ: [0.7, 0.7]
     Nginx: [0.6, 0.9]
-    
+
     ActiveMQ: [0.5, 0.4]
     Traefik: [0.9, 0.5]
 ```
@@ -608,8 +609,8 @@ quadrantChart
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025-10-20  
+**文档版本**: v1.0
+**最后更新**: 2025-10-20
 **维护者**: Rust-lang项目组
 
 ---

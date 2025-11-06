@@ -1,6 +1,7 @@
 ﻿# OTLP Rust 集成指南和部署文档
 
 ## 📋 目录
+
 1. [快速开始](#快速开始)
 2. [集成指南](#集成指南)
 3. [部署方案](#部署方案)
@@ -78,12 +79,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let span = client.start_span("test_span", |span| {
         span.set_attribute("test.key", "test.value");
     });
-    
+
     // 模拟一些工作
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    
+
     span.end();
-    
+
     println!("测试追踪已发送！");
     Ok(())
 }
@@ -162,12 +163,12 @@ async fn database_integration_example() -> Result<(), Box<dyn std::error::Error>
     let result = execute_with_tracing(&otlp_client, &pool, |span, conn| async move {
         span.set_attribute("db.operation", "SELECT");
         span.set_attribute("db.table", "users");
-        
+
         let rows = sqlx::query("SELECT * FROM users WHERE active = $1")
             .bind(true)
             .fetch_all(conn)
             .await?;
-            
+
         span.set_attribute("db.rows_affected", rows.len() as i64);
         Ok(rows)
     }).await?;
@@ -190,7 +191,7 @@ where
 
     let result = operation(span.clone(), pool).await?;
     span.end();
-    
+
     Ok(result)
 }
 ```
@@ -216,7 +217,7 @@ async fn redis_integration_example() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let result: String = conn.set("key", "value")?;
-    
+
     span.set_attribute("redis.key", "key");
     span.set_attribute("redis.value", "value");
     span.end();
@@ -242,7 +243,7 @@ async fn consul_integration() -> Result<(), Box<dyn std::error::Error>> {
 
     // 注册服务
     let service_registry = ServiceRegistry::new(consul_client, otlp_client);
-    
+
     service_registry.register_service(ServiceInfo {
         name: "user-service".to_string(),
         address: "127.0.0.1".to_string(),
@@ -268,18 +269,18 @@ upstream otlp_backend {
     server otlp-collector-1:4317 weight=3;
     server otlp-collector-2:4317 weight=3;
     server otlp-collector-3:4317 weight=2;
-    
+
     keepalive 32;
 }
 
 server {
     listen 4317;
-    
+
     location / {
         grpc_pass grpc://otlp_backend;
         grpc_set_header Host $host;
         grpc_set_header X-Real-IP $remote_addr;
-        
+
         # 健康检查
         health_check;
     }
@@ -340,7 +341,7 @@ use otlp::{OtlpClient, K8sMetadata};
 async fn kubernetes_integration() -> Result<(), Box<dyn std::error::Error>> {
     let k8s_client = Client::try_default().await?;
     let pods: Api<Pod> = Api::default_namespaced(k8s_client);
-    
+
     let otlp_client = OtlpClient::builder()
         .with_endpoint("http://collector:4317")
         .with_k8s_metadata(K8sMetadata {
@@ -358,7 +359,7 @@ async fn kubernetes_integration() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let pod_list = pods.list(&Default::default()).await?;
-    
+
     span.set_attribute("k8s.pods.count", pod_list.items.len() as i64);
     span.end();
 
@@ -587,13 +588,13 @@ data:
     [otlp]
     environment = "production"
     log_level = "info"
-    
+
     [otlp.transport]
     protocol = "grpc"
     endpoints = [
         "http://otlp-collector:4317"
     ]
-    
+
     [otlp.resilience]
     circuit_breaker = { failure_threshold = 5, recovery_timeout = 60 }
     retry = { max_attempts = 3, base_delay = 100 }
@@ -776,21 +777,21 @@ retry_attempts = 3
 compression = "gzip"
 
 [otlp.resilience]
-circuit_breaker = { 
-    failure_threshold = 5, 
+circuit_breaker = {
+    failure_threshold = 5,
     recovery_timeout = 60,
     half_open_max_calls = 3
 }
-retry = { 
-    max_attempts = 3, 
-    base_delay = 100, 
+retry = {
+    max_attempts = 3,
+    base_delay = 100,
     max_delay = 5000,
     backoff_multiplier = 2.0
 }
-timeout = { 
-    connect = 5, 
-    read = 30, 
-    write = 30 
+timeout = {
+    connect = 5,
+    read = 30,
+    write = 30
 }
 
 [otlp.distributed]
@@ -836,16 +837,16 @@ struct OtlpConfig {
 
 async fn validate_config() -> Result<(), Box<dyn std::error::Error>> {
     let validator = ConfigValidator::new();
-    
+
     // 验证配置文件
     let config = validator.validate_file("config/production.toml").await?;
-    
+
     // 验证环境变量
     validator.validate_env_vars().await?;
-    
+
     // 验证依赖服务
     validator.validate_dependencies(&config).await?;
-    
+
     println!("配置验证通过！");
     Ok(())
 }
@@ -899,10 +900,10 @@ async fn setup_authentication() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let auth_provider = AuthProvider::new(auth_config).await?;
-    
+
     // 验证JWT token
     let validator = JwtValidator::new(auth_provider);
-    
+
     Ok(())
 }
 ```
@@ -935,7 +936,7 @@ upstream otlp_backend {
     server otlp-collector-1:4317 weight=3 max_fails=3 fail_timeout=30s;
     server otlp-collector-2:4317 weight=3 max_fails=3 fail_timeout=30s;
     server otlp-collector-3:4317 weight=2 max_fails=3 fail_timeout=30s;
-    
+
     keepalive 32;
     keepalive_requests 100;
     keepalive_timeout 60s;
@@ -943,16 +944,16 @@ upstream otlp_backend {
 
 server {
     listen 4317;
-    
+
     location / {
         grpc_pass grpc://otlp_backend;
-        
+
         # 健康检查
         health_check uri=/health interval=10s fails=3 passes=2;
-        
+
         # 错误处理
         error_page 502 503 504 /50x.html;
-        
+
         # 超时设置
         grpc_read_timeout 30s;
         grpc_send_timeout 30s;

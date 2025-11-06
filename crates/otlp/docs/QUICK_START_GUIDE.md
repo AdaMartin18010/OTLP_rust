@@ -1,8 +1,8 @@
 ﻿# OTLP Rust 快速开始指南
 
-**版本**: 1.1  
-**最后更新**: 2025年10月27日  
-**Rust 版本**: 1.90.0 (LLD链接器、const API)  
+**版本**: 1.1
+**最后更新**: 2025年10月27日
+**Rust 版本**: 1.90.0 (LLD链接器、const API)
 **状态**: 🟢 活跃维护
 
 > **简介**: 5分钟快速入门指南，帮助您快速开始使用 OTLP Rust 库进行分布式追踪、指标收集和日志记录。
@@ -13,28 +13,28 @@
 
 - [OTLP Rust 快速开始指南](#otlp-rust-快速开始指南)
   - [📋 目录](#-目录)
-  - [1. 快速开始](#1-快速开始)
-  - [2. 前置要求](#2-前置要求)
-  - [3. 安装](#3-安装)
+  - [🎯 快速开始](#-快速开始)
+  - [📝 前置要求](#-前置要求)
+  - [💡 安装](#-安装)
     - [3.1 添加依赖](#31-添加依赖)
     - [3.2 创建项目](#32-创建项目)
-  - [4. 基础使用](#4-基础使用)
+  - [🔧 基础使用](#-基础使用)
     - [4.1 最简单的示例](#41-最简单的示例)
     - [4.2 运行示例](#42-运行示例)
-  - [5. 发送不同类型的数据](#5-发送不同类型的数据)
+  - [📊 发送不同类型的数据](#-发送不同类型的数据)
     - [5.1 发送追踪数据](#51-发送追踪数据)
     - [5.2 发送指标数据](#52-发送指标数据)
     - [5.3 发送日志数据](#53-发送日志数据)
-  - [6. 配置选项](#6-配置选项)
+  - [🚀 配置选项](#-配置选项)
     - [6.1 基本配置](#61-基本配置)
     - [6.2 高级配置](#62-高级配置)
     - [6.3 TLS 配置](#63-tls-配置)
-  - [7. 常见场景](#7-常见场景)
+  - [🔍 常见场景](#-常见场景)
     - [7.1 Web 服务集成](#71-web-服务集成)
     - [7.2 数据库操作追踪](#72-数据库操作追踪)
     - [7.3 微服务通信追踪](#73-微服务通信追踪)
-  - [8. 故障排查](#8-故障排查)
-  - [9. 下一步](#9-下一步)
+  - [💻 故障排查](#-故障排查)
+  - [📚 下一步](#-下一步)
 
 ---
 
@@ -133,7 +133,7 @@ async fn send_trace_data(client: &OtlpClient) -> Result<()> {
         .with_attribute("request.duration", AttributeValue::Int64(150))
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -151,7 +151,7 @@ async fn send_metric_data(client: &OtlpClient) -> Result<()> {
         .with_attribute("service", AttributeValue::String("my_service".to_string()))
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -169,7 +169,7 @@ async fn send_log_data(client: &OtlpClient) -> Result<()> {
         .with_attribute("ip_address", AttributeValue::String("192.168.1.100".to_string()))
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -235,13 +235,13 @@ use otlp::{ComprehensivePerformanceOptimizer, TelemetryData};
 
 async fn use_performance_optimizer() -> Result<()> {
     let optimizer = ComprehensivePerformanceOptimizer::new();
-    
+
     // 创建测试数据
     let test_data = vec![TelemetryData::default(); 1000];
-    
+
     // 优化处理
     let optimized_data = optimizer.optimize_processing(test_data).await?;
-    
+
     println!("优化处理了 {} 条数据", optimized_data.len());
     Ok(())
 }
@@ -262,7 +262,7 @@ async fn trace_database_operation(client: &OtlpClient) -> Result<()> {
         .with_attribute("db.statement", AttributeValue::String("SELECT * FROM users".to_string()))
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -282,7 +282,7 @@ async fn trace_microservice_call(client: &OtlpClient) -> Result<()> {
         .with_attribute("target.service", AttributeValue::String("user-service".to_string()))
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -321,15 +321,16 @@ async fn trace_microservice_call(client: &OtlpClient) -> Result<()> {
 5. **生产部署**: 参考 [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
 
 **推荐学习路径**:
+
 ```
 快速开始 → 核心概念 → API参考 → 高级特性 → 生产部署
 ```
 
 ---
 
-**文档版本**: 1.1  
-**Rust 版本**: 1.90.0 (LLD链接器、const API)  
-**最后更新**: 2025年10月27日  
+**文档版本**: 1.1
+**Rust 版本**: 1.90.0 (LLD链接器、const API)
+**最后更新**: 2025年10月27日
 **反馈**: [提交 Issue](https://github.com/your-org/otlp-rust/issues)
 
 ---

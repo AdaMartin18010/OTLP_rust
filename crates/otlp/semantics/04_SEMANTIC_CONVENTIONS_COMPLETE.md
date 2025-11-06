@@ -1,7 +1,7 @@
 # OTLP语义约定完整覆盖
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -89,7 +89,7 @@ naming_rules:
     - "http.method"
     - "db.system"
     - "messaging.operation"
-  
+
   # 2. 命名空间
   namespaces:
     - http: HTTP协议
@@ -99,7 +99,7 @@ naming_rules:
     - net: 网络
     - server: 服务器
     - client: 客户端
-  
+
   # 3. 避免使用
   avoid:
     - 驼峰命名: ❌ httpMethod
@@ -350,27 +350,27 @@ async fn make_http_request(
             KeyValue::new("http.scheme", "https"),
         ])
         .start(tracer);
-    
+
     let cx = Context::current_with_span(span);
-    
+
     // 执行HTTP请求
     let response = match reqwest::get(url).await {
         Ok(resp) => {
             let status = resp.status().as_u16();
-            
+
             cx.span().set_attribute(KeyValue::new("http.status_code", status as i64));
             cx.span().set_attribute(KeyValue::new(
                 "http.response_content_length",
                 resp.content_length().unwrap_or(0) as i64,
             ));
-            
+
             // 状态码>=400视为错误
             if status >= 400 {
                 cx.span().set_status(Status::Error {
                     description: format!("HTTP {}", status).into(),
                 });
             }
-            
+
             resp
         }
         Err(e) => {
@@ -381,7 +381,7 @@ async fn make_http_request(
             return Err(e.into());
         }
     };
-    
+
     cx.span().end();
     Ok(response)
 }
@@ -401,11 +401,11 @@ async fn otel_http_middleware(
     next: Next,
 ) -> Response {
     let tracer = global::tracer("http-server");
-    
+
     let method = request.method().as_str();
     let uri = request.uri();
     let path = uri.path();
-    
+
     let mut span = tracer
         .span_builder(format!("{} {}", method, path))
         .with_kind(SpanKind::Server)
@@ -413,7 +413,7 @@ async fn otel_http_middleware(
             KeyValue::new("http.method", method.to_string()),
             KeyValue::new("http.target", uri.to_string()),
             KeyValue::new("http.scheme", "https"),
-            KeyValue::new("http.host", 
+            KeyValue::new("http.host",
                 request.headers()
                     .get("host")
                     .and_then(|h| h.to_str().ok())
@@ -431,21 +431,21 @@ async fn otel_http_middleware(
             KeyValue::new("http.route", parameterize_route(path)),
         ])
         .start(&tracer);
-    
+
     let cx = Context::current_with_span(span);
-    
+
     // 处理请求
     let response = next.run(request).await;
-    
+
     let status = response.status().as_u16();
     cx.span().set_attribute(KeyValue::new("http.status_code", status as i64));
-    
+
     if status >= 500 {
         cx.span().set_status(Status::Error {
             description: format!("HTTP {}", status).into(),
         });
     }
-    
+
     cx.span().end();
     response
 }
@@ -567,14 +567,14 @@ async fn query_user(
             KeyValue::new("db.user", "app_user"),
         ])
         .start(tracer);
-    
+
     let cx = Context::current_with_span(span);
-    
+
     let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
         .bind(user_id)
         .fetch_one(pool)
         .await;
-    
+
     match &result {
         Ok(_) => {
             cx.span().set_status(Status::Ok);
@@ -586,7 +586,7 @@ async fn query_user(
             cx.span().record_exception(e);
         }
     }
-    
+
     cx.span().end();
     result.map_err(Into::into)
 }
@@ -689,18 +689,18 @@ async fn send_kafka_message(
             KeyValue::new("messaging.message_payload_size_bytes", value.len() as i64),
         ])
         .start(tracer);
-    
+
     let cx = Context::current_with_span(span);
-    
+
     // 注入Trace Context到消息Header
     let mut record = FutureRecord::to(topic)
         .key(key)
         .payload(value);
-    
+
     inject_trace_context(&cx, &mut record);
-    
+
     let result = producer.send(record, Duration::from_secs(5)).await;
-    
+
     match result {
         Ok((partition, offset)) => {
             cx.span().set_attribute(KeyValue::new("messaging.kafka.partition", partition));
@@ -713,7 +713,7 @@ async fn send_kafka_message(
             });
         }
     }
-    
+
     cx.span().end();
     result.map(|_| ()).map_err(|(e, _)| e.into())
 }
@@ -725,7 +725,7 @@ async fn consume_kafka_message(
 ) -> Result<(), Error> {
     // 提取Trace Context
     let parent_cx = extract_trace_context(message);
-    
+
     let mut span = tracer
         .span_builder(format!("{} process", message.topic()))
         .with_kind(SpanKind::Consumer)
@@ -736,16 +736,16 @@ async fn consume_kafka_message(
             KeyValue::new("messaging.destination", message.topic().to_string()),
             KeyValue::new("messaging.kafka.partition", message.partition()),
             KeyValue::new("messaging.kafka.offset", message.offset()),
-            KeyValue::new("messaging.message_payload_size_bytes", 
+            KeyValue::new("messaging.message_payload_size_bytes",
                 message.payload().map(|p| p.len()).unwrap_or(0) as i64),
         ])
         .start(tracer);
-    
+
     let cx = Context::current_with_span(span);
-    
+
     // 处理消息
     let result = process_message(message).await;
-    
+
     match &result {
         Ok(_) => cx.span().set_status(Status::Ok),
         Err(e) => {
@@ -755,7 +755,7 @@ async fn consume_kafka_message(
             cx.span().record_exception(e);
         }
     }
-    
+
     cx.span().end();
     result
 }
@@ -806,10 +806,10 @@ impl MyService for MyServiceImpl {
         request: Request<EchoRequest>,
     ) -> Result<Response<EchoResponse>, Status> {
         let tracer = global::tracer("grpc-server");
-        
+
         // 提取Trace Context
         let parent_cx = extract_from_grpc_metadata(request.metadata());
-        
+
         let mut span = tracer
             .span_builder("myservice.EchoService/Echo")
             .with_kind(SpanKind::Server)
@@ -821,12 +821,12 @@ impl MyService for MyServiceImpl {
                 KeyValue::new("net.peer.ip", "127.0.0.1"),
             ])
             .start(&tracer);
-        
+
         let cx = Context::current_with_span(span);
-        
+
         // 处理请求
         let result = self.echo_impl(request).await;
-        
+
         match &result {
             Ok(_) => {
                 cx.span().set_attribute(KeyValue::new("rpc.grpc.status_code", 0));
@@ -840,7 +840,7 @@ impl MyService for MyServiceImpl {
                 });
             }
         }
-        
+
         cx.span().end();
         result
     }
@@ -900,13 +900,13 @@ async fn run_ci_pipeline(
             KeyValue::new("cicd.pipeline.run.id", pipeline.run_id.clone()),
         ])
         .start(tracer);
-    
+
     let cx = Context::current_with_span(span);
-    
+
     for task in &pipeline.tasks {
         run_ci_task(&cx, tracer, task).await?;
     }
-    
+
     cx.span().end();
     Ok(())
 }
@@ -926,11 +926,11 @@ async fn run_ci_task(
             KeyValue::new("cicd.pipeline.task.run.id", task.run_id.clone()),
         ])
         .start(tracer);
-    
+
     let cx = Context::current_with_span(span);
-    
+
     let result = task.execute().await;
-    
+
     match &result {
         Ok(_) => cx.span().set_status(Status::Ok),
         Err(e) => {
@@ -940,7 +940,7 @@ async fn run_ci_task(
             cx.span().record_exception(e);
         }
     }
-    
+
     cx.span().end();
     result
 }
@@ -1027,9 +1027,9 @@ async fn call_openai_api(
             KeyValue::new("gen_ai.request.temperature", 0.7),
         ])
         .start(tracer);
-    
+
     let cx = Context::current_with_span(span);
-    
+
     let request = CreateChatCompletionRequest {
         model: "gpt-4".to_string(),
         messages: vec![
@@ -1042,7 +1042,7 @@ async fn call_openai_api(
         temperature: Some(0.7),
         ..Default::default()
     };
-    
+
     let response = match openai_client.chat().create(request).await {
         Ok(resp) => {
             // 记录响应属性
@@ -1054,7 +1054,7 @@ async fn call_openai_api(
                 "gen_ai.response.model",
                 resp.model.clone(),
             ));
-            
+
             if let Some(usage) = &resp.usage {
                 cx.span().set_attribute(KeyValue::new(
                     "gen_ai.usage.input_tokens",
@@ -1069,14 +1069,14 @@ async fn call_openai_api(
                     usage.total_tokens as i64,
                 ));
             }
-            
+
             if let Some(choice) = resp.choices.first() {
                 cx.span().set_attribute(KeyValue::new(
                     "gen_ai.response.finish_reason",
                     choice.finish_reason.clone().unwrap_or_default(),
                 ));
             }
-            
+
             cx.span().set_status(Status::Ok);
             resp
         }
@@ -1088,9 +1088,9 @@ async fn call_openai_api(
             return Err(e.into());
         }
     };
-    
+
     cx.span().end();
-    
+
     Ok(response.choices.first()
         .and_then(|c| c.message.content.clone())
         .unwrap_or_default())
@@ -1176,24 +1176,24 @@ custom_conventions:
     - "遵循命名规范: 小写+点分隔"
     - "文档化自定义约定"
     - "在团队内推广"
-  
+
   example:
     # 业务属性
     myorg.business_unit:
       type: string
       description: "业务单元"
       examples: ["retail", "wholesale"]
-    
+
     myorg.tenant_id:
       type: string
       description: "租户ID"
       example: "tenant-abc123"
-    
+
     myorg.feature_flag:
       type: string
       description: "特性开关"
       example: "new-checkout-flow"
-    
+
     myorg.experiment_id:
       type: string
       description: "实验ID"
@@ -1219,7 +1219,7 @@ fn create_span_with_custom_attrs(tracer: &impl Tracer) -> Span {
         .with_attributes(vec![
             // 标准属性
             KeyValue::new("service.name", "my-service"),
-            
+
             // 自定义属性
             KeyValue::new(custom_attributes::BUSINESS_UNIT, "retail"),
             KeyValue::new(custom_attributes::TENANT_ID, "tenant-123"),

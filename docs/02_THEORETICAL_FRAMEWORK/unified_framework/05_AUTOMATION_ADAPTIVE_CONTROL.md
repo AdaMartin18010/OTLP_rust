@@ -1,8 +1,8 @@
 ﻿# OTLP 统一理论框架 - 第五部分(终章)
 
-**版本**: 2.0  
-**创建日期**: 2025年10月26日  
-**系列**: 完结篇  
+**版本**: 2.0
+**创建日期**: 2025年10月26日
+**系列**: 完结篇
 **状态**: 🟢 活跃维护
 
 > **简介**: 统一理论框架第五部分(终章) - 自动化运维与自适应控制的完整理论。
@@ -10,8 +10,9 @@
 ---
 
 ## 📋 目录
+
 - [OTLP 统一理论框架 - 第五部分(终章)](#otlp-统一理论框架---第五部分终章)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [第八部分: 自动化运维与自适应控制](#第八部分-自动化运维与自适应控制)
     - [8.1 控制理论基础](#81-控制理论基础)
       - [8.1.1 闭环控制系统](#811-闭环控制系统)
@@ -121,38 +122,38 @@ impl PidController {
             last_error: 0.0,
         }
     }
-    
+
     /// 计算控制信号
     pub async fn compute(&mut self, measurement: f64, dt: f64) -> f64 {
         let mut span = self.tracer.start_span("pid_control");
         span.set_attribute("setpoint", self.setpoint);
         span.set_attribute("measurement", measurement);
-        
+
         // 计算误差
         let error = self.setpoint - measurement;
         span.set_attribute("error", error);
-        
+
         // 积分项
         self.integral += error * dt;
         let integral_term = self.ki * self.integral;
-        
+
         // 微分项
         let derivative = (error - self.last_error) / dt;
         let derivative_term = self.kd * derivative;
-        
+
         // PID输出
         let output = self.kp * error + integral_term + derivative_term;
-        
+
         span.set_attribute("proportional_term", self.kp * error);
         span.set_attribute("integral_term", integral_term);
         span.set_attribute("derivative_term", derivative_term);
         span.set_attribute("control_output", output);
-        
+
         self.last_error = error;
-        
+
         output
     }
-    
+
     /// 重置积分项(防止积分饱和)
     pub fn reset_integral(&mut self) {
         let mut span = self.tracer.start_span("pid_reset_integral");
@@ -176,22 +177,22 @@ impl AutoScalingController {
     /// 执行自动扩缩容
     pub async fn autoscale(&mut self) -> Result<ScalingAction, OtlpError> {
         let mut span = self.tracer.start_span("autoscaling_decision");
-        
+
         // 从OTLP获取当前P99延迟
         let current_p99 = self.get_p99_latency().await?;
         span.set_attribute("current_p99_ms", current_p99);
-        
+
         // PID计算控制信号
         let control_signal = self.pid.compute(current_p99, 1.0).await;
         span.set_attribute("control_signal", control_signal);
-        
+
         // 转换为实例数变化
         let current = self.current_instances.load(Ordering::Relaxed);
         let desired = self.calculate_desired_instances(current, control_signal);
-        
+
         span.set_attribute("current_instances", current as i64);
         span.set_attribute("desired_instances", desired as i64);
-        
+
         let action = if desired > current {
             ScalingAction::ScaleOut {
                 from: current,
@@ -205,28 +206,28 @@ impl AutoScalingController {
         } else {
             ScalingAction::NoAction
         };
-        
+
         span.set_attribute("action", format!("{:?}", action));
-        
+
         // 执行扩缩容
         if !matches!(action, ScalingAction::NoAction) {
             self.execute_scaling(&action).await?;
             self.current_instances.store(desired, Ordering::Relaxed);
         }
-        
+
         Ok(action)
     }
-    
+
     fn calculate_desired_instances(&self, current: usize, control_signal: f64) -> usize {
         // 控制信号 > 0: 需要更多实例(延迟过高)
         // 控制信号 < 0: 可以减少实例(延迟过低)
-        
+
         let delta = (control_signal / 10.0) as isize;  // 归一化
         let desired = (current as isize + delta).max(self.min_instances as isize);
-        
+
         (desired as usize).min(self.max_instances)
     }
-    
+
     async fn get_p99_latency(&self) -> Result<f64, OtlpError> {
         // 查询OTLP metrics获取P99延迟
         let metrics = query_metrics(
@@ -234,14 +235,14 @@ impl AutoScalingController {
             vec![("service", "my-service")],
             Duration::from_secs(60),
         ).await?;
-        
+
         Ok(calculate_percentile(&metrics, 0.99))
     }
-    
+
     async fn execute_scaling(&self, action: &ScalingAction) -> Result<(), OtlpError> {
         let mut span = self.tracer.start_span("execute_scaling");
         span.set_attribute("action", format!("{:?}", action));
-        
+
         match action {
             ScalingAction::ScaleOut { from, to } => {
                 let count = to - from;
@@ -263,7 +264,7 @@ impl AutoScalingController {
             }
             ScalingAction::NoAction => {}
         }
-        
+
         Ok(())
     }
 }
@@ -345,39 +346,39 @@ impl MapeKManager {
     pub async fn run_loop(&mut self) -> Result<(), OtlpError> {
         let mut span = self.tracer.start_span("mape_k_cycle");
         let mut interval = tokio::time::interval(Duration::from_secs(30));
-        
+
         loop {
             interval.tick().await;
-            
+
             // 1. Monitor: 收集数据
             span.add_event("monitor_phase", vec![]);
             let observations = self.monitor.collect().await?;
             span.set_attribute("observation_count", observations.len() as i64);
-            
+
             // 更新知识库
             self.knowledge.write().await.add_observations(&observations);
-            
+
             // 2. Analyze: 分析问题
             span.add_event("analyze_phase", vec![]);
             let analysis = self.analyzer.analyze(&observations).await?;
             span.set_attribute("issues_found", analysis.issues.len() as i64);
-            
+
             if analysis.issues.is_empty() {
                 span.add_event("no_issues_found", vec![]);
                 continue;
             }
-            
+
             // 3. Plan: 制定计划
             span.add_event("plan_phase", vec![]);
             let plan = self.planner.plan(&analysis, &self.knowledge.read().await).await?;
             span.set_attribute("actions_planned", plan.actions.len() as i64);
-            
+
             // 4. Execute: 执行计划
             span.add_event("execute_phase", vec![]);
             let result = self.executor.execute(&plan).await?;
             span.set_attribute("actions_executed", result.executed_count as i64);
             span.set_attribute("actions_failed", result.failed_count as i64);
-            
+
             // 更新知识库with结果
             self.knowledge.write().await.add_execution_result(&result);
         }
@@ -394,26 +395,26 @@ impl Monitor {
     pub async fn collect(&self) -> Result<Vec<Observation>, OtlpError> {
         let mut span = self.tracer.start_span("monitor_collect");
         let mut observations = Vec::new();
-        
+
         // 收集metrics
         let metrics = self.collect_metrics().await?;
         observations.extend(metrics.into_iter().map(Observation::Metric));
-        
+
         // 收集traces
         let traces = self.collect_traces().await?;
         observations.extend(traces.into_iter().map(Observation::Trace));
-        
+
         // 收集logs
         let logs = self.collect_logs().await?;
         observations.extend(logs.into_iter().map(Observation::Log));
-        
+
         span.set_attribute("total_observations", observations.len() as i64);
         Ok(observations)
     }
-    
+
     async fn collect_metrics(&self) -> Result<Vec<MetricObservation>, OtlpError> {
         let mut span = self.tracer.start_span("collect_metrics");
-        
+
         // 查询关键metrics
         let metrics = vec![
             self.query_metric("http.server.duration").await?,
@@ -421,7 +422,7 @@ impl Monitor {
             self.query_metric("system.memory.usage").await?,
             self.query_metric("http.server.request.count").await?,
         ];
-        
+
         span.set_attribute("metric_count", metrics.len() as i64);
         Ok(metrics)
     }
@@ -437,19 +438,19 @@ pub struct Analyzer {
 impl Analyzer {
     pub async fn analyze(&self, observations: &[Observation]) -> Result<Analysis, OtlpError> {
         let mut span = self.tracer.start_span("analyze_observations");
-        
+
         let mut issues = Vec::new();
-        
+
         // 异常检测
         let anomalies = self.detect_anomalies(observations).await?;
         span.set_attribute("anomalies_found", anomalies.len() as i64);
-        
+
         for anomaly in anomalies {
             // 根因分析
             let root_cause = self.root_cause_analyzer
                 .analyze(&anomaly, observations)
                 .await?;
-            
+
             issues.push(Issue {
                 id: generate_id(),
                 severity: anomaly.severity,
@@ -458,17 +459,17 @@ impl Analyzer {
                 timestamp: Instant::now(),
             });
         }
-        
+
         // SLA违规检测
         let sla_violations = self.detect_sla_violations(observations).await?;
         issues.extend(sla_violations);
-        
+
         Ok(Analysis { issues })
     }
-    
+
     async fn detect_anomalies(&self, observations: &[Observation]) -> Result<Vec<Anomaly>, OtlpError> {
         let mut span = self.tracer.start_span("detect_anomalies");
-        
+
         // 提取metric time series
         let metrics: Vec<_> = observations.iter()
             .filter_map(|obs| match obs {
@@ -476,24 +477,24 @@ impl Analyzer {
                 _ => None,
             })
             .collect();
-        
+
         let mut anomalies = Vec::new();
-        
+
         for metric in metrics {
             let values: Vec<f64> = metric.datapoints.iter()
                 .map(|dp| dp.value)
                 .collect();
-            
+
             let detected = self.anomaly_detector
                 .detect_statistical(&values, &StatisticalConfig {
                     window_size: 10,
                     threshold_factor: 3.0,
                 })
                 .await;
-            
+
             anomalies.extend(detected);
         }
-        
+
         span.set_attribute("anomaly_count", anomalies.len() as i64);
         Ok(anomalies)
     }
@@ -512,13 +513,13 @@ impl Planner {
     ) -> Result<Plan, OtlpError> {
         let mut span = self.tracer.start_span("plan_actions");
         span.set_attribute("issue_count", analysis.issues.len() as i64);
-        
+
         let mut actions = Vec::new();
-        
+
         for issue in &analysis.issues {
             // 从知识库查找类似问题的成功策略
             let similar_cases = knowledge.find_similar_cases(issue);
-            
+
             let action = if let Some(case) = similar_cases.first() {
                 span.add_event("using_learned_strategy", vec![
                     ("case_id", case.id.to_string().into()),
@@ -529,15 +530,15 @@ impl Planner {
                 span.add_event("generating_new_strategy", vec![]);
                 self.generate_action(issue)?
             };
-            
+
             actions.push(action);
         }
-        
+
         span.set_attribute("action_count", actions.len() as i64);
-        
+
         Ok(Plan { actions })
     }
-    
+
     fn generate_action(&self, issue: &Issue) -> Result<Action, OtlpError> {
         // 根据问题类型生成动作
         match issue.severity {
@@ -575,15 +576,15 @@ impl Executor {
     pub async fn execute(&self, plan: &Plan) -> Result<ExecutionResult, OtlpError> {
         let mut span = self.tracer.start_span("execute_plan");
         span.set_attribute("action_count", plan.actions.len() as i64);
-        
+
         let mut executed = 0;
         let mut failed = 0;
-        
+
         for action in &plan.actions {
             span.add_event("executing_action", vec![
                 ("action_type", format!("{:?}", action).into()),
             ]);
-            
+
             match self.execute_action(action).await {
                 Ok(_) => {
                     executed += 1;
@@ -597,19 +598,19 @@ impl Executor {
                 }
             }
         }
-        
+
         span.set_attribute("executed_count", executed);
         span.set_attribute("failed_count", failed);
-        
+
         Ok(ExecutionResult {
             executed_count: executed,
             failed_count: failed,
         })
     }
-    
+
     async fn execute_action(&self, action: &Action) -> Result<(), OtlpError> {
         let mut span = self.tracer.start_span("execute_action");
-        
+
         match action {
             Action::RestartService { service } => {
                 span.set_attribute("action", "restart_service");
@@ -632,7 +633,7 @@ impl Executor {
                 info!("{}", message);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -650,28 +651,28 @@ impl KnowledgeBase {
             .filter(|case| self.similarity(case, issue) > 0.8)
             .collect()
     }
-    
+
     fn similarity(&self, case: &Case, issue: &Issue) -> f64 {
         // 计算相似度
         let mut score = 0.0;
-        
+
         // 严重程度匹配
         if case.issue.severity == issue.severity {
             score += 0.3;
         }
-        
+
         // 服务匹配
         if case.issue.affected_service == issue.affected_service {
             score += 0.4;
         }
-        
+
         // 症状匹配
         let symptom_overlap = self.symptom_overlap(&case.issue, issue);
         score += 0.3 * symptom_overlap;
-        
+
         score
     }
-    
+
     pub fn add_execution_result(&mut self, result: &ExecutionResult) {
         // 学习from执行结果,更新case success rate
         // 使用强化学习更新策略
@@ -749,40 +750,40 @@ impl PredictiveMaintenanceSystem {
         let mut span = self.tracer.start_span("predict_load");
         span.set_attribute("data_points", historical_data.len() as i64);
         span.set_attribute("prediction_horizon", horizon as i64);
-        
+
         let predictions = self.time_series_model.predict(historical_data, horizon)?;
-        
+
         span.set_attribute("predicted_max", predictions.iter().cloned().fold(f64::NEG_INFINITY, f64::max));
         span.set_attribute("predicted_min", predictions.iter().cloned().fold(f64::INFINITY, f64::min));
-        
+
         Ok(predictions)
     }
-    
+
     /// 预测异常
     pub async fn predict_anomaly(
         &self,
         current_state: &SystemState,
     ) -> Result<AnomalyPrediction, OtlpError> {
         let mut span = self.tracer.start_span("predict_anomaly");
-        
+
         // 提取特征
         let features = self.extract_features(current_state);
         span.set_attribute("feature_count", features.len() as i64);
-        
+
         // 预测
         let probability = self.anomaly_predictor.predict(&features)?;
         span.set_attribute("anomaly_probability", probability);
-        
+
         let will_occur = probability > 0.7;
         span.set_attribute("anomaly_predicted", will_occur);
-        
+
         if will_occur {
             span.add_event("anomaly_predicted", vec![
                 ("probability", probability.to_string().into()),
                 ("time_to_anomaly_min", "5".into()),
             ]);
         }
-        
+
         Ok(AnomalyPrediction {
             will_occur,
             probability,
@@ -793,54 +794,54 @@ impl PredictiveMaintenanceSystem {
             },
         })
     }
-    
+
     /// 强化学习决策
     pub async fn rl_decision(
         &mut self,
         state: &SystemState,
     ) -> Result<Action, OtlpError> {
         let mut span = self.tracer.start_span("rl_decision");
-        
+
         // 将系统状态转换为RL state
         let rl_state = self.state_to_tensor(state);
         span.set_attribute("state_dim", rl_state.len() as i64);
-        
+
         // Agent选择动作
         let action = self.rl_agent.select_action(&rl_state);
         span.set_attribute("action", format!("{:?}", action));
-        
+
         // 执行动作
         let result = self.execute_action(&action).await?;
-        
+
         // 计算奖励
         let reward = self.calculate_reward(state, &action, &result);
         span.set_attribute("reward", reward);
-        
+
         // 更新Agent
         self.rl_agent.update(&rl_state, &action, reward, &result.new_state);
-        
+
         Ok(action)
     }
-    
+
     fn calculate_reward(&self, state: &SystemState, action: &Action, result: &ActionResult) -> f64 {
         let mut reward = 0.0;
-        
+
         // SLA满足
         if result.new_state.p99_latency < 100.0 {
             reward += 10.0;
         } else {
             reward -= 20.0 * (result.new_state.p99_latency - 100.0) / 100.0;
         }
-        
+
         // 成本
         let cost = self.calculate_cost(&result.new_state);
         reward -= cost * 0.1;
-        
+
         // 稳定性(避免频繁变更)
         if matches!(action, Action::NoOp) {
             reward += 1.0;
         }
-        
+
         reward
     }
 }
@@ -855,27 +856,27 @@ impl LstmModel {
     pub fn predict(&self, data: &[f64], horizon: usize) -> Result<Vec<f64>, OtlpError> {
         // 归一化
         let scaled = self.scaler.transform(data);
-        
+
         // 转换为tensor
         let input = Tensor::of_slice(&scaled)
             .view([1, data.len() as i64, 1]);
-        
+
         // 预测
         let mut predictions = Vec::with_capacity(horizon);
         let mut current_input = input;
-        
+
         for _ in 0..horizon {
             let output = self.model.forward(&current_input);
             let pred_value = Vec::<f64>::from(output)[0];
             predictions.push(self.scaler.inverse_transform(pred_value));
-            
+
             // 更新输入(滑动窗口)
             current_input = torch::cat(&[
                 current_input.slice(1, 1, -1, 1),
                 output.view([1, 1, 1]),
             ], 1);
         }
-        
+
         Ok(predictions)
     }
 }
@@ -892,7 +893,7 @@ impl ReinforcementLearningAgent {
     pub fn select_action(&self, state: &[f64]) -> Action {
         let state_tensor = Tensor::of_slice(state);
         let action_probs = self.policy_network.forward(&state_tensor);
-        
+
         // ε-greedy策略
         if rand::random::<f64>() < 0.1 {
             // 探索: 随机动作
@@ -903,7 +904,7 @@ impl ReinforcementLearningAgent {
             self.idx_to_action(action_idx.int64_value(&[]))
         }
     }
-    
+
     pub fn update(
         &mut self,
         state: &[f64],
@@ -918,34 +919,34 @@ impl ReinforcementLearningAgent {
             reward,
             next_state: next_state.to_vec(),
         });
-        
+
         // 批量学习
         if self.replay_buffer.len() >= 32 {
             let batch = self.replay_buffer.sample(32);
             self.train_on_batch(&batch);
         }
     }
-    
+
     fn train_on_batch(&mut self, batch: &[Experience]) {
         // Actor-Critic算法
         for exp in batch {
             let state_t = Tensor::of_slice(&exp.state);
             let next_state_t = Tensor::of_slice(&exp.next_state);
-            
+
             // 计算TD目标
             let value = self.value_network.forward(&state_t);
             let next_value = self.value_network.forward(&next_state_t);
             let td_target = exp.reward + 0.99 * next_value;
-            
+
             // 计算TD误差
             let td_error = &td_target - &value;
-            
+
             // 更新Value Network
             let value_loss = td_error.pow(2.0);
             self.optimizer.zero_grad();
             value_loss.backward();
             self.optimizer.step();
-            
+
             // 更新Policy Network
             let action_prob = self.policy_network.forward(&state_t);
             let policy_loss = -action_prob.log() * td_error.detach();

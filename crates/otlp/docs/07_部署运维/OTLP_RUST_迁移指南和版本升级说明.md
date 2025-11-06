@@ -1,6 +1,7 @@
 ﻿# OTLP Rust 迁移指南和版本升级说明
 
 ## 📋 目录
+
 1. [版本升级策略](#版本升级策略)
 2. [兼容性说明](#兼容性说明)
 3. [升级步骤](#升级步骤)
@@ -30,7 +31,7 @@ graph TD
     D --> E[v1.1.0]
     E --> F[v1.2.0]
     F --> G[v2.0.0]
-    
+
     A --> A1[初始版本]
     B --> B1[功能增强]
     C --> C1[性能优化]
@@ -246,17 +247,17 @@ echo "蓝绿部署完成！"
 #[tokio::test]
 async fn test_post_upgrade_functionality() {
     let client = OtlpClient::new("http://localhost:4317").await.unwrap();
-    
+
     // 测试基本功能
     let span = client.start_span("upgrade_test", |span| {
         span.set_attribute("test", "upgrade");
     });
     span.end();
-    
+
     // 测试新功能
     let result = client.record_metric("upgrade_test", 1.0, vec![("test", "upgrade")]).await;
     assert!(result.is_ok());
-    
+
     // 测试批量处理
     let mut batch = TelemetryBatch::new();
     batch.add_trace(create_test_trace());
@@ -301,39 +302,39 @@ pub trait ConfigMigration {
 impl ConfigMigrator {
     pub fn new() -> Self {
         let mut migrations = HashMap::new();
-        
+
         // 注册迁移规则
         migrations.insert("0.1.0->0.2.0".to_string(), Box::new(V010To020Migration));
         migrations.insert("0.2.0->1.0.0".to_string(), Box::new(V020To100Migration));
-        
+
         Self { migrations }
     }
-    
+
     pub fn migrate_config(&self, config_path: &str, target_version: &str) -> Result<(), MigrationError> {
         let current_version = self.detect_version(config_path)?;
         let mut config = self.load_config(config_path)?;
-        
+
         let migration_path = self.find_migration_path(&current_version, target_version)?;
-        
+
         for migration_key in migration_path {
             if let Some(migration) = self.migrations.get(&migration_key) {
                 config = migration.migrate(config)?;
             }
         }
-        
+
         self.save_config(config_path, &config)?;
         Ok(())
     }
-    
+
     fn find_migration_path(&self, from: &str, to: &str) -> Result<Vec<String>, MigrationError> {
         // 查找迁移路径的实现
         let mut path = Vec::new();
-        
+
         if from == "0.1.0" && to == "1.0.0" {
             path.push("0.1.0->0.2.0".to_string());
             path.push("0.2.0->1.0.0".to_string());
         }
-        
+
         Ok(path)
     }
 }
@@ -344,10 +345,10 @@ struct V010To020Migration;
 impl ConfigMigration for V010To020Migration {
     fn from_version(&self) -> &str { "0.1.0" }
     fn to_version(&self) -> &str { "0.2.0" }
-    
+
     fn migrate(&self, config: serde_json::Value) -> Result<serde_json::Value, MigrationError> {
         let mut new_config = config.clone();
-        
+
         // 添加默认重试配置
         if !new_config["otlp"].as_object().unwrap().contains_key("retry_config") {
             new_config["otlp"]["retry_config"] = serde_json::json!({
@@ -356,7 +357,7 @@ impl ConfigMigration for V010To020Migration {
                 "max_delay": 5000
             });
         }
-        
+
         Ok(new_config)
     }
 }
@@ -367,10 +368,10 @@ struct V020To100Migration;
 impl ConfigMigration for V020To100Migration {
     fn from_version(&self) -> &str { "0.2.0" }
     fn to_version(&self) -> &str { "1.0.0" }
-    
+
     fn migrate(&self, config: serde_json::Value) -> Result<serde_json::Value, MigrationError> {
         let mut new_config = serde_json::Map::new();
-        
+
         // 重新组织配置结构
         if let Some(otlp_config) = config.get("otlp").and_then(|v| v.as_object()) {
             // 传输配置
@@ -378,7 +379,7 @@ impl ConfigMigration for V020To100Migration {
                 "endpoint": otlp_config.get("endpoint"),
                 "timeout": otlp_config.get("timeout"),
             }));
-            
+
             // 弹性配置
             if let Some(retry_config) = otlp_config.get("retry_config") {
                 new_config.insert("resilience".to_string(), serde_json::json!({
@@ -386,10 +387,10 @@ impl ConfigMigration for V020To100Migration {
                 }));
             }
         }
-        
+
         let mut result = serde_json::Map::new();
         result.insert("otlp".to_string(), serde_json::Value::Object(new_config));
-        
+
         Ok(serde_json::Value::Object(result))
     }
 }
@@ -443,7 +444,7 @@ import json
 def migrate_config(config_file):
     with open(config_file, 'r') as f:
         config = toml.load(f)
-    
+
     # 新配置结构
     new_config = {
         'otlp': {
@@ -451,24 +452,24 @@ def migrate_config(config_file):
             'log_level': config['otlp'].get('log_level', 'info'),
         }
     }
-    
+
     # 传输配置
     if 'endpoint' in config['otlp']:
         new_config['otlp']['transport'] = {
             'endpoint': config['otlp']['endpoint'],
             'timeout': config['otlp'].get('timeout', 30),
         }
-    
+
     # 弹性配置
     if 'retry_config' in config['otlp']:
         new_config['otlp']['resilience'] = {
             'retry': config['otlp']['retry_config']
         }
-    
+
     # 保存新配置
     with open(config_file, 'w') as f:
         toml.dump(new_config, f)
-    
+
     print("配置迁移完成！")
 
 if __name__ == "__main__":
@@ -504,49 +505,49 @@ impl DatabaseMigrator {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
-    
+
     pub async fn run_migrations(&self) -> Result<(), MigrationError> {
         let current_version = self.get_current_version().await?;
         let target_version = env!("CARGO_PKG_VERSION");
-        
+
         if current_version != target_version {
             self.migrate_to_version(target_version).await?;
         }
-        
+
         Ok(())
     }
-    
+
     async fn migrate_to_version(&self, target_version: &str) -> Result<(), MigrationError> {
         let migrations = self.get_pending_migrations(target_version).await?;
-        
+
         for migration in migrations {
             println!("执行迁移: {}", migration.name);
             self.execute_migration(&migration).await?;
         }
-        
+
         self.update_version(target_version).await?;
         Ok(())
     }
-    
+
     async fn execute_migration(&self, migration: &Migration) -> Result<(), MigrationError> {
         // 开始事务
         let mut tx = self.pool.begin().await?;
-        
+
         // 执行迁移SQL
         sqlx::query(&migration.sql)
             .execute(&mut *tx)
             .await?;
-        
+
         // 记录迁移历史
         sqlx::query("INSERT INTO migration_history (name, version, executed_at) VALUES ($1, $2, NOW())")
             .bind(&migration.name)
             .bind(&migration.version)
             .execute(&mut *tx)
             .await?;
-        
+
         // 提交事务
         tx.commit().await?;
-        
+
         Ok(())
     }
 }
@@ -581,22 +582,22 @@ pub trait DataMigration {
 impl DataMigrator {
     pub fn new() -> Self {
         let mut migrations = HashMap::new();
-        
+
         migrations.insert("0.1.0->0.2.0".to_string(), Box::new(V010To020DataMigration));
         migrations.insert("0.2.0->1.0.0".to_string(), Box::new(V020To100DataMigration));
-        
+
         Self { migrations }
     }
-    
+
     pub fn migrate_data(&self, data: &mut TelemetryData, target_version: &str) -> Result<(), MigrationError> {
         let current_version = data.version.as_ref().unwrap_or(&"0.1.0".to_string());
-        
+
         if current_version == target_version {
             return Ok(());
         }
-        
+
         let migration_path = self.find_migration_path(current_version, target_version)?;
-        
+
         for migration_key in migration_path {
             if let Some(migration) = self.migrations.get(&migration_key) {
                 match data {
@@ -606,7 +607,7 @@ impl DataMigrator {
                 }
             }
         }
-        
+
         data.version = Some(target_version.to_string());
         Ok(())
     }
@@ -618,7 +619,7 @@ struct V010To020DataMigration;
 impl DataMigration for V010To020DataMigration {
     fn from_version(&self) -> &str { "0.1.0" }
     fn to_version(&self) -> &str { "0.2.0" }
-    
+
     fn migrate_trace(&self, trace: &mut TraceData) -> Result<(), MigrationError> {
         // 添加元数据字段
         if trace.metadata.is_none() {
@@ -626,7 +627,7 @@ impl DataMigration for V010To020DataMigration {
         }
         Ok(())
     }
-    
+
     fn migrate_metric(&self, metric: &mut MetricData) -> Result<(), MigrationError> {
         // 添加时间戳字段
         if metric.timestamp.is_none() {
@@ -634,7 +635,7 @@ impl DataMigration for V010To020DataMigration {
         }
         Ok(())
     }
-    
+
     fn migrate_log(&self, log: &mut LogData) -> Result<(), MigrationError> {
         // 标准化日志级别
         log.level = log.level.to_lowercase();
@@ -734,7 +735,7 @@ impl OtlpClient {
     pub async fn update_config(&self, config: ClientConfig) -> Result<(), OtlpError> {
         // 动态配置更新
     }
-    
+
     pub async fn get_metrics(&self) -> Result<ClientMetrics, OtlpError> {
         // 获取客户端指标
     }
@@ -796,25 +797,25 @@ impl UpgradeDiagnostics {
     pub fn new(config_path: String, data_path: String) -> Self {
         Self { config_path, data_path }
     }
-    
+
     pub async fn run_diagnostics(&self) -> Result<DiagnosticReport, DiagnosticError> {
         let mut report = DiagnosticReport::new();
-        
+
         // 检查配置文件
         self.check_config_file(&mut report).await?;
-        
+
         // 检查数据目录
         self.check_data_directory(&mut report).await?;
-        
+
         // 检查数据库
         self.check_database(&mut report).await?;
-        
+
         // 检查网络连接
         self.check_network_connectivity(&mut report).await?;
-        
+
         Ok(report)
     }
-    
+
     async fn check_config_file(&self, report: &mut DiagnosticReport) -> Result<(), DiagnosticError> {
         if !std::path::Path::new(&self.config_path).exists() {
             report.add_issue(DiagnosticIssue {
@@ -824,7 +825,7 @@ impl UpgradeDiagnostics {
                 suggestion: "请检查配置文件路径".to_string(),
             });
         }
-        
+
         // 验证配置格式
         match self.validate_config().await {
             Ok(_) => report.add_success("配置文件格式正确"),
@@ -835,13 +836,13 @@ impl UpgradeDiagnostics {
                 suggestion: "运行配置迁移工具".to_string(),
             }),
         }
-        
+
         Ok(())
     }
-    
+
     async fn check_data_directory(&self, report: &mut DiagnosticReport) -> Result<(), DiagnosticError> {
         let data_path = std::path::Path::new(&self.data_path);
-        
+
         if !data_path.exists() {
             report.add_issue(DiagnosticIssue {
                 severity: IssueSeverity::High,
@@ -851,7 +852,7 @@ impl UpgradeDiagnostics {
             });
             return Ok(());
         }
-        
+
         // 检查磁盘空间
         let available_space = self.get_available_space(data_path)?;
         if available_space < 1024 * 1024 * 1024 { // 1GB
@@ -862,7 +863,7 @@ impl UpgradeDiagnostics {
                 suggestion: "清理磁盘空间或扩展存储".to_string(),
             });
         }
-        
+
         Ok(())
     }
 }
@@ -914,17 +915,17 @@ HEALTH_STATUS=$(curl -s http://localhost:8080/health | jq -r '.status')
 
 if [ "$HEALTH_STATUS" != "healthy" ]; then
     echo "检测到健康状态异常，开始自动回滚..."
-    
+
     # 回滚到前一版本
     kubectl rollout undo deployment/otlp-collector -n otlp-system
-    
+
     # 等待回滚完成
     kubectl rollout status deployment/otlp-collector -n otlp-system
-    
+
     # 验证回滚结果
     sleep 30
     NEW_HEALTH_STATUS=$(curl -s http://localhost:8080/health | jq -r '.status')
-    
+
     if [ "$NEW_HEALTH_STATUS" = "healthy" ]; then
         echo "回滚成功！"
     else

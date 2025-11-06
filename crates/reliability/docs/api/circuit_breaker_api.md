@@ -1,13 +1,14 @@
 ﻿# 熔断器完整实现 - API参考文档
 
-**示例文件**: `crates/reliability/examples/circuit_breaker_complete_impl.rs`  
-**版本**: 1.0.0  
-**Rust版本**: 1.90.0+  
+**示例文件**: `crates/reliability/examples/circuit_breaker_complete_impl.rs`
+**版本**: 1.0.0
+**Rust版本**: 1.90.0+
 **最后更新**: 2025年10月28日
 
 ---
 
 ## 📋 目录
+
 - [核心概念](#核心概念)
 - [核心类型](#核心类型)
   - [CircuitState](#circuitstate)
@@ -31,6 +32,7 @@
 熔断器是一种容错模式，用于防止系统cascade failure（级联失败）。
 
 **状态机**:
+
 ```
     ┌─────────┐
     │ Closed  │ ──(失败率>阈值)──> ┌─────────┐
@@ -46,6 +48,7 @@
 ```
 
 **状态说明**:
+
 - **Closed**: 正常状态，请求正常通过
 - **Open**: 熔断状态，快速失败，不执行操作
 - **HalfOpen**: 半开状态，尝试少量请求测试恢复
@@ -57,6 +60,7 @@
 ### `CircuitState`
 
 **定义**:
+
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CircuitState {
@@ -69,6 +73,7 @@ pub enum CircuitState {
 **功能**: 熔断器的三种状态。
 
 **状态转换条件**:
+
 - `Closed → Open`: 失败率或慢调用率超过阈值
 - `Open → HalfOpen`: 等待时间到达后自动转换
 - `HalfOpen → Closed`: 测试请求成功率足够高
@@ -81,18 +86,19 @@ pub enum CircuitState {
 ### `CircuitError`
 
 **定义**:
+
 ```rust
 #[derive(Debug, Error)]
 pub enum CircuitError {
     #[error("Circuit is open")]
     CircuitOpen,
-    
+
     #[error("Operation timeout")]
     Timeout,
-    
+
     #[error("Operation failed: {0}")]
     OperationFailed(String),
-    
+
     #[error("Max retries exceeded")]
     MaxRetriesExceeded,
 }
@@ -101,6 +107,7 @@ pub enum CircuitError {
 **功能**: 熔断器相关的错误类型。
 
 **错误说明**:
+
 - `CircuitOpen`: 熔断器处于Open状态，请求被拒绝
 - `Timeout`: 操作超时
 - `OperationFailed`: 操作执行失败
@@ -113,6 +120,7 @@ pub enum CircuitError {
 ### `CircuitBreakerConfig`
 
 **定义**:
+
 ```rust
 #[derive(Debug, Clone)]
 pub struct CircuitBreakerConfig {
@@ -132,48 +140,57 @@ pub struct CircuitBreakerConfig {
 **字段说明**:
 
 #### `failure_threshold_percentage`
+
 - **类型**: `f64`
 - **范围**: 0.0 - 100.0
 - **默认**: 50.0
 - **说明**: 失败率阈值百分比，超过此值触发熔断
 
 #### `minimum_request_threshold`
+
 - **类型**: `u64`
 - **默认**: 20
 - **说明**: 最小请求数，达到此数量后才开始计算失败率
 
 #### `sliding_window_size`
+
 - **类型**: `Duration`
 - **默认**: 60秒
 - **说明**: 滑动窗口大小，统计此时间段内的请求
 
 #### `wait_duration_in_open_state`
+
 - **类型**: `Duration`
 - **默认**: 60秒
 - **说明**: 熔断后等待时间，之后转为HalfOpen状态
 
 #### `permitted_requests_in_half_open`
+
 - **类型**: `u32`
 - **默认**: 10
 - **说明**: HalfOpen状态下允许的测试请求数量
 
 #### `timeout_duration`
+
 - **类型**: `Duration`
 - **默认**: 5秒
 - **说明**: 操作超时时间
 
 #### `slow_call_duration_threshold`
+
 - **类型**: `Duration`
 - **默认**: 1秒
 - **说明**: 慢调用判定阈值
 
 #### `slow_call_rate_threshold`
+
 - **类型**: `f64`
 - **范围**: 0.0 - 100.0
 - **默认**: 50.0
 - **说明**: 慢调用率阈值，超过此值触发熔断
 
 **使用示例**:
+
 ```rust
 let config = CircuitBreakerConfig {
     failure_threshold_percentage: 50.0,
@@ -203,6 +220,7 @@ let config = CircuitBreakerConfig {
 ### `CircuitBreaker`
 
 **定义**:
+
 ```rust
 pub struct CircuitBreaker {
     config: CircuitBreakerConfig,
@@ -221,6 +239,7 @@ pub struct CircuitBreaker {
 #### `CircuitBreaker::new()`
 
 **签名**:
+
 ```rust
 pub fn new(config: CircuitBreakerConfig) -> Self
 ```
@@ -228,11 +247,13 @@ pub fn new(config: CircuitBreakerConfig) -> Self
 **功能**: 创建新的熔断器实例。
 
 **参数**:
+
 - `config`: 熔断器配置
 
 **返回值**: CircuitBreaker实例
 
 **使用示例**:
+
 ```rust
 let config = CircuitBreakerConfig::default();
 let circuit_breaker = CircuitBreaker::new(config);
@@ -243,6 +264,7 @@ let circuit_breaker = CircuitBreaker::new(config);
 #### `CircuitBreaker::call()`
 
 **签名**:
+
 ```rust
 pub async fn call<F, T, E>(&self, operation: F) -> Result<T, CircuitError>
 where
@@ -253,13 +275,16 @@ where
 **功能**: 通过熔断器执行操作。
 
 **参数**:
+
 - `operation`: 要执行的异步操作
 
 **返回值**:
+
 - `Ok(T)`: 操作成功，返回结果
 - `Err(CircuitError)`: 操作失败或熔断器打开
 
 **执行流程**:
+
 1. 检查熔断器状态
    - Closed: 允许执行
    - Open: 检查是否可以转为HalfOpen
@@ -269,6 +294,7 @@ where
 4. 根据统计决定状态转换
 
 **使用示例**:
+
 ```rust
 use std::time::Duration;
 use tokio::time::sleep;
@@ -279,7 +305,7 @@ let cb = Arc::new(CircuitBreaker::new(config));
 let result = cb.call(|| async {
     // 模拟外部调用
     sleep(Duration::from_millis(100)).await;
-    
+
     if random() < 0.3 {
         Err("Service unavailable")
     } else {
@@ -298,6 +324,7 @@ match result {
 ```
 
 **错误处理**:
+
 ```rust
 match cb.call(operation).await {
     Ok(result) => handle_success(result),
@@ -320,6 +347,7 @@ match cb.call(operation).await {
 ```
 
 **性能特点**:
+
 - 开销: Closed状态 ~0.1ms, Open状态 ~0.01ms
 - 吞吐量: Closed > 100K req/s, Open > 1M req/s
 - 内存: ~1KB per instance
@@ -329,6 +357,7 @@ match cb.call(operation).await {
 #### `CircuitBreaker::get_state()`
 
 **签名**:
+
 ```rust
 pub async fn get_state(&self) -> CircuitState
 ```
@@ -338,6 +367,7 @@ pub async fn get_state(&self) -> CircuitState
 **返回值**: 当前状态（Closed/Open/HalfOpen）
 
 **使用示例**:
+
 ```rust
 let state = cb.get_state().await;
 match state {
@@ -352,6 +382,7 @@ match state {
 #### `CircuitBreaker::get_stats()`
 
 **签名**:
+
 ```rust
 pub async fn get_stats(&self) -> CircuitStats
 ```
@@ -361,6 +392,7 @@ pub async fn get_stats(&self) -> CircuitStats
 **返回值**: 包含详细统计的`CircuitStats`结构
 
 **使用示例**:
+
 ```rust
 let stats = cb.get_stats().await;
 println!("Circuit Stats:");
@@ -375,6 +407,7 @@ println!("  Avg Duration: {:.2}ms", stats.average_duration_ms);
 #### `CircuitBreaker::reset()`
 
 **签名**:
+
 ```rust
 pub async fn reset(&self)
 ```
@@ -382,16 +415,19 @@ pub async fn reset(&self)
 **功能**: 重置熔断器到初始状态。
 
 **效果**:
+
 - 状态重置为Closed
 - 清空统计数据
 - 重置状态转换计数器
 
 **使用场景**:
+
 - 手动恢复服务
 - 测试场景
 - 配置更新后
 
 **使用示例**:
+
 ```rust
 // 手动重置熔断器
 cb.reset().await;
@@ -405,6 +441,7 @@ info!("Circuit breaker has been reset");
 ### `CircuitBreakerWithFallback`
 
 **定义**:
+
 ```rust
 pub struct CircuitBreakerWithFallback<T> {
     circuit_breaker: Arc<CircuitBreaker>,
@@ -419,6 +456,7 @@ pub struct CircuitBreakerWithFallback<T> {
 #### `CircuitBreakerWithFallback::new()`
 
 **签名**:
+
 ```rust
 pub fn new(
     config: CircuitBreakerConfig,
@@ -429,10 +467,12 @@ pub fn new(
 **功能**: 创建带fallback的熔断器。
 
 **参数**:
+
 - `config`: 熔断器配置
 - `fallback_fn`: 降级函数，当操作失败时调用
 
 **使用示例**:
+
 ```rust
 let cb = CircuitBreakerWithFallback::new(
     config,
@@ -445,6 +485,7 @@ let cb = CircuitBreakerWithFallback::new(
 #### `CircuitBreakerWithFallback::call_with_fallback()`
 
 **签名**:
+
 ```rust
 pub async fn call_with_fallback<F, E>(&self, operation: F) -> T
 where
@@ -457,6 +498,7 @@ where
 **返回值**: 总是返回`T`，不会失败
 
 **使用示例**:
+
 ```rust
 let cb = CircuitBreakerWithFallback::new(
     config,
@@ -473,6 +515,7 @@ println!("Got {} users", users.len());
 ```
 
 **降级策略示例**:
+
 ```rust
 // 1. 返回缓存数据
 let cb = CircuitBreakerWithFallback::new(config, || {
@@ -497,6 +540,7 @@ let cb = CircuitBreakerWithFallback::new(config, || {
 ### `CircuitStats`
 
 **定义**:
+
 ```rust
 #[derive(Debug, Clone)]
 pub struct CircuitStats {
@@ -515,6 +559,7 @@ pub struct CircuitStats {
 **功能**: 熔断器统计数据。
 
 **字段说明**:
+
 - `state`: 当前状态
 - `total_requests`: 总请求数
 - `success_count`: 成功次数
@@ -526,6 +571,7 @@ pub struct CircuitStats {
 - `state_transitions`: 状态转换次数
 
 **Display实现**:
+
 ```rust
 impl Display for CircuitStats {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -551,6 +597,7 @@ impl Display for CircuitStats {
 ### `SlidingWindow`
 
 **定义**:
+
 ```rust
 struct SlidingWindow {
     success_count: AtomicU64,
@@ -565,6 +612,7 @@ struct SlidingWindow {
 **功能**: 滑动窗口统计实现（内部使用）。
 
 **特点**:
+
 - 线程安全（使用Atomic操作）
 - 自动清理过期数据
 - 高性能（无锁读取）
@@ -637,7 +685,7 @@ async fn get_user(
             }
             _ => AppError::InternalError,
         })?;
-    
+
     Ok(Json(user))
 }
 ```
@@ -688,11 +736,11 @@ tokio::spawn(async move {
     loop {
         interval.tick().await;
         let stats = cb.get_stats().await;
-        
+
         // 记录指标
         metrics::gauge!("circuit_breaker.failure_rate", stats.failure_rate);
         metrics::gauge!("circuit_breaker.avg_duration", stats.average_duration_ms);
-        
+
         // 告警
         if stats.state == CircuitState::Open {
             alert!("Circuit breaker is OPEN!");
@@ -754,7 +802,6 @@ let config = CircuitBreakerConfig {
 
 ---
 
-**版本**: 1.0.0  
-**维护者**: OTLP Rust Team  
+**版本**: 1.0.0
+**维护者**: OTLP Rust Team
 **最后更新**: 2025年10月28日
-

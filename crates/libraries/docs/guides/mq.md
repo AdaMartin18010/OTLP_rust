@@ -1,7 +1,7 @@
 ﻿# 消息队列与流处理完整指南：NATS/Kafka/MQTT
 
-> **适用版本**: Rust 1.75+ (推荐 1.90+)  
-> **更新日期**: 2025-10-24  
+> **适用版本**: Rust 1.75+ (推荐 1.90+)
+> **更新日期**: 2025-10-24
 > **难度级别**: 中级到高级
 
 本指南详细介绍三种主流消息系统在 Rust 中的完整实战：NATS（高性能低延迟）、Kafka（分布式流处理）、MQTT（物联网消息）。
@@ -9,8 +9,9 @@
 ---
 
 ## 📋 目录
+
 - [消息队列与流处理完整指南：NATS/Kafka/MQTT](#消息队列与流处理完整指南natskafkamqtt)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [消息系统对比与选型](#消息系统对比与选型)
     - [技术特性对比](#技术特性对比)
     - [选型建议](#选型建议)
@@ -153,10 +154,10 @@ use futures::StreamExt;
 async fn main() -> anyhow::Result<()> {
     // 连接 NATS
     let client = async_nats::connect("nats://localhost:4222").await?;
-    
+
     // 订阅主题
     let mut subscriber = client.subscribe("greetings").await?;
-    
+
     // 在另一个任务中发布消息
     let publisher = client.clone();
     tokio::spawn(async move {
@@ -168,13 +169,13 @@ async fn main() -> anyhow::Result<()> {
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
     });
-    
+
     // 接收消息
     while let Some(message) = subscriber.next().await {
         let payload = String::from_utf8_lossy(&message.payload);
         println!("收到消息: {}", payload);
     }
-    
+
     Ok(())
 }
 ```
@@ -188,7 +189,7 @@ use std::time::Duration;
 
 async fn request_reply_example() -> anyhow::Result<()> {
     let client = async_nats::connect("nats://localhost:4222").await?;
-    
+
     // 服务端：响应请求
     let responder = client.clone();
     tokio::spawn(async move {
@@ -199,7 +200,7 @@ async fn request_reply_example() -> anyhow::Result<()> {
                 let numbers: Vec<i32> = serde_json::from_slice(&message.payload)
                     .unwrap_or_else(|_| vec![]);
                 let sum: i32 = numbers.iter().sum();
-                
+
                 // 发送响应
                 responder
                     .publish(reply_subject, sum.to_string().into())
@@ -208,18 +209,18 @@ async fn request_reply_example() -> anyhow::Result<()> {
             }
         }
     });
-    
+
     // 客户端：发送请求
     tokio::time::sleep(Duration::from_millis(100)).await;
-    
+
     let request = serde_json::to_vec(&vec![1, 2, 3, 4, 5])?;
     let response = client
         .request("math.add", request.into())
         .await?;
-    
+
     let result = String::from_utf8_lossy(&response.payload);
     println!("1+2+3+4+5 = {}", result);  // 输出: 15
-    
+
     Ok(())
 }
 ```
@@ -232,7 +233,7 @@ use futures::StreamExt;
 
 async fn queue_group_example() -> anyhow::Result<()> {
     let client = async_nats::connect("nats://localhost:4222").await?;
-    
+
     // 创建多个消费者在同一队列组
     for worker_id in 0..3 {
         let client = client.clone();
@@ -242,17 +243,17 @@ async fn queue_group_example() -> anyhow::Result<()> {
                 .queue_subscribe("tasks", "workers".to_string())
                 .await
                 .unwrap();
-            
+
             while let Some(message) = subscriber.next().await {
                 let payload = String::from_utf8_lossy(&message.payload);
                 println!("Worker {} 处理任务: {}", worker_id, payload);
-                
+
                 // 模拟处理时间
                 tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
             }
         });
     }
-    
+
     // 发布任务
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
     for i in 0..10 {
@@ -260,7 +261,7 @@ async fn queue_group_example() -> anyhow::Result<()> {
             .publish("tasks", format!("Task {}", i).into())
             .await?;
     }
-    
+
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     Ok(())
 }
@@ -284,7 +285,7 @@ use async_nats::jetstream;
 async fn jetstream_example() -> anyhow::Result<()> {
     let client = async_nats::connect("nats://localhost:4222").await?;
     let jetstream = jetstream::new(client);
-    
+
     // 创建 Stream
     let stream = jetstream
         .create_stream(jetstream::stream::Config {
@@ -297,9 +298,9 @@ async fn jetstream_example() -> anyhow::Result<()> {
             ..Default::default()
         })
         .await?;
-    
+
     println!("Stream 创建成功: {:?}", stream.info().await?);
-    
+
     // 发布消息到 JetStream
     for i in 0..100 {
         let ack = jetstream
@@ -307,7 +308,7 @@ async fn jetstream_example() -> anyhow::Result<()> {
             .await?;
         println!("消息已确认: seq={}", ack.await?.sequence);
     }
-    
+
     // 创建 Consumer
     let consumer = stream
         .create_consumer(jetstream::consumer::pull::Config {
@@ -316,7 +317,7 @@ async fn jetstream_example() -> anyhow::Result<()> {
             ..Default::default()
         })
         .await?;
-    
+
     // 消费消息
     let mut messages = consumer.fetch().max_messages(10).messages().await?;
     while let Some(message) = messages.next().await {
@@ -324,7 +325,7 @@ async fn jetstream_example() -> anyhow::Result<()> {
         println!("消费消息: {}", String::from_utf8_lossy(&message.payload));
         message.ack().await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -338,9 +339,9 @@ use futures::StreamExt;
 async fn message_replay_example() -> anyhow::Result<()> {
     let client = async_nats::connect("nats://localhost:4222").await?;
     let jetstream = jetstream::new(client);
-    
+
     let stream = jetstream.get_stream("ORDERS").await?;
-    
+
     // 从特定序列号开始消费
     let consumer = stream
         .create_consumer(jetstream::consumer::pull::Config {
@@ -351,7 +352,7 @@ async fn message_replay_example() -> anyhow::Result<()> {
             ..Default::default()
         })
         .await?;
-    
+
     // 从头开始重放所有消息
     let consumer_from_start = stream
         .create_consumer(jetstream::consumer::pull::Config {
@@ -360,9 +361,9 @@ async fn message_replay_example() -> anyhow::Result<()> {
             ..Default::default()
         })
         .await?;
-    
+
     println!("可以回溯任意历史消息！");
-    
+
     Ok(())
 }
 ```
@@ -376,20 +377,20 @@ async fn message_replay_example() -> anyhow::Result<()> {
 ```rust
 async fn wildcard_subscriptions() -> anyhow::Result<()> {
     let client = async_nats::connect("nats://localhost:4222").await?;
-    
+
     // 单级通配符
     let mut sub1 = client.subscribe("events.*.created").await?;
     // 匹配: events.user.created, events.order.created
     // 不匹配: events.user.updated, events.user.created.v2
-    
+
     // 多级通配符
     let mut sub2 = client.subscribe("logs.>").await?;
     // 匹配: logs.info, logs.error.database, logs.warn.api.timeout
-    
+
     // 发布测试
     client.publish("events.user.created", "test".into()).await?;
     client.publish("logs.error.database", "DB error".into()).await?;
-    
+
     Ok(())
 }
 ```
@@ -401,13 +402,13 @@ use async_nats::HeaderMap;
 
 async fn message_headers_example() -> anyhow::Result<()> {
     let client = async_nats::connect("nats://localhost:4222").await?;
-    
+
     // 创建带 Header 的消息
     let mut headers = HeaderMap::new();
     headers.insert("Content-Type", "application/json");
     headers.insert("User-ID", "12345");
     headers.insert("Request-ID", "req-abc-123");
-    
+
     client
         .publish_with_headers(
             "api.requests",
@@ -415,7 +416,7 @@ async fn message_headers_example() -> anyhow::Result<()> {
             r#"{"action": "create_order"}"#.into(),
         )
         .await?;
-    
+
     // 接收并读取 Headers
     let mut subscriber = client.subscribe("api.requests").await?;
     if let Some(message) = subscriber.next().await {
@@ -424,7 +425,7 @@ async fn message_headers_example() -> anyhow::Result<()> {
             println!("Request-ID: {:?}", headers.get("Request-ID"));
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -452,7 +453,7 @@ async fn connection_options_example() -> anyhow::Result<()> {
         })
         .connect("nats://localhost:4222")
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -490,7 +491,7 @@ async fn kafka_producer_example() -> anyhow::Result<()> {
         .set("bootstrap.servers", "localhost:9092")
         .set("message.timeout.ms", "5000")
         .create()?;
-    
+
     // 发送消息
     let delivery_status = producer
         .send(
@@ -500,7 +501,7 @@ async fn kafka_producer_example() -> anyhow::Result<()> {
             Duration::from_secs(0),
         )
         .await;
-    
+
     match delivery_status {
         Ok((partition, offset)) => {
             println!("消息已发送: partition={}, offset={}", partition, offset);
@@ -509,7 +510,7 @@ async fn kafka_producer_example() -> anyhow::Result<()> {
             eprintln!("发送失败: {:?}", e);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -583,13 +584,13 @@ async fn main() -> anyhow::Result<()> {
     // 创建 MQTT 客户端选项
     let mut mqttoptions = MqttOptions::new("rust-client-1", "localhost", 1883);
     mqttoptions.set_keep_alive(Duration::from_secs(60));
-    
+
     // 创建客户端和事件循环
     let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
-    
+
     // 订阅主题
     client.subscribe("sensors/temperature", QoS::AtMostOnce).await?;
-    
+
     // 在另一个任务中发布消息
     let publisher = client.clone();
     tokio::spawn(async move {
@@ -602,7 +603,7 @@ async fn main() -> anyhow::Result<()> {
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
     });
-    
+
     // 接收消息
     loop {
         match eventloop.poll().await {
@@ -617,7 +618,7 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -632,17 +633,17 @@ async fn qos_examples(client: &AsyncClient) -> anyhow::Result<()> {
     client
         .publish("sensors/humidity", QoS::AtMostOnce, false, "60%")
         .await?;
-    
+
     // QoS 1: 至少一次，可能重复
     client
         .publish("alerts/temperature", QoS::AtLeastOnce, false, "High temp!")
         .await?;
-    
+
     // QoS 2: 恰好一次，最慢，但最可靠
     client
         .publish("commands/door/lock", QoS::ExactlyOnce, false, "LOCK")
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -669,12 +670,12 @@ struct TemperatureReading {
 async fn smart_home_temperature_monitor() -> anyhow::Result<()> {
     let mut mqttoptions = MqttOptions::new("home-monitor", "localhost", 1883);
     mqttoptions.set_keep_alive(Duration::from_secs(60));
-    
+
     let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
-    
+
     // 订阅所有房间的温度传感器
     client.subscribe("home/+/temperature", QoS::AtLeastOnce).await?;
-    
+
     // 模拟传感器发送数据
     let publisher = client.clone();
     tokio::spawn(async move {
@@ -690,10 +691,10 @@ async fn smart_home_temperature_monitor() -> anyhow::Result<()> {
                         .unwrap()
                         .as_secs(),
                 };
-                
+
                 let payload = serde_json::to_string(&reading).unwrap();
                 let topic = format!("home/{}/temperature", room);
-                
+
                 publisher
                     .publish(topic, QoS::AtLeastOnce, false, payload)
                     .await
@@ -702,15 +703,15 @@ async fn smart_home_temperature_monitor() -> anyhow::Result<()> {
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
     });
-    
+
     // 监控和告警
     loop {
         if let Ok(Event::Incoming(Packet::Publish(publish))) = eventloop.poll().await {
             let payload = String::from_utf8_lossy(&publish.payload);
             if let Ok(reading) = serde_json::from_str::<TemperatureReading>(&payload) {
-                println!("[{}] 温度: {:.1}°C, 湿度: {:.1}%", 
+                println!("[{}] 温度: {:.1}°C, 湿度: {:.1}%",
                         reading.device_id, reading.temperature, reading.humidity);
-                
+
                 // 温度告警
                 if reading.temperature > 25.0 {
                     client
@@ -735,7 +736,7 @@ use rumqttc::{MqttOptions, AsyncClient, QoS, LastWill};
 
 async fn device_control_with_lwt() -> anyhow::Result<()> {
     let mut mqttoptions = MqttOptions::new("device-controller", "localhost", 1883);
-    
+
     // 设置遗嘱消息 (Last Will and Testament)
     let lwt = LastWill::new(
         "devices/controller/status",
@@ -745,25 +746,25 @@ async fn device_control_with_lwt() -> anyhow::Result<()> {
     );
     mqttoptions.set_last_will(lwt);
     mqttoptions.set_keep_alive(Duration::from_secs(10));
-    
+
     let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
-    
+
     // 上线通知
     client
         .publish("devices/controller/status", QoS::AtLeastOnce, true, "ONLINE")
         .await?;
-    
+
     // 订阅控制命令
     client.subscribe("devices/+/command", QoS::AtLeastOnce).await?;
-    
+
     // 处理命令
     loop {
         if let Ok(Event::Incoming(Packet::Publish(publish))) = eventloop.poll().await {
             let device_id = publish.topic.split('/').nth(1).unwrap_or("unknown");
             let command = String::from_utf8_lossy(&publish.payload);
-            
+
             println!("设备 {} 收到命令: {}", device_id, command);
-            
+
             // 执行命令并反馈
             let result = execute_device_command(&command);
             let response_topic = format!("devices/{}/response", device_id);
@@ -789,7 +790,7 @@ fn execute_device_command(command: &str) -> String {
 async fn retained_messages_example() -> anyhow::Result<()> {
     let mut mqttoptions = MqttOptions::new("status-publisher", "localhost", 1883);
     let (client, _) = AsyncClient::new(mqttoptions, 10);
-    
+
     // 发布保留消息（retained = true）
     // 新订阅者会立即收到这条消息
     client
@@ -800,10 +801,10 @@ async fn retained_messages_example() -> anyhow::Result<()> {
             r#"{"power": "ON", "target_temp": 22}"#,
         )
         .await?;
-    
+
     println!("状态已发布（保留消息）");
     println!("任何新订阅者都会立即收到这个状态");
-    
+
     Ok(())
 }
 ```
@@ -824,21 +825,21 @@ async fn order_service_publish(client: &async_nats::Client) -> anyhow::Result<()
         "amount": 99.99,
         "timestamp": chrono::Utc::now().to_rfc3339()
     });
-    
+
     client
         .publish("events.order.created", serde_json::to_vec(&event)?.into())
         .await?;
-    
+
     Ok(())
 }
 
 // 库存服务订阅事件
 async fn inventory_service_subscribe(client: &async_nats::Client) -> anyhow::Result<()> {
     let mut subscriber = client.subscribe("events.order.>").await?;
-    
+
     while let Some(message) = subscriber.next().await {
         let event: serde_json::Value = serde_json::from_slice(&message.payload)?;
-        
+
         match event["event_type"].as_str() {
             Some("OrderCreated") => {
                 let order_id = event["order_id"].as_str().unwrap();
@@ -848,7 +849,7 @@ async fn inventory_service_subscribe(client: &async_nats::Client) -> anyhow::Res
             _ => {}
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -870,7 +871,7 @@ async fn handle_command(producer: &FutureProducer, command: &str) -> anyhow::Res
         "amount": 50.0,
         "timestamp": chrono::Utc::now().timestamp()
     });
-    
+
     producer
         .send(
             FutureRecord::to("account-events")
@@ -880,7 +881,7 @@ async fn handle_command(producer: &FutureProducer, command: &str) -> anyhow::Res
         )
         .await
         .map_err(|(e, _)| e)?;
-    
+
     Ok(())
 }
 
@@ -888,19 +889,19 @@ async fn handle_command(producer: &FutureProducer, command: &str) -> anyhow::Res
 async fn build_read_model(consumer: &StreamConsumer) -> anyhow::Result<()> {
     use rdkafka::consumer::{Consumer, StreamConsumer};
     use rdkafka::Message;
-    
+
     consumer.subscribe(&["account-events"])?;
-    
+
     let mut account_balance: std::collections::HashMap<String, f64> = HashMap::new();
-    
+
     loop {
         if let Ok(message) = consumer.recv().await {
             let payload = message.payload_view::<str>().unwrap().unwrap();
             let event: serde_json::Value = serde_json::from_str(payload)?;
-            
+
             let account_id = event["account_id"].as_str().unwrap().to_string();
             let amount = event["amount"].as_f64().unwrap();
-            
+
             match event["type"].as_str() {
                 Some("AccountCredited") => {
                     *account_balance.entry(account_id).or_insert(0.0) += amount;
@@ -910,7 +911,7 @@ async fn build_read_model(consumer: &StreamConsumer) -> anyhow::Result<()> {
                 }
                 _ => {}
             }
-            
+
             println!("账户余额: {:?}", account_balance);
         }
     }
@@ -928,14 +929,14 @@ async fn build_read_model(consumer: &StreamConsumer) -> anyhow::Result<()> {
 async fn order_saga_orchestrator(nats: &async_nats::Client) -> anyhow::Result<()> {
     // 1. 创建订单
     nats.publish("commands.order.create", "order-123".into()).await?;
-    
+
     // 2. 预留库存
     let response = nats.request("commands.inventory.reserve", "item-456".into()).await?;
-    
+
     if String::from_utf8_lossy(&response.payload) == "SUCCESS" {
         // 3. 处理支付
         let payment_response = nats.request("commands.payment.process", "payment-789".into()).await?;
-        
+
         if String::from_utf8_lossy(&payment_response.payload) == "SUCCESS" {
             // 4. 完成订单
             nats.publish("commands.order.complete", "order-123".into()).await?;
@@ -951,7 +952,7 @@ async fn order_saga_orchestrator(nats: &async_nats::Client) -> anyhow::Result<()
         nats.publish("commands.order.cancel", "order-123".into()).await?;
         println!("订单取消（库存不足）");
     }
-    
+
     Ok(())
 }
 ```
@@ -976,7 +977,7 @@ async fn measure_latency() -> anyhow::Result<()> {
     }
     let nats_latency = start.elapsed() / 1000;
     println!("NATS 平均延迟: {:?}", nats_latency);
-    
+
     // Kafka 延迟测试
     let kafka_producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", "localhost:9092")
@@ -990,7 +991,7 @@ async fn measure_latency() -> anyhow::Result<()> {
     }
     let kafka_latency = start.elapsed() / 1000;
     println!("Kafka 平均延迟: {:?}", kafka_latency);
-    
+
     Ok(())
 }
 ```
@@ -1011,16 +1012,16 @@ async fn measure_latency() -> anyhow::Result<()> {
 async fn measure_throughput() -> anyhow::Result<()> {
     let nats_client = async_nats::connect("nats://localhost:4222").await?;
     let message_count = 100_000;
-    
+
     let start = Instant::now();
     for i in 0..message_count {
         nats_client.publish("throughput-test", format!("msg-{}", i).into()).await?;
     }
     let elapsed = start.elapsed();
     let throughput = message_count as f64 / elapsed.as_secs_f64();
-    
+
     println!("NATS 吞吐量: {:.0} msg/s", throughput);
-    
+
     Ok(())
 }
 ```
@@ -1045,14 +1046,14 @@ services:
       -js
       -cluster nats://0.0.0.0:6222
       -routes nats://nats-2:6222,nats://nats-3:6222
-  
+
   nats-2:
     image: nats:latest
     command: >
       -js
       -cluster nats://0.0.0.0:6222
       -routes nats://nats-1:6222,nats://nats-3:6222
-  
+
   nats-3:
     image: nats:latest
     command: >
@@ -1106,7 +1107,7 @@ lazy_static::lazy_static! {
         "mq_messages_published_total",
         "Total number of messages published"
     ).unwrap();
-    
+
     static ref MESSAGE_LATENCY: Histogram = register_histogram!(
         "mq_message_latency_seconds",
         "Message publishing latency"
@@ -1115,12 +1116,12 @@ lazy_static::lazy_static! {
 
 async fn publish_with_metrics(client: &async_nats::Client, subject: &str, payload: &str) -> anyhow::Result<()> {
     let timer = MESSAGE_LATENCY.start_timer();
-    
+
     client.publish(subject, payload.into()).await?;
-    
+
     MESSAGES_PUBLISHED.inc();
     timer.observe_duration();
-    
+
     Ok(())
 }
 ```
@@ -1159,10 +1160,10 @@ impl IdempotentConsumer {
             println!("跳过重复消息: {}", message_id);
             return;
         }
-        
+
         // 处理消息...
         println!("处理消息: {}", payload);
-        
+
         self.processed_ids.insert(message_id.to_string());
     }
 }
@@ -1225,6 +1226,6 @@ mqttoptions.set_connection_timeout(60);  // 增加连接超时
 
 ---
 
-**更新日期**: 2025-10-24  
-**文档版本**: 1.0  
+**更新日期**: 2025-10-24
+**文档版本**: 1.0
 **反馈**: 如有问题或建议，欢迎提 Issue

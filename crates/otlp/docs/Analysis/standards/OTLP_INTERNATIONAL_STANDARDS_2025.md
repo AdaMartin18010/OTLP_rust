@@ -123,7 +123,7 @@ impl OtlpSDK {
     pub async fn new(config: OtlpConfig) -> Result<Self, OtlpError> {
         let exporter = create_exporter(&config).await?;
         let processor = create_processor(&config).await?;
-        
+
         Ok(Self {
             tracer: Tracer::new(processor.clone()),
             meter: Meter::new(processor.clone()),
@@ -150,12 +150,12 @@ impl Exporter for OtlpExporter {
         let serialized = self.serializer.serialize_traces(traces)?;
         self.transport.send_traces(serialized).await
     }
-    
+
     async fn export_metrics(&self, metrics: Vec<Metric>) -> Result<ExportResult, OtlpError> {
         let serialized = self.serializer.serialize_metrics(metrics)?;
         self.transport.send_metrics(serialized).await
     }
-    
+
     async fn export_logs(&self, logs: Vec<Log>) -> Result<ExportResult, OtlpError> {
         let serialized = self.serializer.serialize_logs(logs)?;
         self.transport.send_logs(serialized).await
@@ -177,7 +177,7 @@ pub enum SamplingStrategy {
     // 速率限制采样
     RateLimiting { rate: u32 },
     // 基于尾部的采样
-    TailBased { 
+    TailBased {
         decision_wait: Duration,
         num_traces: u32,
         expected_new_traces_per_sec: u32,
@@ -249,13 +249,13 @@ impl AsyncBatchProcessor {
     pub async fn start_processing(&mut self) -> Result<(), OtlpError> {
         let mut batch = Vec::with_capacity(self.batch_size);
         let mut last_flush = Instant::now();
-        
+
         loop {
             tokio::select! {
                 data = self.receiver.recv() => {
                     if let Some(data) = data {
                         batch.push(data);
-                        
+
                         if batch.len() >= self.batch_size {
                             self.flush_batch(batch).await?;
                             batch = Vec::with_capacity(self.batch_size);
@@ -297,7 +297,7 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-    
+
     processors:
       batch:
         send_batch_size: 1024
@@ -306,13 +306,13 @@ data:
         limit_mib: 512
       probabilistic_sampler:
         sampling_percentage: 10
-    
+
     exporters:
       otlp:
         endpoint: "https://api.honeycomb.io:443"
         headers:
           "x-honeycomb-team": "${HONEYCOMB_API_KEY}"
-    
+
     service:
       pipelines:
         traces:
@@ -347,7 +347,7 @@ impl IstioOtlpIntegration {
                 }),
             }),
         };
-        
+
         self.envoy_config.apply(config).await?;
         Ok(())
     }
@@ -369,13 +369,13 @@ impl PrometheusExporter {
     pub fn create_metrics(&self) -> Result<(), OtlpError> {
         let counter = Counter::new("otlp_requests_total", "Total OTLP requests")
             .map_err(|e| OtlpError::MetricError(e.to_string()))?;
-        
+
         let histogram = Histogram::new("otlp_request_duration_seconds", "OTLP request duration")
             .map_err(|e| OtlpError::MetricError(e.to_string()))?;
-        
+
         self.registry.register(Box::new(counter.clone()))?;
         self.registry.register(Box::new(histogram.clone()))?;
-        
+
         Ok(())
     }
 }

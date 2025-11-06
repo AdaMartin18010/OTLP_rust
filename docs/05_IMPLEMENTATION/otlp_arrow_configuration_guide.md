@@ -1,9 +1,9 @@
 # 🚀 OTLP/Arrow 配置指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
-**适用于**: OTLP Rust v2.0+  
-**OTLP/Arrow 版本**: 0.6.0+  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
+**适用于**: OTLP Rust v2.0+
+**OTLP/Arrow 版本**: 0.6.0+
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP/Arrow 高性能传输配置 - Apache Arrow列式存储、性能优化和实践指南。
@@ -206,19 +206,19 @@ use otlp::export::arrow::{ArrowConfig, CompressionCodec};
 let arrow_config = ArrowConfig {
     // 批处理大小（记录数）
     batch_size: 1000,
-    
+
     // 压缩算法
     compression: CompressionCodec::Zstd,
-    
+
     // 压缩级别（1-22，默认 3）
     compression_level: 3,
-    
+
     // 启用字典编码（减少重复数据）
     enable_dictionary: true,
-    
+
     // IPC 格式（Stream 或 File）
     ipc_format: IpcFormat::Stream,
-    
+
     // 最大消息大小
     max_message_size: 4 * 1024 * 1024, // 4 MB
 };
@@ -301,10 +301,10 @@ fn spans_to_record_batch(spans: Vec<Span>) -> Result<RecordBatch, ArrowError> {
 let arrow_config = ArrowConfig {
     // 大批次 = 更好的压缩比
     batch_size: 5000,  // 5000 spans per batch
-    
+
     // 批处理超时
     batch_timeout: Duration::from_secs(10),
-    
+
     ..Default::default()
 };
 ```
@@ -542,8 +542,8 @@ let memory_pool = Arc::new(TrackingMemoryPool::with_limit(
 
 ---
 
-**文档完成度**: 100%  
-**配置示例**: 已验证  
+**文档完成度**: 100%
+**配置示例**: 已验证
 **最后审核**: 2025年10月24日
 
 🚀 **需要帮助？** 查看 [故障排除指南](../08_REFERENCE/troubleshooting_guide.md) 或提交 Issue。

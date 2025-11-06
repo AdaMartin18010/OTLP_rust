@@ -1,61 +1,9 @@
 ﻿# Rust 1.90 特性应用指南
 
 ## 📋 目录
-- [Rust 1.90 特性应用指南](#rust-190-特性应用指南)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
-  - [📋 概述](#-概述)
-  - [🚀 Rust 1.90 核心特性](#-rust-190-核心特性)
-    - [1. 显式推断的常量泛型参数 (generic\_arg\_infer)](#1-显式推断的常量泛型参数-generic_arg_infer)
-    - [2. 生命周期语法一致性检查 (mismatched\_lifetime\_syntaxes)](#2-生命周期语法一致性检查-mismatched_lifetime_syntaxes)
-    - [3. 函数指针比较的扩展检查](#3-函数指针比较的扩展检查)
-  - [🔧 实际应用示例](#-实际应用示例)
-    - [1. 增强配置管理](#1-增强配置管理)
-    - [2. 异步中间件接口](#2-异步中间件接口)
-    - [3. 错误处理优化](#3-错误处理优化)
-  - [📊 性能对比](#-性能对比)
-    - [编译时优化](#编译时优化)
-    - [运行时性能](#运行时性能)
-  - [🛠️ 迁移指南](#️-迁移指南)
-    - [1. 从传统配置迁移到增强配置](#1-从传统配置迁移到增强配置)
-    - [2. 更新生命周期标注](#2-更新生命周期标注)
-    - [3. 使用类型安全的比较](#3-使用类型安全的比较)
-  - [🧪 测试策略](#-测试策略)
-    - [1. 单元测试](#1-单元测试)
-    - [2. 集成测试](#2-集成测试)
-    - [3. 性能测试](#3-性能测试)
-  - [📚 最佳实践](#-最佳实践)
-    - [1. 常量泛型使用](#1-常量泛型使用)
-    - [2. 生命周期管理](#2-生命周期管理)
-    - [3. 错误处理](#3-错误处理)
-    - [4. 性能优化](#4-性能优化)
-  - [🔍 故障排除](#-故障排除)
-    - [常见问题](#常见问题)
-  - [📖 参考资料](#-参考资料)
-  - [Rust 1.90 高级特性深度解析补充](#rust-190-高级特性深度解析补充)
-  - [🔬 深度特性解析](#-深度特性解析)
-    - [4. Trait Solver 改进](#4-trait-solver-改进)
-    - [5. 异步闭包改进](#5-异步闭包改进)
-    - [6. Match Ergonomics 增强](#6-match-ergonomics-增强)
-  - [🎯 高级应用场景](#-高级应用场景)
-    - [场景1：类型级编程 - 编译时验证](#场景1类型级编程---编译时验证)
-    - [场景2：零成本异步抽象](#场景2零成本异步抽象)
-    - [场景3：高性能内存管理](#场景3高性能内存管理)
-  - [📊 性能基准测试详解](#-性能基准测试详解)
-    - [基准测试框架](#基准测试框架)
-    - [内存分配性能测试](#内存分配性能测试)
-  - [🛡️ 安全性增强](#️-安全性增强)
-    - [编译时内存安全](#编译时内存安全)
-    - [线程安全保证](#线程安全保证)
-  - [📖 完整示例：生产级中间件](#-完整示例生产级中间件)
-  - [🔥 性能对比总结](#-性能对比总结)
-    - [编译时 vs 运行时对比表](#编译时-vs-运行时对比表)
-  - [🎓 学习路线图](#-学习路线图)
-
-## 📋 目录
 
 - [Rust 1.90 特性应用指南](#rust-190-特性应用指南)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [📋 目录](#-目录-1)
   - [📋 概述](#-概述)
   - [🚀 Rust 1.90 核心特性](#-rust-190-核心特性)
@@ -162,8 +110,8 @@ let config: EnhancedRedisConfig<_, 10000> = EnhancedRedisConfig::new("redis://lo
 ```rust
 // 生命周期语法一致
 impl<'a> Connection<'a> {
-    pub async fn execute_query<'b>(&'a self, query: &'b str) -> Result<String, String> 
-    where 
+    pub async fn execute_query<'b>(&'a self, query: &'b str) -> Result<String, String>
+    where
         'b: 'a, // 确保 query 的生命周期不短于 self
     {
         // 实现逻辑
@@ -211,7 +159,7 @@ impl MiddlewareType {
     pub fn is_redis(&self) -> bool {
         matches!(self, MiddlewareType::Redis)
     }
-    
+
     // 类型安全的比较
     pub fn is_same_type(&self, other: &Self) -> bool {
         std::mem::discriminant(self) == std::mem::discriminant(other)
@@ -263,7 +211,7 @@ composer.validate_all()?;
 pub trait AsyncMiddleware {
     type Connection<'a>: Send + Sync + 'a;
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     async fn connect(&self) -> Result<Self::Connection<'_>, Self::Error>;
     async fn execute(&self, operation: &[u8]) -> Result<Vec<u8>, Self::Error>;
     async fn batch_execute(&self, operations: Vec<&[u8]>) -> Result<Vec<Vec<u8>>, Self::Error>;
@@ -274,11 +222,11 @@ pub trait AsyncMiddleware {
 impl AsyncMiddleware for RedisMiddleware {
     type Connection<'a> = RedisStore;
     type Error = c11_libraries::Error;
-    
+
     async fn connect(&self) -> Result<Self::Connection<'_>, Self::Error> {
         RedisStore::connect_with(self.config.clone()).await
     }
-    
+
     async fn execute(&self, operation: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let store = self.connect().await?;
         let key = "demo_key";
@@ -299,7 +247,7 @@ pub async fn batch_operations_with_flatten(
         .into_iter()
         .map(|op| op.map_err(|e| format!("Operation failed: {}", e)))
         .collect();
-    
+
     // 使用 Rust 1.90 的 Result::flatten
     results
         .into_iter()
@@ -375,7 +323,7 @@ if middleware_type.is_redis() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_enhanced_config() {
         let config: EnhancedRedisConfig<20, 10000> = EnhancedRedisConfig::new("redis://localhost:6379");
@@ -394,7 +342,7 @@ async fn test_middleware_integration() {
     let middleware = RedisMiddleware {
         config: EnhancedRedisConfig::new("redis://localhost:6379"),
     };
-    
+
     let result = middleware.execute(b"test").await;
     assert!(result.is_ok());
 }
@@ -406,12 +354,12 @@ async fn test_middleware_integration() {
 #[tokio::test]
 async fn test_performance() {
     let start = std::time::Instant::now();
-    
+
     // 执行性能测试
     for _ in 0..10000 {
         // 测试操作
     }
-    
+
     let duration = start.elapsed();
     assert!(duration.as_millis() < 1000); // 确保在 1 秒内完成
 }
@@ -452,7 +400,7 @@ async fn test_performance() {
    ```rust
    // 错误：无法推断常量参数
    let config = EnhancedRedisConfig::new("redis://localhost:6379");
-   
+
    // 正确：明确指定类型
    let config: EnhancedRedisConfig<10, 5000> = EnhancedRedisConfig::new("redis://localhost:6379");
    ```
@@ -464,10 +412,10 @@ async fn test_performance() {
    fn get_data<'a>(&'a self, input: &str) -> &'a str {
        input // 错误：input 的生命周期可能短于 self
    }
-   
+
    // 正确：使用生命周期约束
-   fn get_data<'a, 'b>(&'a self, input: &'b str) -> &'a str 
-   where 
+   fn get_data<'a, 'b>(&'a self, input: &'b str) -> &'a str
+   where
        'b: 'a,
    {
        // 实现逻辑
@@ -555,7 +503,7 @@ impl<T> TypedConfig<Unvalidated, T> {
             value,
         }
     }
-    
+
     pub fn validate(self) -> Result<TypedConfig<Validated, T>, String> {
         if self.value.is_empty() {
             return Err("空配置".to_string());
@@ -593,7 +541,7 @@ fn advanced_type_system_example() -> Result<(), String> {
     let config: TypedConfig<Unvalidated, Redis> = TypedConfig::new("redis://localhost".to_string());
     let validated = config.validate()?;
     let _conn = validated.connect()?; // 类型安全保证
-    
+
     Ok(())
 }
 ```
@@ -627,7 +575,7 @@ impl<T: Send + 'static, R: Send + 'static> AsyncMiddleware<T, R> {
             handler: Box::new(move |t| Box::pin(f(t))),
         }
     }
-    
+
     pub async fn call(&self, input: T) -> R {
         (self.handler)(input).await
     }
@@ -671,11 +619,11 @@ async fn auth_middleware(req: Request) -> Response {
 async fn middleware_chain_example() {
     let logging = AsyncMiddleware::new(logging_middleware);
     let auth = AsyncMiddleware::new(auth_middleware);
-    
+
     let req = Request { body: b"test".to_vec() };
     let res1 = logging.call(req.clone()).await;
     let res2 = auth.call(req).await;
-    
+
     println!("日志中间件响应: {}", res1.status);
     println!("认证中间件响应: {}", res2.status);
 }
@@ -709,7 +657,7 @@ impl<T> DatabaseResult<T> {
             DatabaseResult::Error(e) => DatabaseResult::Error(e),
         }
     }
-    
+
     pub fn and_then<U, F>(self, f: F) -> DatabaseResult<U>
     where
         F: FnOnce(T) -> DatabaseResult<U>,
@@ -793,7 +741,7 @@ impl<N: Nat, const SIZE: usize> Buffer<N, SIZE> {
             len: 0,
         }
     }
-    
+
     pub fn push(&mut self, byte: u8) -> Result<(), &'static str> {
         if self.len >= SIZE {
             return Err("缓冲区已满");
@@ -802,7 +750,7 @@ impl<N: Nat, const SIZE: usize> Buffer<N, SIZE> {
         self.len += 1;
         Ok(())
     }
-    
+
     pub fn as_slice(&self) -> &[u8] {
         &self.data[..self.len]
     }
@@ -813,11 +761,11 @@ fn type_level_programming_example() {
     type One = Succ<Zero>;
     type Two = Succ<One>;
     type Three = Succ<Two>;
-    
+
     let mut buffer: Buffer<Three, 1024> = Buffer::new();
     buffer.push(42).unwrap();
     buffer.push(43).unwrap();
-    
+
     println!("缓冲区内容: {:?}", buffer.as_slice());
 }
 ```
@@ -844,7 +792,7 @@ where
     F: Fn() -> Option<T> + Unpin,
 {
     type Output = T;
-    
+
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         match (self.poll_fn)() {
             Some(value) => Poll::Ready(value),
@@ -856,7 +804,7 @@ where
 // 零成本异步迭代器
 trait AsyncIterator {
     type Item;
-    
+
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>>;
 }
 
@@ -876,7 +824,7 @@ impl AsyncRangeIterator {
 
 impl AsyncIterator for AsyncRangeIterator {
     type Item = u64;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         if self.current < self.end {
             let current = self.current;
@@ -900,7 +848,7 @@ where
     F: Fn(I::Item) -> T,
 {
     type Item = T;
-    
+
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         unsafe {
             let this = self.get_unchecked_mut();
@@ -935,12 +883,12 @@ impl<T, const BLOCK_SIZE: usize> MemoryPool<T, BLOCK_SIZE> {
             free_list: Vec::new(),
         }
     }
-    
+
     pub fn allocate(&mut self) -> Option<NonNull<T>> {
         if let Some(ptr) = self.free_list.pop() {
             return Some(ptr);
         }
-        
+
         // 分配新块
         unsafe {
             let layout = Layout::array::<T>(BLOCK_SIZE).ok()?;
@@ -948,20 +896,20 @@ impl<T, const BLOCK_SIZE: usize> MemoryPool<T, BLOCK_SIZE> {
             if ptr.is_null() {
                 return None;
             }
-            
+
             let block = NonNull::new_unchecked(ptr);
             self.blocks.push(block);
-            
+
             // 初始化自由列表
             for i in 1..BLOCK_SIZE {
                 let elem_ptr = ptr.add(i);
                 self.free_list.push(NonNull::new_unchecked(elem_ptr));
             }
-            
+
             Some(block)
         }
     }
-    
+
     pub fn deallocate(&mut self, ptr: NonNull<T>) {
         self.free_list.push(ptr);
     }
@@ -986,7 +934,7 @@ struct Connection {
 
 fn connection_pool_example() {
     let mut pool: MemoryPool<Connection, 1024> = MemoryPool::new();
-    
+
     // 分配连接
     if let Some(mut conn_ptr) = pool.allocate() {
         unsafe {
@@ -994,9 +942,9 @@ fn connection_pool_example() {
                 id: 1,
                 active: true,
             };
-            
+
             // 使用连接...
-            
+
             // 释放连接
             pool.deallocate(conn_ptr);
         }
@@ -1025,7 +973,7 @@ impl Benchmark {
             iterations,
         }
     }
-    
+
     pub fn run<F>(&self, mut f: F)
     where
         F: FnMut(),
@@ -1034,16 +982,16 @@ impl Benchmark {
         for _ in 0..100 {
             f();
         }
-        
+
         let start = Instant::now();
         for _ in 0..self.iterations {
             f();
         }
         let duration = start.elapsed();
-        
+
         let avg_ns = duration.as_nanos() / self.iterations as u128;
         let ops_per_sec = 1_000_000_000 / avg_ns;
-        
+
         println!("基准测试: {}", self.name);
         println!("  迭代次数: {}", self.iterations);
         println!("  总时间: {:?}", duration);
@@ -1058,37 +1006,37 @@ fn benchmark_const_vs_runtime() {
     struct ConstConfig<const SIZE: usize> {
         buffer: [u8; SIZE],
     }
-    
+
     impl<const SIZE: usize> ConstConfig<SIZE> {
         fn process(&self) -> usize {
             self.buffer.iter().filter(|&&b| b > 0).count()
         }
     }
-    
+
     // 运行时版本
     struct RuntimeConfig {
         buffer: Vec<u8>,
     }
-    
+
     impl RuntimeConfig {
         fn process(&self) -> usize {
             self.buffer.iter().filter(|&&b| b > 0).count()
         }
     }
-    
+
     let const_config: ConstConfig<1024> = ConstConfig {
         buffer: [1; 1024],
     };
-    
+
     let runtime_config = RuntimeConfig {
         buffer: vec![1; 1024],
     };
-    
+
     let bench1 = Benchmark::new("常量泛型", 1_000_000);
     bench1.run(|| {
         let _ = const_config.process();
     });
-    
+
     let bench2 = Benchmark::new("运行时配置", 1_000_000);
     bench2.run(|| {
         let _ = runtime_config.process();
@@ -1103,7 +1051,7 @@ fn benchmark_const_vs_runtime() {
 ```rust
 fn benchmark_allocation_strategies() {
     use std::collections::VecDeque;
-    
+
     // 测试1：Vec预分配 vs 动态增长
     let bench1 = Benchmark::new("Vec预分配", 100_000);
     bench1.run(|| {
@@ -1112,7 +1060,7 @@ fn benchmark_allocation_strategies() {
             v.push(i);
         }
     });
-    
+
     let bench2 = Benchmark::new("Vec动态增长", 100_000);
     bench2.run(|| {
         let mut v = Vec::new();
@@ -1120,7 +1068,7 @@ fn benchmark_allocation_strategies() {
             v.push(i);
         }
     });
-    
+
     // 测试2：数组 vs VecDeque
     let bench3 = Benchmark::new("固定数组", 100_000);
     bench3.run(|| {
@@ -1129,7 +1077,7 @@ fn benchmark_allocation_strategies() {
             arr[i] = i as u32;
         }
     });
-    
+
     let bench4 = Benchmark::new("VecDeque", 100_000);
     bench4.run(|| {
         let mut deque = VecDeque::with_capacity(100);
@@ -1162,11 +1110,11 @@ impl<'a, T> SafeBuffer<'a, T> {
             _marker: PhantomData,
         }
     }
-    
+
     pub fn push(&mut self, item: T) {
         self.data.push(item);
     }
-    
+
     pub fn get(&self, index: usize) -> Option<&T> {
         self.data.get(index)
     }
@@ -1183,12 +1131,12 @@ impl<K: Eq + std::hash::Hash + Clone, V: Clone> BorrowFriendlyCache<K, V> {
             data: std::collections::HashMap::new(),
         }
     }
-    
+
     // 返回克隆而不是引用，避免生命周期问题
     pub fn get(&self, key: &K) -> Option<V> {
         self.data.get(key).cloned()
     }
-    
+
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         self.data.insert(key, value)
     }
@@ -1214,7 +1162,7 @@ impl<const MAX_SIZE: usize> ThreadSafeConfig<MAX_SIZE> {
             data: Arc::new(RwLock::new(Vec::with_capacity(MAX_SIZE))),
         }
     }
-    
+
     pub fn add(&self, item: String) -> Result<(), &'static str> {
         let mut data = self.data.write().unwrap();
         if data.len() >= MAX_SIZE {
@@ -1223,7 +1171,7 @@ impl<const MAX_SIZE: usize> ThreadSafeConfig<MAX_SIZE> {
         data.push(item);
         Ok(())
     }
-    
+
     pub fn get_all(&self) -> Vec<String> {
         self.data.read().unwrap().clone()
     }
@@ -1240,9 +1188,9 @@ impl<const MAX_SIZE: usize> Clone for ThreadSafeConfig<MAX_SIZE> {
 // 使用示例：多线程配置访问
 fn thread_safe_example() {
     let config: ThreadSafeConfig<100> = ThreadSafeConfig::new();
-    
+
     let mut handles = vec![];
-    
+
     for i in 0..10 {
         let config_clone = config.clone();
         let handle = thread::spawn(move || {
@@ -1250,11 +1198,11 @@ fn thread_safe_example() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("配置项数量: {}", config.get_all().len());
 }
 ```
@@ -1285,7 +1233,7 @@ impl<const MAX_SIZE: usize, const TTL_SECS: u64> ProductionCache<MAX_SIZE, TTL_S
             store: Arc::new(RwLock::new(HashMap::with_capacity(MAX_SIZE))),
         }
     }
-    
+
     pub fn get(&self, key: &str) -> Option<Vec<u8>> {
         let store = self.store.read().unwrap();
         store.get(key).and_then(|entry| {
@@ -1296,20 +1244,20 @@ impl<const MAX_SIZE: usize, const TTL_SECS: u64> ProductionCache<MAX_SIZE, TTL_S
             }
         })
     }
-    
+
     pub fn set(&self, key: String, value: Vec<u8>) -> Result<(), &'static str> {
         let mut store = self.store.write().unwrap();
-        
+
         // 检查容量
         if store.len() >= MAX_SIZE && !store.contains_key(&key) {
             // 简单的LRU: 清理过期项
             store.retain(|_, entry| entry.expires_at > Instant::now());
-            
+
             if store.len() >= MAX_SIZE {
                 return Err("缓存已满");
             }
         }
-        
+
         store.insert(
             key,
             CacheEntry {
@@ -1317,20 +1265,20 @@ impl<const MAX_SIZE: usize, const TTL_SECS: u64> ProductionCache<MAX_SIZE, TTL_S
                 expires_at: Instant::now() + Duration::from_secs(TTL_SECS),
             },
         );
-        
+
         Ok(())
     }
-    
+
     pub fn delete(&self, key: &str) -> bool {
         self.store.write().unwrap().remove(key).is_some()
     }
-    
+
     pub fn clear_expired(&self) {
         let mut store = self.store.write().unwrap();
         let now = Instant::now();
         store.retain(|_, entry| entry.expires_at > now);
     }
-    
+
     pub fn stats(&self) -> CacheStats {
         let store = self.store.read().unwrap();
         let total = store.len();
@@ -1338,7 +1286,7 @@ impl<const MAX_SIZE: usize, const TTL_SECS: u64> ProductionCache<MAX_SIZE, TTL_S
             .values()
             .filter(|entry| entry.expires_at <= Instant::now())
             .count();
-        
+
         CacheStats {
             total_entries: total,
             expired_entries: expired,
@@ -1359,19 +1307,19 @@ pub struct CacheStats {
 fn production_cache_example() {
     // 编译时配置：最大1000项，TTL 60秒
     let cache: ProductionCache<1000, 60> = ProductionCache::new();
-    
+
     // 设置值
     cache.set("key1".to_string(), b"value1".to_vec()).unwrap();
     cache.set("key2".to_string(), b"value2".to_vec()).unwrap();
-    
+
     // 获取值
     if let Some(value) = cache.get("key1") {
         println!("获取到缓存值: {:?}", String::from_utf8_lossy(&value));
     }
-    
+
     // 清理过期项
     cache.clear_expired();
-    
+
     // 获取统计信息
     let stats = cache.stats();
     println!("缓存统计: {} / {} 活跃", stats.active_entries, stats.max_size);
@@ -1404,6 +1352,6 @@ fn production_cache_example() {
 
 ---
 
-**更新日期**: 2025-10-24  
-**文档版本**: 2.0  
+**更新日期**: 2025-10-24
+**文档版本**: 2.0
 **作者**: C11 Libraries Team

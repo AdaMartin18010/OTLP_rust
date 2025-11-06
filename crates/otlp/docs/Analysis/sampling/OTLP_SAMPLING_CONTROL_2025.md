@@ -23,26 +23,26 @@ pub struct LayeredLogCollection {
 impl LayeredLogCollection {
     pub async fn collect_logs(&self) -> Result<Vec<LogEntry>, OtlpError> {
         let mut all_logs = Vec::new();
-        
+
         // 应用层日志采集
         let app_logs = self.application_layer.collect().await?;
         all_logs.extend(app_logs);
-        
+
         // 系统层日志采集
         let system_logs = self.system_layer.collect().await?;
         all_logs.extend(system_logs);
-        
+
         // 网络层日志采集
         let network_logs = self.network_layer.collect().await?;
         all_logs.extend(network_logs);
-        
+
         // 基础设施层日志采集
         let infra_logs = self.infrastructure_layer.collect().await?;
         all_logs.extend(infra_logs);
-        
+
         // 日志聚合
         let aggregated_logs = self.aggregation_layer.aggregate(all_logs).await?;
-        
+
         Ok(aggregated_logs)
     }
 }
@@ -56,14 +56,14 @@ pub struct ApplicationLogCollector {
 impl ApplicationLogCollector {
     pub async fn collect(&self) -> Result<Vec<LogEntry>, OtlpError> {
         let mut logs = Vec::new();
-        
+
         for source in &self.log_sources {
             let source_logs = source.collect_logs().await?;
             let parsed_logs = self.log_parser.parse_batch(source_logs).await?;
             let enriched_logs = self.log_enricher.enrich_batch(parsed_logs).await?;
             logs.extend(enriched_logs);
         }
-        
+
         Ok(logs)
     }
 }
@@ -84,27 +84,27 @@ impl RealTimeLogCollector {
         for (stream_id, stream) in &mut self.log_streams {
             let stream_processor = self.stream_processor.clone();
             let buffer_manager = self.buffer_manager.clone();
-            
+
             tokio::spawn(async move {
                 Self::process_log_stream(stream, stream_processor, buffer_manager).await;
             });
         }
-        
+
         Ok(())
     }
-    
+
     async fn process_log_stream(
         stream: &mut LogStream,
         processor: StreamProcessor,
         buffer_manager: BufferManager,
     ) -> Result<(), OtlpError> {
         let mut buffer = buffer_manager.get_buffer().await?;
-        
+
         loop {
             match stream.read_log_entry().await? {
                 Some(log_entry) => {
                     buffer.push(log_entry);
-                    
+
                     if buffer.is_full() {
                         processor.process_buffer(buffer).await?;
                         buffer = buffer_manager.get_buffer().await?;
@@ -119,7 +119,7 @@ impl RealTimeLogCollector {
                 }
             }
         }
-        
+
         Ok(())
     }
 }
@@ -142,11 +142,11 @@ impl MultiSourceLogCollector {
         self.sources.insert(source_id.clone(), source);
         self.source_manager.register_source(source_id).await;
     }
-    
+
     pub async fn collect_from_all_sources(&self) -> Result<Vec<LogEntry>, OtlpError> {
         let mut all_logs = Vec::new();
         let mut collection_tasks = Vec::new();
-        
+
         // 为每个源创建收集任务
         for (source_id, source) in &self.sources {
             let source_clone = source.clone();
@@ -155,7 +155,7 @@ impl MultiSourceLogCollector {
             });
             collection_tasks.push((source_id.clone(), task));
         }
-        
+
         // 等待所有收集任务完成
         for (source_id, task) in collection_tasks {
             match task.await? {
@@ -169,14 +169,14 @@ impl MultiSourceLogCollector {
                 }
             }
         }
-        
+
         Ok(all_logs)
     }
-    
+
     pub async fn collect_from_source(&self, source_id: &str) -> Result<Vec<LogEntry>, OtlpError> {
         let source = self.sources.get(source_id)
             .ok_or_else(|| OtlpError::SourceNotFound(source_id.to_string()))?;
-        
+
         source.collect_logs().await
     }
 }
@@ -197,10 +197,10 @@ impl LogSource for FileLogSource {
     async fn collect_logs(&self) -> Result<Vec<LogEntry>, OtlpError> {
         let file_content = tokio::fs::read_to_string(&self.file_path).await?;
         let raw_logs = self.log_parser.parse_raw_logs(&file_content)?;
-        
+
         Ok(raw_logs)
     }
-    
+
     async fn get_source_info(&self) -> SourceInfo {
         SourceInfo {
             source_type: "file".to_string(),
@@ -208,7 +208,7 @@ impl LogSource for FileLogSource {
             last_modified: self.file_watcher.get_last_modified().await,
         }
     }
-    
+
     async fn health_check(&self) -> Result<(), OtlpError> {
         if self.file_path.exists() {
             Ok(())
@@ -241,27 +241,27 @@ impl ProbabilisticSamplingStrategy {
             hash_function: FnvHasher::default(),
         }
     }
-    
+
     pub fn should_sample(&mut self, log_entry: &LogEntry) -> SamplingDecision {
         // 使用日志ID的哈希值确保一致性
         let mut hasher = self.hash_function.clone();
         hasher.write(log_entry.id.as_bytes());
         let hash_value = hasher.finish();
-        
+
         // 将哈希值映射到[0, 1]区间
         let normalized_hash = (hash_value as f64) / (u64::MAX as f64);
-        
+
         if normalized_hash < self.sampling_ratio {
             SamplingDecision::RecordAndSample
         } else {
             SamplingDecision::Drop
         }
     }
-    
+
     pub fn adjust_sampling_ratio(&mut self, new_ratio: f64) {
         self.sampling_ratio = new_ratio.clamp(0.0, 1.0);
     }
-    
+
     pub fn get_current_ratio(&self) -> f64 {
         self.sampling_ratio
     }
@@ -290,15 +290,15 @@ impl RateLimitingSamplingStrategy {
             token_bucket: Arc::new(Mutex::new(TokenBucket::new(max_logs_per_second))),
         }
     }
-    
+
     pub fn should_sample(&self, log_entry: &LogEntry) -> SamplingDecision {
         let now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         let last_reset = self.last_reset.load(Ordering::Relaxed);
-        
+
         // 检查是否需要重置计数器
         if now - last_reset >= self.window_size.as_secs() {
             if self.last_reset.compare_exchange(
@@ -310,7 +310,7 @@ impl RateLimitingSamplingStrategy {
                 self.current_logs.store(0, Ordering::Relaxed);
             }
         }
-        
+
         // 使用令牌桶算法
         let mut bucket = self.token_bucket.lock().unwrap();
         if bucket.try_consume(1) {
@@ -319,7 +319,7 @@ impl RateLimitingSamplingStrategy {
             SamplingDecision::Drop
         }
     }
-    
+
     pub fn adjust_rate_limit(&mut self, new_rate: u32) {
         self.max_logs_per_second = new_rate;
         let mut bucket = self.token_bucket.lock().unwrap();
@@ -343,10 +343,10 @@ impl TokenBucket {
             last_refill: Instant::now(),
         }
     }
-    
+
     pub fn try_consume(&mut self, tokens: u32) -> bool {
         self.refill();
-        
+
         if self.tokens >= tokens {
             self.tokens -= tokens;
             true
@@ -354,18 +354,18 @@ impl TokenBucket {
             false
         }
     }
-    
+
     fn refill(&mut self) {
         let now = Instant::now();
         let elapsed = now.duration_since(self.last_refill);
         let tokens_to_add = (elapsed.as_secs_f64() * self.rate as f64) as u32;
-        
+
         if tokens_to_add > 0 {
             self.tokens = (self.tokens + tokens_to_add).min(self.capacity);
             self.last_refill = now;
         }
     }
-    
+
     pub fn update_rate(&mut self, new_rate: u32) {
         self.rate = new_rate;
         self.capacity = new_rate;
@@ -391,12 +391,12 @@ impl RuleBasedSamplingStrategy {
             rule_evaluator: RuleEvaluator::new(),
         }
     }
-    
+
     pub fn add_rule(&mut self, rule: SamplingRule) {
         self.rules.push(rule);
         self.rule_engine.add_rule(rule);
     }
-    
+
     pub fn should_sample(&self, log_entry: &LogEntry) -> SamplingDecision {
         // 按优先级评估规则
         for rule in &self.rules {
@@ -404,11 +404,11 @@ impl RuleBasedSamplingStrategy {
                 return rule.get_decision();
             }
         }
-        
+
         // 默认决策
         SamplingDecision::Drop
     }
-    
+
     pub fn update_rule(&mut self, rule_id: &str, new_rule: SamplingRule) -> Result<(), OtlpError> {
         if let Some(index) = self.rules.iter().position(|r| r.id == rule_id) {
             self.rules[index] = new_rule;
@@ -448,22 +448,22 @@ impl SamplingRule {
             enabled: true,
         }
     }
-    
+
     pub fn with_priority(mut self, priority: u32) -> Self {
         self.priority = priority;
         self
     }
-    
+
     pub fn with_condition(mut self, condition: RuleCondition) -> Self {
         self.conditions.push(condition);
         self
     }
-    
+
     pub fn with_decision(mut self, decision: SamplingDecision) -> Self {
         self.decision = decision;
         self
     }
-    
+
     pub fn get_decision(&self) -> SamplingDecision {
         self.decision
     }
@@ -496,17 +496,17 @@ impl AdaptiveSamplingStrategy {
             max_history_size: 100,
         }
     }
-    
+
     pub async fn adapt_sampling_ratio(&mut self) -> Result<(), OtlpError> {
         let metrics = self.performance_monitor.get_current_metrics().await?;
-        
+
         // 使用适应引擎计算新的采样率
         let new_ratio = self.adaptation_engine.calculate_optimal_ratio(
             &metrics,
             self.current_sampling_ratio,
             &self.adjustment_history
         );
-        
+
         // 记录调整历史
         let adjustment = SamplingAdjustment {
             timestamp: Utc::now(),
@@ -514,36 +514,36 @@ impl AdaptiveSamplingStrategy {
             new_ratio,
             reason: self.adaptation_engine.get_last_adjustment_reason(),
         };
-        
+
         self.adjustment_history.push_back(adjustment);
         if self.adjustment_history.len() > self.max_history_size {
             self.adjustment_history.pop_front();
         }
-        
+
         // 应用新的采样率
         self.current_sampling_ratio = new_ratio;
-        
+
         Ok(())
     }
-    
+
     pub fn should_sample(&self, log_entry: &LogEntry) -> SamplingDecision {
         // 使用当前采样率进行采样决策
         let mut hasher = FnvHasher::default();
         hasher.write(log_entry.id.as_bytes());
         let hash_value = hasher.finish();
         let normalized_hash = (hash_value as f64) / (u64::MAX as f64);
-        
+
         if normalized_hash < self.current_sampling_ratio {
             SamplingDecision::RecordAndSample
         } else {
             SamplingDecision::Drop
         }
     }
-    
+
     pub fn get_current_ratio(&self) -> f64 {
         self.current_sampling_ratio
     }
-    
+
     pub fn get_adjustment_history(&self) -> &VecDeque<SamplingAdjustment> {
         &self.adjustment_history
     }
@@ -567,7 +567,7 @@ impl AdaptationEngine {
             adjustment_factor: 0.1,
         }
     }
-    
+
     pub fn calculate_optimal_ratio(
         &self,
         metrics: &PerformanceMetrics,
@@ -575,30 +575,30 @@ impl AdaptationEngine {
         history: &VecDeque<SamplingAdjustment>
     ) -> f64 {
         let mut new_ratio = current_ratio;
-        
+
         // 基于延迟调整
         if metrics.average_latency > self.target_latency * 2 {
             new_ratio *= (1.0 - self.adjustment_factor);
         } else if metrics.average_latency < self.target_latency / 2 {
             new_ratio *= (1.0 + self.adjustment_factor);
         }
-        
+
         // 基于吞吐量调整
         if metrics.throughput < self.target_throughput as f64 * 0.8 {
             new_ratio *= (1.0 + self.adjustment_factor);
         } else if metrics.throughput > self.target_throughput as f64 * 1.2 {
             new_ratio *= (1.0 - self.adjustment_factor);
         }
-        
+
         // 基于错误率调整
         if metrics.error_rate > 0.05 {
             new_ratio *= (1.0 - self.adjustment_factor);
         }
-        
+
         // 限制在合理范围内
         new_ratio.clamp(self.min_sampling_ratio, self.max_sampling_ratio)
     }
-    
+
     pub fn get_last_adjustment_reason(&self) -> String {
         "基于性能指标的自适应调整".to_string()
     }
@@ -623,15 +623,15 @@ impl LayeredSamplingStrategy {
             global_sampler: GlobalSampler::new(),
         }
     }
-    
+
     pub fn add_layer(&mut self, layer_id: String, layer: SamplingLayer) {
         self.layers.insert(layer_id, layer);
     }
-    
+
     pub fn should_sample(&self, log_entry: &LogEntry) -> SamplingDecision {
         // 选择适当的采样层
         let layer_id = self.layer_selector.select_layer(log_entry);
-        
+
         if let Some(layer) = self.layers.get(&layer_id) {
             // 使用层特定采样器
             layer.should_sample(log_entry)
@@ -640,7 +640,7 @@ impl LayeredSamplingStrategy {
             self.global_sampler.should_sample(log_entry)
         }
     }
-    
+
     pub fn update_layer_sampling_ratio(&mut self, layer_id: &str, new_ratio: f64) -> Result<(), OtlpError> {
         if let Some(layer) = self.layers.get_mut(layer_id) {
             layer.update_sampling_ratio(new_ratio);
@@ -667,17 +667,17 @@ impl SamplingLayer {
             priority: 0,
         }
     }
-    
+
     pub fn with_condition(mut self, condition: LayerCondition) -> Self {
         self.layer_conditions.push(condition);
         self
     }
-    
+
     pub fn with_priority(mut self, priority: u32) -> Self {
         self.priority = priority;
         self
     }
-    
+
     pub fn should_sample(&self, log_entry: &LogEntry) -> SamplingDecision {
         // 检查层条件
         for condition in &self.layer_conditions {
@@ -685,11 +685,11 @@ impl SamplingLayer {
                 return SamplingDecision::Drop;
             }
         }
-        
+
         // 使用层特定采样策略
         self.sampling_strategy.should_sample(log_entry)
     }
-    
+
     pub fn update_sampling_ratio(&mut self, new_ratio: f64) {
         if let Some(probabilistic_strategy) = self.sampling_strategy
             .as_any()
@@ -745,32 +745,32 @@ impl PerformanceMonitor {
             monitoring_interval: Duration::from_secs(10),
         }
     }
-    
+
     pub async fn start_monitoring(&self) -> Result<(), OtlpError> {
         let metrics_collector = self.metrics_collector.clone();
         let alert_manager = self.alert_manager.clone();
         let adjustment_controller = self.adjustment_controller.clone();
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 // 收集性能指标
                 let metrics = metrics_collector.collect_metrics().await;
-                
+
                 // 检查告警条件
                 alert_manager.check_alerts(&metrics).await;
-                
+
                 // 执行自动调整
                 adjustment_controller.adjust_based_on_metrics(&metrics).await;
             }
         });
-        
+
         Ok(())
     }
-    
+
     pub async fn get_current_metrics(&self) -> Result<PerformanceMetrics, OtlpError> {
         self.metrics_collector.collect_metrics().await
     }
@@ -794,7 +794,7 @@ impl MetricsCollector {
             cpu_gauge: Gauge::new("otlp_cpu_usage_percent", "OTLP CPU usage"),
         }
     }
-    
+
     pub async fn collect_metrics(&self) -> Result<PerformanceMetrics, OtlpError> {
         let metrics = PerformanceMetrics {
             average_latency: self.latency_histogram.get_average(),
@@ -804,14 +804,14 @@ impl MetricsCollector {
             cpu_usage: self.cpu_gauge.get(),
             timestamp: Utc::now(),
         };
-        
+
         Ok(metrics)
     }
-    
+
     fn calculate_error_rate(&self) -> f64 {
         let total_requests = self.throughput_counter.get();
         let errors = self.error_counter.get();
-        
+
         if total_requests > 0 {
             errors as f64 / total_requests as f64
         } else {
@@ -841,7 +841,7 @@ impl AdjustmentController {
             adjustment_policies: Vec::new(),
         }
     }
-    
+
     pub async fn adjust_based_on_metrics(&self, metrics: &PerformanceMetrics) -> Result<(), OtlpError> {
         // 应用调整策略
         for policy in &self.adjustment_policies {
@@ -849,15 +849,15 @@ impl AdjustmentController {
                 policy.apply_adjustment(metrics).await?;
             }
         }
-        
+
         // 执行具体调整
         self.sampling_adjuster.adjust_sampling(metrics).await?;
         self.batch_size_adjuster.adjust_batch_size(metrics).await?;
         self.concurrency_adjuster.adjust_concurrency(metrics).await?;
-        
+
         Ok(())
     }
-    
+
     pub fn add_adjustment_policy(&mut self, policy: AdjustmentPolicy) {
         self.adjustment_policies.push(policy);
     }
@@ -879,40 +879,40 @@ impl SamplingAdjuster {
             adjustment_step: 0.05,
         }
     }
-    
+
     pub async fn adjust_sampling(&self, metrics: &PerformanceMetrics) -> Result<(), OtlpError> {
         let current_ratio = self.get_current_ratio();
         let mut new_ratio = current_ratio;
-        
+
         // 基于延迟调整
         if metrics.average_latency > Duration::from_millis(200) {
             new_ratio = (new_ratio - self.adjustment_step).max(self.min_sampling_ratio);
         } else if metrics.average_latency < Duration::from_millis(50) {
             new_ratio = (new_ratio + self.adjustment_step).min(self.max_sampling_ratio);
         }
-        
+
         // 基于错误率调整
         if metrics.error_rate > 0.1 {
             new_ratio = (new_ratio - self.adjustment_step).max(self.min_sampling_ratio);
         }
-        
+
         // 基于内存使用率调整
         if metrics.memory_usage > 0.9 {
             new_ratio = (new_ratio - self.adjustment_step).max(self.min_sampling_ratio);
         }
-        
+
         if (new_ratio - current_ratio).abs() > 0.001 {
             self.set_sampling_ratio(new_ratio);
             println!("采样率已调整为: {:.3}", new_ratio);
         }
-        
+
         Ok(())
     }
-    
+
     fn get_current_ratio(&self) -> f64 {
         self.current_sampling_ratio.load(Ordering::Relaxed) as f64 / 10000.0
     }
-    
+
     fn set_sampling_ratio(&self, ratio: f64) {
         let fixed_point_ratio = (ratio * 10000.0) as u64;
         self.current_sampling_ratio.store(fixed_point_ratio, Ordering::Relaxed);
@@ -942,34 +942,34 @@ impl LoadPredictor {
             data_retention: Duration::from_hours(24),
         }
     }
-    
+
     pub async fn add_data_point(&mut self, data_point: LoadDataPoint) {
         self.historical_data.push_back(data_point);
-        
+
         // 清理过期数据
         self.cleanup_old_data();
-        
+
         // 更新预测模型
         self.prediction_model.update(&self.historical_data);
     }
-    
+
     pub async fn predict_load(&self, time_ahead: Duration) -> Result<LoadPrediction, OtlpError> {
         if self.historical_data.len() < 10 {
             return Err(OtlpError::InsufficientData);
         }
-        
+
         let prediction = self.prediction_model.predict(time_ahead)?;
-        
+
         Ok(LoadPrediction {
             predicted_load: prediction,
             confidence: self.prediction_model.get_confidence(),
             prediction_time: Utc::now() + time_ahead,
         })
     }
-    
+
     fn cleanup_old_data(&mut self) {
         let cutoff_time = Utc::now() - self.data_retention;
-        
+
         while let Some(front) = self.historical_data.front() {
             if front.timestamp < cutoff_time {
                 self.historical_data.pop_front();
@@ -1014,22 +1014,22 @@ impl PredictiveAdjustmentStrategy {
             adjustment_executor: AdjustmentExecutor::new(),
         }
     }
-    
+
     pub async fn plan_adjustments(&self) -> Result<Vec<PlannedAdjustment>, OtlpError> {
         // 预测未来负载
         let predictions = self.load_predictor.predict_load(Duration::from_minutes(5)).await?;
-        
+
         // 制定调整计划
         let adjustments = self.adjustment_planner.plan_adjustments(&predictions).await?;
-        
+
         Ok(adjustments)
     }
-    
+
     pub async fn execute_planned_adjustments(&self, adjustments: Vec<PlannedAdjustment>) -> Result<(), OtlpError> {
         for adjustment in adjustments {
             self.adjustment_executor.execute_adjustment(adjustment).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -1046,10 +1046,10 @@ impl AdjustmentPlanner {
             adjustment_constraints: AdjustmentConstraints::default(),
         }
     }
-    
+
     pub async fn plan_adjustments(&self, prediction: &LoadPrediction) -> Result<Vec<PlannedAdjustment>, OtlpError> {
         let mut adjustments = Vec::new();
-        
+
         // 基于预测负载制定调整计划
         if prediction.predicted_load > self.target_metrics.max_load {
             // 负载过高，需要减少采样率
@@ -1070,7 +1070,7 @@ impl AdjustmentPlanner {
             };
             adjustments.push(sampling_adjustment);
         }
-        
+
         Ok(adjustments)
     }
 }
@@ -1106,7 +1106,7 @@ pub struct ScenarioBasedSamplingSelector {
 impl ScenarioBasedSamplingSelector {
     pub fn new() -> Self {
         let mut scenarios = HashMap::new();
-        
+
         // 生产环境场景
         scenarios.insert("production".to_string(), SamplingScenario {
             name: "生产环境".to_string(),
@@ -1114,7 +1114,7 @@ impl ScenarioBasedSamplingSelector {
             strategy: SamplingStrategyType::Probabilistic,
             priority: Priority::High,
         });
-        
+
         // 开发环境场景
         scenarios.insert("development".to_string(), SamplingScenario {
             name: "开发环境".to_string(),
@@ -1122,7 +1122,7 @@ impl ScenarioBasedSamplingSelector {
             strategy: SamplingStrategyType::Probabilistic,
             priority: Priority::Low,
         });
-        
+
         // 测试环境场景
         scenarios.insert("testing".to_string(), SamplingScenario {
             name: "测试环境".to_string(),
@@ -1130,16 +1130,16 @@ impl ScenarioBasedSamplingSelector {
             strategy: SamplingStrategyType::RuleBased,
             priority: Priority::Medium,
         });
-        
+
         Self {
             scenarios,
             scenario_detector: ScenarioDetector::new(),
         }
     }
-    
+
     pub fn select_strategy(&self, context: &SamplingContext) -> Result<&SamplingScenario, OtlpError> {
         let scenario_name = self.scenario_detector.detect_scenario(context)?;
-        
+
         self.scenarios.get(&scenario_name)
             .ok_or_else(|| OtlpError::ScenarioNotFound(scenario_name))
     }
@@ -1181,16 +1181,16 @@ impl SamplingMonitor {
             notification_service: NotificationService::new(),
         }
     }
-    
+
     pub async fn monitor_sampling(&self) -> Result<(), OtlpError> {
         let mut interval = tokio::time::interval(Duration::from_secs(30));
-        
+
         loop {
             interval.tick().await;
-            
+
             // 收集采样指标
             let metrics = self.sampling_metrics.collect().await?;
-            
+
             // 检查告警规则
             for rule in &self.alert_rules {
                 if rule.should_trigger(&metrics) {
@@ -1201,13 +1201,13 @@ impl SamplingMonitor {
                         timestamp: Utc::now(),
                         metrics: metrics.clone(),
                     };
-                    
+
                     self.notification_service.send_alert(alert).await?;
                 }
             }
         }
     }
-    
+
     pub fn add_alert_rule(&mut self, rule: AlertRule) {
         self.alert_rules.push(rule);
     }
@@ -1231,18 +1231,18 @@ impl SamplingMetrics {
             sampling_latency: Histogram::new("otlp_sampling_latency", "Sampling decision latency"),
         }
     }
-    
+
     pub async fn collect(&self) -> Result<SamplingMetricsData, OtlpError> {
         let total = self.total_logs.get();
         let sampled = self.sampled_logs.get();
         let dropped = self.dropped_logs.get();
-        
+
         let actual_ratio = if total > 0 {
             sampled as f64 / total as f64
         } else {
             0.0
         };
-        
+
         Ok(SamplingMetricsData {
             total_logs: total,
             sampled_logs: sampled,

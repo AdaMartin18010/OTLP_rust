@@ -52,13 +52,13 @@ impl DataCollectionNode {
         self.is_async = self.config.is_async_enabled();
         Ok(())
     }
-    
+
     // 异步执行阶段
     pub async fn collect_data(&self, data: TelemetryData) -> Result<()> {
         if self.is_async {
             let mut buffer = self.buffer.write().await;
             buffer.push(data);
-            
+
             // 触发异步处理
             if buffer.len() >= self.config.batch_size() {
                 self.trigger_async_processing().await?;
@@ -67,15 +67,15 @@ impl DataCollectionNode {
             // 同步处理
             self.process_sync(data).await?;
         }
-        
+
         Ok(())
     }
-    
+
     async fn trigger_async_processing(&self) -> Result<()> {
         let mut buffer = self.buffer.write().await;
         let batch = buffer.drain(..).collect::<Vec<_>>();
         drop(buffer);
-        
+
         // 异步批处理
         self.process_batch_async(batch).await?;
         Ok(())
@@ -96,7 +96,7 @@ pub struct DataProcessingNode {
 impl DataProcessingNode {
     pub async fn process_batch(&self, batch: Vec<TelemetryData>) -> Result<Vec<ProcessedData>> {
         let mut processed_batch = Vec::new();
-        
+
         // 并行处理每个数据项
         let mut handles = Vec::new();
         for data in batch {
@@ -106,16 +106,16 @@ impl DataProcessingNode {
             });
             handles.push(handle);
         }
-        
+
         // 等待所有处理完成
         for handle in handles {
             let result = handle.await??;
             processed_batch.push(result);
         }
-        
+
         // 压缩处理后的数据
         let compressed_batch = self.compressor.compress_batch(processed_batch).await?;
-        
+
         Ok(compressed_batch)
     }
 }
@@ -135,7 +135,7 @@ impl DataTransportNode {
     pub async fn send_data(&self, data: Vec<ProcessedData>) -> Result<TransportResult> {
         let mut attempts = 0;
         let max_attempts = self.retry_policy.max_attempts();
-        
+
         loop {
             match self.attempt_send(data.clone()).await {
                 Ok(result) => return Ok(result),
@@ -144,7 +144,7 @@ impl DataTransportNode {
                     if attempts >= max_attempts {
                         return Err(e);
                     }
-                    
+
                     // 等待重试间隔
                     let delay = self.retry_policy.get_delay(attempts);
                     tokio::time::sleep(delay).await;
@@ -152,7 +152,7 @@ impl DataTransportNode {
             }
         }
     }
-    
+
     async fn attempt_send(&self, data: Vec<ProcessedData>) -> Result<TransportResult> {
         let connection = self.connection_pool.get_connection().await?;
         let result = self.transport.send_batch(connection, data).await?;
@@ -215,7 +215,7 @@ let result = client.send_trace("operation").await?
 // 批处理异步实现
 async fn batch_processing(client: &OtlpClient) -> Result<()> {
     let mut batch = Vec::new();
-    
+
     // 同步收集数据
     for i in 0..1000 {
         let data = TelemetryData::trace(format!("operation-{}", i))
@@ -224,11 +224,11 @@ async fn batch_processing(client: &OtlpClient) -> Result<()> {
             .with_numeric_attribute("operation.index", i as f64);
         batch.push(data);
     }
-    
+
     // 异步批量发送
     let result = client.send_batch(batch).await?;
     println!("批量发送成功: {} 条", result.success_count);
-    
+
     Ok(())
 }
 ```
@@ -254,13 +254,13 @@ async fn batch_processing(client: &OtlpClient) -> Result<()> {
 // 并发异步处理
 async fn concurrent_processing(client: &OtlpClient) -> Result<()> {
     let mut futures = Vec::new();
-    
+
     // 创建并发任务
     for i in 0..10 {
         let client_clone = client.clone();
         let future = tokio::spawn(async move {
             let mut results = Vec::new();
-            
+
             for j in 0..100 {
                 let result = client_clone.send_trace(format!("concurrent-{}-{}", i, j)).await?
                     .with_attribute("worker.id", i.to_string())
@@ -269,12 +269,12 @@ async fn concurrent_processing(client: &OtlpClient) -> Result<()> {
                     .await?;
                 results.push(result);
             }
-            
+
             Ok::<Vec<_>, Box<dyn std::error::Error + Send + Sync>>(results)
         });
         futures.push(future);
     }
-    
+
     // 同步协调结果
     let mut total_success = 0;
     for future in futures {
@@ -283,7 +283,7 @@ async fn concurrent_processing(client: &OtlpClient) -> Result<()> {
             total_success += result.success_count;
         }
     }
-    
+
     println!("并发处理完成，总成功数: {}", total_success);
     Ok(())
 }
@@ -317,10 +317,10 @@ impl TokenBucket {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         // 补充令牌
         self.refill_tokens(now).await;
-        
+
         // 尝试获取令牌
         let current = self.tokens.load(Ordering::Relaxed);
         if current >= tokens {
@@ -330,16 +330,16 @@ impl TokenBucket {
             false
         }
     }
-    
+
     async fn refill_tokens(&self, now: u64) {
         let last_refill = self.last_refill.load(Ordering::Relaxed);
         let elapsed = now - last_refill;
-        
+
         if elapsed > 0 {
             let tokens_to_add = (elapsed as usize * self.refill_rate).min(self.capacity);
             let current = self.tokens.load(Ordering::Relaxed);
             let new_tokens = (current + tokens_to_add).min(self.capacity);
-            
+
             self.tokens.store(new_tokens, Ordering::Relaxed);
             self.last_refill.store(now, Ordering::Relaxed);
         }
@@ -361,7 +361,7 @@ impl SlidingWindow {
     pub async fn try_acquire(&self) -> bool {
         let now = Instant::now();
         let mut requests = self.requests.write().await;
-        
+
         // 移除过期的请求
         while let Some(&oldest) = requests.front() {
             if now.duration_since(oldest) > self.window_size {
@@ -370,7 +370,7 @@ impl SlidingWindow {
                 break;
             }
         }
-        
+
         // 检查是否超过限制
         if requests.len() < self.max_requests {
             requests.push_back(now);
@@ -401,14 +401,14 @@ impl QueueBackpressure {
         if current >= self.max_queue_size {
             return Err(OtlpError::queue_full());
         }
-        
+
         // 获取信号量
         let _permit = self.semaphore.acquire().await?;
         self.current_size.fetch_add(1, Ordering::Relaxed);
-        
+
         Ok(())
     }
-    
+
     pub fn pop(&self) {
         self.current_size.fetch_sub(1, Ordering::Relaxed);
         self.semaphore.add_permits(1);
@@ -430,14 +430,14 @@ impl MemoryBackpressure {
     pub async fn check_memory_pressure(&self) -> Result<()> {
         let current = self.current_usage.load(Ordering::Relaxed);
         let system_memory = self.memory_monitor.get_system_memory_usage().await?;
-        
+
         if current > self.max_memory_usage || system_memory > 0.8 {
             return Err(OtlpError::memory_pressure());
         }
-        
+
         Ok(())
     }
-    
+
     pub fn update_usage(&self, delta: isize) {
         if delta > 0 {
             self.current_usage.fetch_add(delta as usize, Ordering::Relaxed);
@@ -467,24 +467,24 @@ impl ThroughputMetrics {
         self.requests_per_second.fetch_add(1, Ordering::Relaxed);
         self.bytes_per_second.fetch_add(bytes as u64, Ordering::Relaxed);
     }
-    
+
     pub fn get_throughput(&self) -> (f64, f64) {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         let last_update = self.last_update.load(Ordering::Relaxed);
         let elapsed = (now - last_update).max(1);
-        
+
         let rps = self.requests_per_second.load(Ordering::Relaxed) as f64 / elapsed as f64;
         let bps = self.bytes_per_second.load(Ordering::Relaxed) as f64 / elapsed as f64;
-        
+
         // 重置计数器
         self.requests_per_second.store(0, Ordering::Relaxed);
         self.bytes_per_second.store(0, Ordering::Relaxed);
         self.last_update.store(now, Ordering::Relaxed);
-        
+
         (rps, bps)
     }
 }
@@ -504,10 +504,10 @@ pub struct LatencyMetrics {
 impl LatencyMetrics {
     pub fn record_latency(&self, latency: Duration) {
         let latency_ns = latency.as_nanos() as u64;
-        
+
         self.total_latency.fetch_add(latency_ns, Ordering::Relaxed);
         self.request_count.fetch_add(1, Ordering::Relaxed);
-        
+
         // 更新最大延迟
         let mut max = self.max_latency.load(Ordering::Relaxed);
         while max < latency_ns {
@@ -518,7 +518,7 @@ impl LatencyMetrics {
                 Err(x) => max = x,
             }
         }
-        
+
         // 更新最小延迟
         let mut min = self.min_latency.load(Ordering::Relaxed);
         while min > latency_ns || min == 0 {
@@ -530,11 +530,11 @@ impl LatencyMetrics {
             }
         }
     }
-    
+
     pub fn get_average_latency(&self) -> Duration {
         let total = self.total_latency.load(Ordering::Relaxed);
         let count = self.request_count.load(Ordering::Relaxed);
-        
+
         if count == 0 {
             Duration::ZERO
         } else {
@@ -562,7 +562,7 @@ impl AdaptiveBatchSizer {
     pub async fn adjust_batch_size(&self) {
         let avg_latency = self.metrics.get_average_latency();
         let current_size = self.current_batch_size.load(Ordering::Relaxed);
-        
+
         if avg_latency > self.target_latency * 2 {
             // 延迟过高，减少批大小
             let new_size = (current_size * 3 / 4).max(self.min_batch_size);
@@ -573,7 +573,7 @@ impl AdaptiveBatchSizer {
             self.current_batch_size.store(new_size, Ordering::Relaxed);
         }
     }
-    
+
     pub fn get_batch_size(&self) -> usize {
         self.current_batch_size.load(Ordering::Relaxed)
     }
@@ -596,7 +596,7 @@ impl AdaptiveConcurrency {
     pub async fn adjust_concurrency(&self) {
         let cpu_usage = self.cpu_monitor.get_cpu_usage().await;
         let current = self.current_concurrency.load(Ordering::Relaxed);
-        
+
         if cpu_usage > self.target_utilization * 1.2 {
             // CPU使用率过高，减少并发度
             let new_concurrency = (current * 3 / 4).max(self.min_concurrency);
@@ -607,7 +607,7 @@ impl AdaptiveConcurrency {
             self.current_concurrency.store(new_concurrency, Ordering::Relaxed);
         }
     }
-    
+
     pub fn get_concurrency(&self) -> usize {
         self.current_concurrency.load(Ordering::Relaxed)
     }

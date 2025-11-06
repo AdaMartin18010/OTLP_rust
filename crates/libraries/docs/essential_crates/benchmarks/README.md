@@ -101,17 +101,17 @@ fn serialization_benchmark(c: &mut Criterion) {
         name: "test".to_string(),
         values: vec![1.0, 2.0, 3.0, 4.0, 5.0],
     };
-    
+
     let mut group = c.benchmark_group("serialization");
-    
+
     group.bench_function("serde_json", |b| {
         b.iter(|| serde_json::to_string(&data).unwrap())
     });
-    
+
     group.bench_function("bincode", |b| {
         b.iter(|| bincode::serialize(&data).unwrap())
     });
-    
+
     group.finish();
 }
 
@@ -127,13 +127,13 @@ use rayon::prelude::*;
 
 fn parallel_benchmark(c: &mut Criterion) {
     let data: Vec<_> = (0..10_000).collect();
-    
+
     c.bench_function("sequential", |b| {
         b.iter(|| {
             data.iter().map(|&x| x * x).sum::<i32>()
         })
     });
-    
+
     c.bench_function("parallel", |b| {
         b.iter(|| {
             data.par_iter().map(|&x| x * x).sum::<i32>()
@@ -272,13 +272,13 @@ c.bench_function("test", |b| {
 ```rust
 fn bench_with_input(c: &mut Criterion) {
     let mut group = c.benchmark_group("input_size");
-    
+
     for size in [100, 1000, 10000].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             b.iter(|| process_data(black_box(size)))
         });
     }
-    
+
     group.finish();
 }
 ```

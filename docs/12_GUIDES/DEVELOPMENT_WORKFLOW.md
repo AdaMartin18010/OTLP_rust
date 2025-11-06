@@ -1,8 +1,8 @@
 # 🔧 OTLP Rust 开发工作流程
 
-**版本**: 1.0  
-**更新日期**: 2025年10月26日  
-**适用对象**: 所有开发者  
+**版本**: 1.0
+**更新日期**: 2025年10月26日
+**适用对象**: 所有开发者
 **状态**: 🟢 活跃维护
 
 > **简介**: 开发工作流程 - 从环境准备到PR合并的完整开发流程和最佳实践。
@@ -102,16 +102,16 @@ git checkout -b fix/your-bug-fix
 while developing; do
     # 编写代码
     vim src/your_file.rs
-    
+
     # 检查编译
     cargo check
-    
+
     # 运行测试
     cargo test --lib
-    
+
     # 格式化代码
     cargo fmt
-    
+
     # 检查代码质量
     cargo clippy
 done
@@ -251,20 +251,20 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: 1.90.0
-      
+
       # 编译检查
       - run: cargo check --all-features
-      
+
       # 测试
       - run: cargo test --all-features
-      
+
       # 代码质量
       - run: cargo clippy --all-features -- -D warnings
       - run: cargo fmt -- --check
-      
+
       # 安全审计
       - run: cargo audit
-      
+
       # 覆盖率
       - run: cargo tarpaulin --out Xml
 ```
@@ -488,8 +488,8 @@ cargo publish
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025年1月  
+**文档版本**: v1.0
+**最后更新**: 2025年1月
 **维护者**: OTLP Rust Team
 
 🎉 **祝您开发愉快！** 🎉

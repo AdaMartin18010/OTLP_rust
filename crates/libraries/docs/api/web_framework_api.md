@@ -1,8 +1,8 @@
 ﻿# Web框架完整集成 - API参考文档
 
-**示例文件**: `crates/libraries/examples/web_framework_complete_integration.rs`  
-**版本**: 1.0.0  
-**Rust版本**: 1.90.0+  
+**示例文件**: `crates/libraries/examples/web_framework_complete_integration.rs`
+**版本**: 1.0.0
+**Rust版本**: 1.90.0+
 **最后更新**: 2025年10月28日
 
 ---
@@ -144,19 +144,19 @@ assert_eq!(config.port, 8080);
 pub enum AppError {
     #[error("Database error: {0}")]
     DatabaseError(String),
-    
+
     #[error("Cache error: {0}")]
     CacheError(String),
-    
+
     #[error("Not found: {0}")]
     NotFound(String),
-    
+
     #[error("Bad request: {0}")]
     BadRequest(String),
-    
+
     #[error("Conflict: {0}")]
     Conflict(String),
-    
+
     #[error("Internal server error")]
     InternalError,
 }
@@ -167,7 +167,7 @@ pub enum AppError {
 **错误变体**:
 
 - `DatabaseError`: 数据库操作错误 → 500 Internal Server Error
-- `CacheError`: 缓存操作错误 → 500 Internal Server Error  
+- `CacheError`: 缓存操作错误 → 500 Internal Server Error
 - `NotFound`: 资源未找到 → 404 Not Found
 - `BadRequest`: 请求参数错误 → 400 Bad Request
 - `Conflict`: 资源冲突 → 409 Conflict
@@ -181,7 +181,7 @@ pub enum AppError {
 async fn handler() -> Result<Json<User>, AppError> {
     let user = db.find(id).await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-    
+
     user.ok_or_else(|| AppError::NotFound(format!("User {} not found", id)))
         .map(Json)
 }
@@ -606,9 +606,9 @@ async fn create_user_handler(
 ) -> Result<Json<User>, AppError>
 ```
 
-**HTTP方法**: POST  
-**路径**: `/users`  
-**请求体**: JSON格式的CreateUserRequest  
+**HTTP方法**: POST
+**路径**: `/users`
+**请求体**: JSON格式的CreateUserRequest
 **响应**: 201 Created + User JSON
 
 **示例请求**:
@@ -642,16 +642,16 @@ Content-Type: application/json
 
 #### `get_user_handler`
 
-**HTTP方法**: GET  
-**路径**: `/users/:id`  
+**HTTP方法**: GET
+**路径**: `/users/:id`
 **响应**: 200 OK + User JSON
 
 ---
 
 #### `list_users_handler`
 
-**HTTP方法**: GET  
-**路径**: `/users?page=1&page_size=20`  
+**HTTP方法**: GET
+**路径**: `/users?page=1&page_size=20`
 **查询参数**:
 
 - `page`: 页码（默认1）
@@ -661,8 +661,8 @@ Content-Type: application/json
 
 #### `health_check_handler`
 
-**HTTP方法**: GET  
-**路径**: `/health`  
+**HTTP方法**: GET
+**路径**: `/health`
 **功能**: 健康检查，检测数据库和Redis连接状态
 
 **响应示例**:
@@ -770,6 +770,6 @@ redis.del(format!("user:{}", id)).await?;
 
 ---
 
-**版本**: 1.0.0  
-**维护者**: OTLP Rust Team  
+**版本**: 1.0.0
+**维护者**: OTLP Rust Team
 **最后更新**: 2025年10月28日

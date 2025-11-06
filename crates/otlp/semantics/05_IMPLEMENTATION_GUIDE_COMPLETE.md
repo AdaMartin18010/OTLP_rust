@@ -1,7 +1,7 @@
 # 项目实施与验证完整指南
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -104,19 +104,19 @@ planning_checklist:
     □ 识别关键服务和依赖
     □ 评估现有监控方案
     □ 定义成功标准和KPI
-  
+
   架构设计:
     □ 选择部署模式(Agent/Gateway/Sidecar)
     □ 规划Collector架构(集中式/分层/混合)
     □ 选择后端存储(Jaeger/Prometheus/Loki/...)
     □ 设计数据流和采样策略
-  
+
   资源评估:
     □ 计算资源需求(CPU/内存/存储)
     □ 网络带宽需求
     □ 人力资源(开发/运维/SRE)
     □ 预算和成本
-  
+
   风险评估:
     □ 性能影响评估
     □ 安全和合规要求
@@ -158,21 +158,21 @@ collector_resources:
     memory: 512MB-1GB
     disk: 10GB(日志和缓存)
     network: 100Mbps
-  
+
   # Gateway模式(集中式)
   gateway:
     cpu: 4-8 cores
     memory: 8-16GB
     disk: 50GB
     network: 1Gbps
-  
+
   # 后端存储(取决于数据量)
   backend:
     jaeger:
       cpu: 4+ cores
       memory: 8+ GB
       disk: 100GB+ (SSD推荐)
-    
+
     prometheus:
       cpu: 2+ cores
       memory: 4+ GB
@@ -190,15 +190,15 @@ network_ports:
     - 8888/tcp: Metrics (Prometheus)
     - 8889/tcp: Health check
     - 13133/tcp: Health extension
-  
+
   jaeger:
     - 16686/tcp: UI
     - 14250/tcp: gRPC
     - 14268/tcp: HTTP
-  
+
   prometheus:
     - 9090/tcp: Web UI / API
-  
+
   loki:
     - 3100/tcp: HTTP
 
@@ -265,7 +265,7 @@ services:
     networks:
       - otel
     restart: unless-stopped
-  
+
   # Jaeger (Traces后端)
   jaeger:
     image: jaegertracing/all-in-one:1.51
@@ -277,7 +277,7 @@ services:
     networks:
       - otel
     restart: unless-stopped
-  
+
   # Prometheus (Metrics后端)
   prometheus:
     image: prom/prometheus:v2.47.0
@@ -293,7 +293,7 @@ services:
     networks:
       - otel
     restart: unless-stopped
-  
+
   # Loki (Logs后端)
   loki:
     image: grafana/loki:2.9.0
@@ -303,7 +303,7 @@ services:
     networks:
       - otel
     restart: unless-stopped
-  
+
   # Grafana (可视化)
   grafana:
     image: grafana/grafana:10.1.0
@@ -345,11 +345,11 @@ processors:
   batch:
     timeout: 10s
     send_batch_size: 1024
-  
+
   memory_limiter:
     check_interval: 1s
     limit_mib: 512
-  
+
   resource:
     attributes:
       - key: deployment.environment
@@ -362,16 +362,16 @@ exporters:
     endpoint: jaeger:4317
     tls:
       insecure: true
-  
+
   # Prometheus导出
   prometheus:
     endpoint: "0.0.0.0:8889"
     namespace: otel
-  
+
   # Loki导出
   loki:
     endpoint: http://loki:3100/loki/api/v1/push
-  
+
   # 调试输出
   logging:
     loglevel: info
@@ -382,17 +382,17 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, batch, resource]
       exporters: [otlp/jaeger, logging]
-    
+
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [prometheus]
-    
+
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [loki, logging]
-  
+
   telemetry:
     metrics:
       level: detailed
@@ -450,18 +450,18 @@ config:
           endpoint: ${env:MY_POD_IP}:4317
         http:
           endpoint: ${env:MY_POD_IP}:4318
-    
+
     # Kubernetes Metrics
     kubeletstats:
       collection_interval: 30s
       auth_type: "serviceAccount"
       endpoint: "https://${env:K8S_NODE_NAME}:10250"
       insecure_skip_verify: true
-  
+
   processors:
     batch:
       timeout: 10s
-    
+
     # K8s属性处理器
     k8sattributes:
       auth_type: "serviceAccount"
@@ -477,29 +477,29 @@ config:
           - tag_name: app
             key: app
             from: pod
-    
+
     resource:
       attributes:
         - key: cluster.name
           value: prod-k8s
           action: upsert
-  
+
   exporters:
     otlp:
       endpoint: jaeger.observability.svc.cluster.local:4317
       tls:
         insecure: true
-    
+
     prometheusremotewrite:
       endpoint: http://prometheus.observability.svc.cluster.local:9090/api/v1/write
-  
+
   service:
     pipelines:
       traces:
         receivers: [otlp]
         processors: [k8sattributes, batch, resource]
         exporters: [otlp]
-      
+
       metrics:
         receivers: [otlp, kubeletstats]
         processors: [k8sattributes, batch]
@@ -602,7 +602,7 @@ spec:
         - name: collector
           image: otel/opentelemetry-collector-contrib:0.89.0
           command: ["--config=/etc/otelcol/config.yaml"]
-          
+
           env:
             - name: MY_POD_IP
               valueFrom:
@@ -612,7 +612,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-          
+
           ports:
             - containerPort: 4317
               name: otlp-grpc
@@ -620,11 +620,11 @@ spec:
               name: otlp-http
             - containerPort: 8888
               name: metrics
-          
+
           volumeMounts:
             - name: config
               mountPath: /etc/otelcol
-          
+
           resources:
             requests:
               cpu: 200m
@@ -632,7 +632,7 @@ spec:
             limits:
               cpu: 1000m
               memory: 1Gi
-      
+
       volumes:
         - name: config
           configMap:
@@ -801,15 +801,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ]))
         )
         .install_batch(opentelemetry_sdk::runtime::Tokio)?;
-    
+
     // 配置tracing
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
     let subscriber = Registry::default().with(telemetry);
     tracing::subscriber::set_global_default(subscriber)?;
-    
+
     // 应用逻辑
     run_app().await;
-    
+
     // 清理
     global::shutdown_tracer_provider();
     Ok(())
@@ -837,21 +837,21 @@ metadata:
   namespace: observability
 spec:
   strategy: production
-  
+
   storage:
     type: elasticsearch
     options:
       es:
         server-urls: http://elasticsearch:9200
         index-prefix: jaeger
-    
+
     elasticsearch:
       nodeCount: 3
       redundancyPolicy: MultipleRedundancy
       storage:
         storageClassName: fast-ssd
         size: 100Gi
-  
+
   query:
     replicas: 2
     resources:
@@ -861,7 +861,7 @@ spec:
       limits:
         cpu: 1000m
         memory: 1Gi
-  
+
   collector:
     replicas: 3
     maxReplicas: 10
@@ -888,7 +888,7 @@ scrape_configs:
   - job_name: 'otel-collector'
     static_configs:
       - targets: ['otel-collector:8888']
-    
+
   # 通过OTel Collector导出的应用指标
   - job_name: 'otel-apps'
     static_configs:
@@ -908,13 +908,13 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: true
-  
+
   - name: Jaeger
     type: jaeger
     access: proxy
     url: http://jaeger-query:16686
     editable: true
-  
+
   - name: Loki
     type: loki
     access: proxy
@@ -1071,7 +1071,7 @@ performance_metrics:
     - otelcol_exporter_send_failed_spans (发送失败数)
     - process_cpu_seconds_total (CPU使用)
     - process_resident_memory_bytes (内存使用)
-  
+
   application:
     - http_server_duration_milliseconds (请求延迟)
     - http_server_active_requests (活跃请求)
@@ -1122,7 +1122,7 @@ rollout_plan:
       - 功能正常
       - 无性能劣化
       - 错误率<0.1%
-  
+
   phase_2: # 扩展到20%
     duration: 1周
     targets:
@@ -1131,7 +1131,7 @@ rollout_plan:
       - Traces完整性>95%
       - E2E延迟<5s
       - 成本可控
-  
+
   phase_3: # 全量50%
     duration: 2周
     targets:
@@ -1139,7 +1139,7 @@ rollout_plan:
     validation:
       - 监控覆盖度>80%
       - 运维团队培训完成
-  
+
   phase_4: # 100%
     duration: 1个月
     targets:
@@ -1162,14 +1162,14 @@ production_checklist:
     □ 文档更新
     □ 团队培训完成
     □ 变更审批通过
-  
+
   部署中:
     □ 灰度发布执行
     □ 实时监控指标
     □ 日志检查
     □ 功能验证
     □ 性能对比
-  
+
   部署后:
     □ 全量验证
     □ 用户反馈收集

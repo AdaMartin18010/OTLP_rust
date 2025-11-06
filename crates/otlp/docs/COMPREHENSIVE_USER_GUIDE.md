@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = OtlpClient::new()
         .with_endpoint("http://localhost:4317")
         .build()?;
-    
+
     // 创建遥测数据
     let data = TelemetryData {
         data_type: TelemetryDataType::Trace,
@@ -51,10 +51,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             links: Vec::new(),
         }),
     };
-    
+
     // 发送数据
     client.send_telemetry_data(data).await?;
-    
+
     Ok(())
 }
 ```
@@ -555,6 +555,6 @@ let config = OtlpConfig::new()
 
 ---
 
-**版本**: 1.0.0  
-**最后更新**: 2025年9月18日  
+**版本**: 1.0.0
+**最后更新**: 2025年9月18日
 **维护者**: OTLP Rust Team

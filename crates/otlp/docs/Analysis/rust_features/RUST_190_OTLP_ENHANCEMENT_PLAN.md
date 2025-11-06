@@ -42,7 +42,7 @@ use std::pin::Pin;
 #[async_trait]
 pub trait AsyncTelemetryProcessor: Send + Sync {
     async fn process_async(&self, data: TelemetryData) -> Result<ProcessedData>;
-    
+
     // 支持Future组合
     fn process_stream(&self) -> Pin<Box<dyn Future<Output = Result<TelemetryStream>> + Send>>;
 }
@@ -62,7 +62,7 @@ impl AdvancedOtlpClient {
                 processor.process_async(current_data).await.unwrap()
             })
             .await;
-        
+
         // 流式处理
         let stream = self.stream_processor.process_stream().await?;
         self.export_stream(stream).await
@@ -77,7 +77,7 @@ impl AdvancedOtlpClient {
 pub trait TelemetryDataProcessor<T: Send + Sync + 'static> {
     type ProcessedType: Send + Sync + 'static;
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     async fn process(&self, data: T) -> Result<Self::ProcessedType, Self::Error>;
 }
 
@@ -93,14 +93,14 @@ impl ZeroCopyTelemetryData {
     pub fn create_with_buffer(size: usize) -> Self {
         let buffer = vec![0u8; size].into_boxed_slice();
         let buffer = unsafe { Pin::new_unchecked(buffer) };
-        
+
         Self {
             content: TelemetryContent::default(),
             metadata: Arc::new(Metadata::default()),
             buffer,
         }
     }
-    
+
     // 零拷贝序列化
     pub fn serialize_zero_copy(&self) -> Result<&[u8]> {
         // 直接在内存中序列化，避免拷贝
@@ -125,10 +125,10 @@ pub struct HighPerformanceOtlpClient {
     request_counter: AtomicU64,
     success_counter: AtomicU64,
     error_counter: AtomicU64,
-    
+
     // 使用信号量控制并发
     concurrency_limiter: Arc<Semaphore>,
-    
+
     // 使用读写锁保护共享状态
     shared_state: Arc<RwLock<SharedState>>,
 }
@@ -137,36 +137,36 @@ impl HighPerformanceOtlpClient {
     pub async fn send_with_concurrency_control(&self, data: TelemetryData) -> Result<ExportResult> {
         // 获取并发许可
         let _permit = self.concurrency_limiter.acquire().await?;
-        
+
         // 原子操作更新计数器
         self.request_counter.fetch_add(1, Ordering::Relaxed);
-        
+
         let result = self.send_internal(data).await;
-        
+
         match &result {
             Ok(_) => self.success_counter.fetch_add(1, Ordering::Relaxed),
             Err(_) => self.error_counter.fetch_add(1, Ordering::Relaxed),
         }
-        
+
         result
     }
-    
+
     // 高性能批量处理
     pub async fn send_batch_optimized(&self, batch: Vec<TelemetryData>) -> Result<ExportResult> {
         let batch_size = batch.len();
         let permits = self.concurrency_limiter.acquire_many(batch_size as u32).await?;
-        
+
         // 并行处理批量数据
         let futures: Vec<_> = batch.into_iter()
             .map(|data| self.send_with_permit(data, permits.clone()))
             .collect();
-        
+
         let results = futures::future::join_all(futures).await;
-        
+
         // 聚合结果
         let mut total_success = 0;
         let mut total_failure = 0;
-        
+
         for result in results {
             match result {
                 Ok(export_result) => {
@@ -176,7 +176,7 @@ impl HighPerformanceOtlpClient {
                 Err(_) => total_failure += 1,
             }
         }
-        
+
         Ok(ExportResult {
             success_count: total_success,
             failure_count: total_failure,
@@ -257,14 +257,14 @@ impl IntelligentAttributeFilter {
     pub async fn learn_from_data(&mut self, data: &[TelemetryData]) {
         // 机器学习算法分析数据模式
         let patterns = self.learning_engine.analyze_patterns(data).await;
-        
+
         // 自动生成过滤规则
         for pattern in patterns {
             let rule = AttributeRule::from_pattern(pattern);
             self.attribute_rules.insert(rule.attribute_name.clone(), rule);
         }
     }
-    
+
     pub async fn should_filter(&self, data: &TelemetryData) -> bool {
         for (attribute_name, rule) in &self.attribute_rules {
             if let Some(value) = data.get_attribute(attribute_name) {
@@ -305,7 +305,7 @@ pub struct TimeWindowAggregator {
 impl TimeWindowAggregator {
     pub async fn add_data(&mut self, data: TelemetryData) -> Option<AggregatedData> {
         self.buffer.push_back(data);
-        
+
         // 检查是否需要聚合
         if self.should_aggregate() {
             let aggregated = self.perform_aggregation().await?;
@@ -315,7 +315,7 @@ impl TimeWindowAggregator {
             None
         }
     }
-    
+
     async fn perform_aggregation(&self) -> Result<AggregatedData> {
         match self.aggregation_function {
             AggregationFunction::Sum => self.aggregate_sum().await,
@@ -349,10 +349,10 @@ impl KubernetesIntegration {
         let pod_info = Self::get_pod_info().await?;
         let service_info = Self::get_service_info(&pod_info).await?;
         let namespace_info = Self::get_namespace_info(&pod_info).await?;
-        
+
         // 构建OTLP配置
         let otlp_config = Self::build_otlp_config(&pod_info, &service_info, &namespace_info).await?;
-        
+
         Ok(Self {
             k8s_client,
             pod_info,
@@ -361,17 +361,17 @@ impl KubernetesIntegration {
             otlp_config,
         })
     }
-    
+
     async fn build_otlp_config(
         pod_info: &PodInfo,
         service_info: &ServiceInfo,
         namespace_info: &NamespaceInfo,
     ) -> Result<OtlpConfig> {
         let mut config = OtlpConfig::default();
-        
+
         // 设置服务信息
         config = config.with_service(&service_info.name, &service_info.version);
-        
+
         // 添加Kubernetes资源属性
         config = config
             .with_resource_attribute("k8s.namespace", &namespace_info.name)
@@ -381,28 +381,28 @@ impl KubernetesIntegration {
             .with_resource_attribute("k8s.container.name", &pod_info.container_name)
             .with_resource_attribute("k8s.service.name", &service_info.name)
             .with_resource_attribute("k8s.deployment.name", &service_info.deployment_name);
-        
+
         // 设置OTLP端点
         let otlp_endpoint = Self::discover_otlp_endpoint().await?;
         config = config.with_endpoint(&otlp_endpoint);
-        
+
         Ok(config)
     }
-    
+
     // 自动发现OTLP收集器端点
     async fn discover_otlp_endpoint() -> Result<String> {
         // 从环境变量获取
         if let Ok(endpoint) = std::env::var("OTLP_ENDPOINT") {
             return Ok(endpoint);
         }
-        
+
         // 从Kubernetes服务发现
         let service_name = std::env::var("OTLP_SERVICE_NAME")
             .unwrap_or_else(|_| "otel-collector".to_string());
-        
+
         let namespace = std::env::var("KUBERNETES_NAMESPACE")
             .unwrap_or_else(|_| "default".to_string());
-        
+
         Ok(format!("http://{}.{}.svc.cluster.local:4317", service_name, namespace))
     }
 }
@@ -431,15 +431,15 @@ impl ServiceMeshIntegration {
             ],
             custom_tags: HashMap::new(),
         };
-        
+
         self.istio_client.apply_tracing_config(&tracing_config).await?;
-        
+
         // 配置Envoy代理
         self.configure_envoy_proxy().await?;
-        
+
         Ok(())
     }
-    
+
     async fn configure_envoy_proxy(&self) -> Result<()> {
         let envoy_config = EnvoyConfig {
             tracing: Some(TracingConfig {
@@ -457,7 +457,7 @@ impl ServiceMeshIntegration {
             }),
             ..Default::default()
         };
-        
+
         self.envoy_config.apply_config(&envoy_config).await?;
         Ok(())
     }
@@ -502,15 +502,15 @@ impl AuthProvider for OAuth2Provider {
             client_secret: self.client_secret.clone(),
             scope: self.scope.join(" "),
         };
-        
+
         let response = self.http_client
             .post(&self.token_endpoint)
             .json(&token_request)
             .send()
             .await?;
-        
+
         let token_response: TokenResponse = response.json().await?;
-        
+
         Ok(AuthResult {
             access_token: token_response.access_token,
             token_type: token_response.token_type,
@@ -530,14 +530,14 @@ impl DataEncryption {
     pub async fn encrypt_telemetry_data(&self, data: &TelemetryData) -> Result<EncryptedData> {
         let serialized = serde_json::to_vec(data)?;
         let encrypted = self.encrypt_bytes(&serialized).await?;
-        
+
         Ok(EncryptedData {
             encrypted_content: encrypted,
             algorithm: self.algorithm,
             key_id: self.encryption_key.id.clone(),
         })
     }
-    
+
     async fn encrypt_bytes(&self, data: &[u8]) -> Result<Vec<u8>> {
         match self.algorithm {
             EncryptionAlgorithm::AES256GCM => {
@@ -574,64 +574,64 @@ impl AdvancedMonitoring {
     pub async fn start_monitoring(&self) -> Result<()> {
         // 启动指标收集
         self.start_metrics_collection().await?;
-        
+
         // 启动告警监控
         self.start_alert_monitoring().await?;
-        
+
         // 启动健康检查
         self.start_health_checks().await?;
-        
+
         // 生成监控仪表板
         self.generate_dashboards().await?;
-        
+
         Ok(())
     }
-    
+
     async fn start_metrics_collection(&self) -> Result<()> {
         let metrics_collector = self.metrics_collector.clone();
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(1));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 // 收集系统指标
                 let system_metrics = SystemMetrics::collect().await;
                 metrics_collector.record_system_metrics(system_metrics).await;
-                
+
                 // 收集应用指标
                 let app_metrics = ApplicationMetrics::collect().await;
                 metrics_collector.record_app_metrics(app_metrics).await;
-                
+
                 // 收集OTLP指标
                 let otlp_metrics = OtlpMetrics::collect().await;
                 metrics_collector.record_otlp_metrics(otlp_metrics).await;
             }
         });
-        
+
         Ok(())
     }
-    
+
     async fn start_alert_monitoring(&self) -> Result<()> {
         let alert_manager = self.alert_manager.clone();
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(5));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 // 检查告警条件
                 let alerts = alert_manager.check_alerts().await;
-                
+
                 for alert in alerts {
                     // 发送告警通知
                     alert_manager.send_alert(&alert).await;
                 }
             }
         });
-        
+
         Ok(())
     }
 }
@@ -646,28 +646,28 @@ pub struct IntelligentAlertManager {
 impl IntelligentAlertManager {
     pub async fn check_alerts(&self) -> Vec<Alert> {
         let mut triggered_alerts = Vec::new();
-        
+
         for rule in &self.alert_rules {
             if let Some(alert) = self.evaluate_rule(rule).await {
                 triggered_alerts.push(alert);
             }
         }
-        
+
         triggered_alerts
     }
-    
+
     async fn evaluate_rule(&self, rule: &AlertRule) -> Option<Alert> {
         match rule.condition {
             AlertCondition::Threshold { metric, threshold, operator } => {
                 let current_value = self.get_metric_value(&metric).await;
-                
+
                 let triggered = match operator {
                     ComparisonOperator::GreaterThan => current_value > threshold,
                     ComparisonOperator::LessThan => current_value < threshold,
                     ComparisonOperator::EqualTo => (current_value - threshold).abs() < f64::EPSILON,
                     ComparisonOperator::NotEqualTo => (current_value - threshold).abs() >= f64::EPSILON,
                 };
-                
+
                 if triggered {
                     Some(Alert {
                         id: rule.id.clone(),
@@ -684,7 +684,7 @@ impl IntelligentAlertManager {
             AlertCondition::Anomaly { metric, sensitivity } => {
                 // 异常检测算法
                 let is_anomaly = self.detect_anomaly(&metric, sensitivity).await;
-                
+
                 if is_anomaly {
                     Some(Alert {
                         id: rule.id.clone(),
@@ -719,23 +719,23 @@ impl AdvancedMemoryManager {
     pub async fn optimize_memory_usage(&self) -> Result<()> {
         // 监控内存压力
         let pressure = self.memory_pressure_monitor.get_pressure().await;
-        
+
         if pressure > 0.8 {
             // 高内存压力，触发垃圾回收
             self.gc_scheduler.trigger_gc().await?;
         }
-        
+
         // 优化对象池
         self.optimize_object_pools().await?;
-        
+
         Ok(())
     }
-    
+
     async fn optimize_object_pools(&self) -> Result<()> {
         for (type_id, pool) in &self.object_pools {
             let pool_size = pool.size();
             let usage_rate = pool.usage_rate();
-            
+
             if usage_rate < 0.3 && pool_size > 100 {
                 // 使用率低，减少池大小
                 pool.shrink_to_fit().await?;
@@ -744,7 +744,7 @@ impl AdvancedMemoryManager {
                 pool.expand().await?;
             }
         }
-        
+
         Ok(())
     }
 }
@@ -765,16 +765,16 @@ impl NetworkOptimizer {
     pub async fn optimize_transmission(&self, data: &TelemetryData) -> Result<OptimizedTransmission> {
         // 选择最佳压缩算法
         let compression_algorithm = self.select_compression_algorithm(data).await?;
-        
+
         // 压缩数据
         let compressed_data = self.compression_engine.compress(data, compression_algorithm).await?;
-        
+
         // 选择最佳传输路径
         let transmission_path = self.select_transmission_path().await?;
-        
+
         // 应用传输优化
         let optimized_data = self.apply_transmission_optimizations(compressed_data).await?;
-        
+
         Ok(OptimizedTransmission {
             data: optimized_data,
             compression_algorithm,
@@ -782,11 +782,11 @@ impl NetworkOptimizer {
             estimated_latency: self.estimate_latency(&transmission_path).await?,
         })
     }
-    
+
     async fn select_compression_algorithm(&self, data: &TelemetryData) -> Result<CompressionAlgorithm> {
         let data_size = data.size();
         let data_type = data.get_data_type();
-        
+
         // 基于数据特征选择压缩算法
         match (data_size, data_type) {
             (size, _) if size < 1024 => Ok(CompressionAlgorithm::None), // 小数据不压缩
@@ -846,8 +846,8 @@ impl NetworkOptimizer {
 
 ---
 
-**计划制定时间**: 2025年1月  
-**计划维护者**: Rust OTLP Team  
-**项目版本**: 0.2.0 (增强版)  
-**Rust版本要求**: 1.90+  
+**计划制定时间**: 2025年1月
+**计划维护者**: Rust OTLP Team
+**项目版本**: 0.2.0 (增强版)
+**Rust版本要求**: 1.90+
 **实施状态**: 计划制定完成，准备开始实施

@@ -1,7 +1,7 @@
 # 📦 安装指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 安装指南 - Rust环境、项目依赖和开发工具的完整安装说明。
@@ -413,13 +413,13 @@ use otlp::core::EnhancedOtlpClient;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("测试 OTLP 客户端...");
-    
+
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
         .with_service_name("test-service")
         .build()
         .await?;
-    
+
     println!("✅ OTLP 客户端创建成功！");
     Ok(())
 }
@@ -652,5 +652,5 @@ rm -rf ~/.cargo/registry
 
 ---
 
-*最后更新: 2025年10月20日*  
+*最后更新: 2025年10月20日*
 *文档版本: 1.0.0*

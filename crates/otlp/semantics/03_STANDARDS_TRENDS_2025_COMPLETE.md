@@ -1,23 +1,24 @@
 ﻿# 2025年OTLP标准与趋势完整对标
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
-> **基于**: OpenTelemetry 1.x系列最新规范  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
+> **基于**: OpenTelemetry 1.x系列最新规范
 > **状态**: ✅ 完整版
 
 ---
 
 ## 📋 目录
+
 - [2025年OTLP标准与趋势完整对标](#2025年otlp标准与趋势完整对标)
-  - [目录](#目录)
-  - [1. OTLP协议标准](#1-otlp协议标准)
+  - [📋 目录](#-目录)
+  - [🎯 OTLP协议标准](#-otlp协议标准)
     - [1.1 OTLP 1.x规范概述](#11-otlp-1x规范概述)
     - [1.2 传输层优化](#12-传输层优化)
       - [1.2.1 gRPC传输](#121-grpc传输)
       - [1.2.2 HTTP/JSON传输](#122-httpjson传输)
     - [1.3 多目标导出](#13-多目标导出)
     - [1.4 版本兼容性](#14-版本兼容性)
-  - [2. OTTL转换语言](#2-ottl转换语言)
+  - [📝 OTTL转换语言](#-ottl转换语言)
     - [2.1 OTTL语法规范](#21-ottl语法规范)
       - [2.1.1 基本语法](#211-基本语法)
       - [2.1.2 常用函数](#212-常用函数)
@@ -26,7 +27,7 @@
       - [2.2.2 属性规范化](#222-属性规范化)
       - [2.2.3 采样控制](#223-采样控制)
     - [2.3 OTTL性能优化](#23-ottl性能优化)
-  - [3. OpAMP控制面](#3-opamp控制面)
+  - [💡 OpAMP控制面](#-opamp控制面)
     - [3.1 OpAMP规范](#31-opamp规范)
       - [3.1.1 核心功能](#311-核心功能)
       - [3.1.2 OpAMP消息流](#312-opamp消息流)
@@ -34,7 +35,7 @@
       - [3.2.1 配置下发](#321-配置下发)
       - [3.2.2 灰度发布](#322-灰度发布)
     - [3.3 OpAMP监控](#33-opamp监控)
-  - [4. Profiles第四支柱](#4-profiles第四支柱)
+  - [🔧 Profiles第四支柱](#-profiles第四支柱)
     - [4.1 Profiles规范](#41-profiles规范)
       - [4.1.1 数据模型](#411-数据模型)
       - [4.1.2 Profile类型](#412-profile类型)
@@ -42,7 +43,7 @@
       - [4.2.1 持续采集](#421-持续采集)
       - [4.2.2 按需采集](#422-按需采集)
     - [4.3 Profiles与Traces关联](#43-profiles与traces关联)
-  - [5. 语义约定演进](#5-语义约定演进)
+  - [📊 语义约定演进](#-语义约定演进)
     - [5.1 稳定的语义约定](#51-稳定的语义约定)
       - [5.1.1 HTTP语义约定](#511-http语义约定)
       - [5.1.2 Database语义约定](#512-database语义约定)
@@ -51,26 +52,26 @@
       - [5.2.1 CI/CD语义约定](#521-cicd语义约定)
       - [5.2.2 Gen-AI语义约定](#522-gen-ai语义约定)
     - [5.3 自定义语义约定](#53-自定义语义约定)
-  - [6. eBPF与零代码仪表化](#6-ebpf与零代码仪表化)
+  - [🚀 eBPF与零代码仪表化](#-ebpf与零代码仪表化)
     - [6.1 eBPF采集](#61-ebpf采集)
       - [6.1.1 eBPF Agent配置](#611-ebpf-agent配置)
     - [6.2 自动仪表化](#62-自动仪表化)
-  - [7. 云原生集成](#7-云原生集成)
+  - [🔍 云原生集成](#-云原生集成)
     - [7.1 Kubernetes集成](#71-kubernetes集成)
     - [7.2 Service Mesh集成](#72-service-mesh集成)
-  - [8. 安全与合规](#8-安全与合规)
+  - [💻 安全与合规](#-安全与合规)
     - [8.1 数据脱敏](#81-数据脱敏)
     - [8.2 mTLS配置](#82-mtls配置)
     - [8.3 数据保留策略](#83-数据保留策略)
-  - [9. 性能优化趋势](#9-性能优化趋势)
+  - [📚 性能优化趋势](#-性能优化趋势)
     - [9.1 批处理优化](#91-批处理优化)
     - [9.2 压缩优化](#92-压缩优化)
     - [9.3 内存优化](#93-内存优化)
-  - [10. 行业应用趋势](#10-行业应用趋势)
+  - [✅ 行业应用趋势](#-行业应用趋势)
     - [10.1 金融行业](#101-金融行业)
     - [10.2 医疗行业](#102-医疗行业)
     - [10.3 电商行业](#103-电商行业)
-  - [11. 参考文献](#11-参考文献)
+  - [🌟 参考文献](#-参考文献)
 
 ---
 
@@ -293,13 +294,13 @@ processors:
         statements:
           - delete_key(attributes, "http.request.header.authorization")
           - delete_key(attributes, "http.request.header.cookie")
-      
+
       # 脱敏URL参数
       - context: span
         statements:
           - replace_pattern(attributes["http.url"], "password=[^&]*", "password=***")
           - replace_pattern(attributes["http.url"], "token=[^&]*", "token=***")
-      
+
       # 脱敏SQL语句
       - context: span
         statements:
@@ -319,7 +320,7 @@ processors:
           - set(attributes["deployment.environment"], "staging") where attributes["env"] == "stg"
           - set(attributes["deployment.environment"], "development") where attributes["env"] == "dev"
           - delete_key(attributes, "env")
-      
+
       # 统一状态码
       - context: span
         statements:
@@ -338,12 +339,12 @@ processors:
       - context: span
         statements:
           - set(attributes["sampling.priority"], 0.01) where attributes["http.route"] == "/health"
-      
+
       # 错误全采样
       - context: span
         statements:
           - set(attributes["sampling.priority"], 1.0) where status.code == 2
-      
+
       # VIP用户高采样
       - context: span
         statements:
@@ -472,7 +473,7 @@ opamp:
     endpoint: wss://opamp-server:4320
     headers:
       Authorization: "Bearer ${OPAMP_TOKEN}"
-  
+
   agent_description:
     identifying_attributes:
       - key: service.name
@@ -481,13 +482,13 @@ opamp:
         value: "production"
       - key: cloud.region
         value: "us-west-2"
-    
+
     non_identifying_attributes:
       - key: host.name
         value: "${HOSTNAME}"
       - key: agent.version
         value: "0.90.0"
-  
+
   capabilities:
     - ReportsStatus
     - AcceptsRemoteConfig
@@ -508,7 +509,7 @@ rollout_strategy:
     success_criteria:
       error_rate: < 0.1%
       p99_latency: < 100ms
-  
+
   # 第二批：10%
   - phase: 2
     percentage: 10
@@ -516,7 +517,7 @@ rollout_strategy:
     success_criteria:
       error_rate: < 0.1%
       p99_latency: < 100ms
-  
+
   # 第三批：50%
   - phase: 3
     percentage: 50
@@ -524,7 +525,7 @@ rollout_strategy:
     success_criteria:
       error_rate: < 0.1%
       p99_latency: < 100ms
-  
+
   # 第四批：100%
   - phase: 4
     percentage: 100
@@ -639,18 +640,18 @@ receivers:
     endpoint: 0.0.0.0:1777
     protocols:
       - http
-    
+
     # 采样配置
     profiles:
       cpu:
         enabled: true
         interval: 60s  # 每60秒采集一次
         duration: 10s  # 每次采集10秒
-      
+
       heap:
         enabled: true
         interval: 300s  # 每5分钟采集一次
-      
+
       goroutine:
         enabled: true
         interval: 60s
@@ -659,7 +660,7 @@ processors:
   # 关联Trace信息
   profile_trace_enrichment:
     enabled: true
-    
+
   # 降采样
   profile_sampling:
     sampling_percentage: 10  # 只保留10%
@@ -668,7 +669,7 @@ exporters:
   # 导出到Pyroscope
   otlp/pyroscope:
     endpoint: pyroscope:4317
-  
+
   # 导出到Grafana Phlare
   otlp/phlare:
     endpoint: phlare:4100
@@ -695,7 +696,7 @@ adaptive_profiling:
         profile_type: cpu
         interval: 10s  # 从60s降到10s
         duration: 30s  # 持续30秒高频采集
-    
+
     - metric: process.memory.usage
       threshold: 0.9  # Memory > 90%
       action:
@@ -890,22 +891,22 @@ http.custom_field: "value"  # 不要使用标准前缀
 # Parca Agent (eBPF profiler)
 agent:
   mode: ebpf
-  
+
   # 采样配置
   profiling:
     cpu:
       enabled: true
       sample_rate: 19  # Hz
-    
+
   # 过滤
   filters:
     namespaces:
       include: ["production", "staging"]
-    
+
     processes:
       include_regex: [".*"]
       exclude_regex: [".*debug.*"]
-  
+
   # OTLP导出
   exporters:
     otlp:
@@ -944,18 +945,18 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['app']
-        
+
         securityContext:
           privileged: true  # 需要eBPF权限
           capabilities:
             add: ["SYS_ADMIN", "SYS_PTRACE"]
-        
+
         volumeMounts:
         - name: sys
           mountPath: /sys
         - name: proc
           mountPath: /proc
-      
+
       volumes:
       - name: sys
         hostPath:
@@ -980,23 +981,23 @@ metadata:
   name: otel-collector
 spec:
   mode: daemonset  # 或 deployment, statefulset
-  
+
   config: |
     receivers:
       otlp:
         protocols:
           grpc:
             endpoint: 0.0.0.0:4317
-      
+
       # Kubernetes事件
       k8s_events:
         auth_type: serviceAccount
-      
+
       # Kubernetes集群指标
       k8s_cluster:
         auth_type: serviceAccount
         node_conditions_to_report: [Ready, MemoryPressure]
-    
+
     processors:
       # 自动注入K8s元数据
       k8sattributes:
@@ -1007,25 +1008,25 @@ spec:
             - k8s.pod.name
             - k8s.pod.uid
             - k8s.node.name
-          
+
           labels:
             - tag_name: app.label.app
               key: app
               from: pod
-          
+
           annotations:
             - tag_name: app.annotation.version
               key: version
               from: pod
-      
+
       batch:
         timeout: 10s
         send_batch_size: 1024
-    
+
     exporters:
       otlp:
         endpoint: backend:4317
-    
+
     service:
       pipelines:
         traces:
@@ -1054,7 +1055,7 @@ spec:
         "mesh_version":
           literal:
             value: "1.20.0"
-  
+
   # Metrics
   metrics:
     - providers:
@@ -1118,20 +1119,20 @@ processors:
           - delete_key(attributes, "http.request.header.authorization")
           - delete_key(attributes, "http.request.header.cookie")
           - delete_key(attributes, "http.request.header.x-api-key")
-      
+
       # 脱敏URL
       - context: span
         statements:
           - replace_pattern(attributes["http.url"], "password=[^&]*", "password=REDACTED")
           - replace_pattern(attributes["http.url"], "api_key=[^&]*", "api_key=REDACTED")
           - replace_pattern(attributes["http.url"], "token=[^&]*", "token=REDACTED")
-      
+
       # 脱敏SQL
       - context: span
         statements:
           - replace_pattern(attributes["db.statement"], "'[^']*'", "'REDACTED'")
           - replace_pattern(attributes["db.statement"], "PASSWORD\\s*=\\s*'[^']*'", "PASSWORD='REDACTED'")
-      
+
       # 脱敏日志
       - context: log
         statements:
@@ -1178,24 +1179,24 @@ storage:
     hot:
       retention: 7d
       storage_class: ssd
-    
+
     # 温数据（归档）
     warm:
       retention: 30d
       storage_class: hdd
-    
+
     # 冷数据（长期存储）
     cold:
       retention: 365d
       storage_class: s3
-    
+
     # 采样策略
     sampling:
       - match:
           attributes:
             http.status_code: >= 400
         retention: 90d  # 错误数据保留更久
-      
+
       - match:
           attributes:
             http.route: "/health"
@@ -1215,11 +1216,11 @@ processors:
   batch:
     # 超时时间
     timeout: 1s
-    
+
     # 批量大小
     send_batch_size: 1024
     send_batch_max_size: 2048
-    
+
     # 内存限制
     memory_limit_mib: 512
 ```
@@ -1245,7 +1246,7 @@ processors:
     check_interval: 1s
     limit_mib: 1024  # 硬限制
     spike_limit_mib: 256  # 允许的突发
-    
+
     # 达到限制时的行为
     limit_percentage: 80
     spike_limit_percentage: 20
@@ -1272,13 +1273,13 @@ processors:
     enabled: true
     include_sensitive: false
     retention_days: 2555  # 7年
-  
+
   # PCI-DSS脱敏
   pci_redaction:
     card_numbers: true
     cvv: true
     expiry_date: true
-  
+
   # 高可用配置
   retry_on_failure:
     enabled: true
@@ -1300,7 +1301,7 @@ processors:
     dates_of_birth: true
     addresses: true
     phone_numbers: true
-  
+
   # 访问控制
   access_control:
     roles:
@@ -1332,13 +1333,13 @@ processors:
           attributes:
             event.type: "flash_sale"
         sampling_rate: 5%  # 正常10%
-      
+
       # VIP用户高采样
       - match:
           attributes:
             user.tier: "vip"
         sampling_rate: 50%
-      
+
       # 转化漏斗全采样
       - match:
           attributes:
@@ -1360,6 +1361,6 @@ processors:
 
 ---
 
-**文档版本**: 1.0  
-**最后更新**: 2025年10月17日  
+**文档版本**: 1.0
+**最后更新**: 2025年10月17日
 **维护者**: OTLP Rust Team

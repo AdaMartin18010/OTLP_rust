@@ -210,7 +210,7 @@ impl<const N: usize> ModelConfig<N> {
     fn new(parameters: [f64; N]) -> Self {
         Self { parameters }
     }
-    
+
     // 推断参数数量
     fn with_defaults() -> ModelConfig<_> {
         ModelConfig::new([0.0; 3]) // 推断 N = 3

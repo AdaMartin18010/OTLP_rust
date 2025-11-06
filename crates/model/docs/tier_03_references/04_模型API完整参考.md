@@ -1,49 +1,50 @@
 ﻿# 模型API完整参考
 
-> **文档版本**: v1.0.0  
-> **最后更新**: 2025-10-23  
-> **难度等级**: ⭐⭐⭐☆☆  
+> **文档版本**: v1.0.0
+> **最后更新**: 2025-10-23
+> **难度等级**: ⭐⭐⭐☆☆
 > **预计阅读**: 40分钟
 
 ## 📋 目录
+
 - [模型API完整参考](#模型api完整参考)
-  - [目录](#目录)
-  - [1. 概述](#1-概述)
+  - [📋 目录](#-目录)
+  - [🎯 概述](#-概述)
     - [API 组织结构](#api-组织结构)
-  - [2. 形式化建模API](#2-形式化建模api)
+  - [📝 形式化建模API](#-形式化建模api)
     - [2.1 Expression 类型](#21-expression-类型)
     - [2.2 SmallStepSemantics](#22-smallstepsemantics)
     - [2.3 BigStepSemantics](#23-bigstepsemantics)
     - [2.4 Environment](#24-environment)
     - [2.5 AxiomaticSemantics](#25-axiomaticsemantics)
-  - [3. 分布式系统API](#3-分布式系统api)
+  - [💡 分布式系统API](#-分布式系统api)
     - [3.1 RaftProtocol](#31-raftprotocol)
     - [3.2 PaxosProtocol](#32-paxosprotocol)
     - [3.3 VectorClock](#33-vectorclock)
-  - [4. 并发模型API](#4-并发模型api)
+  - [🔧 并发模型API](#-并发模型api)
     - [4.1 CSPModel](#41-cspmodel)
     - [4.2 ActorSystem](#42-actorsystem)
     - [4.3 WorkStealingScheduler](#43-workstealingscheduler)
-  - [5. 软件设计API](#5-软件设计api)
+  - [📊 软件设计API](#-软件设计api)
     - [5.1 LayeredArchitecture](#51-layeredarchitecture)
     - [5.2 EventDrivenArchitecture](#52-eventdrivenarchitecture)
     - [5.3 DataflowGraph](#53-dataflowgraph)
-  - [6. 算法模型API](#6-算法模型api)
+  - [🚀 算法模型API](#-算法模型api)
     - [6.1 DijkstraAlgorithm](#61-dijkstraalgorithm)
     - [6.2 KMPAlgorithm](#62-kmpalgorithm)
     - [6.3 GCDAlgorithm](#63-gcdalgorithm)
-  - [7. 排队论API](#7-排队论api)
+  - [🔍 排队论API](#-排队论api)
     - [7.1 MM1Model](#71-mm1model)
     - [7.2 MMcModel](#72-mmcmodel)
-  - [8. 机器学习API](#8-机器学习api)
+  - [💻 机器学习API](#-机器学习api)
     - [8.1 LinearRegression](#81-linearregression)
-  - [9. 数学建模API](#9-数学建模api)
+  - [📚 数学建模API](#-数学建模api)
     - [9.1 LinearProgramming](#91-linearprogramming)
-  - [10. 错误处理](#10-错误处理)
+  - [✅ 错误处理](#-错误处理)
     - [ModelError 类型](#modelerror-类型)
-  - [11. 配置选项](#11-配置选项)
+  - [🌟 配置选项](#-配置选项)
     - [ModelConfig](#modelconfig)
-  - [12. 总结](#12-总结)
+  - [🎓 总结](#-总结)
 
 ---
 
@@ -152,7 +153,7 @@ pub struct SmallStepSemantics {
 impl SmallStepSemantics {
     /// 创建新的小步语义求值器
     pub fn new() -> Self { ... }
-    
+
     /// 执行单步转换
     ///
     /// # Arguments
@@ -162,10 +163,10 @@ impl SmallStepSemantics {
     /// * `Ok(Expression)` - 转换后的表达式
     /// * `Err(String)` - 转换错误
     pub fn step(&mut self, expr: Expression) -> Result<Expression, String> { ... }
-    
+
     /// 检查表达式是否为值
     pub fn is_value(&self, expr: &Expression) -> bool { ... }
-    
+
     /// 执行多步转换直到得到值
     pub fn eval(&mut self, expr: Expression) -> Result<Expression, String> { ... }
 }
@@ -196,7 +197,7 @@ pub struct BigStepSemantics { ... }
 impl BigStepSemantics {
     /// 创建新的大步语义求值器
     pub fn new() -> Self { ... }
-    
+
     /// 直接求值表达式
     ///
     /// # Arguments
@@ -221,14 +222,14 @@ pub struct Environment<'a> {
 impl<'a> Environment<'a> {
     /// 创建空环境
     pub fn new() -> Self { ... }
-    
+
     /// 绑定变量到值
     ///
     /// # Arguments
     /// * `name` - 变量名
     /// * `value` - 变量值
     pub fn bind(&mut self, name: &'a str, value: i32) { ... }
-    
+
     /// 查找变量的值
     ///
     /// # Arguments
@@ -270,7 +271,7 @@ pub enum Assertion {
 impl AxiomaticSemantics {
     /// 创建新的公理语义验证器
     pub fn new() -> Self { ... }
-    
+
     /// 验证 Hoare 三元组
     ///
     /// # Arguments
@@ -280,7 +281,7 @@ impl AxiomaticSemantics {
     /// * `Ok(bool)` - 三元组是否有效
     /// * `Err(String)` - 验证错误
     pub fn verify_triple(&self, triple: &HoareTriple) -> Result<bool, String> { ... }
-    
+
     /// 计算最弱前置条件
     ///
     /// # Arguments
@@ -330,16 +331,16 @@ impl RaftProtocol {
         election_timeout: Duration,
         heartbeat_interval: Duration,
     ) -> Self { ... }
-    
+
     /// 添加对等节点
     ///
     /// # Arguments
     /// * `peer_id` - 对等节点ID
     pub fn add_peer(&mut self, peer_id: String) -> Result<(), String> { ... }
-    
+
     /// 开始选举
     pub fn start_election(&mut self) -> Result<(), String> { ... }
-    
+
     /// 处理投票请求
     ///
     /// # Arguments
@@ -353,19 +354,19 @@ impl RaftProtocol {
         candidate_id: &str,
         term: u64
     ) -> Result<bool, String> { ... }
-    
+
     /// 追加日志条目
     ///
     /// # Arguments
     /// * `entry` - 日志条目
     pub fn append_entry(&mut self, entry: String) -> Result<(), String> { ... }
-    
+
     /// 获取当前角色
     pub fn get_role(&self) -> RaftRole { ... }
-    
+
     /// 获取当前任期
     pub fn current_term(&self) -> u64 { ... }
-    
+
     /// 获取已提交索引
     pub fn committed_index(&self) -> usize { ... }
 }
@@ -414,23 +415,23 @@ pub enum PaxosPhase {
 impl PaxosProtocol {
     /// 创建新的 Paxos 提议者
     pub fn new(proposer_id: String) -> Self { ... }
-    
+
     /// 添加接受者
     pub fn add_acceptor(&mut self, acceptor_id: String) -> Result<(), String> { ... }
-    
+
     /// 提议值
     pub fn propose(&mut self, value: String) -> Result<u64, String> { ... }
-    
+
     /// 处理 Prepare 请求
     pub fn handle_prepare(&mut self, proposal_num: u64) -> Result<(), String> { ... }
-    
+
     /// 处理 Accept 请求
     pub fn handle_accept(
         &mut self,
         proposal_num: u64,
         value: String
     ) -> Result<(), String> { ... }
-    
+
     /// 获取已接受的值
     pub fn get_accepted_value(&self) -> Result<Option<String>, String> { ... }
 }
@@ -456,16 +457,16 @@ pub enum CausalRelation {
 impl VectorClock {
     /// 创建新的向量时钟
     pub fn new(node_id: String) -> Self { ... }
-    
+
     /// 递增本地时钟
     pub fn increment(&mut self) { ... }
-    
+
     /// 合并其他向量时钟
     pub fn merge(&mut self, other: &VectorClock) { ... }
-    
+
     /// 比较因果关系
     pub fn compare(&self, other: &VectorClock) -> CausalRelation { ... }
-    
+
     /// 获取特定节点的时钟值
     pub fn get_clock(&self, node_id: &str) -> u64 { ... }
 }
@@ -485,13 +486,13 @@ pub struct CSPModel { ... }
 impl CSPModel {
     /// 创建新的 CSP 模型
     pub fn new() -> Self { ... }
-    
+
     /// 添加进程
     pub fn add_process(&mut self, process_id: String) -> Result<(), String> { ... }
-    
+
     /// 创建通道
     pub fn create_channel(&mut self, channel_id: String) -> Result<(), String> { ... }
-    
+
     /// 发送消息
     ///
     /// # Arguments
@@ -504,7 +505,7 @@ impl CSPModel {
         channel: &str,
         message: &str
     ) -> Result<(), String> { ... }
-    
+
     /// 接收消息
     ///
     /// # Arguments
@@ -528,10 +529,10 @@ pub struct ActorRef { ... }
 impl ActorSystem {
     /// 创建新的 Actor 系统
     pub fn new(name: String) -> Self { ... }
-    
+
     /// 生成新的 Actor
     pub fn spawn_actor(&mut self, actor_id: String) -> Result<ActorRef, String> { ... }
-    
+
     /// 发送消息
     ///
     /// # Arguments
@@ -544,10 +545,10 @@ impl ActorSystem {
         to: &ActorRef,
         message: String
     ) -> Result<(), String> { ... }
-    
+
     /// 广播消息
     pub fn broadcast(&self, from: &str, message: String) -> Result<(), String> { ... }
-    
+
     /// 获取 Actor 数量
     pub fn actor_count(&self) -> usize { ... }
 }
@@ -566,13 +567,13 @@ impl WorkStealingScheduler {
     /// # Arguments
     /// * `num_workers` - 工作线程数量
     pub fn new(num_workers: usize) -> Self { ... }
-    
+
     /// 启动调度器
     ///
     /// # Returns
     /// * 工作线程句柄数组
     pub fn start(&mut self) -> Result<Vec<std::thread::JoinHandle<()>>, String> { ... }
-    
+
     /// 提交任务
     ///
     /// # Arguments
@@ -581,10 +582,10 @@ impl WorkStealingScheduler {
     where
         F: FnOnce() + Send + 'static,
     { ... }
-    
+
     /// 停止调度器
     pub fn shutdown(&mut self) { ... }
-    
+
     /// 获取工作线程数量
     pub fn worker_count(&self) -> usize { ... }
 }
@@ -604,13 +605,13 @@ pub struct LayeredArchitecture { ... }
 impl LayeredArchitecture {
     /// 创建新的分层架构
     pub fn new() -> Self { ... }
-    
+
     /// 添加层
     pub fn add_layer(&mut self, layer_name: String) -> Result<(), String> { ... }
-    
+
     /// 处理请求（自顶向下）
     pub fn handle_request(&self, request: &str) -> Result<String, String> { ... }
-    
+
     /// 获取层数
     pub fn layer_count(&self) -> usize { ... }
 }
@@ -634,7 +635,7 @@ pub type EventHandler = Box<dyn Fn(&Event) -> Result<(), String> + Send + Sync>;
 impl EventDrivenArchitecture {
     /// 创建新的事件驱动架构
     pub fn new() -> Self { ... }
-    
+
     /// 注册事件处理器
     ///
     /// # Arguments
@@ -645,7 +646,7 @@ impl EventDrivenArchitecture {
         event_type: &str,
         handler: EventHandler
     ) -> Result<(), String> { ... }
-    
+
     /// 发布事件
     ///
     /// # Arguments
@@ -664,7 +665,7 @@ pub struct DataflowGraph { ... }
 pub trait DataflowNode: Send {
     type Input;
     type Output;
-    
+
     fn process(&mut self, input: Self::Input) -> Result<Self::Output, String>;
     fn name(&self) -> &str;
 }
@@ -672,7 +673,7 @@ pub trait DataflowNode: Send {
 impl DataflowGraph {
     /// 创建新的数据流图
     pub fn new() -> Self { ... }
-    
+
     /// 添加节点
     ///
     /// # Arguments
@@ -681,14 +682,14 @@ impl DataflowGraph {
     /// # Returns
     /// * 节点ID
     pub fn add_node(&mut self, node: Box<dyn DataflowNode<Input = i32, Output = i32>>) -> usize { ... }
-    
+
     /// 添加边
     ///
     /// # Arguments
     /// * `from` - 源节点ID
     /// * `to` - 目标节点ID
     pub fn add_edge(&mut self, from: usize, to: usize) -> Result<(), String> { ... }
-    
+
     /// 执行数据流
     ///
     /// # Arguments
@@ -714,7 +715,7 @@ pub struct DijkstraAlgorithm { ... }
 impl DijkstraAlgorithm {
     /// 创建新的 Dijkstra 算法实例
     pub fn new() -> Self { ... }
-    
+
     /// 计算从源节点到所有其他节点的最短路径
     ///
     /// # Arguments
@@ -743,7 +744,7 @@ pub struct KMPAlgorithm { ... }
 impl KMPAlgorithm {
     /// 创建新的 KMP 算法实例
     pub fn new() -> Self { ... }
-    
+
     /// 在文本中搜索模式串
     ///
     /// # Arguments
@@ -753,7 +754,7 @@ impl KMPAlgorithm {
     /// # Returns
     /// * `Ok(Vec<usize>)` - 模式串在文本中的所有起始位置
     pub fn search(&self, text: &str, pattern: &str) -> Result<Vec<usize>, String> { ... }
-    
+
     /// 构建 KMP 失败函数
     pub fn build_failure_function(&self, pattern: &str) -> Vec<usize> { ... }
 }
@@ -776,7 +777,7 @@ impl GCDAlgorithm {
     /// # Returns
     /// * 最大公约数
     pub fn euclidean(a: i64, b: i64) -> i64 { ... }
-    
+
     /// 扩展欧几里得算法
     ///
     /// # Returns
@@ -818,7 +819,7 @@ impl MM1Model {
     /// # Panics
     /// * 如果 λ >= μ (系统不稳定)
     pub fn new(arrival_rate: f64, service_rate: f64) -> Self { ... }
-    
+
     /// 计算性能指标
     pub fn calculate_metrics(&self) -> Result<QueueingMetrics, String> { ... }
 }
@@ -858,7 +859,7 @@ impl MMcModel {
     /// * `service_rate` - 每个服务器的服务率 μ
     /// * `servers` - 服务器数量 c
     pub fn new(arrival_rate: f64, service_rate: f64, servers: usize) -> Self { ... }
-    
+
     /// 计算性能指标
     pub fn calculate_metrics(&self) -> Result<QueueingMetrics, String> { ... }
 }
@@ -881,7 +882,7 @@ pub struct LinearRegression {
 impl LinearRegression {
     /// 创建新的线性回归模型
     pub fn new() -> Self { ... }
-    
+
     /// 训练模型
     ///
     /// # Arguments
@@ -892,7 +893,7 @@ impl LinearRegression {
         x_train: &[Vec<f64>],
         y_train: &[f64]
     ) -> Result<(), String> { ... }
-    
+
     /// 预测
     ///
     /// # Arguments
@@ -901,7 +902,7 @@ impl LinearRegression {
     /// # Returns
     /// * 预测结果
     pub fn predict(&self, x_test: &[Vec<f64>]) -> Result<Vec<f64>, String> { ... }
-    
+
     /// 计算 R² 分数
     pub fn score(&self, x_test: &[Vec<f64>], y_test: &[f64]) -> Result<f64, String> { ... }
 }
@@ -948,7 +949,7 @@ pub enum OptimizationDirection {
 impl LinearProgramming {
     /// 创建新的线性规划求解器
     pub fn new() -> Self { ... }
-    
+
     /// 添加变量
     ///
     /// # Arguments
@@ -964,7 +965,7 @@ impl LinearProgramming {
         lower_bound: f64,
         upper_bound: f64
     ) -> usize { ... }
-    
+
     /// 设置目标函数
     ///
     /// # Arguments
@@ -975,7 +976,7 @@ impl LinearProgramming {
         coefficients: Vec<(usize, f64)>,
         direction: OptimizationDirection
     ) { ... }
-    
+
     /// 添加约束条件
     ///
     /// # Arguments
@@ -988,7 +989,7 @@ impl LinearProgramming {
         relation: &str,
         rhs: f64
     ) -> Result<(), String> { ... }
-    
+
     /// 求解
     ///
     /// # Returns
@@ -1008,19 +1009,19 @@ impl LinearProgramming {
 pub enum ModelError {
     /// 无效输入
     InvalidInput(String),
-    
+
     /// 计算错误
     ComputationError(String),
-    
+
     /// 状态错误
     StateError(String),
-    
+
     /// 超时错误
     TimeoutError(String),
-    
+
     /// 网络错误
     NetworkError(String),
-    
+
     /// 并发错误
     ConcurrencyError(String),
 }
@@ -1059,16 +1060,16 @@ match my_function() {
 pub struct ModelConfig {
     /// 最大迭代次数
     pub max_iterations: usize,
-    
+
     /// 超时时间（毫秒）
     pub timeout_ms: u64,
-    
+
     /// 详细日志
     pub verbose: bool,
-    
+
     /// 并行度
     pub parallelism: usize,
-    
+
     /// 缓存大小
     pub cache_size: usize,
 }
@@ -1090,19 +1091,19 @@ impl ModelConfig {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// 设置最大迭代次数
     pub fn with_max_iterations(mut self, max_iterations: usize) -> Self {
         self.max_iterations = max_iterations;
         self
     }
-    
+
     /// 设置超时时间
     pub fn with_timeout(mut self, timeout_ms: u64) -> Self {
         self.timeout_ms = timeout_ms;
         self
     }
-    
+
     /// 启用详细日志
     pub fn with_verbose(mut self, verbose: bool) -> Self {
         self.verbose = verbose;
@@ -1153,6 +1154,6 @@ c12_model 提供了完整的 API 覆盖8大建模领域：
 
 ---
 
-**最后更新**: 2025-10-23  
-**维护者**: C12 Model Team  
+**最后更新**: 2025-10-23
+**维护者**: C12 Model Team
 **许可证**: MIT

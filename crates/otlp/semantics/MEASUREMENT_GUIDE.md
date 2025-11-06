@@ -1,7 +1,7 @@
 # OTLP性能测量与指标查询指南
 
-> **版本**: 2.0  
-> **日期**: 2025年10月17日  
+> **版本**: 2.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -223,15 +223,15 @@ sum(rate(otelcol_receiver_accepted_spans[1m]))
 
 ```promql
 # 5. 导出成功率
-sum(rate(otelcol_exporter_sent_spans[5m])) 
-/ 
-(sum(rate(otelcol_exporter_sent_spans[5m])) + sum(rate(otelcol_exporter_send_failed_spans[5m]))) 
+sum(rate(otelcol_exporter_sent_spans[5m]))
+/
+(sum(rate(otelcol_exporter_sent_spans[5m])) + sum(rate(otelcol_exporter_send_failed_spans[5m])))
 * 100
 
 # 6. CPU使用率变化
-(rate(process_cpu_seconds_total[5m]) - rate(process_cpu_seconds_total[5m] offset 1h)) 
-/ 
-rate(process_cpu_seconds_total[5m] offset 1h) 
+(rate(process_cpu_seconds_total[5m]) - rate(process_cpu_seconds_total[5m] offset 1h))
+/
+rate(process_cpu_seconds_total[5m] offset 1h)
 * 100
 
 # 7. 内存增长率
@@ -255,7 +255,7 @@ histogram_quantile(0.99, rate(otelcol_exporter_send_latency_bucket[5m])) as p99
 
 ```promql
 # 11. 检测异常失败率
-rate(otelcol_exporter_send_failed_spans[5m]) > 
+rate(otelcol_exporter_send_failed_spans[5m]) >
 bool 2 * avg_over_time(rate(otelcol_exporter_send_failed_spans[5m])[7d:5m])
 
 # 12. CPU异常
@@ -292,15 +292,15 @@ ottl_overhead_thresholds:
   simple_transform:
     cpu_overhead: "<2%"
     latency_overhead: "<5ms"
-  
+
   hash_function:
     cpu_overhead: "<5%"
     latency_overhead: "<10ms"
-  
+
   regex_match:
     cpu_overhead: "<10%"
     latency_overhead: "<15ms"
-  
+
   complex_logic:
     cpu_overhead: "<15%"
     latency_overhead: "<20ms"
@@ -371,7 +371,7 @@ for rate in 1000 2000 5000 10000 20000 50000; do
   echo "测试速率: $rate spans/s"
   ./load-test.sh $rate 10
   ./collect-metrics.sh > results-${rate}.json
-  
+
   # 检查是否达到瓶颈
   cpu=$(jq -r '.performance.cpu_cores' results-${rate}.json)
   if (( $(echo "$cpu > 0.8" | bc -l) )); then
@@ -391,7 +391,7 @@ done
 for hour in {1..24}; do
   sleep 3600
   ./collect-metrics.sh > stability-hour-${hour}.json
-  
+
   # 检查内存泄漏
   memory=$(jq -r '.performance.memory_bytes' stability-hour-${hour}.json)
   echo "Hour $hour: Memory = $(echo "scale=2; $memory / 1024 / 1024 / 1024" | bc) GB"

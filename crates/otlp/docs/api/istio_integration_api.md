@@ -1,8 +1,8 @@
 # Istio Integration API 完整文档
 
-**Crate:** c10_otlp  
-**模块:** istio_integration  
-**Rust 版本:** 1.90.0  
+**Crate:** c10_otlp
+**模块:** istio_integration
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -162,6 +162,7 @@ pub async fn new(config: IstioConfig) -> Result<Self>
 ```
 
 **参数:**
+
 - `config`: Istio 集成配置
 
 **示例:**
@@ -206,6 +207,7 @@ pub async fn create_virtual_service(&self, spec: VirtualServiceSpec) -> Result<(
 ```
 
 **参数:**
+
 - `spec`: VirtualService 规格
 
 **示例:**
@@ -258,6 +260,7 @@ pub async fn create_destination_rule(&self, spec: DestinationRuleSpec) -> Result
 ```
 
 **参数:**
+
 - `spec`: DestinationRule 规格
 
 **示例:**
@@ -317,6 +320,7 @@ pub async fn enable_mtls(&self, mode: MtlsMode) -> Result<()>
 ```
 
 **参数:**
+
 - `mode`: mTLS 模式 (`Strict`, `Permissive`, `Disable`)
 
 **示例:**
@@ -336,9 +340,11 @@ pub async fn deploy_canary(&self, canary_config: CanaryConfig) -> Result<CanaryD
 ```
 
 **参数:**
+
 - `canary_config`: 金丝雀部署配置
 
 **返回:**
+
 - `CanaryDeployment`: 部署句柄
 
 **示例:**
@@ -362,18 +368,18 @@ let canary = integration.deploy_canary(canary_config).await?;
 loop {
     let status = canary.get_status().await?;
     println!("Canary weight: {}%", status.current_weight);
-    
+
     if status.is_complete() {
         println!("Canary deployment completed successfully");
         break;
     }
-    
+
     if status.has_failed() {
         eprintln!("Canary deployment failed, rolling back");
         canary.rollback().await?;
         break;
     }
-    
+
     tokio::time::sleep(Duration::from_secs(60)).await;
 }
 ```
@@ -566,13 +572,13 @@ pub async fn configure_envoy_tracing(
         }),
         ..Default::default()
     };
-    
+
     // 2. 应用配置
     self.apply_configmap(configmap).await?;
-    
+
     // 3. 重启 Envoy（滚动更新）
     self.restart_envoy_proxies().await?;
-    
+
     Ok(())
 }
 ```
@@ -609,9 +615,9 @@ pub async fn configure_prometheus(&self) -> Result<()> {
         map.insert("prometheus.io/path".to_string(), "/metrics".to_string());
         map
     };
-    
+
     self.add_service_annotations("otlp-collector", annotations).await?;
-    
+
     // 2. 创建 ServiceMonitor
     let service_monitor = ServiceMonitor {
         metadata: ObjectMeta {
@@ -636,9 +642,9 @@ pub async fn configure_prometheus(&self) -> Result<()> {
             ],
         },
     };
-    
+
     self.create_service_monitor(service_monitor).await?;
-    
+
     Ok(())
 }
 ```
@@ -672,9 +678,9 @@ pub async fn configure_access_logs(&self, config: AccessLogConfig) -> Result<()>
             ],
         },
     };
-    
+
     self.create_telemetry(telemetry).await?;
-    
+
     Ok(())
 }
 ```
@@ -840,15 +846,15 @@ async fn main() -> Result<()> {
             enable_retry: true,
         },
     };
-    
+
     let integration = IstioIntegration::new(config).await?;
-    
+
     // 2. 启用 mTLS
     integration.enable_mtls(MtlsMode::Strict).await?;
-    
+
     // 3. 配置追踪
     integration.configure_tracing().await?;
-    
+
     // 4. 创建 VirtualService
     integration.create_virtual_service(VirtualServiceSpec {
         hosts: vec!["otlp-collector.otlp-system.svc.cluster.local".to_string()],
@@ -873,7 +879,7 @@ async fn main() -> Result<()> {
             },
         ],
     }).await?;
-    
+
     // 5. 创建 DestinationRule（负载均衡 + 熔断）
     integration.create_destination_rule(DestinationRuleSpec {
         host: "otlp-collector.otlp-system.svc.cluster.local".to_string(),
@@ -910,10 +916,10 @@ async fn main() -> Result<()> {
             },
         ],
     }).await?;
-    
+
     // 6. 配置 Prometheus
     integration.configure_prometheus().await?;
-    
+
     println!("Istio integration complete!");
     Ok(())
 }
@@ -924,7 +930,7 @@ async fn main() -> Result<()> {
 ```rust
 async fn canary_deployment_demo() -> Result<()> {
     let integration = IstioIntegration::new(config).await?;
-    
+
     // 配置金丝雀部署
     let canary_config = CanaryConfig {
         baseline_version: "v1".to_string(),
@@ -937,32 +943,32 @@ async fn canary_deployment_demo() -> Result<()> {
             min_request_count: 100,
         },
     };
-    
+
     let canary = integration.deploy_canary(canary_config).await?;
-    
+
     // 监控部署进度
     loop {
         let status = canary.get_status().await?;
-        
+
         println!("Canary deployment progress:");
         println!("  Current weight: {}%", status.current_weight);
         println!("  Error rate: {:.2}%", status.error_rate * 100.0);
         println!("  Request count: {}", status.request_count);
-        
+
         if status.is_complete() {
             println!("✅ Canary deployment completed successfully");
             break;
         }
-        
+
         if status.has_failed() {
             eprintln!("❌ Canary deployment failed, rolling back");
             canary.rollback().await?;
             break;
         }
-        
+
         tokio::time::sleep(Duration::from_secs(60)).await;
     }
-    
+
     Ok(())
 }
 ```
@@ -1015,24 +1021,24 @@ integration.enable_mtls(MtlsMode::Strict).await?;
 async fn monitor_istio_metrics(integration: &IstioIntegration) -> Result<()> {
     loop {
         let metrics = integration.get_istio_metrics().await?;
-        
+
         // 1. 追踪采样率
         println!("Trace sampling rate: {}", metrics.trace_sampling_rate);
-        
+
         // 2. mTLS 连接百分比
         println!("mTLS connections: {}%", metrics.mtls_percentage);
-        
+
         // 3. Envoy 健康状态
-        println!("Healthy envoys: {}/{}", 
-            metrics.healthy_envoys, 
+        println!("Healthy envoys: {}/{}",
+            metrics.healthy_envoys,
             metrics.total_envoys
         );
-        
+
         // 4. 请求成功率
-        println!("Request success rate: {:.2}%", 
+        println!("Request success rate: {:.2}%",
             metrics.request_success_rate * 100.0
         );
-        
+
         tokio::time::sleep(Duration::from_secs(60)).await;
     }
 }
@@ -1125,12 +1131,12 @@ for pod in pods {
 - ✅ 故障排除指南
 
 **下一步推荐:**
+
 - 对比 [Kubernetes Deployment API](./k8s_deployment_api.md)
 - 参考 [完整示例代码](../../examples/istio_complete_integration.rs)
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **代码覆盖率:** 100%
-

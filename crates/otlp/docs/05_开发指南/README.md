@@ -79,20 +79,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_service("my-service", "1.0.0");
-    
+
     // 创建客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送追踪数据
     let result = client.send_trace("operation").await?
         .with_attribute("service.name", "my-service")
         .with_attribute("operation.type", "database")
         .finish()
         .await?;
-    
+
     println!("发送成功: {} 条", result.success_count);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -124,7 +124,7 @@ use c21_otlp::error::OtlpError;
 
 async fn handle_errors() -> Result<(), OtlpError> {
     let client = OtlpClient::new(config).await?;
-    
+
     match client.initialize().await {
         Ok(_) => println!("客户端初始化成功"),
         Err(OtlpError::ConnectionError(e)) => {
@@ -140,7 +140,7 @@ async fn handle_errors() -> Result<(), OtlpError> {
             // 处理其他错误
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -170,6 +170,6 @@ async fn handle_errors() -> Result<(), OtlpError> {
 
 ---
 
-**目录版本**: v1.0  
-**最后更新**: 2025年1月27日  
+**目录版本**: v1.0
+**最后更新**: 2025年1月27日
 **维护者**: OTLP开发团队

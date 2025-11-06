@@ -1,8 +1,8 @@
 # Actor Model API 完整文档
 
-**Crate:** c12_model  
-**模块:** actor_model  
-**Rust 版本:** 1.90.0  
+**Crate:** c12_model
+**模块:** actor_model
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -47,16 +47,16 @@ Actor Model 提供了基于消息传递的并发编程模型，每个 Actor 独�
 pub trait Actor: Send + 'static {
     /// Actor 的消息类型
     type Message: Send + 'static;
-    
+
     /// 处理消息的核心方法
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>);
-    
+
     /// Actor 启动时调用（可选）
     async fn started(&mut self, _ctx: &mut ActorContext<Self>) {}
-    
+
     /// Actor 停止前调用（可选）
     async fn stopping(&mut self, _ctx: &mut ActorContext<Self>) {}
-    
+
     /// Actor 停止后调用（可选）
     async fn stopped(&mut self) {}
 }
@@ -81,7 +81,7 @@ pub enum CounterMessage {
 #[async_trait]
 impl Actor for CounterActor {
     type Message = CounterMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>) {
         match msg {
             CounterMessage::Increment => {
@@ -101,11 +101,11 @@ impl Actor for CounterActor {
             }
         }
     }
-    
+
     async fn started(&mut self, ctx: &mut ActorContext<Self>) {
         println!("CounterActor started with ID: {}", ctx.actor_id());
     }
-    
+
     async fn stopped(&mut self) {
         println!("CounterActor stopped with final count: {}", self.count);
     }
@@ -127,17 +127,17 @@ pub struct ActorRef<A: Actor> {
 impl<A: Actor> ActorRef<A> {
     /// 发送消息（不等待响应）
     pub async fn send(&self, msg: A::Message) -> Result<(), SendError>;
-    
+
     /// 请求-响应模式
-    pub async fn ask<R>(&self, f: impl FnOnce(oneshot::Sender<R>) -> A::Message) 
+    pub async fn ask<R>(&self, f: impl FnOnce(oneshot::Sender<R>) -> A::Message)
         -> Result<R, AskError>;
-    
+
     /// 获取 Actor 名称
     pub fn name(&self) -> &str;
-    
+
     /// 检查 Actor 是否存活
     pub async fn is_alive(&self) -> bool;
-    
+
     /// 停止 Actor
     pub async fn stop(&self) -> Result<(), StopError>;
 }
@@ -179,19 +179,19 @@ pub struct ActorContext<A: Actor> {
 impl<A: Actor> ActorContext<A> {
     /// 获取 Actor ID
     pub fn actor_id(&self) -> ActorId;
-    
+
     /// 获取系统句柄
     pub fn system(&self) -> &ActorSystemHandle;
-    
+
     /// 创建子 Actor
     pub async fn spawn<C: Actor>(&self, actor: C, name: &str) -> ActorRef<C>;
-    
+
     /// 停止自己
     pub fn stop(&mut self);
-    
+
     /// 发送消息给自己（延迟处理）
     pub async fn notify_later(&self, msg: A::Message, delay: Duration);
-    
+
     /// 监控另一个 Actor
     pub async fn watch(&mut self, target: &ActorRef<impl Actor>);
 }
@@ -203,7 +203,7 @@ impl<A: Actor> ActorContext<A> {
 #[async_trait]
 impl Actor for WorkerActor {
     type Message = WorkerMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>) {
         match msg {
             WorkerMessage::SpawnChild => {
@@ -245,16 +245,16 @@ pub struct ActorSystem {
 impl ActorSystem {
     /// 创建新的 Actor 系统
     pub fn new(name: &str) -> Self;
-    
+
     /// 启动 Actor
     pub async fn spawn<A: Actor>(&self, actor: A, name: &str) -> ActorRef<A>;
-    
+
     /// 按名称查找 Actor
     pub async fn find_actor<A: Actor>(&self, name: &str) -> Option<ActorRef<A>>;
-    
+
     /// 停止所有 Actor
     pub async fn shutdown(&self);
-    
+
     /// 获取系统统计信息
     pub fn stats(&self) -> SystemStats;
 }
@@ -317,17 +317,17 @@ pub trait Actor {
     async fn started(&mut self, ctx: &mut ActorContext<Self>) {
         println!("Actor {} started", ctx.actor_id());
     }
-    
+
     // 2. 停止前调用（清理资源）
     async fn stopping(&mut self, ctx: &mut ActorContext<Self>) {
         println!("Actor {} stopping", ctx.actor_id());
     }
-    
+
     // 3. 停止后调用
     async fn stopped(&mut self) {
         println!("Actor stopped");
     }
-    
+
     // 4. 重启时调用
     async fn restarted(&mut self, ctx: &mut ActorContext<Self>) {
         println!("Actor {} restarted", ctx.actor_id());
@@ -345,13 +345,13 @@ pub struct DatabaseActor {
 #[async_trait]
 impl Actor for DatabaseActor {
     type Message = DbMessage;
-    
+
     async fn started(&mut self, ctx: &mut ActorContext<Self>) {
         // 启动时建立数据库连接
         self.connection = Some(DbConnection::new().await.unwrap());
         println!("Database connection established");
     }
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>) {
         if let Some(conn) = &self.connection {
             // 处理数据库操作
@@ -363,7 +363,7 @@ impl Actor for DatabaseActor {
             }
         }
     }
-    
+
     async fn stopping(&mut self, ctx: &mut ActorContext<Self>) {
         // 停止前关闭连接
         if let Some(conn) = self.connection.take() {
@@ -371,7 +371,7 @@ impl Actor for DatabaseActor {
             println!("Database connection closed");
         }
     }
-    
+
     async fn stopped(&mut self) {
         println!("DatabaseActor fully stopped");
     }
@@ -492,7 +492,7 @@ pub struct SupervisorActor {
 #[async_trait]
 impl Actor for SupervisorActor {
     type Message = SupervisorMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>) {
         match msg {
             SupervisorMessage::ChildFailed(child_id, error) => {
@@ -516,7 +516,7 @@ impl Actor for SupervisorActor {
             _ => {}
         }
     }
-    
+
     async fn restart_child(&mut self, child_id: ActorId, max_retries: usize) {
         // 实现重启逻辑
         println!("Restarting child {}", child_id);
@@ -546,7 +546,7 @@ pub enum CounterMessage {
 #[async_trait]
 impl Actor for CounterActor {
     type Message = CounterMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message, _ctx: &mut ActorContext<Self>) {
         match msg {
             CounterMessage::Increment => self.count += 1,
@@ -563,10 +563,10 @@ impl Actor for CounterActor {
 async fn main() {
     let system = ActorSystem::new("counter-system");
     let counter = system.spawn(CounterActor { count: 0 }, "counter").await;
-    
+
     counter.send(CounterMessage::Increment).await.unwrap();
     counter.send(CounterMessage::Increment).await.unwrap();
-    
+
     let count = counter.ask(|tx| CounterMessage::GetCount(tx)).await.unwrap();
     println!("Final count: {}", count);  // 输出: Final count: 2
 }
@@ -589,7 +589,7 @@ pub enum PoolMessage {
 #[async_trait]
 impl Actor for WorkerPoolActor {
     type Message = PoolMessage;
-    
+
     async fn started(&mut self, ctx: &mut ActorContext<Self>) {
         // 启动时创建 worker
         for i in 0..4 {
@@ -600,7 +600,7 @@ impl Actor for WorkerPoolActor {
             self.workers.push(worker);
         }
     }
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>) {
         match msg {
             PoolMessage::SubmitTask(task) => {
@@ -638,7 +638,7 @@ pub enum ChatMessage {
 #[async_trait]
 impl Actor for ChatRoomActor {
     type Message = ChatMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message, _ctx: &mut ActorContext<Self>) {
         match msg {
             ChatMessage::UserJoin { user_id, actor } => {
@@ -658,7 +658,7 @@ impl Actor for ChatRoomActor {
             }
         }
     }
-    
+
     async fn broadcast(&self, message: String) {
         for user_actor in self.users.values() {
             user_actor.send(UserMessage::ReceiveMessage(message.clone()))
@@ -684,12 +684,12 @@ pub struct BatchProcessor {
 #[async_trait]
 impl Actor for BatchProcessor {
     type Message = ProcessorMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>) {
         match msg {
             ProcessorMessage::Add(item) => {
                 self.buffer.push(item);
-                
+
                 // 达到批次大小时批量处理
                 if self.buffer.len() >= self.batch_size {
                     self.process_batch(ctx).await;
@@ -700,7 +700,7 @@ impl Actor for BatchProcessor {
             }
         }
     }
-    
+
     async fn process_batch(&mut self, ctx: &mut ActorContext<Self>) {
         let batch = std::mem::take(&mut self.buffer);
         // 批量处理
@@ -785,7 +785,7 @@ pub enum MutableMessage {
 #[async_trait]
 impl Actor for RobustActor {
     type Message = RobustMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message, ctx: &mut ActorContext<Self>) {
         match msg {
             RobustMessage::RiskyOperation => {
@@ -814,12 +814,12 @@ impl Actor for RobustActor {
 - ✅ 性能优化和最佳实践
 
 **下一步推荐:**
+
 - 阅读 [CSP Model API](./csp_model_api.md)
 - 参考 [完整示例代码](../../examples/actor_model_complete_impl.rs)
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **代码覆盖率:** 100%
-

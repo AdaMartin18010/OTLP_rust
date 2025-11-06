@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Generate profile
     let profile = profiler.generate_profile().await?;
-    
+
     println!("Collected {} samples", profile.sample.len());
 
     Ok(())

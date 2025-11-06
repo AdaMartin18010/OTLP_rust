@@ -114,7 +114,7 @@ async fn handle_operation() -> Result<String> {
 async fn retry_operation() -> Result<String> {
     let mut attempts = 0;
     let max_attempts = 3;
-    
+
     while attempts < max_attempts {
         match risky_operation().await {
             Ok(result) => return Ok(result),
@@ -127,7 +127,7 @@ async fn retry_operation() -> Result<String> {
             Err(err) => return Err(err),
         }
     }
-    
+
     Err(OtlpError::Internal("重试次数耗尽".to_string()))
 }
 ```
@@ -143,10 +143,10 @@ use otlp::ml_error_prediction::{MLErrorPrediction, MLPredictionConfig, SystemCon
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建ML预测配置
     let config = MLPredictionConfig::default();
-    
+
     // 初始化预测系统
     let predictor = MLErrorPrediction::new(config)?;
-    
+
     // 构建系统上下文
     let context = SystemContext {
         timestamp: std::time::SystemTime::now(),
@@ -165,14 +165,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             network_bandwidth: 1000,
         },
     };
-    
+
     // 进行错误预测
     let prediction = predictor.predict_error_probability(&context).await?;
-    
+
     println!("错误概率: {:.2}%", prediction.probability * 100.0);
     println!("置信度: {:.2}%", prediction.confidence * 100.0);
     println!("推荐措施: {:?}", prediction.recommended_actions);
-    
+
     Ok(())
 }
 ```
@@ -195,7 +195,7 @@ async fn train_model(predictor: &MLErrorPrediction) -> Result<()> {
         },
         // 更多训练样本...
     ];
-    
+
     let result = predictor.train_model(&training_data).await?;
     println!("训练结果: {:?}", result);
     Ok(())
@@ -210,7 +210,7 @@ async fn online_learning(predictor: &MLErrorPrediction) -> Result<()> {
         timestamp: std::time::SystemTime::now(),
         context: create_sample_context(),
     };
-    
+
     predictor.online_learn(feedback).await?;
     Ok(())
 }
@@ -227,16 +227,16 @@ use otlp::distributed_coordination::{DistributedErrorCoordinator, DistributedCon
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建分布式配置
     let config = DistributedConfig::default();
-    
+
     // 初始化协调器
     let coordinator = DistributedErrorCoordinator::new(config)?;
-    
+
     // 启动协调器
     coordinator.start().await?;
-    
+
     // 加入集群
     coordinator.join_cluster("http://cluster.example.com:8080").await?;
-    
+
     // 处理分布式错误
     let error = DistributedError {
         id: "error-001".to_string(),
@@ -249,14 +249,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         affected_services: vec!["service-a".to_string(), "service-b".to_string()],
         propagation_path: vec!["service-a".to_string()],
     };
-    
+
     let result = coordinator.handle_distributed_error(error).await?;
     println!("协调结果: {:?}", result);
-    
+
     // 获取集群状态
     let status = coordinator.get_cluster_status().await?;
     println!("集群状态: {:?}", status);
-    
+
     Ok(())
 }
 ```
@@ -267,11 +267,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 // 获取集群状态
 async fn monitor_cluster(coordinator: &DistributedErrorCoordinator) -> Result<()> {
     let status = coordinator.get_cluster_status().await?;
-    
+
     println!("集群总节点数: {}", status.total_nodes);
     println!("活跃节点数: {}", status.active_nodes);
     println!("集群健康状态: {:?}", status.cluster_health);
-    
+
     // 检查集群健康状态
     match status.cluster_health {
         otlp::distributed_coordination::ClusterHealth::Healthy => {
@@ -287,7 +287,7 @@ async fn monitor_cluster(coordinator: &DistributedErrorCoordinator) -> Result<()
             println!("集群状态未知");
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -303,10 +303,10 @@ use otlp::resilience::{ResilienceManager, ResilienceConfig};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建弹性配置
     let config = ResilienceConfig::default();
-    
+
     // 创建弹性管理器
     let manager = ResilienceManager::new(config);
-    
+
     // 执行带弹性的操作
     let result = manager.execute_with_resilience("database_query", || {
         Box::pin(async move {
@@ -315,12 +315,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok::<String, anyhow::Error>("查询结果".to_string())
         })
     }).await;
-    
+
     match result {
         Ok(data) => println!("操作成功: {}", data),
         Err(err) => println!("操作失败: {}", err),
     }
-    
+
     Ok(())
 }
 ```
@@ -329,7 +329,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use otlp::resilience::{
-    ResilienceConfig, RetryConfig, CircuitBreakerConfig, 
+    ResilienceConfig, RetryConfig, CircuitBreakerConfig,
     TimeoutConfig, GracefulDegradationConfig
 };
 
@@ -405,13 +405,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         ],
     };
-    
+
     // 创建监控系统
     let monitoring = ErrorMonitoringSystem::new(config)?;
-    
+
     // 启动监控
     monitoring.start().await?;
-    
+
     // 记录错误事件
     let error_event = otlp::monitoring::ErrorEvent {
         id: "error-001".to_string(),
@@ -422,13 +422,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         message: "Database connection failed".to_string(),
         context: std::collections::HashMap::new(),
     };
-    
+
     monitoring.record_error(error_event).await?;
-    
+
     // 获取监控指标
     let metrics = monitoring.get_metrics().await?;
     println!("监控指标: {:?}", metrics);
-    
+
     Ok(())
 }
 ```
@@ -445,7 +445,7 @@ use otlp::error::{OtlpError, ErrorSeverity, ErrorCategory};
 pub enum CustomError {
     #[error("业务逻辑错误: {0}")]
     BusinessLogic(String),
-    
+
     #[error("外部服务错误: {service} - {reason}")]
     ExternalService { service: String, reason: String },
 }
@@ -520,7 +520,7 @@ impl CustomProcessor {
     pub fn new(config: ProcessingConfig) -> Self {
         Self { config }
     }
-    
+
     async fn custom_processing(&self, data: &[u8]) -> Result<Vec<u8>, otlp::error::OtlpError> {
         // 自定义处理逻辑
         let processed_data = data.to_vec(); // 示例处理
@@ -533,7 +533,7 @@ impl OtlpProcessor for CustomProcessor {
     async fn process(&self, data: &[u8]) -> Result<Vec<u8>, otlp::error::OtlpError> {
         self.custom_processing(data).await
     }
-    
+
     fn get_metrics(&self) -> otlp::processor::ProcessorMetrics {
         otlp::processor::ProcessorMetrics::default()
     }
@@ -558,26 +558,26 @@ pub struct BatchProcessor {
 impl BatchProcessor {
     pub async fn add_trace(&mut self, trace: TraceData) -> Result<()> {
         self.buffer.push_back(trace);
-        
+
         if self.buffer.len() >= self.batch_size {
             self.flush().await?;
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn flush(&mut self) -> Result<()> {
         if self.buffer.is_empty() {
             return Ok(());
         }
-        
+
         let traces: Vec<TraceData> = self.buffer.drain(..).collect();
-        
+
         // 批量发送
         for trace in traces {
             self.client.export_trace(trace).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -597,13 +597,13 @@ pub struct ConnectionPool {
 impl ConnectionPool {
     pub async fn get_connection(&self) -> Result<Connection, otlp::error::OtlpError> {
         let mut connections = self.connections.write().await;
-        
+
         // 查找可用连接
         if let Some(conn) = connections.iter_mut().find(|c| c.is_available()) {
             conn.mark_in_use();
             return Ok(conn.clone());
         }
-        
+
         // 创建新连接
         if connections.len() < self.max_connections {
             let new_conn = Connection::new().await?;
@@ -611,10 +611,10 @@ impl ConnectionPool {
             connections.push(new_conn.clone());
             return Ok(new_conn);
         }
-        
+
         Err(otlp::error::OtlpError::Internal("连接池已满".to_string()))
     }
-    
+
     pub async fn return_connection(&self, conn: Connection) {
         conn.mark_available();
     }
@@ -642,33 +642,33 @@ struct CacheEntry {
 impl CacheManager {
     pub async fn get(&self, key: &str) -> Option<Vec<u8>> {
         let cache = self.cache.read().await;
-        
+
         if let Some(entry) = cache.get(key) {
             if entry.created_at.elapsed() < self.ttl {
                 return Some(entry.value.clone());
             }
         }
-        
+
         None
     }
-    
+
     pub async fn set(&self, key: String, value: Vec<u8>) {
         let entry = CacheEntry {
             value,
             created_at: Instant::now(),
         };
-        
+
         let mut cache = self.cache.write().await;
         cache.insert(key, entry);
-        
+
         // 清理过期条目
         self.cleanup_expired().await;
     }
-    
+
     async fn cleanup_expired(&self) {
         let mut cache = self.cache.write().await;
         let now = Instant::now();
-        
+
         cache.retain(|_, entry| now.duration_since(entry.created_at) < self.ttl);
     }
 }
@@ -731,7 +731,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
-    
+
     // 你的代码...
     Ok(())
 }
@@ -744,13 +744,13 @@ use std::time::Instant;
 
 async fn monitored_operation() -> Result<()> {
     let start = Instant::now();
-    
+
     // 执行操作
     let result = some_operation().await?;
-    
+
     let duration = start.elapsed();
     info!("操作耗时: {:?}", duration);
-    
+
     Ok(result)
 }
 ```
@@ -769,14 +769,14 @@ pub struct ErrorCounter {
 impl ErrorCounter {
     pub fn record_error(&self, error: &OtlpError) {
         self.total_errors.fetch_add(1, Ordering::Relaxed);
-        
+
         if error.is_retryable() {
             self.retryable_errors.fetch_add(1, Ordering::Relaxed);
         } else {
             self.non_retryable_errors.fetch_add(1, Ordering::Relaxed);
         }
     }
-    
+
     pub fn get_stats(&self) -> (u64, u64, u64) {
         (
             self.total_errors.load(Ordering::Relaxed),

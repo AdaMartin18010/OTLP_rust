@@ -36,16 +36,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_service("example-service", "1.0.0")
         .with_timeout(Duration::from_secs(10))
         .with_debug(true);
-    
+
     // 创建并初始化客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     println!("OTLP客户端初始化成功");
-    
+
     // 关闭客户端
     client.shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -61,10 +61,10 @@ async fn send_trace_example() -> Result<(), Box<dyn std::error::Error>> {
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Grpc);
-    
+
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送基本追踪数据
     let result = client.send_trace("user_login").await?
         .with_attribute("user.id", "12345")
@@ -74,11 +74,11 @@ async fn send_trace_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_status(StatusCode::Ok, Some("登录成功".to_string()))
         .finish()
         .await?;
-    
+
     println!("追踪数据发送结果: 成功 {} 条", result.success_count);
     println!("追踪ID: {}", result.trace_id);
     println!("跨度ID: {}", result.span_id);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -94,10 +94,10 @@ async fn send_metrics_example() -> Result<(), Box<dyn std::error::Error>> {
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Grpc);
-    
+
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送计数器指标
     let result = client.send_metric("http_requests_total", 1.0).await?
         .with_label("method", "GET")
@@ -107,9 +107,9 @@ async fn send_metrics_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_unit("count")
         .send()
         .await?;
-    
+
     println!("指标数据发送结果: 成功 {} 条", result.success_count);
-    
+
     // 发送直方图指标
     let histogram_result = client.send_histogram("request_duration_seconds", 0.5).await?
         .with_label("service", "user-service")
@@ -122,9 +122,9 @@ async fn send_metrics_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_unit("seconds")
         .send()
         .await?;
-    
+
     println!("直方图指标发送结果: 成功 {} 条", histogram_result.success_count);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -140,10 +140,10 @@ async fn send_logs_example() -> Result<(), Box<dyn std::error::Error>> {
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Grpc);
-    
+
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送信息日志
     let info_result = client.send_log("用户登录成功", LogSeverity::Info).await?
         .with_attribute("user.id", "12345")
@@ -153,9 +153,9 @@ async fn send_logs_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_trace_context("trace-123", "span-456")
         .send()
         .await?;
-    
+
     println!("信息日志发送结果: 成功 {} 条", info_result.success_count);
-    
+
     // 发送错误日志
     let error_result = client.send_log("数据库连接失败", LogSeverity::Error).await?
         .with_attribute("error.code", "DB_CONNECTION_FAILED")
@@ -165,9 +165,9 @@ async fn send_logs_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_trace_context("trace-789", "span-012")
         .send()
         .await?;
-    
+
     println!("错误日志发送结果: 成功 {} 条", error_result.success_count);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -191,27 +191,27 @@ async fn batch_processing_example() -> Result<(), Box<dyn std::error::Error>> {
             max_queue_size: 1000,
             scheduled_delay: Duration::from_millis(1000),
         });
-    
+
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 创建批量数据
     let mut batch_data = Vec::new();
-    
+
     for i in 0..100 {
         let trace_data = TelemetryData::trace(format!("batch_operation_{}", i))
             .with_attribute("batch_id", "batch-001")
             .with_attribute("operation_index", i.to_string())
             .with_attribute("service.name", "batch-service")
             .with_attribute("service.version", "1.0.0");
-        
+
         batch_data.push(trace_data);
     }
-    
+
     // 批量发送
     let result = client.send_batch(batch_data).await?;
     println!("批量发送结果: 成功 {} 条", result.success_count);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -228,32 +228,32 @@ async fn async_concurrent_example() -> Result<(), Box<dyn std::error::Error>> {
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Grpc);
-    
+
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 创建多个异步任务
     let mut handles = Vec::new();
-    
+
     for i in 0..10 {
         let client_clone = client.clone();
         let handle = task::spawn(async move {
             // 模拟异步操作
             tokio::time::sleep(Duration::from_millis(100)).await;
-            
+
             let result = client_clone.send_trace(format!("async_operation_{}", i)).await?
                 .with_attribute("async", "true")
                 .with_attribute("task_id", i.to_string())
                 .with_attribute("service.name", "async-service")
                 .finish()
                 .await?;
-            
+
             Ok::<_, Box<dyn std::error::Error>>(result)
         });
-        
+
         handles.push(handle);
     }
-    
+
     // 等待所有任务完成
     let mut total_success = 0;
     for handle in handles {
@@ -267,9 +267,9 @@ async fn async_concurrent_example() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     println!("总成功数: {}", total_success);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -303,29 +303,29 @@ impl CustomDataProcessor {
 impl DataProcessor for CustomDataProcessor {
     fn process(&self, data: TelemetryData) -> Result<ProcessingResult, OtlpError> {
         let mut processed_data = data;
-        
+
         // 应用过滤器
         if !self.config.filter_patterns.is_empty() {
             processed_data = self.apply_filters(processed_data)?;
         }
-        
+
         // 限制属性数量
         if processed_data.attributes.len() > self.config.max_attribute_count {
             processed_data = self.limit_attributes(processed_data)?;
         }
-        
+
         // 应用压缩
         if self.config.enable_compression {
             processed_data = self.compress_data(processed_data)?;
         }
-        
+
         Ok(ProcessingResult {
             data: processed_data,
             processing_time: Duration::from_millis(10),
             processor_name: self.name.clone(),
         })
     }
-    
+
     fn get_name(&self) -> &str {
         &self.name
     }
@@ -339,10 +339,10 @@ impl CustomDataProcessor {
                 key.contains(pattern)
             })
         });
-        
+
         Ok(data)
     }
-    
+
     fn limit_attributes(&self, mut data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         if data.attributes.len() > self.config.max_attribute_count {
             let mut attributes: Vec<_> = data.attributes.into_iter().collect();
@@ -350,10 +350,10 @@ impl CustomDataProcessor {
             attributes.truncate(self.config.max_attribute_count);
             data.attributes = attributes.into_iter().collect();
         }
-        
+
         Ok(data)
     }
-    
+
     fn compress_data(&self, data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         // 实现数据压缩逻辑
         // 这里简化处理，实际应该使用压缩算法
@@ -365,19 +365,19 @@ async fn custom_processor_example() -> Result<(), Box<dyn std::error::Error>> {
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Grpc);
-    
+
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 创建自定义处理器
     let processor_config = ProcessorConfig {
         enable_compression: true,
         max_attribute_count: 50,
         filter_patterns: vec!["user.".to_string(), "service.".to_string()],
     };
-    
+
     let processor = CustomDataProcessor::new("custom_processor".to_string(), processor_config);
-    
+
     // 创建测试数据
     let mut test_data = TelemetryData::trace("test_operation")
         .with_attribute("user.id", "12345")
@@ -386,11 +386,11 @@ async fn custom_processor_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_attribute("service.version", "1.0.0")
         .with_attribute("temp.attribute1", "value1")
         .with_attribute("temp.attribute2", "value2");
-    
+
     // 处理数据
     let result = processor.process(test_data)?;
     println!("处理结果: {:?}", result);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -413,10 +413,10 @@ async fn error_handling_example() -> Result<(), Box<dyn std::error::Error>> {
             retry_delay_multiplier: 2.0,
             randomize_retry_delay: true,
         });
-    
+
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 尝试发送数据，处理可能的错误
     match client.send_trace("error_handling_test").await {
         Ok(trace_builder) => {
@@ -453,7 +453,7 @@ async fn error_handling_example() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("客户端错误: {}", e);
         }
     }
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -483,17 +483,17 @@ impl WebAppMonitor {
             .with_service("web-app", "1.0.0")
             .with_resource_attribute("environment", "production")
             .with_resource_attribute("region", "us-west-2");
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self {
             client,
             request_counter: AtomicU64::new(0),
             error_counter: AtomicU64::new(0),
         })
     }
-    
+
     pub async fn monitor_request(
         &self,
         method: &str,
@@ -503,7 +503,7 @@ impl WebAppMonitor {
         user_id: Option<String>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let request_id = self.request_counter.fetch_add(1, Ordering::Relaxed);
-        
+
         // 发送追踪数据
         let trace_result = self.client.send_trace("http_request").await?
             .with_attribute("http.method", method)
@@ -513,7 +513,7 @@ impl WebAppMonitor {
             .with_numeric_attribute("request.duration_ms", duration.as_millis() as f64)
             .finish()
             .await?;
-        
+
         // 发送指标数据
         let metric_result = self.client.send_metric("http_requests_total", 1.0).await?
             .with_label("method", method)
@@ -523,7 +523,7 @@ impl WebAppMonitor {
             .with_unit("count")
             .send()
             .await?;
-        
+
         // 发送延迟指标
         let latency_result = self.client.send_histogram("http_request_duration_seconds", duration.as_secs_f64()).await?
             .with_label("method", method)
@@ -532,7 +532,7 @@ impl WebAppMonitor {
             .with_unit("seconds")
             .send()
             .await?;
-        
+
         // 如果有用户ID，记录用户相关指标
         if let Some(uid) = user_id {
             let _ = self.client.send_metric("user_requests_total", 1.0).await?
@@ -543,11 +543,11 @@ impl WebAppMonitor {
                 .send()
                 .await?;
         }
-        
+
         // 记录错误
         if status_code >= 400 {
             self.error_counter.fetch_add(1, Ordering::Relaxed);
-            
+
             let _ = self.client.send_log(
                 format!("HTTP请求失败: {} {}", method, path),
                 LogSeverity::Error,
@@ -560,10 +560,10 @@ impl WebAppMonitor {
                 .send()
                 .await?;
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn monitor_database_query(
         &self,
         query_type: &str,
@@ -578,7 +578,7 @@ impl WebAppMonitor {
             .with_numeric_attribute("db.duration_ms", duration.as_millis() as f64)
             .finish()
             .await?;
-        
+
         // 发送数据库查询指标
         let _ = self.client.send_metric("database_queries_total", 1.0).await?
             .with_label("operation", query_type)
@@ -587,7 +587,7 @@ impl WebAppMonitor {
             .with_unit("count")
             .send()
             .await?;
-        
+
         // 发送查询延迟指标
         let _ = self.client.send_histogram("database_query_duration_seconds", duration.as_secs_f64()).await?
             .with_label("operation", query_type)
@@ -596,7 +596,7 @@ impl WebAppMonitor {
             .with_unit("seconds")
             .send()
             .await?;
-        
+
         // 如果有行数，记录行数指标
         if let Some(count) = row_count {
             let _ = self.client.send_metric("database_rows_affected", count as f64).await?
@@ -607,10 +607,10 @@ impl WebAppMonitor {
                 .send()
                 .await?;
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn shutdown(&self) -> Result<(), Box<dyn std::error::Error>> {
         self.client.shutdown().await?;
         Ok(())
@@ -620,12 +620,12 @@ impl WebAppMonitor {
 // 使用示例
 async fn web_app_monitoring_example() -> Result<(), Box<dyn std::error::Error>> {
     let monitor = WebAppMonitor::new().await?;
-    
+
     // 模拟HTTP请求
     let start_time = Instant::now();
     tokio::time::sleep(Duration::from_millis(100)).await;
     let duration = start_time.elapsed();
-    
+
     monitor.monitor_request(
         "GET",
         "/api/users",
@@ -633,19 +633,19 @@ async fn web_app_monitoring_example() -> Result<(), Box<dyn std::error::Error>> 
         duration,
         Some("user123".to_string()),
     ).await?;
-    
+
     // 模拟数据库查询
     let start_time = Instant::now();
     tokio::time::sleep(Duration::from_millis(50)).await;
     let duration = start_time.elapsed();
-    
+
     monitor.monitor_database_query(
         "SELECT",
         "users",
         duration,
         Some(10),
     ).await?;
-    
+
     monitor.shutdown().await?;
     Ok(())
 }
@@ -672,17 +672,17 @@ impl MicroserviceCommunicationMonitor {
             .with_service(&service_name, &service_version)
             .with_resource_attribute("service.name", &service_name)
             .with_resource_attribute("service.version", &service_version);
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self {
             client,
             service_name,
             service_version,
         })
     }
-    
+
     pub async fn monitor_service_call(
         &self,
         target_service: &str,
@@ -701,7 +701,7 @@ impl MicroserviceCommunicationMonitor {
             .with_numeric_attribute("call.duration_ms", duration.as_millis() as f64)
             .finish()
             .await?;
-        
+
         // 发送服务调用指标
         let _ = self.client.send_metric("service_calls_total", 1.0).await?
             .with_label("source_service", &self.service_name)
@@ -712,7 +712,7 @@ impl MicroserviceCommunicationMonitor {
             .with_unit("count")
             .send()
             .await?;
-        
+
         // 发送服务调用延迟指标
         let _ = self.client.send_histogram("service_call_duration_seconds", duration.as_secs_f64()).await?
             .with_label("source_service", &self.service_name)
@@ -722,7 +722,7 @@ impl MicroserviceCommunicationMonitor {
             .with_unit("seconds")
             .send()
             .await?;
-        
+
         // 如果调用失败，记录错误日志
         if !success {
             let _ = self.client.send_log(
@@ -737,10 +737,10 @@ impl MicroserviceCommunicationMonitor {
                 .send()
                 .await?;
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn monitor_message_queue(
         &self,
         queue_name: &str,
@@ -756,7 +756,7 @@ impl MicroserviceCommunicationMonitor {
             .with_numeric_attribute("processing.duration_ms", processing_time.as_millis() as f64)
             .finish()
             .await?;
-        
+
         // 发送消息队列指标
         let _ = self.client.send_metric("message_queue_messages_total", 1.0).await?
             .with_label("queue", queue_name)
@@ -766,10 +766,10 @@ impl MicroserviceCommunicationMonitor {
             .with_unit("count")
             .send()
             .await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn shutdown(&self) -> Result<(), Box<dyn std::error::Error>> {
         self.client.shutdown().await?;
         Ok(())
@@ -782,12 +782,12 @@ async fn microservice_communication_example() -> Result<(), Box<dyn std::error::
         "user-service".to_string(),
         "1.0.0".to_string(),
     ).await?;
-    
+
     // 模拟服务调用
     let start_time = Instant::now();
     tokio::time::sleep(Duration::from_millis(200)).await;
     let duration = start_time.elapsed();
-    
+
     monitor.monitor_service_call(
         "auth-service",
         "validate_token",
@@ -795,19 +795,19 @@ async fn microservice_communication_example() -> Result<(), Box<dyn std::error::
         true,
         None,
     ).await?;
-    
+
     // 模拟消息队列处理
     let start_time = Instant::now();
     tokio::time::sleep(Duration::from_millis(50)).await;
     let duration = start_time.elapsed();
-    
+
     monitor.monitor_message_queue(
         "user-events",
         "user_created",
         duration,
         true,
     ).await?;
-    
+
     monitor.shutdown().await?;
     Ok(())
 }
@@ -835,10 +835,10 @@ impl PerformanceMonitor {
             .with_endpoint("http://localhost:4317")
             .with_protocol(TransportProtocol::Grpc)
             .with_service("performance-monitor", "1.0.0");
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self {
             client,
             request_count: AtomicU64::new(0),
@@ -847,16 +847,16 @@ impl PerformanceMonitor {
             last_alert_time: AtomicU64::new(0),
         })
     }
-    
+
     pub async fn record_request(&self, duration: Duration, success: bool) -> Result<(), Box<dyn std::error::Error>> {
         let request_count = self.request_count.fetch_add(1, Ordering::Relaxed);
         let latency_ms = duration.as_millis() as u64;
         self.total_latency.fetch_add(latency_ms, Ordering::Relaxed);
-        
+
         if !success {
             self.error_count.fetch_add(1, Ordering::Relaxed);
         }
-        
+
         // 计算当前指标
         let current_time = Instant::now();
         let avg_latency = if request_count > 0 {
@@ -864,63 +864,63 @@ impl PerformanceMonitor {
         } else {
             0
         };
-        
+
         let error_rate = if request_count > 0 {
             self.error_count.load(Ordering::Relaxed) as f64 / request_count as f64
         } else {
             0.0
         };
-        
+
         // 发送性能指标
         let _ = self.client.send_metric("request_latency_ms", avg_latency as f64).await?
             .with_description("平均请求延迟")
             .with_unit("milliseconds")
             .send()
             .await?;
-        
+
         let _ = self.client.send_metric("error_rate", error_rate).await?
             .with_description("错误率")
             .with_unit("ratio")
             .send()
             .await?;
-        
+
         let _ = self.client.send_metric("requests_per_second", 1.0).await?
             .with_description("每秒请求数")
             .with_unit("requests/second")
             .send()
             .await?;
-        
+
         // 检查告警条件
         self.check_alerts(avg_latency, error_rate).await?;
-        
+
         Ok(())
     }
-    
+
     async fn check_alerts(&self, avg_latency: u64, error_rate: f64) -> Result<(), Box<dyn std::error::Error>> {
         let current_time = Instant::now();
         let last_alert = self.last_alert_time.load(Ordering::Relaxed);
         let time_since_last_alert = current_time.duration_since(Instant::now() - Duration::from_secs(last_alert as u64));
-        
+
         // 避免频繁告警，至少间隔5分钟
         if time_since_last_alert < Duration::from_secs(300) {
             return Ok(());
         }
-        
+
         let mut alert_triggered = false;
         let mut alert_message = String::new();
-        
+
         // 延迟告警
         if avg_latency > 1000 {
             alert_message.push_str(&format!("高延迟告警: 平均延迟 {}ms", avg_latency));
             alert_triggered = true;
         }
-        
+
         // 错误率告警
         if error_rate > 0.05 {
             alert_message.push_str(&format!("高错误率告警: 错误率 {:.2}%", error_rate * 100.0));
             alert_triggered = true;
         }
-        
+
         if alert_triggered {
             // 发送告警日志
             let _ = self.client.send_log(alert_message, LogSeverity::Warn).await?
@@ -929,14 +929,14 @@ impl PerformanceMonitor {
                 .with_attribute("error_rate", error_rate.to_string())
                 .send()
                 .await?;
-            
+
             // 更新最后告警时间
             self.last_alert_time.store(current_time.elapsed().as_secs(), Ordering::Relaxed);
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn shutdown(&self) -> Result<(), Box<dyn std::error::Error>> {
         self.client.shutdown().await?;
         Ok(())
@@ -946,11 +946,11 @@ impl PerformanceMonitor {
 // 使用示例
 async fn performance_monitoring_example() -> Result<(), Box<dyn std::error::Error>> {
     let monitor = PerformanceMonitor::new().await?;
-    
+
     // 模拟一些请求
     for i in 0..100 {
         let start_time = Instant::now();
-        
+
         // 模拟请求处理
         if i % 10 == 0 {
             // 模拟错误
@@ -962,7 +962,7 @@ async fn performance_monitoring_example() -> Result<(), Box<dyn std::error::Erro
             monitor.record_request(start_time.elapsed(), true).await?;
         }
     }
-    
+
     monitor.shutdown().await?;
     Ok(())
 }
@@ -1009,7 +1009,7 @@ impl OtlpConfig {
         let config: OtlpConfig = serde_json::from_str(&content)?;
         Ok(config)
     }
-    
+
     pub fn to_file(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let content = serde_json::to_string_pretty(self)?;
         std::fs::write(path, content)?;
@@ -1027,22 +1027,22 @@ use thiserror::Error;
 pub enum OtlpError {
     #[error("网络错误: {0}")]
     NetworkError(String),
-    
+
     #[error("序列化错误: {0}")]
     SerializationError(String),
-    
+
     #[error("认证错误: {0}")]
     AuthenticationError(String),
-    
+
     #[error("配置错误: {0}")]
     ConfigurationError(String),
-    
+
     #[error("背压错误: {0}")]
     BackpressureError(String),
-    
+
     #[error("超时错误: {0}")]
     TimeoutError(String),
-    
+
     #[error("未知错误: {0}")]
     UnknownError(String),
 }
@@ -1056,7 +1056,7 @@ impl OtlpError {
             _ => false,
         }
     }
-    
+
     pub fn get_retry_delay(&self) -> Duration {
         match self {
             OtlpError::NetworkError(_) => Duration::from_secs(1),
@@ -1075,19 +1075,19 @@ impl OtlpError {
 pub struct PerformanceOptimization {
     // 使用连接池
     connection_pool_size: usize,
-    
+
     // 批量处理
     batch_size: usize,
     batch_timeout: Duration,
-    
+
     // 异步处理
     async_processing: bool,
     max_concurrent_requests: usize,
-    
+
     // 压缩
     enable_compression: bool,
     compression_algorithm: String,
-    
+
     // 缓存
     enable_caching: bool,
     cache_size: usize,
@@ -1109,21 +1109,21 @@ impl PerformanceOptimization {
             cache_ttl: Duration::from_secs(300),
         }
     }
-    
+
     pub fn optimize_for_high_throughput(&mut self) {
         self.batch_size = 1000;
         self.batch_timeout = Duration::from_secs(1);
         self.max_concurrent_requests = 1000;
         self.connection_pool_size = 50;
     }
-    
+
     pub fn optimize_for_low_latency(&mut self) {
         self.batch_size = 10;
         self.batch_timeout = Duration::from_millis(100);
         self.max_concurrent_requests = 10;
         self.connection_pool_size = 5;
     }
-    
+
     pub fn optimize_for_memory_usage(&mut self) {
         self.batch_size = 50;
         self.cache_size = 100;
@@ -1145,4 +1145,4 @@ impl PerformanceOptimization {
 
 ---
 
-*本文档为OTLP的详细使用提供了全面的示例和最佳实践指导，适用于各种实际应用场景。*
+_本文档为OTLP的详细使用提供了全面的示例和最佳实践指导，适用于各种实际应用场景。_

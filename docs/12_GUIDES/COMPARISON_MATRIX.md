@@ -1,7 +1,7 @@
 ﻿# 最佳实践对比矩阵
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -335,13 +335,13 @@ use bumpalo::Bump;
 
 fn process_batch(items: &[Item]) {
     let arena = Bump::new();  // 创建arena
-    
+
     for item in items {
         // 在arena中分配，极快
         let data = arena.alloc([0u8; 100]);
         process_item(item, data);
     }
-    
+
     // arena drop时一次性释放全部内存
 }
 
@@ -403,7 +403,7 @@ use thiserror::Error;
 pub enum MyLibError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Parse error: {0}")]
     Parse(String),
 }
@@ -561,9 +561,9 @@ API设计决策树
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
+**最后更新**: 2025-10-28
 **维护团队**: OTLP_rust指南团队
 
 ---

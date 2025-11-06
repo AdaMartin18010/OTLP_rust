@@ -1,7 +1,7 @@
 # 🚀 快速开始指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 快速开始指南 - 从零到一，5分钟上手 OpenTelemetry Protocol 实现。
@@ -97,11 +97,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_protocol(TransportProtocol::Grpc)
         .with_service("my-service", "1.0.0")
         .with_timeout(Duration::from_secs(10));
-    
+
     // 创建客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送追踪数据
     let result = client.send_trace("example-operation").await?
         .with_attribute("service.name", "my-service")
@@ -109,12 +109,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_numeric_attribute("duration", 150.0)
         .finish()
         .await?;
-    
+
     println!("追踪数据发送结果: 成功 {} 条", result.success_count);
-    
+
     // 关闭客户端
     client.shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -195,7 +195,7 @@ for i in 0..100 {
     let trace_data = TelemetryData::trace(format!("operation-{}", i))
         .with_attribute("batch_id", "batch-001")
         .with_attribute("operation_index", i.to_string());
-    
+
     batch_data.push(trace_data);
 }
 

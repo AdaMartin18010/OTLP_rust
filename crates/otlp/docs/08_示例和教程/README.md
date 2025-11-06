@@ -1,8 +1,8 @@
 # 示例和教程完整指南
 
-> **版本**: v2.0  
-> **更新日期**: 2025年10月17日  
-> **状态**: ✅ 包含可运行示例  
+> **版本**: v2.0
+> **更新日期**: 2025年10月17日
+> **状态**: ✅ 包含可运行示例
 > **维护者**: OTLP示例团队
 
 ---
@@ -409,7 +409,7 @@ impl Exporter for CustomExporter {
     ) -> ExportResult {
         // 自定义导出逻辑
         println!("Exporting {} traces to {}", traces.len(), self.endpoint);
-        
+
         // 可以添加过滤、转换、路由等逻辑
         let filtered_traces: Vec<_> = traces
             .into_iter()
@@ -492,11 +492,11 @@ use opentelemetry::trace::{TraceContextExt, SpanContext};
 
 async fn microservice_a() -> Result<(), Box<dyn std::error::Error>> {
     let tracer = global::tracer("service-a");
-    
+
     let span = tracer
         .span_builder("process_request")
         .start(&tracer);
-    
+
     let cx = Context::current_with_span(span);
 
     // 提取上下文用于传播
@@ -515,7 +515,7 @@ async fn microservice_b(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tracer = global::tracer("service-b");
     let propagator = TraceContextPropagator::new();
-    
+
     // 从carrier中提取上下文
     let parent_cx = propagator.extract(&carrier);
 
@@ -583,7 +583,7 @@ async fn index() -> HttpResponse {
 
 async fn get_users() -> HttpResponse {
     let tracer = global::tracer("http-handler");
-    
+
     tracer.in_span("fetch_users", |cx| {
         // 模拟数据库查询
         let users = vec!["Alice", "Bob", "Charlie"];
@@ -594,10 +594,10 @@ async fn get_users() -> HttpResponse {
 async fn get_user(path: web::Path<u32>) -> HttpResponse {
     let tracer = global::tracer("http-handler");
     let user_id = path.into_inner();
-    
+
     tracer.in_span("fetch_user_by_id", |cx| {
         cx.span().set_attribute(KeyValue::new("user.id", user_id as i64));
-        
+
         // 模拟查询
         let user = format!("User #{}", user_id);
         HttpResponse::Ok().json(user)
@@ -631,7 +631,7 @@ impl Greeter for MyGreeter {
         request: Request<HelloRequest>,
     ) -> Result<Response<HelloReply>, Status> {
         let tracer = global::tracer("greeter");
-        
+
         tracer.in_span("say_hello", |cx| {
             let name = request.get_ref().name.clone();
             cx.span().set_attribute(KeyValue::new("request.name", name.clone()));
@@ -694,7 +694,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn fetch_users(pool: &PgPool) -> Result<Vec<User>, sqlx::Error> {
     let tracer = global::tracer("database");
-    
+
     tracer.in_span("fetch_all_users", |cx| async move {
         cx.span().set_attribute(KeyValue::new("db.system", "postgresql"));
         cx.span().set_attribute(KeyValue::new("db.operation", "SELECT"));
@@ -757,7 +757,7 @@ struct User {
         let client = OtlpClient::new("http://localhost:4317");
         let provider = TracerProvider::new(client);
         let tracer = provider.tracer("my-app");
-        
+
         tracer.in_span("my_operation", |_| {
             println!("执行操作...");
         });
@@ -789,10 +789,10 @@ use otlp_rust::config::OtlpConfig;
 let config = OtlpConfig {
     // 端点配置
     endpoint: "https://otlp.production.com:4317".to_string(),
-    
+
     // 超时配置
     timeout: Duration::from_secs(30),
-    
+
     // 重试配置
     retry: RetryConfig {
         max_retries: 3,
@@ -800,24 +800,24 @@ let config = OtlpConfig {
         max_interval: Duration::from_secs(10),
         multiplier: 2.0,
     },
-    
+
     // 批处理配置
     batch: BatchConfig {
         max_queue_size: 2048,
         scheduled_delay: Duration::from_secs(5),
         max_export_batch_size: 512,
     },
-    
+
     // 压缩配置
     compression: Some(Compression::Gzip),
-    
+
     // TLS配置
     tls: Some(TlsConfig {
         cert_path: "/path/to/cert.pem",
         key_path: "/path/to/key.pem",
         ca_path: Some("/path/to/ca.pem"),
     }),
-    
+
     // 认证配置
     auth: Some(AuthConfig::Bearer {
         token: std::env::var("OTLP_API_KEY").unwrap(),
@@ -898,9 +898,9 @@ tokio::spawn(async move {
 
 ---
 
-**版本**: v2.0  
-**状态**: ✅ 所有示例可运行  
-**最后更新**: 2025年10月17日  
+**版本**: v2.0
+**状态**: ✅ 所有示例可运行
+**最后更新**: 2025年10月17日
 **维护者**: OTLP示例团队
 
 ---

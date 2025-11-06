@@ -1,7 +1,7 @@
 ﻿# 架构设计核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -23,8 +23,9 @@
 #### 定义
 
 **形式化定义**: 服务边界定义为元组 B = (I, O, C, D)，其中：
+
 - I: 输入接口集合
-- O: 输出接口集合  
+- O: 输出接口集合
 - C: 上下文边界
 - D: 数据所有权范围
 
@@ -69,7 +70,7 @@ pub trait TraceService {
     // 输入接口
     async fn export_traces(&self, traces: Vec<Span>) -> Result<()>;
     async fn query_traces(&self, query: TraceQuery) -> Result<Vec<Span>>;
-    
+
     // 输出接口（事件发布）
     async fn notify_trace_exported(&self, trace_id: TraceId);
 }
@@ -97,12 +98,12 @@ impl TraceService for OtlpTraceService {
         }
         Ok(())
     }
-    
+
     async fn query_traces(&self, query: TraceQuery) -> Result<Vec<Span>> {
         // 边界内的逻辑：查询、过滤
         self.storage.query(query).await
     }
-    
+
     async fn notify_trace_exported(&self, trace_id: TraceId) {
         // 边界外的通知（通过消息队列）
         // 不直接调用其他服务
@@ -122,6 +123,7 @@ impl TraceService for OtlpTraceService {
 #### 定义
 
 **形式化定义**: API网关 G = (R, A, T, L)，其中：
+
 - R: 路由规则集合
 - A: 认证授权策略
 - T: 流量管理规则
@@ -197,7 +199,7 @@ async fn proxy_to_trace_service(
         .send()
         .await
         .map_err(|_| StatusCode::BAD_GATEWAY)?;
-    
+
     Ok(Response::new(response.bytes().await.unwrap()))
 }
 
@@ -217,6 +219,7 @@ async fn proxy_to_trace_service(
 #### 定义
 
 **形式化定义**: 对于分布式系统S，不可能同时满足：
+
 - C (Consistency): ∀读操作r，r.value = 最新写入值
 - A (Availability): ∀请求req，∃响应resp，resp.time < ∞
 - P (Partition Tolerance): 系统在网络分区时仍可运行
@@ -269,15 +272,15 @@ impl RaftCluster {
             key: key.to_string(),
             value: value.to_string(),
         };
-        
+
         // 如果当前不是Leader，拒绝写入（牺牲可用性）
         if self.node.raft.state != StateRole::Leader {
             return Err(Error::NotLeader);
         }
-        
+
         // 等待多数节点确认（保证一致性）
         self.node.propose(vec![], proposal.encode())?;
-        
+
         // 阻塞等待提交（强一致性）
         loop {
             if let Some(entry) = self.check_committed() {
@@ -302,14 +305,14 @@ impl EventuallyConsistentCache {
     pub async fn write(&mut self, key: String, value: String) -> Result<()> {
         // 立即写入本地（高可用）
         self.local_cache.insert(key.clone(), value.clone());
-        
+
         // 异步复制到其他节点（不阻塞）
         self.replication_queue.push_back(Update { key, value });
-        
+
         // 立即返回（可用性）
         Ok(())
     }
-    
+
     pub async fn read(&self, key: &str) -> Option<String> {
         // 读取本地缓存（可能不是最新值）
         self.local_cache.get(key).cloned()
@@ -330,6 +333,7 @@ impl EventuallyConsistentCache {
 #### 定义
 
 **形式化定义**: 系统容量 C = n × c，其中：
+
 - n: 节点数量
 - c: 单节点容量
 - 扩展通过增加n实现
@@ -379,15 +383,15 @@ pub struct OtlpReceiver {
 impl OtlpReceiver {
     // 处理请求（无状态）
     pub async fn handle_export(
-        &self, 
+        &self,
         request: ExportRequest
     ) -> Result<ExportResponse> {
         // 不依赖本地状态，可以被任意实例处理
         let traces = self.parse_traces(&request)?;
-        
+
         // 写入共享存储
         self.storage.write_batch(traces).await?;
-        
+
         // 返回结果（无状态）
         Ok(ExportResponse::success())
     }
@@ -398,12 +402,12 @@ impl OtlpReceiver {
 // 节点2: otlp-receiver-2:4317
 // 节点3: otlp-receiver-3:4317
 // 负载均衡器: nginx / Envoy
-// 
+//
 // 容量计算:
 // 单节点: 10K QPS
 // 3节点理论: 30K QPS
 // 实际容量: 27K QPS (90%效率)
-// 
+//
 // 扩展到10节点:
 // 理论: 100K QPS
 // 实际: 85K QPS (85%效率，网络开销增加)
@@ -458,6 +462,7 @@ spec:
 #### 定义
 
 **形式化定义**: 可观测性 O = (M, T, L)，其中：
+
 - M (Metrics): 时序数据，M: Time → ℝⁿ
 - T (Traces): 请求路径，T = (spans, edges)
 - L (Logs): 事件序列，L = [(timestamp, event)]
@@ -503,7 +508,7 @@ pub struct ObservableService {
     // Metrics
     request_counter: Counter<u64>,
     latency_histogram: Histogram<f64>,
-    
+
     // Traces（通过tracing库）
     // Logs（通过tracing库）
 }
@@ -516,32 +521,32 @@ impl ObservableService {
             1,
             &[KeyValue::new("method", req.method.clone())]
         );
-        
+
         // 2. Traces: 创建span
         let span = span!(Level::INFO, "process_request",
             request_id = %req.id,
             method = %req.method
         );
         let _enter = span.enter();
-        
+
         // 3. Logs: 结构化日志
         tracing::info!(
             request_id = %req.id,
             "Processing request"
         );
-        
+
         let start = std::time::Instant::now();
-        
+
         // 业务逻辑
         let result = self.do_work(&req).await;
-        
+
         // 4. Metrics: 延迟
         let duration = start.elapsed().as_secs_f64();
         self.latency_histogram.record(
             duration,
             &[KeyValue::new("status", result.status_code())]
         );
-        
+
         // 5. Logs: 结果
         tracing::info!(
             request_id = %req.id,
@@ -549,17 +554,17 @@ impl ObservableService {
             status = result.status_code(),
             "Request completed"
         );
-        
+
         result
     }
-    
+
     async fn do_work(&self, req: &Request) -> Result<Response> {
         // 嵌套span（Traces层级）
         let _span = span!(Level::DEBUG, "do_work").entered();
-        
+
         // 模拟工作
         tokio::time::sleep(Duration::from_millis(50)).await;
-        
+
         Ok(Response::ok())
     }
 }
@@ -584,6 +589,7 @@ impl ObservableService {
 #### 定义
 
 **形式化定义**: Sidecar S = (P, S, C)，其中：
+
 - P: 主容器（业务服务）
 - S: Sidecar容器（代理）
 - C: 通信管道 P ↔ S ↔ 网络
@@ -636,7 +642,7 @@ spec:
     env:
     - name: UPSTREAM_URL
       value: "http://localhost:15001"  # 指向Sidecar
-  
+
   # Sidecar容器：Envoy代理
   - name: envoy-sidecar
     image: envoyproxy/envoy:v1.28
@@ -653,7 +659,7 @@ spec:
       limits:
         memory: "128Mi"
         cpu: "200m"
-  
+
   volumes:
   - name: envoy-config
     configMap:
@@ -688,7 +694,7 @@ static_resources:
           http_filters:
           # 自动添加追踪
           - name: envoy.filters.http.router
-  
+
   clusters:
   - name: local_service
     type: STATIC
@@ -710,7 +716,7 @@ static_resources:
 // 3. 自动采集Metrics
 // 4. 自动断路器和重试
 // 5. mTLS加密
-// 
+//
 // 性能影响
 // 延迟增加: 1-2ms
 // CPU增加: 10-20%
@@ -728,8 +734,8 @@ static_resources:
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
 **最后更新**: 2025-10-28
 **维护团队**: OTLP_rust架构团队
 

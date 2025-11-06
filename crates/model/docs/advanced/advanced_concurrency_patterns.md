@@ -1,8 +1,8 @@
 ﻿# 高级并发模式完整指南
 
-**Crate:** c12_model  
-**主题:** Advanced Concurrency Patterns  
-**Rust 版本:** 1.90.0  
+**Crate:** c12_model
+**主题:** Advanced Concurrency Patterns
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -96,7 +96,7 @@ use std::rc::Rc;
 
 fn unsafe_example() {
     let data = Rc::new(5);
-    
+
     // 编译错误！Rc<T> 不能跨线程发送
     // std::thread::spawn(move || {
     //     println!("{}", data);
@@ -108,7 +108,7 @@ use std::sync::Arc;
 
 fn safe_example() {
     let data = Arc::new(5);
-    
+
     std::thread::spawn(move || {
         println!("{}", data);
     });
@@ -147,7 +147,7 @@ impl STM {
             version: Arc::new(Mutex::new(0)),
         }
     }
-    
+
     pub fn begin(&self) -> Transaction {
         let version = *self.version.lock().unwrap();
         Transaction {
@@ -156,56 +156,56 @@ impl STM {
             version,
         }
     }
-    
+
     pub fn commit(&self, tx: &Transaction) -> Result<()> {
         // 1. 验证阶段：检查读集是否被修改
         let state = self.global_state.lock().unwrap();
         let current_version = *self.version.lock().unwrap();
-        
+
         for (key, (_, read_version)) in &tx.reads {
             // 如果版本号变化，说明有其他事务修改了数据
             if *read_version < current_version {
                 return Err(anyhow::anyhow!("Conflict detected"));
             }
         }
-        
+
         // 2. 写入阶段：应用所有写操作
         drop(state);  // 释放锁
         let mut state = self.global_state.lock().unwrap();
-        
+
         for (key, value) in &tx.writes {
             state.insert(key.clone(), *value);
         }
-        
+
         // 3. 提交：增加版本号
         let mut version = self.version.lock().unwrap();
         *version += 1;
-        
+
         Ok(())
     }
-    
+
     pub fn read(&self, tx: &mut Transaction, key: &str) -> Option<i64> {
         // 先检查写集
         if let Some(&value) = tx.writes.get(key) {
             return Some(value);
         }
-        
+
         // 再检查读集
         if let Some(&(value, _)) = tx.reads.get(key) {
             return Some(value);
         }
-        
+
         // 从全局状态读取
         let state = self.global_state.lock().unwrap();
         let value = state.get(key).copied();
-        
+
         if let Some(v) = value {
             tx.reads.insert(key.to_string(), (v, tx.version));
         }
-        
+
         value
     }
-    
+
     pub fn write(&self, tx: &mut Transaction, key: String, value: i64) {
         tx.writes.insert(key, value);
     }
@@ -215,20 +215,20 @@ impl STM {
 async fn transfer_with_stm(stm: &STM, from: &str, to: &str, amount: i64) -> Result<()> {
     loop {
         let mut tx = stm.begin();
-        
+
         // 读取账户余额
         let from_balance = stm.read(&mut tx, from).unwrap_or(0);
         let to_balance = stm.read(&mut tx, to).unwrap_or(0);
-        
+
         // 检查余额
         if from_balance < amount {
             return Err(anyhow::anyhow!("Insufficient balance"));
         }
-        
+
         // 执行转账
         stm.write(&mut tx, from.to_string(), from_balance - amount);
         stm.write(&mut tx, to.to_string(), to_balance + amount);
-        
+
         // 尝试提交
         match stm.commit(&tx) {
             Ok(_) => return Ok(()),
@@ -268,22 +268,22 @@ impl<T> LockFreeStack<T> {
             head: AtomicPtr::new(ptr::null_mut()),
         }
     }
-    
+
     pub fn push(&self, data: T) {
         let new_node = Box::into_raw(Box::new(Node {
             data,
             next: ptr::null_mut(),
         }));
-        
+
         loop {
             // 读取当前 head
             let old_head = self.head.load(Ordering::Acquire);
-            
+
             // 设置新节点的 next
             unsafe {
                 (*new_node).next = old_head;
             }
-            
+
             // CAS: 如果 head 没变，更新为新节点
             match self.head.compare_exchange(
                 old_head,
@@ -296,18 +296,18 @@ impl<T> LockFreeStack<T> {
             }
         }
     }
-    
+
     pub fn pop(&self) -> Option<T> {
         loop {
             let old_head = self.head.load(Ordering::Acquire);
-            
+
             if old_head.is_null() {
                 return None;
             }
-            
+
             unsafe {
                 let next = (*old_head).next;
-                
+
                 // CAS: 尝试将 head 更新为 next
                 match self.head.compare_exchange(
                     old_head,
@@ -359,23 +359,23 @@ impl<T> LockFreeQueue<T> {
             data: None,
             next: AtomicPtr::new(ptr::null_mut()),
         }));
-        
+
         Self {
             head: AtomicPtr::new(sentinel),
             tail: AtomicPtr::new(sentinel),
         }
     }
-    
+
     pub fn enqueue(&self, data: T) {
         let new_node = Box::into_raw(Box::new(QueueNode {
             data: Some(data),
             next: AtomicPtr::new(ptr::null_mut()),
         }));
-        
+
         loop {
             let tail = self.tail.load(Ordering::Acquire);
             let next = unsafe { (*tail).next.load(Ordering::Acquire) };
-            
+
             if tail == self.tail.load(Ordering::Acquire) {
                 if next.is_null() {
                     // tail 是最后一个节点，尝试插入
@@ -411,19 +411,19 @@ impl<T> LockFreeQueue<T> {
             }
         }
     }
-    
+
     pub fn dequeue(&self) -> Option<T> {
         loop {
             let head = self.head.load(Ordering::Acquire);
             let tail = self.tail.load(Ordering::Acquire);
             let next = unsafe { (*head).next.load(Ordering::Acquire) };
-            
+
             if head == self.head.load(Ordering::Acquire) {
                 if head == tail {
                     if next.is_null() {
                         return None;  // 队列为空
                     }
-                    
+
                     // 帮助移动 tail
                     self.tail.compare_exchange(
                         tail,
@@ -434,7 +434,7 @@ impl<T> LockFreeQueue<T> {
                 } else {
                     // 读取数据
                     let data = unsafe { (*next).data.take() };
-                    
+
                     // 尝试移动 head
                     match self.head.compare_exchange(
                         head,
@@ -481,7 +481,7 @@ impl WorkStealingScheduler {
     pub fn new(num_threads: usize) -> Self {
         let mut workers = Vec::new();
         let mut stealers = Vec::new();
-        
+
         // 为每个线程创建工作队列
         for _ in 0..num_threads {
             let worker = Worker::new_fifo();
@@ -489,29 +489,29 @@ impl WorkStealingScheduler {
             workers.push(worker);
             stealers.push(stealer);
         }
-        
+
         let stealers = Arc::new(stealers);
         let mut threads = Vec::new();
-        
+
         // 启动工作线程
         for (id, worker) in workers.iter().enumerate() {
             let worker = worker.clone();
             let stealers = Arc::clone(&stealers);
-            
+
             let handle = std::thread::spawn(move || {
                 Self::worker_loop(id, worker, stealers);
             });
-            
+
             threads.push(handle);
         }
-        
+
         Self {
             workers,
             stealers: Arc::try_unwrap(stealers).unwrap(),
             threads,
         }
     }
-    
+
     pub fn submit<F>(&self, task: F)
     where
         F: FnOnce() + Send + 'static,
@@ -520,7 +520,7 @@ impl WorkStealingScheduler {
         let worker_id = rand::random::<usize>() % self.workers.len();
         self.workers[worker_id].push(Box::new(task));
     }
-    
+
     fn worker_loop(
         id: usize,
         worker: Worker<Task>,
@@ -532,21 +532,21 @@ impl WorkStealingScheduler {
                 task();
                 continue;
             }
-            
+
             // 2. 从其他线程偷取任务
             let mut found = false;
             for (i, stealer) in stealers.iter().enumerate() {
                 if i == id {
                     continue;  // 跳过自己
                 }
-                
+
                 if let crossbeam::deque::Steal::Success(task) = stealer.steal() {
                     task();
                     found = true;
                     break;
                 }
             }
-            
+
             if !found {
                 // 3. 没有任务，休眠一会儿
                 std::thread::sleep(Duration::from_millis(1));
@@ -558,7 +558,7 @@ impl WorkStealingScheduler {
 // 使用示例
 async fn work_stealing_example() {
     let scheduler = WorkStealingScheduler::new(4);
-    
+
     // 提交 1000 个任务
     for i in 0..1000 {
         scheduler.submit(move || {
@@ -566,7 +566,7 @@ async fn work_stealing_example() {
             std::thread::sleep(Duration::from_millis(10));
         });
     }
-    
+
     // 等待所有任务完成
     std::thread::sleep(Duration::from_secs(5));
 }
@@ -598,7 +598,7 @@ enum CoroutineState {
 
 impl Future for SimpleCoroutine {
     type Output = ();
-    
+
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.state {
             CoroutineState::Created => {
@@ -651,7 +651,7 @@ fn green_thread_example() {
             println!("Green thread {} finished", i);
         })
     }).collect();
-    
+
     // 等待所有绿色线程完成
     for handle in handles {
         handle.join().ok();
@@ -661,9 +661,9 @@ fn green_thread_example() {
 // 绿色线程池
 fn green_thread_pool_example() {
     use may::sync::mpsc;
-    
+
     let (tx, rx) = mpsc::channel();
-    
+
     // Worker 绿色线程
     for id in 0..10 {
         let rx = rx.clone();
@@ -674,7 +674,7 @@ fn green_thread_pool_example() {
             }
         });
     }
-    
+
     // 发送任务
     for i in 0..100 {
         tx.send(i).ok();
@@ -743,13 +743,13 @@ impl<K: Ord, V> ConcurrentSkipList<K, V> {
         // 实现省略...
         todo!()
     }
-    
+
     pub fn insert(&self, key: K, value: V) {
         let guard = epoch::pin();
-        
+
         // 1. 找到插入位置
         let (preds, succs) = self.find(&key, &guard);
-        
+
         // 2. 创建新节点
         let level = self.random_level();
         let new_node = Owned::new(Node {
@@ -757,26 +757,26 @@ impl<K: Ord, V> ConcurrentSkipList<K, V> {
             value,
             next: Default::default(),
         });
-        
+
         // 3. 插入节点
         // 实现 lock-free 插入逻辑...
     }
-    
+
     pub fn get(&self, key: &K) -> Option<&V> {
         let guard = epoch::pin();
-        
+
         let mut curr = self.head.load(Ordering::Acquire, &guard);
-        
+
         for level in (0..MAX_LEVEL).rev() {
             loop {
                 let next = unsafe { curr.deref() }.next[level].load(Ordering::Acquire, &guard);
-                
+
                 if next.is_null() {
                     break;
                 }
-                
+
                 let next_node = unsafe { next.deref() };
-                
+
                 match next_node.key.cmp(key) {
                     Ordering::Less => curr = next,
                     Ordering::Equal => return Some(&next_node.value),
@@ -784,10 +784,10 @@ impl<K: Ord, V> ConcurrentSkipList<K, V> {
                 }
             }
         }
-        
+
         None
     }
-    
+
     fn random_level(&self) -> usize {
         let mut level = 1;
         while rand::random::<bool>() && level < MAX_LEVEL {
@@ -848,7 +848,7 @@ let atomic = AtomicU64::new(0);
 loop {
     let current = atomic.load(Ordering::Acquire);
     let new_value = current + 1;
-    
+
     match atomic.compare_exchange(
         current,
         new_value,
@@ -901,41 +901,41 @@ impl DeadlockDetector {
             lock_holders: HashMap::new(),
         }
     }
-    
+
     pub fn acquire_lock(&mut self, thread_id: ThreadId, lock_id: LockId) -> Result<()> {
         // 1. 检查是否会导致死锁
         if self.would_deadlock(thread_id, lock_id) {
             return Err(anyhow::anyhow!("Deadlock detected!"));
         }
-        
+
         // 2. 记录锁的获取
         self.held_locks.entry(thread_id)
             .or_insert_with(HashSet::new)
             .insert(lock_id);
-        
+
         self.lock_holders.insert(lock_id, thread_id);
         self.waiting_for.remove(&thread_id);
-        
+
         Ok(())
     }
-    
+
     pub fn wait_for_lock(&mut self, thread_id: ThreadId, lock_id: LockId) {
         self.waiting_for.insert(thread_id, lock_id);
     }
-    
+
     pub fn release_lock(&mut self, thread_id: ThreadId, lock_id: LockId) {
         if let Some(locks) = self.held_locks.get_mut(&thread_id) {
             locks.remove(&lock_id);
         }
         self.lock_holders.remove(&lock_id);
     }
-    
+
     fn would_deadlock(&self, thread_id: ThreadId, lock_id: LockId) -> bool {
         // 使用 DFS 检测环
         let mut visited = HashSet::new();
         self.has_cycle(thread_id, lock_id, &mut visited)
     }
-    
+
     fn has_cycle(
         &self,
         thread_id: ThreadId,
@@ -945,9 +945,9 @@ impl DeadlockDetector {
         if visited.contains(&thread_id) {
             return true;  // 发现环
         }
-        
+
         visited.insert(thread_id);
-        
+
         // 检查持有目标锁的线程
         if let Some(&holder) = self.lock_holders.get(&lock_id) {
             // 检查持有者是否在等待当前线程持有的锁
@@ -957,12 +957,12 @@ impl DeadlockDetector {
                         return true;  // 死锁
                     }
                 }
-                
+
                 // 递归检查
                 return self.has_cycle(holder, waiting_lock, visited);
             }
         }
-        
+
         false
     }
 }
@@ -989,7 +989,7 @@ fn good_transfer(account1: &Mutex<Account>, account2: &Mutex<Account>) {
     } else {
         (account2, account1)
     };
-    
+
     let a1 = first.lock().unwrap();
     let a2 = second.lock().unwrap();
     // ... 转账操作
@@ -1006,16 +1006,16 @@ fn try_lock_with_timeout<T>(
     timeout: Duration,
 ) -> Option<MutexGuard<T>> {
     let start = Instant::now();
-    
+
     loop {
         if let Ok(guard) = lock.try_lock() {
             return Some(guard);
         }
-        
+
         if start.elapsed() > timeout {
             return None;  // 超时
         }
-        
+
         std::thread::sleep(Duration::from_millis(10));
     }
 }
@@ -1045,7 +1045,6 @@ fn try_lock_with_timeout<T>(
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日
-

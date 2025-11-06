@@ -1,8 +1,8 @@
 ﻿# 快速入门核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
-**状态**: ✅ 完整  
+**版本**: 2.0
+**日期**: 2025年10月28日
+**状态**: ✅ 完整
 **面向**: 新手开发者
 
 ---
@@ -25,6 +25,7 @@
 **OpenTelemetry Protocol (OTLP)** 是一个开放标准的遥测数据传输协议。
 
 **简单理解**:
+
 ```
 应用程序 → 生成追踪数据 → OTLP传输 → 后端存储 → 可视化分析
 ```
@@ -97,34 +98,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1️⃣ 初始化 (只需要一次)
     let tracer_provider = TracerProvider::builder().build();
     global::set_tracer_provider(tracer_provider);
-    
+
     // 2️⃣ 创建tracer
     let tracer = global::tracer("my-app");
-    
+
     // 3️⃣ 创建span (追踪点)
     let span = tracer
         .span_builder("my-operation")
         .start(&tracer);
-    
+
     // 4️⃣ 你的业务代码
     println!("Hello, OTLP!");
-    
+
     // 5️⃣ 结束span
     drop(span);
-    
+
     // 6️⃣ 清理
     global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 ```
 
 **运行**:
+
 ```bash
 cargo run
 ```
 
 **输出**:
+
 ```
 Hello, OTLP!
 ```
@@ -183,7 +186,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .tonic()
         .with_endpoint("http://localhost:4317")
         .build()?;
-    
+
     // 2️⃣ 创建TracerProvider
     let tracer_provider = TracerProvider::builder()
         .with_batch_exporter(exporter)
@@ -191,44 +194,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             KeyValue::new("service.name", "my-first-app"),
         ]))
         .build();
-    
+
     global::set_tracer_provider(tracer_provider);
-    
+
     // 3️⃣ 获取tracer
     let tracer = global::tracer("my-app");
-    
+
     // 4️⃣ 创建span
     let mut span = tracer
         .span_builder("hello-operation")
         .start(&tracer);
-    
+
     // 5️⃣ 添加属性
     span.set_attribute(KeyValue::new("user.id", 123));
     span.set_attribute(KeyValue::new("user.name", "Alice"));
-    
+
     // 6️⃣ 模拟业务逻辑
     println!("Processing request...");
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    
+
     // 7️⃣ 添加事件
     span.add_event("Request completed", vec![]);
-    
+
     println!("Done!");
-    
+
     // 8️⃣ span自动结束 (drop)
     drop(span);
-    
+
     // 9️⃣ 等待数据发送
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-    
+
     // 🔟 清理
     global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 ```
 
 **运行并查看结果**:
+
 ```bash
 cargo run
 
@@ -237,6 +241,7 @@ docker logs -f <container-id>
 ```
 
 **你会看到**:
+
 ```json
 {
   "resourceSpans": [{
@@ -283,17 +288,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1️⃣ 初始化tracing
     let tracer = init_tracer()?;
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-    
+
     tracing_subscriber::registry()
         .with(telemetry)
         .init();
-    
+
     // 2️⃣ 调用业务函数
     process_request(123, "Alice").await?;
-    
+
     // 3️⃣ 清理
     opentelemetry::global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 
@@ -301,10 +306,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[instrument]
 async fn process_request(user_id: i64, user_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     info!("Processing request");  // 自动附加到span
-    
+
     // 调用其他函数（自动成为子span）
     fetch_data().await?;
-    
+
     info!("Request completed");
     Ok(())
 }
@@ -321,17 +326,18 @@ fn init_tracer() -> Result<opentelemetry_sdk::trace::Tracer, Box<dyn std::error:
         .tonic()
         .with_endpoint("http://localhost:4317")
         .build()?;
-    
+
     let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(exporter)
         .install_batch(opentelemetry_sdk::runtime::Tokio)?;
-    
+
     Ok(tracer)
 }
 ```
 
 **生成的Trace树**:
+
 ```
 process_request (user_id=123, user_name="Alice")
 ├─ log: Processing request
@@ -423,6 +429,7 @@ cargo run
 ```
 
 **代码中读取环境变量**:
+
 ```rust
 use std::env;
 
@@ -495,6 +502,7 @@ if TcpStream::connect("localhost:4317").await.is_ok() {
 ```
 
 **建议**:
+
 - ✅ 开发环境: 100%采样
 - ✅ 生产环境: 10%采样
 - ✅ 错误请求: 100%采样 (智能采样)
@@ -507,7 +515,7 @@ if TcpStream::connect("localhost:4317").await.is_ok() {
 
 ```
 原因: Collector未运行或端口错误
-解决: 
+解决:
 1. 检查Collector: docker ps
 2. 检查端口: netstat -an | grep 4317
 3. 检查配置: echo $OTEL_EXPORTER_OTLP_ENDPOINT
@@ -628,12 +636,11 @@ std::thread::sleep(Duration::from_secs(5));  // 错误！
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
+**最后更新**: 2025-10-28
 **维护团队**: OTLP_rust入门团队
 
 ---
 
 > **💡 新手提示**: 不要被复杂的概念吓倒！从最简单的示例开始，一步一步学习。OTLP的核心其实很简单：创建span → 添加信息 → 导出数据。
-

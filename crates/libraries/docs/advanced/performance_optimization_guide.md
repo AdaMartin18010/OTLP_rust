@@ -1,8 +1,8 @@
 ﻿# 性能优化完整指南
 
-**Crate:** c11_libraries  
-**主题:** Performance Optimization  
-**Rust 版本:** 1.90.0  
+**Crate:** c11_libraries
+**主题:** Performance Optimization
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -147,11 +147,11 @@ fn good_process_data(data: Bytes) -> Bytes {
 async fn handle_request(body: Bytes) -> Result<Response> {
     // Bytes 可以高效地在异步任务间传递
     let body_clone = body.clone();  // 零拷贝
-    
+
     tokio::spawn(async move {
         process_in_background(body_clone).await;
     });
-    
+
     Ok(Response::new(body))  // 移动，不拷贝
 }
 ```
@@ -186,27 +186,27 @@ pub struct MemoryPool {
 impl MemoryPool {
     pub fn new(block_size: usize, max_blocks: usize) -> Self {
         let mut pool = Vec::with_capacity(max_blocks);
-        
+
         // 预分配内存块
         for _ in 0..max_blocks {
             pool.push(Vec::with_capacity(block_size));
         }
-        
+
         Self {
             pool: Arc::new(Mutex::new(pool)),
             block_size,
             max_blocks,
         }
     }
-    
+
     pub async fn acquire(&self) -> Option<Vec<u8>> {
         let mut pool = self.pool.lock().await;
         pool.pop()
     }
-    
+
     pub async fn release(&self, mut block: Vec<u8>) {
         block.clear();  // 清空但保留容量
-        
+
         let mut pool = self.pool.lock().await;
         if pool.len() < self.max_blocks {
             pool.push(block);
@@ -220,21 +220,21 @@ async fn process_with_pool(pool: &MemoryPool, data: &[u8]) -> Result<()> {
     let mut buffer = pool.acquire().await.unwrap_or_else(|| {
         Vec::with_capacity(pool.block_size)
     });
-    
+
     // 使用 buffer 处理数据
     buffer.extend_from_slice(data);
     let result = expensive_operation(&buffer);
-    
+
     // 归还到池中
     pool.release(buffer).await;
-    
+
     Ok(result)
 }
 ```
 
 #### 性能提升
 
-```
+```text
 无内存池: 1000 次分配耗时 ~500ms
 有内存池: 1000 次分配耗时 ~50ms
 提升: 10x
@@ -267,14 +267,14 @@ impl<'a> RequestContext<'a> {
 fn handle_request_with_arena() {
     let arena = Arena::new();
     let ctx = RequestContext { arena: &arena };
-    
+
     // 在 arena 中分配多个 buffer
     let buf1 = ctx.allocate_buffer(1024);
     let buf2 = ctx.allocate_buffer(2048);
     let buf3 = ctx.allocate_buffer(512);
-    
+
     // 使用这些 buffer...
-    
+
     // 函数结束时，arena 统一释放所有内存
 }
 ```
@@ -336,21 +336,21 @@ fn add_scalar(a: &[f32], b: &[f32], result: &mut [f32]) {
 fn add_simd(a: &[f32], b: &[f32], result: &mut [f32]) {
     let lanes = 4;
     let chunks = a.len() / lanes;
-    
+
     for i in 0..chunks {
         let offset = i * lanes;
-        
+
         // 加载 4 个元素到 SIMD 寄存器
         let va = f32x4::from_slice(&a[offset..]);
         let vb = f32x4::from_slice(&b[offset..]);
-        
+
         // 一条指令处理 4 个加法
         let vr = va + vb;
-        
+
         // 存储结果
         vr.copy_to_slice(&mut result[offset..]);
     }
-    
+
     // 处理剩余元素
     for i in (chunks * lanes)..a.len() {
         result[i] = a[i] + b[i];
@@ -362,22 +362,22 @@ fn add_simd(a: &[f32], b: &[f32], result: &mut [f32]) {
 mod benches {
     use super::*;
     use test::Bencher;
-    
+
     #[bench]
     fn bench_scalar(b: &mut Bencher) {
         let a = vec![1.0f32; 1000];
         let b = vec![2.0f32; 1000];
         let mut result = vec![0.0f32; 1000];
-        
+
         b.iter(|| add_scalar(&a, &b, &mut result));
     }
-    
+
     #[bench]
     fn bench_simd(b: &mut Bencher) {
         let a = vec![1.0f32; 1000];
         let b = vec![2.0f32; 1000];
         let mut result = vec![0.0f32; 1000];
-        
+
         b.iter(|| add_simd(&a, &b, &mut result));
     }
 }
@@ -420,7 +420,7 @@ use image::{DynamicImage, GenericImageView};
 fn parallel_image_process(img: &DynamicImage) -> DynamicImage {
     let (width, height) = img.dimensions();
     let mut output = img.clone();
-    
+
     // 并行处理每一行
     (0..height).into_par_iter().for_each(|y| {
         for x in 0..width {
@@ -429,7 +429,7 @@ fn parallel_image_process(img: &DynamicImage) -> DynamicImage {
             output.put_pixel(x, y, processed);
         }
     });
-    
+
     output
 }
 
@@ -490,7 +490,7 @@ struct ParticlesSoA {
 
 fn update_soa(particles: &mut ParticlesSoA) {
     let len = particles.x.len();
-    
+
     // 连续访问，缓存友好
     for i in 0..len {
         particles.x[i] += particles.vx[i];
@@ -541,7 +541,7 @@ fn good_count_positive(data: &[i32]) -> usize {
 fn conditional_move(condition: bool, a: i32, b: i32) -> i32 {
     // ❌ 分支版本
     // if condition { a } else { b }
-    
+
     // ✅ 无分支版本
     let mask = -(condition as i32);
     (mask & a) | (!mask & b)
@@ -584,7 +584,7 @@ async fn read_multiple_files(paths: Vec<String>) -> Vec<String> {
             async_read_file(&path).await.unwrap_or_default()
         }))
         .collect();
-    
+
     let mut results = Vec::new();
     for task in tasks {
         results.push(task.await.unwrap());
@@ -617,22 +617,22 @@ use tokio::io::AsyncWriteExt;
 // ❌ 不好：频繁的小写入
 async fn bad_write_logs(logs: &[String]) -> tokio::io::Result<()> {
     let mut file = File::create("logs.txt").await?;
-    
+
     for log in logs {
         file.write_all(log.as_bytes()).await?;  // 每次都刷新
     }
-    
+
     Ok(())
 }
 
 // ✅ 好：批量写入
 async fn good_write_logs(logs: &[String]) -> tokio::io::Result<()> {
     let mut file = File::create("logs.txt").await?;
-    
+
     // 合并所有日志
     let batch = logs.join("\n");
     file.write_all(batch.as_bytes()).await?;  // 一次写入
-    
+
     Ok(())
 }
 
@@ -642,12 +642,12 @@ use tokio::io::BufWriter;
 async fn better_write_logs(logs: &[String]) -> tokio::io::Result<()> {
     let file = File::create("logs.txt").await?;
     let mut writer = BufWriter::new(file);
-    
+
     for log in logs {
         writer.write_all(log.as_bytes()).await?;
         writer.write_all(b"\n").await?;
     }
-    
+
     writer.flush().await?;  // 最后统一刷新
     Ok(())
 }
@@ -677,14 +677,14 @@ use std::io::{Read, Write};
 fn unbuffered_copy(src: &str, dst: &str) -> std::io::Result<()> {
     let mut src_file = File::open(src)?;
     let mut dst_file = File::create(dst)?;
-    
+
     let mut buffer = [0u8; 1];  // 每次读1字节
     loop {
         let n = src_file.read(&mut buffer)?;
         if n == 0 { break; }
         dst_file.write_all(&buffer[..n])?;
     }
-    
+
     Ok(())
 }
 
@@ -692,12 +692,12 @@ fn unbuffered_copy(src: &str, dst: &str) -> std::io::Result<()> {
 fn buffered_copy(src: &str, dst: &str) -> std::io::Result<()> {
     let src_file = File::open(src)?;
     let dst_file = File::create(dst)?;
-    
+
     let mut reader = BufReader::new(src_file);
     let mut writer = BufWriter::new(dst_file);
-    
+
     std::io::copy(&mut reader, &mut writer)?;
-    
+
     Ok(())
 }
 ```
@@ -770,38 +770,38 @@ async fn good_insert_users(pool: &PgPool, users: &[User]) -> Result<()> {
     let mut query_builder = sqlx::QueryBuilder::new(
         "INSERT INTO users (name, email) "
     );
-    
+
     query_builder.push_values(users.iter(), |mut b, user| {
         b.push_bind(&user.name)
          .push_bind(&user.email);
     });
-    
+
     query_builder.build()
         .execute(pool)
         .await?;
-    
+
     Ok(())
 }
 
 // ✅ 更好：使用事务批量插入
 async fn better_insert_users(pool: &PgPool, users: &[User]) -> Result<()> {
     let mut tx = pool.begin().await?;
-    
+
     for chunk in users.chunks(1000) {  // 每1000条一批
         let mut query_builder = sqlx::QueryBuilder::new(
             "INSERT INTO users (name, email) "
         );
-        
+
         query_builder.push_values(chunk.iter(), |mut b, user| {
             b.push_bind(&user.name)
              .push_bind(&user.email);
         });
-        
+
         query_builder.build()
             .execute(&mut *tx)
             .await?;
     }
-    
+
     tx.commit().await?;
     Ok(())
 }
@@ -858,7 +858,7 @@ async fn bad_get_users_with_posts(pool: &PgPool) -> Result<Vec<UserWithPosts>> {
     let users = sqlx::query_as::<_, User>("SELECT * FROM users")
         .fetch_all(pool)
         .await?;
-    
+
     let mut result = Vec::new();
     for user in users {
         // 每个用户都查询一次数据库！
@@ -868,10 +868,10 @@ async fn bad_get_users_with_posts(pool: &PgPool) -> Result<Vec<UserWithPosts>> {
         .bind(user.id)
         .fetch_all(pool)
         .await?;
-        
+
         result.push(UserWithPosts { user, posts });
     }
-    
+
     Ok(result)
 }
 
@@ -879,7 +879,7 @@ async fn bad_get_users_with_posts(pool: &PgPool) -> Result<Vec<UserWithPosts>> {
 async fn good_get_users_with_posts(pool: &PgPool) -> Result<Vec<UserWithPosts>> {
     let rows = sqlx::query!(
         r#"
-        SELECT 
+        SELECT
             u.id as user_id, u.name, u.email,
             p.id as post_id, p.title, p.content
         FROM users u
@@ -889,11 +889,11 @@ async fn good_get_users_with_posts(pool: &PgPool) -> Result<Vec<UserWithPosts>> 
     )
     .fetch_all(pool)
     .await?;
-    
+
     // 在内存中组装数据
     let mut result = Vec::new();
     let mut current_user: Option<UserWithPosts> = None;
-    
+
     for row in rows {
         match &mut current_user {
             Some(user) if user.user.id == row.user_id => {
@@ -911,7 +911,7 @@ async fn good_get_users_with_posts(pool: &PgPool) -> Result<Vec<UserWithPosts>> 
                 if let Some(user) = current_user.take() {
                     result.push(user);
                 }
-                
+
                 current_user = Some(UserWithPosts {
                     user: User {
                         id: row.user_id,
@@ -931,11 +931,11 @@ async fn good_get_users_with_posts(pool: &PgPool) -> Result<Vec<UserWithPosts>> 
             }
         }
     }
-    
+
     if let Some(user) = current_user {
         result.push(user);
     }
-    
+
     Ok(result)
 }
 ```
@@ -986,35 +986,35 @@ impl MultiLevelCache {
                 return Ok(Some(value.clone()));
             }
         }
-        
+
         // 2. 尝试 Redis
         let redis_value: Option<String> = self.redis.get(key).await?;
         if let Some(value) = redis_value {
             println!("Cache hit: Redis");
-            
+
             // 写入内存缓存
             let mut cache = self.memory_cache.write().await;
             cache.put(key.to_string(), value.clone());
-            
+
             return Ok(Some(value));
         }
-        
+
         // 3. 从数据库加载
         let db_value = self.load_from_db(key).await?;
         if let Some(value) = &db_value {
             println!("Cache miss: Loading from DB");
-            
+
             // 写入 Redis
             self.redis.set_ex(key, value, 3600).await?;  // 1小时过期
-            
+
             // 写入内存缓存
             let mut cache = self.memory_cache.write().await;
             cache.put(key.to_string(), value.clone());
         }
-        
+
         Ok(db_value)
     }
-    
+
     async fn load_from_db(&self, key: &str) -> Result<Option<String>> {
         // 从数据库加载数据
         let row = sqlx::query_scalar::<_, String>(
@@ -1023,7 +1023,7 @@ impl MultiLevelCache {
         .bind(key)
         .fetch_optional(&self.db_pool)
         .await?;
-        
+
         Ok(row)
     }
 }
@@ -1051,23 +1051,23 @@ pub struct CacheWarmer {
 impl CacheWarmer {
     pub async fn warm_up(&self) -> Result<()> {
         println!("Starting cache warm-up...");
-        
+
         // 1. 预加载热点数据
         let hot_keys = self.get_hot_keys().await?;
         for key in hot_keys {
             self.cache.get(&key).await?;
         }
-        
+
         // 2. 预计算复杂查询
         self.precompute_aggregations().await?;
-        
+
         // 3. 预加载配置
         self.load_configurations().await?;
-        
+
         println!("Cache warm-up completed");
         Ok(())
     }
-    
+
     async fn get_hot_keys(&self) -> Result<Vec<String>> {
         // 从统计数据获取热点 keys
         Ok(vec![
@@ -1076,7 +1076,7 @@ impl CacheWarmer {
             "config:global".to_string(),
         ])
     }
-    
+
     async fn precompute_aggregations(&self) -> Result<()> {
         // 预计算聚合数据
         let stats = compute_daily_stats().await?;
@@ -1109,19 +1109,19 @@ impl MultiLevelCache {
     pub async fn set_with_ttl(&self, key: &str, value: &str, ttl: Duration) -> Result<()> {
         // Redis TTL
         self.redis.set_ex(key, value, ttl.as_secs() as usize).await?;
-        
+
         // 内存缓存（手动管理过期）
         let mut cache = self.memory_cache.write().await;
         cache.put(key.to_string(), value.to_string());
-        
+
         Ok(())
     }
-    
+
     // 延迟双删策略（解决缓存一致性）
     pub async fn delayed_double_delete(&self, key: &str) -> Result<()> {
         // 第一次删除
         self.delete(key).await?;
-        
+
         // 延迟后再次删除
         let key = key.to_string();
         let cache = self.clone();
@@ -1129,17 +1129,17 @@ impl MultiLevelCache {
             tokio::time::sleep(Duration::from_millis(500)).await;
             cache.delete(&key).await.ok();
         });
-        
+
         Ok(())
     }
-    
+
     async fn delete(&self, key: &str) -> Result<()> {
         // 删除内存缓存
         self.memory_cache.write().await.pop(key);
-        
+
         // 删除 Redis
         self.redis.del(key).await?;
-        
+
         Ok(())
     }
 }
@@ -1179,7 +1179,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("fib recursive 20", |b| {
         b.iter(|| fibonacci_recursive(black_box(20)))
     });
-    
+
     c.bench_function("fib iterative 20", |b| {
         b.iter(|| fibonacci_iterative(black_box(20)))
     });
@@ -1226,10 +1226,10 @@ use pprof::ProfilerGuard;
 
 fn main() {
     let guard = ProfilerGuard::new(100).unwrap();
-    
+
     // 需要分析的代码
     heavy_computation();
-    
+
     // 生成报告
     if let Ok(report) = guard.report().build() {
         let file = std::fs::File::create("flamegraph.svg").unwrap();
@@ -1283,23 +1283,23 @@ pub struct AppState {
 pub async fn create_optimized_server() -> Router {
     // 1. 创建优化的数据库连接池
     let pool = create_optimized_pool("postgresql://localhost/db").await.unwrap();
-    
+
     // 2. 创建多级缓存
     let cache = Arc::new(MultiLevelCache::new(pool.clone()).await.unwrap());
-    
+
     // 3. 创建内存池
     let memory_pool = Arc::new(MemoryPool::new(64 * 1024, 100));
-    
+
     // 4. 预热缓存
     let warmer = CacheWarmer { cache: cache.clone() };
     warmer.warm_up().await.unwrap();
-    
+
     let state = AppState {
         cache,
         pool,
         memory_pool,
     };
-    
+
     Router::new()
         .route("/users/:id", get(get_user_handler))
         .route("/users", get(list_users_handler))
@@ -1312,20 +1312,20 @@ async fn get_user_handler(
 ) -> Result<Json<User>> {
     // 使用多级缓存
     let cache_key = format!("user:{}", id);
-    
+
     if let Some(cached) = state.cache.get(&cache_key).await? {
         return Ok(Json(serde_json::from_str(&cached)?));
     }
-    
+
     // 从数据库加载
     let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
         .bind(id)
         .fetch_one(&state.pool)
         .await?;
-    
+
     // 写入缓存
     state.cache.set(&cache_key, &serde_json::to_string(&user)?).await?;
-    
+
     Ok(Json(user))
 }
 ```
@@ -1370,6 +1370,6 @@ async fn get_user_handler(
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日

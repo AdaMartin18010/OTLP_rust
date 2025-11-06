@@ -1,8 +1,8 @@
 ﻿# C11 Libraries - Rust生态系统库更新指南 2025年10月
 
-**版本**: 1.0  
-**发布日期**: 2025年10月28日  
-**Rust版本**: 1.90.0  
+**版本**: 1.0
+**发布日期**: 2025年10月28日
+**Rust版本**: 1.90.0
 **状态**: ✅ 生产就绪
 
 ---
@@ -28,6 +28,7 @@
 ### 1.1 2025年10月生态系统亮点
 
 **关键更新**:
+
 - 🚀 Rust 1.90稳定版发布（2025年9月18日）
 - 🚀 LLD链接器默认启用，编译速度提升30-50%
 - 🚀 OpenTelemetry 0.31.0生产就绪
@@ -35,6 +36,7 @@
 - 🚀 Axum 0.8.7类型系统增强
 
 **生态趋势**:
+
 - 异步生态全面成熟
 - 类型安全持续增强
 - 性能优化持续推进
@@ -75,12 +77,14 @@ tokio-stream = "0.1.17"
 ```
 
 **关键更新**:
+
 - ✅ 改进的任务调度器
 - ✅ 降低内存占用
 - ✅ 更好的CPU利用率
 - ✅ 增强的追踪支持
 
 **使用示例**:
+
 ```rust
 use tokio::runtime::Builder;
 
@@ -94,7 +98,7 @@ async fn main() {
         .enable_all()
         .build()
         .unwrap();
-    
+
     runtime.spawn(async {
         // 异步任务
     });
@@ -102,6 +106,7 @@ async fn main() {
 ```
 
 **性能提升**:
+
 ```
 Tokio 1.48 vs 1.40:
 - 任务调度延迟: -15%
@@ -120,6 +125,7 @@ async-stream = "0.3.7"
 ```
 
 **新特性**:
+
 ```rust
 use futures::stream::{StreamExt, TryStreamExt};
 
@@ -129,7 +135,7 @@ async fn process_stream() {
         .map(|x| x * 2)
         .filter(|x| x % 3 == 0)
         .take(10);
-    
+
     stream.for_each(|x| async move {
         println!("{}", x);
     }).await;
@@ -153,6 +159,7 @@ tower-http = { version = "0.6.7", features = ["cors", "trace", "timeout"] }
 ```
 
 **核心特性**:
+
 ```rust
 use axum::{
     Router,
@@ -170,7 +177,7 @@ struct AppState {
 
 async fn create_app(db: sqlx::PgPool) -> Router {
     let state = Arc::new(AppState { db });
-    
+
     Router::new()
         .route("/api/users", get(list_users).post(create_user))
         .route("/api/users/:id", get(get_user).delete(delete_user))
@@ -186,7 +193,7 @@ async fn list_users(
     let users = sqlx::query_as::<_, User>("SELECT * FROM users")
         .fetch_all(&state.db)
         .await?;
-    
+
     Ok(Json(users))
 }
 
@@ -201,12 +208,13 @@ async fn create_user(
     .bind(&payload.email)
     .fetch_one(&state.db)
     .await?;
-    
+
     Ok(Json(user))
 }
 ```
 
 **中间件系统**:
+
 ```rust
 use axum::middleware::Next;
 use axum::http::Request;
@@ -218,7 +226,7 @@ async fn auth_middleware<B>(
     let auth_header = req.headers()
         .get("Authorization")
         .and_then(|h| h.to_str().ok());
-    
+
     match auth_header {
         Some(token) if validate_token(token) => {
             Ok(next.run(req).await)
@@ -238,6 +246,7 @@ actix = "0.13.6"
 ```
 
 **使用示例**:
+
 ```rust
 use actix_web::{web, App, HttpServer, HttpResponse};
 
@@ -272,6 +281,7 @@ glommio = "0.8.0"
 ```
 
 **使用示例**:
+
 ```rust
 use glommio::{LocalExecutorBuilder, Latency};
 use std::time::Duration;
@@ -290,11 +300,13 @@ fn main() {
 ```
 
 **适用场景**:
+
 - 高频交易系统
 - 实时数据处理
 - 低延迟要求的服务
 
 **性能对比**:
+
 ```
 Glommio vs Tokio (单线程场景):
 - 延迟P50: -40%
@@ -319,7 +331,7 @@ async fn main() {
     let file = File::open("data.txt").await.unwrap();
     let buf = vec![0; 4096];
     let (res, buf) = file.read_at(buf, 0).await;
-    
+
     let n = res.unwrap();
     println!("Read {} bytes", n);
 }
@@ -347,6 +359,7 @@ sqlx = { version = "0.8.7", features = [
 ```
 
 **编译期SQL验证**:
+
 ```rust
 use sqlx::{PgPool, FromRow};
 
@@ -366,7 +379,7 @@ async fn get_user(pool: &PgPool, id: i64) -> Result<User, sqlx::Error> {
     )
     .fetch_one(pool)
     .await?;
-    
+
     Ok(user)
 }
 
@@ -378,21 +391,21 @@ async fn transfer_funds(
     amount: i64,
 ) -> Result<(), sqlx::Error> {
     let mut tx = pool.begin().await?;
-    
+
     sqlx::query!(
         "UPDATE accounts SET balance = balance - $1 WHERE id = $2",
         amount, from_id
     )
     .execute(&mut *tx)
     .await?;
-    
+
     sqlx::query!(
         "UPDATE accounts SET balance = balance + $1 WHERE id = $2",
         amount, to_id
     )
     .execute(&mut *tx)
     .await?;
-    
+
     tx.commit().await?;
     Ok(())
 }
@@ -436,7 +449,7 @@ async fn find_user_with_posts(db: &DatabaseConnection, id: i64) -> Result<Option
         .find_also_related(super::post::Entity)
         .one(db)
         .await?;
-    
+
     Ok(user.map(|(user, _posts)| user))
 }
 ```
@@ -455,23 +468,23 @@ use redis::AsyncCommands;
 async fn redis_example() -> redis::RedisResult<()> {
     let client = redis::Client::open("redis://127.0.0.1/")?;
     let mut conn: MultiplexedConnection = client.get_multiplexed_tokio_connection().await?;
-    
+
     // 字符串操作
     conn.set("key", "value").await?;
     let value: String = conn.get("key").await?;
-    
+
     // 哈希操作
     conn.hset("user:1", "name", "Alice").await?;
     conn.hset("user:1", "email", "alice@example.com").await?;
     let name: String = conn.hget("user:1", "name").await?;
-    
+
     // Pipeline
     let (v1, v2): (String, String) = redis::pipe()
         .get("key1")
         .get("key2")
         .query_async(&mut conn)
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -493,6 +506,7 @@ bincode = "2.0.1"
 ```
 
 **高级特性**:
+
 ```rust
 use serde::{Serialize, Deserialize};
 
@@ -518,14 +532,14 @@ struct Config {
 mod duration_as_millis {
     use serde::{Deserialize, Deserializer, Serializer};
     use std::time::Duration;
-    
+
     pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_u64(duration.as_millis() as u64)
     }
-    
+
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
     where
         D: Deserializer<'de>,
@@ -550,6 +564,7 @@ prost = "0.14.1"
 ```
 
 **服务定义**:
+
 ```protobuf
 // proto/user.proto
 syntax = "proto3";
@@ -572,6 +587,7 @@ message User {
 ```
 
 **服务实现**:
+
 ```rust
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -586,7 +602,7 @@ impl user_service_server::UserService for UserServiceImpl {
         request: Request<GetUserRequest>,
     ) -> Result<Response<User>, Status> {
         let user_id = request.into_inner().id;
-        
+
         let user = sqlx::query_as!(
             User,
             "SELECT id, name, email FROM users WHERE id = $1",
@@ -595,23 +611,23 @@ impl user_service_server::UserService for UserServiceImpl {
         .fetch_one(&self.db)
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
-        
+
         Ok(Response::new(user))
     }
-    
+
     type ListUsersStream = ReceiverStream<Result<User, Status>>;
-    
+
     async fn list_users(
         &self,
         _request: Request<ListUsersRequest>,
     ) -> Result<Response<Self::ListUsersStream>, Status> {
         let (tx, rx) = mpsc::channel(100);
         let db = self.db.clone();
-        
+
         tokio::spawn(async move {
             let mut stream = sqlx::query_as::<_, User>("SELECT * FROM users")
                 .fetch(&db);
-            
+
             while let Some(result) = stream.next().await {
                 match result {
                     Ok(user) => {
@@ -626,7 +642,7 @@ impl user_service_server::UserService for UserServiceImpl {
                 }
             }
         });
-        
+
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 }
@@ -660,12 +676,12 @@ async fn create_user_api() -> Result<User, reqwest::Error> {
     let client = Client::builder()
         .timeout(Duration::from_secs(30))
         .build()?;
-    
+
     let payload = CreateUserRequest {
         name: "Alice".to_string(),
         email: "alice@example.com".to_string(),
     };
-    
+
     let user = client
         .post("https://api.example.com/users")
         .json(&payload)
@@ -673,7 +689,7 @@ async fn create_user_api() -> Result<User, reqwest::Error> {
         .await?
         .json::<User>()
         .await?;
-    
+
     Ok(user)
 }
 ```
@@ -699,23 +715,23 @@ use candle_nn::{Linear, Module};
 
 async fn ml_inference() -> candle_core::Result<()> {
     let device = Device::cuda_if_available(0)?;
-    
+
     // 创建张量
     let input = Tensor::randn(0f32, 1.0, (1, 784), &device)?;
-    
+
     // 构建模型
     let mut varmap = candle_nn::VarMap::new();
     let vs = varmap.pp("model");
-    
+
     let fc1 = Linear::new(vs.pp("fc1"), 784, 256)?;
     let fc2 = Linear::new(vs.pp("fc2"), 256, 10)?;
-    
+
     // 前向传播
     let hidden = fc1.forward(&input)?.relu()?;
     let output = fc2.forward(&hidden)?;
-    
+
     println!("Output shape: {:?}", output.shape());
-    
+
     Ok(())
 }
 ```
@@ -736,15 +752,15 @@ use linfa_linear::LinearRegression;
 fn train_linear_model() {
     let x = array![[1.0], [2.0], [3.0], [4.0], [5.0]];
     let y = array![2.0, 4.0, 6.0, 8.0, 10.0];
-    
+
     let dataset = Dataset::new(x, y);
-    
+
     let model = LinearRegression::new();
     let trained = model.fit(&dataset).unwrap();
-    
+
     let test_x = array![[6.0]];
     let prediction = trained.predict(&test_x);
-    
+
     println!("Prediction: {:?}", prediction);
 }
 ```
@@ -765,6 +781,7 @@ serde = { version = "1.0", features = ["derive"] }
 ```
 
 **特性**:
+
 - ✅ iOS/Android支持
 - ✅ 应用体积<5MB
 - ✅ 原生性能
@@ -801,7 +818,7 @@ use dioxus::prelude::*;
 
 fn App(cx: Scope) -> Element {
     let count = use_state(cx, || 0);
-    
+
     cx.render(rsx! {
         div {
             h1 { "Counter: {count}" }
@@ -839,7 +856,7 @@ use leptos::*;
 #[component]
 fn App(cx: Scope) -> impl IntoView {
     let (count, set_count) = create_signal(cx, 0);
-    
+
     view! { cx,
         <div>
             <h1>"Counter: " {count}</h1>
@@ -884,9 +901,9 @@ fn init_tracing() {
 #[instrument(skip(data))]
 async fn process_request(id: u64, data: Vec<u8>) -> Result<(), Error> {
     info!(id = id, size = data.len(), "Processing request");
-    
+
     // 处理逻辑
-    
+
     Ok(())
 }
 ```
@@ -908,13 +925,13 @@ use thiserror::Error;
 pub enum AppError {
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
-    
+
     #[error("Redis error: {0}")]
     Redis(#[from] redis::RedisError),
-    
+
     #[error("User not found: {id}")]
     UserNotFound { id: i64 },
-    
+
     #[error("Invalid input: {0}")]
     InvalidInput(String),
 }
@@ -926,10 +943,10 @@ async fn load_config(path: &str) -> Result<Config> {
     let content = tokio::fs::read_to_string(path)
         .await
         .context("Failed to read config file")?;
-    
+
     let config: Config = serde_yaml::from_str(&content)
         .context("Failed to parse config")?;
-    
+
     Ok(config)
 }
 ```
@@ -945,6 +962,7 @@ parking_lot = "0.12.5"
 ```
 
 **DashMap - 并发哈希映射**:
+
 ```rust
 use dashmap::DashMap;
 use std::sync::Arc;
@@ -960,11 +978,11 @@ impl Cache {
             data: Arc::new(DashMap::new()),
         }
     }
-    
+
     fn get(&self, key: &str) -> Option<Vec<u8>> {
         self.data.get(key).map(|v| v.clone())
     }
-    
+
     fn insert(&self, key: String, value: Vec<u8>) {
         self.data.insert(key, value);
     }
@@ -972,6 +990,7 @@ impl Cache {
 ```
 
 **Rayon - 数据并行**:
+
 ```rust
 use rayon::prelude::*;
 
@@ -1049,23 +1068,23 @@ cargo outdated
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // 单元测试
     #[test]
     fn test_function() {
         assert_eq!(2 + 2, 4);
     }
-    
+
     // 异步测试
     #[tokio::test]
     async fn test_async_function() {
         let result = async_operation().await;
         assert!(result.is_ok());
     }
-    
+
     // 属性测试
     use proptest::prelude::*;
-    
+
     proptest! {
         #[test]
         fn test_property(x in 0..1000i32) {
@@ -1174,8 +1193,7 @@ OS: Ubuntu 24.04 LTS
 
 ---
 
-**文档版本**: 1.0  
-**作者**: C11 Libraries Team  
-**最后更新**: 2025年10月28日  
-**联系**: libraries@rust-project.io
-
+**文档版本**: 1.0
+**作者**: C11 Libraries Team
+**最后更新**: 2025年10月28日
+**联系**: <libraries@rust-project.io>

@@ -1,7 +1,7 @@
 ﻿# API参考知识图谱
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -26,43 +26,43 @@ graph TB
         S[Span]
         SC[SpanContext]
     end
-    
+
     subgraph "Exporter API"
         EXP[Exporter]
         BP[BatchProcessor]
         GP[GrpcExporter]
         HP[HttpExporter]
     end
-    
+
     subgraph "Resource API"
         RES[Resource]
         ATTR[Attributes]
         SEM[Semantic Conventions]
     end
-    
+
     subgraph "Reliability API"
         CB[CircuitBreaker]
         RT[RetryPolicy]
         RL[RateLimiter]
     end
-    
+
     TP --> T
     T --> S
     S --> SC
-    
+
     TP --> BP
     BP --> EXP
     EXP --> GP
     EXP --> HP
-    
+
     TP --> RES
     RES --> ATTR
     ATTR --> SEM
-    
+
     T --> CB
     EXP --> RT
     BP --> RL
-    
+
     style TP fill:#bbf,stroke:#333,stroke-width:2px
     style EXP fill:#bfb,stroke:#333,stroke-width:2px
     style RES fill:#fbf,stroke:#333,stroke-width:2px
@@ -101,14 +101,14 @@ sequenceDiagram
     participant Span
     participant Processor
     participant Exporter
-    
+
     App->>Tracer: tracer.start("operation")
     Tracer->>Span: create_span()
     Span-->>App: span
-    
+
     App->>Span: span.set_attribute()
     App->>Span: span.add_event()
-    
+
     App->>Span: span.end()
     Span->>Processor: process_span()
     Processor->>Exporter: export_batch()
@@ -186,7 +186,7 @@ Exporter (6个方法):
 
 ---
 
-**版本**: 2.0  
+**版本**: 2.0
 **创建日期**: 2025-10-28
 
 ---

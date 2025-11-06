@@ -1,7 +1,7 @@
 # 🔗 集成指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 集成指南 - OpenTelemetry生态、服务网格、云原生部署和第三方工具集成。
@@ -89,12 +89,12 @@ processors:
     timeout: 1s
     send_batch_size: 1024
     send_batch_max_size: 2048
-  
+
   memory_limiter:
     limit_mib: 512
     spike_limit_mib: 128
     check_interval: 5s
-  
+
   attributes:
     actions:
       - key: service.name
@@ -109,11 +109,11 @@ exporters:
     endpoint: jaeger:14250
     tls:
       insecure: true
-  
+
   prometheus:
     endpoint: "0.0.0.0:8889"
     namespace: otlp
-  
+
   logging:
     loglevel: info
 
@@ -123,12 +123,12 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, attributes, batch]
       exporters: [jaeger, logging]
-    
+
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, attributes, batch]
       exporters: [prometheus, logging]
-    
+
     logs:
       receivers: [otlp]
       processors: [memory_limiter, attributes, batch]
@@ -199,10 +199,10 @@ pub fn setup_auto_instrumentation() -> Result<(), Box<dyn std::error::Error>> {
 pub async fn process_request(request: &Request) -> Result<Response, Error> {
     let span = tracing::info_span!("process_request");
     let _enter = span.enter();
-    
+
     // 业务逻辑会自动创建子 span
     let result = business_logic(request).await;
-    
+
     result
 }
 ```
@@ -250,13 +250,13 @@ impl InstrumentedDatabase {
     {
         let span = self.tracer.start("database.query");
         let _enter = span.enter();
-        
+
         span.set_attribute("db.statement", query.into());
-        
+
         let result = sqlx::query_as::<_, T>(query)
             .fetch_all(&self.pool)
             .await;
-        
+
         match &result {
             Ok(rows) => {
                 span.set_attribute("db.rows_affected", rows.len() as i64);
@@ -265,7 +265,7 @@ impl InstrumentedDatabase {
                 span.record_error(e);
             }
         }
-        
+
         result
     }
 }
@@ -475,7 +475,7 @@ impl LinkerdIntegration {
                 .unwrap_or(true),
         }
     }
-    
+
     pub async fn setup_linkerd_tracing(&self) -> Result<(), Box<dyn std::error::Error>> {
         if self.service_mesh {
             // 配置 Linkerd 特定的 tracing
@@ -580,12 +580,12 @@ impl ConsulIntegration {
             address: consul_url.to_string(),
             ..Default::default()
         };
-        
+
         let client = Client::new(config)?;
-        
+
         Ok(Self { client })
     }
-    
+
     pub async fn register_service(&self, service_name: &str, port: u16) -> Result<(), Box<dyn std::error::Error>> {
         let service = consul::catalog::CatalogRegistration {
             node: "otlp-client".to_string(),
@@ -599,7 +599,7 @@ impl ConsulIntegration {
             }),
             ..Default::default()
         };
-        
+
         self.client.agent().service_register(&service).await?;
         Ok(())
     }
@@ -849,7 +849,7 @@ impl OtlpClientController {
     pub fn new(client: Client) -> Self {
         Self { client }
     }
-    
+
     pub async fn reconcile(
         &self,
         otlp_client: OtlpClient,
@@ -857,13 +857,13 @@ impl OtlpClientController {
     ) -> Result<Action, kube::Error> {
         // 实现协调逻辑
         let api: Api<OtlpClient> = Api::namespaced(self.client.clone(), &otlp_client.namespace().unwrap());
-        
+
         // 创建或更新 Deployment
         self.create_or_update_deployment(&otlp_client).await?;
-        
+
         // 更新状态
         self.update_status(&api, &otlp_client).await?;
-        
+
         Ok(Action::requeue(Duration::from_secs(300)))
     }
 }
@@ -930,16 +930,16 @@ impl DatadogIntegration {
         let tracer = Tracer::new(service_name)?;
         Ok(Self { tracer })
     }
-    
+
     pub async fn trace_operation<F, T>(&self, operation: &str, f: F) -> Result<T, OtlpError>
     where
         F: Future<Output = Result<T, OtlpError>>,
     {
         let span = self.tracer.start_span(operation);
         let _enter = span.enter();
-        
+
         let result = f.await;
-        
+
         match &result {
             Ok(_) => span.set_tag("status", "success"),
             Err(e) => {
@@ -947,7 +947,7 @@ impl DatadogIntegration {
                 span.set_tag("error.message", e.to_string());
             }
         }
-        
+
         result
     }
 }
@@ -970,21 +970,21 @@ impl ElkIntegration {
     pub async fn new(elasticsearch_url: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let transport = Transport::single_node(elasticsearch_url)?;
         let client = Elasticsearch::new(transport);
-        
+
         Ok(Self { client })
     }
-    
+
     pub async fn index_log(&self, log_data: &Value) -> Result<(), Box<dyn std::error::Error>> {
         let response = self.client
             .index(elasticsearch::IndexParts::Index("otlp-logs"))
             .body(log_data)
             .send()
             .await?;
-        
+
         if !response.status_code().is_success() {
             return Err("Failed to index log".into());
         }
-        
+
         Ok(())
     }
 }
@@ -1034,15 +1034,15 @@ impl NewRelicIntegration {
     pub async fn new(license_key: &str, app_name: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let config = Config::new(license_key, app_name);
         let app = App::new(config).await?;
-        
+
         Ok(Self { app })
     }
-    
+
     pub async fn record_metric(&self, name: &str, value: f64) -> Result<(), Box<dyn std::error::Error>> {
         self.app.record_custom_metric(name, value).await?;
         Ok(())
     }
-    
+
     pub async fn start_transaction(&self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
         self.app.start_web_transaction(name).await?;
         Ok(())
@@ -1065,7 +1065,7 @@ impl AppDynamicsIntegration {
         let app = AppDynamics::new(controller_url, account, username, password)?;
         Ok(Self { app })
     }
-    
+
     pub async fn start_business_transaction(&self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
         self.app.start_business_transaction(name).await?;
         Ok(())
@@ -1081,20 +1081,20 @@ impl AppDynamicsIntegration {
 // Jenkinsfile
 pipeline {
     agent any
-    
+
     environment {
         RUST_VERSION = '1.90.0'
         DOCKER_REGISTRY = 'registry.example.com'
         IMAGE_NAME = 'otlp-client'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        
+
         stage('Test') {
             steps {
                 sh 'cargo test --all-features'
@@ -1102,13 +1102,13 @@ pipeline {
                 sh 'cargo fmt -- --check'
             }
         }
-        
+
         stage('Build') {
             steps {
                 sh 'cargo build --release'
             }
         }
-        
+
         stage('Docker Build') {
             steps {
                 script {
@@ -1118,7 +1118,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Deploy') {
             when {
                 branch 'main'
@@ -1129,7 +1129,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             cleanWs()
@@ -1221,7 +1221,7 @@ impl SpanExporter for CustomExporter {
     async fn export(&mut self, batch: Vec<SpanData>) -> opentelemetry::trace::ExportResult {
         let json_data = serde_json::to_string(&batch)
             .map_err(|_| opentelemetry::trace::TraceError::Other("Serialization failed".into()))?;
-        
+
         let response = self.client
             .post(&self.endpoint)
             .header("Content-Type", "application/json")
@@ -1229,14 +1229,14 @@ impl SpanExporter for CustomExporter {
             .send()
             .await
             .map_err(|e| opentelemetry::trace::TraceError::Other(e.into()))?;
-        
+
         if response.status().is_success() {
             Ok(())
         } else {
             Err(opentelemetry::trace::TraceError::Other("Export failed".into()))
         }
     }
-    
+
     fn shutdown(&mut self) {
         // 清理资源
     }
@@ -1272,17 +1272,17 @@ impl SpanProcessor for CustomProcessor {
     async fn on_start(&mut self, span: &mut opentelemetry::trace::Span) {
         self.next.on_start(span).await;
     }
-    
+
     async fn on_end(&mut self, span: SpanData) {
         if (self.filter)(&span) {
             self.next.on_end(span).await;
         }
     }
-    
+
     async fn force_flush(&mut self) -> opentelemetry::trace::ExportResult {
         self.next.force_flush().await
     }
-    
+
     async fn shutdown(&mut self) -> opentelemetry::trace::ExportResult {
         self.next.shutdown().await
     }
@@ -1298,27 +1298,27 @@ impl SpanProcessor for CustomProcessor {
 mod integration_tests {
     use super::*;
     use tokio_test;
-    
+
     #[tokio::test]
     async fn test_full_integration() {
         // 启动测试环境
         let test_env = TestEnvironment::new().await;
-        
+
         // 创建客户端
         let client = OtlpClient::new(test_env.config()).await.unwrap();
-        
+
         // 发送测试数据
         let trace_data = TelemetryData::trace("integration-test");
         let result = client.send_trace_data(trace_data).await;
-        
+
         assert!(result.is_ok());
-        
+
         // 验证数据到达收集器
         assert!(test_env.collector().received_data().await);
-        
+
         // 验证数据到达后端
         assert!(test_env.jaeger().has_trace("integration-test").await);
-        
+
         // 清理
         test_env.cleanup().await;
     }
@@ -1332,7 +1332,7 @@ mod integration_tests {
 mod performance_tests {
     use super::*;
     use criterion::{black_box, criterion_group, criterion_main, Criterion};
-    
+
     fn bench_integration_throughput(c: &mut Criterion) {
         c.bench_function("integration_throughput", |b| {
             b.to_async(tokio::runtime::Runtime::new().unwrap())
@@ -1343,7 +1343,7 @@ mod performance_tests {
                 });
         });
     }
-    
+
     criterion_group!(benches, bench_integration_throughput);
     criterion_main!(benches);
 }
@@ -1359,6 +1359,6 @@ mod performance_tests {
 
 ---
 
-**集成指南版本**: 1.0.0  
-**最后更新**: 2025年1月  
+**集成指南版本**: 1.0.0
+**最后更新**: 2025年1月
 **维护者**: OTLP Rust 集成团队

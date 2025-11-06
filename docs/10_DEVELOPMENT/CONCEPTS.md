@@ -1,7 +1,7 @@
 ﻿# 开发核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -24,6 +24,7 @@
 **形式化定义**: Testing Strategy TS = (unit, integration, e2e, performance)
 
 **测试金字塔**:
+
 ```
     /\
    /E2E\      少量 (10%)
@@ -70,7 +71,7 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // 测试单个函数
     #[test]
     fn test_parse_span_id() {
@@ -79,7 +80,7 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap().to_string(), id);
     }
-    
+
     // 测试边界条件
     #[test]
     fn test_parse_span_id_invalid_length() {
@@ -87,7 +88,7 @@ mod tests {
         let result = parse_span_id(id);
         assert!(result.is_err());
     }
-    
+
     // 测试错误情况
     #[test]
     fn test_parse_span_id_invalid_char() {
@@ -95,7 +96,7 @@ mod tests {
         let result = parse_span_id(id);
         assert!(result.is_err());
     }
-    
+
     // 参数化测试
     #[rstest]
     #[case("0123456789abcdef", true)]
@@ -110,7 +111,7 @@ mod tests {
 #[cfg(test)]
 mod integration_tests {
     use super::*;
-    
+
     // 测试多个组件交互
     #[tokio::test]
     async fn test_span_export_pipeline() {
@@ -118,20 +119,20 @@ mod integration_tests {
         let exporter = InMemoryExporter::new();
         let processor = BatchSpanProcessor::new(exporter.clone());
         let tracer = Tracer::new(processor);
-        
+
         // 执行
         let span = tracer.span_builder("test").start(&tracer);
         span.end();
-        
+
         // 等待导出
         tokio::time::sleep(Duration::from_millis(100)).await;
-        
+
         // 验证
         let exported = exporter.get_exported_spans();
         assert_eq!(exported.len(), 1);
         assert_eq!(exported[0].name, "test");
     }
-    
+
     // 测试错误恢复
     #[tokio::test]
     async fn test_exporter_retry_on_failure() {
@@ -139,10 +140,10 @@ mod integration_tests {
         let processor = BatchSpanProcessor::builder()
             .with_max_retries(5)
             .build(failing_exporter.clone());
-        
+
         // 发送span
         processor.on_end(create_test_span());
-        
+
         // 验证重试成功
         tokio::time::sleep(Duration::from_secs(1)).await;
         assert_eq!(failing_exporter.attempts(), 4); // 1次+3次重试
@@ -156,10 +157,10 @@ mod integration_tests {
 async fn test_end_to_end_tracing() {
     // 启动真实collector
     let collector = start_test_collector().await;
-    
+
     // 配置应用使用collector
     init_tracer(&collector.endpoint()).unwrap();
-    
+
     // 模拟真实请求
     let client = reqwest::Client::new();
     let response = client
@@ -167,27 +168,27 @@ async fn test_end_to_end_tracing() {
         .send()
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), 200);
-    
+
     // 等待数据传输
     tokio::time::sleep(Duration::from_secs(2)).await;
-    
+
     // 验证collector收到完整trace
     let traces = collector.get_traces().await;
     assert_eq!(traces.len(), 1);
-    
+
     let trace = &traces[0];
     assert!(trace.spans.len() >= 3); // HTTP + DB + Redis
-    
+
     // 验证span关系
     let root_span = trace.find_root();
     assert_eq!(root_span.name, "GET /api/users/:id");
-    
+
     let child_spans = trace.find_children(root_span.id);
     assert!(child_spans.iter().any(|s| s.name.starts_with("SELECT")));
     assert!(child_spans.iter().any(|s| s.name.starts_with("Redis")));
-    
+
     // 清理
     collector.shutdown().await;
 }
@@ -196,7 +197,7 @@ async fn test_end_to_end_tracing() {
 #[bench]
 fn bench_span_creation(b: &mut Bencher) {
     let tracer = create_test_tracer();
-    
+
     b.iter(|| {
         let span = tracer.span_builder("bench").start(&tracer);
         black_box(span);
@@ -207,7 +208,7 @@ fn bench_span_creation(b: &mut Bencher) {
 fn criterion_span_pipeline(c: &mut Criterion) {
     let exporter = NoopExporter;
     let processor = BatchSpanProcessor::new(exporter);
-    
+
     c.bench_function("span_export_1000", |b| {
         b.iter(|| {
             for _ in 0..1000 {
@@ -244,6 +245,7 @@ E2E测试:       <5min
 **形式化定义**: Performance Tuning PT = (measure, analyze, optimize, verify)
 
 **调优流程**:
+
 ```
 基准测试 → 性能分析 → 识别瓶颈 → 优化 → 验证 → 重复
 ```
@@ -288,10 +290,10 @@ use std::time::Instant;
 // 简单计时
 fn measure_operation() {
     let start = Instant::now();
-    
+
     // 操作
     expensive_operation();
-    
+
     let duration = start.elapsed();
     println!("Operation took: {:?}", duration);
 }
@@ -300,10 +302,10 @@ fn measure_operation() {
 #[cfg(test)]
 mod benchmarks {
     use criterion::{black_box, criterion_group, criterion_main, Criterion};
-    
+
     fn bench_span_creation(c: &mut Criterion) {
         let tracer = create_tracer();
-        
+
         c.bench_function("span_creation", |b| {
             b.iter(|| {
                 let span = tracer.span_builder("test")
@@ -313,7 +315,7 @@ mod benchmarks {
             });
         });
     }
-    
+
     criterion_group!(benches, bench_span_creation);
     criterion_main!(benches);
 }
@@ -336,7 +338,7 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 
 fn main() {
     let _profiler = dhat::Profiler::new_heap();
-    
+
     // 运行程序
     run_application();
 }
@@ -352,7 +354,7 @@ async fn process_spans_slow(spans: Vec<Span>) {
 // 优化后：批量处理
 async fn process_spans_fast(spans: Vec<Span>) {
     const BATCH_SIZE: usize = 100;
-    
+
     for batch in spans.chunks(BATCH_SIZE) {
         export_batch(batch).await;  // 一次请求多个span
     }
@@ -377,7 +379,7 @@ impl SpanPool {
             pool: Pool::new(100, || Span::default()),
         }
     }
-    
+
     pub fn acquire(&self) -> impl Deref<Target = Span> + '_ {
         self.pool.pull()
     }
@@ -447,6 +449,7 @@ fn serialize_new(span: &Span) -> Bytes {
 **形式化定义**: Error Handling EH = (detect, classify, handle, recover)
 
 **错误分类**:
+
 ```
 错误
 ├── 预期错误 (Result<T, E>)
@@ -497,16 +500,16 @@ use thiserror::Error;
 pub enum OtlpError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("Parse error: {0}")]
     Parse(String),
-    
+
     #[error("Configuration error: {0}")]
     Config(String),
-    
+
     #[error("Export failed: {0}")]
     Export(String),
-    
+
     #[error("Timeout after {0:?}")]
     Timeout(Duration),
 }
@@ -517,14 +520,14 @@ pub type Result<T> = std::result::Result<T, OtlpError>;
 async fn export_with_retry(spans: Vec<Span>) -> Result<()> {
     const MAX_RETRIES: usize = 3;
     let mut attempts = 0;
-    
+
     loop {
         match try_export(&spans).await {
             Ok(_) => return Ok(()),
             Err(e) if attempts < MAX_RETRIES => {
                 attempts += 1;
                 warn!("Export failed (attempt {}/{}): {}", attempts, MAX_RETRIES, e);
-                
+
                 // 退避重试
                 let backoff = Duration::from_millis(100 * 2_u64.pow(attempts as u32));
                 tokio::time::sleep(backoff).await;
@@ -544,14 +547,14 @@ async fn load_and_process(file_path: &str) -> Result<()> {
     let content = tokio::fs::read_to_string(file_path)
         .await
         .context(format!("Failed to read file: {}", file_path))?;
-    
+
     let config: Config = serde_json::from_str(&content)
         .context("Failed to parse configuration")?;
-    
+
     process_config(config)
         .await
         .context("Failed to process configuration")?;
-    
+
     Ok(())
 }
 // 错误信息示例：
@@ -592,7 +595,7 @@ async fn process_request(req: Request) -> Result<Response> {
     let user_id = extract_user_id(&req)?;
     let user = fetch_user(user_id).await?;
     let data = process_user(&user)?;
-    
+
     Ok(Response::new(data))
 }
 
@@ -622,6 +625,7 @@ async fn process_request(req: Request) -> Result<Response> {
 **形式化定义**: Structured Logging SL = (level, message, context, timestamp)
 
 **日志级别**:
+
 ```
 TRACE   详细跟踪信息
 DEBUG   调试信息
@@ -685,16 +689,16 @@ info!(
 async fn process_order(order_id: i64, user_id: i64) -> Result<()> {
     // 自动记录函数入口和出口
     // 自动添加 order_id 和 user_id 到日志上下文
-    
+
     info!("Processing order");
-    
+
     let order = fetch_order(order_id).await?;
     debug!(?order, "Fetched order");  // ?表示Debug格式
-    
+
     validate_order(&order)?;
-    
+
     execute_order(&order).await?;
-    
+
     info!("Order processed successfully");
     Ok(())
 }
@@ -739,7 +743,7 @@ use tracing_opentelemetry::OpenTelemetryLayer;
 
 fn init_with_otlp() {
     let tracer = init_tracer();
-    
+
     tracing_subscriber::registry()
         .with(OpenTelemetryLayer::new(tracer))  // 关联OTLP
         .with(tracing_subscriber::fmt::layer())
@@ -820,8 +824,8 @@ DEBUG级别:
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
 **最后更新**: 2025-10-28
 **维护团队**: OTLP_rust开发团队
 

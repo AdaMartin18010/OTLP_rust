@@ -1,7 +1,7 @@
 ﻿# 实施核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -22,11 +22,13 @@
 #### 定义
 
 **形式化定义**: BatchSpanProcessor B = (buffer, config, exporter)，其中：
+
 - buffer: 缓冲区 ⊆ Span集合
 - config: 配置参数 (max_queue_size, schedule_delay, max_export_batch_size)
 - exporter: 导出器接口
 
 **约束条件**:
+
 ```
 |buffer| ≤ max_queue_size
 export_interval = schedule_delay
@@ -105,7 +107,7 @@ impl CustomBatchProcessor {
         let buffer_clone = Arc::clone(&buffer);
         let exporter_clone = exporter.clone();
         let config_clone = config.clone();
-        
+
         // 启动后台工作线程
         let worker_handle = tokio::spawn(async move {
             Self::worker_loop(
@@ -114,7 +116,7 @@ impl CustomBatchProcessor {
                 config_clone,
             ).await;
         });
-        
+
         Self {
             buffer,
             config,
@@ -122,11 +124,11 @@ impl CustomBatchProcessor {
             worker_handle: Some(worker_handle),
         }
     }
-    
+
     // 添加Span到缓冲区
     pub async fn on_end(&self, span: SpanData) -> Result<()> {
         let mut buffer = self.buffer.lock().await;
-        
+
         // 检查队列是否满
         if buffer.len() >= self.config.max_queue_size {
             // 背压策略：丢弃或阻塞
@@ -135,25 +137,25 @@ impl CustomBatchProcessor {
                 buffer.len()
             );
             return Ok(()); // 丢弃策略
-            
+
             // 或者阻塞策略：
             // while buffer.len() >= self.config.max_queue_size {
             //     tokio::time::sleep(Duration::from_millis(10)).await;
             //     buffer = self.buffer.lock().await;
             // }
         }
-        
+
         buffer.push(span);
-        
+
         // 如果达到批次大小，立即触发导出
         if buffer.len() >= self.config.max_export_batch_size {
             drop(buffer); // 释放锁
             self.flush().await?;
         }
-        
+
         Ok(())
     }
-    
+
     // 后台工作循环
     async fn worker_loop(
         buffer: Arc<Mutex<Vec<SpanData>>>,
@@ -161,21 +163,21 @@ impl CustomBatchProcessor {
         config: BatchConfig,
     ) {
         let mut interval = tokio::time::interval(config.schedule_delay);
-        
+
         loop {
             interval.tick().await;
-            
+
             // 获取待导出的批次
             let batch = {
                 let mut buffer = buffer.lock().await;
                 if buffer.is_empty() {
                     continue;
                 }
-                
+
                 let batch_size = buffer.len().min(config.max_export_batch_size);
                 buffer.drain(0..batch_size).collect::<Vec<_>>()
             };
-            
+
             // 导出批次（带超时）
             let export_future = exporter.export(batch.clone());
             match tokio::time::timeout(
@@ -204,18 +206,18 @@ impl CustomBatchProcessor {
             }
         }
     }
-    
+
     // 强制刷新
     pub async fn flush(&self) -> Result<()> {
         let batch = {
             let mut buffer = self.buffer.lock().await;
             buffer.drain(..).collect::<Vec<_>>()
         };
-        
+
         if !batch.is_empty() {
             self.exporter.export(batch).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -223,20 +225,20 @@ impl CustomBatchProcessor {
 // 使用示例
 pub fn create_tracer_with_batch() -> Tracer {
     let exporter = OtlpExporter::new().unwrap();
-    
+
     let batch_config = BatchConfig {
         max_queue_size: 4096,
         schedule_delay: Duration::from_secs(3),
         max_export_batch_size: 512,
         max_export_timeout: Duration::from_secs(30),
     };
-    
+
     let processor = BatchSpanProcessor::builder(exporter)
         .with_max_queue_size(batch_config.max_queue_size)
         .with_scheduled_delay(batch_config.schedule_delay)
         .with_max_export_batch_size(batch_config.max_export_batch_size)
         .build();
-    
+
     TracerProvider::builder()
         .with_span_processor(processor)
         .build()
@@ -271,10 +273,12 @@ BatchProcessor (异步, batch=512):
 #### 定义
 
 **形式化定义**: SpanExporter E = (export, shutdown)，其中：
+
 - export: Vec<SpanData> → Result<()>
 - shutdown: () → Result<()>
 
 **接口约定**:
+
 ```rust
 #[async_trait]
 pub trait SpanExporter: Send + Sync {
@@ -302,7 +306,7 @@ pub trait SpanExporter: Send + Sync {
 | 属性 | 说明 | 典型值 |
 |------|------|--------|
 | Protocol | 传输协议 | gRPC/HTTP/stdout |
-| Endpoint | 目标地址 | http://collector:4318 |
+| Endpoint | 目标地址 | <http://collector:4318> |
 | Timeout | 导出超时 | 30s |
 | Retry | 重试策略 | 指数退避 |
 | Compression | 压缩算法 | gzip/none |
@@ -334,9 +338,9 @@ impl OtlpGrpcExporter {
             .timeout(Duration::from_secs(30))
             .connect()
             .await?;
-        
+
         let client = tonic::client::Grpc::new(channel);
-        
+
         Ok(Self {
             client,
             endpoint,
@@ -352,21 +356,21 @@ impl SpanExporter for OtlpGrpcExporter {
         let request = ExportTraceServiceRequest {
             resource_spans: Self::convert_to_otlp(batch),
         };
-        
+
         // 发送gRPC请求
         let response = tokio::time::timeout(
             self.timeout,
             self.client.export(tonic::Request::new(request))
         ).await??;
-        
+
         tracing::debug!(
             "Exported spans: {:?}",
             response.into_inner()
         );
-        
+
         Ok(())
     }
-    
+
     async fn shutdown(&mut self) -> Result<()> {
         // 关闭连接
         Ok(())
@@ -386,7 +390,7 @@ impl OtlpHttpExporter {
             .timeout(Duration::from_secs(30))
             .build()
             .unwrap();
-        
+
         Self {
             client,
             endpoint,
@@ -402,9 +406,9 @@ impl SpanExporter for OtlpHttpExporter {
         let request = ExportTraceServiceRequest {
             resource_spans: Self::convert_to_otlp(batch),
         };
-        
+
         let body = serde_json::to_vec(&request)?;
-        
+
         // 发送HTTP POST
         let response = self.client
             .post(&self.endpoint)
@@ -412,14 +416,14 @@ impl SpanExporter for OtlpHttpExporter {
             .body(body)
             .send()
             .await?;
-        
+
         if !response.status().is_success() {
             return Err(Error::HttpError(response.status()));
         }
-        
+
         Ok(())
     }
-    
+
     async fn shutdown(&mut self) -> Result<()> {
         Ok(())
     }
@@ -436,7 +440,7 @@ impl SpanExporter for ConsoleExporter {
         }
         Ok(())
     }
-    
+
     async fn shutdown(&mut self) -> Result<()> {
         println!("Console exporter shutdown");
         Ok(())
@@ -466,10 +470,10 @@ impl SpanExporter for DatabaseExporter {
             .execute(&self.pool)
             .await?;
         }
-        
+
         Ok(())
     }
-    
+
     async fn shutdown(&mut self) -> Result<()> {
         self.pool.close().await;
         Ok(())
@@ -504,6 +508,7 @@ Database      200ms     5K/s      高
 **形式化定义**: Runtime R = (worker_threads, max_blocking_threads, thread_stack_size)
 
 **配置参数**:
+
 ```rust
 tokio::runtime::Builder::new_multi_thread()
     .worker_threads(num_cpus::get())
@@ -550,7 +555,7 @@ use std::sync::Arc;
 // 生产环境运行时配置
 pub fn create_production_runtime() -> Result<Runtime> {
     let num_cpus = num_cpus::get();
-    
+
     Builder::new_multi_thread()
         // 工作线程数 = CPU核心数
         .worker_threads(num_cpus)
@@ -571,7 +576,7 @@ pub fn create_dev_runtime() -> Result<Runtime> {
         .worker_threads(2) // 开发环境少线程
         .max_blocking_threads(10)
         .thread_name_fn(|| {
-            static ATOMIC_ID: std::sync::atomic::AtomicUsize = 
+            static ATOMIC_ID: std::sync::atomic::AtomicUsize =
                 std::sync::atomic::AtomicUsize::new(0);
             let id = ATOMIC_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             format!("otlp-dev-{}", id)
@@ -583,7 +588,7 @@ pub fn create_dev_runtime() -> Result<Runtime> {
 // 高性能运行时配置
 pub fn create_high_performance_runtime() -> Result<Runtime> {
     let num_cpus = num_cpus::get();
-    
+
     Builder::new_multi_thread()
         // 更多工作线程
         .worker_threads(num_cpus * 2)
@@ -599,7 +604,7 @@ pub fn create_high_performance_runtime() -> Result<Runtime> {
 // 使用示例
 pub async fn main() -> Result<()> {
     let runtime = create_production_runtime()?;
-    
+
     runtime.block_on(async {
         // OTLP服务器
         let server = OtlpServer::new();
@@ -633,11 +638,13 @@ Runtime配置性能对比 (10K QPS负载)
 #### 定义
 
 **形式化定义**: Pool P = (capacity, factory, reuse)，其中：
+
 - capacity: 池容量
 - factory: 对象创建函数
 - reuse: 对象重置函数
 
 **优化目标**:
+
 ```
 minimize(allocations + deallocations)
 subject to: memory_usage ≤ max_memory
@@ -697,7 +704,7 @@ impl<T> ObjectPool<T> {
         R: Fn(&mut T) + Send + Sync + 'static,
     {
         let pool = Arc::new(Mutex::new(Vec::with_capacity(capacity)));
-        
+
         Self {
             pool,
             factory: Arc::new(factory),
@@ -705,16 +712,16 @@ impl<T> ObjectPool<T> {
             capacity,
         }
     }
-    
+
     // 从池获取对象
     pub fn acquire(&self) -> PooledObject<T> {
         let obj = {
             let mut pool = self.pool.lock();
             pool.pop()
         };
-        
+
         let obj = obj.unwrap_or_else(|| (self.factory)());
-        
+
         PooledObject {
             obj: Some(obj),
             pool: Arc::clone(&self.pool),
@@ -722,7 +729,7 @@ impl<T> ObjectPool<T> {
             capacity: self.capacity,
         }
     }
-    
+
     // 池统计
     pub fn stats(&self) -> PoolStats {
         let pool = self.pool.lock();
@@ -746,7 +753,7 @@ impl<T> Drop for PooledObject<T> {
         if let Some(mut obj) = self.obj.take() {
             // 重置对象状态
             (self.reset)(&mut obj);
-            
+
             // 归还到池
             let mut pool = self.pool.lock();
             if pool.len() < self.capacity {
@@ -759,7 +766,7 @@ impl<T> Drop for PooledObject<T> {
 
 impl<T> std::ops::Deref for PooledObject<T> {
     type Target = T;
-    
+
     fn deref(&self) -> &Self::Target {
         self.obj.as_ref().unwrap()
     }
@@ -800,15 +807,15 @@ pub async fn process_with_pool(
 ) -> Result<()> {
     // 从池获取Span
     let mut span = span_pool.acquire();
-    
+
     // 使用Span
     span.name = "my_operation".to_string();
     span.start_time = SystemTime::now();
-    
+
     // 处理...
-    
+
     span.end_time = SystemTime::now();
-    
+
     // 离开作用域时自动归还到池
     Ok(())
 }
@@ -844,8 +851,8 @@ pub async fn process_with_pool(
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
 **最后更新**: 2025-10-28
 **维护团队**: OTLP_rust实施团队
 

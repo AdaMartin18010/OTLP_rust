@@ -1,7 +1,7 @@
 # 🔧 故障排除指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 故障排除指南 - 常见问题、诊断工具、解决方案和预防措施。
@@ -157,7 +157,7 @@ pub fn create_grpc_client(endpoint: &str) -> Result<Channel, Box<dyn std::error:
         .tcp_nodelay(true)
         .connect()
         .await?;
-    
+
     Ok(channel)
 }
 ```
@@ -207,7 +207,7 @@ impl OptimizedBatchConfig {
             max_queue_size: 1000,  // 较小的队列
         }
     }
-    
+
     pub fn for_high_throughput() -> Self {
         Self {
             max_batch_size: 1000,  // 较大的批处理大小
@@ -257,7 +257,7 @@ impl MemoryMonitor {
             current_memory: Arc::new(AtomicUsize::new(0)),
         }
     }
-    
+
     pub fn check_memory_usage(&self) -> Result<(), MemoryError> {
         let current = self.current_memory.load(Ordering::Relaxed);
         if current > self.max_memory {
@@ -269,7 +269,7 @@ impl MemoryMonitor {
             Ok(())
         }
     }
-    
+
     pub fn cleanup_memory(&self) {
         // 强制垃圾回收
         // 清理缓存
@@ -319,7 +319,7 @@ impl ConfigValidator {
             ],
         }
     }
-    
+
     pub fn validate(&self, config: &OtlpConfig) -> Result<(), ConfigError> {
         // 检查必需字段
         for field in &self.required_fields {
@@ -327,29 +327,29 @@ impl ConfigValidator {
                 return Err(ConfigError::MissingField(field.to_string()));
             }
         }
-        
+
         // 验证字段值
         if !config.endpoint.starts_with("http") {
             return Err(ConfigError::InvalidEndpoint(config.endpoint.clone()));
         }
-        
+
         if config.timeout.as_secs() == 0 {
             return Err(ConfigError::InvalidTimeout(config.timeout));
         }
-        
+
         Ok(())
     }
-    
+
     pub fn fix_config(&self, mut config: OtlpConfig) -> OtlpConfig {
         // 自动修复常见配置问题
         if config.timeout.as_secs() == 0 {
             config.timeout = Duration::from_secs(10);
         }
-        
+
         if config.max_retries == 0 {
             config.max_retries = 3;
         }
-        
+
         config
     }
 }
@@ -388,16 +388,16 @@ impl EnvironmentConfig {
             ),
         }
     }
-    
+
     pub fn validate(&self) -> Result<(), ConfigError> {
         if self.endpoint.is_empty() {
             return Err(ConfigError::MissingEndpoint);
         }
-        
+
         if !["grpc", "http"].contains(&self.protocol.as_str()) {
             return Err(ConfigError::InvalidProtocol(self.protocol.clone()));
         }
-        
+
         Ok(())
     }
 }
@@ -497,14 +497,14 @@ impl LogCollector {
             max_logs,
         }
     }
-    
+
     pub async fn collect_log(&self, level: LogLevel, message: &str, metadata: &serde_json::Value) {
         let mut logs = self.logs.lock().await;
-        
+
         if logs.len() >= self.max_logs {
             logs.remove(0);
         }
-        
+
         logs.push(LogEntry {
             timestamp: chrono::Utc::now(),
             level,
@@ -512,14 +512,14 @@ impl LogCollector {
             metadata: metadata.clone(),
         });
     }
-    
+
     pub async fn analyze_logs(&self) -> LogAnalysis {
         let logs = self.logs.lock().await;
-        
+
         let error_count = logs.iter().filter(|log| log.level == LogLevel::Error).count();
         let warning_count = logs.iter().filter(|log| log.level == LogLevel::Warn).count();
         let info_count = logs.iter().filter(|log| log.level == LogLevel::Info).count();
-        
+
         LogAnalysis {
             total_logs: logs.len(),
             error_count,
@@ -577,21 +577,21 @@ impl MetricsCollector {
             error_rate: Gauge::new("otlp_error_rate", "Error rate").unwrap(),
         }
     }
-    
+
     pub fn record_request(&self, duration: Duration, status: u16) {
         self.requests_total.inc();
         self.request_duration.observe(duration.as_secs_f64());
-        
+
         if status >= 400 {
             self.error_rate.inc();
         }
     }
-    
+
     pub fn update_system_metrics(&self) {
         // 更新系统指标
         let memory_info = get_memory_info();
         self.memory_usage.set(memory_info.used as f64);
-        
+
         let cpu_info = get_cpu_info();
         self.cpu_usage.set(cpu_info.usage as f64);
     }
@@ -614,10 +614,10 @@ impl NetworkDiagnostics {
             client: reqwest::Client::new(),
         }
     }
-    
+
     pub async fn test_connectivity(&self, endpoint: &str) -> NetworkTestResult {
         let start_time = Instant::now();
-        
+
         match self.client.get(endpoint).send().await {
             Ok(response) => {
                 let duration = start_time.elapsed();
@@ -639,15 +639,15 @@ impl NetworkDiagnostics {
             }
         }
     }
-    
+
     pub async fn test_dns_resolution(&self, hostname: &str) -> Result<Vec<std::net::IpAddr>, Box<dyn std::error::Error>> {
         use std::net::ToSocketAddrs;
-        
+
         let addresses: Vec<_> = (hostname, 0)
             .to_socket_addrs()?
             .map(|addr| addr.ip())
             .collect();
-        
+
         Ok(addresses)
     }
 }
@@ -671,7 +671,7 @@ impl PerformanceProfiler {
             events: Vec::new(),
         }
     }
-    
+
     pub fn record_event(&mut self, name: &str, duration: Duration) {
         self.events.push(ProfileEvent {
             name: name.to_string(),
@@ -679,15 +679,15 @@ impl PerformanceProfiler {
             duration,
         });
     }
-    
+
     pub fn generate_report(&self) -> PerformanceReport {
         let total_duration = self.start_time.elapsed();
         let mut event_durations: std::collections::HashMap<String, Vec<Duration>> = std::collections::HashMap::new();
-        
+
         for event in &self.events {
             event_durations.entry(event.name.clone()).or_insert_with(Vec::new).push(event.duration);
         }
-        
+
         let mut event_stats = std::collections::HashMap::new();
         for (name, durations) in event_durations {
             let total: Duration = durations.iter().sum();
@@ -695,7 +695,7 @@ impl PerformanceProfiler {
             let avg = total / count as u32;
             let max = durations.iter().max().copied().unwrap_or_default();
             let min = durations.iter().min().copied().unwrap_or_default();
-            
+
             event_stats.insert(name, EventStats {
                 count,
                 total,
@@ -704,7 +704,7 @@ impl PerformanceProfiler {
                 minimum: min,
             });
         }
-        
+
         PerformanceReport {
             total_duration,
             event_stats,
@@ -737,13 +737,13 @@ impl AutoReconnect {
             backoff_multiplier: 2.0,
         }
     }
-    
+
     pub async fn connect_with_retry<F, T>(&self, mut connect_fn: F) -> Result<T, OtlpError>
     where
         F: FnMut() -> Pin<Box<dyn Future<Output = Result<T, OtlpError>> + Send>>,
     {
         let mut delay = self.base_delay;
-        
+
         for attempt in 1..=self.max_retries {
             match connect_fn().await {
                 Ok(result) => {
@@ -762,7 +762,7 @@ impl AutoReconnect {
                 }
             }
         }
-        
+
         Err(OtlpError::ConnectionFailed)
     }
 }
@@ -788,37 +788,37 @@ impl DynamicTuner {
             max_history: 100,
         }
     }
-    
+
     pub fn record_performance(&mut self, snapshot: PerformanceSnapshot) {
         self.performance_history.push(snapshot);
-        
+
         if self.performance_history.len() > self.max_history {
             self.performance_history.remove(0);
         }
-        
+
         // 分析性能趋势并调整配置
         self.analyze_and_tune();
     }
-    
+
     fn analyze_and_tune(&mut self) {
         if self.performance_history.len() < 10 {
             return;
         }
-        
+
         let recent_snapshots = &self.performance_history[self.performance_history.len() - 10..];
         let avg_latency = recent_snapshots.iter().map(|s| s.latency).sum::<Duration>() / recent_snapshots.len() as u32;
         let avg_throughput = recent_snapshots.iter().map(|s| s.throughput).sum::<f64>() / recent_snapshots.len() as f64;
-        
+
         // 根据性能指标调整配置
         if avg_latency > Duration::from_millis(100) {
             // 延迟过高，减少批处理大小
-            self.current_config.batch_config.max_export_batch_size = 
+            self.current_config.batch_config.max_export_batch_size =
                 (self.current_config.batch_config.max_export_batch_size as f64 * 0.8) as usize;
         }
-        
+
         if avg_throughput < 1000.0 {
             // 吞吐量过低，增加批处理大小
-            self.current_config.batch_config.max_export_batch_size = 
+            self.current_config.batch_config.max_export_batch_size =
                 (self.current_config.batch_config.max_export_batch_size as f64 * 1.2) as usize;
         }
     }
@@ -841,32 +841,32 @@ impl ConfigAutoFix {
             validator: ConfigValidator::new(),
         }
     }
-    
+
     pub fn fix_config(&self, mut config: OtlpConfig) -> Result<OtlpConfig, ConfigError> {
         // 检查并修复常见问题
         if config.endpoint.is_empty() {
             config.endpoint = "http://localhost:4317".to_string();
             warn!("Empty endpoint, using default: {}", config.endpoint);
         }
-        
+
         if !config.endpoint.starts_with("http") {
             config.endpoint = format!("http://{}", config.endpoint);
             warn!("Added http:// prefix to endpoint: {}", config.endpoint);
         }
-        
+
         if config.timeout.as_secs() == 0 {
             config.timeout = Duration::from_secs(10);
             warn!("Zero timeout, using default: {:?}", config.timeout);
         }
-        
+
         if config.max_retries == 0 {
             config.max_retries = 3;
             warn!("Zero retries, using default: {}", config.max_retries);
         }
-        
+
         // 验证修复后的配置
         self.validator.validate(&config)?;
-        
+
         Ok(config)
     }
 }
@@ -892,17 +892,17 @@ impl HealthChecker {
             interval,
         }
     }
-    
+
     pub fn add_check<C>(&mut self, check: C)
     where
         C: HealthCheck + Send + Sync + 'static,
     {
         self.checks.push(Box::new(check));
     }
-    
+
     pub async fn run_health_checks(&self) -> HealthStatus {
         let mut results = Vec::new();
-        
+
         for check in &self.checks {
             let result = check.check().await;
             results.push(HealthCheckResult {
@@ -910,9 +910,9 @@ impl HealthChecker {
                 status: result,
             });
         }
-        
+
         let all_healthy = results.iter().all(|r| r.status.is_ok());
-        
+
         HealthStatus {
             overall: if all_healthy { HealthStatus::Healthy } else { HealthStatus::Unhealthy },
             checks: results,
@@ -991,14 +991,14 @@ impl AutoRecovery {
             recovery_strategies: Vec::new(),
         }
     }
-    
+
     pub fn add_strategy<S>(&mut self, strategy: S)
     where
         S: RecoveryStrategy + Send + Sync + 'static,
     {
         self.recovery_strategies.push(Box::new(strategy));
     }
-    
+
     pub async fn attempt_recovery(&self, error: &OtlpError) -> Result<(), RecoveryError> {
         for strategy in &self.recovery_strategies {
             if strategy.can_handle(error) {
@@ -1014,7 +1014,7 @@ impl AutoRecovery {
                 }
             }
         }
-        
+
         Err(RecoveryError::NoSuitableStrategy)
     }
 }
@@ -1108,6 +1108,6 @@ spec:
 
 ---
 
-**故障排除指南版本**: 1.0.0  
-**最后更新**: 2025年1月  
+**故障排除指南版本**: 1.0.0
+**最后更新**: 2025年1月
 **维护者**: OTLP Rust 运维团队

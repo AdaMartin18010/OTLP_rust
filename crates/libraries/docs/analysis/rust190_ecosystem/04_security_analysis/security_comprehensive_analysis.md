@@ -98,7 +98,7 @@ impl SecureBuffer {
             owner: OwnerId::new(),
         }
     }
-    
+
     pub fn access(&self, requester: &OwnerId) -> Result<&[u8]> {
         if self.owner == *requester {
             Ok(&self.data)
@@ -106,7 +106,7 @@ impl SecureBuffer {
             Err(SecurityError::UnauthorizedAccess)
         }
     }
-    
+
     pub fn transfer_ownership(mut self, new_owner: OwnerId) -> Self {
         self.owner = new_owner;
         self
@@ -117,7 +117,7 @@ impl SecureBuffer {
 pub fn safe_pointer_operations() {
     let data = vec![1, 2, 3, 4, 5];
     let slice = &data[1..4]; // 安全的切片操作
-    
+
     // 以下代码无法编译，因为 data 被移动了
     // let moved_data = data; // 编译错误
     // println!("{:?}", slice); // 编译错误：悬垂引用
@@ -144,7 +144,7 @@ impl Drop for ResourceManager {
 // RAII 模式确保资源安全释放
 pub fn safe_resource_usage() {
     let _manager = ResourceManager::new(); // 自动管理资源
-    
+
     // 函数结束时，manager 自动被释放
     // 所有资源都会被正确清理
 }
@@ -168,12 +168,12 @@ pub fn safe_array_access(arr: &[i32], index: usize) -> Result<i32> {
 pub fn safe_string_operations(s: &str) -> Result<String> {
     // 防止缓冲区溢出
     let mut result = String::with_capacity(s.len() * 2);
-    
+
     for ch in s.chars() {
         // 安全的字符处理
         result.push(ch.to_uppercase().next().unwrap_or(ch));
     }
-    
+
     Ok(result)
 }
 ```
@@ -190,8 +190,8 @@ pub fn safe_formatting(name: &str, age: u32) -> String {
 // 防止格式化字符串攻击
 pub fn secure_logging(level: LogLevel, message: &str) {
     // 使用结构化的日志格式，避免格式化字符串漏洞
-    println!("{{\"level\":\"{}\",\"message\":\"{}\"}}", 
-             level, 
+    println!("{{\"level\":\"{}\",\"message\":\"{}\"}}",
+             level,
              message.replace("\"", "\\\""));
 }
 ```
@@ -242,7 +242,7 @@ impl ThreadSafeCounter {
             count: Arc::new(Mutex::new(0)),
         }
     }
-    
+
     pub fn increment(&self) -> Result<u32> {
         let mut count = self.count.lock().unwrap();
         *count += 1;
@@ -254,7 +254,7 @@ impl ThreadSafeCounter {
 pub fn safe_concurrent_access() {
     let counter = Arc::new(ThreadSafeCounter::new());
     let mut handles = Vec::new();
-    
+
     for _ in 0..10 {
         let counter = Arc::clone(&counter);
         let handle = thread::spawn(move || {
@@ -264,11 +264,11 @@ pub fn safe_concurrent_access() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("Final count: {}", counter.increment().unwrap() - 1);
 }
 ```
@@ -289,11 +289,11 @@ impl AtomicCounter {
             count: AtomicUsize::new(0),
         }
     }
-    
+
     pub fn increment(&self) -> usize {
         self.count.fetch_add(1, Ordering::SeqCst)
     }
-    
+
     pub fn get(&self) -> usize {
         self.count.load(Ordering::SeqCst)
     }
@@ -303,7 +303,7 @@ impl AtomicCounter {
 pub fn lock_free_concurrency() {
     let counter = Arc::new(AtomicCounter::new());
     let mut handles = Vec::new();
-    
+
     for _ in 0..10 {
         let counter = Arc::clone(&counter);
         let handle = thread::spawn(move || {
@@ -313,11 +313,11 @@ pub fn lock_free_concurrency() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("Final count: {}", counter.get());
 }
 ```
@@ -340,12 +340,12 @@ impl DeadlockFreeResource {
             resource_b: Mutex::new(ResourceB::new()),
         }
     }
-    
+
     pub fn safe_operation(&self) -> Result<()> {
         // 始终按相同顺序获取锁
         let _guard_a = self.resource_a.lock().unwrap();
         let _guard_b = self.resource_b.lock().unwrap();
-        
+
         // 执行需要两个资源的操作
         Ok(())
     }
@@ -355,10 +355,10 @@ impl DeadlockFreeResource {
 pub fn try_lock_approach(resource: &DeadlockFreeResource) -> Result<()> {
     let guard_a = resource.resource_a.try_lock()
         .map_err(|_| SecurityError::LockContention)?;
-    
+
     let guard_b = resource.resource_b.try_lock()
         .map_err(|_| SecurityError::LockContention)?;
-    
+
     // 执行操作
     Ok(())
 }
@@ -384,20 +384,20 @@ impl AsyncResourceManager {
                 return Some(value.clone());
             }
         }
-        
+
         // 读锁失败，尝试写锁
         let mut data = self.data.write().await;
         data.get(key).cloned()
     }
-    
+
     pub async fn update_data(&self, key: String, value: String) -> Result<()> {
         let mut data = self.data.write().await;
         data.insert(key.clone(), value.clone());
-        
+
         // 更新缓存
         let mut cache = self.cache.lock().await;
         cache.put(key, value);
-        
+
         Ok(())
     }
 }
@@ -422,16 +422,16 @@ impl SecureEncryption {
     pub fn new(key: &[u8; 32]) -> Result<Self> {
         let key = Key::from_slice(key);
         let cipher = Aes256Gcm::new(key);
-        
+
         Ok(Self { cipher })
     }
-    
+
     pub fn encrypt(&self, plaintext: &[u8], nonce: &[u8; 12]) -> Result<Vec<u8>> {
         let nonce = Nonce::from_slice(nonce);
         self.cipher.encrypt(nonce, plaintext)
             .map_err(|_| SecurityError::EncryptionFailed)
     }
-    
+
     pub fn decrypt(&self, ciphertext: &[u8], nonce: &[u8; 12]) -> Result<Vec<u8>> {
         let nonce = Nonce::from_slice(nonce);
         self.cipher.decrypt(nonce, ciphertext)
@@ -442,7 +442,7 @@ impl SecureEncryption {
 // 安全的密钥生成
 pub fn generate_secure_key() -> Result<[u8; 32]> {
     use rand::RngCore;
-    
+
     let mut key = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut key);
     Ok(key)
@@ -466,24 +466,24 @@ impl AsymmetricCrypto {
         let mut rng = OsRng;
         let private_key = RsaPrivateKey::new(&mut rng, 2048)?;
         let public_key = RsaPublicKey::from(&private_key);
-        
+
         Ok(Self {
             private_key,
             public_key,
         })
     }
-    
+
     pub fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>> {
         let mut rng = OsRng;
         let padding = rsa::Pkcs1v15Encrypt;
-        
+
         self.public_key.encrypt(&mut rng, padding, data)
             .map_err(|_| SecurityError::EncryptionFailed)
     }
-    
+
     pub fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>> {
         let padding = rsa::Pkcs1v15Encrypt;
-        
+
         self.private_key.decrypt(padding, data)
             .map_err(|_| SecurityError::DecryptionFailed)
     }
@@ -508,23 +508,23 @@ impl DigitalSignature {
     pub fn new() -> Result<Self> {
         let signing_key = SigningKey::random(&mut rand::thread_rng());
         let verifying_key = VerifyingKey::from(&signing_key);
-        
+
         Ok(Self {
             signing_key,
             verifying_key,
         })
     }
-    
+
     pub fn sign(&self, message: &[u8]) -> Result<Signature<NistP256>> {
         use sha2::Sha256;
-        
+
         self.signing_key.sign(message)
             .map_err(|_| SecurityError::SigningFailed)
     }
-    
+
     pub fn verify(&self, message: &[u8], signature: &Signature<NistP256>) -> Result<bool> {
         use sha2::Sha256;
-        
+
         Ok(self.verifying_key.verify(message, signature).is_ok())
     }
 }
@@ -547,20 +547,20 @@ impl MessageAuthentication {
     pub fn new(key: &[u8]) -> Result<Self> {
         let mac = HmacSha256::new_from_slice(key)
             .map_err(|_| SecurityError::InvalidKey)?;
-        
+
         Ok(Self { mac })
     }
-    
+
     pub fn generate_mac(&mut self, message: &[u8]) -> Result<Vec<u8>> {
         self.mac.update(message);
         let result = self.mac.finalize();
         Ok(result.into_bytes().to_vec())
     }
-    
+
     pub fn verify_mac(&mut self, message: &[u8], mac: &[u8]) -> Result<bool> {
         self.mac.update(message);
         let result = self.mac.finalize();
-        
+
         Ok(result.into_bytes().to_vec() == mac)
     }
 }
@@ -588,21 +588,21 @@ impl SecureTlsClient {
             .with_safe_defaults()
             .with_root_certificates()
             .with_no_client_auth();
-        
+
         Ok(Self { config })
     }
-    
+
     pub async fn connect(&self, hostname: &str, port: u16) -> Result<TlsStream> {
         let server_name = ServerName::try_from(hostname)
             .map_err(|_| SecurityError::InvalidHostname)?;
-        
+
         let connector = TlsConnector::from(Arc::new(self.config.clone()));
         let stream = TcpStream::connect((hostname, port)).await?;
         let tls_stream = connector.connect(server_name, stream).await?;
-        
+
         Ok(tls_stream)
     }
-    
+
     pub async fn send_secure_data(&self, stream: &mut TlsStream, data: &[u8]) -> Result<()> {
         stream.write_all(data).await?;
         stream.flush().await?;
@@ -626,19 +626,19 @@ impl SecureTlsServer {
     pub fn new(cert_path: &str, key_path: &str) -> Result<Self> {
         let cert_chain = load_certificates(cert_path)?;
         let private_key = load_private_key(key_path)?;
-        
+
         let config = ServerConfig::builder()
             .with_safe_defaults()
             .with_no_client_auth()
             .with_single_cert(cert_chain, private_key)?;
-        
+
         Ok(Self { config })
     }
-    
+
     pub async fn accept_connection(&self, stream: TcpStream) -> Result<TlsStream> {
         let acceptor = TlsAcceptor::from(Arc::new(self.config.clone()));
         let tls_stream = acceptor.accept(stream).await?;
-        
+
         Ok(tls_stream)
     }
 }
@@ -668,28 +668,28 @@ impl OAuth2Client {
             Some(token_url),
         )
         .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap());
-        
+
         Self {
             client,
             state: generate_random_state(),
         }
     }
-    
+
     pub fn get_authorization_url(&self) -> Result<Url> {
         let auth_url = self.client
             .authorize_url(CsrfToken::new(self.state.clone()))
             .add_scope(Scope::new("read".to_string()))
             .url();
-        
+
         Ok(auth_url)
     }
-    
+
     pub async fn exchange_code_for_token(&self, code: String) -> Result<TokenResponse> {
         let token = self.client
             .exchange_code(AuthorizationCode::new(code))
             .request_async(async_http_client)
             .await?;
-        
+
         Ok(token)
     }
 }
@@ -722,18 +722,18 @@ impl JwtManager {
             decoding_key: DecodingKey::from_secret(secret),
         }
     }
-    
+
     pub fn create_token(&self, claims: &Claims) -> Result<String> {
         encode(&Header::default(), claims, &self.encoding_key)
             .map_err(|_| SecurityError::TokenCreationFailed)
     }
-    
+
     pub fn validate_token(&self, token: &str) -> Result<Claims> {
         let validation = Validation::new(Algorithm::HS256);
-        
+
         let token_data = decode::<Claims>(token, &self.decoding_key, &validation)
             .map_err(|_| SecurityError::TokenValidationFailed)?;
-        
+
         Ok(token_data.claims)
     }
 }
@@ -760,7 +760,7 @@ impl SecureDatabase {
             .bind(user_id)
             .fetch_optional(&self.pool)
             .await?;
-        
+
         if let Some(row) = row {
             let user = User {
                 id: row.get("id"),
@@ -772,22 +772,22 @@ impl SecureDatabase {
             Ok(None)
         }
     }
-    
+
     pub async fn search_users(&self, query: &str) -> Result<Vec<User>> {
         // 输入验证和清理
         let clean_query = sanitize_input(query)?;
-        
+
         let rows = sqlx::query("SELECT id, username, email FROM users WHERE username ILIKE $1")
             .bind(format!("%{}%", clean_query))
             .fetch_all(&self.pool)
             .await?;
-        
+
         let users = rows.into_iter().map(|row| User {
             id: row.get("id"),
             username: row.get("username"),
             email: row.get("email"),
         }).collect();
-        
+
         Ok(users)
     }
 }
@@ -798,11 +798,11 @@ fn sanitize_input(input: &str) -> Result<String> {
         .chars()
         .filter(|c| c.is_alphanumeric() || c.is_whitespace())
         .collect::<String>();
-    
+
     if cleaned.len() != input.len() {
         return Err(SecurityError::InvalidInput);
     }
-    
+
     Ok(cleaned)
 }
 ```
@@ -826,20 +826,20 @@ pub fn escape_html(input: &str) -> String {
 pub fn sanitize_html(input: &str) -> String {
     // 使用 HTML 解析器清理危险标签
     use ammonia::clean;
-    
+
     clean(input)
 }
 
 // 安全的模板渲染
 pub fn safe_template_render(template: &str, data: &HashMap<String, String>) -> String {
     let mut result = template.to_string();
-    
+
     for (key, value) in data {
         let placeholder = format!("{{{{{}}}}}", key);
         let escaped_value = escape_html(value);
         result = result.replace(&placeholder, &escaped_value);
     }
-    
+
     result
 }
 ```
@@ -864,28 +864,28 @@ impl CsrfProtection {
             secret_key,
         }
     }
-    
+
     pub fn generate_token(&self, session_id: &str) -> Result<String> {
         let token_id = Uuid::new_v4().to_string();
         let token_data = format!("{}:{}", session_id, token_id);
-        
+
         let token = hmac_sha256(&self.secret_key, token_data.as_bytes());
         let token_hex = hex::encode(token);
-        
+
         let mut tokens = self.tokens.lock().unwrap();
         tokens.insert(token_hex.clone(), Instant::now());
-        
+
         Ok(token_hex)
     }
-    
+
     pub fn validate_token(&self, token: &str, session_id: &str) -> Result<bool> {
         let mut tokens = self.tokens.lock().unwrap();
-        
+
         // 检查 token 是否存在
         if !tokens.contains_key(token) {
             return Ok(false);
         }
-        
+
         // 检查 token 是否过期（5分钟）
         if let Some(created_at) = tokens.get(token) {
             if created_at.elapsed() > Duration::from_secs(300) {
@@ -893,7 +893,7 @@ impl CsrfProtection {
                 return Ok(false);
             }
         }
-        
+
         // 验证 token 格式
         if let Ok(token_bytes) = hex::decode(token) {
             if token_bytes.len() == 32 {
@@ -901,7 +901,7 @@ impl CsrfProtection {
                 return Ok(true);
             }
         }
-        
+
         Ok(false)
     }
 }
@@ -925,7 +925,7 @@ pub struct KeyManager {
 impl KeyManager {
     pub fn new() -> Result<Self> {
         let current_key = generate_secure_key()?;
-        
+
         Ok(Self {
             current_key,
             previous_key: None,
@@ -933,25 +933,25 @@ impl KeyManager {
             last_rotation: Instant::now(),
         })
     }
-    
+
     pub fn get_current_key(&self) -> [u8; 32] {
         self.current_key
     }
-    
+
     pub fn rotate_key(&mut self) -> Result<()> {
         let new_key = generate_secure_key()?;
-        
+
         self.previous_key = Some(self.current_key);
         self.current_key = new_key;
         self.last_rotation = Instant::now();
-        
+
         Ok(())
     }
-    
+
     pub fn should_rotate(&self) -> bool {
         self.last_rotation.elapsed() >= self.rotation_interval
     }
-    
+
     pub fn decrypt_with_fallback(&self, data: &[u8]) -> Result<Vec<u8>> {
         // 先尝试当前密钥
         match self.decrypt_with_key(data, &self.current_key) {
@@ -982,16 +982,16 @@ use validator::{Validate, ValidationError};
 pub struct SecurityConfig {
     #[validate(range(min = 1024, max = 65536))]
     pub port: u16,
-    
+
     #[validate(length(min = 32))]
     pub secret_key: String,
-    
+
     #[validate(range(min = 1, max = 3600))]
     pub session_timeout: u64,
-    
+
     #[validate(length(min = 8))]
     pub password_min_length: usize,
-    
+
     pub enable_https: bool,
     pub enable_cors: bool,
     pub allowed_origins: Vec<String>,
@@ -1001,27 +1001,27 @@ impl SecurityConfig {
     pub fn from_file(path: &str) -> Result<Self> {
         let content = std::fs::read_to_string(path)?;
         let config: SecurityConfig = toml::from_str(&content)?;
-        
+
         config.validate()?;
         Ok(config)
     }
-    
+
     pub fn validate(&self) -> Result<()> {
         // 验证端口范围
         if self.port < 1024 || self.port > 65536 {
             return Err(SecurityError::InvalidPort);
         }
-        
+
         // 验证密钥强度
         if self.secret_key.len() < 32 {
             return Err(SecurityError::WeakSecretKey);
         }
-        
+
         // 验证会话超时
         if self.session_timeout < 1 || self.session_timeout > 3600 {
             return Err(SecurityError::InvalidSessionTimeout);
         }
-        
+
         Ok(())
     }
 }
@@ -1078,19 +1078,19 @@ impl SecurityAuditor {
             logger: Arc::new(Mutex::new(Vec::new())),
         }
     }
-    
+
     pub fn log_event(&self, event: SecurityEvent) -> Result<()> {
         let mut logger = self.logger.lock().unwrap();
         logger.push(event);
-        
+
         // 保持日志大小限制
         if logger.len() > 10000 {
             logger.drain(0..1000);
         }
-        
+
         Ok(())
     }
-    
+
     pub fn get_events_by_type(&self, event_type: SecurityEventType) -> Vec<SecurityEvent> {
         let logger = self.logger.lock().unwrap();
         logger.iter()
@@ -1098,7 +1098,7 @@ impl SecurityAuditor {
             .cloned()
             .collect()
     }
-    
+
     pub fn get_events_by_severity(&self, severity: Severity) -> Vec<SecurityEvent> {
         let logger = self.logger.lock().unwrap();
         logger.iter()
@@ -1127,7 +1127,7 @@ impl AnomalyDetector {
             thresholds: HashMap::new(),
         }
     }
-    
+
     pub fn train(&mut self, metric_name: String, values: Vec<f64>) {
         // 计算正常模式
         let mean = values.iter().sum::<f64>() / values.len() as f64;
@@ -1135,32 +1135,32 @@ impl AnomalyDetector {
             .map(|v| (v - mean).powi(2))
             .sum::<f64>() / values.len() as f64;
         let std_dev = variance.sqrt();
-        
+
         self.normal_patterns.insert(metric_name.clone(), vec![mean, std_dev]);
         self.thresholds.insert(metric_name, 3.0 * std_dev); // 3-sigma 规则
     }
-    
+
     pub fn detect_anomaly(&self, metric_name: &str, value: f64) -> bool {
-        if let (Some(pattern), Some(threshold)) = 
+        if let (Some(pattern), Some(threshold)) =
             (self.normal_patterns.get(metric_name), self.thresholds.get(metric_name)) {
-            
+
             let mean = pattern[0];
             let deviation = (value - mean).abs();
-            
+
             deviation > *threshold
         } else {
             false
         }
     }
-    
+
     pub fn analyze_security_events(&self, events: &[SecurityEvent]) -> Vec<SecurityAlert> {
         let mut alerts = Vec::new();
-        
+
         // 检测频繁登录失败
         let failed_logins = events.iter()
             .filter(|e| matches!(e.event_type, SecurityEventType::LoginFailure))
             .count();
-        
+
         if failed_logins > 5 {
             alerts.push(SecurityAlert {
                 alert_type: AlertType::BruteForceAttempt,
@@ -1169,16 +1169,16 @@ impl AnomalyDetector {
                 timestamp: Utc::now(),
             });
         }
-        
+
         // 检测异常访问模式
         let access_times: Vec<f64> = events.iter()
             .filter(|e| matches!(e.event_type, SecurityEventType::DataAccess))
             .map(|e| e.timestamp.hour() as f64)
             .collect();
-        
+
         if !access_times.is_empty() {
             let mean_access_time = access_times.iter().sum::<f64>() / access_times.len() as f64;
-            
+
             if mean_access_time < 6.0 || mean_access_time > 22.0 {
                 alerts.push(SecurityAlert {
                     alert_type: AlertType::UnusualAccessPattern,
@@ -1188,7 +1188,7 @@ impl AnomalyDetector {
                 });
             }
         }
-        
+
         alerts
     }
 }
@@ -1221,7 +1221,7 @@ mod security_checks {
     pub fn safe_function() {
         // 安全代码
     }
-    
+
     // 禁止使用危险函数
     #[forbid(clippy::disallowed_methods)]
     pub fn safe_pointer_operations() {
@@ -1244,11 +1244,11 @@ runner = "miri run"
 #[cfg(miri)]
 mod miri_checks {
     use std::ptr;
-    
+
     pub fn safe_memory_operations() {
         let data = vec![1, 2, 3, 4, 5];
         let slice = &data[1..4];
-        
+
         // Miri 会检查这些操作的内存安全性
         for &value in slice {
             println!("{}", value);
@@ -1271,38 +1271,38 @@ pub mod security_guidelines {
     // 3. 使用类型安全的 API
     // 4. 正确处理错误
     // 5. 使用安全的随机数生成器
-    
+
     pub fn secure_input_validation(input: &str) -> Result<String> {
         // 输入验证
         if input.is_empty() {
             return Err(SecurityError::EmptyInput);
         }
-        
+
         if input.len() > 1000 {
             return Err(SecurityError::InputTooLong);
         }
-        
+
         // 字符过滤
         let filtered: String = input
             .chars()
             .filter(|c| c.is_alphanumeric() || c.is_whitespace())
             .collect();
-        
+
         if filtered.len() != input.len() {
             return Err(SecurityError::InvalidCharacters);
         }
-        
+
         Ok(filtered)
     }
-    
+
     pub fn secure_random_generation() -> [u8; 32] {
         use rand::RngCore;
-        
+
         let mut bytes = [0u8; 32];
         rand::thread_rng().fill_bytes(&mut bytes);
         bytes
     }
-    
+
     pub fn secure_error_handling() -> Result<String> {
         // 不要在错误信息中泄露敏感信息
         Err(SecurityError::OperationFailed)
@@ -1408,7 +1408,7 @@ impl SecurityRisk {
             Likelihood::High => 4,
             Likelihood::VeryHigh => 5,
         };
-        
+
         let impact_score = match self.impact {
             Impact::VeryLow => 1,
             Impact::Low => 2,
@@ -1416,13 +1416,13 @@ impl SecurityRisk {
             Impact::High => 4,
             Impact::VeryHigh => 5,
         };
-        
+
         likelihood_score * impact_score
     }
-    
+
     pub fn get_risk_level(&self) -> RiskLevel {
         let score = self.calculate_risk_score();
-        
+
         match score {
             1..=4 => RiskLevel::Low,
             5..=12 => RiskLevel::Medium,
@@ -1481,4 +1481,4 @@ Rust 1.85.0 和 Rust 2024 Edition 为构建安全、可靠的软件系统提供�
 
 ---
 
--*本报告基于 Rust 1.85.0 和 Rust 2024 Edition 的安全特性分析，将持续更新以反映最新的安全改进。最后更新：2025年9月28日*-
+-_本报告基于 Rust 1.85.0 和 Rust 2024 Edition 的安全特性分析，将持续更新以反映最新的安全改进。最后更新：2025年9月28日_-

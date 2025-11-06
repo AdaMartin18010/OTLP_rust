@@ -1,8 +1,8 @@
 # 语义模型与执行流控制流数据流分析
 
-**版本**: 1.0  
-**日期**: 2025年10月26日  
-**主题**: 自我修复与自动调整架构的理论基础与模型分析  
+**版本**: 1.0
+**日期**: 2025年10月26日
+**主题**: 自我修复与自动调整架构的理论基础与模型分析
 **状态**: 🟢 活跃维护
 
 > **简介**: 语义模型与三流分析 - 形式化语义、执行流、控制流、数据流的完整理论基础。
@@ -210,7 +210,7 @@ impl StateTransitionFunction {
     /// 应用事件到系统状态
     pub fn apply(state: &SystemState, event: &Event) -> SystemState {
         let mut new_state = state.clone();
-        
+
         match event {
             Event::ComponentFailure { component_id, reason } => {
                 if let Some(component) = new_state.components.get_mut(component_id) {
@@ -238,12 +238,12 @@ impl StateTransitionFunction {
             }
             _ => {}
         }
-        
+
         new_state.timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         new_state
     }
 }
@@ -289,7 +289,7 @@ use std::sync::Arc;
 pub trait Denotation {
     /// 语义域
     type Domain;
-    
+
     /// 将语法映射到语义域
     fn denote(&self) -> Self::Domain;
 }
@@ -346,12 +346,12 @@ impl ComponentSemantics {
             }
         }
     }
-    
+
     /// 组合两个组件的语义
     pub fn compose(f: &ComponentSemantics, g: &ComponentSemantics) -> ComponentSemantics {
         let f_transform = Arc::clone(&f.transformation);
         let g_transform = Arc::clone(&g.transformation);
-        
+
         ComponentSemantics {
             input_space: Arc::clone(&f.input_space),
             output_space: Arc::clone(&g.output_space),
@@ -453,11 +453,11 @@ impl Invariant for ResourceInvariant {
         let total_cpu: f64 = state.components.values()
             .map(|c| c.config.resources.cpu_limit * c.config.replicas as f64)
             .sum();
-        
+
         let total_memory: u64 = state.components.values()
             .map(|c| c.config.resources.memory_limit * c.config.replicas as u64)
             .sum();
-        
+
         total_cpu <= self.max_total_cpu && total_memory <= self.max_total_memory
     }
 }
@@ -542,7 +542,7 @@ impl BehaviorTreeExecutor {
                 }
                 BehaviorStatus::Success
             }
-            
+
             BehaviorNode::Selector(children) => {
                 for child in children {
                     match Self::execute(child, context).await {
@@ -553,13 +553,13 @@ impl BehaviorTreeExecutor {
                 }
                 BehaviorStatus::Failure
             }
-            
+
             BehaviorNode::Parallel(children) => {
                 let mut statuses = Vec::new();
                 for child in children {
                     statuses.push(Self::execute(child, context).await);
                 }
-                
+
                 if statuses.iter().all(|s| *s == BehaviorStatus::Success) {
                     BehaviorStatus::Success
                 } else if statuses.iter().any(|s| *s == BehaviorStatus::Failure) {
@@ -568,15 +568,15 @@ impl BehaviorTreeExecutor {
                     BehaviorStatus::Running
                 }
             }
-            
+
             BehaviorNode::Decorator { decorator, child } => {
                 Self::execute_decorator(decorator, child, context).await
             }
-            
+
             BehaviorNode::Action(action) => {
                 Self::execute_action(action, context).await
             }
-            
+
             BehaviorNode::Condition(condition) => {
                 if Self::check_condition(condition, context).await {
                     BehaviorStatus::Success
@@ -586,7 +586,7 @@ impl BehaviorTreeExecutor {
             }
         }
     }
-    
+
     async fn execute_decorator(
         decorator: &DecoratorType,
         child: &BehaviorNode,
@@ -602,7 +602,7 @@ impl BehaviorTreeExecutor {
                 }
                 BehaviorStatus::Success
             }
-            
+
             DecoratorType::Retry { max_attempts, delay } => {
                 for _ in 0..*max_attempts {
                     let status = Self::execute(child, context).await;
@@ -613,14 +613,14 @@ impl BehaviorTreeExecutor {
                 }
                 BehaviorStatus::Failure
             }
-            
+
             DecoratorType::Timeout(duration) => {
                 match tokio::time::timeout(*duration, Self::execute(child, context)).await {
                     Ok(status) => status,
                     Err(_) => BehaviorStatus::Failure,
                 }
             }
-            
+
             DecoratorType::Inverter => {
                 match Self::execute(child, context).await {
                     BehaviorStatus::Success => BehaviorStatus::Failure,
@@ -630,7 +630,7 @@ impl BehaviorTreeExecutor {
             }
         }
     }
-    
+
     async fn execute_action(
         _action: &Action,
         _context: &mut ExecutionContext,
@@ -638,7 +638,7 @@ impl BehaviorTreeExecutor {
         // 执行具体动作
         BehaviorStatus::Success
     }
-    
+
     async fn check_condition(
         _condition: &Condition,
         _context: &ExecutionContext,
@@ -686,12 +686,12 @@ where
             final_states: Vec::new(),
         }
     }
-    
+
     /// 添加状态转换
     pub fn add_transition(&mut self, from: S, event: E, to: S) {
         self.transitions.insert((from, event), to);
     }
-    
+
     /// 处理事件
     pub fn process_event(&mut self, event: E) -> Result<(), String> {
         let key = (self.current_state.clone(), event);
@@ -702,7 +702,7 @@ where
             Err(format!("No transition defined for current state and event"))
         }
     }
-    
+
     /// 检查是否处于终止状态
     pub fn is_final(&self) -> bool {
         self.final_states.contains(&self.current_state)
@@ -737,7 +737,7 @@ pub enum ServiceEvent {
 /// 构建服务生命周期状态机
 pub fn build_service_fsm() -> FiniteStateMachine<ServiceState, ServiceEvent> {
     let mut fsm = FiniteStateMachine::new(ServiceState::Stopped);
-    
+
     // 定义状态转换
     fsm.add_transition(ServiceState::Stopped, ServiceEvent::Start, ServiceState::Starting);
     fsm.add_transition(ServiceState::Starting, ServiceEvent::StartComplete, ServiceState::Running);
@@ -750,9 +750,9 @@ pub fn build_service_fsm() -> FiniteStateMachine<ServiceState, ServiceEvent> {
     fsm.add_transition(ServiceState::Recovering, ServiceEvent::RecoveryComplete, ServiceState::Running);
     fsm.add_transition(ServiceState::Running, ServiceEvent::Shutdown, ServiceState::ShuttingDown);
     fsm.add_transition(ServiceState::ShuttingDown, ServiceEvent::ShutdownComplete, ServiceState::Stopped);
-    
+
     fsm.final_states = vec![ServiceState::Stopped];
-    
+
     fsm
 }
 ```
@@ -949,7 +949,7 @@ impl ContextAwareDecisionEngine {
             .cloned()
             .unwrap_or(DecisionStrategy::StandardOperation)
     }
-    
+
     fn classify_context(&self, context: &EnvironmentContext) -> ContextPattern {
         // 分析上下文并分类
         if context.workload.current_load > 0.8
@@ -1043,23 +1043,23 @@ impl PetriNet {
                 }
             }
         }
-        
+
         // 检查守卫条件
         if let Some(transition) = self.transitions.get(transition_id) {
             if let Some(guard) = &transition.guard {
                 return guard(&self.marking);
             }
         }
-        
+
         true
     }
-    
+
     /// 触发变迁
     pub fn fire(&mut self, transition_id: &TransitionId) -> Result<(), String> {
         if !self.is_enabled(transition_id) {
             return Err("Transition is not enabled".to_string());
         }
-        
+
         // 移除输入令牌
         for arc in &self.arcs {
             if let Arc::InputArc { from, to, weight } = arc {
@@ -1069,7 +1069,7 @@ impl PetriNet {
                 }
             }
         }
-        
+
         // 添加输出令牌
         for arc in &self.arcs {
             if let Arc::OutputArc { from, to, weight } = arc {
@@ -1078,7 +1078,7 @@ impl PetriNet {
                 }
             }
         }
-        
+
         Ok(())
     }
 }
@@ -1091,29 +1091,29 @@ pub fn build_self_healing_petri_net() -> PetriNet {
         arcs: Vec::new(),
         marking: HashMap::new(),
     };
-    
+
     // 定义位置
     let p_normal = PlaceId("Normal".to_string());
     let p_detecting = PlaceId("Detecting".to_string());
     let p_diagnosed = PlaceId("Diagnosed".to_string());
     let p_recovering = PlaceId("Recovering".to_string());
     let p_recovered = PlaceId("Recovered".to_string());
-    
+
     net.places.insert(p_normal.clone(), Place {
         id: p_normal.clone(),
         name: "Normal Operation".to_string(),
         capacity: Some(1),
     });
-    
+
     // 初始标记
     net.marking.insert(p_normal.clone(), 1);
-    
+
     // 定义变迁
     let t_detect = TransitionId("DetectFailure".to_string());
     let t_diagnose = TransitionId("Diagnose".to_string());
     let t_recover = TransitionId("Recover".to_string());
     let t_validate = TransitionId("Validate".to_string());
-    
+
     // 定义弧
     net.arcs.push(Arc::InputArc {
         from: p_normal.clone(),
@@ -1125,7 +1125,7 @@ pub fn build_self_healing_petri_net() -> PetriNet {
         to: p_detecting.clone(),
         weight: 1,
     });
-    
+
     net
 }
 ```
@@ -1190,30 +1190,30 @@ impl DependencyGraph {
     pub fn topological_sort(&self) -> Result<Vec<ComponentId>, String> {
         let mut in_degree: HashMap<ComponentId, usize> = HashMap::new();
         let mut adj_list: HashMap<ComponentId, Vec<ComponentId>> = HashMap::new();
-        
+
         // 初始化
         for node in self.nodes.keys() {
             in_degree.insert(node.clone(), 0);
             adj_list.insert(node.clone(), Vec::new());
         }
-        
+
         // 构建邻接表和入度
         for edge in &self.edges {
             adj_list.get_mut(&edge.from).unwrap().push(edge.to.clone());
             *in_degree.get_mut(&edge.to).unwrap() += 1;
         }
-        
+
         // Kahn 算法
         let mut queue: VecDeque<ComponentId> = in_degree.iter()
             .filter(|(_, &degree)| degree == 0)
             .map(|(id, _)| id.clone())
             .collect();
-        
+
         let mut result = Vec::new();
-        
+
         while let Some(node) = queue.pop_front() {
             result.push(node.clone());
-            
+
             if let Some(neighbors) = adj_list.get(&node) {
                 for neighbor in neighbors {
                     let degree = in_degree.get_mut(neighbor).unwrap();
@@ -1224,20 +1224,20 @@ impl DependencyGraph {
                 }
             }
         }
-        
+
         if result.len() == self.nodes.len() {
             Ok(result)
         } else {
             Err("Cycle detected in dependency graph".to_string())
         }
     }
-    
+
     /// 查找受影响的组件
     pub fn find_affected_components(&self, failed: &ComponentId) -> HashSet<ComponentId> {
         let mut affected = HashSet::new();
         let mut queue = VecDeque::new();
         queue.push_back(failed.clone());
-        
+
         while let Some(component) = queue.pop_front() {
             for edge in &self.edges {
                 if edge.to == component && edge.strength == DependencyStrength::Strong {
@@ -1247,10 +1247,10 @@ impl DependencyGraph {
                 }
             }
         }
-        
+
         affected
     }
-    
+
     /// 查找关键路径
     pub fn find_critical_path(&self) -> Vec<ComponentId> {
         // 实现关键路径算法（CPM）
@@ -1318,7 +1318,7 @@ impl AdaptiveScheduler {
             cpu: f64::MAX,
             memory: u64::MAX,
         };
-        
+
         for strategy in &self.strategies {
             let cost = strategy.estimate_cost(task);
             if self.is_better_cost(&cost, &best_cost, task) {
@@ -1326,10 +1326,10 @@ impl AdaptiveScheduler {
                 best_strategy = Some(&**strategy);
             }
         }
-        
+
         best_strategy.unwrap()
     }
-    
+
     fn is_better_cost(&self, new: &ExecutionCost, current: &ExecutionCost, task: &Task) -> bool {
         match task.priority {
             Priority::Critical => new.time < current.time,
@@ -1359,7 +1359,7 @@ use tokio::sync::mpsc;
 #[async_trait::async_trait]
 pub trait Actor: Send {
     type Message: Send;
-    
+
     async fn handle(&mut self, msg: Self::Message);
     async fn pre_start(&mut self) {}
     async fn post_stop(&mut self) {}
@@ -1388,24 +1388,24 @@ impl ActorSystem {
     pub fn new(name: String) -> Self {
         Self { name }
     }
-    
+
     /// 生成 Actor
     pub fn spawn<A>(&self, mut actor: A) -> ActorRef<A::Message>
     where
         A: Actor + 'static,
     {
         let (tx, mut rx) = mpsc::channel(100);
-        
+
         tokio::spawn(async move {
             actor.pre_start().await;
-            
+
             while let Some(msg) = rx.recv().await {
                 actor.handle(msg).await;
             }
-            
+
             actor.post_stop().await;
         });
-        
+
         ActorRef { sender: tx }
     }
 }
@@ -1425,7 +1425,7 @@ pub enum MonitorMessage {
 #[async_trait::async_trait]
 impl Actor for MonitorActor {
     type Message = MonitorMessage;
-    
+
     async fn handle(&mut self, msg: Self::Message) {
         match msg {
             MonitorMessage::RecordMetric { name, value } => {
@@ -1560,7 +1560,7 @@ impl StrategySelector {
             .max_by_key(|s| self.calculate_priority(s, situation))
             .map(|s| &**s)
     }
-    
+
     fn calculate_priority(&self, _strategy: &Box<dyn Strategy>, situation: &Situation) -> u32 {
         match situation.severity {
             Severity::Critical => 100,
@@ -1578,16 +1578,16 @@ impl Strategy for RestartStrategy {
     fn name(&self) -> &str {
         "restart"
     }
-    
+
     fn can_handle(&self, situation: &Situation) -> bool {
         situation.symptom_type == "service_failure"
     }
-    
+
     fn execute(&self, _context: &mut ExecutionContext) -> Result<(), String> {
         println!("Executing restart strategy");
         Ok(())
     }
-    
+
     fn rollback(&self, _context: &mut ExecutionContext) -> Result<(), String> {
         println!("Rolling back restart");
         Ok(())
@@ -1628,13 +1628,13 @@ impl ClosedLoopController {
     pub fn step(&mut self, dt: f64) {
         // 1. 测量当前值
         let measured_value = self.sensor.measure();
-        
+
         // 2. 计算误差
         let error = self.setpoint - measured_value;
-        
+
         // 3. 计算控制信号
         let control_signal = self.controller.compute(error, dt);
-        
+
         // 4. 应用控制信号
         self.actuator.apply(control_signal);
     }
@@ -1652,15 +1652,15 @@ pub struct PIDControllerImpl {
 impl Controller for PIDControllerImpl {
     fn compute(&mut self, error: f64, dt: f64) -> f64 {
         let p = self.kp * error;
-        
+
         self.integral += error * dt;
         let i = self.ki * self.integral;
-        
+
         let derivative = (error - self.last_error) / dt;
         let d = self.kd * derivative;
-        
+
         self.last_error = error;
-        
+
         p + i + d
     }
 }
@@ -1718,7 +1718,7 @@ impl ControlFlowGraph {
     /// 计算支配关系
     pub fn compute_dominators(&self) -> HashMap<BlockId, HashSet<BlockId>> {
         let mut dominators: HashMap<BlockId, HashSet<BlockId>> = HashMap::new();
-        
+
         // 初始化
         for block_id in self.basic_blocks.keys() {
             if *block_id == self.entry {
@@ -1727,7 +1727,7 @@ impl ControlFlowGraph {
                 dominators.insert(block_id.clone(), self.basic_blocks.keys().cloned().collect());
             }
         }
-        
+
         // 迭代计算
         let mut changed = true;
         while changed {
@@ -1736,12 +1736,12 @@ impl ControlFlowGraph {
                 if *block_id == self.entry {
                     continue;
                 }
-                
+
                 let predecessors = self.get_predecessors(block_id);
                 if predecessors.is_empty() {
                     continue;
                 }
-                
+
                 let mut new_doms: HashSet<BlockId> = dominators[&predecessors[0]].clone();
                 for pred in &predecessors[1..] {
                     new_doms = new_doms.intersection(&dominators[pred])
@@ -1749,17 +1749,17 @@ impl ControlFlowGraph {
                         .collect();
                 }
                 new_doms.insert(block_id.clone());
-                
+
                 if new_doms != dominators[block_id] {
                     dominators.insert(block_id.clone(), new_doms);
                     changed = true;
                 }
             }
         }
-        
+
         dominators
     }
-    
+
     fn get_predecessors(&self, block: &BlockId) -> Vec<BlockId> {
         self.edges.iter()
             .filter(|e| e.to == *block)
@@ -1795,11 +1795,11 @@ impl<T: Send + 'static> DataPipeline<T> {
     pub fn new() -> Self {
         Self { stages: Vec::new() }
     }
-    
+
     pub fn add_stage<S: PipelineStage<T> + 'static>(&mut self, stage: S) {
         self.stages.push(Box::new(stage));
     }
-    
+
     /// 执行管道
     pub async fn execute(&self, input: T) -> Result<T, String> {
         let mut current = input;
@@ -1808,14 +1808,14 @@ impl<T: Send + 'static> DataPipeline<T> {
         }
         Ok(current)
     }
-    
+
     /// 流式处理
     pub async fn stream_process<S>(&self, mut input_stream: S, output: mpsc::Sender<T>)
     where
         S: Stream<Item = T> + Unpin,
     {
         use futures::StreamExt;
-        
+
         while let Some(item) = input_stream.next().await {
             match self.execute(item).await {
                 Ok(result) => {
@@ -1910,7 +1910,7 @@ impl<T> ReactiveProcessor<T> {
             capacity,
         }
     }
-    
+
     /// 尝试添加元素
     pub fn try_push(&mut self, item: T) -> Result<(), T> {
         if self.buffer.len() < self.capacity {
@@ -1965,30 +1965,30 @@ impl TimeWindow {
             points: Vec::new(),
         }
     }
-    
+
     /// 添加数据点
     pub fn add_point(&mut self, point: TimeSeriesPoint) {
         self.points.push(point);
         self.evict_old_points();
     }
-    
+
     /// 移除过期数据点
     fn evict_old_points(&mut self) {
         let now = Instant::now();
         self.points.retain(|p| now.duration_since(p.timestamp) <= self.size);
     }
-    
+
     /// 计算窗口统计
     pub fn compute_statistics(&self) -> WindowStatistics {
         let values: Vec<f64> = self.points.iter().map(|p| p.value).collect();
-        
+
         let sum: f64 = values.iter().sum();
         let count = values.len();
         let avg = if count > 0 { sum / count as f64 } else { 0.0 };
-        
+
         let mut sorted = values.clone();
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        
+
         let min = sorted.first().copied().unwrap_or(0.0);
         let max = sorted.last().copied().unwrap_or(0.0);
         let p50 = if !sorted.is_empty() {
@@ -2006,7 +2006,7 @@ impl TimeWindow {
         } else {
             0.0
         };
-        
+
         WindowStatistics {
             count,
             sum,
@@ -2043,7 +2043,7 @@ impl StreamAggregator {
             windows: HashMap::new(),
         }
     }
-    
+
     /// 添加指标
     pub fn add_metric(&mut self, metric_name: String, point: TimeSeriesPoint) {
         let window = self.windows.entry(metric_name).or_insert_with(|| {
@@ -2051,7 +2051,7 @@ impl StreamAggregator {
         });
         window.add_point(point);
     }
-    
+
     /// 获取所有指标的统计
     pub fn get_all_statistics(&self) -> HashMap<String, WindowStatistics> {
         self.windows.iter()
@@ -2115,28 +2115,28 @@ impl DataFlowGraph {
     pub fn execution_order(&self) -> Result<Vec<NodeId>, String> {
         let mut in_degree: HashMap<NodeId, usize> = HashMap::new();
         let mut queue = VecDeque::new();
-        
+
         // 初始化入度
         for node_id in self.nodes.keys() {
             in_degree.insert(node_id.clone(), 0);
         }
-        
+
         for edge in &self.edges {
             *in_degree.get_mut(&edge.to).unwrap() += 1;
         }
-        
+
         // 找到所有入度为0的节点
         for (node_id, &degree) in &in_degree {
             if degree == 0 {
                 queue.push_back(node_id.clone());
             }
         }
-        
+
         let mut result = Vec::new();
-        
+
         while let Some(node_id) = queue.pop_front() {
             result.push(node_id.clone());
-            
+
             // 减少后继节点的入度
             for edge in &self.edges {
                 if edge.from == node_id {
@@ -2148,26 +2148,26 @@ impl DataFlowGraph {
                 }
             }
         }
-        
+
         if result.len() == self.nodes.len() {
             Ok(result)
         } else {
             Err("Cycle detected in data flow graph".to_string())
         }
     }
-    
+
     /// 分析数据血缘
     pub fn trace_lineage(&self, node_id: &NodeId) -> Vec<NodeId> {
         let mut lineage = Vec::new();
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();
-        
+
         queue.push_back(node_id.clone());
-        
+
         while let Some(current) = queue.pop_front() {
             if visited.insert(current.clone()) {
                 lineage.push(current.clone());
-                
+
                 // 添加所有前驱节点
                 for edge in &self.edges {
                     if edge.to == current {
@@ -2176,7 +2176,7 @@ impl DataFlowGraph {
                 }
             }
         }
-        
+
         lineage
     }
 }
@@ -2245,7 +2245,7 @@ impl UnifiedAdaptiveFramework {
     /// 初始化框架
     pub fn new() -> Self {
         let (tx, _rx) = mpsc::channel(1000);
-        
+
         Self {
             semantic_model: SemanticModel {
                 system_state: SystemState {
@@ -2288,14 +2288,14 @@ impl UnifiedAdaptiveFramework {
             },
         }
     }
-    
+
     /// 处理系统事件
     pub async fn handle_event(&mut self, event: Event) -> Result<(), String> {
         // 1. 更新语义模型
         let old_state = self.semantic_model.system_state.clone();
         let new_state = StateTransitionFunction::apply(&old_state, &event);
         self.semantic_model.system_state = new_state.clone();
-        
+
         // 2. 检查不变式
         for invariant in &self.semantic_model.invariants {
             if !invariant.holds(&new_state) {
@@ -2303,43 +2303,43 @@ impl UnifiedAdaptiveFramework {
                 // 触发恢复
             }
         }
-        
+
         // 3. 更新执行流
         // 根据新状态调整任务调度
-        
+
         // 4. 控制流决策
         // 选择适当的策略和控制动作
-        
+
         // 5. 数据流处理
         // 更新监控数据流
-        
+
         // 6. 发布框架事件
         let _ = self.coordinator.event_bus.send(FrameworkEvent::StateChanged {
             old: old_state,
             new: new_state,
         }).await;
-        
+
         Ok(())
     }
-    
+
     /// 执行自适应循环
     pub async fn adaptive_loop(&mut self) {
         loop {
             // 1. 监控
             // 收集系统状态和指标
-            
+
             // 2. 分析
             // 检测异常和性能问题
-            
+
             // 3. 规划
             // 制定调整策略
-            
+
             // 4. 执行
             // 应用调整
-            
+
             // 5. 验证
             // 检查效果
-            
+
             tokio::time::sleep(Duration::from_secs(10)).await;
         }
     }
@@ -2414,22 +2414,22 @@ impl EndToEndSelfHealingWorkflow {
             let metrics = self.monitoring.collectors.iter()
                 .flat_map(|c| c.collect())
                 .collect::<HashMap<_, _>>();
-            
+
             // Step 2: Diagnose
             let issues: Vec<Issue> = self.diagnosis.analyzers.iter()
                 .flat_map(|a| a.analyze(&metrics))
                 .collect();
-            
+
             if issues.is_empty() {
                 tokio::time::sleep(Duration::from_secs(5)).await;
                 continue;
             }
-            
+
             // Step 3: Plan
             let plans: Vec<RecoveryPlan> = self.planning.planners.iter()
                 .map(|p| p.plan(&issues))
                 .collect();
-            
+
             // Step 4: Execute
             for plan in plans {
                 for action in plan.actions {
@@ -2441,7 +2441,7 @@ impl EndToEndSelfHealingWorkflow {
                     }
                 }
             }
-            
+
             tokio::time::sleep(Duration::from_secs(10)).await;
         }
     }
@@ -2478,7 +2478,7 @@ impl MultiObjectiveOptimizer {
     /// 使用 NSGA-II 算法
     pub fn optimize(&self, population_size: usize, generations: usize) -> Vec<Solution> {
         let mut population = self.initialize_population(population_size);
-        
+
         for _ in 0..generations {
             // 1. 评估目标函数
             for solution in &mut population {
@@ -2486,37 +2486,37 @@ impl MultiObjectiveOptimizer {
                     .map(|obj| obj.evaluate(solution))
                     .collect();
             }
-            
+
             // 2. 非支配排序
             let fronts = self.non_dominated_sort(&population);
-            
+
             // 3. 计算拥挤距离
             // 4. 选择
             // 5. 交叉和变异
-            
+
             // 简化实现
             population = self.select_next_generation(&population, &fronts);
         }
-        
+
         // 返回帕累托前沿
         self.get_pareto_front(&population)
     }
-    
+
     fn initialize_population(&self, size: usize) -> Vec<Solution> {
         (0..size).map(|_| Solution {
             parameters: HashMap::new(),
             objective_values: Vec::new(),
         }).collect()
     }
-    
+
     fn non_dominated_sort(&self, population: &[Solution]) -> Vec<Vec<usize>> {
         vec![vec![0]]  // 简化实现
     }
-    
+
     fn select_next_generation(&self, population: &[Solution], _fronts: &[Vec<usize>]) -> Vec<Solution> {
         population.to_vec()
     }
-    
+
     fn get_pareto_front(&self, population: &[Solution]) -> Vec<Solution> {
         population.to_vec()
     }
@@ -2529,7 +2529,7 @@ impl Objective for PerformanceObjective {
     fn evaluate(&self, solution: &Solution) -> f64 {
         solution.parameters.get("latency").copied().unwrap_or(0.0)
     }
-    
+
     fn is_minimization(&self) -> bool {
         true
     }
@@ -2542,7 +2542,7 @@ impl Objective for CostObjective {
     fn evaluate(&self, solution: &Solution) -> f64 {
         solution.parameters.get("cost").copied().unwrap_or(0.0)
     }
-    
+
     fn is_minimization(&self) -> bool {
         true
     }
@@ -2555,7 +2555,7 @@ impl Objective for ReliabilityObjective {
     fn evaluate(&self, solution: &Solution) -> f64 {
         solution.parameters.get("reliability").copied().unwrap_or(1.0)
     }
-    
+
     fn is_minimization(&self) -> bool {
         false  // 最大化可靠性
     }

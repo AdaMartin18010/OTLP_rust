@@ -1,7 +1,7 @@
 # 📊 监控配置指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 监控配置指南 - 系统指标、分布式追踪、告警和仪表板的完整配置。
@@ -85,12 +85,12 @@ let client = EnhancedOtlpClient::builder()
     .with_endpoint("http://localhost:4317")
     .with_service_name("monitored-app")
     .with_service_version("1.0.0")
-    
+
     // 启用监控
     .with_monitoring_enabled(true)
     .with_metrics_interval(Duration::from_secs(10))
     .with_health_check_interval(Duration::from_secs(30))
-    
+
     // 监控配置
     .with_monitoring_config(MonitoringConfig {
         enable_performance_metrics: true,
@@ -99,7 +99,7 @@ let client = EnhancedOtlpClient::builder()
         metrics_export_interval: Duration::from_secs(10),
         health_check_endpoint: Some("http://localhost:8080/health".to_string()),
     })
-    
+
     .build()
     .await?;
 ```
@@ -126,12 +126,12 @@ let client = EnhancedOtlpClient::builder()
 // 获取系统指标
 async fn get_system_metrics() -> Result<(), Box<dyn std::error::Error>> {
     let metrics = client.get_system_metrics().await?;
-    
+
     println!("CPU 使用率: {:.2}%", metrics.cpu_usage * 100.0);
     println!("内存使用率: {:.2}%", metrics.memory_usage * 100.0);
     println!("磁盘使用率: {:.2}%", metrics.disk_usage * 100.0);
     println!("网络吞吐量: {:.2} MB/s", metrics.network_throughput);
-    
+
     Ok(())
 }
 ```
@@ -179,14 +179,14 @@ async fn record_business_metrics() -> Result<(), Box<dyn std::error::Error>> {
     let mut attributes = HashMap::new();
     attributes.insert("source".to_string(), "web".into());
     attributes.insert("country".to_string(), "US".into());
-    
+
     // 记录用户注册
     user_registrations.add(1, &attributes);
-    
+
     // 记录交易金额
     let amount = 150.0;
     transaction_amount.record(amount, &attributes);
-    
+
     Ok(())
 }
 ```
@@ -214,13 +214,13 @@ let tracer = client.tracer("monitored-component");
 // 监控追踪
 async fn monitored_operation() -> Result<(), Box<dyn std::error::Error>> {
     let mut span = tracer.start_with_kind("monitored-operation", SpanKind::Internal);
-    
+
     span.set_attribute("operation.type", "business_logic");
     span.set_attribute("user.id", "12345");
-    
+
     // 执行业务逻辑
     let result = execute_business_logic().await;
-    
+
     match result {
         Ok(_) => {
             span.set_status(StatusCode::Ok, "Operation successful".to_string());
@@ -232,7 +232,7 @@ async fn monitored_operation() -> Result<(), Box<dyn std::error::Error>> {
             println!("❌ 操作失败: {}", e);
         }
     }
-    
+
     span.end();
     Ok(())
 }
@@ -326,13 +326,13 @@ async fn handle_alert(alert: Alert) -> Result<(), Box<dyn std::error::Error>> {
     println!("严重程度: {:?}", alert.severity);
     println!("描述: {}", alert.description);
     println!("时间: {}", alert.timestamp);
-    
+
     // 发送通知
     alert_handler.send_notification(&alert).await?;
-    
+
     // 记录告警
     alert_handler.log_alert(&alert).await?;
-    
+
     Ok(())
 }
 ```
@@ -398,10 +398,10 @@ async fn create_dashboard() -> Result<(), Box<dyn std::error::Error>> {
             },
         ],
     };
-    
+
     dashboard_manager.create_dashboard(&dashboard).await?;
     println!("✅ 仪表板创建成功");
-    
+
     Ok(())
 }
 ```
@@ -479,23 +479,23 @@ let client = EnhancedOtlpClient::builder()
 // 性能指标
 async fn collect_performance_metrics() -> Result<(), Box<dyn std::error::Error>> {
     let metrics = client.get_performance_metrics().await?;
-    
+
     println!("📊 性能指标:");
     println!("  吞吐量: {:.2} req/s", metrics.throughput);
     println!("  平均延迟: {:.2}ms", metrics.avg_latency.as_millis());
     println!("  P95延迟: {:.2}ms", metrics.p95_latency.as_millis());
     println!("  P99延迟: {:.2}ms", metrics.p99_latency.as_millis());
     println!("  错误率: {:.2}%", metrics.error_rate * 100.0);
-    
+
     // 检查性能阈值
     if metrics.error_rate > 0.05 {
         println!("⚠️ 错误率过高: {:.2}%", metrics.error_rate * 100.0);
     }
-    
+
     if metrics.p99_latency > Duration::from_millis(1000) {
         println!("⚠️ P99延迟过高: {:.2}ms", metrics.p99_latency.as_millis());
     }
-    
+
     Ok(())
 }
 ```
@@ -514,18 +514,18 @@ let performance_analyzer = PerformanceAnalyzer::new()
 // 分析性能趋势
 async fn analyze_performance_trends() -> Result<(), Box<dyn std::error::Error>> {
     let analysis = performance_analyzer.analyze_trends().await?;
-    
+
     println!("📈 性能趋势分析:");
     println!("  吞吐量趋势: {:?}", analysis.throughput_trend);
     println!("  延迟趋势: {:?}", analysis.latency_trend);
     println!("  错误率趋势: {:?}", analysis.error_rate_trend);
-    
+
     // 容量规划建议
     if let Some(capacity_advice) = analysis.capacity_advice {
         println!("💡 容量规划建议:");
         println!("  {}", capacity_advice);
     }
-    
+
     // 异常检测
     if let Some(anomalies) = analysis.anomalies {
         println!("🚨 检测到异常:");
@@ -533,7 +533,7 @@ async fn analyze_performance_trends() -> Result<(), Box<dyn std::error::Error>> 
             println!("  - {}: {}", anomaly.metric, anomaly.description);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -570,17 +570,17 @@ async fn search_logs() -> Result<(), Box<dyn std::error::Error>> {
         log_levels: vec![LogLevel::Error, LogLevel::Warn],
         limit: 100,
     };
-    
+
     let logs = client.search_logs(&search_query).await?;
-    
+
     println!("🔍 找到 {} 条相关日志", logs.len());
     for log in logs {
-        println!("[{}] {}: {}", 
-                log.timestamp, 
-                log.level, 
+        println!("[{}] {}: {}",
+                log.timestamp,
+                log.level,
                 log.message);
     }
-    
+
     Ok(())
 }
 ```
@@ -599,7 +599,7 @@ let pattern_detector = LogPatternDetector::new()
 // 检测日志模式
 async fn detect_log_patterns() -> Result<(), Box<dyn std::error::Error>> {
     let patterns = pattern_detector.detect_patterns().await?;
-    
+
     println!("🔍 检测到的日志模式:");
     for pattern in patterns {
         println!("  模式: {}", pattern.pattern);
@@ -607,7 +607,7 @@ async fn detect_log_patterns() -> Result<(), Box<dyn std::error::Error>> {
         println!("  示例: {}", pattern.example);
         println!("  ---");
     }
-    
+
     // 异常日志检测
     let anomalies = pattern_detector.detect_anomalies().await?;
     if !anomalies.is_empty() {
@@ -616,7 +616,7 @@ async fn detect_log_patterns() -> Result<(), Box<dyn std::error::Error>> {
             println!("  - {}", anomaly.description);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -640,7 +640,7 @@ struct BusinessMetricsCollector {
 impl MetricCollector for BusinessMetricsCollector {
     async fn collect(&self) -> Result<Vec<Metric>, Box<dyn std::error::Error>> {
         let mut metrics = Vec::new();
-        
+
         // 用户数量指标
         metrics.push(Metric {
             name: "business_users_total".to_string(),
@@ -648,7 +648,7 @@ impl MetricCollector for BusinessMetricsCollector {
             labels: vec![("source".to_string(), "business".to_string())],
             timestamp: chrono::Utc::now(),
         });
-        
+
         // 交易数量指标
         metrics.push(Metric {
             name: "business_transactions_total".to_string(),
@@ -656,7 +656,7 @@ impl MetricCollector for BusinessMetricsCollector {
             labels: vec![("type".to_string(), "payment".to_string())],
             timestamp: chrono::Utc::now(),
         });
-        
+
         // 收入指标
         metrics.push(Metric {
             name: "business_revenue_total".to_string(),
@@ -664,7 +664,7 @@ impl MetricCollector for BusinessMetricsCollector {
             labels: vec![("currency".to_string(), "USD".to_string())],
             timestamp: chrono::Utc::now(),
         });
-        
+
         Ok(metrics)
     }
 }
@@ -700,7 +700,7 @@ impl AlertRule for BusinessAlertRule {
     fn name(&self) -> &str {
         &self.name
     }
-    
+
     fn check(&self, metrics: &Metrics) -> Option<Alert> {
         if (self.condition)(metrics) {
             Some(Alert {
@@ -763,14 +763,14 @@ let monitoring_strategy = MonitoringStrategy {
         disk_threshold: 0.9,
         network_threshold: 0.8,
     },
-    
+
     // 应用层
     application: ApplicationMonitoring {
         response_time_threshold: Duration::from_millis(1000),
         error_rate_threshold: 0.05,
         throughput_threshold: 100.0,
     },
-    
+
     // 业务层
     business: BusinessMonitoring {
         user_satisfaction_threshold: 0.9,
@@ -796,12 +796,12 @@ fn create_production_monitoring_config() -> MonitoringConfig {
         enable_system_metrics: true,
         enable_application_metrics: true,
         enable_business_metrics: true,
-        
+
         // 收集间隔
         system_metrics_interval: Duration::from_secs(30),
         application_metrics_interval: Duration::from_secs(10),
         business_metrics_interval: Duration::from_secs(60),
-        
+
         // 告警配置
         alert_rules: vec![
             AlertRule {
@@ -817,14 +817,14 @@ fn create_production_monitoring_config() -> MonitoringConfig {
                 severity: AlertSeverity::Warning,
             },
         ],
-        
+
         // 仪表板配置
         dashboard_config: DashboardConfig {
             auto_refresh: true,
             refresh_interval: Duration::from_secs(30),
             time_range: Duration::from_hours(24),
         },
-        
+
         // 日志配置
         log_config: LogConfig {
             enable_structured_logging: true,
@@ -865,5 +865,5 @@ fn create_production_monitoring_config() -> MonitoringConfig {
 
 ---
 
-*最后更新: 2025年10月20日*  
-*版本: 1.0.0*
+_最后更新: 2025年10月20日_
+_版本: 1.0.0_

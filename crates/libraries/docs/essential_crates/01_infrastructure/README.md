@@ -1,7 +1,7 @@
 # 第1层：基础设施层 (Infrastructure Layer)
 
-> **定位**: 几乎所有 Rust 项目都会使用的核心基础库  
-> **特点**: 零依赖或轻量依赖、高性能、稳定API  
+> **定位**: 几乎所有 Rust 项目都会使用的核心基础库
+> **特点**: 零依赖或轻量依赖、高性能、稳定API
 > **版本**: Rust 1.90 (2025)
 
 ---
@@ -70,19 +70,19 @@ graph TD
     A --> F[数学计算]
     A --> G[编码压缩]
     A --> H[解析工具]
-    
+
     B --> B1[序列化<br/>serde]
     B --> B2[格式转换<br/>json/toml/yaml]
-    
+
     C --> C1[正则表达式<br/>regex]
     C --> C2[Unicode<br/>unicode-*]
-    
+
     D --> D1[日期时间<br/>chrono]
     D --> D2[时间操作<br/>time]
-    
+
     E --> E1[随机数<br/>rand]
     E --> E2[UUID<br/>uuid]
-    
+
     style A fill:#FFD700
     style B fill:#87CEEB
     style C fill:#87CEEB
@@ -139,7 +139,7 @@ fn main() {
     let json = r#"{"host": "localhost", "port": 8080}"#;
     let config: Config = serde_json::from_str(json).unwrap();
     println!("{:?}", config);
-    
+
     // TOML
     let toml_str = toml::to_string(&config).unwrap();
     println!("{}", toml_str);
@@ -253,17 +253,17 @@ use uuid::Uuid;
 
 fn main() {
     let mut rng = thread_rng();
-    
+
     // 随机数
     let n: u32 = rng.gen_range(1..=100);
     println!("Random number: {}", n);
-    
+
     // 随机字符串
     let token: String = (0..32)
         .map(|_| rng.sample(Alphanumeric) as char)
         .collect();
     println!("Token: {}", token);
-    
+
     // UUID
     let id = Uuid::new_v4();
     println!("UUID: {}", id);
@@ -298,7 +298,7 @@ fn main() {
     let z1 = Complex::new(1.0, 2.0);
     let z2 = Complex::new(3.0, 4.0);
     println!("z1 + z2 = {}", z1 + z2);
-    
+
     // 矩阵运算
     let a = arr2(&[[1, 2], [3, 4]]);
     let b = arr2(&[[5, 6], [7, 8]]);
@@ -389,12 +389,12 @@ fn main() {
     // 排列组合
     let perms: Vec<_> = (1..=3).permutations(2).collect();
     println!("Permutations: {:?}", perms);
-    
+
     // 去重
     let nums = vec![1, 2, 2, 3, 3, 3];
     let unique: Vec<_> = nums.into_iter().unique().collect();
     println!("Unique: {:?}", unique);
-    
+
     // 分组
     let words = vec!["apple", "apricot", "banana", "blueberry"];
     for (key, group) in &words.into_iter().group_by(|w| w.chars().next().unwrap()) {
@@ -417,21 +417,21 @@ graph TD
     A --> C[文本处理]
     A --> D[时间操作]
     A --> E[随机性]
-    
+
     B --> B1{格式?}
     B1 --> |JSON/YAML/TOML| B2[serde + 格式库]
     B1 --> |二进制| B3{场景?}
     B3 --> |跨语言| B4[prost]
     B3 --> |高性能| B5[bincode]
-    
+
     C --> C1{需求?}
     C1 --> |正则| C2[regex]
     C1 --> |Unicode| C3[unicode-*]
-    
+
     D --> D1{重点?}
     D1 --> |功能丰富| D2[chrono]
     D1 --> |高性能| D3[time]
-    
+
     E --> E1{安全级别?}
     E1 --> |密码学| E2[rand with OsRng]
     E1 --> |通用| E3[rand with thread_rng]
@@ -463,9 +463,9 @@ use serde::{Serialize, Deserialize};
 struct User {
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<u64>,
-    
+
     username: String,
-    
+
     #[serde(default)]
     is_active: bool,
 }
@@ -583,6 +583,6 @@ struct Event {
 
 ---
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 1.0.0
+**最后更新**: 2025-10-20
 **维护者**: C11 Middlewares Team

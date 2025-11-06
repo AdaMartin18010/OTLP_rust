@@ -1,8 +1,8 @@
 ﻿# 响应式编程完整指南
 
-**Crate:** c12_model  
-**主题:** Reactive Programming  
-**Rust 版本:** 1.90.0  
+**Crate:** c12_model
+**主题:** Reactive Programming
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -53,12 +53,12 @@
 pub trait ReactiveStream<T> {
     /// 订阅流
     fn subscribe(&self, observer: Box<dyn Observer<T>>);
-    
+
     /// 转换流
     fn map<U, F>(self, f: F) -> MappedStream<T, U, F>
     where
         F: Fn(T) -> U;
-    
+
     /// 过滤流
     fn filter<F>(self, predicate: F) -> FilteredStream<T, F>
     where
@@ -91,25 +91,25 @@ impl<T: Clone + Send + 'static> Observable<T> {
             observers: Arc::new(Mutex::new(Vec::new())),
         }
     }
-    
+
     pub fn subscribe(&self, observer: Box<dyn Observer<T>>) {
         self.observers.lock().unwrap().push(observer);
     }
-    
+
     pub fn emit(&self, item: T) {
         let observers = self.observers.lock().unwrap();
         for observer in observers.iter() {
             observer.on_next(item.clone());
         }
     }
-    
+
     pub fn error(&self, error: Box<dyn std::error::Error + Send>) {
         let observers = self.observers.lock().unwrap();
         for observer in observers.iter() {
             observer.on_error(error.clone());
         }
     }
-    
+
     pub fn complete(&self) {
         let observers = self.observers.lock().unwrap();
         for observer in observers.iter() {
@@ -125,11 +125,11 @@ impl Observer<i32> for PrintObserver {
     fn on_next(&mut self, item: i32) {
         println!("Received: {}", item);
     }
-    
+
     fn on_error(&mut self, error: Box<dyn std::error::Error + Send>) {
         eprintln!("Error: {}", error);
     }
-    
+
     fn on_completed(&mut self) {
         println!("Completed");
     }
@@ -137,10 +137,10 @@ impl Observer<i32> for PrintObserver {
 
 fn observable_example() {
     let observable = Observable::new();
-    
+
     // 订阅
     observable.subscribe(Box::new(PrintObserver));
-    
+
     // 发射数据
     observable.emit(1);
     observable.emit(2);
@@ -164,20 +164,20 @@ impl<T: Clone + Send + 'static> Subject<T> {
             observable: Observable::new(),
         }
     }
-    
+
     // Subject 既是 Observable 也是 Observer
     pub fn subscribe(&self, observer: Box<dyn Observer<T>>) {
         self.observable.subscribe(observer);
     }
-    
+
     pub fn next(&self, item: T) {
         self.observable.emit(item);
     }
-    
+
     pub fn error(&self, error: Box<dyn std::error::Error + Send>) {
         self.observable.error(error);
     }
-    
+
     pub fn complete(&self) {
         self.observable.complete();
     }
@@ -196,20 +196,20 @@ impl<T: Clone + Send + 'static> BehaviorSubject<T> {
             current_value: Arc::new(Mutex::new(initial)),
         }
     }
-    
+
     pub fn subscribe(&self, mut observer: Box<dyn Observer<T>>) {
         // 立即发送当前值
         let current = self.current_value.lock().unwrap().clone();
         observer.on_next(current);
-        
+
         self.observable.subscribe(observer);
     }
-    
+
     pub fn next(&self, item: T) {
         *self.current_value.lock().unwrap() = item.clone();
         self.observable.emit(item);
     }
-    
+
     pub fn value(&self) -> T {
         self.current_value.lock().unwrap().clone()
     }
@@ -235,7 +235,7 @@ pub struct EventStream<T> {
 impl<T> EventStream<T> {
     pub fn new() -> (EventEmitter<T>, Self) {
         let (tx, rx) = mpsc::unbounded_channel();
-        
+
         (
             EventEmitter { sender: tx },
             EventStream { receiver: rx },
@@ -245,7 +245,7 @@ impl<T> EventStream<T> {
 
 impl<T> Stream for EventStream<T> {
     type Item = T;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         self.receiver.poll_recv(cx)
     }
@@ -266,9 +266,9 @@ impl<T> EventEmitter<T> {
 #[tokio::main]
 async fn main() {
     use futures::StreamExt;
-    
+
     let (emitter, mut stream) = EventStream::<i32>::new();
-    
+
     // 生产者
     tokio::spawn(async move {
         for i in 0..10 {
@@ -276,7 +276,7 @@ async fn main() {
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
     });
-    
+
     // 消费者
     while let Some(event) = stream.next().await {
         println!("Event: {}", event);
@@ -291,7 +291,7 @@ async fn main() {
 ```rust
 use futures::{Stream, StreamExt};
 
-pub struct CombinedStream<S1, S2> 
+pub struct CombinedStream<S1, S2>
 where
     S1: Stream,
     S2: Stream<Item = S1::Item>,
@@ -306,7 +306,7 @@ where
     S2: Stream<Item = S1::Item> + Unpin,
 {
     type Item = S1::Item;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         // 先尝试 stream1
         match self.stream1.poll_next_unpin(cx) {
@@ -314,7 +314,7 @@ where
             Poll::Ready(None) => {}
             Poll::Pending => {}
         }
-        
+
         // 再尝试 stream2
         self.stream2.poll_next_unpin(cx)
     }
@@ -324,9 +324,9 @@ where
 pub async fn merge_streams_example() {
     let stream1 = futures::stream::iter(vec![1, 2, 3]);
     let stream2 = futures::stream::iter(vec![4, 5, 6]);
-    
+
     let mut merged = futures::stream::select(stream1, stream2);
-    
+
     while let Some(item) = merged.next().await {
         println!("{}", item);
     }
@@ -362,7 +362,7 @@ pub struct BackpressureChannel<T> {
 impl<T> BackpressureChannel<T> {
     pub fn new(capacity: usize, strategy: BackpressureStrategy) -> (Self, mpsc::Receiver<T>) {
         let (tx, rx) = mpsc::channel(capacity);
-        
+
         (
             BackpressureChannel {
                 sender: tx,
@@ -371,14 +371,14 @@ impl<T> BackpressureChannel<T> {
             rx,
         )
     }
-    
+
     pub async fn send(&self, value: T) -> Result<()> {
         match self.strategy {
             BackpressureStrategy::Block => {
                 self.sender.send(value).await
                     .map_err(|_| anyhow::anyhow!("Channel closed"))
             }
-            
+
             BackpressureStrategy::DropNewest => {
                 match self.sender.try_send(value) {
                     Ok(_) => Ok(()),
@@ -391,7 +391,7 @@ impl<T> BackpressureChannel<T> {
                     }
                 }
             }
-            
+
             _ => todo!("Other strategies"),
         }
     }
@@ -426,24 +426,24 @@ where
     S: Stream + Unpin,
 {
     type Item = S::Item;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         // 检查是否需要限流
         if let Some(last) = self.last_emit {
             let interval = Duration::from_secs(1) / self.rate_per_second;
             let elapsed = last.elapsed();
-            
+
             if elapsed < interval {
                 // 需要等待
                 let sleep_duration = interval - elapsed;
                 let mut sleep = tokio::time::sleep(sleep_duration);
-                
+
                 if Pin::new(&mut sleep).poll(cx).is_pending() {
                     return Poll::Pending;
                 }
             }
         }
-        
+
         // 从底层流获取下一个元素
         match self.stream.poll_next_unpin(cx) {
             Poll::Ready(Some(item)) => {
@@ -477,15 +477,15 @@ impl<T: Clone + Send + 'static> ColdObservable<T> {
             generator: Arc::new(generator),
         }
     }
-    
+
     pub fn subscribe(&self, mut observer: Box<dyn Observer<T>>) {
         // 为每个订阅者生成新的数据
         let items = (self.generator)();
-        
+
         for item in items {
             observer.on_next(item);
         }
-        
+
         observer.on_completed();
     }
 }
@@ -493,10 +493,10 @@ impl<T: Clone + Send + 'static> ColdObservable<T> {
 // 使用示例
 fn cold_observable_example() {
     let cold = ColdObservable::new(|| vec![1, 2, 3, 4, 5]);
-    
+
     // 订阅者1
     cold.subscribe(Box::new(PrintObserver));
-    
+
     // 订阅者2 获得独立的数据流
     cold.subscribe(Box::new(PrintObserver));
 }
@@ -518,11 +518,11 @@ impl<T: Clone + Send + 'static> HotObservable<T> {
             subject: Arc::new(Subject::new()),
         }
     }
-    
+
     pub fn subscribe(&self, observer: Box<dyn Observer<T>>) {
         self.subject.subscribe(observer);
     }
-    
+
     pub fn emit(&self, item: T) {
         self.subject.next(item);
     }
@@ -531,19 +531,19 @@ impl<T: Clone + Send + 'static> HotObservable<T> {
 // 使用示例
 fn hot_observable_example() {
     let hot = HotObservable::new();
-    
+
     // 先发射
     hot.emit(1);
     hot.emit(2);
-    
+
     // 订阅者1 (不会收到之前的 1, 2)
     hot.subscribe(Box::new(PrintObserver));
-    
+
     hot.emit(3);  // 订阅者1 会收到
-    
+
     // 订阅者2
     hot.subscribe(Box::new(PrintObserver));
-    
+
     hot.emit(4);  // 两个订阅者都收到
 }
 ```
@@ -570,7 +570,7 @@ where
     F: Fn(T) -> U + Unpin,
 {
     type Item = U;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match self.stream.poll_next_unpin(cx) {
             Poll::Ready(Some(item)) => {
@@ -602,7 +602,7 @@ where
     S2: Stream<Item = U> + Unpin,
 {
     type Item = U;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
             // 先尝试从内部流获取
@@ -615,7 +615,7 @@ where
                     Poll::Pending => return Poll::Pending,
                 }
             }
-            
+
             // 从外部流获取新的内部流
             match self.outer_stream.poll_next_unpin(cx) {
                 Poll::Ready(Some(item)) => {
@@ -649,7 +649,7 @@ where
     F: Fn(&T) -> bool + Unpin,
 {
     type Item = T;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
             match self.stream.poll_next_unpin(cx) {
@@ -677,12 +677,12 @@ where
     S: Stream + Unpin,
 {
     type Item = S::Item;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         if self.remaining == 0 {
             return Poll::Ready(None);
         }
-        
+
         match self.stream.poll_next_unpin(cx) {
             Poll::Ready(Some(item)) => {
                 self.remaining -= 1;
@@ -717,7 +717,7 @@ where
     S2: Stream<Item = S1::Item> + Unpin,
 {
     type Item = S1::Item;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         if !self.stream1_done {
             match self.stream1.poll_next_unpin(cx) {
@@ -726,7 +726,7 @@ where
                 Poll::Pending => {}
             }
         }
-        
+
         if !self.stream2_done {
             match self.stream2.poll_next_unpin(cx) {
                 Poll::Ready(Some(item)) => return Poll::Ready(Some(item)),
@@ -734,7 +734,7 @@ where
                 Poll::Pending => {}
             }
         }
-        
+
         if self.stream1_done && self.stream2_done {
             Poll::Ready(None)
         } else {
@@ -759,20 +759,20 @@ where
     S2: Stream + Unpin,
 {
     type Item = (S1::Item, S2::Item);
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let item1 = match self.stream1.poll_next_unpin(cx) {
             Poll::Ready(Some(item)) => item,
             Poll::Ready(None) => return Poll::Ready(None),
             Poll::Pending => return Poll::Pending,
         };
-        
+
         let item2 = match self.stream2.poll_next_unpin(cx) {
             Poll::Ready(Some(item)) => item,
             Poll::Ready(None) => return Poll::Ready(None),
             Poll::Pending => return Poll::Pending,
         };
-        
+
         Poll::Ready(Some((item1, item2)))
     }
 }
@@ -807,7 +807,7 @@ impl ReactiveSystem {
             handlers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub fn on<F>(&self, event_type: String, handler: F)
     where
         F: Fn(Event) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync + 'static,
@@ -817,24 +817,24 @@ impl ReactiveSystem {
             .or_insert_with(Vec::new)
             .push(Arc::new(handler));
     }
-    
+
     pub async fn emit(&self, event: Event) {
         let handlers = self.handlers.read().unwrap();
-        
+
         if let Some(event_handlers) = handlers.get(&event.event_type) {
             let mut tasks = Vec::new();
-            
+
             for handler in event_handlers {
                 let handler = Arc::clone(handler);
                 let event = event.clone();
-                
+
                 let task = tokio::spawn(async move {
                     handler(event).await;
                 });
-                
+
                 tasks.push(task);
             }
-            
+
             // 等待所有处理器完成
             for task in tasks {
                 task.await.ok();
@@ -847,7 +847,7 @@ impl ReactiveSystem {
 #[tokio::main]
 async fn main() {
     let system = ReactiveSystem::new();
-    
+
     // 注册事件处理器
     system.on("user.created".to_string(), |event| {
         Box::pin(async move {
@@ -855,14 +855,14 @@ async fn main() {
             // 发送欢迎邮件
         })
     });
-    
+
     system.on("user.created".to_string(), |event| {
         Box::pin(async move {
             println!("Creating user profile...");
             // 创建用户配置文件
         })
     });
-    
+
     // 发射事件
     let event = Event {
         id: uuid::Uuid::new_v4().to_string(),
@@ -873,7 +873,7 @@ async fn main() {
         }),
         timestamp: chrono::Utc::now(),
     };
-    
+
     system.emit(event).await;
 }
 ```
@@ -903,16 +903,16 @@ impl ReactiveWebApp {
             user_count: 0,
             active_sessions: 0,
         };
-        
+
         Self {
             state_stream: Arc::new(BehaviorSubject::new(initial_state)),
         }
     }
-    
+
     pub fn subscribe_to_state(&self, observer: Box<dyn Observer<AppState>>) {
         self.state_stream.subscribe(observer);
     }
-    
+
     pub fn update_state<F>(&self, updater: F)
     where
         F: FnOnce(&mut AppState),
@@ -933,10 +933,10 @@ async fn websocket_handler(
 
 async fn handle_socket(socket: WebSocket, app: Arc<ReactiveWebApp>) {
     let (mut sender, _receiver) = socket.split();
-    
+
     // 创建观察者
     let observer = WebSocketObserver { sender };
-    
+
     // 订阅状态变化
     app.subscribe_to_state(Box::new(observer));
 }
@@ -950,11 +950,11 @@ impl Observer<AppState> for WebSocketObserver {
         let json = serde_json::to_string(&item).unwrap();
         self.sender.send(Message::Text(json)).await.ok();
     }
-    
+
     fn on_error(&mut self, _error: Box<dyn std::error::Error + Send>) {
         // 处理错误
     }
-    
+
     fn on_completed(&mut self) {
         // 关闭连接
     }
@@ -985,7 +985,6 @@ impl Observer<AppState> for WebSocketObserver {
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日
-

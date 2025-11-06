@@ -21,7 +21,7 @@ impl SyncControlFlow {
     pub fn execute_sync(&self, operation: Operation) -> Result<ExecutionResult, OtlpError> {
         // 同步执行控制逻辑
         let state = self.state.lock().unwrap();
-        
+
         match operation {
             Operation::StartTrace => {
                 let span = self.create_span()?;
@@ -65,7 +65,7 @@ impl AsyncControlFlow {
                 self.task_scheduler.schedule(Box::new(RecordMetricTask::new(metric)))
             }
         };
-        
+
         task.await
     }
 }
@@ -99,7 +99,7 @@ impl HybridControlFlow {
             }
         }
     }
-    
+
     async fn execute_hybrid_operation(&self, operation: Operation) -> Result<ExecutionResult, OtlpError> {
         match operation {
             Operation::ComplexTrace { critical_parts, async_parts } => {
@@ -107,18 +107,18 @@ impl HybridControlFlow {
                 for critical_op in critical_parts {
                     self.sync_controller.execute_sync(critical_op)?;
                 }
-                
+
                 // 非关键部分异步执行
                 let async_tasks: Vec<_> = async_parts.into_iter()
                     .map(|async_op| self.async_controller.execute_async(async_op))
                     .collect();
-                
+
                 // 等待所有异步任务完成
                 let results = futures::future::join_all(async_tasks).await;
                 for result in results {
                     result?;
                 }
-                
+
                 Ok(ExecutionResult::Success)
             }
             _ => Err(OtlpError::UnsupportedOperation)
@@ -143,15 +143,15 @@ pub struct SequentialExecutionFlow {
 impl SequentialExecutionFlow {
     pub async fn execute_sequential(&mut self) -> Result<ExecutionResult, OtlpError> {
         let mut results = Vec::new();
-        
+
         for operation in self.operations.drain(..) {
             let result = self.execute_operation(operation).await?;
             results.push(result);
         }
-        
+
         Ok(ExecutionResult::Batch(results))
     }
-    
+
     async fn execute_operation(&self, operation: Operation) -> Result<OperationResult, OtlpError> {
         // 根据操作类型执行
         match operation {
@@ -178,42 +178,42 @@ impl ParallelExecutionFlow {
     pub async fn execute_parallel(&mut self) -> Result<ExecutionResult, OtlpError> {
         let semaphore = Arc::new(Semaphore::new(self.concurrency_limit));
         let mut tasks = Vec::new();
-        
+
         for operation_group in self.operation_groups.drain(..) {
             let semaphore = semaphore.clone();
             let context = self.execution_context.clone();
-            
+
             let task = tokio::spawn(async move {
                 let _permit = semaphore.acquire().await.unwrap();
                 Self::execute_operation_group(operation_group, context).await
             });
-            
+
             tasks.push(task);
         }
-        
+
         // 等待所有任务完成
         let results = futures::future::join_all(tasks).await;
         let mut execution_results = Vec::new();
-        
+
         for result in results {
             let operation_result = result??;
             execution_results.push(operation_result);
         }
-        
+
         Ok(ExecutionResult::Batch(execution_results))
     }
-    
+
     async fn execute_operation_group(
         operations: Vec<Operation>,
         context: ExecutionContext
     ) -> Result<OperationResult, OtlpError> {
         let mut group_results = Vec::new();
-        
+
         for operation in operations {
             let result = Self::execute_single_operation(operation, &context).await?;
             group_results.push(result);
         }
-        
+
         Ok(OperationResult::Group(group_results))
     }
 }
@@ -237,17 +237,17 @@ impl RecursiveExecutionFlow {
         if self.current_depth >= self.max_depth {
             return Err(OtlpError::MaxDepthExceeded);
         }
-        
+
         self.current_depth += 1;
         let result = match operation {
             Operation::NestedTrace { child_operations } => {
                 let mut child_results = Vec::new();
-                
+
                 for child_op in child_operations {
                     let child_result = self.execute_recursive(child_op).await?;
                     child_results.push(child_result);
                 }
-                
+
                 ExecutionResult::Nested(child_results)
             }
             Operation::RecursiveMetric { base_metric, recursion_factor } => {
@@ -258,11 +258,11 @@ impl RecursiveExecutionFlow {
                 self.execute_simple_operation(operation).await?
             }
         };
-        
+
         self.current_depth -= 1;
         Ok(result)
     }
-    
+
     async fn execute_recursive_metric(
         &self,
         base_metric: Metric,
@@ -271,13 +271,13 @@ impl RecursiveExecutionFlow {
         if recursion_factor <= 1.0 {
             return Ok(ExecutionResult::Metric(base_metric));
         }
-        
+
         // 递归处理指标
         let modified_metric = Metric {
             value: base_metric.value * recursion_factor,
             ..base_metric
         };
-        
+
         Ok(ExecutionResult::Metric(modified_metric))
     }
 }
@@ -301,22 +301,22 @@ impl SyncDataFlow {
         // 同步数据处理
         let mut buffer = self.data_buffer.lock().unwrap();
         buffer.push(data.clone());
-        
+
         // 同步处理管道
         let processed = self.processing_pipeline.process_sync(data)?;
-        
+
         Ok(processed)
     }
-    
+
     pub fn flush_buffer_sync(&self) -> Result<Vec<ProcessedData>, OtlpError> {
         let mut buffer = self.data_buffer.lock().unwrap();
         let mut results = Vec::new();
-        
+
         for data in buffer.drain(..) {
             let processed = self.processing_pipeline.process_sync(data)?;
             results.push(processed);
         }
-        
+
         Ok(results)
     }
 }
@@ -338,11 +338,11 @@ impl AsyncDataFlow {
         self.data_channel.send(data)?;
         Ok(())
     }
-    
+
     pub async fn start_processing(&mut self) -> Result<(), OtlpError> {
         let (tx, mut rx) = mpsc::unbounded_channel::<TelemetryData>();
         self.data_channel = tx;
-        
+
         // 启动异步处理任务
         let batch_processor = self.batch_processor.clone();
         let processing_task = tokio::spawn(async move {
@@ -350,13 +350,13 @@ impl AsyncDataFlow {
             let batch_size = 100;
             let flush_interval = Duration::from_millis(100);
             let mut last_flush = Instant::now();
-            
+
             loop {
                 tokio::select! {
                     data = rx.recv() => {
                         if let Some(data) = data {
                             batch.push(data);
-                            
+
                             if batch.len() >= batch_size {
                                 batch_processor.process_batch(batch).await?;
                                 batch = Vec::new();
@@ -374,7 +374,7 @@ impl AsyncDataFlow {
                 }
             }
         });
-        
+
         self.processing_tasks.insert(processing_task);
         Ok(())
     }
@@ -409,10 +409,10 @@ impl HybridDataFlow {
                 self.priority_queue.push(data, Priority::High);
             }
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn process_priority_queue(&mut self) -> Result<(), OtlpError> {
         while let Some((data, _priority)) = self.priority_queue.pop() {
             // 优先级数据优先处理
@@ -443,30 +443,30 @@ impl TaskScheduler {
             scheduled_time: Instant::now(),
             retry_count: 0,
         };
-        
+
         let mut queue = self.task_queue.lock().unwrap();
         queue.push_back(scheduled_task);
-        
+
         // 通知工作线程
         self.worker_pool.notify_new_task().await;
         Ok(())
     }
-    
+
     pub async fn start_scheduler(&self) -> Result<(), OtlpError> {
         let queue = self.task_queue.clone();
         let worker_pool = self.worker_pool.clone();
         let config = self.scheduler_config.clone();
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_millis(100));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 // 检查到期的任务
                 let mut queue = queue.lock().unwrap();
                 let now = Instant::now();
-                
+
                 while let Some(task) = queue.front() {
                     if now >= task.scheduled_time {
                         let task = queue.pop_front().unwrap();
@@ -477,7 +477,7 @@ impl TaskScheduler {
                 }
             }
         });
-        
+
         Ok(())
     }
 }
@@ -496,7 +496,7 @@ pub struct DynamicScheduler {
 impl DynamicScheduler {
     pub async fn adjust_scheduling(&mut self) -> Result<(), OtlpError> {
         let metrics = self.performance_monitor.get_current_metrics().await?;
-        
+
         // 根据性能指标调整调度策略
         if metrics.cpu_usage > 0.8 {
             // CPU使用率高，减少并发任务
@@ -508,13 +508,13 @@ impl DynamicScheduler {
             // 延迟高，优化任务优先级
             self.adjustment_controller.optimize_priorities().await?;
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn start_dynamic_adjustment(&mut self) -> Result<(), OtlpError> {
         let mut interval = tokio::time::interval(Duration::from_secs(10));
-        
+
         loop {
             interval.tick().await;
             self.adjust_scheduling().await?;
@@ -539,37 +539,37 @@ impl ExecutionFlowOrganizer {
     pub async fn execute_phases(&mut self) -> Result<ExecutionResult, OtlpError> {
         let mut results = Vec::new();
         let mut completed_phases = HashSet::new();
-        
+
         // 按依赖关系执行阶段
         while completed_phases.len() < self.execution_phases.len() {
             let ready_phases = self.get_ready_phases(&completed_phases);
-            
+
             if ready_phases.is_empty() {
                 return Err(OtlpError::CircularDependency);
             }
-            
+
             // 并行执行就绪的阶段
             let phase_tasks: Vec<_> = ready_phases.into_iter()
                 .map(|phase_id| self.execute_phase(phase_id))
                 .collect();
-            
+
             let phase_results = futures::future::join_all(phase_tasks).await;
-            
+
             for (phase_id, result) in phase_results {
                 result?;
                 completed_phases.insert(phase_id);
                 results.push(ExecutionResult::Phase(phase_id));
             }
         }
-        
+
         Ok(ExecutionResult::Batch(results))
     }
-    
+
     async fn execute_phase(&self, phase_id: PhaseId) -> Result<PhaseResult, OtlpError> {
         let phase = self.execution_phases.iter()
             .find(|p| p.id == phase_id)
             .ok_or(OtlpError::PhaseNotFound)?;
-        
+
         match phase.execution_type {
             ExecutionType::Sync => self.execute_sync_phase(phase).await,
             ExecutionType::Async => self.execute_async_phase(phase).await,
@@ -594,29 +594,29 @@ impl ControlFlowOrganizer {
         let mut visited = HashSet::new();
         let mut execution_stack = vec![start_node];
         let mut results = Vec::new();
-        
+
         while let Some(current_node) = execution_stack.pop() {
             if visited.contains(&current_node) {
                 continue;
             }
-            
+
             visited.insert(current_node);
-            
+
             let node = self.control_nodes.get(&current_node)
                 .ok_or(OtlpError::NodeNotFound)?;
-            
+
             // 执行当前节点
             let result = self.execute_control_node(node).await?;
             results.push(result);
-            
+
             // 根据控制流逻辑决定下一个节点
             let next_nodes = self.get_next_nodes(current_node)?;
             execution_stack.extend(next_nodes);
         }
-        
+
         Ok(ExecutionResult::ControlFlow(results))
     }
-    
+
     async fn execute_control_node(&self, node: &ControlNode) -> Result<NodeResult, OtlpError> {
         match &node.node_type {
             ControlNodeType::Conditional { condition, true_branch, false_branch } => {
@@ -628,14 +628,14 @@ impl ControlFlowOrganizer {
             }
             ControlNodeType::Loop { condition, body } => {
                 let mut loop_results = Vec::new();
-                
+
                 while condition.evaluate(&self.execution_state)? {
                     for body_node in body {
                         let result = self.execute_control_node(body_node).await?;
                         loop_results.push(result);
                     }
                 }
-                
+
                 Ok(NodeResult::Loop(loop_results))
             }
             ControlNodeType::Operation(operation) => {
@@ -659,39 +659,39 @@ pub struct DataFlowOrganizer {
 impl DataFlowOrganizer {
     pub async fn execute_data_flow(&mut self, input_data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         let mut current_data = input_data;
-        
+
         // 按顺序执行数据处理管道
         for processor in &self.data_processors {
             current_data = processor.process(current_data, &mut self.data_flow_state).await?;
         }
-        
+
         Ok(current_data)
     }
-    
+
     pub async fn execute_parallel_data_flow(&mut self, input_data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         // 并行执行可以并行处理的数据处理器
         let parallel_processors = self.get_parallel_processors();
         let sequential_processors = self.get_sequential_processors();
-        
+
         let mut current_data = input_data;
-        
+
         // 并行处理阶段
         if !parallel_processors.is_empty() {
             let parallel_tasks: Vec<_> = parallel_processors.into_iter()
                 .map(|processor| processor.process(current_data.clone(), &mut self.data_flow_state))
                 .collect();
-            
+
             let parallel_results = futures::future::join_all(parallel_tasks).await;
-            
+
             // 合并并行处理结果
             current_data = self.merge_parallel_results(parallel_results)?;
         }
-        
+
         // 顺序处理阶段
         for processor in sequential_processors {
             current_data = processor.process(current_data, &mut self.data_flow_state).await?;
         }
-        
+
         Ok(current_data)
     }
 }
@@ -718,10 +718,10 @@ impl ExecutionFlowLogger {
             context: self.execution_context.clone(),
             metadata: HashMap::new(),
         }).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn log_execution_end(&self, operation: &Operation, result: &ExecutionResult) -> Result<(), OtlpError> {
         self.logger.log(LogEntry {
             timestamp: Utc::now(),
@@ -730,10 +730,10 @@ impl ExecutionFlowLogger {
             context: self.execution_context.clone(),
             metadata: HashMap::new(),
         }).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn log_execution_error(&self, operation: &Operation, error: &OtlpError) -> Result<(), OtlpError> {
         self.logger.log(LogEntry {
             timestamp: Utc::now(),
@@ -742,7 +742,7 @@ impl ExecutionFlowLogger {
             context: self.execution_context.clone(),
             metadata: HashMap::new(),
         }).await?;
-        
+
         Ok(())
     }
 }
@@ -766,10 +766,10 @@ impl ControlFlowLogger {
             context: self.control_flow_state.clone(),
             metadata: HashMap::new(),
         }).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn log_control_flow_transition(&self, from: NodeId, to: NodeId) -> Result<(), OtlpError> {
         self.logger.log(LogEntry {
             timestamp: Utc::now(),
@@ -778,7 +778,7 @@ impl ControlFlowLogger {
             context: self.control_flow_state.clone(),
             metadata: HashMap::new(),
         }).await?;
-        
+
         Ok(())
     }
 }
@@ -802,10 +802,10 @@ impl DataFlowLogger {
             context: self.data_flow_state.clone(),
             metadata: HashMap::new(),
         }).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn log_data_processing(&self, processor: &str, input_size: usize, output_size: usize) -> Result<(), OtlpError> {
         self.logger.log(LogEntry {
             timestamp: Utc::now(),
@@ -814,10 +814,10 @@ impl DataFlowLogger {
             context: self.data_flow_state.clone(),
             metadata: HashMap::new(),
         }).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn log_data_flow_end(&self, data: &TelemetryData, processing_time: Duration) -> Result<(), OtlpError> {
         self.logger.log(LogEntry {
             timestamp: Utc::now(),
@@ -826,7 +826,7 @@ impl DataFlowLogger {
             context: self.data_flow_state.clone(),
             metadata: HashMap::new(),
         }).await?;
-        
+
         Ok(())
     }
 }
@@ -853,7 +853,7 @@ impl SyncAsyncSelectionStrategy {
             OperationType::Background => ExecutionMode::Async,
         }
     }
-    
+
     pub fn should_use_async(&self, operation: &Operation, current_load: &SystemLoad) -> bool {
         match operation {
             Operation::HighLatency => true,

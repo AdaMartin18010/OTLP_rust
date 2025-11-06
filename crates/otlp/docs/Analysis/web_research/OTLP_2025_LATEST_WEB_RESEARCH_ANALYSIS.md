@@ -58,31 +58,31 @@ use opentelemetry::trace::{Tracer, Span};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 利用Rust 1.90的异步特性实现高性能OTLP数据收集
     let tracer = init_otlp_tracer().await?;
-    
+
     // 异步并发处理多个遥测数据流
     let mut handles = Vec::new();
-    
+
     for i in 0..10 {
         let tracer_clone = tracer.clone();
         let handle = tokio::spawn(async move {
             let span = tracer_clone.start(format!("operation-{}", i));
-            
+
             // 模拟异步操作
             sleep(Duration::from_millis(100)).await;
-            
+
             span.set_attribute("operation_id", i.into());
             span.set_attribute("async_processing", true.into());
-            
+
             span.end();
         });
         handles.push(handle);
     }
-    
+
     // 等待所有异步操作完成
     for handle in handles {
         handle.await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -110,7 +110,7 @@ impl OtlpExporter {
             spans: spans.into_iter().collect(),
             metadata: self.config.metadata.clone(),
         };
-        
+
         // 异步发送，不阻塞调用线程
         self.send_batch_async(batch).await
     }
@@ -127,13 +127,13 @@ use thiserror::Error;
 pub enum OtlpError {
     #[error("网络传输错误: {0}")]
     Transport(#[from] tonic::transport::Error),
-    
+
     #[error("序列化错误: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     #[error("配置错误: {0}")]
     Configuration(String),
-    
+
     #[error("认证失败: {0}")]
     Authentication(String),
 }
@@ -170,16 +170,16 @@ impl HybridOtlpProcessor {
     pub fn process_sync(&self, data: TelemetryData) -> Result<(), OtlpError> {
         self.sync_processor.process(data)
     }
-    
+
     // 异步接口用于复杂操作
     pub async fn process_async(&self, data: TelemetryData) -> Result<(), OtlpError> {
         self.async_processor.process(data).await
     }
-    
+
     // 流式处理大量数据
     pub fn process_stream(&self, mut stream: impl Stream<Item = TelemetryData>) {
         let control_sender = self.control_channel.clone();
-        
+
         tokio::spawn(async move {
             while let Some(data) = stream.next().await {
                 // 根据数据量选择同步或异步处理
@@ -219,7 +219,7 @@ impl TokenBucket {
             last_refill: std::sync::Mutex::new(Instant::now()),
         }
     }
-    
+
     pub async fn acquire(&self, tokens: u64) -> bool {
         loop {
             let current_tokens = self.tokens.load(Ordering::Acquire);
@@ -239,17 +239,17 @@ impl TokenBucket {
             }
         }
     }
-    
+
     async fn refill_tokens(&self) {
         let mut last_refill = self.last_refill.lock().unwrap();
         let now = Instant::now();
         let elapsed = now.duration_since(*last_refill);
-        
+
         if elapsed.as_millis() > 0 {
             let tokens_to_add = (elapsed.as_millis() as u64 * self.refill_rate) / 1000;
             let current_tokens = self.tokens.load(Ordering::Acquire);
             let new_tokens = (current_tokens + tokens_to_add).min(self.capacity);
-            
+
             self.tokens.store(new_tokens, Ordering::Release);
             *last_refill = now;
         }
@@ -275,27 +275,27 @@ pub struct OtlpDataPipeline {
 impl OtlpDataPipeline {
     pub fn new(buffer_size: usize) -> Self {
         let (sender, receiver) = unbounded();
-        
+
         Self {
             producer: Arc::new(OtlpProducer::new(sender.clone())),
             consumer: Arc::new(OtlpConsumer::new(receiver)),
             channel: (sender, receiver),
         }
     }
-    
+
     pub async fn start(&self) -> Result<(), OtlpError> {
         // 启动消费者
         let consumer = self.consumer.clone();
         tokio::spawn(async move {
             consumer.process_loop().await;
         });
-        
+
         // 启动生产者
         let producer = self.producer.clone();
         tokio::spawn(async move {
             producer.collect_loop().await;
         });
-        
+
         Ok(())
     }
 }
@@ -369,31 +369,31 @@ impl OtlpEventBus {
             listeners: Vec::new(),
         }
     }
-    
+
     pub fn subscribe(&mut self, listener: Arc<dyn OtlpEventListener>) {
         self.listeners.push(listener);
     }
-    
+
     pub async fn publish_trace(&self, trace: TraceData) {
         let _ = self.trace_sender.send(trace.clone());
-        
+
         // 通知所有监听器
         for listener in &self.listeners {
             listener.on_trace_created(&trace).await;
         }
     }
-    
+
     pub async fn publish_metric(&self, metric: MetricData) {
         let _ = self.metric_sender.send(metric.clone());
-        
+
         for listener in &self.listeners {
             listener.on_metric_updated(&metric).await;
         }
     }
-    
+
     pub async fn publish_log(&self, log: LogData) {
         let _ = self.log_sender.send(log.clone());
-        
+
         for listener in &self.listeners {
             listener.on_log_generated(&log).await;
         }
@@ -426,9 +426,9 @@ impl OtlpMicroservice {
             .with_service(&service_name, &service_version)
             .with_resource_attribute("service.name", &service_name)
             .with_resource_attribute("service.version", &service_version);
-        
+
         let otlp_client = Arc::new(OtlpClient::new(config).await?);
-        
+
         Ok(Self {
             service_name,
             service_version,
@@ -437,7 +437,7 @@ impl OtlpMicroservice {
             metrics_collector: Arc::new(MetricsCollector::new()),
         })
     }
-    
+
     pub async fn start(&self) -> Result<(), OtlpError> {
         // 启动健康检查
         let health_checker = self.health_checker.clone();
@@ -445,14 +445,14 @@ impl OtlpMicroservice {
         tokio::spawn(async move {
             health_checker.start_monitoring(otlp_client).await;
         });
-        
+
         // 启动指标收集
         let metrics_collector = self.metrics_collector.clone();
         let otlp_client = self.otlp_client.clone();
         tokio::spawn(async move {
             metrics_collector.start_collection(otlp_client).await;
         });
-        
+
         Ok(())
     }
 }
@@ -476,17 +476,17 @@ impl OtlpDataPipeline {
                 return Ok(()); // 数据被过滤掉
             }
         }
-        
+
         // 处理器阶段
         for processor in &self.processors {
             data = processor.process(data).await?;
         }
-        
+
         // 导出器阶段
         for exporter in &self.exporters {
             exporter.export(data.clone()).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -531,7 +531,7 @@ use std::time::Duration;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志系统
     tracing_subscriber::fmt::init();
-    
+
     // 创建OTLP配置
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
@@ -541,14 +541,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_sampling_ratio(0.1)
         .with_resource_attribute("environment", "development")
         .with_resource_attribute("region", "us-west-2");
-    
+
     // 创建并初始化客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 模拟Web研究数据收集
     let research_data = collect_web_research_data().await?;
-    
+
     // 发送追踪数据
     let trace_result = client.send_trace("web_research_analysis").await?
         .with_attribute("research.topic", "OTLP_2025")
@@ -559,9 +559,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_status(StatusCode::Ok, Some("研究数据收集成功".to_string()))
         .finish()
         .await?;
-    
+
     println!("追踪数据发送结果: 成功 {} 条", trace_result.success_count);
-    
+
     // 发送指标数据
     let metric_result = client.send_metric("web_research_success_rate", 1.0).await?
         .with_label("research_type", "otlp_analysis")
@@ -570,9 +570,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_unit("ratio")
         .send()
         .await?;
-    
+
     println!("指标数据发送结果: 成功 {} 条", metric_result.success_count);
-    
+
     // 发送日志数据
     let log_result = client.send_log("Web研究分析完成", LogSeverity::Info).await?
         .with_attribute("research.topic", "OTLP_2025")
@@ -581,19 +581,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_trace_context(&trace_result.trace_id, &trace_result.span_id)
         .send()
         .await?;
-    
+
     println!("日志数据发送结果: 成功 {} 条", log_result.success_count);
-    
+
     // 关闭客户端
     client.shutdown().await?;
-    
+
     Ok(())
 }
 
 // 模拟Web研究数据收集
 async fn collect_web_research_data() -> Result<ResearchData, Box<dyn std::error::Error>> {
     let start_time = std::time::Instant::now();
-    
+
     // 模拟异步Web搜索
     let sources = vec![
         "OpenTelemetry官方文档".to_string(),
@@ -601,7 +601,7 @@ async fn collect_web_research_data() -> Result<ResearchData, Box<dyn std::error:
         "OTLP协议规范".to_string(),
         "可观测性最佳实践".to_string(),
     ];
-    
+
     let keywords = vec![
         "OTLP".to_string(),
         "OpenTelemetry".to_string(),
@@ -609,12 +609,12 @@ async fn collect_web_research_data() -> Result<ResearchData, Box<dyn std::error:
         "异步编程".to_string(),
         "可观测性".to_string(),
     ];
-    
+
     // 模拟处理时间
     tokio::time::sleep(Duration::from_millis(500)).await;
-    
+
     let duration = start_time.elapsed();
-    
+
     Ok(ResearchData {
         sources,
         keywords,
@@ -649,28 +649,28 @@ impl OtlpBatchProcessor {
     pub async fn add_data(&self, data: TelemetryData) -> Result<(), OtlpError> {
         let mut pending = self.pending_data.lock().unwrap();
         pending.push(data);
-        
+
         // 检查是否需要立即刷新
         if pending.len() >= self.batch_size {
             self.flush_batch().await?;
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn flush_batch(&self) -> Result<(), OtlpError> {
         let mut pending = self.pending_data.lock().unwrap();
         if pending.is_empty() {
             return Ok(());
         }
-        
+
         let batch = std::mem::take(&mut *pending);
         drop(pending); // 释放锁
-        
+
         // 异步发送批次数据
         self.send_batch_async(batch).await
     }
-    
+
     async fn send_batch_async(&self, batch: Vec<TelemetryData>) -> Result<(), OtlpError> {
         // 实现异步批次发送逻辑
         tokio::time::sleep(Duration::from_millis(10)).await; // 模拟网络延迟
@@ -693,26 +693,26 @@ pub struct OtlpConnectionPool {
 impl OtlpConnectionPool {
     pub async fn get_connection(&self) -> Result<OtlpConnection, OtlpError> {
         let mut pool = self.pool.lock().unwrap();
-        
+
         // 尝试获取可用连接
         if let Some(connection) = pool.pop() {
             if connection.is_healthy().await {
                 return Ok(connection);
             }
         }
-        
+
         // 创建新连接
         if pool.len() < self.max_connections {
             let connection = OtlpConnection::new(self.connection_timeout).await?;
             return Ok(connection);
         }
-        
+
         // 等待连接可用
         drop(pool);
         tokio::time::sleep(Duration::from_millis(100)).await;
         self.get_connection().await
     }
-    
+
     pub fn return_connection(&self, connection: OtlpConnection) {
         let mut pool = self.pool.lock().unwrap();
         if pool.len() < self.max_connections {
@@ -747,4 +747,4 @@ impl OtlpConnectionPool {
 
 ---
 
-*本报告基于2025年最新Web研究结果，为OTLP在Rust 1.90环境下的应用提供全面的技术分析和实践指导。*
+_本报告基于2025年最新Web研究结果，为OTLP在Rust 1.90环境下的应用提供全面的技术分析和实践指导。_

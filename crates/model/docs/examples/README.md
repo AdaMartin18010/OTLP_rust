@@ -2,7 +2,7 @@
 
 > **完整的代码示例**，展示 c12_model 的实际使用
 
-**最后更新**: 2025-10-19  
+**最后更新**: 2025-10-19
 **适用版本**: Rust 1.90+
 
 ---
@@ -362,8 +362,8 @@ cargo run -p c12_model --example your_example --all-features
 
 ---
 
-**示例维护**: 项目维护团队  
-**最后更新**: 2025-10-19  
+**示例维护**: 项目维护团队
+**最后更新**: 2025-10-19
 **反馈**: [GitHub Issues](https://github.com/rust-lang/rust-lang/issues)
 
 ---

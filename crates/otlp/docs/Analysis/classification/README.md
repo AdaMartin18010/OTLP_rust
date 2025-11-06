@@ -184,7 +184,7 @@ impl TransportProtocol {
             TransportProtocol::HttpProtobuf => 4318,
         }
     }
-    
+
     /// 获取内容类型
     pub fn content_type(&self) -> &'static str {
         match self {
@@ -263,7 +263,7 @@ impl BasicConfig {
             retry_count: 3,
         }
     }
-    
+
     /// 生产环境配置
     pub fn for_production() -> Self {
         Self {
@@ -412,11 +412,11 @@ pub struct ResourceUsage {
 impl ResourceUsage {
     /// 获取资源使用等级
     pub fn get_usage_level(&self) -> UsageLevel {
-        let total_score = self.cpu_usage + 
+        let total_score = self.cpu_usage +
             (self.memory_usage as f64 / 1024.0 / 1024.0) + // MB
             (self.network_usage as f64 / 1024.0) + // KB
             (self.disk_io_usage as f64 / 1024.0); // KB
-        
+
         match total_score {
             score if score < 10.0 => UsageLevel::Low,
             score if score < 50.0 => UsageLevel::Medium,
@@ -622,22 +622,22 @@ pub struct SmartConfigBuilder {
 impl SmartConfigBuilder {
     pub fn build(&self) -> OtlpConfig {
         let mut config = self.application_type.get_recommended_config();
-        
+
         // 根据部署环境调整
         let env_config = self.deployment_env.get_config();
         config = config
             .with_endpoint(env_config.endpoint.clone())
             .with_debug(env_config.debug)
             .with_sampling_ratio(env_config.sampling_ratio);
-        
+
         // 根据数据量级优化
         let volume_config = self.data_volume.get_optimized_config();
         config = config.with_batch_config(volume_config.batch_config);
-        
+
         // 根据性能要求调整
         let perf_config = self.performance_level.get_config();
         config = config.with_batch_config(perf_config.batch_config);
-        
+
         config
     }
 }
@@ -654,14 +654,14 @@ pub struct DynamicConfigManager {
 impl DynamicConfigManager {
     pub async fn adjust_config(&self, metrics: &PerformanceMetrics) -> Result<()> {
         let mut config = self.current_config.read().await.clone();
-        
+
         for strategy in &self.adjustment_strategies {
             config = strategy.adjust(config, metrics).await?;
         }
-        
+
         let mut current = self.current_config.write().await;
         *current = config;
-        
+
         Ok(())
     }
 }

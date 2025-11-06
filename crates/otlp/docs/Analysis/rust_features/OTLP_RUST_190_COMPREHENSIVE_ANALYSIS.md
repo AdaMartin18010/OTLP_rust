@@ -73,13 +73,13 @@ OpenTelemetry Protocol (OTLP) 是CNCF（云原生计算基金会）制定的开�
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 异步客户端创建
     let client = OtlpClient::new(config).await?;
-    
+
     // 异步数据发送
     let result = client.send_trace("operation").await?
         .with_attribute("service", "my-service")
         .finish()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -282,7 +282,7 @@ impl OtlpClient {
     pub async fn send(&self, data: TelemetryData) -> Result<ExportResult> {
         // 异步处理逻辑
     }
-    
+
     // 同步兼容的配置方法
     pub fn with_endpoint(mut self, endpoint: impl Into<String>) -> Self {
         self.config.endpoint = endpoint.into();
@@ -480,7 +480,7 @@ let metric = TelemetryData::metric("request_count", MetricType::Counter)
 // 并发异步处理
 async fn process_multiple_operations(client: &OtlpClient) -> Result<()> {
     let mut futures = Vec::new();
-    
+
     for i in 0..10 {
         let client_clone = client.clone();
         let future = tokio::spawn(async move {
@@ -491,13 +491,13 @@ async fn process_multiple_operations(client: &OtlpClient) -> Result<()> {
         });
         futures.push(future);
     }
-    
+
     // 等待所有操作完成
     for future in futures {
         let result = future.await??;
         println!("操作完成: 成功 {} 条", result.success_count);
     }
-    
+
     Ok(())
 }
 ```
@@ -524,11 +524,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_protocol(TransportProtocol::Grpc)
         .with_service("my-service", "1.0.0")
         .with_timeout(Duration::from_secs(10));
-    
+
     // 创建客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送追踪数据
     let result = client.send_trace("user-login").await?
         .with_attribute("user.id", "12345")
@@ -537,9 +537,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_status(StatusCode::Ok, Some("登录成功".to_string()))
         .finish()
         .await?;
-    
+
     println!("追踪数据发送结果: 成功 {} 条", result.success_count);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -584,19 +584,19 @@ println!("日志数据发送结果: 成功 {} 条", result.success_count);
 // 批量发送数据
 async fn send_batch_data(client: &OtlpClient) -> Result<()> {
     let mut batch_data = Vec::new();
-    
+
     for i in 0..100 {
         let trace_data = TelemetryData::trace(format!("batch-operation-{}", i))
             .with_attribute("batch_id", "batch-001")
             .with_attribute("operation_index", i.to_string())
             .with_numeric_attribute("processing_time", (i * 10) as f64);
-        
+
         batch_data.push(trace_data);
     }
-    
+
     let result = client.send_batch(batch_data).await?;
     println!("批量发送结果: 成功 {} 条", result.success_count);
-    
+
     Ok(())
 }
 ```
@@ -607,7 +607,7 @@ async fn send_batch_data(client: &OtlpClient) -> Result<()> {
 // 异步并发发送
 async fn concurrent_operations(client: &OtlpClient) -> Result<()> {
     let mut futures = Vec::new();
-    
+
     for i in 0..10 {
         let client_clone = client.clone();
         let future = tokio::spawn(async move {
@@ -619,13 +619,13 @@ async fn concurrent_operations(client: &OtlpClient) -> Result<()> {
         });
         futures.push(future);
     }
-    
+
     // 等待所有异步操作完成
     for future in futures {
         let result = future.await??;
         println!("并发操作结果: 成功 {} 条", result.success_count);
     }
-    
+
     Ok(())
 }
 ```
@@ -642,18 +642,18 @@ async fn send_with_retry(client: &OtlpClient) -> Result<()> {
         retry_delay_multiplier: 2.0,
         randomize_retry_delay: true,
     };
-    
+
     let config = OtlpConfig::default()
         .with_retry_config(retry_config);
-    
+
     let client = OtlpClient::new(config).await?;
-    
+
     // 发送数据（自动重试）
     let result = client.send_trace("retry-operation").await?
         .with_attribute("retry_enabled", "true")
         .finish()
         .await?;
-    
+
     println!("重试发送结果: 成功 {} 条", result.success_count);
     Ok(())
 }
@@ -667,15 +667,15 @@ async fn send_with_retry(client: &OtlpClient) -> Result<()> {
 // 获取客户端指标
 async fn monitor_client_metrics(client: &OtlpClient) {
     let metrics = client.get_metrics().await;
-    
+
     println!("=== 客户端指标 ===");
     println!("总发送数据量: {}", metrics.total_data_sent);
     println!("总接收数据量: {}", metrics.total_data_received);
     println!("活跃连接数: {}", metrics.active_connections);
     println!("运行时间: {:?}", metrics.uptime);
     println!("平均导出延迟: {:?}", metrics.exporter_metrics.average_export_latency);
-    println!("导出成功率: {:.2}%", 
-        (metrics.exporter_metrics.successful_exports as f64 / 
+    println!("导出成功率: {:.2}%",
+        (metrics.exporter_metrics.successful_exports as f64 /
          metrics.exporter_metrics.total_exports as f64) * 100.0);
 }
 ```
@@ -781,7 +781,7 @@ let client = OtlpClient::new(config).await?;
 
 ---
 
-**最后更新**: 2025年1月  
-**维护者**: Rust OTLP Team  
-**版本**: 0.1.0  
+**最后更新**: 2025年1月
+**维护者**: Rust OTLP Team
+**版本**: 0.1.0
 **Rust版本**: 1.90+

@@ -1,6 +1,6 @@
 # 压缩与编码
 
-> **核心库**: flate2, bzip2, zstd, lz4, base64  
+> **核心库**: flate2, bzip2, zstd, lz4, base64
 > **适用场景**: 数据压缩、文件压缩、网络传输、编码转换
 
 ---
@@ -130,7 +130,7 @@ fn main() {
     let data = b"Hello, World!";
     let encoded = encode_base64(data);
     println!("Encoded: {}", encoded);
-    
+
     let decoded = decode_base64(&encoded).unwrap();
     println!("Decoded: {}", String::from_utf8_lossy(&decoded));
 }
@@ -214,5 +214,5 @@ fn archive_log(log_path: &str) -> std::io::Result<()> {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

@@ -1,8 +1,8 @@
 ﻿# C11 开发库 - 文档中心
 
-**文档版本**: v2.1  
-**最后更新**: 2025年10月27日  
-**Rust 版本**: 1.90.0 (LLD链接器、const API稳定、workspace发布)  
+**文档版本**: v2.1
+**最后更新**: 2025年10月27日
+**Rust 版本**: 1.90.0 (LLD链接器、const API稳定、workspace发布)
 **状态**: 🟢 活跃维护
 
 > **简介**: 欢迎来到 C11 开发库项目文档中心！本文档是您探索项目的起点，提供统一的 Rust 接口集成各类主流中间件。
@@ -61,12 +61,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let redis_config = RedisConfig::new("redis://127.0.0.1:6379");
     let store = RedisStore::connect_with(redis_config).await?;
     store.set("hello", b"world").await?;
-    
+
     // PostgreSQL 示例
     let pg_config = PostgresConfig::new("postgres://user:pass@localhost/db");
     let db = PostgresDb::connect_with(pg_config).await?;
     let rows = db.query("SELECT * FROM users LIMIT 10").await?;
-    
+
     println!("✅ 开发库成功！");
     Ok(())
 }
@@ -173,21 +173,25 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 **C11 开发库**提供：
 
 ### 4.1 统一接口设计
+
 - 一致的API风格
 - 类型安全保证
 - 错误处理标准化
 
 ### 4.2 Rust 1.90+ 特性支持
+
 - LLD链接器加速编译
 - const API 稳定化
 - workspace 一键发布
 
 ### 4.3 异步非阻塞
+
 - 基于 Tokio 最新稳定版
 - 高性能异步运行时
 - 完整的异步生态支持
 
 ### 4.4 连接池管理
+
 - 自动连接池
 - 负载均衡
 - 健康检查
@@ -197,19 +201,23 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 ## 📊 支持的中间件
 
 ### 5.1 数据库
+
 - PostgreSQL
 - MySQL
 - SQLite
 
 ### 5.2 缓存
+
 - Redis (完整支持)
 
 ### 5.3 消息队列
+
 - Kafka
 - NATS
 - MQTT
 
 ### 5.4 HTTP代理
+
 - Pingora
 
 ---
@@ -217,15 +225,18 @@ cargo run --example rust190_features_demo --features kv-redis,tokio
 ## 🚀 Rust 1.90 新特性集成
 
 ### 6.1 编译性能提升
+
 - **LLD 链接器**: x86_64-unknown-linux-gnu 默认使用 LLD，大幅提升链接速度
 - **工作区发布**: 支持 `cargo publish --workspace` 一键发布所有 crate
 
 ### 6.2 API 稳定性增强
+
 - **常量上下文稳定**: 更多 API 可在 const 环境使用
 - **整数运算增强**: `checked_sub_signed`、`wrapping_sub_signed` 等新 API
 - **字符串比较**: `CStr`、`CString` 的 `PartialEq` 实现
 
 ### 6.3 使用建议
+
 ```bash
 # 更新到 Rust 1.90
 rustup update stable
@@ -472,10 +483,10 @@ cargo publish --workspace
 
 ---
 
-**文档版本**: v2.1  
-**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)  
-**最后更新**: 2025年10月27日  
-**维护者**: C11 Libraries Team  
+**文档版本**: v2.1
+**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)
+**最后更新**: 2025年10月27日
+**维护者**: C11 Libraries Team
 **反馈**: [提交 Issue](https://github.com/rust-lang/rust-lang/issues)
 
 ---

@@ -1,8 +1,8 @@
 # CSP Model API 完整文档
 
-**Crate:** c12_model  
-**模块:** csp_model  
-**Rust 版本:** 1.90.0  
+**Crate:** c12_model
+**模块:** csp_model
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -51,6 +51,7 @@ pub fn bounded<T>(capacity: usize) -> (Sender<T>, Receiver<T>) {
 ```
 
 **特点:**
+
 - 固定容量
 - 发送端可能阻塞（背压）
 - 内存可控
@@ -81,6 +82,7 @@ pub fn unbounded<T>() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
 ```
 
 **特点:**
+
 - 无容量限制
 - 发送端永不阻塞
 - 可能导致内存溢出
@@ -112,6 +114,7 @@ pub fn oneshot<T>() -> (oneshot::Sender<T>, oneshot::Receiver<T>) {
 ```
 
 **特点:**
+
 - 只能发送一次
 - 用于请求-响应模式
 - 高效的单次通信
@@ -290,7 +293,7 @@ async fn stage3(mut rx: mpsc::Receiver<i32>) {
 async fn run_pipeline() {
     let (tx1, rx1) = mpsc::channel(10);
     let (tx2, rx2) = mpsc::channel(10);
-    
+
     tokio::spawn(stage1(tx1));
     tokio::spawn(stage2(rx1, tx2));
     tokio::spawn(stage3(rx2));
@@ -310,7 +313,7 @@ async fn run_pipeline() {
 ```rust
 async fn fan_out_demo() {
     let (tx, _rx) = mpsc::channel(100);
-    
+
     // 创建多个 worker
     let mut workers = Vec::new();
     for i in 0..4 {
@@ -323,7 +326,7 @@ async fn fan_out_demo() {
         });
         workers.push(worker);
     }
-    
+
     // 生产者发送任务
     for task_id in 0..20 {
         tx.send(task_id).await.ok();
@@ -362,7 +365,7 @@ impl<T> RoundRobinDispatcher<T> {
 ```rust
 async fn fan_in_demo() {
     let (tx, mut rx) = mpsc::channel(100);
-    
+
     // 创建多个生产者
     for i in 0..4 {
         let tx = tx.clone();
@@ -373,7 +376,7 @@ async fn fan_in_demo() {
         });
     }
     drop(tx);  // 释放原始发送端
-    
+
     // 消费者接收所有数据
     while let Some(item) = rx.recv().await {
         println!("Received: {}", item);
@@ -389,7 +392,7 @@ pub async fn merge<T: Send + 'static>(
     rx2: mpsc::Receiver<T>,
 ) -> mpsc::Receiver<T> {
     let (tx, rx) = mpsc::channel(100);
-    
+
     // 转发 rx1
     let tx1 = tx.clone();
     tokio::spawn(async move {
@@ -398,7 +401,7 @@ pub async fn merge<T: Send + 'static>(
             tx1.send(item).await.ok();
         }
     });
-    
+
     // 转发 rx2
     tokio::spawn(async move {
         let mut rx2 = rx2;
@@ -406,7 +409,7 @@ pub async fn merge<T: Send + 'static>(
             tx.send(item).await.ok();
         }
     });
-    
+
     rx
 }
 ```
@@ -428,21 +431,21 @@ impl<T: Send + 'static> WorkerPool<T> {
     pub fn new(worker_count: usize) -> Self {
         let (task_tx, task_rx) = mpsc::channel(100);
         let (result_tx, result_rx) = mpsc::channel(100);
-        
+
         let task_rx = Arc::new(Mutex::new(task_rx));
         let mut workers = Vec::new();
-        
+
         for id in 0..worker_count {
             let task_rx = Arc::clone(&task_rx);
             let result_tx = result_tx.clone();
-            
+
             let handle = tokio::spawn(async move {
                 loop {
                     let task = {
                         let mut rx = task_rx.lock().await;
                         rx.recv().await
                     };
-                    
+
                     match task {
                         Some(t) => {
                             let result = process_task(t).await;
@@ -452,17 +455,17 @@ impl<T: Send + 'static> WorkerPool<T> {
                     }
                 }
             });
-            
+
             workers.push(handle);
         }
-        
+
         Self { task_tx, result_rx, workers }
     }
-    
+
     pub async fn submit(&self, task: T) -> Result<(), SendError> {
         self.task_tx.send(task).await
     }
-    
+
     pub async fn get_result(&mut self) -> Option<Result<T>> {
         self.result_rx.recv().await
     }
@@ -485,12 +488,12 @@ impl<T: Clone> PubSub<T> {
         let (tx, _) = broadcast::channel(capacity);
         Self { tx }
     }
-    
+
     /// 发布消息
     pub fn publish(&self, message: T) -> Result<usize, SendError> {
         self.tx.send(message)
     }
-    
+
     /// 订阅
     pub fn subscribe(&self) -> broadcast::Receiver<T> {
         self.tx.subscribe()
@@ -500,23 +503,23 @@ impl<T: Clone> PubSub<T> {
 // 使用示例
 async fn pubsub_demo() {
     let pubsub = PubSub::<String>::new(100);
-    
+
     // 创建多个订阅者
     let mut sub1 = pubsub.subscribe();
     let mut sub2 = pubsub.subscribe();
-    
+
     tokio::spawn(async move {
         while let Ok(msg) = sub1.recv().await {
             println!("Subscriber 1 received: {}", msg);
         }
     });
-    
+
     tokio::spawn(async move {
         while let Ok(msg) = sub2.recv().await {
             println!("Subscriber 2 received: {}", msg);
         }
     });
-    
+
     // 发布消息
     pubsub.publish("Hello".to_string()).ok();
     pubsub.publish("World".to_string()).ok();
@@ -539,7 +542,7 @@ impl<Req, Res> RequestReplyChannel<Req, Res> {
         let (tx, rx) = mpsc::channel(100);
         (Self { tx }, rx)
     }
-    
+
     /// 发送请求并等待响应
     pub async fn request(&self, req: Req) -> Result<Res, RecvError> {
         let (response_tx, response_rx) = oneshot::channel();
@@ -560,7 +563,7 @@ async fn server(mut rx: mpsc::Receiver<(String, oneshot::Sender<String>)>) {
 async fn client_demo() {
     let (client, rx) = RequestReplyChannel::new();
     tokio::spawn(server(rx));
-    
+
     let response = client.request("Hello".to_string()).await.unwrap();
     println!("Response: {}", response);
 }
@@ -600,13 +603,13 @@ impl<T> PriorityChannel<T> {
             notify: Arc::new(Notify::new()),
         }
     }
-    
+
     pub async fn send(&self, item: T, priority: u8) {
         let mut heap = self.heap.lock().await;
         heap.push(Reverse(PrioritizedItem { priority, item }));
         self.notify.notify_one();
     }
-    
+
     pub async fn recv(&self) -> Option<T> {
         loop {
             {
@@ -695,14 +698,14 @@ async fn data_pipeline_demo() {
     let (tx1, rx1) = mpsc::channel(10);
     let (tx2, rx2) = mpsc::channel(10);
     let (tx3, rx3) = mpsc::channel(10);
-    
+
     // Stage 1: 读取数据
     tokio::spawn(async move {
         for i in 0..100 {
             tx1.send(i).await.ok();
         }
     });
-    
+
     // Stage 2: 过滤
     tokio::spawn(async move {
         let mut rx1 = rx1;
@@ -712,7 +715,7 @@ async fn data_pipeline_demo() {
             }
         }
     });
-    
+
     // Stage 3: 转换
     tokio::spawn(async move {
         let mut rx2 = rx2;
@@ -720,7 +723,7 @@ async fn data_pipeline_demo() {
             tx3.send(n * 2).await.ok();
         }
     });
-    
+
     // Stage 4: 输出
     let mut rx3 = rx3;
     while let Some(n) = rx3.recv().await {
@@ -741,7 +744,7 @@ impl ConcurrentDownloader {
     pub async fn download_all(&mut self, urls: Vec<String>) -> Vec<Result<Bytes>> {
         let semaphore = Arc::new(Semaphore::new(self.max_concurrent));
         let mut tasks = Vec::new();
-        
+
         for url in urls {
             let permit = semaphore.clone().acquire_owned().await.unwrap();
             let task = tokio::spawn(async move {
@@ -751,13 +754,13 @@ impl ConcurrentDownloader {
             });
             tasks.push(task);
         }
-        
+
         // 等待所有下载完成
         let mut results = Vec::new();
         for task in tasks {
             results.push(task.await.unwrap());
         }
-        
+
         results
     }
 }
@@ -775,11 +778,11 @@ impl<E: Clone> EventBus<E> {
         let (tx, _) = broadcast::channel(capacity);
         Self { tx }
     }
-    
+
     pub fn emit(&self, event: E) {
         self.tx.send(event).ok();
     }
-    
+
     pub fn subscribe(&self) -> EventSubscriber<E> {
         EventSubscriber {
             rx: self.tx.subscribe(),
@@ -820,7 +823,7 @@ let (tx, rx) = oneshot::channel();
 ```rust
 async fn batch_processor(mut rx: mpsc::Receiver<Item>) {
     let mut batch = Vec::with_capacity(100);
-    
+
     loop {
         select! {
             Some(item) = rx.recv() => {
@@ -874,11 +877,11 @@ impl GracefulShutdown {
         let (tx, _) = broadcast::channel(1);
         Self { shutdown_tx: tx }
     }
-    
+
     pub fn trigger(&self) {
         self.shutdown_tx.send(()).ok();
     }
-    
+
     pub fn subscribe(&self) -> broadcast::Receiver<()> {
         self.shutdown_tx.subscribe()
     }
@@ -942,12 +945,12 @@ where
 - ✅ 性能优化和最佳实践
 
 **下一步推荐:**
+
 - 对比 [Actor Model API](./actor_model_api.md)
 - 参考 [完整示例代码](../../examples/csp_model_complete_impl.rs)
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **代码覆盖率:** 100%
-

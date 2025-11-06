@@ -1,8 +1,8 @@
 # ⚡ SIMD Optimization API 参考
 
-**模块**: `otlp::simd`  
-**版本**: 1.0  
-**状态**: ✅ 生产就绪  
+**模块**: `otlp::simd`
+**版本**: 1.0
+**状态**: ✅ 生产就绪
 **最后更新**: 2025年10月26日
 
 > **简介**: SIMD 矢量化优化 - 提供性能关键操作的 SIMD 实现，自动检测 CPU 能力并优雅降级。
@@ -21,15 +21,30 @@
     - [CpuFeatures](#cpufeatures)
     - [Aggregator](#aggregator)
     - [BatchSerializer](#batchserializer)
-    - [SimdString](#simdstring)
-  - [🔧 CPU特性检测](#-cpu特性检测)
-  - [📊 SIMD聚合](#-simd聚合)
-  - [📦 批量序列化](#-批量序列化)
-  - [💡 使用示例](#-使用示例)
-  - [⚡ 性能优化指南](#-性能优化指南)
-  - [🔬 性能基准](#-性能基准)
-  - [🐛 错误处理](#-错误处理)
-  - [📚 参考资源](#-参考资源)
+    - [StringOps](#stringops)
+  - [🔧 编译时配置](#-编译时配置)
+    - [Feature Flags](#feature-flags)
+    - [编译器标志](#编译器标志)
+  - [📊 性能基准](#-性能基准)
+    - [Aggregation性能](#aggregation性能)
+    - [Serialization性能](#serialization性能)
+  - [💡 最佳实践](#-最佳实践)
+    - [1. 批量处理](#1-批量处理)
+    - [2. 数据对齐](#2-数据对齐)
+    - [3. 特性检测缓存](#3-特性检测缓存)
+    - [4. 避免小数据集](#4-避免小数据集)
+  - [🔬 基准测试](#-基准测试)
+  - [🐛 调试和诊断](#-调试和诊断)
+    - [启用SIMD调试日志](#启用simd调试日志)
+    - [验证SIMD使用](#验证simd使用)
+  - [⚠️ 注意事项](#️-注意事项)
+    - [1. CPU特性要求](#1-cpu特性要求)
+    - [2. 数据大小阈值](#2-数据大小阈值)
+    - [3. 内存对齐](#3-内存对齐)
+    - [4. 跨平台兼容性](#4-跨平台兼容性)
+  - [📖 完整示例](#-完整示例)
+    - [Metrics聚合完整示例](#metrics聚合完整示例)
+  - [🔗 相关文档](#-相关文档)
 
 ---
 
@@ -96,25 +111,25 @@ pub struct CpuFeatures {
 impl CpuFeatures {
     /// 检测当前CPU的SIMD特性
     pub fn detect() -> Self;
-    
+
     /// 是否支持任何SIMD指令集
     pub fn has_simd(&self) -> bool;
-    
+
     /// 是否支持SSE2
     pub fn has_sse2(&self) -> bool;
-    
+
     /// 是否支持AVX
     pub fn has_avx(&self) -> bool;
-    
+
     /// 是否支持AVX2
     pub fn has_avx2(&self) -> bool;
-    
+
     /// 是否支持AVX-512
     pub fn has_avx512(&self) -> bool;
-    
+
     /// 是否支持BMI1/BMI2
     pub fn has_bmi(&self) -> bool;
-    
+
     /// 获取检测到的特性描述
     pub fn description(&self) -> String;
 }
@@ -128,7 +143,7 @@ let features = CpuFeatures::detect();
 if features.has_simd() {
     println!("✅ SIMD support detected!");
     println!("Features: {}", features.description());
-    
+
     if features.has_avx2() {
         println!("🚀 AVX2 available - optimal performance");
     } else if features.has_sse2() {
@@ -151,28 +166,28 @@ pub struct Aggregator;
 impl Aggregator {
     /// 计算i64数组的和
     pub fn sum_i64(values: &[i64]) -> i64;
-    
+
     /// 计算f64数组的和
     pub fn sum_f64(values: &[f64]) -> f64;
-    
+
     /// 计算i64数组的最小值
     pub fn min_i64(values: &[i64]) -> Option<i64>;
-    
+
     /// 计算i64数组的最大值
     pub fn max_i64(values: &[i64]) -> Option<i64>;
-    
+
     /// 计算f64数组的最小值
     pub fn min_f64(values: &[f64]) -> Option<f64>;
-    
+
     /// 计算f64数组的最大值
     pub fn max_f64(values: &[f64]) -> Option<f64>;
-    
+
     /// 计算f64数组的平均值
     pub fn avg_f64(values: &[f64]) -> Option<f64>;
-    
+
     /// 计算i64数组的中位数（需要可变slice）
     pub fn median_i64(values: &mut [i64]) -> Option<i64>;
-    
+
     /// 计算f64数组的标准差
     pub fn std_dev_f64(values: &[f64]) -> Option<f64>;
 }
@@ -204,13 +219,13 @@ println!("StdDev: {:.2}ms", std_dev);
 pub struct AggregateStats {
     /// 处理的数据点数
     pub data_points: usize,
-    
+
     /// 使用的SIMD指令集
     pub simd_used: Option<String>,
-    
+
     /// 处理时间
     pub processing_time: Duration,
-    
+
     /// 吞吐量 (points/sec)
     pub throughput: f64,
 }
@@ -235,19 +250,19 @@ pub struct BatchSerializer {
 impl BatchSerializer {
     /// 创建新的批量序列化器
     pub fn new() -> Self;
-    
+
     /// 序列化一批spans
     pub fn serialize_spans(&self, spans: &[Span]) -> Result<Vec<u8>>;
-    
+
     /// 序列化一批metrics
     pub fn serialize_metrics(&self, metrics: &[Metric]) -> Result<Vec<u8>>;
-    
+
     /// 序列化一批logs
     pub fn serialize_logs(&self, logs: &[LogRecord]) -> Result<Vec<u8>>;
-    
+
     /// 获取序列化统计信息
     pub fn stats(&self) -> SerializationStats;
-    
+
     /// 重置统计信息
     pub fn reset_stats(&mut self);
 }
@@ -266,19 +281,19 @@ impl Default for BatchSerializer {
 pub struct SerializationStats {
     /// 序列化的对象数
     pub objects_serialized: usize,
-    
+
     /// 生成的字节数
     pub bytes_generated: usize,
-    
+
     /// 总处理时间
     pub total_time: Duration,
-    
+
     /// 使用的SIMD特性
     pub simd_features: Vec<String>,
-    
+
     /// 吞吐量 (objects/sec)
     pub throughput: f64,
-    
+
     /// 平均序列化时间
     pub avg_time_per_object: Duration,
 }
@@ -322,22 +337,22 @@ pub struct StringOps;
 impl StringOps {
     /// SIMD优化的字符串比较
     pub fn compare(s1: &str, s2: &str) -> bool;
-    
+
     /// SIMD优化的字符串前缀检查
     pub fn starts_with(haystack: &str, needle: &str) -> bool;
-    
+
     /// SIMD优化的字符串后缀检查
     pub fn ends_with(haystack: &str, needle: &str) -> bool;
-    
+
     /// SIMD优化的字符串搜索
     pub fn contains(haystack: &str, needle: &str) -> bool;
-    
+
     /// SIMD优化的字符串查找
     pub fn find(haystack: &str, needle: &str) -> Option<usize>;
-    
+
     /// SIMD优化的字符串计数
     pub fn count_char(s: &str, ch: char) -> usize;
-    
+
     /// SIMD优化的空白字符修剪
     pub fn trim_whitespace(s: &str) -> &str;
 }
@@ -455,7 +470,7 @@ let sum = Aggregator::sum_i64(&values);
 
 ```rust
 // ✅ 在程序启动时检测一次
-static CPU_FEATURES: once_cell::sync::Lazy<CpuFeatures> = 
+static CPU_FEATURES: once_cell::sync::Lazy<CpuFeatures> =
     once_cell::sync::Lazy::new(|| CpuFeatures::detect());
 
 fn use_simd() {
@@ -506,7 +521,7 @@ use otlp::simd::Aggregator;
 
 fn bench_sum_i64(c: &mut Criterion) {
     let values: Vec<i64> = (0..1000).collect();
-    
+
     c.bench_function("simd sum_i64 1000", |b| {
         b.iter(|| {
             Aggregator::sum_i64(black_box(&values))
@@ -605,23 +620,23 @@ fn main() {
     // 1. 检测SIMD特性
     let features = CpuFeatures::detect();
     println!("CPU Features: {}", features.description());
-    
+
     // 2. 准备metric数据（模拟收集的延迟数据）
     let latencies: Vec<f64> = (0..10000)
         .map(|i| (i as f64 * 0.1) % 100.0)
         .collect();
-    
+
     // 3. 使用SIMD聚合
     let start = Instant::now();
-    
+
     let sum = Aggregator::sum_f64(&latencies);
     let avg = Aggregator::avg_f64(&latencies).unwrap();
     let min = Aggregator::min_f64(&latencies).unwrap();
     let max = Aggregator::max_f64(&latencies).unwrap();
     let std_dev = Aggregator::std_dev_f64(&latencies).unwrap();
-    
+
     let duration = start.elapsed();
-    
+
     // 4. 输出结果
     println!("\n📊 Latency Statistics (10000 samples):");
     println!("  Sum: {:.2}ms", sum);
@@ -630,7 +645,7 @@ fn main() {
     println!("  Max: {:.2}ms", max);
     println!("  StdDev: {:.2}ms", std_dev);
     println!("\n⚡ Processing time: {:?}", duration);
-    println!("🚀 Throughput: {:.0} samples/sec", 
+    println!("🚀 Throughput: {:.0} samples/sec",
              latencies.len() as f64 / duration.as_secs_f64());
 }
 ```
@@ -645,7 +660,7 @@ fn main() {
 
 ---
 
-**模块版本**: 0.5.0  
-**最后更新**: 2025年10月26日  
-**维护状态**: ✅ 活跃维护  
+**模块版本**: 0.5.0
+**最后更新**: 2025年10月26日
+**维护状态**: ✅ 活跃维护
 **性能目标**: ✅ 已达成 (+40%吞吐量)

@@ -1,6 +1,7 @@
 ﻿# OTLP Rust 故障排查和性能调优指南
 
 ## 📋 目录
+
 1. [故障排查基础](#故障排查基础)
 2. [常见问题诊断](#常见问题诊断)
 3. [性能问题分析](#性能问题分析)
@@ -86,7 +87,7 @@ async fn health_check_example() -> Result<(), Box<dyn std::error::Error>> {
 
     // 检查服务健康状态
     let status = health_checker.check_all().await?;
-    
+
     match status {
         HealthStatus::Healthy => {
             println!("✅ 所有服务健康");
@@ -144,10 +145,10 @@ use otlp::diagnostics::{ConnectionDiagnostics, DiagnosticResult};
 
 async fn diagnose_connection_issues() -> Result<(), Box<dyn std::error::Error>> {
     let diagnostics = ConnectionDiagnostics::new();
-    
+
     // 执行连接诊断
     let results = diagnostics.run_full_diagnosis("http://collector:4317").await?;
-    
+
     for result in results {
         match result {
             DiagnosticResult::Success(message) => {
@@ -210,19 +211,19 @@ use otlp::diagnostics::{MemoryDiagnostics, MemoryLeakDetector};
 
 async fn diagnose_memory_leaks() -> Result<(), Box<dyn std::error::Error>> {
     let memory_diagnostics = MemoryDiagnostics::new();
-    
+
     // 检查内存使用趋势
     let memory_trend = memory_diagnostics.analyze_memory_trend().await?;
-    
+
     if memory_trend.is_leaking() {
         println!("⚠️ 检测到内存泄漏");
-        
+
         // 获取内存快照
         let snapshot = memory_diagnostics.take_snapshot().await?;
-        
+
         // 分析内存分配
         let analysis = memory_diagnostics.analyze_allocation_patterns(&snapshot).await?;
-        
+
         println!("内存分析结果: {:?}", analysis);
     }
 
@@ -276,10 +277,10 @@ async fn performance_benchmark() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let benchmark_runner = BenchmarkRunner::new(config);
-    
+
     // 运行基准测试
     let results = benchmark_runner.run_benchmark().await?;
-    
+
     // 分析结果
     println!("=== 性能基准测试结果 ===");
     println!("吞吐量: {:.2} ops/sec", results.throughput);
@@ -306,13 +307,13 @@ async fn performance_profiling() -> Result<(), Box<dyn std::error::Error>> {
 
     // 开始性能分析
     profiler.start().await?;
-    
+
     // 运行负载
     run_workload().await?;
-    
+
     // 停止分析
     let profile_result = profiler.stop().await?;
-    
+
     // 分析结果
     println!("=== 性能分析结果 ===");
     for (function, stats) in profile_result.function_stats {
@@ -341,13 +342,13 @@ async fn resource_analysis() -> Result<(), Box<dyn std::error::Error>> {
 
     // 开始监控
     resource_monitor.start().await?;
-    
+
     // 运行负载
     run_workload().await?;
-    
+
     // 获取资源使用报告
     let usage_report = resource_monitor.get_report().await?;
-    
+
     println!("=== 资源使用报告 ===");
     println!("CPU使用率: {:.2}%", usage_report.cpu_usage * 100.0);
     println!("内存使用: {:.2} MB", usage_report.memory_usage / 1024.0 / 1024.0);
@@ -559,12 +560,12 @@ async fn database_optimization() -> Result<(), Box<dyn std::error::Error>> {
 
     // 优化查询
     let query_optimizer = QueryOptimizer::new();
-    
+
     // 添加索引
     query_optimizer.add_index("traces", "timestamp").await?;
     query_optimizer.add_index("traces", "service_name").await?;
     query_optimizer.add_index("traces", "trace_id").await?;
-    
+
     // 分析查询性能
     let slow_queries = query_optimizer.analyze_slow_queries().await?;
     for query in slow_queries {
@@ -614,7 +615,7 @@ use otlp::monitoring::{MonitoringBestPractices, HealthCheck};
 
 async fn monitoring_best_practices() -> Result<(), Box<dyn std::error::Error>> {
     let best_practices = MonitoringBestPractices::new();
-    
+
     // 设置关键指标
     best_practices.setup_critical_metrics(vec![
         "otlp_requests_total".to_string(),
@@ -709,7 +710,7 @@ use otlp::performance::{PerformanceOptimizer, OptimizationStrategy};
 
 async fn performance_best_practices() -> Result<(), Box<dyn std::error::Error>> {
     let performance_optimizer = PerformanceOptimizer::new();
-    
+
     // 应用优化策略
     let strategies = vec![
         OptimizationStrategy::ConnectionPooling {

@@ -1,6 +1,6 @@
 # 时间与日期处理
 
-> **核心库**: chrono, time  
+> **核心库**: chrono, time
 > **适用场景**: 时间戳、日期计算、时区转换、格式化
 
 ---
@@ -90,11 +90,11 @@ fn main() {
     // UTC 时间
     let utc_now: DateTime<Utc> = Utc::now();
     println!("UTC: {}", utc_now);
-    
+
     // 本地时间
     let local_now: DateTime<Local> = Local::now();
     println!("Local: {}", local_now);
-    
+
     // 固定偏移时区 (UTC+8)
     let offset = FixedOffset::east_opt(8 * 3600).unwrap();
     let cn_now = DateTime::<Utc>::from(utc_now).with_timezone(&offset);
@@ -111,17 +111,17 @@ fn main() -> Result<(), chrono::ParseError> {
     // 解析 ISO 8601
     let dt = "2025-10-20T15:30:00Z".parse::<DateTime<Utc>>()?;
     println!("Parsed: {}", dt);
-    
+
     // 解析自定义格式
     let date = NaiveDate::parse_from_str("2025-10-20", "%Y-%m-%d")?;
     println!("Date: {}", date);
-    
+
     // 格式化输出
     println!("Format 1: {}", dt.format("%Y-%m-%d %H:%M:%S"));
     println!("Format 2: {}", dt.format("%Y年%m月%d日"));
     println!("RFC2822: {}", dt.to_rfc2822());
     println!("RFC3339: {}", dt.to_rfc3339());
-    
+
     Ok(())
 }
 ```
@@ -133,16 +133,16 @@ use chrono::{DateTime, Utc, Duration};
 
 fn main() {
     let now = Utc::now();
-    
+
     // 加减时间
     let tomorrow = now + Duration::days(1);
     let yesterday = now - Duration::days(1);
     let later = now + Duration::hours(3) + Duration::minutes(30);
-    
+
     println!("Now: {}", now);
     println!("Tomorrow: {}", tomorrow);
     println!("Later: {}", later);
-    
+
     // 计算时间差
     let diff = tomorrow - now;
     println!("Difference: {} seconds", diff.num_seconds());
@@ -158,12 +158,12 @@ use chrono::{DateTime, Utc, FixedOffset, TimeZone};
 fn main() {
     let utc_time = Utc::now();
     println!("UTC: {}", utc_time);
-    
+
     // 转换到东八区
     let beijing_offset = FixedOffset::east_opt(8 * 3600).unwrap();
     let beijing_time = utc_time.with_timezone(&beijing_offset);
     println!("Beijing: {}", beijing_time);
-    
+
     // 转换到西五区
     let ny_offset = FixedOffset::west_opt(5 * 3600).unwrap();
     let ny_time = utc_time.with_timezone(&ny_offset);
@@ -182,11 +182,11 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize, Debug)]
 struct Event {
     name: String,
-    
+
     // 自动序列化为 RFC3339 字符串
     #[serde(with = "chrono::serde::ts_seconds")]
     timestamp: DateTime<Utc>,
-    
+
     // 可选的自定义格式
     #[serde(
         serialize_with = "serialize_custom",
@@ -231,11 +231,11 @@ impl ScheduledTask {
             interval,
         }
     }
-    
+
     fn should_run(&self) -> bool {
         Utc::now() >= self.next_run
     }
-    
+
     fn update_next_run(&mut self) {
         self.next_run = self.next_run + self.interval;
     }
@@ -268,15 +268,15 @@ fn main() -> Result<(), time::Error> {
     // 当前时间
     let now = OffsetDateTime::now_utc();
     println!("Now: {}", now);
-    
+
     // 时间计算
     let tomorrow = now + Duration::days(1);
     let next_week = now + Duration::weeks(1);
-    
+
     // 格式化
     let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]")?;
     println!("Custom: {}", now.format(&format)?);
-    
+
     Ok(())
 }
 ```
@@ -303,7 +303,7 @@ fn main() {
             let _ = vec![1, 2, 3];
         }
     });
-    
+
     println!("Took: {} microseconds", duration.whole_microseconds());
 }
 ```
@@ -382,11 +382,11 @@ fn parse_user_date(input: &str) -> Result<DateTime<Utc>, chrono::ParseError> {
     if let Ok(dt) = input.parse::<DateTime<Utc>>() {
         return Ok(dt);
     }
-    
+
     if let Ok(naive) = NaiveDateTime::parse_from_str(input, "%Y-%m-%d %H:%M:%S") {
         return Ok(DateTime::from_naive_utc_and_offset(naive, Utc));
     }
-    
+
     // 其他格式...
     Err(chrono::ParseError(chrono::ParseErrorKind::Invalid))
 }
@@ -423,7 +423,7 @@ use serde::{Serialize, Deserialize};
 struct ApiResponse {
     // ISO 8601 / RFC 3339 格式
     timestamp: DateTime<Utc>,
-    
+
     // 或者使用 Unix 时间戳
     #[serde(with = "chrono::serde::ts_seconds")]
     created_at: DateTime<Utc>,
@@ -434,7 +434,7 @@ fn main() {
         timestamp: Utc::now(),
         created_at: Utc::now(),
     };
-    
+
     let json = serde_json::to_string_pretty(&response).unwrap();
     println!("{}", json);
     // {
@@ -456,12 +456,12 @@ use chrono::{Datelike, Utc};
 fn calculate_age(birth_date: chrono::NaiveDate) -> u32 {
     let today = Utc::now().date_naive();
     let mut age = today.year() - birth_date.year();
-    
+
     if today.month() < birth_date.month() ||
        (today.month() == birth_date.month() && today.day() < birth_date.day()) {
         age -= 1;
     }
-    
+
     age as u32
 }
 
@@ -479,13 +479,13 @@ use chrono::{Timelike, Utc, Weekday};
 
 fn is_business_hours() -> bool {
     let now = Utc::now();
-    
+
     // 周一到周五
     match now.weekday() {
         Weekday::Sat | Weekday::Sun => return false,
         _ => {}
     }
-    
+
     // 9:00 - 18:00
     let hour = now.hour();
     hour >= 9 && hour < 18
@@ -505,11 +505,11 @@ impl Subscription {
     fn is_expired(&self) -> bool {
         Utc::now() > self.expires_at
     }
-    
+
     fn days_until_expiry(&self) -> i64 {
         (self.expires_at - Utc::now()).num_days()
     }
-    
+
     fn is_expiring_soon(&self) -> bool {
         self.days_until_expiry() <= 7 && !self.is_expired()
     }
@@ -549,5 +549,5 @@ fn get_current_month() -> (DateTime<Utc>, DateTime<Utc>) {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

@@ -70,14 +70,14 @@ pub struct HybridExecutionController {
     // 同步通道
     sync_sender: Sender<SyncTask>,
     sync_receiver: Receiver<SyncTask>,
-    
+
     // 异步通道
     async_sender: mpsc::UnboundedSender<AsyncTask>,
     async_receiver: mpsc::UnboundedReceiver<AsyncTask>,
-    
+
     // 控制状态
     state: Arc<RwLock<ControllerState>>,
-    
+
     // 配置参数
     config: ControllerConfig,
 }
@@ -107,7 +107,7 @@ impl HybridExecutionController {
     pub fn new(config: ControllerConfig) -> Self {
         let (sync_sender, sync_receiver) = unbounded();
         let (async_sender, async_receiver) = mpsc::unbounded_channel();
-        
+
         let state = Arc::new(RwLock::new(ControllerState {
             sync_queue_size: 0,
             async_queue_size: 0,
@@ -117,7 +117,7 @@ impl HybridExecutionController {
             total_errors: 0,
             last_health_check: Instant::now(),
         }));
-        
+
         Self {
             sync_sender,
             sync_receiver,
@@ -127,7 +127,7 @@ impl HybridExecutionController {
             config,
         }
     }
-    
+
     /// 启动控制器
     pub async fn start(&mut self) -> Result<(), OtlpError> {
         // 启动同步工作线程
@@ -135,43 +135,43 @@ impl HybridExecutionController {
             let receiver = self.sync_receiver.clone();
             let state = self.state.clone();
             let config = self.config.clone();
-            
+
             std::thread::spawn(move || {
                 Self::sync_worker_loop(i, receiver, state, config);
             });
         }
-        
+
         // 启动异步工作协程
         for i in 0..self.config.max_async_workers {
             let mut receiver = self.async_receiver.clone();
             let state = self.state.clone();
             let config = self.config.clone();
-            
+
             tokio::spawn(async move {
                 Self::async_worker_loop(i, &mut receiver, state, config).await;
             });
         }
-        
+
         // 启动健康检查协程
         let state = self.state.clone();
         tokio::spawn(async move {
             Self::health_check_loop(state).await;
         });
-        
+
         Ok(())
     }
-    
+
     /// 提交同步任务
     pub fn submit_sync_task(&self, task: SyncTask) -> Result<(), OtlpError> {
         let current_state = futures::executor::block_on(self.state.read());
-        
+
         // 检查背压
         if current_state.sync_queue_size >= self.config.sync_queue_size {
             return Err(OtlpError::Backpressure("同步队列已满".to_string()));
         }
-        
+
         self.sync_sender.send(task)?;
-        
+
         // 更新状态
         drop(current_state);
         tokio::spawn({
@@ -181,29 +181,29 @@ impl HybridExecutionController {
                 state.sync_queue_size += 1;
             }
         });
-        
+
         Ok(())
     }
-    
+
     /// 提交异步任务
     pub async fn submit_async_task(&self, task: AsyncTask) -> Result<(), OtlpError> {
         let current_state = self.state.read().await;
-        
+
         // 检查背压
         if current_state.async_queue_size >= self.config.async_queue_size {
             return Err(OtlpError::Backpressure("异步队列已满".to_string()));
         }
-        
+
         self.async_sender.send(task)?;
-        
+
         // 更新状态
         drop(current_state);
         let mut state = self.state.write().await;
         state.async_queue_size += 1;
-        
+
         Ok(())
     }
-    
+
     /// 同步工作线程循环
     fn sync_worker_loop(
         worker_id: usize,
@@ -219,7 +219,7 @@ impl HybridExecutionController {
                         let state = futures::executor::block_on(state.read());
                         // 这里需要修改状态，但为了简化示例，我们跳过
                     }
-                    
+
                     // 执行同步任务
                     let start_time = Instant::now();
                     match task.execute() {
@@ -230,7 +230,7 @@ impl HybridExecutionController {
                             eprintln!("同步工作线程 {} 任务失败: {}", worker_id, e);
                         }
                     }
-                    
+
                     // 更新统计信息
                     {
                         let mut state = futures::executor::block_on(state.write());
@@ -245,7 +245,7 @@ impl HybridExecutionController {
             }
         }
     }
-    
+
     /// 异步工作协程循环
     async fn async_worker_loop(
         worker_id: usize,
@@ -259,7 +259,7 @@ impl HybridExecutionController {
                 let mut state = state.write().await;
                 state.active_async_workers += 1;
             }
-            
+
             // 执行异步任务
             let start_time = Instant::now();
             match task.execute().await {
@@ -270,7 +270,7 @@ impl HybridExecutionController {
                     eprintln!("异步工作协程 {} 任务失败: {}", worker_id, e);
                 }
             }
-            
+
             // 更新统计信息
             {
                 let mut state = state.write().await;
@@ -279,40 +279,40 @@ impl HybridExecutionController {
                 state.total_processed += 1;
             }
         }
-        
+
         println!("异步工作协程 {} 退出", worker_id);
     }
-    
+
     /// 健康检查循环
     async fn health_check_loop(state: Arc<RwLock<ControllerState>>) {
         let mut interval = tokio::time::interval(Duration::from_secs(30));
-        
+
         loop {
             interval.tick().await;
-            
+
             let current_state = state.read().await;
             let now = Instant::now();
-            
+
             // 检查队列大小
             if current_state.sync_queue_size > 1000 || current_state.async_queue_size > 1000 {
-                eprintln!("警告: 队列大小异常 - 同步: {}, 异步: {}", 
-                         current_state.sync_queue_size, 
+                eprintln!("警告: 队列大小异常 - 同步: {}, 异步: {}",
+                         current_state.sync_queue_size,
                          current_state.async_queue_size);
             }
-            
+
             // 检查错误率
             let error_rate = if current_state.total_processed > 0 {
                 current_state.total_errors as f64 / current_state.total_processed as f64
             } else {
                 0.0
             };
-            
+
             if error_rate > 0.1 {
                 eprintln!("警告: 错误率过高 - {:.2}%", error_rate * 100.0);
             }
-            
+
             drop(current_state);
-            
+
             // 更新最后健康检查时间
             {
                 let mut state = state.write().await;
@@ -320,7 +320,7 @@ impl HybridExecutionController {
             }
         }
     }
-    
+
     /// 获取控制器状态
     pub async fn get_state(&self) -> ControllerState {
         self.state.read().await.clone()
@@ -361,7 +361,7 @@ impl SyncTask {
             priority: TaskPriority::Normal,
         }
     }
-    
+
     pub fn execute(&self) -> Result<(), OtlpError> {
         match &self.task_type {
             SyncTaskType::DataValidation => self.validate_data(),
@@ -370,25 +370,25 @@ impl SyncTask {
             SyncTaskType::DataSerialization => self.serialize_data(),
         }
     }
-    
+
     fn validate_data(&self) -> Result<(), OtlpError> {
         // 实现数据验证逻辑
         println!("验证数据: {}", self.id);
         Ok(())
     }
-    
+
     fn transform_data(&self) -> Result<(), OtlpError> {
         // 实现数据转换逻辑
         println!("转换数据: {}", self.id);
         Ok(())
     }
-    
+
     fn compress_data(&self) -> Result<(), OtlpError> {
         // 实现数据压缩逻辑
         println!("压缩数据: {}", self.id);
         Ok(())
     }
-    
+
     fn serialize_data(&self) -> Result<(), OtlpError> {
         // 实现数据序列化逻辑
         println!("序列化数据: {}", self.id);
@@ -422,7 +422,7 @@ impl AsyncTask {
             priority: TaskPriority::Normal,
         }
     }
-    
+
     pub async fn execute(&self) -> Result<(), OtlpError> {
         match &self.task_type {
             AsyncTaskType::NetworkTransmission => self.transmit_data().await,
@@ -431,28 +431,28 @@ impl AsyncTask {
             AsyncTaskType::ExternalApiCall => self.external_api_call().await,
         }
     }
-    
+
     async fn transmit_data(&self) -> Result<(), OtlpError> {
         // 模拟网络传输
         tokio::time::sleep(Duration::from_millis(100)).await;
         println!("传输数据: {}", self.id);
         Ok(())
     }
-    
+
     async fn database_operation(&self) -> Result<(), OtlpError> {
         // 模拟数据库操作
         tokio::time::sleep(Duration::from_millis(50)).await;
         println!("数据库操作: {}", self.id);
         Ok(())
     }
-    
+
     async fn filesystem_operation(&self) -> Result<(), OtlpError> {
         // 模拟文件系统操作
         tokio::time::sleep(Duration::from_millis(20)).await;
         println!("文件系统操作: {}", self.id);
         Ok(())
     }
-    
+
     async fn external_api_call(&self) -> Result<(), OtlpError> {
         // 模拟外部API调用
         tokio::time::sleep(Duration::from_millis(200)).await;
@@ -476,13 +476,13 @@ pub struct AdaptiveFlowController {
     current_tokens: AtomicU64,
     refill_rate: u64,
     last_refill: std::sync::Mutex<Instant>,
-    
+
     // 自适应参数
     target_latency: Duration,
     current_latency: AtomicU64,
     error_rate: AtomicU64,
     success_count: AtomicU64,
-    
+
     // 历史数据
     latency_history: std::sync::Mutex<VecDeque<Duration>>,
     throughput_history: std::sync::Mutex<VecDeque<u64>>,
@@ -503,12 +503,12 @@ impl AdaptiveFlowController {
             throughput_history: std::sync::Mutex::new(VecDeque::with_capacity(100)),
         }
     }
-    
+
     /// 尝试获取令牌
     pub async fn acquire_tokens(&self, requested: u64) -> bool {
         loop {
             let current = self.current_tokens.load(Ordering::Acquire);
-            
+
             if current >= requested {
                 if self.current_tokens.compare_exchange_weak(
                     current,
@@ -525,23 +525,23 @@ impl AdaptiveFlowController {
             }
         }
     }
-    
+
     /// 补充令牌
     async fn refill_tokens(&self) {
         let mut last_refill = self.last_refill.lock().unwrap();
         let now = Instant::now();
         let elapsed = now.duration_since(*last_refill);
-        
+
         if elapsed.as_millis() > 0 {
             let tokens_to_add = (elapsed.as_millis() as u64 * self.refill_rate) / 1000;
             let current = self.current_tokens.load(Ordering::Acquire);
             let new_tokens = (current + tokens_to_add).min(self.bucket_capacity);
-            
+
             self.current_tokens.store(new_tokens, Ordering::Release);
             *last_refill = now;
         }
     }
-    
+
     /// 记录操作结果
     pub fn record_operation(&self, latency: Duration, success: bool) {
         if success {
@@ -549,7 +549,7 @@ impl AdaptiveFlowController {
         } else {
             self.error_rate.fetch_add(1, Ordering::Relaxed);
         }
-        
+
         // 更新延迟历史
         {
             let mut history = self.latency_history.lock().unwrap();
@@ -558,16 +558,16 @@ impl AdaptiveFlowController {
                 history.pop_front();
             }
         }
-        
+
         // 自适应调整
         self.adaptive_adjustment();
     }
-    
+
     /// 自适应调整算法
     fn adaptive_adjustment(&self) {
         let current_latency = self.get_average_latency();
         let error_rate = self.get_error_rate();
-        
+
         // 如果延迟过高或错误率过高，减少令牌补充速率
         if current_latency > self.target_latency * 2 || error_rate > 0.1 {
             self.decrease_rate();
@@ -577,34 +577,34 @@ impl AdaptiveFlowController {
             self.increase_rate();
         }
     }
-    
+
     fn get_average_latency(&self) -> Duration {
         let history = self.latency_history.lock().unwrap();
         if history.is_empty() {
             return self.target_latency;
         }
-        
+
         let total: Duration = history.iter().sum();
         total / history.len() as u32
     }
-    
+
     fn get_error_rate(&self) -> f64 {
         let errors = self.error_rate.load(Ordering::Relaxed);
         let successes = self.success_count.load(Ordering::Relaxed);
         let total = errors + successes;
-        
+
         if total == 0 {
             0.0
         } else {
             errors as f64 / total as f64
         }
     }
-    
+
     fn decrease_rate(&self) {
         // 减少令牌补充速率
         self.refill_rate = (self.refill_rate * 0.9).max(1);
     }
-    
+
     fn increase_rate(&self) {
         // 增加令牌补充速率
         self.refill_rate = (self.refill_rate * 1.1).min(self.bucket_capacity);
@@ -623,11 +623,11 @@ pub struct BackpressureController {
     // 队列大小监控
     queue_size: AtomicUsize,
     max_queue_size: usize,
-    
+
     // 背压状态
     is_backpressured: AtomicBool,
     backpressure_notify: Notify,
-    
+
     // 统计信息
     backpressure_events: AtomicUsize,
     total_requests: AtomicUsize,
@@ -646,18 +646,18 @@ impl BackpressureController {
             rejected_requests: AtomicUsize::new(0),
         }
     }
-    
+
     /// 尝试增加队列大小
     pub fn try_increment(&self) -> Result<(), BackpressureError> {
         self.total_requests.fetch_add(1, Ordering::Relaxed);
-        
+
         let current_size = self.queue_size.load(Ordering::Acquire);
-        
+
         if current_size >= self.max_queue_size {
             self.rejected_requests.fetch_add(1, Ordering::Relaxed);
             return Err(BackpressureError::QueueFull);
         }
-        
+
         let new_size = current_size + 1;
         if self.queue_size.compare_exchange_weak(
             current_size,
@@ -668,15 +668,15 @@ impl BackpressureController {
             // 重试
             return self.try_increment();
         }
-        
+
         // 检查是否需要触发背压
         if new_size >= self.max_queue_size * 8 / 10 {
             self.trigger_backpressure();
         }
-        
+
         Ok(())
     }
-    
+
     /// 减少队列大小
     pub fn decrement(&self) {
         let current_size = self.queue_size.load(Ordering::Acquire);
@@ -695,7 +695,7 @@ impl BackpressureController {
             }
         }
     }
-    
+
     /// 触发背压
     fn trigger_backpressure(&self) {
         if !self.is_backpressured.swap(true, Ordering::Release) {
@@ -703,7 +703,7 @@ impl BackpressureController {
             println!("触发背压控制");
         }
     }
-    
+
     /// 解除背压
     fn release_backpressure(&self) {
         if self.is_backpressured.swap(false, Ordering::Release) {
@@ -711,14 +711,14 @@ impl BackpressureController {
             println!("解除背压控制");
         }
     }
-    
+
     /// 等待背压解除
     pub async fn wait_for_backpressure_release(&self) {
         if self.is_backpressured.load(Ordering::Acquire) {
             self.backpressure_notify.notified().await;
         }
     }
-    
+
     /// 获取统计信息
     pub fn get_stats(&self) -> BackpressureStats {
         BackpressureStats {
@@ -785,15 +785,15 @@ impl AsyncStreamProcessor {
             backpressure_controller,
         }
     }
-    
+
     pub fn add_processor(&mut self, processor: Box<dyn StreamProcessor + Send + Sync>) {
         self.processors.push(processor);
     }
-    
+
     /// 启动流处理
     pub async fn start_processing(&mut self) -> Result<(), OtlpError> {
         let mut stream = self.input_stream.take(1000); // 限制处理数量
-        
+
         while let Some(data) = stream.next().await {
             // 检查背压
             if let Err(_) = self.backpressure_controller.try_increment() {
@@ -801,34 +801,34 @@ impl AsyncStreamProcessor {
                 self.backpressure_controller.wait_for_backpressure_release().await;
                 continue;
             }
-            
+
             // 处理数据
             let processed_data = self.process_data(data).await;
-            
+
             // 发送处理结果
             if let Ok(processed) = processed_data {
                 if let Err(_) = self.output_stream.send(processed) {
                     break; // 接收端已关闭
                 }
             }
-            
+
             // 减少队列大小
             self.backpressure_controller.decrement();
         }
-        
+
         Ok(())
     }
-    
+
     async fn process_data(&self, mut data: TelemetryData) -> Result<ProcessedData, OtlpError> {
         let start_time = std::time::Instant::now();
-        
+
         // 依次应用所有处理器
         for processor in &self.processors {
             data = processor.process(data).await?;
         }
-        
+
         let processing_time = start_time.elapsed();
-        
+
         Ok(ProcessedData {
             original_data: data,
             processing_time,
@@ -863,7 +863,7 @@ impl StreamProcessor for DataValidationProcessor {
         }
         Ok(data)
     }
-    
+
     fn name(&self) -> &str {
         "DataValidationProcessor"
     }
@@ -894,7 +894,7 @@ impl StreamProcessor for DataTransformationProcessor {
         }
         Ok(data)
     }
-    
+
     fn name(&self) -> &str {
         "DataTransformationProcessor"
     }
@@ -922,7 +922,7 @@ impl StreamProcessor for DataCompressionProcessor {
             CompressionAlgorithm::Zstd => self.compress_zstd(data).await,
         }
     }
-    
+
     fn name(&self) -> &str {
         "DataCompressionProcessor"
     }
@@ -933,12 +933,12 @@ impl DataCompressionProcessor {
         // 实现gzip压缩
         Ok(data)
     }
-    
+
     async fn compress_brotli(&self, data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         // 实现brotli压缩
         Ok(data)
     }
-    
+
     async fn compress_zstd(&self, data: TelemetryData) -> Result<TelemetryData, OtlpError> {
         // 实现zstd压缩
         Ok(data)
@@ -975,20 +975,20 @@ pub struct PerformanceMetrics {
     total_processed: AtomicU64,
     total_errors: AtomicU64,
     total_dropped: AtomicU64,
-    
+
     // 延迟指标
     total_latency: AtomicU64,
     min_latency: AtomicU64,
     max_latency: AtomicU64,
-    
+
     // 队列指标
     current_queue_size: AtomicUsize,
     max_queue_size: AtomicUsize,
-    
+
     // 资源使用指标
     cpu_usage: AtomicU64,
     memory_usage: AtomicU64,
-    
+
     // 时间戳
     start_time: Instant,
     last_reset: Instant,
@@ -1011,14 +1011,14 @@ impl PerformanceMetrics {
             last_reset: Instant::now(),
         }
     }
-    
+
     /// 记录处理完成
     pub fn record_processed(&self, latency: Duration) {
         self.total_processed.fetch_add(1, Ordering::Relaxed);
-        
+
         let latency_ms = latency.as_millis() as u64;
         self.total_latency.fetch_add(latency_ms, Ordering::Relaxed);
-        
+
         // 更新最小延迟
         loop {
             let current_min = self.min_latency.load(Ordering::Acquire);
@@ -1034,7 +1034,7 @@ impl PerformanceMetrics {
                 break;
             }
         }
-        
+
         // 更新最大延迟
         loop {
             let current_max = self.max_latency.load(Ordering::Acquire);
@@ -1051,21 +1051,21 @@ impl PerformanceMetrics {
             }
         }
     }
-    
+
     /// 记录错误
     pub fn record_error(&self) {
         self.total_errors.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     /// 记录丢弃
     pub fn record_dropped(&self) {
         self.total_dropped.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     /// 更新队列大小
     pub fn update_queue_size(&self, size: usize) {
         self.current_queue_size.store(size, Ordering::Release);
-        
+
         // 更新最大队列大小
         loop {
             let current_max = self.max_queue_size.load(Ordering::Acquire);
@@ -1082,7 +1082,7 @@ impl PerformanceMetrics {
             }
         }
     }
-    
+
     /// 获取性能报告
     pub fn get_report(&self) -> PerformanceReport {
         let uptime = self.start_time.elapsed();
@@ -1092,25 +1092,25 @@ impl PerformanceMetrics {
         let total_latency = self.total_latency.load(Ordering::Acquire);
         let min_latency = self.min_latency.load(Ordering::Acquire);
         let max_latency = self.max_latency.load(Ordering::Acquire);
-        
+
         let throughput = if uptime.as_secs() > 0 {
             total_processed as f64 / uptime.as_secs() as f64
         } else {
             0.0
         };
-        
+
         let error_rate = if total_processed > 0 {
             total_errors as f64 / total_processed as f64
         } else {
             0.0
         };
-        
+
         let avg_latency = if total_processed > 0 {
             Duration::from_millis(total_latency / total_processed)
         } else {
             Duration::ZERO
         };
-        
+
         PerformanceReport {
             uptime,
             total_processed,
@@ -1125,7 +1125,7 @@ impl PerformanceMetrics {
             max_queue_size: self.max_queue_size.load(Ordering::Acquire),
         }
     }
-    
+
     /// 重置指标
     pub fn reset(&mut self) {
         self.total_processed.store(0, Ordering::Release);
@@ -1179,7 +1179,7 @@ impl OtlpDataPipeline {
         // 创建通道
         let (input_sender, input_receiver) = mpsc::unbounded_channel();
         let (output_sender, output_receiver) = mpsc::unbounded_channel();
-        
+
         // 创建控制器配置
         let config = ControllerConfig {
             max_sync_workers: 4,
@@ -1189,14 +1189,14 @@ impl OtlpDataPipeline {
             task_timeout: Duration::from_secs(30),
             backpressure_threshold: 0.8,
         };
-        
+
         // 创建混合执行控制器
         let mut controller = HybridExecutionController::new(config);
         controller.start().await?;
-        
+
         // 创建背压控制器
         let backpressure_controller = Arc::new(BackpressureController::new(1000));
-        
+
         // 创建流处理器
         let input_stream = Box::new(ReceiverStream::new(input_receiver));
         let mut stream_processor = AsyncStreamProcessor::new(
@@ -1204,17 +1204,17 @@ impl OtlpDataPipeline {
             output_sender.clone(),
             backpressure_controller,
         );
-        
+
         // 添加处理器
         stream_processor.add_processor(Box::new(DataValidationProcessor::new()));
         stream_processor.add_processor(Box::new(DataTransformationProcessor::new()));
         stream_processor.add_processor(Box::new(DataCompressionProcessor::new(
             CompressionAlgorithm::Gzip
         )));
-        
+
         // 创建性能指标收集器
         let metrics = Arc::new(PerformanceMetrics::new());
-        
+
         Ok(Self {
             input_receiver,
             output_sender,
@@ -1223,7 +1223,7 @@ impl OtlpDataPipeline {
             metrics,
         })
     }
-    
+
     /// 启动数据处理管道
     pub async fn start(&mut self) -> Result<(), OtlpError> {
         // 启动流处理器
@@ -1235,13 +1235,13 @@ impl OtlpDataPipeline {
                 Arc::new(BackpressureController::new(1000)),
             ),
         );
-        
+
         tokio::spawn(async move {
             if let Err(e) = stream_processor.start_processing().await {
                 eprintln!("流处理器错误: {}", e);
             }
         });
-        
+
         // 启动性能监控
         let metrics = self.metrics.clone();
         tokio::spawn(async move {
@@ -1252,26 +1252,26 @@ impl OtlpDataPipeline {
                 println!("性能报告: {:?}", report);
             }
         });
-        
+
         Ok(())
     }
-    
+
     /// 发送数据到管道
     pub async fn send_data(&self, data: TelemetryData) -> Result<(), OtlpError> {
         let start_time = Instant::now();
-        
+
         // 发送到输入通道
         if let Err(_) = self.input_sender.send(data) {
             self.metrics.record_dropped();
             return Err(OtlpError::PipelineClosed);
         }
-        
+
         let latency = start_time.elapsed();
         self.metrics.record_processed(latency);
-        
+
         Ok(())
     }
-    
+
     /// 获取处理结果
     pub async fn get_result(&mut self) -> Option<ProcessedData> {
         self.output_receiver.recv().await
@@ -1283,23 +1283,23 @@ impl OtlpDataPipeline {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建数据处理管道
     let mut pipeline = OtlpDataPipeline::new().await?;
-    
+
     // 启动管道
     pipeline.start().await?;
-    
+
     // 发送测试数据
     for i in 0..100 {
         let data = TelemetryData::new(format!("test-{}", i));
         pipeline.send_data(data).await?;
     }
-    
+
     // 获取处理结果
     for _ in 0..100 {
         if let Some(result) = pipeline.get_result().await {
             println!("处理结果: {:?}", result);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -1318,4 +1318,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ---
 
-*本文档为OTLP同步异步控制执行数据流设计提供了全面的技术分析和实践指导，适用于构建企业级的可观测性系统。*
+_本文档为OTLP同步异步控制执行数据流设计提供了全面的技术分析和实践指导，适用于构建企业级的可观测性系统。_

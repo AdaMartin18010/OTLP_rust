@@ -1,7 +1,7 @@
 # 🔧 API 参考文档
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: API 参考文档 - OTLP Rust 库的完整 API 参考，包括客户端、数据类型和配置选项。
@@ -63,10 +63,10 @@
 impl OtlpClient {
     /// 创建新的 OTLP 客户端
     pub async fn new(config: OtlpConfig) -> Result<Self, OtlpError>
-    
+
     /// 从环境变量创建客户端
     pub async fn from_env() -> Result<Self, OtlpError>
-    
+
     /// 使用默认配置创建客户端
     pub async fn default() -> Result<Self, OtlpError>
 }
@@ -78,10 +78,10 @@ impl OtlpClient {
 impl OtlpClient {
     /// 初始化客户端
     pub async fn initialize(&self) -> Result<(), OtlpError>
-    
+
     /// 关闭客户端
     pub async fn shutdown(&self) -> Result<(), OtlpError>
-    
+
     /// 检查客户端状态
     pub fn is_healthy(&self) -> bool
 }
@@ -93,16 +93,16 @@ impl OtlpClient {
 impl OtlpClient {
     /// 发送单个追踪数据
     pub async fn send_trace(&self, operation: &str) -> Result<TraceBuilder, OtlpError>
-    
+
     /// 发送单个指标数据
     pub async fn send_metric(&self, data: TelemetryData) -> Result<SendResult, OtlpError>
-    
+
     /// 发送单个日志数据
     pub async fn send_log(&self, data: TelemetryData) -> Result<SendResult, OtlpError>
-    
+
     /// 批量发送数据
     pub async fn send_batch(&self, data: Vec<TelemetryData>) -> Result<BatchResult, OtlpError>
-    
+
     /// 发送原始 OTLP 数据
     pub async fn send_raw(&self, data: OtlpData) -> Result<SendResult, OtlpError>
 }
@@ -114,10 +114,10 @@ impl OtlpClient {
 impl OtlpClient {
     /// 更新客户端配置
     pub async fn update_config(&self, config: OtlpConfig) -> Result<(), OtlpError>
-    
+
     /// 获取当前配置
     pub fn get_config(&self) -> &OtlpConfig
-    
+
     /// 设置审计钩子
     pub async fn set_audit_hook(&self, hook: Arc<dyn AuditHook>) -> Result<(), OtlpError>
 }
@@ -131,22 +131,22 @@ impl OtlpClient {
 impl TraceBuilder {
     /// 添加字符串属性
     pub fn with_attribute(mut self, key: &str, value: &str) -> Self
-    
+
     /// 添加数值属性
     pub fn with_numeric_attribute(mut self, key: &str, value: f64) -> Self
-    
+
     /// 添加布尔属性
     pub fn with_bool_attribute(mut self, key: &str, value: bool) -> Self
-    
+
     /// 设置状态码
     pub fn with_status(mut self, code: StatusCode, message: Option<String>) -> Self
-    
+
     /// 设置开始时间
     pub fn with_start_time(mut self, time: SystemTime) -> Self
-    
+
     /// 设置持续时间
     pub fn with_duration(mut self, duration: Duration) -> Self
-    
+
     /// 完成并发送追踪数据
     pub async fn finish(self) -> Result<SendResult, OtlpError>
 }
@@ -180,37 +180,37 @@ pub struct OtlpConfig {
 impl OtlpConfig {
     /// 创建默认配置
     pub fn default() -> Self
-    
+
     /// 设置端点 URL
     pub fn with_endpoint(mut self, endpoint: &str) -> Self
-    
+
     /// 设置传输协议
     pub fn with_protocol(mut self, protocol: TransportProtocol) -> Self
-    
+
     /// 设置压缩算法
     pub fn with_compression(mut self, compression: Compression) -> Self
-    
+
     /// 设置超时时间
     pub fn with_timeout(mut self, timeout: Duration) -> Self
-    
+
     /// 设置重试配置
     pub fn with_retry_config(mut self, config: RetryConfig) -> Self
-    
+
     /// 设置批处理配置
     pub fn with_batch_config(mut self, config: BatchConfig) -> Self
-    
+
     /// 设置认证配置
     pub fn with_auth_config(mut self, config: AuthConfig) -> Self
-    
+
     /// 设置 TLS 配置
     pub fn with_tls_config(mut self, config: TlsConfig) -> Self
-    
+
     /// 添加资源属性
     pub fn with_resource_attribute(mut self, key: &str, value: &str) -> Self
-    
+
     /// 设置仪器化范围
     pub fn with_instrumentation_scope(mut self, scope: InstrumentationScope) -> Self
-    
+
     /// 验证配置
     pub fn validate(&self) -> Result<(), ConfigError>
 }
@@ -322,16 +322,16 @@ pub enum TelemetryData {
 impl TelemetryData {
     /// 创建追踪数据
     pub fn trace(operation: &str) -> Self
-    
+
     /// 创建指标数据
     pub fn metric(name: &str, value: MetricValue) -> Self
-    
+
     /// 创建日志数据
     pub fn log(message: &str, severity: LogSeverity) -> Self
-    
+
     /// 添加属性
     pub fn with_attribute(mut self, key: &str, value: AttributeValue) -> Self
-    
+
     /// 设置时间戳
     pub fn with_timestamp(mut self, timestamp: SystemTime) -> Self
 }
@@ -433,31 +433,31 @@ pub enum OtlpError {
     /// 网络错误
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     /// gRPC 错误
     #[error("gRPC error: {0}")]
     Grpc(#[from] tonic::Status),
-    
+
     /// 序列化错误
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     /// 配置错误
     #[error("Configuration error: {0}")]
     Config(#[from] ConfigError),
-    
+
     /// 认证错误
     #[error("Authentication error: {0}")]
     Auth(String),
-    
+
     /// 超时错误
     #[error("Timeout error: {0}")]
     Timeout(String),
-    
+
     /// 批处理错误
     #[error("Batch processing error: {0}")]
     Batch(String),
-    
+
     /// 自定义错误
     #[error("Custom error: {0}")]
     Custom(String),
@@ -510,23 +510,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_endpoint("http://localhost:4317")
         .with_protocol(TransportProtocol::Grpc)
         .with_timeout(Duration::from_secs(10));
-    
+
     // 创建客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送追踪数据
     let result = client.send_trace("example-operation").await?
         .with_attribute("service.name", "my-service")
         .with_attribute("service.version", "1.0.0")
         .finish()
         .await?;
-    
+
     println!("发送结果: {:?}", result);
-    
+
     // 关闭客户端
     client.shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -679,6 +679,6 @@ Tracezip压缩API参考（600+ 行）:
 
 ---
 
-**API 版本**: 0.5.0  
-**最后更新**: 2025年10月26日  
+**API 版本**: 0.5.0
+**最后更新**: 2025年10月26日
 **维护者**: OTLP Rust 团队

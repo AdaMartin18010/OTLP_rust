@@ -1,8 +1,9 @@
 ﻿# Redis 生产环境实践补充
 
 ## 📋 目录
+
 - [Redis 生产环境实践补充](#redis-生产环境实践补充)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [持久化与高可用](#持久化与高可用)
     - [RDB vs AOF](#rdb-vs-aof)
     - [Redis Sentinel (哨兵)](#redis-sentinel-哨兵)
@@ -61,10 +62,10 @@ async fn sentinel_connection() -> anyhow::Result<()> {
         "redis://sentinel2:26379/",
         "redis://sentinel3:26379/",
     ])?;
-    
+
     let mut con = client.get_async_connection().await?;
     con.set("key", "value").await?;
-    
+
     Ok(())
 }
 ```
@@ -85,14 +86,14 @@ async fn cluster_connection() -> anyhow::Result<()> {
         "redis://127.0.0.1:7001/",
         "redis://127.0.0.1:7002/",
     ];
-    
+
     let client = ClusterClient::builder(nodes)
         .read_from_replicas()  // 从副本读取
         .build()?;
-    
+
     let mut con = client.get_async_connection().await?;
     con.set("key", "value").await?;
-    
+
     Ok(())
 }
 ```
@@ -128,9 +129,9 @@ async fn compress_and_store(con: &mut redis::aio::Connection, key: &str, data: &
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     encoder.write_all(data.as_bytes())?;
     let compressed = encoder.finish()?;
-    
+
     con.set(key, compressed).await?;
-    
+
     Ok(())
 }
 ```
@@ -160,9 +161,9 @@ loop {
         .arg("MATCH").arg("user:*")
         .arg("COUNT").arg(100)
         .query_async(con).await?;
-    
+
     // 处理 keys...
-    
+
     cursor = new_cursor;
     if cursor == 0 {
         break;
@@ -194,19 +195,19 @@ async fn cache_aside_get_user(
     user_id: u64,
 ) -> anyhow::Result<User> {
     let cache_key = format!("user:{}", user_id);
-    
+
     // 1. 先查缓存
     if let Some(cached): Option<String> = con.get(&cache_key).await? {
         return Ok(serde_json::from_str(&cached)?);
     }
-    
+
     // 2. 缓存未命中，查数据库
     let user = db.get_user(user_id).await?;
-    
+
     // 3. 写入缓存
     let json = serde_json::to_string(&user)?;
     con.set_ex(&cache_key, json, 3600).await?;  // 1小时
-    
+
     Ok(user)
 }
 ```
@@ -227,10 +228,10 @@ async fn get_with_null_cache(con: &mut redis::aio::Connection, key: &str) -> any
         }
         return Ok(Some(cached));
     }
-    
+
     // 查询数据库
     let value = query_database(key).await?;
-    
+
     match value {
         Some(v) => {
             con.set_ex(key, &v, 3600).await?;
@@ -259,12 +260,12 @@ pub struct HotKeyCache {
 impl HotKeyCache {
     pub async fn get(&self, key: &str) -> anyhow::Result<Option<String>> {
         let mut con = self.redis.clone();
-        
+
         // 检查缓存
         if let Some(cached) = con.get::<_, Option<String>>(key).await? {
             return Ok(Some(cached));
         }
-        
+
         // 使用互斥锁防止缓存击穿
         let mut loading = self.loading.lock().await;
         if loading.contains(key) {
@@ -273,20 +274,20 @@ impl HotKeyCache {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
             return self.get(key).await;
         }
-        
+
         loading.insert(key.to_string());
         drop(loading);
-        
+
         // 加载数据
         let value = query_database(key).await?;
-        
+
         if let Some(ref v) = value {
             con.set_ex(key, v, 3600).await?;
         }
-        
+
         // 清理加载标记
         self.loading.lock().await.remove(key);
-        
+
         Ok(value)
     }
 }
@@ -302,9 +303,9 @@ async fn set_with_random_ttl(con: &mut redis::aio::Connection, key: &str, value:
     let base_ttl = 3600;  // 1小时
     let random_offset = rand::thread_rng().gen_range(0..300);  // 0-5分钟随机偏移
     let ttl = base_ttl + random_offset;
-    
+
     con.set_ex(key, value, ttl).await?;
-    
+
     Ok(())
 }
 // 辅助函数

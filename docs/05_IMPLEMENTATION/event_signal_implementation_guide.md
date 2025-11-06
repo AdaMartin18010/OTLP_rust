@@ -1,9 +1,9 @@
 # 🎯 Event 信号实现指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
-**适用于**: OTLP Rust v2.0+  
-**OTLP 版本**: 1.3.0+ (Event Signal Type)  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
+**适用于**: OTLP Rust v2.0+
+**OTLP 版本**: 1.3.0+ (Event Signal Type)
 **状态**: 🟢 活跃维护
 
 > **简介**: Event 信号完整实现指南 - 事件处理、实时流、复杂事件处理和最佳实践。
@@ -510,13 +510,13 @@ impl EventBuilder {
 pub enum EventError {
     #[error("Event queue is full")]
     QueueFull,
-    
+
     #[error("Event channel is closed")]
     ChannelClosed,
-    
+
     #[error("Failed to serialize event: {0}")]
     SerializationFailed(String),
-    
+
     #[error("Failed to export event: {0}")]
     ExportFailed(String),
 }
@@ -576,7 +576,7 @@ impl EventProcessor {
         exporter: Arc<dyn EventExporter>,
     ) -> Self {
         let (tx, rx) = mpsc::channel(config.max_queue_size);
-        
+
         let processor = Self {
             config: config.clone(),
             tx,
@@ -1215,8 +1215,8 @@ match serde_json::to_value(&payload) {
 
 ---
 
-**文档完成度**: 100%  
-**示例代码**: 已验证  
+**文档完成度**: 100%
+**示例代码**: 已验证
 **最后审核**: 2025年10月24日
 
 🎯 **需要帮助？** 查看 [故障排除指南](../08_REFERENCE/troubleshooting_guide.md) 或提交 Issue。

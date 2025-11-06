@@ -129,7 +129,7 @@ fn rocket_handler() -> &'static str {
 
 fn benchmark_web_frameworks(c: &mut Criterion) {
     let mut group = c.benchmark_group("web_frameworks");
-    
+
     group.bench_function("actix_web", |b| {
         b.to_async(tokio::runtime::Runtime::new().unwrap())
             .iter(|| async {
@@ -137,14 +137,14 @@ fn benchmark_web_frameworks(c: &mut Criterion) {
                 actix_handler().await
             });
     });
-    
+
     group.bench_function("axum", |b| {
         b.to_async(tokio::runtime::Runtime::new().unwrap())
             .iter(|| async {
                 axum_handler().await
             });
     });
-    
+
     group.finish();
 }
 ```
@@ -194,12 +194,12 @@ use tokio_postgres::{Client, NoTls};
 
 async fn benchmark_database_drivers(c: &mut Criterion) {
     let mut group = c.benchmark_group("database_drivers");
-    
+
     // 测试连接池
     let pool = PgPool::connect("postgresql://user:pass@localhost/testdb")
         .await
         .unwrap();
-    
+
     group.bench_function("sqlx_select", |b| {
         b.to_async(tokio::runtime::Runtime::new().unwrap())
             .iter(|| async {
@@ -211,7 +211,7 @@ async fn benchmark_database_drivers(c: &mut Criterion) {
                 black_box(rows);
             });
     });
-    
+
     group.bench_function("diesel_select", |b| {
         b.iter(|| {
             let connection = establish_connection();
@@ -222,7 +222,7 @@ async fn benchmark_database_drivers(c: &mut Criterion) {
             black_box(users);
         });
     });
-    
+
     group.finish();
 }
 ```
@@ -246,9 +246,9 @@ use tikv_client::{TransactionClient, Transaction};
 
 async fn benchmark_tikv_performance() -> Result<()> {
     let client = TransactionClient::new(vec!["127.0.0.1:2379"]).await?;
-    
+
     let mut txn = client.begin().await?;
-    
+
     // 写入性能测试
     let start = std::time::Instant::now();
     for i in 0..10000 {
@@ -256,7 +256,7 @@ async fn benchmark_tikv_performance() -> Result<()> {
     }
     txn.commit().await?;
     let write_time = start.elapsed();
-    
+
     // 读取性能测试
     let start = std::time::Instant::now();
     let mut txn = client.begin().await?;
@@ -264,10 +264,10 @@ async fn benchmark_tikv_performance() -> Result<()> {
         let _value = txn.get(format!("key_{}", i)).await?;
     }
     let read_time = start.elapsed();
-    
+
     println!("TiKV 写入时间: {:?}", write_time);
     println!("TiKV 读取时间: {:?}", read_time);
-    
+
     Ok(())
 }
 ```
@@ -296,7 +296,7 @@ use rayon::prelude::*;
 
 async fn benchmark_concurrency() {
     let data = (0..1000000).collect::<Vec<i32>>();
-    
+
     // Tokio 异步并发
     let start = Instant::now();
     let handles: Vec<_> = data.chunks(1000)
@@ -307,27 +307,27 @@ async fn benchmark_concurrency() {
             })
         })
         .collect();
-    
+
     let results: Vec<i32> = futures::future::join_all(handles).await
         .into_iter()
         .map(|r| r.unwrap())
         .collect();
     let tokio_time = start.elapsed();
-    
+
     // Rayon 并行计算
     let start = Instant::now();
     let rayon_result: i32 = data.par_iter()
         .map(|x| x * x)
         .sum();
     let rayon_time = start.elapsed();
-    
+
     // 单线程计算
     let start = Instant::now();
     let single_result: i32 = data.iter()
         .map(|x| x * x)
         .sum();
     let single_time = start.elapsed();
-    
+
     println!("Tokio 时间: {:?}", tokio_time);
     println!("Rayon 时间: {:?}", rayon_time);
     println!("单线程时间: {:?}", single_time);
@@ -354,7 +354,7 @@ use std::thread;
 
 fn benchmark_locks() {
     const ITERATIONS: usize = 1000000;
-    
+
     // Mutex 性能测试
     let mutex = Arc::new(Mutex::new(0));
     let start = Instant::now();
@@ -367,12 +367,12 @@ fn benchmark_locks() {
             }
         })
     }).collect();
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
     let mutex_time = start.elapsed();
-    
+
     // RwLock 性能测试
     let rwlock = Arc::new(RwLock::new(0));
     let start = Instant::now();
@@ -385,12 +385,12 @@ fn benchmark_locks() {
             }
         })
     }).collect();
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
     let rwlock_time = start.elapsed();
-    
+
     // Atomic 性能测试
     let atomic = Arc::new(AtomicUsize::new(0));
     let start = Instant::now();
@@ -402,12 +402,12 @@ fn benchmark_locks() {
             }
         })
     }).collect();
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
     let atomic_time = start.elapsed();
-    
+
     println!("Mutex 时间: {:?}", mutex_time);
     println!("RwLock 时间: {:?}", rwlock_time);
     println!("Atomic 时间: {:?}", atomic_time);
@@ -441,7 +441,7 @@ static ALLOCATOR: Jemalloc = Jemalloc;
 fn benchmark_allocators() {
     const ALLOCATIONS: usize = 1000000;
     const SIZE: usize = 1024;
-    
+
     // 系统分配器
     let start = Instant::now();
     let mut vec: Vec<Vec<u8>> = Vec::new();
@@ -450,7 +450,7 @@ fn benchmark_allocators() {
     }
     let system_time = start.elapsed();
     drop(vec);
-    
+
     // jemalloc
     let start = Instant::now();
     let mut vec: Vec<Vec<u8>> = Vec::new();
@@ -459,7 +459,7 @@ fn benchmark_allocators() {
     }
     let jemalloc_time = start.elapsed();
     drop(vec);
-    
+
     // mimalloc
     let start = Instant::now();
     let mut vec: Vec<Vec<u8>> = Vec::new();
@@ -468,7 +468,7 @@ fn benchmark_allocators() {
     }
     let mimalloc_time = start.elapsed();
     drop(vec);
-    
+
     println!("系统分配器时间: {:?}", system_time);
     println!("jemalloc 时间: {:?}", jemalloc_time);
     println!("mimalloc 时间: {:?}", mimalloc_time);
@@ -494,7 +494,7 @@ use std::collections::{HashMap, BTreeMap, VecDeque};
 
 fn benchmark_data_structures() {
     const ELEMENTS: usize = 1000000;
-    
+
     // HashMap 内存使用
     let start = Instant::now();
     let mut map = HashMap::new();
@@ -503,7 +503,7 @@ fn benchmark_data_structures() {
     }
     let hashmap_time = start.elapsed();
     let hashmap_size = std::mem::size_of_val(&map);
-    
+
     // BTreeMap 内存使用
     let start = Instant::now();
     let mut map = BTreeMap::new();
@@ -512,7 +512,7 @@ fn benchmark_data_structures() {
     }
     let btreemap_time = start.elapsed();
     let btreemap_size = std::mem::size_of_val(&map);
-    
+
     // Vec 内存使用
     let start = Instant::now();
     let mut vec = Vec::with_capacity(ELEMENTS);
@@ -521,7 +521,7 @@ fn benchmark_data_structures() {
     }
     let vec_time = start.elapsed();
     let vec_size = std::mem::size_of_val(&vec);
-    
+
     println!("HashMap 时间: {:?}, 大小: {} bytes", hashmap_time, hashmap_size);
     println!("BTreeMap 时间: {:?}, 大小: {} bytes", btreemap_time, btreemap_size);
     println!("Vec 时间: {:?}, 大小: {} bytes", vec_time, vec_size);
@@ -550,11 +550,11 @@ fn benchmark_data_structures() {
 # 创建不同规模的项目
 for size in 100 1000 10000 100000; do
     echo "测试项目规模: $size 个文件"
-    
+
     # 创建测试项目
     cargo new test_project_$size
     cd test_project_$size
-    
+
     # 生成指定数量的文件
     for i in $(seq 1 $size); do
         cat > src/mod_$i.rs << EOF
@@ -564,15 +564,15 @@ pub fn function_$i() -> i32 {
 EOF
         echo "pub mod mod_$i;" >> src/lib.rs
     done
-    
+
     # 测量编译时间
     time_start=$(date +%s.%N)
     cargo build --release
     time_end=$(date +%s.%N)
     compile_time=$(echo "$time_end - $time_start" | bc)
-    
+
     echo "项目规模 $size: 编译时间 ${compile_time}s"
-    
+
     cd ..
     rm -rf test_project_$size
 done
@@ -604,14 +604,14 @@ fn benchmark_incremental_compilation() {
         .output()
         .expect("Failed to execute cargo build");
     let first_build_time = start.elapsed();
-    
+
     // 修改一个文件
     std::fs::write("src/main.rs", r#"
 fn main() {
     println!("Hello, World! Modified");
 }
 "#).expect("Failed to write file");
-    
+
     // 增量编译
     let start = Instant::now();
     let output = Command::new("cargo")
@@ -619,10 +619,10 @@ fn main() {
         .output()
         .expect("Failed to execute cargo build");
     let incremental_build_time = start.elapsed();
-    
+
     println!("首次编译时间: {:?}", first_build_time);
     println!("增量编译时间: {:?}", incremental_build_time);
-    println!("加速比: {:.2}x", 
+    println!("加速比: {:.2}x",
         first_build_time.as_secs_f64() / incremental_build_time.as_secs_f64());
 }
 ```
@@ -650,7 +650,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 async fn benchmark_async_networking() {
     // 启动服务器
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
-    
+
     tokio::spawn(async move {
         loop {
             let (socket, _) = listener.accept().await.unwrap();
@@ -659,26 +659,26 @@ async fn benchmark_async_networking() {
             });
         }
     });
-    
+
     // 客户端压力测试
     let start = Instant::now();
     let mut handles = Vec::new();
-    
+
     for _ in 0..1000 {
         let handle = tokio::spawn(async {
             let mut stream = TcpStream::connect("127.0.0.1:8080").await.unwrap();
             stream.write_all(b"Hello, Server!").await.unwrap();
-            
+
             let mut buffer = [0; 1024];
             let n = stream.read(&mut buffer).await.unwrap();
             buffer[..n].to_vec()
         });
         handles.push(handle);
     }
-    
+
     let results: Vec<_> = futures::future::join_all(handles).await;
     let duration = start.elapsed();
-    
+
     println!("1000 个并发连接完成时间: {:?}", duration);
     println!("平均延迟: {:?}", duration / 1000);
 }
@@ -711,12 +711,12 @@ use surf;
 
 async fn benchmark_http_clients() {
     let url = "http://httpbin.org/json";
-    
+
     // reqwest 性能测试
     let start = Instant::now();
     let client = reqwest::Client::new();
     let mut handles = Vec::new();
-    
+
     for _ in 0..1000 {
         let client = client.clone();
         let handle = tokio::spawn(async move {
@@ -725,15 +725,15 @@ async fn benchmark_http_clients() {
         });
         handles.push(handle);
     }
-    
+
     let _results: Vec<_> = futures::future::join_all(handles).await;
     let reqwest_time = start.elapsed();
-    
+
     // hyper 性能测试
     let start = Instant::now();
     let client = hyper::Client::new();
     let mut handles = Vec::new();
-    
+
     for _ in 0..1000 {
         let client = client.clone();
         let handle = tokio::spawn(async move {
@@ -743,10 +743,10 @@ async fn benchmark_http_clients() {
         });
         handles.push(handle);
     }
-    
+
     let _results: Vec<_> = futures::future::join_all(handles).await;
     let hyper_time = start.elapsed();
-    
+
     println!("reqwest 时间: {:?}", reqwest_time);
     println!("hyper 时间: {:?}", hyper_time);
 }
@@ -789,34 +789,34 @@ fn benchmark_serialization() {
         values: (0..1000).map(|i| i as f64).collect(),
         metadata: (0..100).map(|i| (format!("key_{}", i), format!("value_{}", i))).collect(),
     };
-    
+
     // JSON 序列化
     let start = Instant::now();
     let json_data = serde_json::to_vec(&data).unwrap();
     let json_serialize_time = start.elapsed();
-    
+
     let start = Instant::now();
     let _: TestData = serde_json::from_slice(&json_data).unwrap();
     let json_deserialize_time = start.elapsed();
-    
+
     // Bincode 序列化
     let start = Instant::now();
     let bincode_data = bincode::serialize(&data).unwrap();
     let bincode_serialize_time = start.elapsed();
-    
+
     let start = Instant::now();
     let _: TestData = bincode::deserialize(&bincode_data).unwrap();
     let bincode_deserialize_time = start.elapsed();
-    
+
     // MessagePack 序列化
     let start = Instant::now();
     let msgpack_data = rmp_serde::to_vec(&data).unwrap();
     let msgpack_serialize_time = start.elapsed();
-    
+
     let start = Instant::now();
     let _: TestData = rmp_serde::from_slice(&msgpack_data).unwrap();
     let msgpack_deserialize_time = start.elapsed();
-    
+
     println!("JSON 序列化时间: {:?}, 大小: {} bytes", json_serialize_time, json_data.len());
     println!("JSON 反序列化时间: {:?}", json_deserialize_time);
     println!("Bincode 序列化时间: {:?}, 大小: {} bytes", bincode_serialize_time, bincode_data.len());
@@ -885,7 +885,7 @@ impl<T> MemoryPool<T> {
             factory,
         }
     }
-    
+
     pub fn get(&self) -> T {
         if let Some(item) = self.pool.lock().unwrap().pop_front() {
             item
@@ -893,7 +893,7 @@ impl<T> MemoryPool<T> {
             (self.factory)()
         }
     }
-    
+
     pub fn put(&self, item: T) {
         self.pool.lock().unwrap().push_back(item);
     }
@@ -924,7 +924,7 @@ where
             access_order: VecDeque::new(),
         }
     }
-    
+
     pub fn get(&mut self, key: &K) -> Option<&V> {
         if let Some((value, _)) = self.cache.get(key) {
             // 更新访问顺序
@@ -935,14 +935,14 @@ where
             None
         }
     }
-    
+
     pub fn put(&mut self, key: K, value: V) {
         if self.cache.len() >= self.capacity {
             if let Some(oldest_key) = self.access_order.pop_front() {
                 self.cache.remove(&oldest_key);
             }
         }
-        
+
         self.cache.insert(key.clone(), (value, 0));
         self.access_order.push_back(key);
     }
@@ -974,7 +974,7 @@ fn main() {
         // 数据库查询代码
         query_database().await
     });
-    
+
     let result = time_it!("文件处理", {
         // 文件处理代码
         process_file().await
@@ -998,7 +998,7 @@ unsafe impl GlobalAlloc for MemoryTracker {
         }
         ptr
     }
-    
+
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         println!("释放内存: {} bytes", layout.size());
         System.dealloc(ptr, layout);
@@ -1021,11 +1021,11 @@ fn benchmark_fibonacci(c: &mut Criterion) {
     c.bench_function("fibonacci_recursive", |b| {
         b.iter(|| fibonacci_recursive(black_box(20)))
     });
-    
+
     c.bench_function("fibonacci_iterative", |b| {
         b.iter(|| fibonacci_iterative(black_box(20)))
     });
-    
+
     c.bench_function("fibonacci_memoized", |b| {
         b.iter(|| fibonacci_memoized(black_box(20)))
     });
@@ -1052,11 +1052,11 @@ fn fibonacci_memoized(n: u32) -> u32 {
     let mut memo = vec![0; (n + 1) as usize];
     memo[0] = 0;
     memo[1] = 1;
-    
+
     for i in 2..=n {
         memo[i as usize] = memo[(i - 1) as usize] + memo[(i - 2) as usize];
     }
-    
+
     memo[n as usize]
 }
 
@@ -1102,4 +1102,4 @@ Rust 1.90 在性能方面取得了显著进步，特别是在：
 
 ---
 
--*本报告基于 Rust 1.85.0 和 Rust 2024 Edition 的性能基准测试，将持续更新以反映最新的性能改进。最后更新：2025年9月28日*-
+-_本报告基于 Rust 1.85.0 和 Rust 2024 Edition 的性能基准测试，将持续更新以反映最新的性能改进。最后更新：2025年9月28日_-

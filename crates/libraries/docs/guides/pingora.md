@@ -1,7 +1,7 @@
 ﻿# Pingora 高性能代理完整实战指南
 
-> **适用版本**: Rust 1.75+ (推荐 1.90+)  
-> **更新日期**: 2025-10-24  
+> **适用版本**: Rust 1.75+ (推荐 1.90+)
+> **更新日期**: 2025-10-24
 > **难度级别**: 中级到高级
 
 Pingora 是 Cloudflare 开源的高性能 HTTP 代理框架，基于 Rust 和 Tokio 构建，用于处理百万级并发连接。本指南提供从入门到生产的完整实战教程。
@@ -9,8 +9,9 @@ Pingora 是 Cloudflare 开源的高性能 HTTP 代理框架，基于 Rust 和 To
 ---
 
 ## 📋 目录
+
 - [Pingora 高性能代理完整实战指南](#pingora-高性能代理完整实战指南)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [Pingora 架构原理](#pingora-架构原理)
     - [核心特性](#核心特性)
   - [快速开始](#快速开始)
@@ -124,11 +125,11 @@ pub struct MyProxy {
 #[async_trait]
 impl ProxyHttp for MyProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -145,22 +146,22 @@ impl ProxyHttp for MyProxy {
 
 fn main() {
     env_logger::init();
-    
+
     // 创建服务器
     let mut server = Server::new(None).unwrap();
     server.bootstrap();
-    
+
     // 创建代理服务
     let proxy = MyProxy {
         upstream_addr: "127.0.0.1:8080".to_string(),
     };
-    
+
     let mut service = http_proxy_service(&server.configuration, proxy);
     service.add_tcp("0.0.0.0:6188");
-    
+
     // 添加到服务器
     server.add_service(service);
-    
+
     // 启动服务器
     server.run_forever();
 }
@@ -200,11 +201,11 @@ pub struct CustomProxy {
 #[async_trait]
 impl ProxyHttp for CustomProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -217,7 +218,7 @@ impl ProxyHttp for CustomProxy {
         ));
         Ok(peer)
     }
-    
+
     // 请求过滤器：修改请求头
     async fn request_filter(
         &self,
@@ -228,18 +229,18 @@ impl ProxyHttp for CustomProxy {
         session
             .req_header_mut()
             .insert_header("X-Proxy-By", "Pingora")?;
-        
+
         session
             .req_header_mut()
             .insert_header("X-Request-ID", &uuid::Uuid::new_v4().to_string())?;
-        
+
         // 移除某些头
         session.req_header_mut().remove_header("Cookie");
-        
+
         // 返回 false 继续处理，返回 true 中断请求
         Ok(false)
     }
-    
+
     // 上游请求过滤器：修改发往上游的请求
     async fn upstream_request_filter(
         &self,
@@ -251,7 +252,7 @@ impl ProxyHttp for CustomProxy {
         upstream_request.insert_header("X-Forwarded-Proto", "http")?;
         Ok(())
     }
-    
+
     // 响应过滤器：修改响应头
     async fn response_filter(
         &self,
@@ -262,13 +263,13 @@ impl ProxyHttp for CustomProxy {
         // 添加响应头
         upstream_response.insert_header("X-Served-By", "Pingora")?;
         upstream_response.insert_header("X-Cache", "MISS")?;
-        
+
         // 移除服务器信息（安全考虑）
         upstream_response.remove_header("Server");
-        
+
         Ok(())
     }
-    
+
     // 日志记录
     async fn logging(
         &self,
@@ -279,7 +280,7 @@ impl ProxyHttp for CustomProxy {
         let response_code = session
             .response_written()
             .map_or(0, |resp| resp.status.as_u16());
-        
+
         log::info!(
             "{} {} {} - {}",
             session.client_addr().unwrap(),
@@ -303,11 +304,11 @@ use std::time::Duration;
 #[async_trait]
 impl ProxyHttp for TimeoutProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -318,19 +319,19 @@ impl ProxyHttp for TimeoutProxy {
             false,
             "".to_string(),
         );
-        
+
         // 设置连接超时
         peer.options.connection_timeout = Some(Duration::from_secs(5));
-        
+
         // 设置读超时
         peer.options.read_timeout = Some(Duration::from_secs(30));
-        
+
         // 设置写超时
         peer.options.write_timeout = Some(Duration::from_secs(30));
-        
+
         // 设置总超时
         peer.options.total_connection_timeout = Some(Duration::from_secs(10));
-        
+
         Ok(Box::new(peer))
     }
 }
@@ -350,11 +351,11 @@ pub struct RetryProxy {
 #[async_trait]
 impl ProxyHttp for RetryProxy {
     type CTX = u32;  // 使用 CTX 存储当前重试次数
-    
+
     fn new_ctx(&self) -> Self::CTX {
         0
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -367,7 +368,7 @@ impl ProxyHttp for RetryProxy {
         ));
         Ok(peer)
     }
-    
+
     async fn fail_to_connect(
         &self,
         _session: &mut Session,
@@ -376,7 +377,7 @@ impl ProxyHttp for RetryProxy {
         e: Box<Error>,
     ) -> Result<bool> {
         *ctx += 1;
-        
+
         if *ctx < self.max_retries {
             log::warn!("连接失败，重试 {}/{}: {:?}", ctx, self.max_retries, e);
             // 返回 true 表示重试
@@ -387,7 +388,7 @@ impl ProxyHttp for RetryProxy {
             Ok(false)
         }
     }
-    
+
     async fn fail_to_proxy(
         &self,
         _session: &mut Session,
@@ -395,7 +396,7 @@ impl ProxyHttp for RetryProxy {
         e: Box<Error>,
     ) -> Result<bool> {
         *ctx += 1;
-        
+
         if *ctx < self.max_retries {
             log::warn!("代理失败，重试 {}/{}: {:?}", ctx, self.max_retries, e);
             Ok(true)
@@ -424,18 +425,18 @@ pub struct PathRoutingProxy {
 #[async_trait]
 impl ProxyHttp for PathRoutingProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         session: &mut Session,
         _ctx: &mut Self::CTX,
     ) -> Result<Box<HttpPeer>> {
         let path = session.req_header().uri.path();
-        
+
         let upstream_addr = if path.starts_with("/api/") {
             &self.api_upstream
         } else if path.starts_with("/static/") {
@@ -443,9 +444,9 @@ impl ProxyHttp for PathRoutingProxy {
         } else {
             &self.default_upstream
         };
-        
+
         log::info!("路由 {} 到 {}", path, upstream_addr);
-        
+
         let peer = Box::new(HttpPeer::new(
             upstream_addr.parse()?,
             false,
@@ -470,11 +471,11 @@ pub struct HostRoutingProxy {
 #[async_trait]
 impl ProxyHttp for HostRoutingProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         session: &mut Session,
@@ -486,7 +487,7 @@ impl ProxyHttp for HostRoutingProxy {
             .get("Host")
             .and_then(|h| h.to_str().ok())
             .unwrap_or("");
-        
+
         let upstream_addr = if host.contains(&self.api_domain) {
             &self.api_upstream
         } else if host.contains(&self.web_domain) {
@@ -494,9 +495,9 @@ impl ProxyHttp for HostRoutingProxy {
         } else {
             &self.default_upstream
         };
-        
+
         log::info!("路由 Host {} 到 {}", host, upstream_addr);
-        
+
         let peer = Box::new(HttpPeer::new(
             upstream_addr.parse()?,
             false,
@@ -527,9 +528,9 @@ impl LoadBalancedProxy {
             .iter()
             .map(|addr| Backend::new(addr).unwrap())
             .collect();
-        
+
         let lb = LoadBalancer::from_backends(backends);
-        
+
         Self {
             lb: Arc::new(lb),
         }
@@ -539,11 +540,11 @@ impl LoadBalancedProxy {
 #[async_trait]
 impl ProxyHttp for LoadBalancedProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         session: &mut Session,
@@ -553,13 +554,13 @@ impl ProxyHttp for LoadBalancedProxy {
         let client_ip = session.client_addr()
             .map(|addr| addr.to_string())
             .unwrap_or_default();
-        
+
         let backend = self.lb
             .select(client_ip.as_bytes(), 256)
             .ok_or_else(|| Error::new(ErrorType::InternalError))?;
-        
+
         log::info!("选择后端: {}", backend.addr);
-        
+
         let peer = Box::new(HttpPeer::new(
             backend.addr,
             false,
@@ -576,7 +577,7 @@ fn main() {
         "127.0.0.1:8081",
         "127.0.0.1:8082",
     ]);
-    
+
     // ... 启动服务器
 }
 ```
@@ -593,22 +594,22 @@ pub struct WeightedLoadBalancer {
 impl WeightedLoadBalancer {
     pub fn new() -> Self {
         let mut backends = vec![];
-        
+
         // 添加不同权重的后端
         let mut backend1 = Backend::new("127.0.0.1:8080").unwrap();
         backend1.weight = 5;  // 权重 5
         backends.push(backend1);
-        
+
         let mut backend2 = Backend::new("127.0.0.1:8081").unwrap();
         backend2.weight = 3;  // 权重 3
         backends.push(backend2);
-        
+
         let mut backend3 = Backend::new("127.0.0.1:8082").unwrap();
         backend3.weight = 2;  // 权重 2
         backends.push(backend3);
-        
+
         let lb = LoadBalancer::from_backends(backends);
-        
+
         Self {
             lb: Arc::new(lb),
         }
@@ -618,11 +619,11 @@ impl WeightedLoadBalancer {
 #[async_trait]
 impl ProxyHttp for WeightedLoadBalancer {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -631,7 +632,7 @@ impl ProxyHttp for WeightedLoadBalancer {
         let backend = self.lb
             .select(b"", 256)
             .ok_or_else(|| Error::new(ErrorType::InternalError))?;
-        
+
         let peer = Box::new(HttpPeer::new(
             backend.addr,
             false,
@@ -660,16 +661,16 @@ pub struct HealthCheckManager {
 impl HealthCheckManager {
     pub fn start_health_checks(&self) {
         let lb = self.lb.clone();
-        
+
         tokio::spawn(async move {
             let mut ticker = interval(Duration::from_secs(10));
-            
+
             loop {
                 ticker.tick().await;
-                
+
                 for backend in lb.backends().get_backend() {
                     let health_check_path = "/health";
-                    
+
                     match health_check::http_health_check(
                         &backend.addr,
                         health_check_path,
@@ -718,20 +719,20 @@ impl RateLimiter {
             capacity,
         }
     }
-    
+
     fn try_acquire(&self, key: &str) -> bool {
         let mut buckets = self.buckets.lock().unwrap();
         let now = Instant::now();
-        
+
         let (tokens, last_refill) = buckets
             .entry(key.to_string())
             .or_insert((self.capacity, now));
-        
+
         // 补充令牌
         let elapsed = now.duration_since(*last_refill).as_secs_f64();
         *tokens = (*tokens + elapsed * self.rate).min(self.capacity);
         *last_refill = now;
-        
+
         // 尝试消耗一个令牌
         if *tokens >= 1.0 {
             *tokens -= 1.0;
@@ -750,11 +751,11 @@ pub struct RateLimitProxy {
 #[async_trait]
 impl ProxyHttp for RateLimitProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn request_filter(
         &self,
         session: &mut Session,
@@ -763,21 +764,21 @@ impl ProxyHttp for RateLimitProxy {
         let client_ip = session.client_addr()
             .map(|addr| addr.to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        
+
         if !self.limiter.try_acquire(&client_ip) {
             log::warn!("限流: {}", client_ip);
-            
+
             // 返回 429 Too Many Requests
             let mut resp = ResponseHeader::build(429, None)?;
             resp.insert_header("Retry-After", "1")?;
             session.write_response_header(Box::new(resp)).await?;
-            
+
             return Ok(true);  // 中断请求
         }
-        
+
         Ok(false)  // 继续处理
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -811,11 +812,11 @@ pub struct CacheMiddleware {
 #[async_trait]
 impl ProxyHttp for CacheMiddleware {
     type CTX = Option<Vec<u8>>;  // 存储缓存的响应
-    
+
     fn new_ctx(&self) -> Self::CTX {
         None
     }
-    
+
     async fn request_filter(
         &self,
         session: &mut Session,
@@ -825,25 +826,25 @@ impl ProxyHttp for CacheMiddleware {
         if session.req_header().method != http::Method::GET {
             return Ok(false);
         }
-        
+
         let cache_key = session.req_header().uri.to_string();
-        
+
         // 检查缓存
         let cache = self.cache.read().unwrap();
         if let Some(cached_response) = cache.get(&cache_key) {
             log::info!("缓存命中: {}", cache_key);
-            
+
             // 直接返回缓存的响应
             let resp = ResponseHeader::build(200, None)?;
             session.write_response_header(Box::new(resp)).await?;
             session.write_response_body(Some(cached_response.clone().into())).await?;
-            
+
             return Ok(true);  // 中断请求，直接返回缓存
         }
-        
+
         Ok(false)  // 缓存未命中，继续请求上游
     }
-    
+
     async fn response_filter(
         &self,
         session: &mut Session,
@@ -857,10 +858,10 @@ impl ProxyHttp for CacheMiddleware {
             cache.insert(cache_key, body.to_vec());
             log::info!("缓存存储: {}", session.req_header().uri);
         }
-        
+
         Ok(())
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -898,7 +899,7 @@ pub struct CircuitBreaker {
     failure_count: AtomicU32,
     success_count: AtomicU32,
     last_failure_time: AtomicU64,
-    
+
     failure_threshold: u32,
     success_threshold: u32,
     timeout: Duration,
@@ -920,10 +921,10 @@ impl CircuitBreaker {
             timeout,
         }
     }
-    
+
     pub fn is_open(&self) -> bool {
         let state = *self.state.lock().unwrap();
-        
+
         match state {
             CircuitState::Open => {
                 // 检查是否应该进入半开状态
@@ -932,7 +933,7 @@ impl CircuitBreaker {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
-                
+
                 if now - last_fail >= self.timeout.as_secs() {
                     *self.state.lock().unwrap() = CircuitState::HalfOpen;
                     false
@@ -944,14 +945,14 @@ impl CircuitBreaker {
             CircuitState::Closed => false,
         }
     }
-    
+
     pub fn record_success(&self) {
         let mut state = self.state.lock().unwrap();
-        
+
         match *state {
             CircuitState::HalfOpen => {
                 self.success_count.fetch_add(1, Ordering::Relaxed);
-                
+
                 if self.success_count.load(Ordering::Relaxed) >= self.success_threshold {
                     *state = CircuitState::Closed;
                     self.failure_count.store(0, Ordering::Relaxed);
@@ -962,16 +963,16 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     pub fn record_failure(&self) {
         self.failure_count.fetch_add(1, Ordering::Relaxed);
-        
+
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
         self.last_failure_time.store(now, Ordering::Relaxed);
-        
+
         if self.failure_count.load(Ordering::Relaxed) >= self.failure_threshold {
             *self.state.lock().unwrap() = CircuitState::Open;
             log::warn!("熔断器打开");
@@ -987,11 +988,11 @@ pub struct CircuitBreakerProxy {
 #[async_trait]
 impl ProxyHttp for CircuitBreakerProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn request_filter(
         &self,
         session: &mut Session,
@@ -999,16 +1000,16 @@ impl ProxyHttp for CircuitBreakerProxy {
     ) -> Result<bool> {
         if self.circuit_breaker.is_open() {
             log::warn!("熔断器打开，拒绝请求");
-            
+
             let resp = ResponseHeader::build(503, None)?;
             session.write_response_header(Box::new(resp)).await?;
-            
+
             return Ok(true);  // 中断请求
         }
-        
+
         Ok(false)
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -1021,7 +1022,7 @@ impl ProxyHttp for CircuitBreakerProxy {
         ));
         Ok(peer)
     }
-    
+
     async fn fail_to_proxy(
         &self,
         _session: &mut Session,
@@ -1031,7 +1032,7 @@ impl ProxyHttp for CircuitBreakerProxy {
         self.circuit_breaker.record_failure();
         Ok(false)  // 不重试
     }
-    
+
     async fn logging(
         &self,
         session: &mut Session,
@@ -1057,25 +1058,25 @@ use pingora::tls::ssl::{SslAcceptor, SslFiletype, SslMethod};
 fn create_tls_server() -> Result<Server> {
     let mut server = Server::new(None)?;
     server.bootstrap();
-    
+
     // 配置 TLS
     let mut acceptor = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
     acceptor.set_private_key_file("/path/to/private.key", SslFiletype::PEM)?;
     acceptor.set_certificate_chain_file("/path/to/cert.pem")?;
-    
+
     let proxy = MyProxy {
         upstream_addr: "127.0.0.1:8080".to_string(),
     };
-    
+
     let mut service = http_proxy_service(&server.configuration, proxy);
-    
+
     // 添加 HTTPS 监听
     service.add_tls_with_acceptor(
         "0.0.0.0:443",
         None,
         acceptor.build(),
     )?;
-    
+
     server.add_service(service);
     Ok(server)
 }
@@ -1094,11 +1095,11 @@ pub struct SniProxy {
 #[async_trait]
 impl ProxyHttp for SniProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         session: &mut Session,
@@ -1109,14 +1110,14 @@ impl ProxyHttp for SniProxy {
             .get_header("Host")
             .and_then(|h| h.to_str().ok())
             .unwrap_or("");
-        
+
         let upstream_addr = self.domain_mapping
             .get(sni)
             .cloned()
             .unwrap_or_else(|| "127.0.0.1:8080".to_string());
-        
+
         log::info!("SNI: {} -> {}", sni, upstream_addr);
-        
+
         let peer = Box::new(HttpPeer::new(
             upstream_addr.parse()?,
             false,
@@ -1137,11 +1138,11 @@ impl ProxyHttp for SniProxy {
 #[async_trait]
 impl ProxyHttp for UpstreamTlsProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -1152,11 +1153,11 @@ impl ProxyHttp for UpstreamTlsProxy {
             true,  // 启用 TLS
             "api.example.com".to_string(),  // SNI
         );
-        
+
         // 配置 TLS 选项
         peer.options.verify_cert = true;  // 验证证书
         peer.options.verify_hostname = true;  // 验证主机名
-        
+
         Ok(Box::new(peer))
     }
 }
@@ -1172,11 +1173,11 @@ impl ProxyHttp for UpstreamTlsProxy {
 #[async_trait]
 impl ProxyHttp for SecurityHeadersProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn response_filter(
         &self,
         _session: &mut Session,
@@ -1188,29 +1189,29 @@ impl ProxyHttp for SecurityHeadersProxy {
             "Strict-Transport-Security",
             "max-age=31536000; includeSubDomains; preload",
         )?;
-        
+
         // XSS Protection
         upstream_response.insert_header("X-XSS-Protection", "1; mode=block")?;
-        
+
         // Content Type Options
         upstream_response.insert_header("X-Content-Type-Options", "nosniff")?;
-        
+
         // Frame Options
         upstream_response.insert_header("X-Frame-Options", "SAMEORIGIN")?;
-        
+
         // CSP (Content Security Policy)
         upstream_response.insert_header(
             "Content-Security-Policy",
             "default-src 'self'; script-src 'self' 'unsafe-inline'",
         )?;
-        
+
         // 移除敏感信息
         upstream_response.remove_header("Server");
         upstream_response.remove_header("X-Powered-By");
-        
+
         Ok(())
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -1268,7 +1269,7 @@ fn main() {
         conf: Some("/etc/pingora/pingora.yaml".to_string()),
         ..Default::default()
     };
-    
+
     let mut server = Server::new(Some(opt)).unwrap();
     // ...
 }
@@ -1286,11 +1287,11 @@ use pingora::connectors::http::Connector;
 fn create_connector() -> Connector {
     // 创建连接器，支持连接池
     let mut connector = Connector::new(Some(256));  // 最大 256 个连接
-    
+
     // 配置 Keep-Alive
     connector.set_connect_timeout(Duration::from_secs(10));
     connector.set_read_timeout(Duration::from_secs(30));
-    
+
     connector
 }
 ```
@@ -1308,11 +1309,11 @@ use bytes::Bytes;
 #[async_trait]
 impl ProxyHttp for ZeroCopyProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     // Pingora 内部已经优化了零拷贝
     // 响应体直接从上游流式传输到客户端
     async fn upstream_peer(
@@ -1468,12 +1469,12 @@ lazy_static::lazy_static! {
         "http_requests_total",
         "Total number of HTTP requests"
     ).unwrap();
-    
+
     static ref HTTP_REQUEST_DURATION: Histogram = Histogram::new(
         "http_request_duration_seconds",
         "HTTP request duration in seconds"
     ).unwrap();
-    
+
     static ref UPSTREAM_FAILURES: Counter = Counter::new(
         "upstream_failures_total",
         "Total number of upstream failures"
@@ -1487,11 +1488,11 @@ pub struct MonitoredProxy {
 #[async_trait]
 impl ProxyHttp for MonitoredProxy {
     type CTX = Instant;
-    
+
     fn new_ctx(&self) -> Self::CTX {
         Instant::now()
     }
-    
+
     async fn request_filter(
         &self,
         _session: &mut Session,
@@ -1501,7 +1502,7 @@ impl ProxyHttp for MonitoredProxy {
         *ctx = Instant::now();
         Ok(false)
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -1514,7 +1515,7 @@ impl ProxyHttp for MonitoredProxy {
         ));
         Ok(peer)
     }
-    
+
     async fn fail_to_proxy(
         &self,
         _session: &mut Session,
@@ -1524,7 +1525,7 @@ impl ProxyHttp for MonitoredProxy {
         UPSTREAM_FAILURES.inc();
         Ok(false)
     }
-    
+
     async fn logging(
         &self,
         _session: &mut Session,
@@ -1542,11 +1543,11 @@ async fn metrics_handler() -> String {
     registry.register(Box::new(HTTP_REQUESTS_TOTAL.clone())).unwrap();
     registry.register(Box::new(HTTP_REQUEST_DURATION.clone())).unwrap();
     registry.register(Box::new(UPSTREAM_FAILURES.clone())).unwrap();
-    
+
     let encoder = TextEncoder::new();
     let mut buffer = vec![];
     encoder.encode(&registry.gather(), &mut buffer).unwrap();
-    
+
     String::from_utf8(buffer).unwrap()
 }
 ```
@@ -1568,28 +1569,28 @@ pub struct StructuredLoggingProxy {
 #[async_trait]
 impl ProxyHttp for StructuredLoggingProxy {
     type CTX = (Instant, String);
-    
+
     fn new_ctx(&self) -> Self::CTX {
         (Instant::now(), uuid::Uuid::new_v4().to_string())
     }
-    
+
     async fn request_filter(
         &self,
         session: &mut Session,
         ctx: &mut Self::CTX,
     ) -> Result<bool> {
         let (start_time, request_id) = ctx;
-        
+
         slog::info!(self.logger, "接收请求";
             "request_id" => &request_id,
             "method" => session.req_header().method.as_str(),
             "uri" => session.req_header().uri.to_string(),
             "client_ip" => format!("{}", session.client_addr().unwrap()),
         );
-        
+
         Ok(false)
     }
-    
+
     async fn upstream_peer(
         &self,
         _session: &mut Session,
@@ -1602,7 +1603,7 @@ impl ProxyHttp for StructuredLoggingProxy {
         ));
         Ok(peer)
     }
-    
+
     async fn logging(
         &self,
         session: &mut Session,
@@ -1613,7 +1614,7 @@ impl ProxyHttp for StructuredLoggingProxy {
         let duration = start_time.elapsed().as_millis();
         let status = session.response_written()
             .map_or(0, |resp| resp.status.as_u16());
-        
+
         slog::info!(self.logger, "请求完成";
             "request_id" => request_id,
             "status" => status,
@@ -1636,11 +1637,11 @@ impl ProxyHttp for StructuredLoggingProxy {
 #[async_trait]
 impl ProxyHttp for WebSocketProxy {
     type CTX = ();
-    
+
     fn new_ctx(&self) -> Self::CTX {
         ()
     }
-    
+
     async fn upstream_peer(
         &self,
         session: &mut Session,
@@ -1654,11 +1655,11 @@ impl ProxyHttp for WebSocketProxy {
             .and_then(|v| v.to_str().ok())
             .map(|v| v.eq_ignore_ascii_case("websocket"))
             .unwrap_or(false);
-        
+
         if is_websocket {
             log::info!("WebSocket 连接升级");
         }
-        
+
         let peer = Box::new(HttpPeer::new(
             "127.0.0.1:8080".parse()?,
             false,
@@ -1764,6 +1765,6 @@ top -H -p $(pgrep pingora)
 
 ---
 
-**更新日期**: 2025-10-24  
-**文档版本**: 1.0  
+**更新日期**: 2025-10-24
+**文档版本**: 1.0
 **反馈**: 如有问题或建议，欢迎提 Issue

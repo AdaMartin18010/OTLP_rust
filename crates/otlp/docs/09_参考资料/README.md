@@ -1,8 +1,8 @@
 # 参考资料完整指南
 
-> **版本**: v2.0  
-> **最后更新**: 2025年10月17日  
-> **状态**: ✅ 完整版  
+> **版本**: v2.0
+> **最后更新**: 2025年10月17日
+> **状态**: ✅ 完整版
 > **维护者**: OTLP参考资料团队
 
 ---
@@ -58,7 +58,7 @@
   - 定义了Traces、Metrics、Logs的传输格式
   - gRPC和HTTP/Protobuf两种传输方式
   - 版本: 1.0.0 (稳定版)
-  
+
 **Protocol Buffers定义**:
 
 - **Traces Proto**: <https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto>
@@ -73,7 +73,7 @@
   - Tracer、Span、SpanContext定义
   - Context传播机制
   - 采样策略
-  
+
 - **Metrics API**: <https://opentelemetry.io/docs/specs/otel/metrics/api/>
   - Counter、Gauge、Histogram定义
   - 指标聚合和导出
@@ -91,15 +91,15 @@
 - **Resource Conventions**: <https://opentelemetry.io/docs/specs/semconv/resource/>
   - service.name, service.version
   - host, container, k8s资源属性
-  
+
 - **HTTP Conventions**: <https://opentelemetry.io/docs/specs/semconv/http/>
   - http.method, http.status_code
   - http.url, http.route
-  
+
 - **Database Conventions**: <https://opentelemetry.io/docs/specs/semconv/database/>
   - db.system, db.statement
   - db.connection_string
-  
+
 - **RPC Conventions**: <https://opentelemetry.io/docs/specs/semconv/rpc/>
   - rpc.system, rpc.service
   - rpc.method, rpc.grpc.status_code
@@ -114,7 +114,7 @@
   - traceparent header格式
   - tracestate header使用
   - 版本: 1.0 (W3C推荐标准)
-  
+
 - **W3C Baggage**: <https://www.w3.org/TR/baggage/>
   - 跨服务传递元数据
   - 限制和安全考虑
@@ -133,7 +133,7 @@
   - 概念介绍
   - 语言SDK指南
   - Collector配置
-  
+
 - **Rust SDK文档**: <https://opentelemetry.io/docs/instrumentation/rust/>
   - 安装和配置
   - API使用示例
@@ -147,7 +147,7 @@
   - Receivers、Processors、Exporters
   - 配置文件结构
   - 性能调优
-  
+
 - **Collector Builder**: <https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder>
   - 自定义Collector构建
   - 插件开发
@@ -189,13 +189,13 @@
 - **OpenTelemetry Organization**: <https://github.com/open-telemetry>
   - 50+个仓库，涵盖各语言SDK
   - Collector和工具
-  
+
 **核心仓库**:
 
 - **opentelemetry-rust**: <https://github.com/open-telemetry/opentelemetry-rust>
   - Rust SDK官方实现
   - Issues和PR活跃
-  
+
 - **opentelemetry-proto**: <https://github.com/open-telemetry/opentelemetry-proto>
   - Protocol Buffers定义
   - 跨语言共享
@@ -212,11 +212,11 @@
   - #otel-rust 频道
   - #otel-collector 频道
   - #otel-instrumentation 频道
-  
+
 - **GitHub Discussions**: <https://github.com/open-telemetry/opentelemetry-rust/discussions>
   - 问答和讨论
   - 功能请求
-  
+
 - **Mailing List**: <https://lists.cncf.io/g/cncf-opentelemetry>
   - 官方邮件列表
   - 重要公告
@@ -228,7 +228,7 @@
 - **SIG Meetings**: <https://github.com/open-telemetry/community#special-interest-groups>
   - Rust SIG每两周一次
   - Collector SIG每周一次
-  
+
 - **Community Meetings**: <https://github.com/open-telemetry/community#community-meetings>
   - 每月社区会议
   - 查看会议纪要
@@ -240,7 +240,7 @@
 - **OpenTelemetry CNCF项目页**: <https://www.cncf.io/projects/opentelemetry/>
   - 项目状态: Graduated (毕业)
   - 成熟度评估
-  
+
 - **CNCF Landscape**: <https://landscape.cncf.io/?selected=open-telemetry>
   - 生态系统可视化
   - 相关项目
@@ -258,11 +258,11 @@
 - **protoc**: <https://github.com/protocolbuffers/protobuf>
   - Protocol Buffers编译器
   - 安装: `brew install protobuf` (macOS)
-  
+
 - **prost**: <https://github.com/tokio-rs/prost>
   - Rust Protocol Buffers实现
   - 代码生成工具
-  
+
 ```bash
 # 安装prost-build
 cargo install prost-build
@@ -278,7 +278,7 @@ prost-build build
 - **grpcurl**: <https://github.com/fullstorydev/grpcurl>
   - gRPC命令行工具
   - 类似curl for gRPC
-  
+
 ```bash
 # 安装
 brew install grpcurl
@@ -301,7 +301,7 @@ grpcurl -plaintext \
 - **telemetrygen**: <https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/cmd/telemetrygen>
   - 生成测试数据
   - 性能测试工具
-  
+
 ```bash
 # 安装
 go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen@latest
@@ -319,13 +319,13 @@ telemetrygen traces \
 
 - **rustup**: <https://rustup.rs/>
   - Rust版本管理
-  
+
 - **cargo-expand**: <https://github.com/dtolnay/cargo-expand>
   - 查看宏展开代码
-  
+
 - **cargo-udeps**: <https://github.com/est31/cargo-udeps>
   - 检测未使用的依赖
-  
+
 - **cargo-deny**: <https://github.com/EmbarkStudios/cargo-deny>
   - 依赖审计工具
 
@@ -350,7 +350,7 @@ cargo deny check
 - **Jaeger**: <https://www.jaegertracing.io/>
   - 分布式追踪UI
   - 原生支持OTLP
-  
+
 ```yaml
 # docker-compose.yml
 services:
@@ -370,7 +370,7 @@ services:
 - **Prometheus**: <https://prometheus.io/>
   - 时序数据库
   - PromQL查询语言
-  
+
 - **VictoriaMetrics**: <https://victoriametrics.com/>
   - 高性能Prometheus兼容后端
   - 更低资源消耗
@@ -380,7 +380,7 @@ services:
 - **Loki**: <https://grafana.com/oss/loki/>
   - 日志聚合系统
   - Grafana集成
-  
+
 - **Elasticsearch**: <https://www.elastic.co/>
   - 成熟的日志搜索平台
 
@@ -391,12 +391,12 @@ services:
 - **Grafana**: <https://grafana.com/>
   - 统一可观测性平台
   - 支持Traces、Metrics、Logs
-  
+
 **Dashboards**:
 
 - **OpenTelemetry Collector Dashboard**: <https://grafana.com/grafana/dashboards/15983>
   - Collector性能监控
-  
+
 - **RED Method Dashboard**: 预构建的请求监控仪表板
 
 #### 3. 性能分析工具
@@ -405,7 +405,7 @@ services:
 
 - **flamegraph**: <https://github.com/flamegraph-rs/flamegraph>
   - 火焰图生成
-  
+
 ```bash
 cargo install flamegraph
 cargo flamegraph --bin your-app
@@ -413,7 +413,7 @@ cargo flamegraph --bin your-app
 
 - **criterion**: <https://github.com/bheisler/criterion.rs>
   - 基准测试框架
-  
+
 - **pprof**: <https://github.com/tikv/pprof-rs>
   - CPU/内存性能分析
 
@@ -429,7 +429,7 @@ cargo flamegraph --bin your-app
 
 - **Getting Started with OpenTelemetry**: <https://opentelemetry.io/docs/getting-started/>
   - 各语言快速入门
-  
+
 - **Rust Instrumentation**: <https://opentelemetry.io/docs/instrumentation/rust/>
   - Rust SDK完整教程
 
@@ -439,7 +439,7 @@ cargo flamegraph --bin your-app
 
 - **OpenTelemetry Interactive Tutorial**: <https://www.katacoda.com/opentelemetry>
   - 浏览器内实践环境
-  
+
 - **Distributed Tracing in Practice**: O'Reilly在线课程
 
 #### 3. 视频教程
@@ -449,7 +449,7 @@ cargo flamegraph --bin your-app
 - **OpenTelemetry Channel**: <https://www.youtube.com/@otel-official>
   - 官方视频教程
   - 社区演讲
-  
+
 - **CNCF Channel**: <https://www.youtube.com/@cncf>
   - KubeCon演讲
   - OpenTelemetry相关话题
@@ -510,10 +510,10 @@ cargo flamegraph --bin your-app
 
 - **opentelemetry**: <https://github.com/open-telemetry/opentelemetry-rust>
   - 官方SDK
-  
+
 - **opentelemetry-otlp**: <https://crates.io/crates/opentelemetry-otlp>
   - OTLP导出器
-  
+
 - **opentelemetry-semantic-conventions**: <https://crates.io/crates/opentelemetry-semantic-conventions>
   - 语义约定常量
 
@@ -521,10 +521,10 @@ cargo flamegraph --bin your-app
 
 - **tracing-opentelemetry**: <https://github.com/tokio-rs/tracing-opentelemetry>
   - tracing与OpenTelemetry桥接
-  
+
 - **actix-web-opentelemetry**: <https://github.com/OutThereLabs/actix-web-opentelemetry>
   - Actix Web集成
-  
+
 - **tower-http**: <https://github.com/tower-rs/tower-http>
   - Tower中间件（支持tracing）
 
@@ -535,7 +535,7 @@ cargo flamegraph --bin your-app
 - **tracing**: <https://github.com/tokio-rs/tracing>
   - Rust结构化日志和追踪框架
   - 与OpenTelemetry互操作
-  
+
 - **tracing-subscriber**: <https://github.com/tokio-rs/tracing/tree/master/tracing-subscriber>
   - tracing订阅者和过滤
 
@@ -543,7 +543,7 @@ cargo flamegraph --bin your-app
 
 - **tokio**: <https://tokio.rs/>
   - 异步运行时
-  
+
 - **async-std**: <https://async.rs/>
   - 异步标准库替代
 
@@ -558,7 +558,7 @@ cargo flamegraph --bin your-app
 - **OpenTelemetry Operator**: <https://github.com/open-telemetry/opentelemetry-operator>
   - 自动注入SDK
   - Collector管理
-  
+
 ```bash
 # 安装Operator
 kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
@@ -571,7 +571,7 @@ kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releas
 - **Istio**: <https://istio.io/>
   - 集成EnvoyALS
   - 分布式追踪
-  
+
 - **Envoy Proxy**: <https://www.envoyproxy.io/>
   - AccessLogService (ALS)
   - OTLP导出
@@ -725,9 +725,9 @@ kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releas
 
 ---
 
-**版本**: v2.0  
-**状态**: ✅ 完整参考手册  
-**最后更新**: 2025年10月17日  
+**版本**: v2.0
+**状态**: ✅ 完整参考手册
+**最后更新**: 2025年10月17日
 **维护者**: OTLP参考资料团队
 
 ---

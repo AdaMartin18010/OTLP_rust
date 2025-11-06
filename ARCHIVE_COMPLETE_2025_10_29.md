@@ -22,7 +22,7 @@
   archives/reports/2025_10_28_previous/ # 2025年10月28日及之前报告
 ```
 
-### 清理后的根目录
+## 📋 目录
 
 **仅保留4个核心Markdown文件**：
 
@@ -33,23 +33,6 @@ OTLP_rust/
 ├── CONTRIBUTING.md       # 贡献指南
 └── CHANGELOG.md          # 变更日志
 ```
-
-### 清理后的analysis目录
-
-**仅保留7个核心文档**：
-
-```text
-analysis/
-├── INDEX.md                              # 主索引 ⭐
-├── README.md                            # 分析说明 ⭐
-├── QUICK_START_GUIDE.md                 # 快速入门 ⭐
-├── TROUBLESHOOTING.md                   # 故障排查 ⭐
-├── COMPREHENSIVE_ANALYSIS_SUMMARY.md    # 综合分析总结
-├── DOCUMENT_CROSS_REFERENCES.md         # 文档交叉引用
-└── RUST_OTLP_SEMANTIC_ANALYSIS_2025.md  # Rust OTLP语义分析
-```
-
----
 
 ## 📊 归档的文件类型
 
@@ -258,17 +241,6 @@ fix_remaining_all_docs.ps1
 fix_remaining_content_docs.ps1
 standardize_toc_format.md
 ```
-
-### 新增的归档目录
-
-```bash
-# 归档目录
-archives/reports/2025_10_29/              # 新建
-archives/reports/2025_10_28_previous/     # 新建
-archives/reports/ARCHIVE_2025_10_29_SUMMARY.md  # 新建
-```
-
----
 
 ## 📝 维护建议
 

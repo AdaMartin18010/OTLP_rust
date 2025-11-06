@@ -1,8 +1,8 @@
 # 🎨 Model Crate 使用指南
 
-**版本**: 1.0  
-**定位**: Rust各领域的设计模型、形式模型、架构模型、软件模型  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**定位**: Rust各领域的设计模型、形式模型、架构模型、软件模型
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: Model Crate 使用指南 - 设计模型、形式模型和架构模型的完整指南。
@@ -137,7 +137,7 @@ async fn main() -> Result<()> {
     let expr = Expression::Add(Box::new(Value(1)), Box::new(Value(2)));
     let result = semantics.evaluate(expr)?;
     println!("Result: {}", result);
-    
+
     // 2. Raft共识算法
     let raft = RaftProtocol::new(
         "node1".to_string(),
@@ -146,17 +146,17 @@ async fn main() -> Result<()> {
     );
     raft.start_election()?;
     raft.append_entry("SET x = 10".to_string())?;
-    
+
     // 3. CSP并发模型
     let mut csp = CSPModel::new();
     csp.send("producer", "channel", "data")?;
     let msg = csp.receive("consumer", "channel")?;
-    
+
     // 4. 架构模式 - 六边形架构
     let hex_arch = HexagonalArchitecture::new();
     hex_arch.add_port("HTTP", PortType::Input);
     hex_arch.add_adapter("HTTPAdapter", "HTTP", AdapterType::Input);
-    
+
     Ok(())
 }
 ```
@@ -205,7 +205,7 @@ impl SmallStepSemantics {
             _ => todo!(),
         }
     }
-    
+
     fn evaluate(&self, mut expr: Expression) -> i32 {
         while let Some(next) = self.step(expr) {
             expr = next;
@@ -281,7 +281,7 @@ impl DenotationalSemantics {
             _ => todo!(),
         }
     }
-    
+
     // 语句语义
     fn stmt_semantics(&self, stmt: &Statement) -> Box<dyn Fn(&State) -> State> {
         match stmt {
@@ -344,11 +344,11 @@ impl LTLModelChecker {
 // 示例: 验证安全性质
 fn main() {
     let checker = LTLModelChecker::new(/* ... */);
-    
+
     // 验证: "系统总是在安全状态"
     let safety = LTLFormula::Always(Box::new(LTLFormula::Atom("safe".to_string())));
     assert!(checker.check(&safety, 0));
-    
+
     // 验证: "请求最终会被响应"
     let liveness = LTLFormula::Always(Box::new(
         LTLFormula::Implies(
@@ -384,24 +384,24 @@ struct Layer {
 impl LayeredArchitecture {
     fn new() -> Self {
         let mut arch = LayeredArchitecture { layers: Vec::new() };
-        
+
         // 定义4层架构
         arch.add_layer("Presentation", 4, vec![]);           // 表示层
         arch.add_layer("Application", 3, vec!["Presentation"]); // 应用层
         arch.add_layer("Domain", 2, vec!["Application"]);    // 领域层
         arch.add_layer("Infrastructure", 1, vec!["Domain"]); // 基础设施层
-        
+
         arch
     }
-    
+
     fn validate_dependency(&self, from: &str, to: &str) -> Result<()> {
         let from_level = self.get_level(from)?;
         let to_level = self.get_level(to)?;
-        
+
         if from_level <= to_level {
             return Err(anyhow!("Violation: {} cannot depend on {}", from, to));
         }
-        
+
         Ok(())
     }
 }
@@ -409,13 +409,13 @@ impl LayeredArchitecture {
 // 示例
 fn main() -> Result<()> {
     let arch = LayeredArchitecture::new();
-    
+
     // 合法依赖
     arch.validate_dependency("Presentation", "Application")?; // ✅
-    
+
     // 非法依赖 (违反分层原则)
     arch.validate_dependency("Infrastructure", "Presentation")?; // ❌ 错误!
-    
+
     Ok(())
 }
 ```
@@ -458,7 +458,7 @@ impl UserRepository for PostgresUserRepository {
             .await
             .ok()
     }
-    
+
     fn save(&self, user: &User) -> Result<()> {
         sqlx::query("INSERT INTO users (...) VALUES (...)")
             .execute(&self.pool)
@@ -476,7 +476,7 @@ impl UserRepository for InMemoryUserRepository {
     fn find_by_id(&self, id: u64) -> Option<User> {
         self.users.get(&id).cloned()
     }
-    
+
     fn save(&self, user: &User) -> Result<()> {
         self.users.insert(user.id, user.clone());
         Ok(())
@@ -488,7 +488,7 @@ fn main() {
     // 生产环境: 使用 PostgreSQL
     let repo = Box::new(PostgresUserRepository { pool });
     let service = UserService { repo };
-    
+
     // 测试环境: 使用 In-Memory
     let repo = Box::new(InMemoryUserRepository::new());
     let service = UserService { repo };
@@ -519,18 +519,18 @@ impl ServiceMesh {
         self.registry.register(&service);
         self.services.insert(service.name.clone(), service);
     }
-    
+
     fn discover(&self, service_name: &str) -> Option<&Microservice> {
         self.services.get(service_name)
     }
-    
+
     async fn call(&self, from: &str, to: &str, request: Request) -> Response {
         // 服务间调用,带有:
         // - 负载均衡
         // - 熔断器
         // - 重试
         // - 分布式追踪
-        
+
         let target = self.discover(to)?;
         self.load_balancer.route(target, request).await
     }
@@ -539,21 +539,21 @@ impl ServiceMesh {
 // 示例: API Gateway -> User Service -> Auth Service
 fn main() {
     let mut mesh = ServiceMesh::new();
-    
+
     mesh.register(Microservice {
         name: "api-gateway".to_string(),
         port: 8080,
         endpoints: vec![Endpoint::new("/api/*")],
         dependencies: vec!["user-service".to_string()],
     });
-    
+
     mesh.register(Microservice {
         name: "user-service".to_string(),
         port: 8081,
         endpoints: vec![Endpoint::new("/users/*")],
         dependencies: vec!["auth-service".to_string()],
     });
-    
+
     mesh.register(Microservice {
         name: "auth-service".to_string(),
         port: 8082,
@@ -600,27 +600,27 @@ impl HttpRequestBuilder {
             timeout: Duration::from_secs(30),
         }
     }
-    
+
     fn method(mut self, method: impl Into<String>) -> Self {
         self.method = method.into();
         self
     }
-    
+
     fn header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.headers.insert(key.into(), value.into());
         self
     }
-    
+
     fn body(mut self, body: impl Into<String>) -> Self {
         self.body = Some(body.into());
         self
     }
-    
+
     fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self
     }
-    
+
     fn build(self) -> HttpRequest {
         HttpRequest {
             method: self.method,
@@ -663,7 +663,7 @@ impl Subject {
     fn attach(&mut self, observer: Box<dyn Observer>) {
         self.observers.push(observer);
     }
-    
+
     fn notify(&self, event: &Event) {
         for observer in &self.observers {
             observer.update(event);
@@ -693,7 +693,7 @@ fn main() {
     let mut subject = Subject::new();
     subject.attach(Box::new(Logger));
     subject.attach(Box::new(Metrics));
-    
+
     subject.notify(&Event::UserCreated { id: 1 });
 }
 ```
@@ -740,11 +740,11 @@ impl Compressor {
     fn new(strategy: Box<dyn CompressionStrategy>) -> Self {
         Self { strategy }
     }
-    
+
     fn set_strategy(&mut self, strategy: Box<dyn CompressionStrategy>) {
         self.strategy = strategy;
     }
-    
+
     fn compress(&self, data: &[u8]) -> Vec<u8> {
         self.strategy.compress(data)
     }
@@ -754,7 +754,7 @@ impl Compressor {
 fn main() {
     let mut compressor = Compressor::new(Box::new(GzipCompression));
     let compressed = compressor.compress(b"data");
-    
+
     // 切换策略
     compressor.set_strategy(Box::new(ZstdCompression));
     let compressed = compressor.compress(b"data");
@@ -784,7 +784,7 @@ impl Actor {
             self.handle_message(msg).await;
         }
     }
-    
+
     async fn handle_message(&self, msg: Message) {
         match msg {
             Message::Request(data) => {
@@ -802,16 +802,16 @@ impl Actor {
 #[tokio::main]
 async fn main() {
     let (tx, rx) = mpsc::channel(32);
-    
+
     let actor = Actor {
         id: "worker-1".to_string(),
         mailbox: rx,
     };
-    
+
     tokio::spawn(async move {
         actor.run().await;
     });
-    
+
     // 发送消息
     tx.send(Message::Request("task1".to_string())).await.unwrap();
     tx.send(Message::Request("task2".to_string())).await.unwrap();
@@ -846,7 +846,7 @@ async fn consumer(mut rx: mpsc::Receiver<i32>) {
 #[tokio::main]
 async fn main() {
     let (tx, rx) = mpsc::channel(10);
-    
+
     // 并发执行两个进程
     tokio::join!(
         producer(tx),
@@ -874,36 +874,36 @@ impl WorkStealingScheduler {
         let global_queue = Arc::new(Injector::new());
         let mut workers = Vec::new();
         let mut stealers = Vec::new();
-        
+
         for _ in 0..num_workers {
             let worker = Worker::new_fifo();
             stealers.push(worker.stealer());
             workers.push(worker);
         }
-        
+
         Self { global_queue, workers, stealers }
     }
-    
+
     fn submit(&self, task: Task) {
         self.global_queue.push(task);
     }
-    
+
     fn worker_loop(&self, worker_id: usize) {
         let worker = &self.workers[worker_id];
-        
+
         loop {
             // 1. 从本地队列获取任务
             if let Some(task) = worker.pop() {
                 task.execute();
                 continue;
             }
-            
+
             // 2. 从全局队列获取任务
             if let Ok(task) = self.global_queue.steal() {
                 task.execute();
                 continue;
             }
-            
+
             // 3. 从其他 worker 窃取任务
             for stealer in &self.stealers {
                 if let Ok(task) = stealer.steal() {
@@ -911,7 +911,7 @@ impl WorkStealingScheduler {
                     continue;
                 }
             }
-            
+
             // 4. 没有任务，休眠
             std::thread::sleep(Duration::from_millis(1));
         }
@@ -951,35 +951,35 @@ impl RaftNode {
         self.state = NodeState::Candidate;
         self.current_term += 1;
         self.voted_for = Some(self.id.clone());
-        
+
         // 发送 RequestVote RPC
         for peer in &self.peers {
             self.send_vote_request(peer);
         }
     }
-    
+
     fn append_entries(&mut self, entry: LogEntry) -> Result<()> {
         if !matches!(self.state, NodeState::Leader) {
             return Err(anyhow!("Not leader"));
         }
-        
+
         self.log.push(entry);
-        
+
         // 复制到其他节点
         for peer in &self.peers {
             self.send_append_entries(peer);
         }
-        
+
         Ok(())
     }
-    
+
     fn commit(&mut self, index: u64) {
         if self.commit_index >= index {
             return;
         }
-        
+
         self.commit_index = index;
-        
+
         // 应用已提交的日志
         while self.last_applied < self.commit_index {
             self.last_applied += 1;
@@ -992,16 +992,16 @@ impl RaftNode {
 // 使用示例
 fn main() {
     let mut node = RaftNode::new("node1".to_string());
-    
+
     // 启动选举
     node.start_election();
-    
+
     // 追加日志
     node.append_entries(LogEntry {
         term: 1,
         command: "SET x = 10".to_string(),
     })?;
-    
+
     // 提交
     node.commit(1);
 }
@@ -1025,7 +1025,7 @@ impl PaxosNode {
     fn prepare(&self, proposal_num: u64) -> PrepareRequest {
         PrepareRequest { proposal_num }
     }
-    
+
     // Phase 1b: Acceptor 响应 Promise
     fn handle_prepare(&mut self, req: PrepareRequest) -> Option<PromiseResponse> {
         if Some(req.proposal_num) > self.promised_proposal {
@@ -1038,12 +1038,12 @@ impl PaxosNode {
             None
         }
     }
-    
+
     // Phase 2a: Proposer 发送 Accept
     fn accept(&self, proposal_num: u64, value: String) -> AcceptRequest {
         AcceptRequest { proposal_num, value }
     }
-    
+
     // Phase 2b: Acceptor 响应 Accepted
     fn handle_accept(&mut self, req: AcceptRequest) -> Option<AcceptedResponse> {
         if Some(req.proposal_num) >= self.promised_proposal {
@@ -1077,22 +1077,22 @@ impl DistributedSnapshot {
     fn initiate(&mut self, node_id: String) {
         // 1. 记录本地状态
         self.local_states.insert(node_id.clone(), self.get_local_state(&node_id));
-        
+
         // 2. 发送 marker 到所有出边
         for neighbor in self.get_neighbors(&node_id) {
             self.send_marker(&node_id, &neighbor);
         }
     }
-    
+
     fn receive_marker(&mut self, from: String, to: String) {
         if !self.local_states.contains_key(&to) {
             // 第一次收到 marker
             // 1. 记录本地状态
             self.local_states.insert(to.clone(), self.get_local_state(&to));
-            
+
             // 2. 标记该通道为空
             self.channel_states.insert((from.clone(), to.clone()), vec![]);
-            
+
             // 3. 发送 marker 到其他出边
             for neighbor in self.get_neighbors(&to) {
                 if neighbor != from {
@@ -1105,7 +1105,7 @@ impl DistributedSnapshot {
             self.stop_recording(&from, &to);
         }
     }
-    
+
     fn get_global_snapshot(&self) -> GlobalSnapshot {
         GlobalSnapshot {
             local_states: self.local_states.clone(),
@@ -1132,18 +1132,18 @@ mod tests {
     fn test_concurrent_counter() {
         loom::model(|| {
             let counter = Arc::new(AtomicU32::new(0));
-            
+
             let handles: Vec<_> = (0..2).map(|_| {
                 let counter = Arc::clone(&counter);
                 thread::spawn(move || {
                     counter.fetch_add(1, Ordering::SeqCst);
                 })
             }).collect();
-            
+
             for handle in handles {
                 handle.join().unwrap();
             }
-            
+
             assert_eq!(counter.load(Ordering::SeqCst), 2);
         });
     }
@@ -1157,7 +1157,7 @@ mod tests {
 mod presentation {
     // 表示层只能依赖 application 层
     use super::application;
-    
+
     pub struct Controller {
         service: application::UserService,
     }
@@ -1166,7 +1166,7 @@ mod presentation {
 mod application {
     // 应用层只能依赖 domain 层
     use super::domain;
-    
+
     pub struct UserService {
         repo: Box<dyn domain::UserRepository>,
     }
@@ -1182,7 +1182,7 @@ mod domain {
 mod infrastructure {
     // 基础设施层实现 domain 接口
     use super::domain;
-    
+
     pub struct PostgresUserRepository;
     impl domain::UserRepository for PostgresUserRepository {
         fn find(&self, id: u64) -> Option<User> {
@@ -1203,16 +1203,16 @@ mod chaos_tests {
     #[test]
     fn test_raft_with_network_partition() {
         let cluster = RaftCluster::new(5);
-        
+
         // 网络分区: 隔离 leader
         chaos::network_partition(&cluster, vec![0], vec![1, 2, 3, 4]);
-        
+
         // 验证: 剩余节点能选出新 leader
         assert!(cluster.wait_for_leader(Duration::from_secs(5)));
-        
+
         // 恢复网络
         chaos::heal_network(&cluster);
-        
+
         // 验证: 原 leader 同步到最新状态
         assert!(cluster.wait_for_convergence(Duration::from_secs(10)));
     }
@@ -1318,6 +1318,6 @@ cargo run --example tower_reliability
 
 ---
 
-**最后更新**: 2025年10月26日  
-**文档版本**: v1.0.0  
+**最后更新**: 2025年10月26日
+**文档版本**: v1.0.0
 **维护状态**: 🔄 持续维护中

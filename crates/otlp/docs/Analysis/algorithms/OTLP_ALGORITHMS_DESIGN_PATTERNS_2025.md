@@ -26,23 +26,23 @@ impl ProbabilisticSampler {
             trace_id_hash: FnvHasher::default(),
         }
     }
-    
+
     pub fn should_sample(&mut self, trace_id: &str, span_id: &str) -> SamplingDecision {
         // 使用trace_id的哈希值确保同一trace的所有span采样决策一致
         let mut hasher = self.trace_id_hash.clone();
         hasher.write(trace_id.as_bytes());
         let hash_value = hasher.finish();
-        
+
         // 将哈希值映射到[0, 1]区间
         let normalized_hash = (hash_value as f64) / (u64::MAX as f64);
-        
+
         if normalized_hash < self.sampling_ratio {
             SamplingDecision::RecordAndSample
         } else {
             SamplingDecision::Drop
         }
     }
-    
+
     pub fn adjust_sampling_ratio(&mut self, new_ratio: f64) {
         self.sampling_ratio = new_ratio.clamp(0.0, 1.0);
     }
@@ -69,15 +69,15 @@ impl RateLimitingSampler {
             window_size: Duration::from_secs(1),
         }
     }
-    
+
     pub fn should_sample(&self) -> SamplingDecision {
         let now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         let last_reset = self.last_reset.load(Ordering::Relaxed);
-        
+
         // 检查是否需要重置计数器
         if now - last_reset >= self.window_size.as_secs() {
             if self.last_reset.compare_exchange(
@@ -89,7 +89,7 @@ impl RateLimitingSampler {
                 self.current_spans.store(0, Ordering::Relaxed);
             }
         }
-        
+
         // 检查是否超过速率限制
         let current = self.current_spans.fetch_add(1, Ordering::Relaxed);
         if current < self.max_spans_per_second {
@@ -127,17 +127,17 @@ impl TailBasedSampler {
             decision_engine: DecisionEngine::new(),
         }
     }
-    
+
     pub async fn process_span(&self, span: Span) -> SamplingDecision {
         let trace_id = span.trace_id.clone();
         let mut buffer = self.trace_buffer.lock().unwrap();
-        
+
         // 更新trace信息
         let trace_info = buffer.entry(trace_id.clone())
             .or_insert_with(|| TraceInfo::new(span.timestamp));
-        
+
         trace_info.add_span(span);
-        
+
         // 检查是否达到决策时间
         if trace_info.age() >= self.decision_wait {
             let decision = self.decision_engine.make_decision(trace_info);
@@ -147,11 +147,11 @@ impl TailBasedSampler {
             SamplingDecision::RecordAndSample
         }
     }
-    
+
     pub async fn cleanup_expired_traces(&self) {
         let mut buffer = self.trace_buffer.lock().unwrap();
         let now = SystemTime::now();
-        
+
         buffer.retain(|_, trace_info| {
             now.duration_since(trace_info.start_time)
                 .unwrap_or_default() < self.decision_wait * 2
@@ -190,27 +190,27 @@ impl AdaptiveBatchProcessor {
             adjustment_factor: 0.1,
         }
     }
-    
+
     pub async fn process_batch(&self, data: Vec<TelemetryData>) -> Result<(), OtlpError> {
         let start_time = Instant::now();
-        
+
         // 处理批次
         let result = self.execute_batch(data).await;
-        
+
         // 记录性能指标
         let processing_time = start_time.elapsed();
         self.performance_monitor.record_batch_processing_time(processing_time).await;
-        
+
         // 自适应调整批次大小
         self.adjust_batch_size(processing_time).await;
-        
+
         result
     }
-    
+
     async fn adjust_batch_size(&self, processing_time: Duration) {
         let target_time = Duration::from_millis(100); // 目标处理时间
         let current_size = self.current_batch_size.load(Ordering::Relaxed);
-        
+
         if processing_time > target_time * 2 {
             // 处理时间过长，减少批次大小
             let new_size = (current_size as f64 * (1.0 - self.adjustment_factor)) as usize;
@@ -243,7 +243,7 @@ impl PriorityBatchProcessor {
         batch_sizes.insert(Priority::High, 50);
         batch_sizes.insert(Priority::Medium, 100);
         batch_sizes.insert(Priority::Low, 200);
-        
+
         Self {
             priority_queues: HashMap::new(),
             batch_sizes,
@@ -251,21 +251,21 @@ impl PriorityBatchProcessor {
             processor: Arc::new(DefaultBatchProcessor::new()),
         }
     }
-    
+
     pub async fn add_data(&mut self, data: TelemetryData, priority: Priority) -> Result<(), OtlpError> {
         let queue = self.priority_queues.entry(priority).or_insert_with(VecDeque::new);
         queue.push_back(data);
-        
+
         // 检查是否可以形成完整批次
         self.try_process_batch(priority).await?;
-        
+
         Ok(())
     }
-    
+
     async fn try_process_batch(&mut self, priority: Priority) -> Result<(), OtlpError> {
         let batch_size = self.batch_sizes[&priority];
         let queue = self.priority_queues.get_mut(&priority).unwrap();
-        
+
         if queue.len() >= batch_size {
             let mut batch = Vec::with_capacity(batch_size);
             for _ in 0..batch_size {
@@ -273,17 +273,17 @@ impl PriorityBatchProcessor {
                     batch.push(data);
                 }
             }
-            
+
             self.processor.process_batch(batch).await?;
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn process_all_priorities(&mut self) -> Result<(), OtlpError> {
         // 按优先级顺序处理所有批次
         let priorities = vec![Priority::High, Priority::Medium, Priority::Low];
-        
+
         for priority in priorities {
             if let Some(queue) = self.priority_queues.get_mut(&priority) {
                 if !queue.is_empty() {
@@ -292,7 +292,7 @@ impl PriorityBatchProcessor {
                 }
             }
         }
-        
+
         Ok(())
     }
 }
@@ -316,34 +316,34 @@ impl AdaptiveCompressor {
         algorithms.push(Box::new(GzipCompressor::new()));
         algorithms.push(Box::new(BrotliCompressor::new()));
         algorithms.push(Box::new(ZstdCompressor::new()));
-        
+
         Self {
             compression_algorithms: algorithms,
             performance_monitor: Arc::new(PerformanceMonitor::new()),
             selection_strategy: CompressionSelectionStrategy::new(),
         }
     }
-    
+
     pub async fn compress(&self, data: &[u8]) -> Result<CompressedData, OtlpError> {
         let start_time = Instant::now();
-        
+
         // 选择最佳压缩算法
         let algorithm = self.selection_strategy.select_algorithm(
             data.len(),
             &self.performance_monitor.get_metrics().await
         );
-        
+
         // 执行压缩
         let compressed = algorithm.compress(data)?;
         let compression_time = start_time.elapsed();
-        
+
         // 记录性能指标
         self.performance_monitor.record_compression_time(compression_time).await;
         self.performance_monitor.record_compression_ratio(
             data.len(),
             compressed.len()
         ).await;
-        
+
         Ok(CompressedData {
             data: compressed,
             algorithm: algorithm.name(),
@@ -377,7 +377,7 @@ impl OtlpComponentFactory for DefaultOtlpComponentFactory {
             ExporterType::Prometheus => Ok(Box::new(PrometheusExporter::new(config)?)),
         }
     }
-    
+
     fn create_processor(&self, config: &ProcessorConfig) -> Result<Box<dyn Processor>, OtlpError> {
         match config.processor_type {
             ProcessorType::Batch => Ok(Box::new(BatchProcessor::new(config)?)),
@@ -385,7 +385,7 @@ impl OtlpComponentFactory for DefaultOtlpComponentFactory {
             ProcessorType::Sampler => Ok(Box::new(SamplerProcessor::new(config)?)),
         }
     }
-    
+
     fn create_transport(&self, config: &TransportConfig) -> Result<Box<dyn Transport>, OtlpError> {
         match config.transport_type {
             TransportType::Grpc => Ok(Box::new(GrpcTransport::new(config)?)),
@@ -416,56 +416,56 @@ impl OtlpClientBuilder {
             transport_config: None,
         }
     }
-    
+
     pub fn with_endpoint(mut self, endpoint: &str) -> Self {
         self.config.endpoint = endpoint.to_string();
         self
     }
-    
+
     pub fn with_protocol(mut self, protocol: TransportProtocol) -> Self {
         self.config.protocol = protocol;
         self
     }
-    
+
     pub fn with_exporter(mut self, exporter_config: ExporterConfig) -> Self {
         self.exporter_config = Some(exporter_config);
         self
     }
-    
+
     pub fn with_processor(mut self, processor_config: ProcessorConfig) -> Self {
         self.processor_configs.push(processor_config);
         self
     }
-    
+
     pub fn with_transport(mut self, transport_config: TransportConfig) -> Self {
         self.transport_config = Some(transport_config);
         self
     }
-    
+
     pub async fn build(self) -> Result<OtlpClient, OtlpError> {
         let factory = DefaultOtlpComponentFactory;
-        
+
         // 创建导出器
         let exporter = if let Some(exporter_config) = self.exporter_config {
             factory.create_exporter(&exporter_config)?
         } else {
             factory.create_exporter(&ExporterConfig::default())?
         };
-        
+
         // 创建处理器
         let mut processors = Vec::new();
         for processor_config in self.processor_configs {
             let processor = factory.create_processor(&processor_config)?;
             processors.push(processor);
         }
-        
+
         // 创建传输层
         let transport = if let Some(transport_config) = self.transport_config {
             factory.create_transport(&transport_config)?
         } else {
             factory.create_transport(&TransportConfig::default())?
         };
-        
+
         Ok(OtlpClient::new(
             self.config,
             exporter,
@@ -501,7 +501,7 @@ impl ThirdPartySystemAdapter for JaegerAdapter {
         }
         Ok(())
     }
-    
+
     async fn export_metrics(&self, metrics: Vec<Metric>) -> Result<(), OtlpError> {
         // Jaeger不直接支持指标，转换为追踪数据
         for metric in metrics {
@@ -511,7 +511,7 @@ impl ThirdPartySystemAdapter for JaegerAdapter {
         }
         Ok(())
     }
-    
+
     async fn export_logs(&self, logs: Vec<Log>) -> Result<(), OtlpError> {
         // Jaeger不直接支持日志，转换为追踪事件
         for log in logs {
@@ -541,7 +541,7 @@ pub struct RetryProcessorDecorator {
 impl Processor for RetryProcessorDecorator {
     async fn process(&self, data: TelemetryData) -> Result<ProcessedData, OtlpError> {
         let mut last_error = None;
-        
+
         for attempt in 0..=self.max_retries {
             match self.inner_processor.process(data.clone()).await {
                 Ok(result) => return Ok(result),
@@ -553,7 +553,7 @@ impl Processor for RetryProcessorDecorator {
                 }
             }
         }
-        
+
         Err(last_error.unwrap())
     }
 }
@@ -572,17 +572,17 @@ pub struct MetricsProcessorDecorator {
 impl Processor for MetricsProcessorDecorator {
     async fn process(&self, data: TelemetryData) -> Result<ProcessedData, OtlpError> {
         let start_time = Instant::now();
-        
+
         let result = self.inner_processor.process(data).await;
-        
+
         let processing_time = start_time.elapsed();
         self.metrics_collector.record_processing_time(processing_time).await;
-        
+
         match &result {
             Ok(_) => self.metrics_collector.increment_success_count().await,
             Err(_) => self.metrics_collector.increment_error_count().await,
         }
-        
+
         result
     }
 }
@@ -609,12 +609,12 @@ pub struct OtlpEventManager {
 impl OtlpEventManager {
     pub fn new() -> Self {
         let (tx, mut rx) = mpsc::unbounded_channel();
-        
+
         let manager = Self {
             listeners: Vec::new(),
             event_channel: tx,
         };
-        
+
         // 启动事件处理任务
         tokio::spawn(async move {
             while let Some(event) = rx.recv().await {
@@ -622,29 +622,29 @@ impl OtlpEventManager {
                 // ...
             }
         });
-        
+
         manager
     }
-    
+
     pub fn add_listener(&mut self, listener: Arc<dyn OtlpEventListener>) {
         self.listeners.push(listener);
     }
-    
+
     pub async fn notify_trace_exported(&self, trace: &Trace, result: &ExportResult) {
         let event = OtlpEvent::TraceExported(trace.clone(), result.clone());
         self.event_channel.send(event).unwrap();
     }
-    
+
     pub async fn notify_metric_exported(&self, metric: &Metric, result: &ExportResult) {
         let event = OtlpEvent::MetricExported(metric.clone(), result.clone());
         self.event_channel.send(event).unwrap();
     }
-    
+
     pub async fn notify_log_exported(&self, log: &Log, result: &ExportResult) {
         let event = OtlpEvent::LogExported(log.clone(), result.clone());
         self.event_channel.send(event).unwrap();
     }
-    
+
     pub async fn notify_error_occurred(&self, error: &OtlpError) {
         let event = OtlpEvent::ErrorOccurred(error.clone());
         self.event_channel.send(event).unwrap();
@@ -674,7 +674,7 @@ impl SamplingStrategy for ProbabilisticSamplingStrategy {
             SamplingDecision::Drop
         }
     }
-    
+
     fn get_description(&self) -> String {
         format!("概率采样策略，采样率: {}", self.sampling_ratio)
     }
@@ -694,7 +694,7 @@ impl SamplingStrategy for RateLimitingSamplingStrategy {
             SamplingDecision::Drop
         }
     }
-    
+
     fn get_description(&self) -> String {
         format!("速率限制采样策略，最大每秒: {} spans", self.max_spans_per_second)
     }
@@ -716,13 +716,13 @@ impl SamplingStrategyManager {
             "rate_limiting".to_string(),
             Box::new(RateLimitingSamplingStrategy::new(1000))
         );
-        
+
         Self {
             strategies,
             current_strategy: "probabilistic".to_string(),
         }
     }
-    
+
     pub fn set_strategy(&mut self, strategy_name: &str) -> Result<(), OtlpError> {
         if self.strategies.contains_key(strategy_name) {
             self.current_strategy = strategy_name.to_string();
@@ -731,7 +731,7 @@ impl SamplingStrategyManager {
             Err(OtlpError::UnknownStrategy(strategy_name.to_string()))
         }
     }
-    
+
     pub fn should_sample(&self, context: &SamplingContext) -> SamplingDecision {
         let strategy = self.strategies.get(&self.current_strategy).unwrap();
         strategy.should_sample(context)
@@ -749,20 +749,20 @@ impl SamplingStrategyManager {
 // OTLP三层架构实现
 pub mod presentation_layer {
     use super::*;
-    
+
     pub struct OtlpApiLayer {
         business_layer: Arc<BusinessLayer>,
         request_validator: RequestValidator,
     }
-    
+
     impl OtlpApiLayer {
         pub async fn handle_trace_request(&self, request: TraceRequest) -> Result<TraceResponse, OtlpError> {
             // 请求验证
             self.request_validator.validate(&request)?;
-            
+
             // 调用业务层
             let result = self.business_layer.process_trace(request).await?;
-            
+
             // 返回响应
             Ok(TraceResponse::from(result))
         }
@@ -771,21 +771,21 @@ pub mod presentation_layer {
 
 pub mod business_layer {
     use super::*;
-    
+
     pub struct BusinessLayer {
         data_layer: Arc<DataLayer>,
         trace_processor: Arc<TraceProcessor>,
         metric_processor: Arc<MetricProcessor>,
     }
-    
+
     impl BusinessLayer {
         pub async fn process_trace(&self, request: TraceRequest) -> Result<TraceResult, OtlpError> {
             // 业务逻辑处理
             let processed_trace = self.trace_processor.process(request.trace).await?;
-            
+
             // 数据持久化
             self.data_layer.store_trace(processed_trace).await?;
-            
+
             Ok(TraceResult::Success)
         }
     }
@@ -793,22 +793,22 @@ pub mod business_layer {
 
 pub mod data_layer {
     use super::*;
-    
+
     pub struct DataLayer {
         trace_storage: Arc<dyn TraceStorage>,
         metric_storage: Arc<dyn MetricStorage>,
         log_storage: Arc<dyn LogStorage>,
     }
-    
+
     impl DataLayer {
         pub async fn store_trace(&self, trace: ProcessedTrace) -> Result<(), OtlpError> {
             self.trace_storage.store(trace).await
         }
-        
+
         pub async fn store_metric(&self, metric: ProcessedMetric) -> Result<(), OtlpError> {
             self.metric_storage.store(metric).await
         }
-        
+
         pub async fn store_log(&self, log: ProcessedLog) -> Result<(), OtlpError> {
             self.log_storage.store(log).await
         }
@@ -894,10 +894,10 @@ impl OtlpMicroservicesArchitecture {
         self.service_registry.register("log-service", &self.log_service).await?;
         self.service_registry.register("collector-service", &self.collector_service).await?;
         self.service_registry.register("exporter-service", &self.exporter_service).await?;
-        
+
         // 配置API网关路由
         self.api_gateway.configure_routes().await?;
-        
+
         Ok(())
     }
 }
@@ -912,27 +912,27 @@ impl TraceService {
     pub async fn process_trace(&self, trace: Trace) -> Result<(), OtlpError> {
         // 处理追踪数据
         let processed_trace = self.trace_processor.process(trace).await?;
-        
+
         // 存储追踪数据
         self.trace_storage.store(processed_trace).await?;
-        
+
         // 通知其他服务
         self.notify_other_services(processed_trace).await?;
-        
+
         Ok(())
     }
-    
+
     async fn notify_other_services(&self, trace: ProcessedTrace) -> Result<(), OtlpError> {
         // 通知指标服务
         if let Some(metric_service) = self.service_discovery.find_service("metric-service").await? {
             metric_service.record_trace_metrics(trace.clone()).await?;
         }
-        
+
         // 通知导出服务
         if let Some(exporter_service) = self.service_discovery.find_service("exporter-service").await? {
             exporter_service.export_trace(trace).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -960,17 +960,17 @@ impl EventBus {
         self.event_channel.send(event)?;
         Ok(())
     }
-    
+
     pub async fn subscribe(&mut self, event_type: EventType, handler: Arc<dyn EventHandler>) {
         self.subscribers.entry(event_type)
             .or_insert_with(Vec::new)
             .push(handler);
     }
-    
+
     pub async fn start_event_processing(&self) -> Result<(), OtlpError> {
         let (tx, mut rx) = mpsc::unbounded_channel();
         let subscribers = self.subscribers.clone();
-        
+
         tokio::spawn(async move {
             while let Some(event) = rx.recv().await {
                 if let Some(handlers) = subscribers.get(&event.event_type()) {
@@ -982,7 +982,7 @@ impl EventBus {
                 }
             }
         });
-        
+
         Ok(())
     }
 }
@@ -1023,18 +1023,18 @@ pub struct AdaptiveSamplingManager {
 impl AdaptiveSamplingManager {
     pub async fn adapt_sampling_strategy(&mut self) -> Result<(), OtlpError> {
         let metrics = self.performance_monitor.get_current_metrics().await?;
-        
+
         // 根据性能指标选择最佳采样策略
         let optimal_strategy = self.adaptation_engine.select_optimal_strategy(&metrics);
-        
+
         if optimal_strategy != self.current_strategy {
             self.set_strategy(&optimal_strategy)?;
             println!("采样策略已调整为: {}", optimal_strategy);
         }
-        
+
         Ok(())
     }
-    
+
     pub fn should_sample(&self, context: &SamplingContext) -> SamplingDecision {
         let strategy = self.strategies.get(&self.current_strategy).unwrap();
         strategy.should_sample(context)
@@ -1055,12 +1055,12 @@ pub struct EnhancedBatchProcessor {
 impl BatchProcessor for EnhancedBatchProcessor {
     async fn process_batch(&self, data: Vec<TelemetryData>) -> Result<(), OtlpError> {
         let mut processed_data = data;
-        
+
         // 应用装饰器
         for decorator in &self.decorators {
             processed_data = decorator.decorate(processed_data).await?;
         }
-        
+
         // 使用自适应算法处理批次
         self.adaptive_algorithm.process_batch(processed_data).await
     }
@@ -1077,12 +1077,12 @@ pub struct CompressionDecorator {
 impl BatchProcessorDecorator for CompressionDecorator {
     async fn decorate(&self, data: Vec<TelemetryData>) -> Result<Vec<TelemetryData>, OtlpError> {
         let mut compressed_data = Vec::new();
-        
+
         for item in data {
             let compressed = self.compressor.compress(&item.serialize()?).await?;
             compressed_data.push(TelemetryData::from_compressed(compressed)?);
         }
-        
+
         Ok(compressed_data)
     }
 }
@@ -1105,10 +1105,10 @@ impl EventDrivenMicroservices {
         // 发布事件
         let event = OtlpEvent::TelemetryDataReceived(data);
         self.event_bus.publish(event).await?;
-        
+
         // 协调服务处理
         self.service_orchestrator.orchestrate_processing(data).await?;
-        
+
         Ok(())
     }
 }
@@ -1122,16 +1122,16 @@ impl ServiceOrchestrator {
     pub async fn orchestrate_processing(&self, data: TelemetryData) -> Result<(), OtlpError> {
         // 创建工作流
         let workflow = self.create_processing_workflow(&data).await?;
-        
+
         // 执行工作流
         self.workflow_engine.execute_workflow(workflow).await?;
-        
+
         Ok(())
     }
-    
+
     async fn create_processing_workflow(&self, data: &TelemetryData) -> Result<Workflow, OtlpError> {
         let mut workflow = Workflow::new();
-        
+
         match data.data_type {
             TelemetryDataType::Trace => {
                 // 添加追踪处理步骤
@@ -1152,7 +1152,7 @@ impl ServiceOrchestrator {
                 workflow.add_step(WorkflowStep::ExportLog);
             }
         }
-        
+
         Ok(workflow)
     }
 }
@@ -1175,25 +1175,25 @@ impl MemoryOptimizedProcessor {
         // 从对象池获取对象
         let mut pooled_data = self.object_pool.acquire().await?;
         *pooled_data = data;
-        
+
         // 处理数据
         let result = self.process_data(pooled_data).await;
-        
+
         // 返回对象到池中
         self.object_pool.release(pooled_data).await;
-        
+
         result
     }
-    
+
     pub async fn start_garbage_collection(&self) -> Result<(), OtlpError> {
         let mut interval = tokio::time::interval(Duration::from_secs(30));
-        
+
         loop {
             interval.tick().await;
-            
+
             // 执行垃圾回收
             self.gc_controller.collect_garbage().await?;
-            
+
             // 压缩内存池
             self.memory_pool.compact().await?;
         }
@@ -1215,7 +1215,7 @@ impl ConcurrentProcessor {
     pub async fn process_concurrent(&self, data: Vec<TelemetryData>) -> Result<(), OtlpError> {
         // 将数据分片
         let chunks = self.partition_data(data, self.worker_pool.size());
-        
+
         // 创建任务
         let tasks: Vec<_> = chunks.into_iter()
             .map(|chunk| {
@@ -1226,18 +1226,18 @@ impl ConcurrentProcessor {
                 }
             })
             .collect();
-        
+
         // 并发执行任务
         let results = futures::future::join_all(tasks).await;
-        
+
         // 检查结果
         for result in results {
             result??;
         }
-        
+
         Ok(())
     }
-    
+
     fn partition_data(&self, data: Vec<TelemetryData>, num_partitions: usize) -> Vec<Vec<TelemetryData>> {
         let chunk_size = (data.len() + num_partitions - 1) / num_partitions;
         data.chunks(chunk_size).map(|chunk| chunk.to_vec()).collect()

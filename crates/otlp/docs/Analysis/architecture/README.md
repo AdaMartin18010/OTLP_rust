@@ -59,7 +59,7 @@ impl OtlpClient {
         let data = TelemetryData::trace(name);
         Ok(TraceBuilder::new(self.clone(), data))
     }
-    
+
     pub async fn send_metric(&self, name: impl Into<String>, value: f64) -> Result<MetricBuilder> {
         let data = TelemetryData::metric(name, MetricType::Gauge);
         Ok(MetricBuilder::new(self.clone(), data, value))
@@ -137,10 +137,10 @@ impl ServiceDiscovery {
         let registry = self.registry.read().await;
         let endpoints = registry.get(service_name)
             .ok_or_else(|| OtlpError::service_not_found(service_name))?;
-        
+
         // 健康检查
         let healthy_endpoints = self.health_checker.filter_healthy(endpoints).await;
-        
+
         // 负载均衡
         Ok(self.load_balancer.select_endpoints(healthy_endpoints))
     }
@@ -159,17 +159,17 @@ pub struct ConfigCenter {
 impl ConfigCenter {
     pub async fn watch_config_changes(&self) -> Result<()> {
         let mut stream = self.config_client.watch_config().await?;
-        
+
         while let Some(new_config) = stream.next().await {
             let mut current = self.current_config.write().await;
             *current = new_config;
-            
+
             // 通知所有观察者
             for watcher in &self.watchers {
                 watcher.on_config_updated(&*current).await?;
             }
         }
-        
+
         Ok(())
     }
 }
@@ -191,7 +191,7 @@ impl CircuitBreaker {
         F: Fn() -> Pin<Box<dyn Future<Output = Result<T>> + Send>>,
     {
         let state = self.state.read().await;
-        
+
         match *state {
             CircuitState::Open => {
                 if self.should_attempt_reset().await {
@@ -207,7 +207,7 @@ impl CircuitBreaker {
                 // 正常处理请求
             }
         }
-        
+
         match operation().await {
             Ok(result) => {
                 self.record_success().await;
@@ -246,13 +246,13 @@ impl PluginManager {
     pub async fn load_plugin(&self, plugin: Box<dyn OTLPPlugin>) -> Result<()> {
         let name = plugin.name().to_string();
         plugin.initialize(&self.config).await?;
-        
+
         let mut plugins = self.plugins.write().await;
         plugins.insert(name, plugin);
-        
+
         Ok(())
     }
-    
+
     pub async fn process_data(&self, data: &mut TelemetryData) -> Result<()> {
         let plugins = self.plugins.read().await;
         for plugin in plugins.values() {
@@ -281,15 +281,15 @@ impl MiddlewareChain {
         self.execute_next(&mut data, &mut index).await?;
         Ok(data)
     }
-    
+
     async fn execute_next(&self, data: &mut TelemetryData, index: &mut usize) -> Result<()> {
         if *index >= self.middlewares.len() {
             return Ok(());
         }
-        
+
         let middleware = &self.middlewares[*index];
         *index += 1;
-        
+
         let next = Next::new(self, *index);
         middleware.process(data, next).await
     }
@@ -312,7 +312,7 @@ impl KubernetesAdapter {
         // 获取Kubernetes信息
         let kubernetes_info = Self::get_kubernetes_info().await?;
         let pod_info = Self::get_pod_info().await?;
-        
+
         let config = OtlpConfig::default()
             .with_endpoint(&kubernetes_info.otlp_endpoint)
             .with_service(&pod_info.service_name, &pod_info.service_version)
@@ -321,10 +321,10 @@ impl KubernetesAdapter {
             .with_resource_attribute("k8s.pod.uid", &pod_info.uid)
             .with_resource_attribute("k8s.node.name", &pod_info.node_name)
             .with_resource_attribute("k8s.container.name", &pod_info.container_name);
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self {
             client,
             kubernetes_info,
@@ -346,16 +346,16 @@ pub struct ServiceMeshAdapter {
 impl ServiceMeshAdapter {
     pub async fn new(mesh_config: ServiceMeshConfig) -> Result<Self> {
         let sidecar_proxy = SidecarProxy::new(&mesh_config).await?;
-        
+
         let config = OtlpConfig::default()
             .with_endpoint(&mesh_config.otlp_endpoint)
             .with_service(&mesh_config.service_name, &mesh_config.service_version)
             .with_resource_attribute("mesh.name", &mesh_config.mesh_name)
             .with_resource_attribute("mesh.version", &mesh_config.mesh_version);
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         Ok(Self {
             client,
             mesh_config,
@@ -379,19 +379,19 @@ pub struct MetricsCollector {
 impl MetricsCollector {
     pub async fn collect_metrics(&self) -> Result<MetricsSnapshot> {
         let mut all_metrics = Vec::new();
-        
+
         // 收集所有指标
         for collector in &self.collectors {
             let metrics = collector.collect().await?;
             all_metrics.extend(metrics);
         }
-        
+
         // 聚合指标
         let aggregated_metrics = self.aggregator.aggregate(all_metrics).await?;
-        
+
         // 导出指标
         self.exporter.export(aggregated_metrics).await?;
-        
+
         Ok(MetricsSnapshot::new(aggregated_metrics))
     }
 }
@@ -409,19 +409,19 @@ pub struct DistributedTracing {
 impl DistributedTracing {
     pub async fn start_span(&self, name: &str, parent_context: Option<Context>) -> Result<Span> {
         let mut span_builder = self.tracer.span_builder(name);
-        
+
         if let Some(parent) = parent_context {
             span_builder = span_builder.with_parent(parent);
         }
-        
+
         let span = self.tracer.build(span_builder);
         Ok(span)
     }
-    
+
     pub fn inject_context(&self, context: &Context, carrier: &mut dyn TextMapCarrier) {
         self.propagator.inject_context(context, carrier);
     }
-    
+
     pub fn extract_context(&self, carrier: &dyn TextMapCarrier) -> Context {
         self.propagator.extract_context(carrier)
     }
@@ -441,20 +441,20 @@ pub struct LayeredConfigManager {
 impl LayeredConfigManager {
     pub async fn load_config(&self) -> Result<OtlpConfig> {
         let mut config = OtlpConfig::default();
-        
+
         // 按优先级加载配置层
         for layer in &self.layers {
             let layer_config = layer.load_config().await?;
             config = config.merge(layer_config);
         }
-        
+
         // 验证配置
         config.validate()?;
-        
+
         // 更新当前配置
         let mut current = self.current_config.write().await;
         *current = config.clone();
-        
+
         Ok(config)
     }
 }
@@ -477,21 +477,21 @@ pub struct HotConfigManager {
 impl HotConfigManager {
     pub async fn start_watching(&self) -> Result<()> {
         let mut receiver = self.update_channel.subscribe();
-        
+
         while let Some(new_config) = receiver.recv().await {
             // 验证新配置
             new_config.validate()?;
-            
+
             // 更新配置
             let mut current = self.config_manager.current_config.write().await;
             *current = new_config;
-            
+
             // 通知所有观察者
             for watcher in &self.watchers {
                 watcher.on_config_updated(&*current).await?;
             }
         }
-        
+
         Ok(())
     }
 }

@@ -1,7 +1,7 @@
 # 部署运维指南
 
-> **版本**: v2.0  
-> **最后更新**: 2025年10月17日  
+> **版本**: v2.0
+> **最后更新**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -10,8 +10,8 @@
 
 本目录包含OTLP Rust项目的部署和运维相关文档，涵盖容器化部署、Kubernetes集成、监控告警、故障排查等生产环境必需的内容。
 
-**创建时间**: 2025年9月26日  
-**维护者**: OTLP运维团队  
+**创建时间**: 2025年9月26日
+**维护者**: OTLP运维团队
 
 ---
 
@@ -358,7 +358,7 @@ rate(otlp_receiver_accepted_spans_total[5m])
 rate(otlp_exporter_sent_spans_total[5m])
 
 # 错误率
-rate(otlp_exporter_send_failed_spans_total[5m]) / 
+rate(otlp_exporter_send_failed_spans_total[5m]) /
 rate(otlp_exporter_sent_spans_total[5m])
 
 # CPU使用率
@@ -415,7 +415,7 @@ spec:
         severity: critical
       annotations:
         summary: "OTLP Collector实例宕机"
-    
+
     - alert: OTLPCollectorHighErrorRate
       expr: |
         rate(otlp_exporter_send_failed_spans_total[5m]) /
@@ -666,6 +666,6 @@ env:
 
 ---
 
-**文档版本**: v2.0  
-**最后更新**: 2025年10月17日  
+**文档版本**: v2.0
+**最后更新**: 2025年10月17日
 **维护者**: OTLP运维团队

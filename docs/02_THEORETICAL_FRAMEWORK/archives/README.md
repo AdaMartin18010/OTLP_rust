@@ -1,8 +1,8 @@
 # Theoretical Framework Archives
 
-**版本**: 1.0  
-**归档日期**: 2025年10月26日  
-**维护者**: Documentation Team  
+**版本**: 1.0
+**归档日期**: 2025年10月26日
+**维护者**: Documentation Team
 **状态**: 🗄️ 已归档
 
 > **简介**: 理论框架归档文档 - 已被新版本取代的历史文档，仅供参考。
@@ -16,6 +16,7 @@ This directory contains archived versions of theoretical framework documents tha
 ### Archived Files
 
 #### 1. OTLP_THEORETICAL_FRAMEWORK_INDEX_OLD.md
+
 - **Original Name**: `OTLP_THEORETICAL_FRAMEWORK_INDEX.md`
 - **Archived Date**: 2025-10-26
 - **Reason**: Superseded by `INDEX.md` which provides a more concise and standardized navigation
@@ -25,6 +26,7 @@ This directory contains archived versions of theoretical framework documents tha
 **Replacement**: `../INDEX.md` (530 lines, provides updated structure)
 
 #### 2. theoretical_framework_structure_cn.md
+
 - **Original Name**: `理论框架文档结构说明.md`
 - **Archived Date**: 2025-10-26
 - **Reason**: Chinese language document, archived for consistency with English naming convention
@@ -38,12 +40,16 @@ This directory contains archived versions of theoretical framework documents tha
 ## 🔄 Migration Information
 
 ### Index Document Migration
+
 The old detailed index (`OTLP_THEORETICAL_FRAMEWORK_INDEX_OLD.md`) has been replaced by:
+
 - `../INDEX.md` - Main framework index (more concise, standardized format)
 - `../unified_framework/00_INDEX.md` - Unified framework navigation
 
 ### Content Preservation
+
 All content from archived documents has been reviewed and important information has been:
+
 - Integrated into the new `INDEX.md`
 - Preserved in the unified framework structure
 - Referenced in related documents
@@ -53,15 +59,19 @@ All content from archived documents has been reviewed and important information 
 ## 📖 How to Use Archived Documents
 
 ### For Historical Reference
+
 These documents are kept for:
+
 - Historical record of framework evolution
 - Reference for previous organizational structure
 - Comparison with current structure
 
 ### Not for Active Use
+
 ⚠️ **Important**: These documents are no longer maintained and should not be used as primary references.
 
 **Instead, use**:
+
 - `../INDEX.md` for framework navigation
 - `../unified_framework/` for complete theoretical content
 - `../README.md` for theoretical framework overview
@@ -76,7 +86,6 @@ These documents are kept for:
 
 ---
 
-**Archive Created**: 2025-10-26  
-**Maintained By**: Documentation Team  
+**Archive Created**: 2025-10-26
+**Maintained By**: Documentation Team
 **Purpose**: Historical preservation and reference
-

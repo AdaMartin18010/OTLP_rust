@@ -1,8 +1,8 @@
 ﻿# 云原生最佳实践完整指南
 
-**Crate:** c10_otlp  
-**主题:** Cloud Native Best Practices  
-**Rust 版本:** 1.90.0  
+**Crate:** c10_otlp
+**主题:** Cloud Native Best Practices
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -15,7 +15,18 @@
     - [云原生定义](#云原生定义)
     - [核心原则](#核心原则)
   - [📝 12-Factor App](#-12-factor-app)
-    - [1-12条原则](#1-codebase-代码库)
+    - [1. Codebase (代码库)](#1-codebase-代码库)
+    - [2. Dependencies (依赖)](#2-dependencies-依赖)
+    - [3. Config (配置)](#3-config-配置)
+    - [4. Backing Services (后端服务)](#4-backing-services-后端服务)
+    - [5. Build, Release, Run (构建、发布、运行)](#5-build-release-run-构建发布运行)
+    - [6. Processes (进程)](#6-processes-进程)
+    - [7. Port Binding (端口绑定)](#7-port-binding-端口绑定)
+    - [8. Concurrency (并发)](#8-concurrency-并发)
+    - [9. Disposability (易处理)](#9-disposability-易处理)
+    - [10. Dev/Prod Parity (开发环境与线上环境等价)](#10-devprod-parity-开发环境与线上环境等价)
+    - [11. Logs (日志)](#11-logs-日志)
+    - [12. Admin Processes (管理进程)](#12-admin-processes-管理进程)
   - [🐳 容器化最佳实践](#-容器化最佳实践)
     - [1. 优化的 Dockerfile](#1-优化的-dockerfile)
     - [2. 镜像大小优化](#2-镜像大小优化)
@@ -151,13 +162,13 @@ use serde::{Deserialize, Serialize};
 pub struct AppConfig {
     #[serde(env = "DATABASE_URL")]
     pub database_url: String,
-    
+
     #[serde(env = "REDIS_URL")]
     pub redis_url: String,
-    
+
     #[serde(env = "LOG_LEVEL", default = "info")]
     pub log_level: String,
-    
+
     #[serde(env = "PORT", default = "8080")]
     pub port: u16,
 }
@@ -196,7 +207,7 @@ impl BackingServices {
         let database = PgPool::connect(&env::var("DATABASE_URL")?).await?;
         let cache = RedisPool::connect(&env::var("REDIS_URL")?).await?;
         let message_queue = KafkaProducer::new(&env::var("KAFKA_BROKERS")?)?;
-        
+
         Ok(Self {
             database,
             cache,
@@ -268,7 +279,7 @@ impl StatelessApp {
     pub async fn get_session(&self, session_id: &str) -> Result<Option<Session>> {
         let mut conn = self.session_store.get().await?;
         let data: Option<String> = conn.get(session_id).await?;
-        
+
         data.map(|s| serde_json::from_str(&s))
             .transpose()
             .map_err(Into::into)
@@ -290,17 +301,17 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/metrics", get(metrics));
-    
+
     // 从环境变量读取端口
     let port = env::var("PORT")
         .unwrap_or_else(|_| "8080".to_string())
         .parse::<u16>()
         .unwrap();
-    
+
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    
+
     println!("Server listening on {}", addr);
-    
+
     Server::bind(&addr)
         .serve(app.into_make_service())
         .await
@@ -353,17 +364,17 @@ use tokio::signal;
 
 pub async fn run_with_graceful_shutdown(app: Router) {
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
-    
+
     let server = Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(shutdown_signal());
-    
+
     println!("Server starting on {}", addr);
-    
+
     if let Err(e) = server.await {
         eprintln!("Server error: {}", e);
     }
-    
+
     println!("Server shut down gracefully");
 }
 
@@ -373,7 +384,7 @@ async fn shutdown_signal() {
             .await
             .expect("Failed to install Ctrl+C handler");
     };
-    
+
     #[cfg(unix)]
     let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
@@ -381,15 +392,15 @@ async fn shutdown_signal() {
             .recv()
             .await;
     };
-    
+
     #[cfg(not(unix))]
     let terminate = std::future::pending::<()>();
-    
+
     tokio::select! {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
-    
+
     println!("Shutdown signal received");
 }
 ```
@@ -440,14 +451,14 @@ pub async fn handle_request(req: Request) -> Response {
         uri = %req.uri(),
         "Incoming request"
     );
-    
+
     let response = process(req).await;
-    
+
     info!(
         status = response.status().as_u16(),
         "Request completed"
     );
-    
+
     response
 }
 
@@ -466,7 +477,7 @@ pub async fn handle_request(req: Request) -> Response {
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
-    
+
     match args.get(1).map(|s| s.as_str()) {
         Some("migrate") => {
             run_migrations().await?;
@@ -478,7 +489,7 @@ async fn main() {
             run_server().await?;
         }
     }
-    
+
     Ok(())
 }
 
@@ -629,7 +640,7 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: otlp-collector
-      
+
       # Anti-affinity: 分散到不同节点
       affinity:
         podAntiAffinity:
@@ -643,12 +654,12 @@ spec:
                   values:
                   - otlp-collector
               topologyKey: kubernetes.io/hostname
-      
+
       containers:
       - name: collector
         image: myapp:v1.0.0
         imagePullPolicy: IfNotPresent
-        
+
         ports:
         - name: otlp-grpc
           containerPort: 4317
@@ -659,7 +670,7 @@ spec:
         - name: metrics
           containerPort: 8888
           protocol: TCP
-        
+
         env:
         - name: LOG_LEVEL
           valueFrom:
@@ -671,7 +682,7 @@ spec:
             secretKeyRef:
               name: otlp-secrets
               key: database_url
-        
+
         resources:
           requests:
             memory: "512Mi"
@@ -679,7 +690,7 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "2000m"
-        
+
         # 健康检查
         livenessProbe:
           httpGet:
@@ -689,7 +700,7 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-        
+
         readinessProbe:
           httpGet:
             path: /health/ready
@@ -698,7 +709,7 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
-        
+
         # 安全上下文
         securityContext:
           runAsNonRoot: true
@@ -707,14 +718,14 @@ spec:
           capabilities:
             drop:
             - ALL
-        
+
         volumeMounts:
         - name: config
           mountPath: /etc/otlp
           readOnly: true
         - name: tmp
           mountPath: /tmp
-      
+
       volumes:
       - name: config
         configMap:
@@ -879,7 +890,7 @@ impl IstioTracing {
         // x-b3-parentspanid
         // x-b3-sampled
         // x-b3-flags
-        
+
         if !headers.contains_key("x-request-id") {
             headers.insert(
                 "x-request-id",
@@ -1002,37 +1013,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    
+
     - name: Run tests
       run: cargo test --all-features
-    
+
     - name: Run clippy
       run: cargo clippy -- -D warnings
-    
+
     - name: Check formatting
       run: cargo fmt -- --check
-  
+
   build:
     needs: test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v2
-    
+
     - name: Login to Registry
       uses: docker/login-action@v2
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    
+
     - name: Build and push
       uses: docker/build-push-action@v4
       with:
@@ -1043,28 +1054,28 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
-  
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup kubectl
       uses: azure/setup-kubectl@v3
-    
+
     - name: Configure kubectl
       run: |
         echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
         export KUBECONFIG=kubeconfig
-    
+
     - name: Deploy to Kubernetes
       run: |
         kubectl set image deployment/otlp-collector \
           otlp-collector=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
           -n observability
-        
+
         kubectl rollout status deployment/otlp-collector -n observability
 ```
 
@@ -1083,23 +1094,23 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  
+
   source:
     repoURL: https://github.com/myorg/otlp-collector
     targetRevision: HEAD
     path: k8s/overlays/prod
-  
+
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
-  
+
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
     - CreateNamespace=true
-    
+
     retry:
       limit: 5
       backoff:
@@ -1170,6 +1181,6 @@ spec:
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日

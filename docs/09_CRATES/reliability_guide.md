@@ -1,8 +1,8 @@
 # ⚡ Reliability Crate 使用指南
 
-**版本**: 1.0  
-**定位**: Rust的运行、执行流、环境OS感知、度量的封装和组织  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**定位**: Rust的运行、执行流、环境OS感知、度量的封装和组织
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: Reliability Crate 使用指南 - 执行流感知、环境适配和可靠性保障的完整指南。
@@ -129,11 +129,11 @@ async fn main() -> Result<()> {
     // 1. 执行流追踪
     let tracer = CallChainTracer::new();
     tracer.start_span("main_operation")?;
-    
+
     // 2. 性能度量
     let metrics = PerformanceMetrics::new();
     metrics.record_cpu_usage().await?;
-    
+
     // 3. 容错机制
     let circuit_breaker = CircuitBreaker::new(
         CircuitBreakerConfig::default()
@@ -141,11 +141,11 @@ async fn main() -> Result<()> {
     circuit_breaker.call(|| async {
         risky_operation().await
     }).await?;
-    
+
     // 4. 运行时环境检测
     let env = RuntimeEnvironment::detect()?;
     println!("Running in: {:?}", env.platform);
-    
+
     Ok(())
 }
 ```
@@ -173,11 +173,11 @@ impl CallChainTracer {
             current_span: Arc::new(RwLock::new(None)),
         }
     }
-    
+
     fn start_span(&self, name: impl Into<String>) -> SpanId {
         let span_id = SpanId::new();
         let parent_id = self.current_span.read().unwrap().clone();
-        
+
         let span = Span {
             id: span_id.clone(),
             name: name.into(),
@@ -186,34 +186,34 @@ impl CallChainTracer {
             end_time: None,
             attributes: HashMap::new(),
         };
-        
+
         self.spans.write().unwrap().insert(span_id.0.clone(), span);
         *self.current_span.write().unwrap() = Some(span_id.0.clone());
-        
+
         span_id
     }
-    
+
     fn end_span(&self, span_id: SpanId) {
         if let Some(span) = self.spans.write().unwrap().get_mut(&span_id.0) {
             span.end_time = Some(Instant::now());
         }
-        
+
         // 恢复父 span 为当前 span
         if let Some(span) = self.spans.read().unwrap().get(&span_id.0) {
             *self.current_span.write().unwrap() = span.parent_id.clone();
         }
     }
-    
+
     fn add_attribute(&self, span_id: SpanId, key: String, value: String) {
         if let Some(span) = self.spans.write().unwrap().get_mut(&span_id.0) {
             span.attributes.insert(key, value);
         }
     }
-    
+
     fn get_call_chain(&self, span_id: SpanId) -> Vec<Span> {
         let mut chain = Vec::new();
         let spans = self.spans.read().unwrap();
-        
+
         let mut current_id = Some(span_id.0);
         while let Some(id) = current_id {
             if let Some(span) = spans.get(&id) {
@@ -223,7 +223,7 @@ impl CallChainTracer {
                 break;
             }
         }
-        
+
         chain.reverse();
         chain
     }
@@ -232,24 +232,24 @@ impl CallChainTracer {
 // 使用示例
 fn main() -> Result<()> {
     let tracer = CallChainTracer::new();
-    
+
     // 开始追踪
     let span1 = tracer.start_span("operation_a");
     tracer.add_attribute(span1.clone(), "user_id".to_string(), "123".to_string());
-    
+
     // 嵌套调用
     let span2 = tracer.start_span("operation_b");
     // ... 执行操作 ...
     tracer.end_span(span2.clone());
-    
+
     tracer.end_span(span1.clone());
-    
+
     // 获取调用链
     let chain = tracer.get_call_chain(span2);
     for span in chain {
         println!("{} -> {}", span.name, span.duration());
     }
-    
+
     Ok(())
 }
 ```
@@ -286,7 +286,7 @@ impl ExecutionGraph {
             nodes: HashMap::new(),
             edges: Vec::new(),
         };
-        
+
         for span in spans {
             // 添加节点
             let node = graph.nodes.entry(span.id.clone()).or_insert_with(|| Node {
@@ -296,10 +296,10 @@ impl ExecutionGraph {
                 total_time: Duration::ZERO,
                 self_time: Duration::ZERO,
             });
-            
+
             node.execution_count += 1;
             node.total_time += span.duration();
-            
+
             // 添加边
             if let Some(parent_id) = &span.parent_id {
                 graph.edges.push(Edge {
@@ -309,19 +309,19 @@ impl ExecutionGraph {
                 });
             }
         }
-        
+
         graph
     }
-    
+
     fn find_hotspots(&self) -> Vec<&Node> {
         let mut nodes: Vec<&Node> = self.nodes.values().collect();
         nodes.sort_by_key(|n| std::cmp::Reverse(n.self_time));
         nodes.into_iter().take(10).collect()
     }
-    
+
     fn to_dot(&self) -> String {
         let mut dot = String::from("digraph G {\n");
-        
+
         for node in self.nodes.values() {
             dot.push_str(&format!(
                 "  \"{}\" [label=\"{}\\n{:.2}ms ({}x)\"];\n",
@@ -331,14 +331,14 @@ impl ExecutionGraph {
                 node.execution_count,
             ));
         }
-        
+
         for edge in &self.edges {
             dot.push_str(&format!(
                 "  \"{}\" -> \"{}\" [label=\"{}\"];\n",
                 edge.from, edge.to, edge.count
             ));
         }
-        
+
         dot.push_str("}\n");
         dot
     }
@@ -371,17 +371,17 @@ impl Profiler {
             sampling_interval,
         }
     }
-    
+
     async fn start_profiling(&self) {
         let samples = Arc::clone(&self.samples);
         let interval = self.sampling_interval;
-        
+
         tokio::spawn(async move {
             let mut interval_timer = tokio::time::interval(interval);
-            
+
             loop {
                 interval_timer.tick().await;
-                
+
                 // 采集样本
                 let sample = Sample {
                     timestamp: Instant::now(),
@@ -389,42 +389,42 @@ impl Profiler {
                     cpu_time: Self::get_cpu_time(),
                     memory_usage: Self::get_memory_usage(),
                 };
-                
+
                 samples.lock().unwrap().push(sample);
             }
         });
     }
-    
+
     fn generate_flamegraph(&self) -> String {
         let samples = self.samples.lock().unwrap();
-        
+
         // 聚合调用栈
         let mut stack_counts: HashMap<Vec<String>, usize> = HashMap::new();
-        
+
         for sample in samples.iter() {
             let stack: Vec<String> = sample.stack_trace
                 .iter()
                 .map(|f| f.function.clone())
                 .collect();
-            
+
             *stack_counts.entry(stack).or_insert(0) += 1;
         }
-        
+
         // 生成火焰图格式
         let mut flamegraph = String::new();
         for (stack, count) in stack_counts {
             flamegraph.push_str(&format!("{} {}\n", stack.join(";"), count));
         }
-        
+
         flamegraph
     }
-    
+
     fn get_hotspots(&self, top_n: usize) -> Vec<HotSpot> {
         let samples = self.samples.lock().unwrap();
-        
+
         // 统计函数调用次数和时间
         let mut function_stats: HashMap<String, FunctionStats> = HashMap::new();
-        
+
         for sample in samples.iter() {
             for frame in &sample.stack_trace {
                 let stats = function_stats.entry(frame.function.clone()).or_insert_with(|| FunctionStats {
@@ -432,12 +432,12 @@ impl Profiler {
                     count: 0,
                     total_time: Duration::ZERO,
                 });
-                
+
                 stats.count += 1;
                 stats.total_time += sample.cpu_time;
             }
         }
-        
+
         // 排序并返回 top N
         let mut hotspots: Vec<HotSpot> = function_stats.values()
             .map(|s| HotSpot {
@@ -446,7 +446,7 @@ impl Profiler {
                 total_time: s.total_time,
             })
             .collect();
-        
+
         hotspots.sort_by(|a, b| b.percentage.partial_cmp(&a.percentage).unwrap());
         hotspots.into_iter().take(top_n).collect()
     }
@@ -457,20 +457,20 @@ impl Profiler {
 async fn main() -> Result<()> {
     let profiler = Profiler::new(Duration::from_millis(10));
     profiler.start_profiling().await;
-    
+
     // 运行程序...
     tokio::time::sleep(Duration::from_secs(60)).await;
-    
+
     // 分析结果
     let hotspots = profiler.get_hotspots(10);
     for hotspot in hotspots {
         println!("{}: {:.2}%", hotspot.function, hotspot.percentage);
     }
-    
+
     // 生成火焰图
     let flamegraph = profiler.generate_flamegraph();
     std::fs::write("flamegraph.txt", flamegraph)?;
-    
+
     Ok(())
 }
 ```
@@ -520,42 +520,42 @@ impl RuntimeEnvironment {
             is_wasm: cfg!(target_arch = "wasm32"),
         })
     }
-    
+
     fn detect_platform() -> Platform {
         #[cfg(target_os = "linux")]
         return Platform::Linux;
-        
+
         #[cfg(target_os = "windows")]
         return Platform::Windows;
-        
+
         #[cfg(target_os = "macos")]
         return Platform::MacOS;
-        
+
         #[cfg(target_os = "freebsd")]
         return Platform::FreeBSD;
-        
+
         Platform::Unknown
     }
-    
+
     fn is_running_in_container() -> Result<bool> {
         // 检查 /.dockerenv 文件
         if std::path::Path::new("/.dockerenv").exists() {
             return Ok(true);
         }
-        
+
         // 检查 cgroup
         if let Ok(cgroup) = std::fs::read_to_string("/proc/1/cgroup") {
             return Ok(cgroup.contains("docker") || cgroup.contains("kubepods"));
         }
-        
+
         Ok(false)
     }
-    
+
     fn is_running_in_k8s() -> Result<bool> {
         // 检查 Kubernetes 环境变量
         Ok(std::env::var("KUBERNETES_SERVICE_HOST").is_ok())
     }
-    
+
     fn detect_total_memory() -> Result<u64> {
         #[cfg(target_os = "linux")]
         {
@@ -569,31 +569,31 @@ impl RuntimeEnvironment {
                 }
             }
         }
-        
+
         Ok(0)
     }
-    
+
     fn optimize_for_environment(&self) -> EnvironmentConfig {
         let mut config = EnvironmentConfig::default();
-        
+
         // 容器环境: 限制资源使用
         if self.is_container {
             config.max_threads = (self.cpu_count / 2).max(1);
             config.max_memory = self.total_memory / 2;
         }
-        
+
         // K8s环境: 启用健康检查
         if self.is_k8s {
             config.enable_health_check = true;
             config.health_check_port = 8080;
         }
-        
+
         // Wasm环境: 禁用线程
         if self.is_wasm {
             config.max_threads = 1;
             config.enable_threading = false;
         }
-        
+
         config
     }
 }
@@ -601,18 +601,18 @@ impl RuntimeEnvironment {
 // 使用示例
 fn main() -> Result<()> {
     let env = RuntimeEnvironment::detect()?;
-    
+
     println!("Platform: {:?}", env.platform);
     println!("Architecture: {}", env.arch);
     println!("CPUs: {}", env.cpu_count);
     println!("Memory: {} GB", env.total_memory / 1024 / 1024 / 1024);
     println!("Container: {}", env.is_container);
     println!("Kubernetes: {}", env.is_k8s);
-    
+
     // 根据环境优化配置
     let config = env.optimize_for_environment();
     println!("Optimized config: {:?}", config);
-    
+
     Ok(())
 }
 ```
@@ -638,21 +638,21 @@ impl K8sIntegration {
             service_account: std::env::var("KUBERNETES_SERVICE_ACCOUNT")?,
         })
     }
-    
+
     async fn register_health_check(&self, port: u16) {
         use axum::{routing::get, Router};
-        
+
         let app = Router::new()
             .route("/healthz", get(|| async { "ok" }))
             .route("/readyz", get(Self::readiness_check));
-        
+
         let addr = format!("0.0.0.0:{}", port).parse().unwrap();
         axum::Server::bind(&addr)
             .serve(app.into_make_service())
             .await
             .unwrap();
     }
-    
+
     async fn readiness_check() -> &'static str {
         // 检查应用是否准备好接收流量
         if Self::is_ready().await {
@@ -661,13 +661,13 @@ impl K8sIntegration {
             "not ready"
         }
     }
-    
+
     async fn watch_config_map(&self, name: &str) -> Result<()> {
         // 监听 ConfigMap 变化
         // 实现略
         Ok(())
     }
-    
+
     async fn discover_services(&self) -> Result<Vec<Service>> {
         // 服务发现
         // 通过 Kubernetes API 发现其他服务
@@ -703,12 +703,12 @@ impl CpuMetrics {
                 .skip(1)
                 .map(|s| s.parse().unwrap())
                 .collect();
-            
+
             let user = parts[0];
             let system = parts[2];
             let idle = parts[3];
             let total = parts.iter().sum::<u64>();
-            
+
             Ok(Self {
                 usage_percent: (1.0 - idle as f64 / total as f64) * 100.0,
                 user_time: Duration::from_millis(user * 10),
@@ -716,7 +716,7 @@ impl CpuMetrics {
                 idle_time: Duration::from_millis(idle * 10),
             })
         }
-        
+
         #[cfg(not(target_os = "linux"))]
         {
             // 其他平台实现
@@ -748,7 +748,7 @@ impl MemoryMetrics {
             let meminfo = std::fs::read_to_string("/proc/meminfo")?;
             let mut total = 0;
             let mut available = 0;
-            
+
             for line in meminfo.lines() {
                 if line.starts_with("MemTotal:") {
                     total = line.split_whitespace().nth(1).unwrap().parse::<u64>()? * 1024;
@@ -756,19 +756,19 @@ impl MemoryMetrics {
                     available = line.split_whitespace().nth(1).unwrap().parse::<u64>()? * 1024;
                 }
             }
-            
+
             let used = total - available;
-            
+
             // 进程内存
             let status = std::fs::read_to_string("/proc/self/status")?;
             let mut rss = 0;
-            
+
             for line in status.lines() {
                 if line.starts_with("VmRSS:") {
                     rss = line.split_whitespace().nth(1).unwrap().parse::<u64>()? * 1024;
                 }
             }
-            
+
             Ok(Self {
                 total,
                 available,
@@ -778,13 +778,13 @@ impl MemoryMetrics {
                 heap: Self::get_heap_usage(),
             })
         }
-        
+
         #[cfg(not(target_os = "linux"))]
         {
             Ok(Self::default())
         }
     }
-    
+
     fn get_heap_usage() -> u64 {
         // 使用 jemalloc 或其他分配器的统计信息
         0
@@ -822,31 +822,31 @@ impl ResourcePredictor {
             .take(60)
             .map(|s| s.cpu_usage)
             .collect();
-        
+
         // 简单移动平均
         recent.iter().sum::<f64>() / recent.len() as f64
     }
-    
+
     fn predict_memory(&self, horizon: Duration) -> u64 {
         // 线性回归预测
         let n = self.history.len();
         if n < 2 {
             return 0;
         }
-        
+
         let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
         let y: Vec<f64> = self.history.iter().map(|s| s.memory_usage as f64).collect();
-        
+
         let (slope, intercept) = Self::linear_regression(&x, &y);
-        
+
         let future_x = n as f64 + horizon.as_secs() as f64;
         (slope * future_x + intercept) as u64
     }
-    
+
     fn recommend_scaling(&self) -> ScalingRecommendation {
         let predicted_cpu = self.predict_cpu(Duration::from_mins(5));
         let predicted_memory = self.predict_memory(Duration::from_mins(5));
-        
+
         if predicted_cpu > 80.0 || predicted_memory > 80 * 1024 * 1024 * 1024 {
             ScalingRecommendation::ScaleUp
         } else if predicted_cpu < 20.0 && predicted_memory < 20 * 1024 * 1024 * 1024 {
@@ -892,7 +892,7 @@ impl CircuitBreaker {
         F: FnOnce() -> BoxFuture<'static, Result<T>>,
     {
         let state = *self.state.read().unwrap();
-        
+
         match state {
             CircuitState::Open => {
                 // 熔断状态: 直接返回错误
@@ -913,10 +913,10 @@ impl CircuitBreaker {
             }
         }
     }
-    
+
     fn on_success(&self) {
         let count = self.success_count.fetch_add(1, Ordering::SeqCst) + 1;
-        
+
         let state = *self.state.read().unwrap();
         if matches!(state, CircuitState::HalfOpen) && count >= self.config.success_threshold {
             // 从半开状态转为关闭状态
@@ -925,14 +925,14 @@ impl CircuitBreaker {
             self.success_count.store(0, Ordering::SeqCst);
         }
     }
-    
+
     fn on_failure(&self) {
         let count = self.failure_count.fetch_add(1, Ordering::SeqCst) + 1;
-        
+
         if count >= self.config.failure_threshold {
             // 熔断
             *self.state.write().unwrap() = CircuitState::Open;
-            
+
             // 定时器: timeout 后转为半开状态
             let state = Arc::clone(&self.state);
             let timeout = self.config.timeout;
@@ -952,12 +952,12 @@ async fn main() -> Result<()> {
         success_threshold: 2,
         timeout: Duration::from_secs(30),
     });
-    
+
     let result = circuit_breaker.call(|| Box::pin(async {
         // 可能失败的操作
         external_service_call().await
     })).await?;
-    
+
     Ok(())
 }
 ```
@@ -981,10 +981,10 @@ impl RetryPolicy {
     {
         let mut attempts = 0;
         let mut delay = self.initial_delay;
-        
+
         loop {
             attempts += 1;
-            
+
             match f().await {
                 Ok(result) => return Ok(result),
                 Err(e) if attempts >= self.max_attempts => {
@@ -1011,11 +1011,11 @@ async fn main() -> Result<()> {
         max_delay: Duration::from_secs(5),
         backoff_multiplier: 2.0,
     };
-    
+
     let result = retry_policy.execute(|| Box::pin(async {
         unreliable_operation().await
     })).await?;
-    
+
     Ok(())
 }
 ```
@@ -1038,24 +1038,24 @@ impl RateLimiter {
             capacity,
             refill_rate,
         };
-        
+
         // 启动补充tokens的任务
         limiter.start_refill_task();
-        
+
         limiter
     }
-    
+
     fn start_refill_task(&self) {
         let tokens = Arc::clone(&self.tokens);
         let capacity = self.capacity;
         let refill_rate = self.refill_rate;
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_millis(100));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 let refill_amount = (refill_rate * 0.1) as u32;
                 tokens.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
                     Some((current + refill_amount).min(capacity))
@@ -1063,11 +1063,11 @@ impl RateLimiter {
             }
         });
     }
-    
+
     async fn acquire(&self, tokens: u32) -> Result<()> {
         loop {
             let current = self.tokens.load(Ordering::SeqCst);
-            
+
             if current >= tokens {
                 if self.tokens.compare_exchange(
                     current,
@@ -1089,12 +1089,12 @@ impl RateLimiter {
 #[tokio::main]
 async fn main() -> Result<()> {
     let rate_limiter = RateLimiter::new(100, 10.0); // 100 tokens, 10 tokens/s
-    
+
     for _ in 0..1000 {
         rate_limiter.acquire(1).await?;
         process_request().await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -1120,10 +1120,10 @@ impl ReliableService {
     async fn call_external_service(&self, request: Request) -> Result<Response> {
         // 1. 限流
         self.rate_limiter.acquire(1).await?;
-        
+
         // 2. 追踪
         let span = self.tracer.start_span("external_service_call");
-        
+
         // 3. 熔断器 + 重试
         let result = self.circuit_breaker.call(|| {
             Box::pin(async {
@@ -1132,22 +1132,22 @@ impl ReliableService {
                         // 实际调用
                         let start = Instant::now();
                         let response = external_api_call(&request).await?;
-                        
+
                         // 4. 记录指标
                         self.metrics.record_latency(
                             "external_service",
                             start.elapsed(),
                         ).await;
-                        
+
                         Ok(response)
                     })
                 }).await
             })
         }).await;
-        
+
         // 5. 结束追踪
         self.tracer.end_span(span);
-        
+
         result
     }
 }
@@ -1247,6 +1247,6 @@ cargo run --example enhanced_anomaly_detection
 
 ---
 
-**最后更新**: 2025年10月26日  
-**文档版本**: v1.0.0  
+**最后更新**: 2025年10月26日
+**文档版本**: v1.0.0
 **维护状态**: 🔄 持续维护中

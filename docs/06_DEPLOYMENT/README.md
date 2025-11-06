@@ -1,7 +1,7 @@
 # 🚀 部署运维指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 部署运维指南 - 生产环境部署、监控设置、故障排除和性能调优。
@@ -401,7 +401,7 @@ data:
       host: "0.0.0.0"
       port: 8080
       workers: 4
-    
+
     otlp:
       endpoint: "http://collector:4317"
       protocol: "grpc"
@@ -411,17 +411,17 @@ data:
         initial_delay: "100ms"
         max_delay: "30s"
         multiplier: 2.0
-    
+
     batch:
       max_size: 512
       timeout: "5s"
       max_queue_size: 2048
-    
+
     metrics:
       enabled: true
       port: 9090
       path: "/metrics"
-    
+
     logging:
       level: "info"
       format: "json"
@@ -504,11 +504,11 @@ config:
     endpoint: "http://collector:4317"
     protocol: "grpc"
     timeout: "10s"
-  
+
   batch:
     max_size: 512
     timeout: "5s"
-  
+
   metrics:
     enabled: true
     port: 9090
@@ -617,24 +617,24 @@ pub fn init_logging() {
 
 // 结构化日志使用
 pub async fn process_request(request: &Request) -> Result<Response, Error> {
-    let span = tracing::info_span!("process_request", 
+    let span = tracing::info_span!("process_request",
         request_id = %request.id,
         method = %request.method,
         path = %request.path
     );
-    
+
     let _enter = span.enter();
-    
+
     info!(
         request_id = %request.id,
         method = %request.method,
         path = %request.path,
         "Processing request"
     );
-    
+
     // 处理逻辑
     let result = handle_request(request).await;
-    
+
     match &result {
         Ok(response) => {
             info!(
@@ -652,7 +652,7 @@ pub async fn process_request(request: &Request) -> Result<Response, Error> {
             );
         }
     }
-    
+
     result
 }
 ```
@@ -672,12 +672,12 @@ pub fn init_tracing() -> Result<(), Box<dyn std::error::Error>> {
         .with_service_name("otlp-client")
         .with_endpoint("http://jaeger:14268/api/traces")
         .install_simple()?;
-    
+
     tracing_subscriber::registry()
         .with(tracing_opentelemetry::layer().with_tracer(tracer))
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
-    
+
     Ok(())
 }
 
@@ -685,20 +685,20 @@ pub fn init_tracing() -> Result<(), Box<dyn std::error::Error>> {
 pub async fn send_trace_data(&self, data: TelemetryData) -> Result<(), OtlpError> {
     let span = tracing::info_span!("send_trace_data");
     let _enter = span.enter();
-    
+
     // 创建子 span
     let child_span = tracing::info_span!("serialize_data");
     let _child_enter = child_span.enter();
-    
+
     let serialized = serde_json::to_string(&data)?;
     drop(_child_enter);
-    
+
     // 发送数据
     let send_span = tracing::info_span!("send_to_collector");
     let _send_enter = send_span.enter();
-    
+
     self.transport.send(&serialized).await?;
-    
+
     Ok(())
 }
 ```
@@ -818,9 +818,9 @@ async fn readiness_check() -> Json<Value> {
         ("collector", check_collector().await),
         ("redis", check_redis().await),
     ];
-    
+
     let all_ready = checks.iter().all(|(_, ready)| *ready);
-    
+
     Json(json!({
         "status": if all_ready { "ready" } else { "not_ready" },
         "checks": checks.into_iter().collect::<std::collections::HashMap<_, _>>(),
@@ -883,7 +883,7 @@ impl AutoRecovery {
         F: FnMut() -> Pin<Box<dyn Future<Output = Result<T, OtlpError>> + Send>>,
     {
         let mut delay = self.base_delay;
-        
+
         for attempt in 0..self.max_retries {
             match operation().await {
                 Ok(result) => return Ok(result),
@@ -899,7 +899,7 @@ impl AutoRecovery {
                 }
             }
         }
-        
+
         Err(OtlpError::Custom("Max retries exceeded".to_string()))
     }
 }
@@ -1101,13 +1101,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.90.0
         override: true
-    
+
     - name: Cache dependencies
       uses: actions/cache@v3
       with:
@@ -1116,13 +1116,13 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    
+
     - name: Run tests
       run: |
         cargo test --all-features
         cargo clippy --all-features -- -D warnings
         cargo fmt -- --check
-    
+
     - name: Run benchmarks
       run: cargo bench
 
@@ -1131,17 +1131,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    
+
     - name: Login to Container Registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    
+
     - name: Build and push
       uses: docker/build-push-action@v5
       with:
@@ -1159,7 +1159,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Deploy to Kubernetes
       run: |
         kubectl set image deployment/otlp-client \
@@ -1213,6 +1213,6 @@ spec:
 
 ---
 
-**部署运维指南版本**: 1.0.0  
-**最后更新**: 2025年1月  
+**部署运维指南版本**: 1.0.0
+**最后更新**: 2025年1月
 **维护者**: OTLP Rust 运维团队

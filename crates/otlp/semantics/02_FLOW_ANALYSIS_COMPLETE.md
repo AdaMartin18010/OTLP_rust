@@ -1,15 +1,16 @@
 ﻿# 执行流、控制流与数据流深度分析
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
 
 ## 📋 目录
+
 - [执行流、控制流与数据流深度分析](#执行流控制流与数据流深度分析)
-  - [目录](#目录)
-  - [1. 概述](#1-概述)
+  - [📋 目录](#-目录)
+  - [🎯 概述](#-概述)
     - [1.1 三大流模型的定义](#11-三大流模型的定义)
       - [1.1.1 执行流（Execution Flow）](#111-执行流execution-flow)
       - [1.1.2 控制流（Control Flow）](#112-控制流control-flow)
@@ -18,7 +19,7 @@
       - [1.2.1 问题定位](#121-问题定位)
       - [1.2.2 性能优化](#122-性能优化)
       - [1.2.3 可靠性提升](#123-可靠性提升)
-  - [2. 执行流分析](#2-执行流分析)
+  - [📝 执行流分析](#-执行流分析)
     - [2.1 执行流基本概念](#21-执行流基本概念)
       - [2.1.1 线性执行流](#211-线性执行流)
       - [2.1.2 分支执行流](#212-分支执行流)
@@ -30,7 +31,7 @@
       - [2.3.2 批处理执行流](#232-批处理执行流)
     - [2.4 异步执行流](#24-异步执行流)
       - [2.4.1 消息队列异步模式](#241-消息队列异步模式)
-  - [3. 控制流分析](#3-控制流分析)
+  - [💡 控制流分析](#-控制流分析)
     - [3.1 控制流基本概念](#31-控制流基本概念)
       - [3.1.1 控制流图（CFG）](#311-控制流图cfg)
     - [3.2 条件分支控制流](#32-条件分支控制流)
@@ -41,7 +42,7 @@
       - [3.3.2 条件循环](#332-条件循环)
     - [3.4 异常处理控制流](#34-异常处理控制流)
       - [3.4.1 Try-Catch模式](#341-try-catch模式)
-  - [4. 数据流分析](#4-数据流分析)
+  - [🔧 数据流分析](#-数据流分析)
     - [4.1 数据流基本概念](#41-数据流基本概念)
       - [4.1.1 数据流模型](#411-数据流模型)
     - [4.2 请求数据流](#42-请求数据流)
@@ -51,16 +52,16 @@
       - [4.3.2 Collector数据处理管道](#432-collector数据处理管道)
     - [4.4 数据转换流](#44-数据转换流)
       - [4.4.1 OTTL转换](#441-ottl转换)
-  - [5. 流模型集成分析](#5-流模型集成分析)
+  - [📊 流模型集成分析](#-流模型集成分析)
     - [5.1 三流协同](#51-三流协同)
       - [5.1.1 完整请求分析](#511-完整请求分析)
     - [5.2 性能瓶颈分析](#52-性能瓶颈分析)
       - [5.2.1 识别关键路径](#521-识别关键路径)
     - [5.3 故障传播分析](#53-故障传播分析)
       - [5.3.1 级联故障追踪](#531-级联故障追踪)
-  - [6. OTLP中的流模型实践](#6-otlp中的流模型实践)
+  - [🚀 OTLP中的流模型实践](#-otlp中的流模型实践)
     - [6.1 完整示例](#61-完整示例)
-  - [7. 参考文献](#7-参考文献)
+  - [🔍 参考文献](#-参考文献)
 
 ---
 
@@ -213,33 +214,33 @@ use opentelemetry::trace::{Tracer, Span};
 
 async fn process_order(order_id: &str) {
     let tracer = global::tracer("order-service");
-    
+
     // Root span
     let mut root_span = tracer
         .span_builder("process_order")
         .start(&tracer);
-    
+
     // Step 1: 验证订单
     let mut span_validate = tracer
         .span_builder("validate_order")
         .start_with_context(&tracer, &root_span.context());
     validate_order(order_id).await;
     span_validate.end();
-    
+
     // Step 2: 处理支付
     let mut span_payment = tracer
         .span_builder("process_payment")
         .start_with_context(&tracer, &root_span.context());
     process_payment(order_id).await;
     span_payment.end();
-    
+
     // Step 3: 更新库存
     let mut span_inventory = tracer
         .span_builder("update_inventory")
         .start_with_context(&tracer, &root_span.context());
     update_inventory(order_id).await;
     span_inventory.end();
-    
+
     root_span.end();
 }
 ```
@@ -282,9 +283,9 @@ async fn process_order(order_id: &str) {
 async fn handle_payment(amount: f64) {
     let tracer = global::tracer("payment-service");
     let mut root_span = tracer.span_builder("handle_payment").start(&tracer);
-    
+
     root_span.set_attribute(KeyValue::new("payment.amount", amount));
-    
+
     // 决策点
     if amount > 1000.0 {
         // 大额支付路径
@@ -292,11 +293,11 @@ async fn handle_payment(amount: f64) {
             .span_builder("high_value_payment")
             .start_with_context(&tracer, &root_span.context());
         span.set_attribute(KeyValue::new("payment.type", "high_value"));
-        
+
         // 需要额外验证
         verify_identity().await;
         check_fraud_score().await;
-        
+
         span.end();
     } else {
         // 普通支付路径
@@ -304,13 +305,13 @@ async fn handle_payment(amount: f64) {
             .span_builder("standard_payment")
             .start_with_context(&tracer, &root_span.context());
         span.set_attribute(KeyValue::new("payment.type", "standard"));
-        
+
         // 快速处理
         process_quickly().await;
-        
+
         span.end();
     }
-    
+
     root_span.end();
 }
 ```
@@ -393,18 +394,18 @@ use tokio::join;
 async fn fan_out_pattern() {
     let tracer = global::tracer("fan-out");
     let mut root_span = tracer.span_builder("fan_out").start(&tracer);
-    
+
     // 并发执行多个任务
     let (result1, result2, result3) = join!(
         fetch_user_data(&tracer, &root_span),
         fetch_order_data(&tracer, &root_span),
         fetch_inventory_data(&tracer, &root_span),
     );
-    
+
     // 合并结果
     let merged = merge_results(result1, result2, result3);
     root_span.set_attribute(KeyValue::new("results.count", merged.len() as i64));
-    
+
     root_span.end();
 }
 
@@ -412,10 +413,10 @@ async fn fetch_user_data(tracer: &Tracer, parent: &Span) -> UserData {
     let mut span = tracer
         .span_builder("fetch_user_data")
         .start_with_context(tracer, &parent.context());
-    
+
     // 模拟数据库查询
     tokio::time::sleep(Duration::from_millis(100)).await;
-    
+
     span.end();
     UserData::default()
 }
@@ -446,9 +447,9 @@ use futures::stream::{self, StreamExt};
 async fn batch_process(items: Vec<Item>) {
     let tracer = global::tracer("batch-processor");
     let mut batch_span = tracer.span_builder("batch_process").start(&tracer);
-    
+
     batch_span.set_attribute(KeyValue::new("batch.size", items.len() as i64));
-    
+
     // 并发处理，限制并发数为10
     let results: Vec<_> = stream::iter(items)
         .map(|item| {
@@ -458,11 +459,11 @@ async fn batch_process(items: Vec<Item>) {
                 let mut span = tracer
                     .span_builder("process_item")
                     .start_with_context(&tracer, &context);
-                
+
                 span.set_attribute(KeyValue::new("item.id", item.id.clone()));
-                
+
                 let result = process_single_item(item).await;
-                
+
                 span.end();
                 result
             }
@@ -470,8 +471,8 @@ async fn batch_process(items: Vec<Item>) {
         .buffer_unordered(10)  // 最多10个并发
         .collect()
         .await;
-    
-    batch_span.set_attribute(KeyValue::new("results.success", 
+
+    batch_span.set_attribute(KeyValue::new("results.success",
         results.iter().filter(|r| r.is_ok()).count() as i64));
     batch_span.end();
 }
@@ -512,42 +513,42 @@ async fn publish_message(message: Message) {
     let mut span = tracer.span_builder("publish_message")
         .with_kind(SpanKind::Producer)
         .start(&tracer);
-    
+
     span.set_attribute(KeyValue::new("messaging.system", "kafka"));
     span.set_attribute(KeyValue::new("messaging.destination", "orders"));
-    
+
     // 将TraceContext注入到消息中
     let mut carrier = HashMap::new();
     global::get_text_map_propagator(|propagator| {
         propagator.inject_context(&span.context(), &mut carrier);
     });
-    
+
     // 发送消息
     kafka_producer.send(message, carrier).await;
-    
+
     span.end();
 }
 
 // 消费者
 async fn consume_message(message: Message, carrier: HashMap<String, String>) {
     let tracer = global::tracer("consumer");
-    
+
     // 从消息中提取TraceContext
     let parent_context = global::get_text_map_propagator(|propagator| {
         propagator.extract(&carrier)
     });
-    
+
     // 创建Consumer Span，链接到Producer Span
     let mut span = tracer.span_builder("consume_message")
         .with_kind(SpanKind::Consumer)
         .start_with_context(&tracer, &parent_context);
-    
+
     span.set_attribute(KeyValue::new("messaging.system", "kafka"));
     span.set_attribute(KeyValue::new("messaging.destination", "orders"));
-    
+
     // 处理消息
     process_order(message).await;
-    
+
     span.end();
 }
 ```
@@ -595,35 +596,35 @@ async fn consume_message(message: Message, carrier: HashMap<String, String>) {
 async fn conditional_flow(user: &User) {
     let tracer = global::tracer("auth-service");
     let mut root_span = tracer.span_builder("check_auth").start(&tracer);
-    
+
     // 记录决策点
     root_span.add_event("decision_point", vec![
         KeyValue::new("condition", "user_role_check"),
     ]);
-    
+
     if user.is_admin() {
         root_span.set_attribute(KeyValue::new("auth.decision", "admin_flow"));
-        
+
         let mut admin_span = tracer
             .span_builder("admin_authorization")
             .start_with_context(&tracer, &root_span.context());
-        
+
         // 管理员流程
         grant_full_access(user).await;
         admin_span.end();
-        
+
     } else {
         root_span.set_attribute(KeyValue::new("auth.decision", "user_flow"));
-        
+
         let mut user_span = tracer
             .span_builder("user_authorization")
             .start_with_context(&tracer, &root_span.context());
-        
+
         // 普通用户流程
         grant_limited_access(user).await;
         user_span.end();
     }
-    
+
     root_span.end();
 }
 ```
@@ -636,9 +637,9 @@ async fn conditional_flow(user: &User) {
 async fn route_by_type(request_type: RequestType) {
     let tracer = global::tracer("router");
     let mut root_span = tracer.span_builder("route_request").start(&tracer);
-    
+
     root_span.set_attribute(KeyValue::new("request.type", format!("{:?}", request_type)));
-    
+
     match request_type {
         RequestType::Query => {
             let mut span = tracer.span_builder("handle_query")
@@ -659,7 +660,7 @@ async fn route_by_type(request_type: RequestType) {
             span.end();
         }
     }
-    
+
     root_span.end();
 }
 ```
@@ -672,29 +673,29 @@ async fn route_by_type(request_type: RequestType) {
 async fn process_batch(items: Vec<Item>) {
     let tracer = global::tracer("batch-processor");
     let mut batch_span = tracer.span_builder("process_batch").start(&tracer);
-    
+
     batch_span.set_attribute(KeyValue::new("batch.size", items.len() as i64));
-    
+
     for (index, item) in items.iter().enumerate() {
         let mut item_span = tracer
             .span_builder("process_item")
             .start_with_context(&tracer, &batch_span.context());
-        
+
         item_span.set_attribute(KeyValue::new("item.index", index as i64));
         item_span.set_attribute(KeyValue::new("item.id", item.id.clone()));
-        
+
         // 处理单个item
         let result = process_item(item).await;
-        
+
         if result.is_err() {
             item_span.set_status(Status::Error {
                 description: format!("Failed to process item: {:?}", result.err()).into(),
             });
         }
-        
+
         item_span.end();
     }
-    
+
     batch_span.end();
 }
 ```
@@ -713,19 +714,19 @@ where
 {
     let tracer = global::tracer("retry-handler");
     let mut retry_span = tracer.span_builder("retry_operation").start(&tracer);
-    
+
     retry_span.set_attribute(KeyValue::new("retry.max_attempts", max_retries as i64));
-    
+
     let mut attempt = 0;
     loop {
         attempt += 1;
-        
+
         let mut attempt_span = tracer
             .span_builder(format!("attempt_{}", attempt))
             .start_with_context(&tracer, &retry_span.context());
-        
+
         attempt_span.set_attribute(KeyValue::new("retry.attempt", attempt as i64));
-        
+
         match operation().await {
             Ok(result) => {
                 attempt_span.set_attribute(KeyValue::new("retry.success", true));
@@ -753,7 +754,7 @@ where
                     KeyValue::new("backoff_ms", 2_u64.pow(attempt) * 100),
                 ]);
                 attempt_span.end();
-                
+
                 // 指数退避
                 tokio::time::sleep(Duration::from_millis(2_u64.pow(attempt) * 100)).await;
             }
@@ -770,7 +771,7 @@ where
 async fn safe_operation() {
     let tracer = global::tracer("safe-executor");
     let mut root_span = tracer.span_builder("safe_operation").start(&tracer);
-    
+
     match risky_operation().await {
         Ok(result) => {
             root_span.set_attribute(KeyValue::new("operation.success", true));
@@ -786,18 +787,18 @@ async fn safe_operation() {
                 KeyValue::new("error.type", e.type_name()),
                 KeyValue::new("error.message", e.to_string()),
             ]);
-            
+
             // 执行恢复逻辑
             let mut recovery_span = tracer
                 .span_builder("recovery")
                 .start_with_context(&tracer, &root_span.context());
-            
+
             perform_recovery().await;
-            
+
             recovery_span.end();
         }
     }
-    
+
     root_span.end();
 }
 ```
@@ -882,11 +883,11 @@ processors:
   batch:
     timeout: 1s
     send_batch_size: 1024
-  
+
   # 采样
   probabilistic_sampler:
     sampling_percentage: 10
-  
+
   # 属性处理
   attributes:
     actions:
@@ -895,7 +896,7 @@ processors:
         action: insert
       - key: sensitive_data
         action: delete
-  
+
   # 资源检测
   resourcedetection:
     detectors: [env, system, docker]
@@ -904,7 +905,7 @@ exporters:
   # 导出到Jaeger
   jaeger:
     endpoint: jaeger:14250
-  
+
   # 导出到Prometheus
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -915,7 +916,7 @@ service:
       receivers: [otlp]
       processors: [resourcedetection, attributes, probabilistic_sampler, batch]
       exporters: [jaeger]
-    
+
     metrics:
       receivers: [otlp]
       processors: [resourcedetection, batch]
@@ -936,14 +937,14 @@ transform:
       statements:
         - delete_key(attributes, "http.request.header.authorization")
         - delete_key(attributes, "password")
-    
+
     # 规范化属性
     - context: span
       statements:
         - set(attributes["service.environment"], resource.attributes["deployment.environment"])
         - set(attributes["normalized.status"], "ok") where status.code == 1
         - set(attributes["normalized.status"], "error") where status.code == 2
-    
+
     # 采样决策
     - context: span
       statements:
@@ -989,10 +990,10 @@ Order JSON → Order Proto → Payment Request → Inventory Update
 ```text
 1. 执行流分析 → 找到最长路径
    [Root] → [A] → [B] → [C]  总计: 500ms
-   
+
 2. 控制流分析 → 理解为什么慢
    在B中有数据库查询
-   
+
 3. 数据流分析 → 发现传输瓶颈
    B→C之间传输了10MB数据
 ```
@@ -1022,26 +1023,26 @@ use opentelemetry::KeyValue;
 
 async fn complete_flow_example() {
     let tracer = global::tracer("complete-example");
-    
+
     // 1. 执行流：Root Span
     let mut root_span = tracer
         .span_builder("process_order")
         .start(&tracer);
-    
+
     // 2. 数据流：记录输入
     root_span.set_attribute(KeyValue::new("order.id", "12345"));
     root_span.set_attribute(KeyValue::new("order.amount", 99.99));
-    
+
     // 3. 控制流：决策分支
     let order_amount = 99.99;
     if order_amount > 100.0 {
         root_span.set_attribute(KeyValue::new("flow.path", "high_value"));
-        
+
         // 执行流：高价值订单流程
         let mut verification_span = tracer
             .span_builder("verify_identity")
             .start_with_context(&tracer, &root_span.context());
-        
+
         // 数据流：身份验证
         match verify_identity().await {
             Ok(_) => {
@@ -1062,13 +1063,13 @@ async fn complete_flow_example() {
         }
         verification_span.end();
     }
-    
+
     // 4. 执行流：并发操作
     let (payment_result, inventory_result) = tokio::join!(
         process_payment(&tracer, &root_span),
         update_inventory(&tracer, &root_span),
     );
-    
+
     // 5. 控制流：结果处理
     if payment_result.is_ok() && inventory_result.is_ok() {
         root_span.add_event("order_completed", vec![
@@ -1079,10 +1080,10 @@ async fn complete_flow_example() {
             KeyValue::new("success", false),
         ]);
     }
-    
+
     // 6. 数据流：记录输出
     root_span.set_attribute(KeyValue::new("result.status", "completed"));
-    
+
     root_span.end();
 }
 ```
@@ -1097,5 +1098,5 @@ async fn complete_flow_example() {
 
 ---
 
-**文档版本**: 1.0  
+**文档版本**: 1.0
 **最后更新**: 2025年10月17日

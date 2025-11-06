@@ -1,8 +1,8 @@
 # 测试完整指南
 
-**Crate:** c11_libraries  
-**主题:** Testing Complete Guide  
-**Rust 版本:** 1.90.0  
+**Crate:** c11_libraries
+**主题:** Testing Complete Guide
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -109,23 +109,23 @@ pub fn add(a: i32, b: i32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_add_positive_numbers() {
         assert_eq!(add(2, 3), 5);
     }
-    
+
     #[test]
     fn test_add_negative_numbers() {
         assert_eq!(add(-2, -3), -5);
     }
-    
+
     #[test]
     fn test_add_zero() {
         assert_eq!(add(0, 5), 5);
         assert_eq!(add(5, 0), 5);
     }
-    
+
     #[test]
     #[should_panic(expected = "overflow")]
     fn test_add_overflow() {
@@ -147,19 +147,19 @@ impl Calculator {
     pub fn new() -> Self {
         Self { memory: 0.0 }
     }
-    
+
     pub fn add(&mut self, value: f64) {
         self.memory += value;
     }
-    
+
     pub fn subtract(&mut self, value: f64) {
         self.memory -= value;
     }
-    
+
     pub fn result(&self) -> f64 {
         self.memory
     }
-    
+
     pub fn clear(&mut self) {
         self.memory = 0.0;
     }
@@ -168,14 +168,14 @@ impl Calculator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_calculator_add() {
         let mut calc = Calculator::new();
         calc.add(5.0);
         assert_eq!(calc.result(), 5.0);
     }
-    
+
     #[test]
     fn test_calculator_chain_operations() {
         let mut calc = Calculator::new();
@@ -184,7 +184,7 @@ mod tests {
         calc.add(2.0);
         assert_eq!(calc.result(), 9.0);
     }
-    
+
     #[test]
     fn test_calculator_clear() {
         let mut calc = Calculator::new();
@@ -211,19 +211,19 @@ pub async fn fetch_user(id: u64) -> Result<User, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_fetch_user_success() {
         let user = fetch_user(1).await.unwrap();
         assert_eq!(user.id, 1);
     }
-    
+
     #[tokio::test]
     async fn test_fetch_user_not_found() {
         let result = fetch_user(999).await;
         assert!(result.is_err());
     }
-    
+
     #[tokio::test]
     async fn test_concurrent_requests() {
         let futures = vec![
@@ -231,7 +231,7 @@ mod tests {
             fetch_user(2),
             fetch_user(3),
         ];
-        
+
         let results = futures::future::join_all(futures).await;
         assert_eq!(results.len(), 3);
         assert!(results.iter().all(|r| r.is_ok()));
@@ -269,32 +269,32 @@ pub fn sqrt(x: f64) -> Result<f64, MathError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_divide_success() {
         assert_eq!(divide(10.0, 2.0).unwrap(), 5.0);
     }
-    
+
     #[test]
     fn test_divide_by_zero() {
         assert_eq!(divide(10.0, 0.0), Err(MathError::DivisionByZero));
     }
-    
+
     #[test]
     fn test_sqrt_positive() {
         assert_eq!(sqrt(4.0).unwrap(), 2.0);
     }
-    
+
     #[test]
     fn test_sqrt_negative() {
         assert_eq!(sqrt(-1.0), Err(MathError::NegativeSquareRoot));
     }
-    
+
     #[test]
     fn test_error_propagation() {
         let result = sqrt(-4.0)
             .and_then(|x| divide(10.0, x));
-        
+
         assert_eq!(result, Err(MathError::NegativeSquareRoot));
     }
 }
@@ -329,7 +329,7 @@ async fn get_user(Path(id): Path<u64>) -> Result<Json<User>, StatusCode> {
 #[tokio::test]
 async fn test_health_check() {
     let app = create_app().await;
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -339,14 +339,14 @@ async fn test_health_check() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn test_get_user() {
     let app = create_app().await;
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -356,12 +356,12 @@ async fn test_get_user() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
     let user: User = serde_json::from_slice(&body).unwrap();
-    
+
     assert_eq!(user.id, 1);
 }
 ```
@@ -376,15 +376,15 @@ use sqlx::PgPool;
 async fn setup_test_db() -> PgPool {
     let database_url = std::env::var("TEST_DATABASE_URL")
         .expect("TEST_DATABASE_URL must be set");
-    
+
     let pool = PgPool::connect(&database_url).await.unwrap();
-    
+
     // 运行迁移
     sqlx::migrate!("./migrations")
         .run(&pool)
         .await
         .unwrap();
-    
+
     pool
 }
 
@@ -395,20 +395,20 @@ async fn cleanup_test_db(pool: &PgPool) {
 #[tokio::test]
 async fn test_create_user() {
     let pool = setup_test_db().await;
-    
+
     // 插入用户
     let user = User {
         id: 0,
         email: "test@example.com".to_string(),
         name: "Test User".to_string(),
     };
-    
+
     let created = create_user(&pool, user).await.unwrap();
-    
+
     // 验证
     assert!(created.id > 0);
     assert_eq!(created.email, "test@example.com");
-    
+
     // 清理
     cleanup_test_db(&pool).await;
 }
@@ -416,20 +416,20 @@ async fn test_create_user() {
 #[tokio::test]
 async fn test_find_user_by_email() {
     let pool = setup_test_db().await;
-    
+
     // 准备数据
     let user = create_user(&pool, User {
         id: 0,
         email: "find@example.com".to_string(),
         name: "Find Me".to_string(),
     }).await.unwrap();
-    
+
     // 查询
     let found = find_user_by_email(&pool, "find@example.com").await.unwrap();
-    
+
     assert_eq!(found.id, user.id);
     assert_eq!(found.email, "find@example.com");
-    
+
     cleanup_test_db(&pool).await;
 }
 ```
@@ -447,40 +447,40 @@ async fn test_e2e_user_registration_flow() {
     let server = spawn_test_server().await;
     let client = Client::new();
     let base_url = server.url();
-    
+
     // 1. 注册用户
     let register_payload = json!({
         "email": "newuser@example.com",
         "password": "SecurePass123",
         "name": "New User"
     });
-    
+
     let register_response = client
         .post(format!("{}/register", base_url))
         .json(&register_payload)
         .send()
         .await
         .unwrap();
-    
+
     assert_eq!(register_response.status(), 201);
     let user: User = register_response.json().await.unwrap();
-    
+
     // 2. 登录
     let login_payload = json!({
         "email": "newuser@example.com",
         "password": "SecurePass123"
     });
-    
+
     let login_response = client
         .post(format!("{}/login", base_url))
         .json(&login_payload)
         .send()
         .await
         .unwrap();
-    
+
     assert_eq!(login_response.status(), 200);
     let token: String = login_response.json::<LoginResponse>().await.unwrap().token;
-    
+
     // 3. 使用 token 访问受保护资源
     let profile_response = client
         .get(format!("{}/profile", base_url))
@@ -488,11 +488,11 @@ async fn test_e2e_user_registration_flow() {
         .send()
         .await
         .unwrap();
-    
+
     assert_eq!(profile_response.status(), 200);
     let profile: User = profile_response.json().await.unwrap();
     assert_eq!(profile.email, "newuser@example.com");
-    
+
     // 清理
     server.shutdown().await;
 }
@@ -528,17 +528,17 @@ fn fibonacci_iterative(n: u64) -> u64 {
 
 fn benchmark_fibonacci(c: &mut Criterion) {
     let mut group = c.benchmark_group("fibonacci");
-    
+
     for n in [10, 15, 20].iter() {
         group.bench_with_input(BenchmarkId::new("recursive", n), n, |b, &n| {
             b.iter(|| fibonacci_recursive(black_box(n)))
         });
-        
+
         group.bench_with_input(BenchmarkId::new("iterative", n), n, |b, &n| {
             b.iter(|| fibonacci_iterative(black_box(n)))
         });
     }
-    
+
     group.finish();
 }
 
@@ -556,13 +556,13 @@ use tokio::runtime::Runtime;
 
 fn benchmark_async_operations(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
-    
+
     c.bench_function("fetch_user", |b| {
         b.to_async(&rt).iter(|| async {
             fetch_user(1).await.unwrap()
         });
     });
-    
+
     c.bench_function("concurrent_fetch", |b| {
         b.to_async(&rt).iter(|| async {
             let futures = (1..=10).map(|i| fetch_user(i));
@@ -585,7 +585,7 @@ async fn test_load_stress() {
     let app = create_app().await;
     let concurrent_requests = 1000;
     let mut tasks = Vec::new();
-    
+
     for i in 0..concurrent_requests {
         let app_clone = app.clone();
         let task = tokio::spawn(async move {
@@ -598,18 +598,18 @@ async fn test_load_stress() {
                 )
                 .await
                 .unwrap();
-            
+
             response.status()
         });
-        
+
         tasks.push(task);
     }
-    
+
     let results = futures::future::join_all(tasks).await;
     let success_count = results.iter()
         .filter(|r| r.as_ref().unwrap() == &StatusCode::OK)
         .count();
-    
+
     // 至少 95% 成功率
     assert!(success_count as f64 / concurrent_requests as f64 >= 0.95);
 }
@@ -641,7 +641,7 @@ impl<R: UserRepository> UserService<R> {
     pub fn new(repo: R) -> Self {
         Self { repo }
     }
-    
+
     pub async fn get_user(&self, id: u64) -> Result<User, Error> {
         self.repo.find_by_id(id).await
     }
@@ -650,11 +650,11 @@ impl<R: UserRepository> UserService<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_get_user_success() {
         let mut mock_repo = MockUserRepository::new();
-        
+
         // 设置期望
         mock_repo
             .expect_find_by_id()
@@ -667,27 +667,27 @@ mod tests {
                     name: "Test User".to_string(),
                 })
             });
-        
+
         let service = UserService::new(mock_repo);
         let user = service.get_user(1).await.unwrap();
-        
+
         assert_eq!(user.id, 1);
         assert_eq!(user.email, "test@example.com");
     }
-    
+
     #[tokio::test]
     async fn test_get_user_not_found() {
         let mut mock_repo = MockUserRepository::new();
-        
+
         mock_repo
             .expect_find_by_id()
             .with(eq(999))
             .times(1)
             .returning(|_| Err(Error::NotFound));
-        
+
         let service = UserService::new(mock_repo);
         let result = service.get_user(999).await;
-        
+
         assert!(result.is_err());
     }
 }
@@ -705,7 +705,7 @@ use wiremock::matchers::{method, path};
 async fn test_external_api_call() {
     // 启动 mock server
     let mock_server = MockServer::start().await;
-    
+
     // 配置 mock 响应
     Mock::given(method("GET"))
         .and(path("/users/1"))
@@ -716,7 +716,7 @@ async fn test_external_api_call() {
         })))
         .mount(&mock_server)
         .await;
-    
+
     // 测试代码
     let client = Client::new();
     let response = client
@@ -724,7 +724,7 @@ async fn test_external_api_call() {
         .send()
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), 200);
     let user: User = response.json().await.unwrap();
     assert_eq!(user.name, "John Doe");
@@ -769,7 +769,7 @@ fn prop_divide_multiply(a: i32, b: i32) -> TestResult {
     if b == 0 {
         return TestResult::discard();  // 跳过这个测试用例
     }
-    
+
     TestResult::from_bool((a / b) * b + (a % b) == a)
 }
 ```
@@ -786,7 +786,7 @@ proptest! {
     fn test_string_length(s in ".*") {
         assert_eq!(s.len(), s.chars().count());
     }
-    
+
     #[test]
     fn test_vec_push_pop(
         mut v in prop::collection::vec(any::<i32>(), 0..100),
@@ -795,7 +795,7 @@ proptest! {
         v.push(x);
         assert_eq!(v.pop(), Some(x));
     }
-    
+
     #[test]
     fn test_addition_commutative(a in 0..1000i32, b in 0..1000i32) {
         assert_eq!(a + b, b + a);
@@ -859,7 +859,7 @@ fn generated_code() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_critical_path() {
         // 确保关键路径有测试覆盖
@@ -878,12 +878,12 @@ mod tests {
 - name: Run tests with coverage
   run: |
     cargo tarpaulin --out Xml --output-dir coverage
-    
+
 - name: Upload coverage to Codecov
   uses: codecov/codecov-action@v3
   with:
     files: coverage/cobertura.xml
-    
+
 - name: Check coverage threshold
   run: |
     COVERAGE=$(cargo tarpaulin --print-json | jq '.coverage')
@@ -916,7 +916,7 @@ mod tests {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_calculate_discount() {
         let price = 100.0;
@@ -934,17 +934,17 @@ pub fn calculate_discount(price: f64, percentage: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_calculate_discount_zero() {
         assert_eq!(calculate_discount(100.0, 0.0), 100.0);
     }
-    
+
     #[test]
     fn test_calculate_discount_full() {
         assert_eq!(calculate_discount(100.0, 100.0), 0.0);
     }
-    
+
     #[test]
     #[should_panic]
     fn test_calculate_discount_negative_percentage() {
@@ -1026,7 +1026,6 @@ fn given_empty_cart_when_add_item_then_cart_has_one_item() {
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日
-

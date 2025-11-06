@@ -1,6 +1,7 @@
 ﻿# OTLP Rust 性能基准测试报告
 
 ## 📋 目录
+
 1. [测试环境](#测试环境)
 2. [测试方法](#测试方法)
 3. [基准测试结果](#基准测试结果)
@@ -57,7 +58,7 @@ use otlp::{OtlpClient, BenchmarkRunner, BenchmarkConfig};
 
 fn benchmark_trace_sending(c: &mut Criterion) {
     let mut group = c.benchmark_group("trace_sending");
-    
+
     for concurrency in [1, 10, 50, 100, 200, 500, 1000].iter() {
         for batch_size in [1, 10, 100, 1000, 10000].iter() {
             group.bench_with_input(
@@ -72,7 +73,7 @@ fn benchmark_trace_sending(c: &mut Criterion) {
                                 duration: Duration::from_secs(10),
                                 ..Default::default()
                             };
-                            
+
                             let runner = BenchmarkRunner::new(config);
                             runner.run_benchmark().await
                         });
@@ -80,7 +81,7 @@ fn benchmark_trace_sending(c: &mut Criterion) {
             );
         }
     }
-    
+
     group.finish();
 }
 
@@ -224,16 +225,16 @@ graph TD
     A[单线程性能] --> B[并发性能]
     B --> C[批量处理性能]
     C --> D[压缩性能]
-    
+
     A --> A1[gRPC: 15.4K ops/sec]
     A --> A2[HTTP: 12.9K ops/sec]
-    
+
     B --> B1[1000并发: 6.8M ops/sec]
     B --> B2[线性增长至200并发]
-    
+
     C --> C1[10000批量: 15.2M ops/sec]
     C --> C2[最优批量: 1000]
-    
+
     D --> D1[无压缩: 1.3M ops/sec]
     D --> D2[lz4压缩: 1.2M ops/sec]
 ```
@@ -246,16 +247,16 @@ graph LR
     A --> C[处理延迟]
     A --> D[序列化延迟]
     A --> E[排队延迟]
-    
+
     B --> B1[gRPC: 0.02ms]
     B --> B2[HTTP: 0.03ms]
-    
+
     C --> C1[单线程: 0.04ms]
     C --> C2[1000并发: 0.12ms]
-    
+
     D --> D1[protobuf: 0.01ms]
     D --> D2[JSON: 0.02ms]
-    
+
     E --> E1[低并发: 0.001ms]
     E --> E2[高并发: 0.08ms]
 ```
@@ -332,12 +333,12 @@ let zero_copy_processor = ZeroCopyProcessor::new()
 // 异步批处理
 async fn optimized_batch_processing() {
     let (tx, mut rx) = mpsc::channel(10000);
-    
+
     // 生产者
     for i in 0..1000000 {
         tx.send(create_trace(i)).await.unwrap();
     }
-    
+
     // 消费者
     let mut batch = Vec::with_capacity(1000);
     while let Some(trace) = rx.recv().await {

@@ -174,14 +174,14 @@ impl PooledAllocator {
             current_pool: 0,
         }
     }
-    
+
     pub fn allocate(&mut self, size: usize) -> *mut u8 {
         for pool in &mut self.pools {
             if let Some(ptr) = pool.allocate(size) {
                 return ptr;
             }
         }
-        
+
         // 创建新的内存池
         let new_pool = MemoryPool::new(size.max(1024));
         self.pools.push(new_pool);
@@ -203,12 +203,12 @@ impl MemoryPool {
             block_size,
         }
     }
-    
+
     pub fn allocate(&mut self, size: usize) -> Option<*mut u8> {
         if size > self.block_size {
             return None;
         }
-        
+
         self.free_blocks.pop_front().map(|index| {
             let offset = index * self.block_size;
             self.memory.as_mut_ptr().add(offset)
@@ -233,7 +233,7 @@ pub struct ConnectionPool {
 impl ConnectionPool {
     pub async fn get_connection(&self, endpoint: &str) -> Result<Connection, PoolError> {
         let mut connections = self.connections.write().await;
-        
+
         if let Some(pool) = connections.get_mut(endpoint) {
             if let Some(conn) = pool.pop() {
                 if conn.is_healthy().await {
@@ -241,15 +241,15 @@ impl ConnectionPool {
                 }
             }
         }
-        
+
         // 创建新连接
         let conn = Connection::new(endpoint, self.connection_timeout).await?;
         Ok(conn)
     }
-    
+
     pub async fn return_connection(&self, endpoint: &str, conn: Connection) {
         let mut connections = self.connections.write().await;
-        
+
         if let Some(pool) = connections.get_mut(endpoint) {
             if pool.len() < self.max_connections_per_endpoint {
                 pool.push(conn);
@@ -280,22 +280,22 @@ impl<T> BatchProcessor<T> {
             last_flush: Instant::now(),
         }
     }
-    
+
     pub fn add(&mut self, item: T) -> Option<Vec<T>> {
         self.buffer.push(item);
-        
+
         if self.should_flush() {
             Some(self.flush())
         } else {
             None
         }
     }
-    
+
     fn should_flush(&self) -> bool {
         self.buffer.len() >= self.max_batch_size ||
         self.last_flush.elapsed() >= self.max_wait_time
     }
-    
+
     fn flush(&mut self) -> Vec<T> {
         self.last_flush = Instant::now();
         std::mem::replace(&mut self.buffer, Vec::with_capacity(self.max_batch_size))
@@ -310,7 +310,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn benchmark_batch_processing(c: &mut Criterion) {
     let mut group = c.benchmark_group("batch_processing");
-    
+
     group.bench_function("small_batch", |b| {
         let mut processor = BatchProcessor::new(10, Duration::from_millis(100));
         b.iter(|| {
@@ -319,7 +319,7 @@ fn benchmark_batch_processing(c: &mut Criterion) {
             }
         });
     });
-    
+
     group.bench_function("large_batch", |b| {
         let mut processor = BatchProcessor::new(1000, Duration::from_millis(100));
         b.iter(|| {
@@ -328,7 +328,7 @@ fn benchmark_batch_processing(c: &mut Criterion) {
             }
         });
     });
-    
+
     group.finish();
 }
 
@@ -350,12 +350,12 @@ pub struct AsyncProcessor<T> {
 }
 
 impl<T: Send + 'static> AsyncProcessor<T> {
-    pub fn new<F>(processor: F) -> Self 
+    pub fn new<F>(processor: F) -> Self
     where
         F: Fn(T) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + 'static,
     {
         let (sender, mut receiver) = mpsc::unbounded_channel();
-        
+
         let handle = tokio::spawn(async move {
             while let Some(item) = receiver.recv().await {
                 if let Err(e) = processor(item) {
@@ -363,10 +363,10 @@ impl<T: Send + 'static> AsyncProcessor<T> {
                 }
             }
         });
-        
+
         Self { sender, handle }
     }
-    
+
     pub async fn process(&self, item: T) -> Result<(), mpsc::error::SendError<T>> {
         self.sender.send(item)
     }
@@ -389,11 +389,11 @@ impl LockFreeCounter {
             count: AtomicUsize::new(0),
         }
     }
-    
+
     pub fn increment(&self) -> usize {
         self.count.fetch_add(1, Ordering::SeqCst)
     }
-    
+
     pub fn get(&self) -> usize {
         self.count.load(Ordering::SeqCst)
     }
@@ -415,27 +415,27 @@ impl<T> LockFreeQueue<T> {
             capacity,
         }
     }
-    
+
     pub fn enqueue(&self, item: T) -> Result<(), QueueError> {
         let tail = self.tail.load(Ordering::SeqCst);
         let next_tail = (tail + 1) % self.capacity;
-        
+
         if next_tail == self.head.load(Ordering::SeqCst) {
             return Err(QueueError::Full);
         }
-        
+
         self.buffer[tail] = Some(item);
         self.tail.store(next_tail, Ordering::SeqCst);
         Ok(())
     }
-    
+
     pub fn dequeue(&self) -> Option<T> {
         let head = self.head.load(Ordering::SeqCst);
-        
+
         if head == self.tail.load(Ordering::SeqCst) {
             return None;
         }
-        
+
         let item = self.buffer[head].take();
         self.head.store((head + 1) % self.capacity, Ordering::SeqCst);
         item
@@ -468,6 +468,6 @@ impl<T> LockFreeQueue<T> {
 
 ---
 
-**目录版本**: v1.0  
-**最后更新**: 2025年1月27日  
+**目录版本**: v1.0
+**最后更新**: 2025年1月27日
 **维护者**: OTLP高级特性团队

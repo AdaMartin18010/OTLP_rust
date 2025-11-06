@@ -30,26 +30,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_service_name("my-service")
         .build()
         .await?;
-    
+
     // 2. 获取 Tracer
     let tracer = client.tracer("my-component");
-    
+
     // 3. 创建 Span
     let span = tracer.start("my-operation");
-    
+
     // 4. 业务逻辑
     println!("Processing...");
-    
+
     // 5. Span 自动结束
     drop(span);
-    
+
     // 6. 查看统计
     let stats = client.stats().await;
     println!("Spans exported: {}", stats.spans_exported);
-    
+
     // 7. 优雅关闭
     client.shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -359,12 +359,12 @@ let client = EnhancedOtlpClient::builder()
     .with_service_name("production-service")
     .with_timeout(Duration::from_secs(30))
     .with_protocol(Protocol::Grpc)
-    
+
     // 增强功能
     .with_performance_optimization(true)
     .with_reliability_enhancement(true)
     .with_global_provider(true)
-    
+
     .build()
     .await?;
 ```
@@ -414,17 +414,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_service_name("example-service")
         .build()
         .await?;
-    
+
     let tracer = client.tracer("main");
-    
+
     // 创建 span
     let span = tracer.start("example-operation");
-    
+
     // 模拟工作
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
+
     drop(span);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -442,24 +442,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_service_name("nested-example")
         .build()
         .await?;
-    
+
     let tracer = client.tracer("main");
-    
+
     // 父 span
     let parent = tracer.start("parent-operation");
-    
+
     {
         // 子 span
         let child = tracer.start("child-operation");
-        
+
         // 工作
         process_data().await;
-        
+
         drop(child);
     }
-    
+
     drop(parent);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -483,34 +483,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .build()
             .await?
     );
-    
+
     let mut handles = vec![];
-    
+
     // 启动多个并发任务
     for i in 0..5 {
         let client_clone = Arc::clone(&client);
         let handle = tokio::spawn(async move {
             let tracer = client_clone.tracer(format!("worker-{}", i));
             let span = tracer.start(format!("task-{}", i));
-            
+
             // 模拟工作
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-            
+
             drop(span);
         });
-        
+
         handles.push(handle);
     }
-    
+
     // 等待所有任务完成
     for handle in handles {
         handle.await?;
     }
-    
+
     // 查看统计
     let stats = client.stats().await;
     println!("Total spans: {}", stats.spans_exported);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -528,27 +528,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_service_name("attributes-example")
         .build()
         .await?;
-    
+
     let tracer = client.tracer("main");
     let mut span = tracer.start("operation-with-attributes");
-    
+
     // 添加属性
     span.set_attribute(KeyValue::new("user.id", "123"));
     span.set_attribute(KeyValue::new("operation.type", "read"));
-    
+
     // 添加事件
     span.add_event("Processing started", vec![
         KeyValue::new("item.count", 10),
     ]);
-    
+
     // 模拟工作
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-    
+
     // 设置状态
     span.set_status(Status::Ok);
-    
+
     drop(span);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -566,10 +566,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_service_name("error-handling")
         .build()
         .await?;
-    
+
     let tracer = client.tracer("main");
     let mut span = tracer.start("operation-with-error");
-    
+
     match risky_operation().await {
         Ok(result) => {
             span.set_attribute(KeyValue::new("result", result));
@@ -580,9 +580,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             span.set_status(Status::error(e.to_string()));
         }
     }
-    
+
     drop(span);
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -608,9 +608,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_service_name("my-service")
         .build()
         .await?;
-    
+
     // 使用客户端...
-    
+
     // 程序结束时关闭
     client.shutdown().await?;
     Ok(())
@@ -623,7 +623,7 @@ async fn bad_example() {
             .build()
             .await
             .unwrap();  // 开销大
-        
+
         // 使用...
     }
 }
@@ -786,7 +786,7 @@ let client = EnhancedOtlpClient::builder()
 
 ---
 
-**最后更新**: 2025-10-18  
+**最后更新**: 2025-10-18
 **版本**: 0.1.0
 
 ---

@@ -1,8 +1,8 @@
 ﻿# Rust Essential Crates Library - Master Index
 
-**版本**: 1.2.0  
-**最后更新**: 2025年10月28日  
-**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)  
+**版本**: 1.2.0
+**最后更新**: 2025年10月28日
+**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)
 **状态**: 🟢 生产就绪
 
 > **简介**: C11开发库主导航索引，提供完整的文档结构和快速导航，帮助您快速找到所需资源。
@@ -229,12 +229,14 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 **需求**: 构建高性能Web服务
 
 **推荐方案**:
+
 - **Web框架**: [Axum](essential_crates/03_application_dev/web_frameworks/) / [Actix-web](essential_crates/03_application_dev/web_frameworks/)
 - **数据库**: [SQLx](essential_crates/03_application_dev/databases/) / [Diesel](essential_crates/03_application_dev/orm/)
 - **缓存**: [Redis](essential_crates/03_application_dev/cache/)
 - **序列化**: [Serde](essential_crates/01_infrastructure/serialization/)
 
 **相关文档**:
+
 - [Web框架指南](guides/2.4_Web框架指南.md)
 - [SQL数据库集成](guides/2.1_数据库集成指南.md)
 - [Redis缓存指南](guides/redis.md)
@@ -246,6 +248,7 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 **需求**: 分布式微服务系统
 
 **推荐方案**:
+
 - **服务发现**: Consul / Etcd
 - **消息队列**: [NATS](essential_crates/03_application_dev/messaging/) / [Kafka](guides/kafka_pingora.md)
 - **RPC**: [gRPC](essential_crates/03_application_dev/grpc/)
@@ -253,6 +256,7 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 - **配置管理**: [Config](essential_crates/03_application_dev/config/)
 
 **相关文档**:
+
 - [消息队列指南](guides/2.3_消息队列指南.md)
 - [Kafka与Pingora](guides/kafka_pingora.md)
 - [gRPC集成](essential_crates/03_application_dev/grpc/)
@@ -264,12 +268,14 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 **需求**: 大规模数据处理
 
 **推荐方案**:
+
 - **数据分析**: [Polars](essential_crates/01_infrastructure/serialization/) / Arrow
 - **序列化**: [Serde](essential_crates/01_infrastructure/serialization/) / [Bincode](essential_crates/01_infrastructure/encoding/)
 - **压缩**: [Flate2](essential_crates/01_infrastructure/compression/)
 - **并发处理**: [Rayon](essential_crates/02_system_programming/concurrency/)
 
 **相关文档**:
+
 - [数据处理最佳实践](references/3.5_架构设计模式集.md)
 - [并发模型](essential_crates/02_system_programming/concurrency/)
 
@@ -280,12 +286,14 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 **需求**: 命令行工具
 
 **推荐方案**:
+
 - **参数解析**: [Clap](essential_crates/03_application_dev/cli_tools/)
 - **日志**: [Tracing](essential_crates/03_application_dev/logging/) / Env_logger
 - **配置**: [Config](essential_crates/03_application_dev/config/)
 - **终端UI**: Ratatui / Crossterm
 
 **相关文档**:
+
 - [CLI工具指南](essential_crates/03_application_dev/cli_tools/)
 - [日志最佳实践](essential_crates/03_application_dev/logging/)
 
@@ -296,12 +304,14 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 **需求**: 低延迟、高吞吐
 
 **推荐方案**:
+
 - **异步运行时**: [Tokio](essential_crates/02_system_programming/async_runtime/)
 - **网络**: [Hyper](essential_crates/02_system_programming/networking/)
 - **消息传递**: [Channels](essential_crates/02_system_programming/channels/)
 - **性能分析**: [Criterion](essential_crates/03_application_dev/testing/)
 
 **相关文档**:
+
 - [异步运行时指南](guides/2.5_异步运行时指南.md)
 - [性能优化](references/3.4_性能基准测试报告.md)
 
@@ -312,12 +322,14 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 **需求**: 资源受限环境
 
 **推荐方案**:
+
 - **嵌入式HAL**: [embedded-hal](essential_crates/04_domain_specific/embedded/)
 - **消息协议**: [MQTT](guides/mq.md)
 - **序列化**: [Serde](essential_crates/01_infrastructure/serialization/) (no_std)
 - **异步**: [Embassy](essential_crates/04_domain_specific/embedded/)
 
 **相关文档**:
+
 - [嵌入式开发](essential_crates/04_domain_specific/embedded/)
 - [MQTT协议](guides/mq.md)
 
@@ -523,18 +535,19 @@ Want to add crate documentation?
 
 ---
 
-**版本**: 1.2.0  
-**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)  
-**最后更新**: 2025年10月27日  
-**维护者**: C11 Libraries Team  
+**版本**: 1.2.0
+**Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)
+**最后更新**: 2025年10月27日
+**维护者**: C11 Libraries Team
 **下次审查**: 2025年11月27日
 
 ---
 
 > **导航提示**:
+>
 > - 使用搜索 (Ctrl+F / Cmd+F) 查找特定crate
 > - 收藏分类和成熟度指南
 > - 遇到问题先查看FAQ
 > - 查看示例了解实际用法
-> 
+>
 > **祝您使用Rust愉快！** 🦀✨

@@ -1,6 +1,7 @@
 ﻿# OTLP Rust API 参考文档
 
 ## 📋 目录
+
 1. [核心API](#核心api)
 2. [传输层API](#传输层api)
 3. [数据处理API](#数据处理api)
@@ -70,17 +71,17 @@ impl OtlpClient {
 
     // 记录指标
     pub async fn record_metric(
-        &self, 
-        name: &str, 
-        value: f64, 
+        &self,
+        name: &str,
+        value: f64,
         labels: Vec<(&str, &str)>
     ) -> Result<(), OtlpError>;
 
     // 发送日志
     pub async fn emit_log(
-        &self, 
-        level: LogLevel, 
-        message: &str, 
+        &self,
+        level: LogLevel,
+        message: &str,
         attributes: Vec<(&str, &str)>
     ) -> Result<(), OtlpError>;
 
@@ -462,27 +463,27 @@ struct CustomFeatureExtractor {
 impl FeatureExtractor for CustomFeatureExtractor {
     fn extract_features(&mut self, metrics: &SystemMetrics) -> FeatureVector {
         let mut features = FeatureVector::new();
-        
+
         // 基础指标
         features.push("cpu_usage", metrics.cpu_usage);
         features.push("memory_usage", metrics.memory_usage);
         features.push("network_io", metrics.network_io);
         features.push("disk_io", metrics.disk_io);
-        
+
         // 时间序列特征
         if let Some(historical) = self.feature_cache.get(&metrics.timestamp.to_string()) {
             let moving_avg = historical.iter().sum::<f64>() / historical.len() as f64;
             features.push("moving_average", moving_avg);
-            
+
             if historical.len() >= 2 {
                 let trend = historical.last().unwrap() - historical.first().unwrap();
                 features.push("trend", trend);
             }
         }
-        
+
         // 更新缓存
         self.update_cache(metrics);
-        
+
         features
     }
 }

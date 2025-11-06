@@ -244,7 +244,7 @@ use serde_json::json;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    
+
     // 发送请求
     let response = client
         .post("https://api.example.com/endpoint")
@@ -254,10 +254,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }))
         .send()
         .await?;
-    
+
     let result: serde_json::Value = response.json().await?;
     println!("Response: {}", result);
-    
+
     Ok(())
 }
 ```
@@ -270,7 +270,7 @@ use serde_json::json;
 
 async fn handle_api_call() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    
+
     match client
         .post("https://api.example.com/endpoint")
         .json(&json!({"data": "example"}))
@@ -290,7 +290,7 @@ async fn handle_api_call() -> Result<(), Box<dyn std::error::Error>> {
             println!("Request failed: {}", e);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -332,7 +332,7 @@ async fn handle_api_call() -> Result<(), Box<dyn std::error::Error>> {
 
 ---
 
-**API版本**: v1.0  
-**文档版本**: v1.0  
-**最后更新**: [日期]  
+**API版本**: v1.0
+**文档版本**: v1.0
+**最后更新**: [日期]
 **维护者**: [维护者]

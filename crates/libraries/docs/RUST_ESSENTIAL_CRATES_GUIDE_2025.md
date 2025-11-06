@@ -1,14 +1,14 @@
 ﻿# Rust 必备开源库生态指南 (2025)
 
-> **基于 Rust 1.90 版本** | **更新日期**: 2025-10-20  
+> **基于 Rust 1.90 版本** | **更新日期**: 2025-10-20
 > **目标**: 为 Rust 开发者提供全面、系统的开源库选择指南
 
 ---
 
 ## 📋 目录
+
 - [Rust 必备开源库生态指南 (2025)](#rust-必备开源库生态指南-2025)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [📋 目录](#-目录)
   - [概览](#概览)
     - [生态全景图](#生态全景图)
   - [核心基础库](#核心基础库)
@@ -92,97 +92,6 @@
   - [总结](#总结)
     - [核心建议](#核心建议)
     - [持续更新](#持续更新)
-
-## 📋 目录
-
-- [Rust 必备开源库生态指南 (2025)](#rust-必备开源库生态指南-2025)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
-  - [概览](#概览)
-    - [生态全景图](#生态全景图)
-  - [核心基础库](#核心基础库)
-    - [1. 序列化 - serde](#1-序列化---serde)
-    - [2. 正则表达式 - regex](#2-正则表达式---regex)
-    - [3. 随机数 - rand](#3-随机数---rand)
-    - [4. 时间日期 - chrono / time](#4-时间日期---chrono--time)
-  - [异步运行时](#异步运行时)
-    - [1. tokio (主流选择)](#1-tokio-主流选择)
-    - [2. async-std (简单易用)](#2-async-std-简单易用)
-    - [3. smol (轻量高效)](#3-smol-轻量高效)
-    - [异步运行时对比](#异步运行时对比)
-  - [Web 框架](#web-框架)
-    - [1. axum (现代首选)](#1-axum-现代首选)
-    - [2. actix-web (成熟稳定)](#2-actix-web-成熟稳定)
-    - [3. rocket (易用性强)](#3-rocket-易用性强)
-    - [Web 框架对比](#web-框架对比)
-  - [数据库与 ORM](#数据库与-orm)
-    - [1. sqlx (推荐)](#1-sqlx-推荐)
-    - [2. diesel (传统 ORM)](#2-diesel-传统-orm)
-    - [3. sea-orm (新一代 ORM)](#3-sea-orm-新一代-orm)
-    - [数据库库对比](#数据库库对比)
-  - [消息队列与流处理](#消息队列与流处理)
-    - [1. rdkafka (Kafka 客户端)](#1-rdkafka-kafka-客户端)
-    - [2. lapin (RabbitMQ 客户端)](#2-lapin-rabbitmq-客户端)
-    - [3. async-nats (NATS 客户端)](#3-async-nats-nats-客户端)
-  - [序列化与数据格式](#序列化与数据格式)
-    - [JSON - serde\_json](#json---serde_json)
-    - [MessagePack - rmp-serde](#messagepack---rmp-serde)
-    - [Protocol Buffers - prost](#protocol-buffers---prost)
-  - [HTTP 客户端](#http-客户端)
-    - [1. reqwest (推荐)](#1-reqwest-推荐)
-    - [2. hyper (底层库)](#2-hyper-底层库)
-  - [命令行工具](#命令行工具)
-    - [1. clap (推荐)](#1-clap-推荐)
-    - [2. indicatif (进度条)](#2-indicatif-进度条)
-    - [3. colored (彩色输出)](#3-colored-彩色输出)
-  - [日志与可观测性](#日志与可观测性)
-    - [1. tracing (推荐)](#1-tracing-推荐)
-    - [2. log (传统日志)](#2-log-传统日志)
-    - [3. prometheus (指标)](#3-prometheus-指标)
-  - [错误处理](#错误处理)
-    - [1. anyhow (应用错误)](#1-anyhow-应用错误)
-    - [2. thiserror (库错误)](#2-thiserror-库错误)
-  - [测试工具](#测试工具)
-    - [1. criterion (基准测试)](#1-criterion-基准测试)
-    - [2. proptest (属性测试)](#2-proptest-属性测试)
-    - [3. mockall (Mock)](#3-mockall-mock)
-  - [密码学与安全](#密码学与安全)
-    - [1. rustls (TLS)](#1-rustls-tls)
-    - [2. ring (密码学)](#2-ring-密码学)
-    - [3. argon2 (密码哈希)](#3-argon2-密码哈希)
-  - [并发与并行](#并发与并行)
-    - [1. rayon (数据并行)](#1-rayon-数据并行)
-    - [2. crossbeam (并发工具)](#2-crossbeam-并发工具)
-  - [图形与 GUI](#图形与-gui)
-    - [1. egui (即时模式 GUI)](#1-egui-即时模式-gui)
-    - [2. iced (响应式 GUI)](#2-iced-响应式-gui)
-  - [游戏开发](#游戏开发)
-    - [1. bevy (游戏引擎)](#1-bevy-游戏引擎)
-  - [WebAssembly](#webassembly)
-    - [1. wasm-bindgen](#1-wasm-bindgen)
-    - [2. yew (Web 前端框架)](#2-yew-web-前端框架)
-  - [嵌入式开发](#嵌入式开发)
-    - [1. embedded-hal](#1-embedded-hal)
-  - [性能分析](#性能分析)
-    - [1. flamegraph](#1-flamegraph)
-  - [代码质量](#代码质量)
-    - [1. clippy (Linter)](#1-clippy-linter)
-    - [2. rustfmt (格式化)](#2-rustfmt-格式化)
-  - [选择决策树](#选择决策树)
-    - [Web 应用开发](#web-应用开发)
-    - [数据库访问](#数据库访问)
-    - [错误处理1](#错误处理1)
-  - [成熟度评估](#成熟度评估)
-    - [评估标准](#评估标准)
-    - [推荐库成熟度总览](#推荐库成熟度总览)
-  - [快速参考](#快速参考)
-    - [新项目必备库](#新项目必备库)
-    - [学习路径](#学习路径)
-  - [总结](#总结)
-    - [核心建议](#核心建议)
-    - [持续更新](#持续更新)
-
----
 
 ## 概览
 
@@ -235,9 +144,9 @@ Rust 开源库生态 (2025)
 
 ### 1. 序列化 - serde
 
-**GitHub**: <https://github.com/serde-rs/serde>  
-**版本**: 1.0.210+ (2025)  
-**下载量**: 500M+  
+**GitHub**: <https://github.com/serde-rs/serde>
+**版本**: 1.0.210+ (2025)
+**下载量**: 500M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -291,9 +200,9 @@ let user: User = serde_json::from_str(&json)?;
 
 ### 2. 正则表达式 - regex
 
-**GitHub**: <https://github.com/rust-lang/regex>  
-**版本**: 1.10+  
-**下载量**: 300M+  
+**GitHub**: <https://github.com/rust-lang/regex>
+**版本**: 1.10+
+**下载量**: 300M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -352,9 +261,9 @@ let re = RegexBuilder::new(r"pattern")
 
 ### 3. 随机数 - rand
 
-**GitHub**: <https://github.com/rust-random/rand>  
-**版本**: 0.8+  
-**下载量**: 250M+  
+**GitHub**: <https://github.com/rust-random/rand>
+**版本**: 0.8+
+**下载量**: 250M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -416,8 +325,8 @@ OsRng.fill_bytes(&mut key);
 - chrono: <https://github.com/chronotope/chrono>
 - time: <https://github.com/time-rs/time>
 
-**版本**: chrono 0.4+ | time 0.3+  
-**下载量**: chrono 200M+ | time 150M+  
+**版本**: chrono 0.4+ | time 0.3+
+**下载量**: chrono 200M+ | time 150M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **选择指南**:
@@ -482,9 +391,9 @@ let future = now + Duration::hours(24);
 
 ### 1. tokio (主流选择)
 
-**GitHub**: <https://github.com/tokio-rs/tokio>  
-**版本**: 1.40+ (2025)  
-**下载量**: 400M+  
+**GitHub**: <https://github.com/tokio-rs/tokio>
+**版本**: 1.40+ (2025)
+**下载量**: 400M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -504,11 +413,11 @@ async fn main() {
     let task1 = tokio::spawn(async {
         println!("Task 1");
     });
-    
+
     let task2 = tokio::spawn(async {
         println!("Task 2");
     });
-    
+
     // 等待所有任务
     let _ = tokio::join!(task1, task2);
 }
@@ -590,9 +499,9 @@ rt.block_on(async {
 
 ### 2. async-std (简单易用)
 
-**GitHub**: <https://github.com/async-rs/async-std>  
-**版本**: 1.12+  
-**下载量**: 50M+  
+**GitHub**: <https://github.com/async-rs/async-std>
+**版本**: 1.12+
+**下载量**: 50M+
 **成熟度**: ⭐⭐⭐⭐
 
 **用途**:
@@ -613,12 +522,12 @@ async fn main() {
     let mut file = File::open("data.txt").await?;
     let mut contents = String::new();
     file.read_to_string(&mut contents).await?;
-    
+
     // 任务生成
     let handle = task::spawn(async {
         println!("Async task");
     });
-    
+
     handle.await;
 }
 ```
@@ -639,9 +548,9 @@ async fn main() {
 
 ### 3. smol (轻量高效)
 
-**GitHub**: <https://github.com/smol-rs/smol>  
-**版本**: 2.0+  
-**下载量**: 20M+  
+**GitHub**: <https://github.com/smol-rs/smol>
+**版本**: 2.0+
+**下载量**: 20M+
 **成熟度**: ⭐⭐⭐⭐
 
 **用途**:
@@ -693,9 +602,9 @@ fn main() {
 
 ### 1. axum (现代首选)
 
-**GitHub**: <https://github.com/tokio-rs/axum>  
-**版本**: 0.7+ (2025)  
-**下载量**: 50M+  
+**GitHub**: <https://github.com/tokio-rs/axum>
+**版本**: 0.7+ (2025)
+**下载量**: 50M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -751,11 +660,11 @@ async fn main() {
     let app = Router::new()
         .route("/users/:id", get(get_user))
         .route("/users", post(create_user));
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 ```
@@ -832,9 +741,9 @@ let app = Router::new()
 
 ### 2. actix-web (成熟稳定)
 
-**GitHub**: <https://github.com/actix/actix-web>  
-**版本**: 4.9+ (2025)  
-**下载量**: 100M+  
+**GitHub**: <https://github.com/actix/actix-web>
+**版本**: 4.9+ (2025)
+**下载量**: 100M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -890,9 +799,9 @@ async fn main() -> std::io::Result<()> {
 
 ### 3. rocket (易用性强)
 
-**GitHub**: <https://github.com/SergioBenitez/Rocket>  
-**版本**: 0.5+ (2025)  
-**下载量**: 50M+  
+**GitHub**: <https://github.com/SergioBenitez/Rocket>
+**版本**: 0.5+ (2025)
+**下载量**: 50M+
 **成熟度**: ⭐⭐⭐⭐
 
 **用途**:
@@ -948,9 +857,9 @@ fn rocket() -> _ {
 
 ### 1. sqlx (推荐)
 
-**GitHub**: <https://github.com/launchbadge/sqlx>  
-**版本**: 0.8+ (2025)  
-**下载量**: 80M+  
+**GitHub**: <https://github.com/launchbadge/sqlx>
+**版本**: 0.8+ (2025)
+**下载量**: 80M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -975,20 +884,20 @@ struct User {
 async fn main() -> Result<(), sqlx::Error> {
     // 连接池
     let pool = PgPool::connect("postgres://user:pass@localhost/db").await?;
-    
+
     // 查询 (编译时验证)
     let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
         .bind(1)
         .fetch_one(&pool)
         .await?;
-    
+
     // 插入
     sqlx::query("INSERT INTO users (name, email) VALUES ($1, $2)")
         .bind("Alice")
         .bind("alice@example.com")
         .execute(&pool)
         .await?;
-    
+
     // 事务
     let mut tx = pool.begin().await?;
     sqlx::query("UPDATE users SET name = $1 WHERE id = $2")
@@ -997,7 +906,7 @@ async fn main() -> Result<(), sqlx::Error> {
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
-    
+
     Ok(())
 }
 ```
@@ -1040,9 +949,9 @@ sqlx migrate run
 
 ### 2. diesel (传统 ORM)
 
-**GitHub**: <https://github.com/diesel-rs/diesel>  
-**版本**: 2.2+ (2025)  
-**下载量**: 60M+  
+**GitHub**: <https://github.com/diesel-rs/diesel>
+**版本**: 2.2+ (2025)
+**下载量**: 60M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -1072,7 +981,7 @@ struct NewUser<'a> {
 
 fn main() {
     let connection = &mut establish_connection();
-    
+
     // 查询
     use schema::users::dsl::*;
     let results = users
@@ -1080,13 +989,13 @@ fn main() {
         .limit(5)
         .load::<User>(connection)
         .expect("Error loading users");
-    
+
     // 插入
     let new_user = NewUser {
         name: "Alice",
         email: "alice@example.com",
     };
-    
+
     diesel::insert_into(users)
         .values(&new_user)
         .execute(connection)
@@ -1110,9 +1019,9 @@ fn main() {
 
 ### 3. sea-orm (新一代 ORM)
 
-**GitHub**: <https://github.com/SeaQL/sea-orm>  
-**版本**: 1.0+ (2025)  
-**下载量**: 20M+  
+**GitHub**: <https://github.com/SeaQL/sea-orm>
+**版本**: 1.0+ (2025)
+**下载量**: 20M+
 **成熟度**: ⭐⭐⭐⭐
 
 **用途**:
@@ -1141,12 +1050,12 @@ impl ActiveModelBehavior for ActiveModel {}
 
 async fn main() -> Result<(), DbErr> {
     let db = Database::connect("postgres://...").await?;
-    
+
     // 查询
     let user: Option<Model> = Entity::find_by_id(1)
         .one(&db)
         .await?;
-    
+
     // 插入
     let user = ActiveModel {
         name: Set("Alice".to_owned()),
@@ -1154,7 +1063,7 @@ async fn main() -> Result<(), DbErr> {
         ..Default::default()
     };
     let result = user.insert(&db).await?;
-    
+
     Ok(())
 }
 ```
@@ -1191,9 +1100,9 @@ async fn main() -> Result<(), DbErr> {
 
 ### 1. rdkafka (Kafka 客户端)
 
-**GitHub**: <https://github.com/fede1024/rust-rdkafka>  
-**版本**: 0.36+ (2025)  
-**下载量**: 15M+  
+**GitHub**: <https://github.com/fede1024/rust-rdkafka>
+**版本**: 0.36+ (2025)
+**下载量**: 15M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -1216,11 +1125,11 @@ async fn produce() {
         .set("bootstrap.servers", "localhost:9092")
         .create()
         .expect("Producer creation failed");
-    
+
     let record = FutureRecord::to("my-topic")
         .payload("message payload")
         .key("message key");
-    
+
     producer.send(record, Duration::from_secs(0)).await;
 }
 
@@ -1231,9 +1140,9 @@ async fn consume() {
         .set("group.id", "my-group")
         .create()
         .expect("Consumer creation failed");
-    
+
     consumer.subscribe(&["my-topic"]).unwrap();
-    
+
     loop {
         match consumer.recv().await {
             Ok(msg) => {
@@ -1256,9 +1165,9 @@ async fn consume() {
 
 ### 2. lapin (RabbitMQ 客户端)
 
-**GitHub**: <https://github.com/CleverCloud/lapin>  
-**版本**: 2.5+ (2025)  
-**下载量**: 10M+  
+**GitHub**: <https://github.com/CleverCloud/lapin>
+**版本**: 2.5+ (2025)
+**下载量**: 10M+
 **成熟度**: ⭐⭐⭐⭐
 
 **核心特性**:
@@ -1275,16 +1184,16 @@ async fn main() {
         "amqp://guest:guest@localhost:5672",
         ConnectionProperties::default()
     ).await.unwrap();
-    
+
     let channel = conn.create_channel().await.unwrap();
-    
+
     // 声明队列
     channel.queue_declare(
         "my_queue",
         QueueDeclareOptions::default(),
         FieldTable::default()
     ).await.unwrap();
-    
+
     // 发布消息
     channel.basic_publish(
         "",
@@ -1300,9 +1209,9 @@ async fn main() {
 
 ### 3. async-nats (NATS 客户端)
 
-**GitHub**: <https://github.com/nats-io/nats.rs>  
-**版本**: 0.35+ (2025)  
-**下载量**: 8M+  
+**GitHub**: <https://github.com/nats-io/nats.rs>
+**版本**: 0.35+ (2025)
+**下载量**: 8M+
 **成熟度**: ⭐⭐⭐⭐
 
 **核心特性**:
@@ -1313,16 +1222,16 @@ use async_nats;
 #[tokio::main]
 async fn main() -> Result<(), async_nats::Error> {
     let client = async_nats::connect("nats://localhost:4222").await?;
-    
+
     // 发布
     client.publish("my.subject", "Hello NATS".into()).await?;
-    
+
     // 订阅
     let mut sub = client.subscribe("my.subject").await?;
     while let Some(msg) = sub.next().await {
         println!("Received: {:?}", msg);
     }
-    
+
     Ok(())
 }
 ```
@@ -1333,8 +1242,8 @@ async fn main() -> Result<(), async_nats::Error> {
 
 ### JSON - serde_json
 
-**版本**: 1.0.128+ (2025)  
-**下载量**: 450M+  
+**版本**: 1.0.128+ (2025)
+**下载量**: 450M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -1357,8 +1266,8 @@ let json_str = serde_json::to_string_pretty(&data)?;
 
 ### MessagePack - rmp-serde
 
-**版本**: 1.3+ (2025)  
-**下载量**: 15M+  
+**版本**: 1.3+ (2025)
+**下载量**: 15M+
 **成熟度**: ⭐⭐⭐⭐
 
 ```rust
@@ -1374,8 +1283,8 @@ let decoded: MyStruct = rmp_serde::from_slice(&buf)?;
 
 ### Protocol Buffers - prost
 
-**版本**: 0.13+ (2025)  
-**下载量**: 40M+  
+**版本**: 0.13+ (2025)
+**下载量**: 40M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -1402,9 +1311,9 @@ let decoded = Person::decode(&buf[..])?;
 
 ### 1. reqwest (推荐)
 
-**GitHub**: <https://github.com/seanmonstar/reqwest>  
-**版本**: 0.12+ (2025)  
-**下载量**: 200M+  
+**GitHub**: <https://github.com/seanmonstar/reqwest>
+**版本**: 0.12+ (2025)
+**下载量**: 200M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **核心特性**:
@@ -1419,7 +1328,7 @@ async fn main() -> Result<(), reqwest::Error> {
         .await?
         .json::<Vec<User>>()
         .await?;
-    
+
     // POST 请求
     let client = reqwest::Client::new();
     let res = client
@@ -1430,7 +1339,7 @@ async fn main() -> Result<(), reqwest::Error> {
         })
         .send()
         .await?;
-    
+
     // 自定义请求
     let response = client
         .request(reqwest::Method::PUT, "https://api.example.com/users/1")
@@ -1439,7 +1348,7 @@ async fn main() -> Result<(), reqwest::Error> {
         .json(&update_data)
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -1483,9 +1392,9 @@ client.post("https://api.example.com/upload")
 
 ### 2. hyper (底层库)
 
-**GitHub**: <https://github.com/hyperium/hyper>  
-**版本**: 1.4+ (2025)  
-**下载量**: 150M+  
+**GitHub**: <https://github.com/hyperium/hyper>
+**版本**: 1.4+ (2025)
+**下载量**: 150M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **用途**:
@@ -1499,12 +1408,12 @@ use hyper::{Body, Client, Request, Uri};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    
+
     let uri: Uri = "http://httpbin.org/get".parse()?;
     let resp = client.get(uri).await?;
-    
+
     println!("Status: {}", resp.status());
-    
+
     Ok(())
 }
 ```
@@ -1515,9 +1424,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### 1. clap (推荐)
 
-**GitHub**: <https://github.com/clap-rs/clap>  
-**版本**: 4.5+ (2025)  
-**下载量**: 250M+  
+**GitHub**: <https://github.com/clap-rs/clap>
+**版本**: 4.5+ (2025)
+**下载量**: 250M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **核心特性**:
@@ -1532,11 +1441,11 @@ struct Cli {
     /// The name to greet
     #[arg(short, long)]
     name: String,
-    
+
     /// Number of times to greet
     #[arg(short, long, default_value_t = 1)]
     count: u8,
-    
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -1557,11 +1466,11 @@ enum Commands {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     for _ in 0..cli.count {
         println!("Hello {}!", cli.name);
     }
-    
+
     match &cli.command {
         Some(Commands::Add { files }) => {
             println!("Adding files: {:?}", files);
@@ -1587,8 +1496,8 @@ generate(Bash, &mut cmd, "myapp", &mut std::io::stdout());
 
 ### 2. indicatif (进度条)
 
-**GitHub**: <https://github.com/console-rs/indicatif>  
-**版本**: 0.17+ (2025)  
+**GitHub**: <https://github.com/console-rs/indicatif>
+**版本**: 0.17+ (2025)
 **下载量**: 50M+
 
 ```rust
@@ -1613,8 +1522,8 @@ pb.finish_with_message("Done!");
 
 ### 3. colored (彩色输出)
 
-**GitHub**: <https://github.com/mackwic/colored>  
-**版本**: 2.1+ (2025)  
+**GitHub**: <https://github.com/mackwic/colored>
+**版本**: 2.1+ (2025)
 **下载量**: 80M+
 
 ```rust
@@ -1631,9 +1540,9 @@ println!("{}", "Error message".on_red().white());
 
 ### 1. tracing (推荐)
 
-**GitHub**: <https://github.com/tokio-rs/tracing>  
-**版本**: 0.1.40+ (2025)  
-**下载量**: 200M+  
+**GitHub**: <https://github.com/tokio-rs/tracing>
+**版本**: 0.1.40+ (2025)
+**下载量**: 200M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 **核心特性**:
@@ -1645,11 +1554,11 @@ use tracing_subscriber;
 #[instrument]
 async fn fetch_user(user_id: u64) -> Result<User, Error> {
     info!("Fetching user {}", user_id);
-    
+
     let user = db.query_user(user_id).await?;
-    
+
     debug!(user.name = %user.name, "User fetched");
-    
+
     Ok(user)
 }
 
@@ -1657,7 +1566,7 @@ fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .init();
-    
+
     fetch_user(1).await;
 }
 ```
@@ -1694,9 +1603,9 @@ tracing_subscriber::registry()
 
 ### 2. log (传统日志)
 
-**GitHub**: <https://github.com/rust-lang/log>  
-**版本**: 0.4+ (2025)  
-**下载量**: 400M+  
+**GitHub**: <https://github.com/rust-lang/log>
+**版本**: 0.4+ (2025)
+**下载量**: 400M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -1705,7 +1614,7 @@ use env_logger;
 
 fn main() {
     env_logger::init();
-    
+
     info!("Application started");
     warn!("Warning message");
     error!("Error occurred");
@@ -1716,8 +1625,8 @@ fn main() {
 
 ### 3. prometheus (指标)
 
-**GitHub**: <https://github.com/tikv/rust-prometheus>  
-**版本**: 0.13+ (2025)  
+**GitHub**: <https://github.com/tikv/rust-prometheus>
+**版本**: 0.13+ (2025)
 **下载量**: 20M+
 
 ```rust
@@ -1741,9 +1650,9 @@ encoder.encode(&metric_families, &mut buffer)?;
 
 ### 1. anyhow (应用错误)
 
-**GitHub**: <https://github.com/dtolnay/anyhow>  
-**版本**: 1.0.89+ (2025)  
-**下载量**: 300M+  
+**GitHub**: <https://github.com/dtolnay/anyhow>
+**版本**: 1.0.89+ (2025)
+**下载量**: 300M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -1752,10 +1661,10 @@ use anyhow::{Result, Context};
 fn read_config() -> Result<Config> {
     let content = std::fs::read_to_string("config.toml")
         .context("Failed to read config file")?;
-    
+
     let config: Config = toml::from_str(&content)
         .context("Failed to parse config")?;
-    
+
     Ok(config)
 }
 
@@ -1769,9 +1678,9 @@ fn main() -> Result<()> {
 
 ### 2. thiserror (库错误)
 
-**GitHub**: <https://github.com/dtolnay/thiserror>  
-**版本**: 1.0.64+ (2025)  
-**下载量**: 300M+  
+**GitHub**: <https://github.com/dtolnay/thiserror>
+**版本**: 1.0.64+ (2025)
+**下载量**: 300M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -1781,10 +1690,10 @@ use thiserror::Error;
 pub enum MyError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Parse error: {0}")]
     Parse(String),
-    
+
     #[error("Not found: {id}")]
     NotFound { id: u64 },
 }
@@ -1796,8 +1705,8 @@ pub enum MyError {
 
 ### 1. criterion (基准测试)
 
-**GitHub**: <https://github.com/bheisler/criterion.rs>  
-**版本**: 0.5+ (2025)  
+**GitHub**: <https://github.com/bheisler/criterion.rs>
+**版本**: 0.5+ (2025)
 **下载量**: 40M+
 
 ```rust
@@ -1823,8 +1732,8 @@ criterion_main!(benches);
 
 ### 2. proptest (属性测试)
 
-**GitHub**: <https://github.com/proptest-rs/proptest>  
-**版本**: 1.5+ (2025)  
+**GitHub**: <https://github.com/proptest-rs/proptest>
+**版本**: 1.5+ (2025)
 **下载量**: 25M+
 
 ```rust
@@ -1845,8 +1754,8 @@ proptest! {
 
 ### 3. mockall (Mock)
 
-**GitHub**: <https://github.com/asomers/mockall>  
-**版本**: 0.13+ (2025)  
+**GitHub**: <https://github.com/asomers/mockall>
+**版本**: 0.13+ (2025)
 **下载量**: 15M+
 
 ```rust
@@ -1864,7 +1773,7 @@ fn test_with_mock() {
         .with(eq(1))
         .times(1)
         .returning(|_| Ok(User::default()));
-    
+
     // 使用 mock
 }
 ```
@@ -1875,9 +1784,9 @@ fn test_with_mock() {
 
 ### 1. rustls (TLS)
 
-**GitHub**: <https://github.com/rustls/rustls>  
-**版本**: 0.23+ (2025)  
-**下载量**: 100M+  
+**GitHub**: <https://github.com/rustls/rustls>
+**版本**: 0.23+ (2025)
+**下载量**: 100M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -1898,8 +1807,8 @@ let config = ClientConfig::builder()
 
 ### 2. ring (密码学)
 
-**GitHub**: <https://github.com/briansmith/ring>  
-**版本**: 0.17+ (2025)  
+**GitHub**: <https://github.com/briansmith/ring>
+**版本**: 0.17+ (2025)
 **下载量**: 150M+
 
 ```rust
@@ -1920,8 +1829,8 @@ let pkcs8_bytes = signature::EcdsaKeyPair::generate_pkcs8(
 
 ### 3. argon2 (密码哈希)
 
-**GitHub**: <https://github.com/RustCrypto/password-hashes>  
-**版本**: 0.5+ (2025)  
+**GitHub**: <https://github.com/RustCrypto/password-hashes>
+**版本**: 0.5+ (2025)
 **下载量**: 10M+
 
 ```rust
@@ -1947,9 +1856,9 @@ assert!(argon2.verify_password(password, &parsed_hash).is_ok());
 
 ### 1. rayon (数据并行)
 
-**GitHub**: <https://github.com/rayon-rs/rayon>  
-**版本**: 1.10+ (2025)  
-**下载量**: 80M+  
+**GitHub**: <https://github.com/rayon-rs/rayon>
+**版本**: 1.10+ (2025)
+**下载量**: 80M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -1974,8 +1883,8 @@ let found = data.par_iter()
 
 ### 2. crossbeam (并发工具)
 
-**GitHub**: <https://github.com/crossbeam-rs/crossbeam>  
-**版本**: 0.8+ (2025)  
+**GitHub**: <https://github.com/crossbeam-rs/crossbeam>
+**版本**: 0.8+ (2025)
 **下载量**: 100M+
 
 ```rust
@@ -2007,9 +1916,9 @@ select! {
 
 ### 1. egui (即时模式 GUI)
 
-**GitHub**: <https://github.com/emilk/egui>  
-**版本**: 0.28+ (2025)  
-**下载量**: 20M+  
+**GitHub**: <https://github.com/emilk/egui>
+**版本**: 0.28+ (2025)
+**下载量**: 20M+
 **成熟度**: ⭐⭐⭐⭐
 
 ```rust
@@ -2052,8 +1961,8 @@ impl eframe::App for MyApp {
 
 ### 2. iced (响应式 GUI)
 
-**GitHub**: <https://github.com/iced-rs/iced>  
-**版本**: 0.13+ (2025)  
+**GitHub**: <https://github.com/iced-rs/iced>
+**版本**: 0.13+ (2025)
 **下载量**: 15M+
 
 ```rust
@@ -2109,9 +2018,9 @@ impl Sandbox for Counter {
 
 ### 1. bevy (游戏引擎)
 
-**GitHub**: <https://github.com/bevyengine/bevy>  
-**版本**: 0.14+ (2025)  
-**下载量**: 25M+  
+**GitHub**: <https://github.com/bevyengine/bevy>
+**版本**: 0.14+ (2025)
+**下载量**: 25M+
 **成熟度**: ⭐⭐⭐⭐
 
 ```rust
@@ -2140,9 +2049,9 @@ fn hello_world_system() {
 
 ### 1. wasm-bindgen
 
-**GitHub**: <https://github.com/rustwasm/wasm-bindgen>  
-**版本**: 0.2.93+ (2025)  
-**下载量**: 80M+  
+**GitHub**: <https://github.com/rustwasm/wasm-bindgen>
+**版本**: 0.2.93+ (2025)
+**下载量**: 80M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -2169,8 +2078,8 @@ pub fn main() {
 
 ### 2. yew (Web 前端框架)
 
-**GitHub**: <https://github.com/yewstack/yew>  
-**版本**: 0.21+ (2025)  
+**GitHub**: <https://github.com/yewstack/yew>
+**版本**: 0.21+ (2025)
 **下载量**: 10M+
 
 ```rust
@@ -2203,9 +2112,9 @@ fn main() {
 
 ### 1. embedded-hal
 
-**GitHub**: <https://github.com/rust-embedded/embedded-hal>  
-**版本**: 1.0+ (2025)  
-**下载量**: 30M+  
+**GitHub**: <https://github.com/rust-embedded/embedded-hal>
+**版本**: 1.0+ (2025)
+**下载量**: 30M+
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```rust
@@ -2225,8 +2134,8 @@ fn blink<P: OutputPin>(led: &mut P) {
 
 ### 1. flamegraph
 
-**GitHub**: <https://github.com/flamegraph-rs/flamegraph>  
-**版本**: 0.6+ (2025)  
+**GitHub**: <https://github.com/flamegraph-rs/flamegraph>
+**版本**: 0.6+ (2025)
 **下载量**: 5M+
 
 ```bash
@@ -2245,8 +2154,8 @@ cargo flamegraph --bin my-app
 
 ### 1. clippy (Linter)
 
-**内置工具**  
-**版本**: 随 Rust 更新  
+**内置工具**
+**版本**: 随 Rust 更新
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```bash
@@ -2264,8 +2173,8 @@ cargo clippy -- -D warnings
 
 ### 2. rustfmt (格式化)
 
-**内置工具**  
-**版本**: 随 Rust 更新  
+**内置工具**
+**版本**: 随 Rust 更新
 **成熟度**: ⭐⭐⭐⭐⭐
 
 ```bash
@@ -2419,9 +2328,9 @@ Rust 生态快速发展，建议:
 
 ---
 
-**文档版本**: 1.0  
-**最后更新**: 2025-10-20  
-**基于版本**: Rust 1.90  
+**文档版本**: 1.0
+**最后更新**: 2025-10-20
+**基于版本**: Rust 1.90
 **维护者**: C11 Middlewares Team
 
 ---

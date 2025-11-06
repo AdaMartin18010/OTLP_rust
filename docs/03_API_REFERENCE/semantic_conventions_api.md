@@ -1,9 +1,9 @@
 # 🏷️ Semantic Conventions API 参考
 
-**模块**: `otlp::semantic_conventions`  
-**版本**: 1.0  
-**状态**: ✅ 生产就绪  
-**标准版本**: OpenTelemetry v1.29.0  
+**模块**: `otlp::semantic_conventions`
+**版本**: 1.0
+**状态**: ✅ 生产就绪
+**标准版本**: OpenTelemetry v1.29.0
 **最后更新**: 2025年10月26日
 
 > **简介**: 类型安全的 OpenTelemetry 语义约定实现 - 确保所有遥测信号使用一致的属性命名和值。
@@ -20,20 +20,31 @@
   - [📚 HTTP约定](#-http约定)
     - [HttpAttributesBuilder](#httpattributesbuilder)
     - [HttpMethod](#httpmethod)
-    - [HttpAttributes](#httpattributes)
-  - [🗄️ Database约定](#️-database约定)
+    - [使用示例](#使用示例)
+  - [💾 数据库约定](#-数据库约定)
     - [DatabaseAttributesBuilder](#databaseattributesbuilder)
     - [DatabaseSystem](#databasesystem)
-  - [📮 Messaging约定](#-messaging约定)
+    - [DatabaseOperation](#databaseoperation)
+    - [使用示例1](#使用示例1)
+  - [📨 消息队列约定](#-消息队列约定)
     - [MessagingAttributesBuilder](#messagingattributesbuilder)
     - [MessagingSystem](#messagingsystem)
+    - [使用示例2](#使用示例2)
   - [☸️ Kubernetes约定](#️-kubernetes约定)
     - [K8sAttributesBuilder](#k8sattributesbuilder)
-    - [K8sResourceType](#k8sresourcetype)
-  - [🌐 通用资源约定](#-通用资源约定)
-  - [💡 使用示例](#-使用示例)
-  - [🔧 类型安全保证](#-类型安全保证)
-  - [📚 参考资源](#-参考资源)
+    - [使用示例3](#使用示例3)
+  - [🔧 通用约定](#-通用约定)
+    - [资源属性](#资源属性)
+  - [📝 完整示例](#-完整示例)
+    - [HTTP服务器追踪](#http服务器追踪)
+    - [数据库操作追踪](#数据库操作追踪)
+    - [微服务间消息传递](#微服务间消息传递)
+  - [📊 标准化属性对照](#-标准化属性对照)
+    - [HTTP标准属性](#http标准属性)
+    - [数据库标准属性](#数据库标准属性)
+    - [消息系统标准属性](#消息系统标准属性)
+  - [✅ 验证和错误处理](#-验证和错误处理)
+  - [🔗 相关文档](#-相关文档)
 
 ---
 
@@ -86,46 +97,46 @@ pub struct HttpAttributesBuilder {
 impl HttpAttributesBuilder {
     /// 创建新的builder
     pub fn new() -> Self;
-    
+
     /// HTTP方法
     pub fn method(mut self, method: HttpMethod) -> Self;
-    
+
     /// 完整URL
     pub fn url(mut self, url: impl Into<String>) -> Self;
-    
+
     /// URL scheme (http/https)
     pub fn scheme(mut self, scheme: HttpScheme) -> Self;
-    
+
     /// 目标主机
     pub fn host(mut self, host: impl Into<String>) -> Self;
-    
+
     /// 目标端口
     pub fn port(mut self, port: u16) -> Self;
-    
+
     /// URL路径
     pub fn target(mut self, target: impl Into<String>) -> Self;
-    
+
     /// HTTP状态码
     pub fn status_code(mut self, code: u16) -> Self;
-    
+
     /// User-Agent头
     pub fn user_agent(mut self, ua: impl Into<String>) -> Self;
-    
+
     /// 请求大小（字节）
     pub fn request_content_length(mut self, len: u64) -> Self;
-    
+
     /// 响应大小（字节）
     pub fn response_content_length(mut self, len: u64) -> Self;
-    
+
     /// 服务器名称
     pub fn server_name(mut self, name: impl Into<String>) -> Self;
-    
+
     /// 路由模板
     pub fn route(mut self, route: impl Into<String>) -> Self;
-    
+
     /// 客户端IP
     pub fn client_ip(mut self, ip: impl Into<String>) -> Self;
-    
+
     /// 构建属性集合
     pub fn build(self) -> Result<HttpAttributes, SemanticConventionError>;
 }
@@ -205,28 +216,28 @@ pub struct DatabaseAttributesBuilder {
 impl DatabaseAttributesBuilder {
     /// 创建新的builder
     pub fn new() -> Self;
-    
+
     /// 数据库系统
     pub fn system(mut self, system: DatabaseSystem) -> Self;
-    
+
     /// 数据库名称
     pub fn name(mut self, name: impl Into<String>) -> Self;
-    
+
     /// 连接字符串
     pub fn connection_string(mut self, conn: impl Into<String>) -> Self;
-    
+
     /// 数据库用户
     pub fn user(mut self, user: impl Into<String>) -> Self;
-    
+
     /// SQL语句
     pub fn statement(mut self, stmt: impl Into<String>) -> Self;
-    
+
     /// 操作类型
     pub fn operation(mut self, op: DatabaseOperation) -> Self;
-    
+
     /// 表名
     pub fn table(mut self, table: impl Into<String>) -> Self;
-    
+
     /// 构建属性
     pub fn build(self) -> Result<DatabaseAttributes, SemanticConventionError>;
 }
@@ -317,28 +328,28 @@ pub struct MessagingAttributesBuilder {
 impl MessagingAttributesBuilder {
     /// 创建新的builder
     pub fn new() -> Self;
-    
+
     /// 消息系统
     pub fn system(mut self, system: MessagingSystem) -> Self;
-    
+
     /// 目标名称（队列/主题）
     pub fn destination(mut self, dest: impl Into<String>) -> Self;
-    
+
     /// 目标类型
     pub fn destination_kind(mut self, kind: DestinationKind) -> Self;
-    
+
     /// 操作类型
     pub fn operation(mut self, op: MessagingOperation) -> Self;
-    
+
     /// 消息ID
     pub fn message_id(mut self, id: impl Into<String>) -> Self;
-    
+
     /// 会话ID
     pub fn conversation_id(mut self, id: impl Into<String>) -> Self;
-    
+
     /// 消息大小（字节）
     pub fn payload_size(mut self, size: u64) -> Self;
-    
+
     /// 构建属性
     pub fn build(self) -> Result<MessagingAttributes, SemanticConventionError>;
 }
@@ -403,31 +414,31 @@ pub struct K8sAttributesBuilder {
 impl K8sAttributesBuilder {
     /// 创建新的builder
     pub fn new() -> Self;
-    
+
     /// 命名空间
     pub fn namespace(mut self, ns: impl Into<String>) -> Self;
-    
+
     /// Pod名称
     pub fn pod_name(mut self, name: impl Into<String>) -> Self;
-    
+
     /// Pod UID
     pub fn pod_uid(mut self, uid: impl Into<String>) -> Self;
-    
+
     /// 容器名称
     pub fn container_name(mut self, name: impl Into<String>) -> Self;
-    
+
     /// Deployment名称
     pub fn deployment_name(mut self, name: impl Into<String>) -> Self;
-    
+
     /// Service名称
     pub fn service_name(mut self, name: impl Into<String>) -> Self;
-    
+
     /// Node名称
     pub fn node_name(mut self, name: impl Into<String>) -> Self;
-    
+
     /// 集群名称
     pub fn cluster_name(mut self, name: impl Into<String>) -> Self;
-    
+
     /// 构建属性
     pub fn build(self) -> Result<K8sAttributes, SemanticConventionError>;
 }
@@ -499,7 +510,7 @@ async fn main() -> Result<()> {
     let mut span = tracer.span_builder("handle_request")
         .with_kind(SpanKind::Server)
         .start();
-    
+
     // 2. 添加HTTP语义约定属性
     let http_attrs = HttpAttributesBuilder::new()
         .method(HttpMethod::Post)
@@ -513,16 +524,16 @@ async fn main() -> Result<()> {
         .client_ip("192.168.1.100")
         .user_agent("Mozilla/5.0")
         .build()?;
-    
+
     span.set_attributes(http_attrs.into_map());
-    
+
     // 3. 处理请求
     let result = handle_user_creation().await?;
-    
+
     // 4. 设置状态
     span.set_status(SpanStatus::Ok, None);
     span.end();
-    
+
     Ok(())
 }
 ```
@@ -536,7 +547,7 @@ async fn query_user(id: i64) -> Result<User> {
     let mut span = tracer.span_builder("db.query")
         .with_kind(SpanKind::Client)
         .start();
-    
+
     // 添加数据库语义约定
     let db_attrs = DatabaseAttributesBuilder::new()
         .system(DatabaseSystem::PostgreSQL)
@@ -546,12 +557,12 @@ async fn query_user(id: i64) -> Result<User> {
         .operation(DatabaseOperation::Select)
         .table("users")
         .build()?;
-    
+
     span.set_attributes(db_attrs.into_map());
-    
+
     // 执行查询
     let user = execute_query(id).await?;
-    
+
     span.end();
     Ok(user)
 }
@@ -566,7 +577,7 @@ async fn publish_event(event: UserEvent) -> Result<()> {
     let mut span = tracer.span_builder("publish.user_event")
         .with_kind(SpanKind::Producer)
         .start();
-    
+
     // Kafka producer属性
     let msg_attrs = MessagingAttributesBuilder::new()
         .system(MessagingSystem::Kafka)
@@ -576,12 +587,12 @@ async fn publish_event(event: UserEvent) -> Result<()> {
         .message_id(&event.id)
         .payload_size(event.size_bytes())
         .build()?;
-    
+
     span.set_attributes(msg_attrs.into_map());
-    
+
     // 发布消息
     kafka_producer.send(&event).await?;
-    
+
     span.set_status(SpanStatus::Ok, None);
     span.end();
     Ok(())
@@ -664,7 +675,7 @@ if let Err(SemanticConventionError::MissingRequired(field)) = result {
 
 ---
 
-**模块版本**: 0.5.0  
-**语义约定版本**: v1.29.0  
-**最后更新**: 2025年10月26日  
+**模块版本**: 0.5.0
+**语义约定版本**: v1.29.0
+**最后更新**: 2025年10月26日
 **维护状态**: ✅ 活跃维护

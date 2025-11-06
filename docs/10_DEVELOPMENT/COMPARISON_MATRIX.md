@@ -1,7 +1,7 @@
 ﻿# 开发工具对比矩阵
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -264,7 +264,7 @@ CI:            GitHub Actions
 
 ### 8.2 专业团队配置
 
-```
+```text
 IDE:           IntelliJ IDEA + Rust Plugin
 测试:          rstest + criterion + proptest
 性能:          perf + flamegraph + dhat
@@ -274,7 +274,7 @@ CI:            GitLab CI + 自定义runner
 
 ### 8.3 高性能场景配置
 
-```
+```text
 IDE:           Vim/Neovim + rust-analyzer
 测试:          criterion + 自定义benchmark
 性能:          perf + VTune + flamegraph
@@ -293,9 +293,9 @@ CI:            自托管Jenkins
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
+**最后更新**: 2025-10-28
 **维护团队**: OTLP_rust开发团队
 
 ---

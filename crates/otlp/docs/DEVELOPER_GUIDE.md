@@ -84,7 +84,7 @@ impl NewModule {
     pub fn new(config: NewModuleConfig) -> Self {
         Self { config }
     }
-    
+
     /// 执行功能
     pub async fn execute(&self) -> Result<()> {
         // 实现功能
@@ -95,14 +95,14 @@ impl NewModule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_new_module() {
         let config = NewModuleConfig {
             enabled: true,
             timeout: std::time::Duration::from_secs(5),
         };
-        
+
         let module = NewModule::new(config);
         assert!(module.execute().await.is_ok());
     }
@@ -121,7 +121,7 @@ async fn test_integration() {
         enabled: true,
         timeout: std::time::Duration::from_secs(5),
     };
-    
+
     let module = NewModule::new(config);
     let result = module.execute().await;
     assert!(result.is_ok());
@@ -176,7 +176,7 @@ fn benchmark_new_module(c: &mut Criterion) {
                 enabled: true,
                 timeout: std::time::Duration::from_secs(5),
             };
-            
+
             let module = NewModule::new(config);
             // 执行基准测试
             black_box(module.execute());
@@ -245,10 +245,10 @@ use validator::{Validate, ValidationError};
 pub struct UserInput {
     #[validate(length(min = 1, max = 100))]
     pub name: String,
-    
+
     #[validate(email)]
     pub email: String,
-    
+
     #[validate(range(min = 0, max = 120))]
     pub age: u8,
 }
@@ -269,10 +269,10 @@ use thiserror::Error;
 pub enum ModuleError {
     #[error("Configuration error: {0}")]
     Configuration(String),
-    
+
     #[error("Network error: {0}")]
     Network(#[from] std::io::Error),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 }
@@ -288,25 +288,25 @@ type Result<T> = std::result::Result<T, ModuleError>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_basic_functionality() {
         let config = NewModuleConfig {
             enabled: true,
             timeout: std::time::Duration::from_secs(5),
         };
-        
+
         let module = NewModule::new(config);
         assert!(module.config.enabled);
     }
-    
+
     #[tokio::test]
     async fn test_async_functionality() {
         let config = NewModuleConfig {
             enabled: true,
             timeout: std::time::Duration::from_secs(5),
         };
-        
+
         let module = NewModule::new(config);
         let result = module.execute().await;
         assert!(result.is_ok());
@@ -326,11 +326,11 @@ async fn test_end_to_end_flow() {
         .with_endpoint("http://localhost:4317")
         .build()
         .unwrap();
-    
+
     let data = TelemetryData {
         // 测试数据
     };
-    
+
     let result = client.send_telemetry_data(data).await;
     assert!(result.is_ok());
 }
@@ -348,9 +348,9 @@ async fn test_high_load() {
         .with_endpoint("http://localhost:4317")
         .build()
         .unwrap();
-    
+
     let mut handles = Vec::new();
-    
+
     // 创建100个并发任务
     for i in 0..100 {
         let client = client.clone();
@@ -363,7 +363,7 @@ async fn test_high_load() {
         });
         handles.push(handle);
     }
-    
+
     // 等待所有任务完成
     for handle in handles {
         handle.await.unwrap();
@@ -377,22 +377,22 @@ async fn test_high_load() {
 
 ```rust
 /// 新功能模块
-/// 
+///
 /// 这个模块提供了新功能的实现，包括：
 /// - 功能A
 /// - 功能B
 /// - 功能C
-/// 
+///
 /// # 示例
-/// 
+///
 /// ```rust
 /// use otlp::NewModule;
-/// 
+///
 /// let config = NewModuleConfig {
 ///     enabled: true,
 ///     timeout: std::time::Duration::from_secs(5),
 /// };
-/// 
+///
 /// let module = NewModule::new(config);
 /// let result = module.execute().await?;
 /// ```
@@ -405,26 +405,26 @@ pub struct NewModule {
 
 ```rust
 /// 执行功能
-/// 
+///
 /// 这个方法执行新功能的主要逻辑。
-/// 
+///
 /// # 参数
-/// 
+///
 /// * `input` - 输入数据
-/// 
+///
 /// # 返回值
-/// 
+///
 /// 返回执行结果，成功时返回`Ok(())`，失败时返回错误。
-/// 
+///
 /// # 错误
-/// 
+///
 /// 可能返回以下错误：
 /// - `ConfigurationError` - 配置错误
 /// - `NetworkError` - 网络错误
 /// - `SerializationError` - 序列化错误
-/// 
+///
 /// # 示例
-/// 
+///
 /// ```rust
 /// let result = module.execute().await?;
 /// ```
@@ -464,6 +464,7 @@ let result = module.execute().await?;
 1. 设置合理的超时时间
 2. 启用功能前检查配置
 3. 处理可能的错误
+
 ```
 
 ## 🚀 部署和发布
@@ -639,6 +640,6 @@ refactor: 重构代码
 
 ---
 
-**版本**: 1.0.0  
-**最后更新**: 2025年9月18日  
+**版本**: 1.0.0
+**最后更新**: 2025年9月18日
 **维护者**: OTLP Rust Team

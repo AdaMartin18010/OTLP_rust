@@ -1,8 +1,9 @@
 ﻿# c11_libraries 项目编译成功最终报告
 
 ## 📋 目录
+
 - [c11\_libraries 项目编译成功最终报告](#c11_libraries-项目编译成功最终报告)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [项目概述](#项目概述)
   - [编译状态](#编译状态)
   - [主要成就](#主要成就)
@@ -187,17 +188,17 @@ async fn main() -> Result<()> {
     let store = RedisStore::connect_with(
         RedisConfig::new("redis://127.0.0.1:6379")
     ).await?;
-    
+
     store.set("key", b"value").await?;
     let value = store.get("key").await?;
-    
+
     // PostgreSQL 操作
     let db = PostgresDb::connect_with(
         PostgresConfig::new("postgres://user:pass@localhost/db")
     ).await?;
-    
+
     db.execute("CREATE TABLE IF NOT EXISTS test (id SERIAL PRIMARY KEY)").await?;
-    
+
     Ok(())
 }
 ```

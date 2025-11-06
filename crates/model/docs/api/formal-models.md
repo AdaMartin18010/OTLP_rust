@@ -76,80 +76,6 @@
   - [1.9 性能考虑](#19-性能考虑)
   - [1.10 使用建议](#110-使用建议)
 
-## 📋 目录
-
-- [形式化方法模型 API 参考](#形式化方法模型-api-参考)
-  - [📋 目录](#-目录)
-  - [📋 目录](#-目录-1)
-  - [概述](#概述)
-  - [基础类型与结构](#基础类型与结构)
-    - [State](#state)
-    - [Transition](#transition)
-    - [FiniteStateMachine {#finitestatemachine}](#finitestatemachine-finitestatemachine)
-  - [时序逻辑](#时序逻辑)
-    - [TemporalFormula](#temporalformula)
-    - [TemporalModelChecker {#temporalmodelchecker}](#temporalmodelchecker-temporalmodelchecker)
-  - [进程代数](#进程代数)
-    - [ProcessTerm](#processterm)
-    - [ProcessAlgebraInterpreter {#processalgebrainterpreter}](#processalgebrainterpreter-processalgebrainterpreter)
-  - [错误处理](#错误处理)
-  - [性能与实现建议](#性能与实现建议)
-  - [示例与最佳实践](#示例与最佳实践)
-  - [版本](#版本)
-  - [快速索引](#快速索引)
-  - [术语表](#术语表)
-  - [📖 形式化方法模型 API 参考](#-形式化方法模型-api-参考)
-  - [1.1 目录](#11-目录)
-  - [1.2 概述](#12-概述)
-  - [1.3 基础形式化模型](#13-基础形式化模型)
-    - [1.3.1 State](#131-state)
-      - [1.3.1.1 构造函数](#1311-构造函数)
-      - [1.3.1.2 主要方法](#1312-主要方法)
-    - [1.3.2 Transition](#132-transition)
-      - [1.3.2.1 构造函数](#1321-构造函数)
-      - [1.3.2.2 主要方法](#1322-主要方法)
-    - [1.3.3 FiniteStateMachine](#133-finitestatemachine)
-      - [1.3.3.1 构造函数](#1331-构造函数)
-      - [1.3.3.2 主要方法](#1332-主要方法)
-    - [1.3.4 TemporalFormula](#134-temporalformula)
-    - [1.3.5 TemporalModelChecker](#135-temporalmodelchecker)
-      - [1.3.5.1 构造函数](#1351-构造函数)
-      - [1.3.5.2 主要方法](#1352-主要方法)
-    - [1.3.6 ProcessTerm](#136-processterm)
-    - [1.3.7 ProcessAlgebraInterpreter](#137-processalgebrainterpreter)
-      - [1.3.7.1 构造函数](#1371-构造函数)
-      - [1.3.7.2 主要方法](#1372-主要方法)
-  - [1.4 高级形式化方法](#14-高级形式化方法)
-    - [1.4.1 形式化描述语言](#141-形式化描述语言)
-      - [1.4.1.1 AlgebraicLanguage](#1411-algebraiclanguage)
-      - [1.4.1.2 LogicLanguage](#1412-logiclanguage)
-      - [1.4.1.3 SetLanguage](#1413-setlanguage)
-      - [1.4.1.4 ProcessLanguage](#1414-processlanguage)
-    - [1.4.2 验证技术](#142-验证技术)
-      - [1.4.2.1 TheoremProving](#1421-theoremproving)
-      - [1.4.2.2 ModelChecking](#1422-modelchecking)
-      - [1.4.2.3 EquivalenceChecking](#1423-equivalencechecking)
-    - [1.4.3 模型转换](#143-模型转换)
-      - [1.4.3.1 AlgebraicTransformation](#1431-algebraictransformation)
-      - [1.4.3.2 CategoryTheory](#1432-categorytheory)
-  - [1.5 具体实现](#15-具体实现)
-    - [1.5.1 NaturalNumberAlgebra](#151-naturalnumberalgebra)
-    - [1.5.2 PropositionalLogic](#152-propositionallogic)
-    - [1.5.3 FiniteSet](#153-finiteset)
-  - [1.6 工具集](#16-工具集)
-    - [1.6.1 FormalMethodsToolkit](#161-formalmethodstoolkit)
-      - [1.6.1.1 主要方法](#1611-主要方法)
-    - [1.6.2 AdvancedFormalMethodsToolkit](#162-advancedformalmethodstoolkit)
-      - [1.6.2.1 主要方法](#1621-主要方法)
-  - [1.7 使用示例](#17-使用示例)
-    - [1.7.1 基础状态机](#171-基础状态机)
-    - [1.7.2 时序逻辑模型检查](#172-时序逻辑模型检查)
-    - [1.7.3 进程代数](#173-进程代数)
-    - [1.7.4 高级形式化方法](#174-高级形式化方法)
-  - [1.8 错误处理](#18-错误处理)
-  - [1.9 性能考虑](#19-性能考虑)
-  - [1.10 使用建议](#110-使用建议)
-
 ## 概述
 
 本节涵盖有限状态机、时序逻辑与进程代数等形式化方法核心组件的 API。示例仅展示典型用法，具体模块路径以实际代码为准。
@@ -274,80 +200,6 @@ let mut fsm = FiniteStateMachine::new("idle");
 - 反例（Counterexample）：违背性质的执行路径示例。
 
 ## 📖 形式化方法模型 API 参考
-
-## 1.1 目录
-
-- [形式化方法模型 API 参考](#形式化方法模型-api-参考)
-  - [📋 目录](#-目录)
-  - [📋 目录](#-目录-1)
-  - [概述](#概述)
-  - [基础类型与结构](#基础类型与结构)
-    - [State](#state)
-    - [Transition](#transition)
-    - [FiniteStateMachine {#finitestatemachine}](#finitestatemachine-finitestatemachine)
-  - [时序逻辑](#时序逻辑)
-    - [TemporalFormula](#temporalformula)
-    - [TemporalModelChecker {#temporalmodelchecker}](#temporalmodelchecker-temporalmodelchecker)
-  - [进程代数](#进程代数)
-    - [ProcessTerm](#processterm)
-    - [ProcessAlgebraInterpreter {#processalgebrainterpreter}](#processalgebrainterpreter-processalgebrainterpreter)
-  - [错误处理](#错误处理)
-  - [性能与实现建议](#性能与实现建议)
-  - [示例与最佳实践](#示例与最佳实践)
-  - [版本](#版本)
-  - [快速索引](#快速索引)
-  - [术语表](#术语表)
-  - [📖 形式化方法模型 API 参考](#-形式化方法模型-api-参考)
-  - [1.1 目录](#11-目录)
-  - [1.2 概述](#12-概述)
-  - [1.3 基础形式化模型](#13-基础形式化模型)
-    - [1.3.1 State](#131-state)
-      - [1.3.1.1 构造函数](#1311-构造函数)
-      - [1.3.1.2 主要方法](#1312-主要方法)
-    - [1.3.2 Transition](#132-transition)
-      - [1.3.2.1 构造函数](#1321-构造函数)
-      - [1.3.2.2 主要方法](#1322-主要方法)
-    - [1.3.3 FiniteStateMachine](#133-finitestatemachine)
-      - [1.3.3.1 构造函数](#1331-构造函数)
-      - [1.3.3.2 主要方法](#1332-主要方法)
-    - [1.3.4 TemporalFormula](#134-temporalformula)
-    - [1.3.5 TemporalModelChecker](#135-temporalmodelchecker)
-      - [1.3.5.1 构造函数](#1351-构造函数)
-      - [1.3.5.2 主要方法](#1352-主要方法)
-    - [1.3.6 ProcessTerm](#136-processterm)
-    - [1.3.7 ProcessAlgebraInterpreter](#137-processalgebrainterpreter)
-      - [1.3.7.1 构造函数](#1371-构造函数)
-      - [1.3.7.2 主要方法](#1372-主要方法)
-  - [1.4 高级形式化方法](#14-高级形式化方法)
-    - [1.4.1 形式化描述语言](#141-形式化描述语言)
-      - [1.4.1.1 AlgebraicLanguage](#1411-algebraiclanguage)
-      - [1.4.1.2 LogicLanguage](#1412-logiclanguage)
-      - [1.4.1.3 SetLanguage](#1413-setlanguage)
-      - [1.4.1.4 ProcessLanguage](#1414-processlanguage)
-    - [1.4.2 验证技术](#142-验证技术)
-      - [1.4.2.1 TheoremProving](#1421-theoremproving)
-      - [1.4.2.2 ModelChecking](#1422-modelchecking)
-      - [1.4.2.3 EquivalenceChecking](#1423-equivalencechecking)
-    - [1.4.3 模型转换](#143-模型转换)
-      - [1.4.3.1 AlgebraicTransformation](#1431-algebraictransformation)
-      - [1.4.3.2 CategoryTheory](#1432-categorytheory)
-  - [1.5 具体实现](#15-具体实现)
-    - [1.5.1 NaturalNumberAlgebra](#151-naturalnumberalgebra)
-    - [1.5.2 PropositionalLogic](#152-propositionallogic)
-    - [1.5.3 FiniteSet](#153-finiteset)
-  - [1.6 工具集](#16-工具集)
-    - [1.6.1 FormalMethodsToolkit](#161-formalmethodstoolkit)
-      - [1.6.1.1 主要方法](#1611-主要方法)
-    - [1.6.2 AdvancedFormalMethodsToolkit](#162-advancedformalmethodstoolkit)
-      - [1.6.2.1 主要方法](#1621-主要方法)
-  - [1.7 使用示例](#17-使用示例)
-    - [1.7.1 基础状态机](#171-基础状态机)
-    - [1.7.2 时序逻辑模型检查](#172-时序逻辑模型检查)
-    - [1.7.3 进程代数](#173-进程代数)
-    - [1.7.4 高级形式化方法](#174-高级形式化方法)
-  - [1.8 错误处理](#18-错误处理)
-  - [1.9 性能考虑](#19-性能考虑)
-  - [1.10 使用建议](#110-使用建议)
 
 ## 1.2 概述
 
@@ -555,7 +407,7 @@ pub fn are_equivalent(&self, p1: &ProcessTerm, p2: &ProcessTerm) -> bool
 pub trait AlgebraicLanguage {
     type Element;
     type Operation;
-    
+
     fn identity(&self) -> Self::Element;
     fn operation(&self, op: Self::Operation, a: Self::Element, b: Self::Element) -> Self::Element;
     fn inverse(&self, element: Self::Element) -> Option<Self::Element>;
@@ -570,7 +422,7 @@ pub trait AlgebraicLanguage {
 pub trait LogicLanguage {
     type Formula;
     type Connective;
-    
+
     fn conjunction(&self, a: Self::Formula, b: Self::Formula) -> Self::Formula;
     fn disjunction(&self, a: Self::Formula, b: Self::Formula) -> Self::Formula;
     fn negation(&self, formula: Self::Formula) -> Self::Formula;
@@ -586,7 +438,7 @@ pub trait LogicLanguage {
 pub trait SetLanguage {
     type Element;
     type Set;
-    
+
     fn empty_set(&self) -> Self::Set;
     fn singleton(&self, element: Self::Element) -> Self::Set;
     fn union(&self, a: Self::Set, b: Self::Set) -> Self::Set;
@@ -603,7 +455,7 @@ pub trait SetLanguage {
 pub trait ProcessLanguage {
     type Process;
     type Action;
-    
+
     fn nil(&self) -> Self::Process;
     fn action(&self, action: Self::Action) -> Self::Process;
     fn choice(&self, a: Self::Process, b: Self::Process) -> Self::Process;
@@ -622,7 +474,7 @@ pub trait ProcessLanguage {
 pub trait TheoremProving {
     type Theorem;
     type Proof;
-    
+
     fn prove(&self, theorem: Self::Theorem) -> Result<Self::Proof, String>;
     fn verify_proof(&self, proof: Self::Proof) -> bool;
 }
@@ -636,7 +488,7 @@ pub trait TheoremProving {
 pub trait ModelChecking {
     type Model;
     type Property;
-    
+
     fn check_property(&self, model: Self::Model, property: Self::Property) -> bool;
     fn find_counterexample(&self, model: Self::Model, property: Self::Property) -> Option<Self::Model>;
 }
@@ -649,7 +501,7 @@ pub trait ModelChecking {
 ```rust
 pub trait EquivalenceChecking {
     type System;
-    
+
     fn are_equivalent(&self, system1: Self::System, system2: Self::System) -> bool;
     fn find_difference(&self, system1: Self::System, system2: Self::System) -> Option<String>;
 }
@@ -664,7 +516,7 @@ pub trait EquivalenceChecking {
 ```rust
 pub trait AlgebraicTransformation {
     type Expression;
-    
+
     fn simplify(&self, expression: Self::Expression) -> Self::Expression;
     fn factorize(&self, expression: Self::Expression) -> Self::Expression;
     fn expand(&self, expression: Self::Expression) -> Self::Expression;
@@ -679,7 +531,7 @@ pub trait AlgebraicTransformation {
 pub trait CategoryTheory {
     type Object;
     type Morphism;
-    
+
     fn identity(&self, object: Self::Object) -> Self::Morphism;
     fn compose(&self, f: Self::Morphism, g: Self::Morphism) -> Self::Morphism;
     fn is_isomorphic(&self, a: Self::Object, b: Self::Object) -> bool;
@@ -698,7 +550,7 @@ pub struct NaturalNumberAlgebra;
 impl AlgebraicLanguage for NaturalNumberAlgebra {
     type Element = u32;
     type Operation = String;
-    
+
     fn identity(&self) -> Self::Element { 0 }
     fn operation(&self, op: Self::Operation, a: Self::Element, b: Self::Element) -> Self::Element
     fn inverse(&self, _element: Self::Element) -> Option<Self::Element> { None }
@@ -715,7 +567,7 @@ pub struct PropositionalLogic;
 impl LogicLanguage for PropositionalLogic {
     type Formula = String;
     type Connective = String;
-    
+
     fn conjunction(&self, a: Self::Formula, b: Self::Formula) -> Self::Formula
     fn disjunction(&self, a: Self::Formula, b: Self::Formula) -> Self::Formula
     fn negation(&self, formula: Self::Formula) -> Self::Formula
@@ -735,7 +587,7 @@ pub struct FiniteSet<T> {
 impl<T: Clone + PartialEq> SetLanguage for FiniteSet<T> {
     type Element = T;
     type Set = FiniteSet<T>;
-    
+
     fn empty_set(&self) -> Self::Set
     fn singleton(&self, element: Self::Element) -> Self::Set
     fn union(&self, a: Self::Set, b: Self::Set) -> Self::Set
@@ -846,8 +698,8 @@ println!("公式满足: {}", result);
 ```rust
 use c18_model::{ProcessTerm, ProcessAlgebraInterpreter};
 
-let process = ProcessTerm::Prefix("send".to_string(), 
-    Box::new(ProcessTerm::Prefix("receive".to_string(), 
+let process = ProcessTerm::Prefix("send".to_string(),
+    Box::new(ProcessTerm::Prefix("receive".to_string(),
         Box::new(ProcessTerm::Nil))));
 
 let interpreter = ProcessAlgebraInterpreter::new();

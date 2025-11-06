@@ -1,8 +1,8 @@
 # Kubernetes Deployment API 完整文档
 
-**Crate:** c10_otlp  
-**模块:** k8s_deployment  
-**Rust 版本:** 1.90.0  
+**Crate:** c10_otlp
+**模块:** k8s_deployment
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -161,6 +161,7 @@ pub async fn new(config: K8sDeploymentConfig) -> Result<Self>
 ```
 
 **参数:**
+
 - `config`: 部署配置
 
 **示例:**
@@ -185,6 +186,7 @@ pub async fn deploy(&self) -> Result<DeploymentStatus>
 ```
 
 **返回:**
+
 - `DeploymentStatus`: 部署状态信息
 
 **示例:**
@@ -211,6 +213,7 @@ pub async fn update_config(&self, new_config: CollectorConfig) -> Result<()>
 ```
 
 **参数:**
+
 - `new_config`: 新的 Collector 配置
 
 **示例:**
@@ -246,6 +249,7 @@ pub async fn scale(&self, replicas: u32) -> Result<()>
 ```
 
 **参数:**
+
 - `replicas`: 目标副本数
 
 **示例:**
@@ -265,6 +269,7 @@ pub async fn health_check(&self) -> Result<HealthStatus>
 ```
 
 **返回:**
+
 - `HealthStatus`: 健康状态
 
 **示例:**
@@ -332,16 +337,16 @@ pub fn create_daemonset_config() -> K8sDeploymentConfig {
 async fn deploy_daemonset() -> Result<()> {
     let config = create_daemonset_config();
     let deployment = CollectorDeployment::new(config).await?;
-    
+
     // 1. 创建 RBAC
     deployment.create_rbac().await?;
-    
+
     // 2. 部署 DaemonSet
     let status = deployment.deploy().await?;
-    
+
     // 3. 等待就绪
     deployment.wait_until_ready(Duration::from_secs(300)).await?;
-    
+
     println!("DaemonSet deployed successfully");
     Ok(())
 }
@@ -388,13 +393,13 @@ pub fn create_gateway_config() -> K8sDeploymentConfig {
 async fn deploy_ha_gateway() -> Result<()> {
     let config = create_gateway_config();
     let deployment = CollectorDeployment::new(config).await?;
-    
+
     // 1. 创建 Headless Service
     deployment.create_headless_service().await?;
-    
+
     // 2. 部署 Deployment（3 副本）
     deployment.deploy().await?;
-    
+
     // 3. 配置 HPA（水平自动扩展）
     deployment.create_hpa(HpaConfig {
         min_replicas: 3,
@@ -402,12 +407,12 @@ async fn deploy_ha_gateway() -> Result<()> {
         target_cpu_utilization: 70,
         target_memory_utilization: 80,
     }).await?;
-    
+
     // 4. 配置 PodDisruptionBudget
     deployment.create_pdb(PdbConfig {
         min_available: 2,  // 至少保持 2 个副本可用
     }).await?;
-    
+
     println!("High-availability gateway deployed");
     Ok(())
 }
@@ -482,12 +487,12 @@ pub async fn inject_sidecar(pod: &mut Pod, config: &K8sDeploymentConfig) -> Resu
         ]),
         ..Default::default()
     };
-    
+
     // 注入 sidecar 容器
     if let Some(spec) = &mut pod.spec {
         spec.containers.push(sidecar_container);
     }
-    
+
     Ok(())
 }
 ```
@@ -658,7 +663,7 @@ impl RbacConfig {
             cluster_role_binding: ClusterRoleBindingSpec::default(),
         }
     }
-    
+
     /// 集群级权限（Gateway）
     pub fn cluster_level() -> Self {
         Self {
@@ -679,7 +684,7 @@ impl RbacConfig {
             cluster_role_binding: ClusterRoleBindingSpec::default(),
         }
     }
-    
+
     /// Pod级权限（Sidecar）
     pub fn pod_level() -> Self {
         Self {
@@ -698,7 +703,7 @@ impl RbacConfig {
 ```rust
 async fn deploy_rbac(config: &RbacConfig, namespace: &str) -> Result<()> {
     let client = kube::Client::try_default().await?;
-    
+
     // 1. 创建 ServiceAccount
     let sa_api: Api<ServiceAccount> = Api::namespaced(client.clone(), namespace);
     let sa = ServiceAccount {
@@ -710,7 +715,7 @@ async fn deploy_rbac(config: &RbacConfig, namespace: &str) -> Result<()> {
         ..Default::default()
     };
     sa_api.create(&PostParams::default(), &sa).await?;
-    
+
     // 2. 创建 ClusterRole
     let cr_api: Api<ClusterRole> = Api::all(client.clone());
     let cr = ClusterRole {
@@ -722,7 +727,7 @@ async fn deploy_rbac(config: &RbacConfig, namespace: &str) -> Result<()> {
         ..Default::default()
     };
     cr_api.create(&PostParams::default(), &cr).await?;
-    
+
     // 3. 创建 ClusterRoleBinding
     let crb_api: Api<ClusterRoleBinding> = Api::all(client);
     let crb = ClusterRoleBinding {
@@ -744,7 +749,7 @@ async fn deploy_rbac(config: &RbacConfig, namespace: &str) -> Result<()> {
         ..Default::default()
     };
     crb_api.create(&PostParams::default(), &crb).await?;
-    
+
     println!("RBAC resources created successfully");
     Ok(())
 }
@@ -777,16 +782,16 @@ async fn main() -> Result<()> {
         replicas: Some(3),
         rbac: RbacConfig::cluster_level(),
     };
-    
+
     // 2. 创建部署器
     let deployment = CollectorDeployment::new(config).await?;
-    
+
     // 3. 部署 RBAC
     deployment.create_rbac().await?;
-    
+
     // 4. 部署 Collector
     deployment.deploy().await?;
-    
+
     // 5. 创建 Service
     deployment.create_service(ServiceSpec {
         service_type: ServiceType::ClusterIP,
@@ -805,10 +810,10 @@ async fn main() -> Result<()> {
             },
         ],
     }).await?;
-    
+
     // 6. 等待就绪
     deployment.wait_until_ready(Duration::from_secs(300)).await?;
-    
+
     println!("Deployment complete!");
     Ok(())
 }
@@ -835,9 +840,9 @@ async fn deploy_log_collector() -> Result<()> {
         replicas: None,
         rbac: RbacConfig::node_level(),
     };
-    
+
     let deployment = CollectorDeployment::new(config).await?;
-    
+
     // 配置日志收集
     let collector_config = CollectorConfig {
         receivers: vec![
@@ -861,10 +866,10 @@ async fn deploy_log_collector() -> Result<()> {
         ],
         service: ServiceConfig::default(),
     };
-    
+
     deployment.update_config(collector_config).await?;
     deployment.deploy().await?;
-    
+
     Ok(())
 }
 ```
@@ -991,12 +996,12 @@ deployment.update_config(new_config).await?;
 - ✅ 故障排除指南
 
 **下一步推荐:**
+
 - 阅读 [Istio Integration API](./istio_integration_api.md)
 - 参考 [完整示例代码](../../examples/k8s_complete_deployment_demo.rs)
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **代码覆盖率:** 100%
-

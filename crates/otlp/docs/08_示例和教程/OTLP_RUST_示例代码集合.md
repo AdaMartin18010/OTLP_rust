@@ -1,6 +1,7 @@
 ﻿# OTLP Rust 示例代码集合
 
 ## 📋 目录
+
 1. [基础示例](#基础示例)
 2. [Web应用示例](#web应用示例)
 3. [微服务示例](#微服务示例)
@@ -36,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 模拟工作
     tokio::time::sleep(Duration::from_millis(100)).await;
-    
+
     // 记录指标
     client.record_metric("operation_count", 1.0, vec![
         ("type", "basic"),
@@ -372,7 +373,7 @@ async fn call_user_service(
         .await?;
 
     let user_info: UserInfo = response.json().await?;
-    
+
     span.set_attribute("user.name", &user_info.name);
     span.set_attribute("response.status", response.status().as_u16());
     span.end();
@@ -501,7 +502,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 模拟数据产生
     for i in 0..10000 {
         let trace_data = create_sample_trace(i);
-        
+
         // 应用过滤器
         if data_filter.should_process(&trace_data).await? {
             batch_processor.add_trace(trace_data).await?;
@@ -641,26 +642,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for i in 0..100 {
         // 收集系统指标
         let metrics = collect_system_metrics(i).await?;
-        
+
         // 提取特征
         let features = feature_extractor.extract_features(&metrics);
-        
+
         // 进行预测
         let prediction = ml_predictor.predict(&features).await?;
-        
+
         // 处理预测结果
         if prediction.confidence > 0.8 && prediction.error_probability > 0.7 {
-            println!("⚠️ 高风险预警 (第{}次): 错误概率 {:.2}%, 置信度 {:.2}%", 
-                i, 
-                prediction.error_probability * 100.0, 
+            println!("⚠️ 高风险预警 (第{}次): 错误概率 {:.2}%, 置信度 {:.2}%",
+                i,
+                prediction.error_probability * 100.0,
                 prediction.confidence * 100.0
             );
-            
+
             // 触发预防措施
             trigger_preventive_measures(&prediction).await?;
         } else {
-            println!("✅ 系统正常 (第{}次): 错误概率 {:.2}%", 
-                i, 
+            println!("✅ 系统正常 (第{}次): 错误概率 {:.2}%",
+                i,
                 prediction.error_probability * 100.0
             );
         }
@@ -711,9 +712,9 @@ impl SystemMetricsExtractor {
     fn update_cache(&mut self, metrics: &SystemMetrics) {
         let key = format!("{}", metrics.timestamp.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
         let entry = self.feature_cache.entry(key).or_insert_with(Vec::new);
-        
+
         entry.push(metrics.cpu_usage);
-        
+
         // 保持窗口大小
         if entry.len() > 10 {
             entry.remove(0);
@@ -724,7 +725,7 @@ impl SystemMetricsExtractor {
 async fn load_training_data() -> Result<Vec<TrainingSample>, Box<dyn std::error::Error>> {
     // 模拟加载训练数据
     let mut training_data = Vec::new();
-    
+
     for i in 0..1000 {
         let features = vec![
             (i as f64 * 0.1) % 100.0, // CPU使用率
@@ -732,15 +733,15 @@ async fn load_training_data() -> Result<Vec<TrainingSample>, Box<dyn std::error:
             (i as f64 * 0.3) % 1000.0, // 网络I/O
             (i as f64 * 0.4) % 1000.0, // 磁盘I/O
         ];
-        
+
         let error_occurred = features[0] > 80.0 || features[1] > 90.0;
-        
+
         training_data.push(TrainingSample {
             features,
             label: if error_occurred { 1.0 } else { 0.0 },
         });
     }
-    
+
     Ok(training_data)
 }
 
@@ -838,7 +839,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for _ in 0..10 {
         let cluster_status = cluster_manager.get_status().await?;
         println!("集群状态: {:?}", cluster_status);
-        
+
         tokio::time::sleep(Duration::from_secs(5)).await;
     }
 
@@ -866,7 +867,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 构建错误传播图
     let mut error_graph = ErrorGraph::new();
-    
+
     // 添加节点
     error_graph.add_node("api-gateway".to_string());
     error_graph.add_node("user-service".to_string());
@@ -1010,13 +1011,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 模拟触发告警
     println!("模拟触发告警...");
-    
+
     // 模拟高错误率
     alert_manager.check_condition("error_rate", 0.08).await?;
-    
+
     // 模拟高延迟
     alert_manager.check_condition("p99_latency", 6.5).await?;
-    
+
     // 模拟磁盘空间不足
     alert_manager.check_condition("disk_usage", 0.95).await?;
 
@@ -1081,10 +1082,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let pool = connection_pool.clone();
         let handle = tokio::spawn(async move {
             let connection = pool.get_connection().await?;
-            
+
             // 模拟OTLP请求
             let result = connection.send_trace_data(&create_sample_trace(i)).await?;
-            
+
             pool.return_connection(connection);
             Ok::<_, Box<dyn std::error::Error>>(result)
         });

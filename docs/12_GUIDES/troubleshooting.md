@@ -1,7 +1,7 @@
 # 🔧 故障排除指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 故障排除指南 - 常见问题、连接问题、性能问题、数据丢失等完整排查方案。
@@ -217,10 +217,10 @@ match result {
 async fn parent_function() {
     let mut parent_span = tracer.start("parent");
     let context = parent_span.context();
-    
+
     // 传递上下文给子函数
     child_function(&context).await;
-    
+
     parent_span.end();
 }
 
@@ -230,7 +230,7 @@ async fn child_function(parent_context: &TraceContext) {
         SpanKind::Internal,
         parent_context
     );
-    
+
     // 子操作
     child_span.end();
 }
@@ -344,34 +344,34 @@ println!("总延迟: {:?}", elapsed);
 // 2. 分段测量
 async fn diagnose_latency() -> Result<(), Box<dyn std::error::Error>> {
     let mut timings = Vec::new();
-    
+
     // 测量 Span 创建时间
     let t1 = Instant::now();
     let mut span = tracer.start("test");
     timings.push(("span_creation", t1.elapsed()));
-    
+
     // 测量属性设置时间
     let t2 = Instant::now();
     for i in 0..100 {
         span.set_attribute(format!("attr_{}", i), i);
     }
     timings.push(("attribute_setting", t2.elapsed()));
-    
+
     // 测量 Span 结束时间
     let t3 = Instant::now();
     span.end();
     timings.push(("span_ending", t3.elapsed()));
-    
+
     // 测量导出时间
     let t4 = Instant::now();
     client.flush().await?;
     timings.push(("export", t4.elapsed()));
-    
+
     // 打印结果
     for (name, duration) in timings {
         println!("{}: {:?}", name, duration);
     }
-    
+
     Ok(())
 }
 ```
@@ -513,26 +513,26 @@ use tokio::signal;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = create_client().await?;
-    
+
     // 设置信号处理
     tokio::spawn(async move {
         signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
-        
+
         println!("收到关闭信号，刷新数据...");
         if let Err(e) = client.flush().await {
             eprintln!("刷新失败: {}", e);
         }
-        
+
         println!("优雅关闭完成");
         std::process::exit(0);
     });
-    
+
     // 应用逻辑
     run_application().await?;
-    
+
     // 确保刷新
     client.flush().await?;
-    
+
     Ok(())
 }
 
@@ -562,19 +562,19 @@ impl LossMonitor {
     fn record_sent(&self) {
         self.sent_count.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     fn record_success(&self) {
         self.success_count.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     fn record_failure(&self) {
         self.failure_count.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     fn get_loss_rate(&self) -> f64 {
         let sent = self.sent_count.load(Ordering::Relaxed);
         let failed = self.failure_count.load(Ordering::Relaxed);
-        
+
         if sent == 0 {
             0.0
         } else {
@@ -592,7 +592,7 @@ tokio::spawn(async move {
     loop {
         interval.tick().await;
         let loss_rate = mon.get_loss_rate();
-        
+
         if loss_rate > 0.01 {  // 超过 1% 丢失率
             eprintln!("⚠️ 数据丢失率过高: {:.2}%", loss_rate * 100.0);
         }
@@ -757,7 +757,7 @@ fn benchmark_span_creation(c: &mut Criterion) {
     let client = rt.block_on(async {
         create_client().await.unwrap()
     });
-    
+
     c.bench_function("span_creation", |b| {
         b.to_async(&rt).iter(|| async {
             let tracer = client.tracer("bench");
@@ -839,5 +839,5 @@ echo "诊断信息已保存到 diagnostics.txt"
 
 ---
 
-*最后更新: 2025年10月20日*  
-*版本: 1.0.0*
+_最后更新: 2025年10月20日_
+_版本: 1.0.0_

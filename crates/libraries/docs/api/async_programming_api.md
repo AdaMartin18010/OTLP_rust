@@ -1,8 +1,8 @@
 ﻿# 异步编程最佳实践 - API参考文档
 
-**示例文件**: `crates/libraries/examples/async_programming_best_practices.rs`  
-**版本**: 1.0.0  
-**Rust版本**: 1.90.0+  
+**示例文件**: `crates/libraries/examples/async_programming_best_practices.rs`
+**版本**: 1.0.0
+**Rust版本**: 1.90.0+
 **最后更新**: 2025年10月28日
 
 ---
@@ -80,7 +80,7 @@ async fn main() {
         sleep(Duration::from_millis(100)).await;
         "Task completed"
     });
-    
+
     // 等待任务完成
     match handle.await {
         Ok(result) => println!("Result: {}", result),
@@ -663,12 +663,12 @@ fn async_fibonacci(n: u64) -> BoxFuture<'static, u64> {
         if n <= 1 {
             return n;
         }
-        
+
         let (a, b) = tokio::join!(
             async_fibonacci(n - 1),
             async_fibonacci(n - 2)
         );
-        
+
         a + b
     }.boxed()
 }
@@ -744,10 +744,10 @@ for result in results {
 pub enum AsyncError {
     #[error("Timeout")]
     Timeout,
-    
+
     #[error("Task panicked")]
     Panic,
-    
+
     #[error("Operation failed: {0}")]
     Failed(String),
 }
@@ -790,7 +790,7 @@ let work_rx = Arc::new(Mutex::new(work_rx));
 for worker_id in 0..4 {
     let work_rx = work_rx.clone();
     let result_tx = result_tx.clone();
-    
+
     tokio::spawn(async move {
         loop {
             let task = work_rx.lock().await.recv().await;
@@ -961,6 +961,6 @@ stream.map(|x| process(x))
 
 ---
 
-**版本**: 1.0.0  
-**维护者**: OTLP Rust Team  
+**版本**: 1.0.0
+**维护者**: OTLP Rust Team
 **最后更新**: 2025年10月28日

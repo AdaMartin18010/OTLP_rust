@@ -3,8 +3,9 @@
 > 适用范围：Rust 1.89+；示例需启用特性 `kv-redis`，风格遵循 `../../c10_networks/docs/STYLE.md`。
 
 ## 📋 目录
+
 - [Redis（kv-redis）](#rediskv-redis)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [Redis 核心概念](#redis-核心概念)
     - [Redis 的优势](#redis-的优势)
   - [快速开始](#快速开始)
@@ -122,18 +123,18 @@ async fn main() -> anyhow::Result<()> {
     // 连接 Redis
     let client = redis::Client::open("redis://127.0.0.1:6379/")?;
     let mut con = client.get_async_connection().await?;
-    
+
     // 基础操作
     con.set("key", "value").await?;
     let value: String = con.get("key").await?;
     println!("获取值: {}", value);
-    
+
     // 设置过期时间
     con.set_ex("temp_key", "temp_value", 60).await?;  // 60秒过期
-    
+
     // 删除键
     con.del("key").await?;
-    
+
     Ok(())
 }
 ```
@@ -146,25 +147,25 @@ use redis::AsyncCommands;
 async fn key_operations(con: &mut redis::aio::Connection) -> anyhow::Result<()> {
     // 设置键
     con.set("user:1000", "John").await?;
-    
+
     // 检查键是否存在
     let exists: bool = con.exists("user:1000").await?;
     println!("键存在: {}", exists);
-    
+
     // 获取键的类型
     let key_type: String = con.key_type("user:1000").await?;
     println!("键类型: {}", key_type);
-    
+
     // 获取键的 TTL
     let ttl: i64 = con.ttl("user:1000").await?;
     println!("TTL: {} 秒", ttl);  // -1 表示永不过期
-    
+
     // 设置过期时间
     con.expire("user:1000", 3600).await?;  // 1小时
-    
+
     // 重命名键
     con.rename("user:1000", "user:1001").await?;
-    
+
     Ok(())
 }
 ```
@@ -184,31 +185,31 @@ async fn string_operations(con: &mut redis::aio::Connection) -> anyhow::Result<(
     // SET 和 GET
     con.set("name", "Alice").await?;
     let name: String = con.get("name").await?;
-    
+
     // SETNX (只在键不存在时设置)
     let set: bool = con.set_nx("counter", 0).await?;
     println!("设置成功: {}", set);
-    
+
     // SETEX (设置并指定过期时间)
     con.set_ex("session:abc123", "user_data", 3600).await?;
-    
+
     // MGET 和 MSET (批量操作)
     con.mset(&[("key1", "value1"), ("key2", "value2")]).await?;
     let values: Vec<String> = con.mget(&["key1", "key2"]).await?;
-    
+
     // INCR 和 DECR (原子递增/递减)
     let count: i64 = con.incr("counter", 1).await?;
     let count: i64 = con.decr("counter", 1).await?;
-    
+
     // INCRBY 和 DECRBY (指定增量)
     let count: i64 = con.incr("counter", 10).await?;
-    
+
     // APPEND (追加字符串)
     let len: i64 = con.append("name", " Smith").await?;
-    
+
     // GETRANGE (获取子字符串)
     let substr: String = con.getrange("name", 0, 4).await?;
-    
+
     Ok(())
 }
 ```
@@ -220,19 +221,19 @@ async fn counter_example(con: &mut redis::aio::Connection) -> anyhow::Result<()>
     // 页面访问计数
     let views: i64 = con.incr("page:home:views", 1).await?;
     println!("页面访问次数: {}", views);
-    
+
     // 用户积分
     con.incrby("user:1000:score", 100).await?;
-    
+
     // 限流：每分钟最多100次请求
     let key = format!("rate_limit:user:1000:{}", chrono::Utc::now().minute());
     let count: i64 = con.incr(&key, 1).await?;
     con.expire(&key, 60).await?;
-    
+
     if count > 100 {
         println!("请求被限流");
     }
-    
+
     Ok(())
 }
 ```
@@ -251,33 +252,33 @@ async fn hash_operations(con: &mut redis::aio::Connection) -> anyhow::Result<()>
     con.hset("user:1000", "name", "Alice").await?;
     con.hset("user:1000", "age", 30).await?;
     let name: String = con.hget("user:1000", "name").await?;
-    
+
     // HMSET (批量设置)
     con.hset_multiple(
         "user:1001",
         &[("name", "Bob"), ("email", "bob@example.com"), ("role", "admin")]
     ).await?;
-    
+
     // HGETALL (获取所有字段)
-    let user: std::collections::HashMap<String, String> = 
+    let user: std::collections::HashMap<String, String> =
         con.hgetall("user:1000").await?;
-    
+
     // HINCRBY (字段递增)
     let age: i64 = con.hincr("user:1000", "age", 1).await?;
-    
+
     // HEXISTS (检查字段是否存在)
     let exists: bool = con.hexists("user:1000", "name").await?;
-    
+
     // HDEL (删除字段)
     con.hdel("user:1000", "age").await?;
-    
+
     // HKEYS 和 HVALS
     let keys: Vec<String> = con.hkeys("user:1000").await?;
     let values: Vec<String> = con.hvals("user:1000").await?;
-    
+
     // HLEN (字段数量)
     let len: i64 = con.hlen("user:1000").await?;
-    
+
     Ok(())
 }
 ```
@@ -302,19 +303,19 @@ async fn user_storage_example(con: &mut redis::aio::Connection) -> anyhow::Resul
         email: "alice@example.com".to_string(),
         created_at: chrono::Utc::now().to_rfc3339(),
     };
-    
+
     // 存储用户信息（使用 Hash）
     let key = format!("user:{}", user.id);
     con.hset(&key, "name", &user.name).await?;
     con.hset(&key, "email", &user.email).await?;
     con.hset(&key, "created_at", &user.created_at).await?;
-    
+
     // 获取用户信息
     let name: String = con.hget(&key, "name").await?;
     let email: String = con.hget(&key, "email").await?;
-    
+
     println!("用户: {} <{}>", name, email);
-    
+
     Ok(())
 }
 ```
@@ -332,25 +333,25 @@ async fn list_operations(con: &mut redis::aio::Connection) -> anyhow::Result<()>
     // LPUSH 和 RPUSH (左/右插入)
     con.lpush("messages", "msg1").await?;
     con.rpush("messages", "msg2").await?;
-    
+
     // LPOP 和 RPOP (左/右弹出)
     let msg: Option<String> = con.lpop("messages", None).await?;
-    
+
     // LRANGE (获取范围)
     let messages: Vec<String> = con.lrange("messages", 0, -1).await?;  // 获取所有
-    
+
     // LLEN (列表长度)
     let len: i64 = con.llen("messages").await?;
-    
+
     // LINDEX (获取指定索引元素)
     let msg: String = con.lindex("messages", 0).await?;
-    
+
     // LTRIM (修剪列表)
     con.ltrim("messages", 0, 99).await?;  // 只保留前100条
-    
+
     // BLPOP (阻塞式弹出)
     let result: Option<(String, String)> = con.blpop("queue", 5.0).await?;
-    
+
     Ok(())
 }
 ```
@@ -360,7 +361,7 @@ async fn list_operations(con: &mut redis::aio::Connection) -> anyhow::Result<()>
 ```rust
 async fn message_queue_example() -> anyhow::Result<()> {
     let client = redis::Client::open("redis://127.0.0.1:6379/")?;
-    
+
     // 生产者
     tokio::spawn({
         let client = client.clone();
@@ -374,7 +375,7 @@ async fn message_queue_example() -> anyhow::Result<()> {
             }
         }
     });
-    
+
     // 消费者
     let mut con = client.get_async_connection().await?;
     loop {
@@ -404,38 +405,38 @@ async fn set_operations(con: &mut redis::aio::Connection) -> anyhow::Result<()> 
     // SADD (添加成员)
     con.sadd("tags", "rust").await?;
     con.sadd("tags", "redis").await?;
-    
+
     // SISMEMBER (检查成员是否存在)
     let is_member: bool = con.sismember("tags", "rust").await?;
-    
+
     // SMEMBERS (获取所有成员)
     let members: Vec<String> = con.smembers("tags").await?;
-    
+
     // SCARD (集合大小)
     let count: i64 = con.scard("tags").await?;
-    
+
     // SREM (删除成员)
     con.srem("tags", "redis").await?;
-    
+
     // SPOP (随机弹出)
     let random: Option<String> = con.spop("tags", None).await?;
-    
+
     // SRANDMEMBER (随机获取，不删除)
     let random: Option<String> = con.srandmember("tags", None).await?;
-    
+
     // 集合运算
     con.sadd("set1", &["a", "b", "c"]).await?;
     con.sadd("set2", &["b", "c", "d"]).await?;
-    
+
     // SINTER (交集)
     let intersection: Vec<String> = con.sinter(&["set1", "set2"]).await?;
-    
+
     // SUNION (并集)
     let union: Vec<String> = con.sunion(&["set1", "set2"]).await?;
-    
+
     // SDIFF (差集)
     let diff: Vec<String> = con.sdiff(&["set1", "set2"]).await?;
-    
+
     Ok(())
 }
 ```
@@ -447,19 +448,19 @@ async fn tag_system_example(con: &mut redis::aio::Connection) -> anyhow::Result<
     // 为文章添加标签
     con.sadd("article:1000:tags", &["rust", "redis", "backend"]).await?;
     con.sadd("article:1001:tags", &["rust", "async", "tokio"]).await?;
-    
+
     // 获取文章标签
     let tags: Vec<String> = con.smembers("article:1000:tags").await?;
     println!("文章标签: {:?}", tags);
-    
+
     // 找到同时包含 "rust" 和 "redis" 标签的文章
     con.sadd("tag:rust:articles", 1000).await?;
     con.sadd("tag:redis:articles", 1000).await?;
     con.sadd("tag:rust:articles", 1001).await?;
-    
+
     let articles: Vec<i64> = con.sinter(&["tag:rust:articles", "tag:redis:articles"]).await?;
     println!("同时包含 rust 和 redis 标签的文章: {:?}", articles);
-    
+
     Ok(())
 }
 ```
@@ -478,34 +479,34 @@ async fn zset_operations(con: &mut redis::aio::Connection) -> anyhow::Result<()>
     con.zadd("leaderboard", "Alice", 100).await?;
     con.zadd("leaderboard", "Bob", 85).await?;
     con.zadd("leaderboard", "Charlie", 95).await?;
-    
+
     // ZSCORE (获取分数)
     let score: f64 = con.zscore("leaderboard", "Alice").await?;
-    
+
     // ZRANK (获取排名，从0开始)
     let rank: Option<i64> = con.zrank("leaderboard", "Alice").await?;
-    
+
     // ZINCRBY (增加分数)
     let new_score: f64 = con.zincr("leaderboard", "Bob", 10.0).await?;
-    
+
     // ZRANGE (按排名获取，升序)
     let top3: Vec<String> = con.zrange("leaderboard", 0, 2).await?;
-    
+
     // ZREVRANGE (按排名获取，降序)
     let top3: Vec<(String, f64)> = con.zrevrange_withscores("leaderboard", 0, 2).await?;
-    
+
     // ZRANGEBYSCORE (按分数范围获取)
     let players: Vec<String> = con.zrangebyscore("leaderboard", 90, 100).await?;
-    
+
     // ZCOUNT (统计分数范围内的成员数)
     let count: i64 = con.zcount("leaderboard", 90, 100).await?;
-    
+
     // ZREM (删除成员)
     con.zrem("leaderboard", "Bob").await?;
-    
+
     // ZCARD (集合大小)
     let size: i64 = con.zcard("leaderboard").await?;
-    
+
     Ok(())
 }
 ```
@@ -519,7 +520,7 @@ async fn leaderboard_example(con: &mut redis::aio::Connection) -> anyhow::Result
         con.zadd("game:leaderboard", player, score).await?;
         Ok(())
     }
-    
+
     // 批量更新
     let players = vec![
         ("Alice", 1500.0),
@@ -528,31 +529,31 @@ async fn leaderboard_example(con: &mut redis::aio::Connection) -> anyhow::Result
         ("David", 1350.0),
         ("Eve", 1650.0),
     ];
-    
+
     for (player, score) in players {
         update_score(con, player, score).await?;
     }
-    
+
     // 获取前10名
     let top10: Vec<(String, f64)> = con
         .zrevrange_withscores("game:leaderboard", 0, 9)
         .await?;
-    
+
     println!("排行榜前10名:");
     for (rank, (player, score)) in top10.iter().enumerate() {
         println!("{}. {} - {:.0} 分", rank + 1, player, score);
     }
-    
+
     // 获取某个玩家的排名
     let rank: Option<i64> = con.zrevrank("game:leaderboard", "Alice").await?;
     if let Some(rank) = rank {
         println!("Alice 的排名: {}", rank + 1);
     }
-    
+
     // 获取某个分数段的玩家数量
     let count: i64 = con.zcount("game:leaderboard", 1500, 2000).await?;
     println!("1500-2000分的玩家数: {}", count);
-    
+
     Ok(())
 }
 ```
@@ -571,11 +572,11 @@ use redis::Client;
 async fn single_connection_example() -> anyhow::Result<()> {
     let client = Client::open("redis://127.0.0.1:6379/")?;
     let mut con = client.get_async_connection().await?;
-    
+
     // 使用连接
     con.set("key", "value").await?;
     let value: String = con.get("key").await?;
-    
+
     Ok(())
 }
 ```
@@ -588,22 +589,22 @@ use redis::aio::ConnectionManager;
 
 async fn connection_pool_example() -> anyhow::Result<()> {
     let client = Client::open("redis://127.0.0.1:6379/")?;
-    
+
     // ConnectionManager 自动管理连接池
     let manager = ConnectionManager::new(client).await?;
-    
+
     // 可以克隆并在多个任务中使用
     let manager_clone = manager.clone();
-    
+
     tokio::spawn(async move {
         let mut con = manager_clone;
         con.set::<_, _, ()>("key1", "value1").await.unwrap();
     });
-    
+
     // 主任务
     let mut con = manager;
     con.set("key2", "value2").await?;
-    
+
     Ok(())
 }
 ```
@@ -626,13 +627,13 @@ async fn advanced_connection_config() -> anyhow::Result<()> {
             password: Some("your_password".to_string()),  // 密码
         },
     };
-    
+
     let client = Client::open(conn_info)?;
     let mut con = client.get_async_connection().await?;
-    
+
     // 测试连接
     redis::cmd("PING").query_async(&mut con).await?;
-    
+
     Ok(())
 }
 ```
@@ -647,9 +648,9 @@ async fn timeout_config() -> anyhow::Result<()> {
     let client = Client::open("redis://127.0.0.1:6379/")?
         .set_connection_timeout(Duration::from_secs(5))?  // 连接超时
         .set_response_timeout(Duration::from_secs(3))?;   // 响应超时
-    
+
     let mut con = client.get_async_connection().await?;
-    
+
     Ok(())
 }
 ```
@@ -662,13 +663,13 @@ async fn timeout_config() -> anyhow::Result<()> {
 #[cfg(feature = "tls")]
 async fn tls_connection() -> anyhow::Result<()> {
     use redis::Client;
-    
+
     // 使用 rediss:// 协议启用 TLS
     let client = Client::open("rediss://127.0.0.1:6380/")?;
     let mut con = client.get_async_connection().await?;
-    
+
     con.set("secure_key", "secure_value").await?;
-    
+
     Ok(())
 }
 ```
@@ -869,10 +870,10 @@ async fn sentinel_connection() -> anyhow::Result<()> {
         "redis://sentinel2:26379/",
         "redis://sentinel3:26379/",
     ])?;
-    
+
     let mut con = client.get_async_connection().await?;
     con.set("key", "value").await?;
-    
+
     Ok(())
 }
 ```
@@ -893,14 +894,14 @@ async fn cluster_connection() -> anyhow::Result<()> {
         "redis://127.0.0.1:7001/",
         "redis://127.0.0.1:7002/",
     ];
-    
+
     let client = ClusterClient::builder(nodes)
         .read_from_replicas()  // 从副本读取
         .build()?;
-    
+
     let mut con = client.get_async_connection().await?;
     con.set("key", "value").await?;
-    
+
     Ok(())
 }
 ```
@@ -936,9 +937,9 @@ async fn compress_and_store(con: &mut redis::aio::Connection, key: &str, data: &
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     encoder.write_all(data.as_bytes())?;
     let compressed = encoder.finish()?;
-    
+
     con.set(key, compressed).await?;
-    
+
     Ok(())
 }
 ```
@@ -968,9 +969,9 @@ loop {
         .arg("MATCH").arg("user:*")
         .arg("COUNT").arg(100)
         .query_async(con).await?;
-    
+
     // 处理 keys...
-    
+
     cursor = new_cursor;
     if cursor == 0 {
         break;
@@ -1002,19 +1003,19 @@ async fn cache_aside_get_user(
     user_id: u64,
 ) -> anyhow::Result<User> {
     let cache_key = format!("user:{}", user_id);
-    
+
     // 1. 先查缓存
     if let Some(cached): Option<String> = con.get(&cache_key).await? {
         return Ok(serde_json::from_str(&cached)?);
     }
-    
+
     // 2. 缓存未命中，查数据库
     let user = db.get_user(user_id).await?;
-    
+
     // 3. 写入缓存
     let json = serde_json::to_string(&user)?;
     con.set_ex(&cache_key, json, 3600).await?;  // 1小时
-    
+
     Ok(user)
 }
 ```
@@ -1035,10 +1036,10 @@ async fn get_with_null_cache(con: &mut redis::aio::Connection, key: &str) -> any
         }
         return Ok(Some(cached));
     }
-    
+
     // 查询数据库
     let value = query_database(key).await?;
-    
+
     match value {
         Some(v) => {
             con.set_ex(key, &v, 3600).await?;
@@ -1067,12 +1068,12 @@ pub struct HotKeyCache {
 impl HotKeyCache {
     pub async fn get(&self, key: &str) -> anyhow::Result<Option<String>> {
         let mut con = self.redis.clone();
-        
+
         // 检查缓存
         if let Some(cached) = con.get::<_, Option<String>>(key).await? {
             return Ok(Some(cached));
         }
-        
+
         // 使用互斥锁防止缓存击穿
         let mut loading = self.loading.lock().await;
         if loading.contains(key) {
@@ -1081,20 +1082,20 @@ impl HotKeyCache {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
             return self.get(key).await;
         }
-        
+
         loading.insert(key.to_string());
         drop(loading);
-        
+
         // 加载数据
         let value = query_database(key).await?;
-        
+
         if let Some(ref v) = value {
             con.set_ex(key, v, 3600).await?;
         }
-        
+
         // 清理加载标记
         self.loading.lock().await.remove(key);
-        
+
         Ok(value)
     }
 }
@@ -1110,9 +1111,9 @@ async fn set_with_random_ttl(con: &mut redis::aio::Connection, key: &str, value:
     let base_ttl = 3600;  // 1小时
     let random_offset = rand::thread_rng().gen_range(0..300);  // 0-5分钟随机偏移
     let ttl = base_ttl + random_offset;
-    
+
     con.set_ex(key, value, ttl).await?;
-    
+
     Ok(())
 }
 

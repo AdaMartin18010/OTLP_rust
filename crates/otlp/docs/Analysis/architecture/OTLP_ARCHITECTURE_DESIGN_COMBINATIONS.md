@@ -92,7 +92,7 @@ impl MicroserviceOtlpIntegration {
     ) -> Result<Self, OtlpError> {
         // 创建服务注册表
         let service_registry = Arc::new(ServiceRegistry::new());
-        
+
         // 创建OTLP客户端
         let config = OtlpConfig::default()
             .with_endpoint(&otlp_endpoint)
@@ -100,25 +100,25 @@ impl MicroserviceOtlpIntegration {
             .with_resource_attribute("service.name", &service_name)
             .with_resource_attribute("service.version", &service_version)
             .with_resource_attribute("deployment.environment", "production");
-        
+
         let otlp_client = Arc::new(OtlpClient::new(config).await?);
-        
+
         // 创建健康检查器
         let health_checker = Arc::new(HealthChecker::new(
             service_registry.clone(),
             otlp_client.clone(),
         ));
-        
+
         // 创建指标收集器
         let metrics_collector = Arc::new(MetricsCollector::new(
             otlp_client.clone(),
         ));
-        
+
         // 创建分布式追踪器
         let distributed_tracer = Arc::new(DistributedTracer::new(
             otlp_client.clone(),
         ));
-        
+
         Ok(Self {
             service_registry,
             otlp_client,
@@ -127,7 +127,7 @@ impl MicroserviceOtlpIntegration {
             distributed_tracer,
         })
     }
-    
+
     /// 启动微服务集成
     pub async fn start(&self) -> Result<(), OtlpError> {
         // 启动健康检查
@@ -135,33 +135,33 @@ impl MicroserviceOtlpIntegration {
         tokio::spawn(async move {
             health_checker.start_monitoring().await;
         });
-        
+
         // 启动指标收集
         let metrics_collector = self.metrics_collector.clone();
         tokio::spawn(async move {
             metrics_collector.start_collection().await;
         });
-        
+
         // 启动分布式追踪
         let distributed_tracer = self.distributed_tracer.clone();
         tokio::spawn(async move {
             distributed_tracer.start_tracing().await;
         });
-        
+
         Ok(())
     }
-    
+
     /// 注册服务
     pub async fn register_service(&self, service_info: ServiceInfo) -> Result<(), OtlpError> {
         self.service_registry.register(service_info).await?;
         Ok(())
     }
-    
+
     /// 创建分布式追踪span
     pub async fn create_span(&self, operation_name: &str) -> Result<DistributedSpan, OtlpError> {
         self.distributed_tracer.create_span(operation_name).await
     }
-    
+
     /// 记录指标
     pub async fn record_metric(&self, name: &str, value: f64, labels: HashMap<String, String>) -> Result<(), OtlpError> {
         self.metrics_collector.record_metric(name, value, labels).await
@@ -181,13 +181,13 @@ impl ServiceRegistry {
             discovery_client: Arc::new(ServiceDiscoveryClient::new()),
         }
     }
-    
+
     pub async fn register(&self, service_info: ServiceInfo) -> Result<(), OtlpError> {
         let mut services = self.services.write().await;
         services.insert(service_info.service_id.clone(), service_info);
         Ok(())
     }
-    
+
     pub async fn discover_services(&self, service_name: &str) -> Result<Vec<ServiceInfo>, OtlpError> {
         let services = self.services.read().await;
         let matching_services: Vec<ServiceInfo> = services
@@ -195,21 +195,21 @@ impl ServiceRegistry {
             .filter(|service| service.service_name == service_name)
             .cloned()
             .collect();
-        
+
         Ok(matching_services)
     }
-    
+
     pub async fn get_healthy_services(&self, service_name: &str) -> Result<Vec<ServiceInfo>, OtlpError> {
         let services = self.services.read().await;
         let healthy_services: Vec<ServiceInfo> = services
             .values()
             .filter(|service| {
-                service.service_name == service_name && 
+                service.service_name == service_name &&
                 matches!(service.health_status, HealthStatus::Healthy)
             })
             .cloned()
             .collect();
-        
+
         Ok(healthy_services)
     }
 }
@@ -281,39 +281,39 @@ impl EventDrivenOtlpArchitecture {
             otlp_integration: Arc::new(OtlpEventIntegration::new()),
         }
     }
-    
+
     /// 注册事件处理器
     pub async fn register_handler(&self, handler: Arc<dyn EventHandler>) -> Result<(), OtlpError> {
         let mut handlers = self.event_handlers.write().await;
-        
+
         for event_type in handler.get_event_types() {
             handlers.entry(event_type).or_insert_with(Vec::new).push(handler.clone());
         }
-        
+
         Ok(())
     }
-    
+
     /// 发布事件
     pub async fn publish_event(&self, event: OtlpEvent) -> Result<(), OtlpError> {
         // 发布到事件总线
         self.event_bus.publish(event.clone()).await?;
-        
+
         // 调用相关处理器
         let event_type = self.get_event_type(&event);
         let handlers = {
             let handlers = self.event_handlers.read().await;
             handlers.get(&event_type).cloned().unwrap_or_default()
         };
-        
+
         for handler in handlers {
             if let Err(e) = handler.handle(&event).await {
                 eprintln!("事件处理器错误: {}", e);
             }
         }
-        
+
         Ok(())
     }
-    
+
     fn get_event_type(&self, event: &OtlpEvent) -> String {
         match event {
             OtlpEvent::TraceCreated(_) => "trace_created".to_string(),
@@ -340,12 +340,12 @@ impl EventBus {
             subscribers: Arc::new(RwLock::new(Vec::new())),
         }
     }
-    
+
     pub async fn publish(&self, event: OtlpEvent) -> Result<(), OtlpError> {
         let _ = self.sender.send(event);
         Ok(())
     }
-    
+
     pub async fn subscribe(&self) -> broadcast::Receiver<OtlpEvent> {
         self.sender.subscribe()
     }
@@ -362,16 +362,16 @@ impl OtlpEventIntegration {
         let config = OtlpConfig::default()
             .with_endpoint("http://localhost:4317")
             .with_protocol(TransportProtocol::Grpc);
-        
+
         let otlp_client = Arc::new(OtlpClient::new(config).await.unwrap());
         let event_processor = Arc::new(EventProcessor::new(otlp_client.clone()));
-        
+
         Self {
             otlp_client,
             event_processor,
         }
     }
-    
+
     pub async fn process_event(&self, event: &OtlpEvent) -> Result<(), OtlpError> {
         self.event_processor.process(event).await
     }
@@ -386,7 +386,7 @@ impl EventProcessor {
     pub fn new(otlp_client: Arc<OtlpClient>) -> Self {
         Self { otlp_client }
     }
-    
+
     pub async fn process(&self, event: &OtlpEvent) -> Result<(), OtlpError> {
         match event {
             OtlpEvent::TraceCreated(trace_event) => {
@@ -401,7 +401,7 @@ impl EventProcessor {
             _ => Ok(()),
         }
     }
-    
+
     async fn process_trace_event(&self, event: &TraceCreatedEvent) -> Result<(), OtlpError> {
         let result = self.otlp_client.send_trace(&event.operation_name).await?
             .with_attribute("service.name", &event.service_name)
@@ -409,21 +409,21 @@ impl EventProcessor {
             .with_attribute("span.id", &event.span_id)
             .finish()
             .await?;
-        
+
         println!("追踪事件处理完成: {}", result.trace_id);
         Ok(())
     }
-    
+
     async fn process_metric_event(&self, event: &MetricUpdatedEvent) -> Result<(), OtlpError> {
         let result = self.otlp_client.send_metric(&event.metric_name, event.value).await?
             .with_description("事件驱动的指标更新")
             .send()
             .await?;
-        
+
         println!("指标事件处理完成: {}", result.success_count);
         Ok(())
     }
-    
+
     async fn process_log_event(&self, event: &LogGeneratedEvent) -> Result<(), OtlpError> {
         let severity = match event.log_level.as_str() {
             "ERROR" => LogSeverity::Error,
@@ -432,13 +432,13 @@ impl EventProcessor {
             "DEBUG" => LogSeverity::Debug,
             _ => LogSeverity::Info,
         };
-        
+
         let result = self.otlp_client.send_log(&event.message, severity).await?
             .with_attribute("service.name", &event.service_name)
             .with_attribute("log.level", &event.log_level)
             .send()
             .await?;
-        
+
         println!("日志事件处理完成: {}", result.success_count);
         Ok(())
     }
@@ -493,7 +493,7 @@ impl PipelineFilterArchitecture {
             pipeline_factory: Arc::new(PipelineFactory::new()),
         }
     }
-    
+
     /// 创建新的数据管道
     pub async fn create_pipeline(
         &self,
@@ -507,47 +507,47 @@ impl PipelineFilterArchitecture {
             filter_names,
             self.filter_registry.clone(),
         ).await?;
-        
+
         let mut pipelines = self.pipelines.write().await;
         pipelines.insert(pipeline.id.clone(), pipeline.clone());
-        
+
         Ok(pipeline)
     }
-    
+
     /// 启动管道
     pub async fn start_pipeline(&self, pipeline_id: &str) -> Result<(), OtlpError> {
         let mut pipelines = self.pipelines.write().await;
         if let Some(pipeline) = pipelines.get_mut(pipeline_id) {
             pipeline.status = PipelineStatus::Running;
-            
+
             // 启动管道处理协程
             let pipeline_clone = pipeline.clone();
             tokio::spawn(async move {
                 Self::run_pipeline(pipeline_clone).await;
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// 停止管道
     pub async fn stop_pipeline(&self, pipeline_id: &str) -> Result<(), OtlpError> {
         let mut pipelines = self.pipelines.write().await;
         if let Some(pipeline) = pipelines.get_mut(pipeline_id) {
             pipeline.status = PipelineStatus::Stopped;
         }
-        
+
         Ok(())
     }
-    
+
     /// 运行管道
     async fn run_pipeline(pipeline: DataPipeline) {
         let mut input_receiver = pipeline.input_channel.subscribe();
         let output_sender = pipeline.output_channel.clone();
-        
+
         while let Ok(data) = input_receiver.recv().await {
             let mut processed_data = data;
-            
+
             // 依次应用过滤器
             for filter in &pipeline.filters {
                 match filter.filter(processed_data).await {
@@ -564,14 +564,14 @@ impl PipelineFilterArchitecture {
                     }
                 }
             }
-            
+
             // 发送处理结果
             let result = ProcessedData {
                 original_data: processed_data,
                 processed_at: Instant::now(),
                 pipeline_id: pipeline.id.clone(),
             };
-            
+
             if let Err(_) = output_sender.send(result) {
                 break; // 接收端已关闭
             }
@@ -590,12 +590,12 @@ impl FilterRegistry {
             filters: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub async fn register_filter(&self, name: String, filter: Arc<dyn DataFilter>) {
         let mut filters = self.filters.write().await;
         filters.insert(name, filter);
     }
-    
+
     pub async fn get_filter(&self, name: &str) -> Option<Arc<dyn DataFilter>> {
         let filters = self.filters.read().await;
         filters.get(name).cloned()
@@ -609,7 +609,7 @@ impl PipelineFactory {
     pub fn new() -> Self {
         Self
     }
-    
+
     pub async fn create_pipeline(
         &self,
         id: String,
@@ -618,7 +618,7 @@ impl PipelineFactory {
         filter_registry: Arc<FilterRegistry>,
     ) -> Result<DataPipeline, OtlpError> {
         let mut filters = Vec::new();
-        
+
         for filter_name in filter_names {
             if let Some(filter) = filter_registry.get_filter(&filter_name).await {
                 filters.push(filter);
@@ -626,13 +626,13 @@ impl PipelineFactory {
                 return Err(OtlpError::FilterNotFound(filter_name));
             }
         }
-        
+
         // 按优先级排序
         filters.sort_by_key(|f| f.get_priority());
-        
+
         let (input_sender, input_receiver) = mpsc::unbounded_channel();
         let (output_sender, output_receiver) = mpsc::unbounded_channel();
-        
+
         Ok(DataPipeline {
             id,
             name,
@@ -669,11 +669,11 @@ impl DataFilter for DataValidationFilter {
         }
         Ok(Some(data))
     }
-    
+
     fn get_name(&self) -> &str {
         "DataValidationFilter"
     }
-    
+
     fn get_priority(&self) -> u32 {
         1 // 最高优先级
     }
@@ -704,11 +704,11 @@ impl DataFilter for DataTransformationFilter {
         }
         Ok(Some(data))
     }
-    
+
     fn get_name(&self) -> &str {
         "DataTransformationFilter"
     }
-    
+
     fn get_priority(&self) -> u32 {
         2
     }
@@ -734,11 +734,11 @@ impl DataFilter for DataCompressionFilter {
             CompressionAlgorithm::Zstd => self.compress_zstd(data).await,
         }
     }
-    
+
     fn get_name(&self) -> &str {
         "DataCompressionFilter"
     }
-    
+
     fn get_priority(&self) -> u32 {
         3
     }
@@ -749,12 +749,12 @@ impl DataCompressionFilter {
         // 实现gzip压缩
         Ok(Some(data))
     }
-    
+
     async fn compress_brotli(&self, data: TelemetryData) -> Result<Option<TelemetryData>, OtlpError> {
         // 实现brotli压缩
         Ok(Some(data))
     }
-    
+
     async fn compress_zstd(&self, data: TelemetryData) -> Result<Option<TelemetryData>, OtlpError> {
         // 实现zstd压缩
         Ok(Some(data))
@@ -819,14 +819,14 @@ impl PubSubArchitecture {
             message_router: Arc::new(MessageRouter::new()),
         }
     }
-    
+
     /// 创建主题
     pub async fn create_topic(&self, topic: Topic) -> Result<(), OtlpError> {
         let mut topics = self.topics.write().await;
         topics.insert(topic.name.clone(), topic);
         Ok(())
     }
-    
+
     /// 订阅主题
     pub async fn subscribe(&self, subscriber: Subscriber) -> Result<(), OtlpError> {
         let mut subscribers = self.subscribers.write().await;
@@ -834,7 +834,7 @@ impl PubSubArchitecture {
         topic_subscribers.push(subscriber);
         Ok(())
     }
-    
+
     /// 发布消息
     pub async fn publish(&self, topic_name: &str, message: OtlpMessage) -> Result<(), OtlpError> {
         // 检查主题是否存在
@@ -842,20 +842,20 @@ impl PubSubArchitecture {
             let topics = self.topics.read().await;
             topics.get(topic_name).cloned()
         };
-        
+
         if let Some(topic) = topic {
             // 获取订阅者
             let subscribers = {
                 let subscribers = self.subscribers.read().await;
                 subscribers.get(topic_name).cloned().unwrap_or_default()
             };
-            
+
             // 路由消息
             self.message_router.route_message(topic, subscribers, message).await?;
         } else {
             return Err(OtlpError::TopicNotFound(topic_name.to_string()));
         }
-        
+
         Ok(())
     }
 }
@@ -871,12 +871,12 @@ impl MessageRouter {
         strategies.insert("round_robin".to_string(), Arc::new(RoundRobinRouting::new()));
         strategies.insert("random".to_string(), Arc::new(RandomRouting::new()));
         strategies.insert("weighted".to_string(), Arc::new(WeightedRouting::new()));
-        
+
         Self {
             routing_strategies: strategies,
         }
     }
-    
+
     pub async fn route_message(
         &self,
         topic: Topic,
@@ -886,18 +886,18 @@ impl MessageRouter {
         if subscribers.is_empty() {
             return Ok(());
         }
-        
+
         // 根据订阅类型选择路由策略
         let strategy_name = match subscribers[0].subscription_type {
             SubscriptionType::Exclusive => "round_robin",
             SubscriptionType::Shared => "round_robin",
             SubscriptionType::Failover => "weighted",
         };
-        
+
         if let Some(strategy) = self.routing_strategies.get(strategy_name) {
             strategy.route(topic, subscribers, message).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -935,7 +935,7 @@ impl RoutingStrategy for RoundRobinRouting {
     ) -> Result<(), OtlpError> {
         let index = self.current_index.fetch_add(1, Ordering::Relaxed) % subscribers.len();
         let subscriber = &subscribers[index];
-        
+
         subscriber.message_handler.handle(&message).await?;
         Ok(())
     }
@@ -960,7 +960,7 @@ impl RoutingStrategy for RandomRouting {
     ) -> Result<(), OtlpError> {
         let index = rand::thread_rng().gen_range(0..subscribers.len());
         let subscriber = &subscribers[index];
-        
+
         subscriber.message_handler.handle(&message).await?;
         Ok(())
     }
@@ -991,7 +991,7 @@ impl RoutingStrategy for WeightedRouting {
                 return Ok(());
             }
         }
-        
+
         Err(OtlpError::NoHealthySubscribers)
     }
 }
@@ -1021,12 +1021,12 @@ impl HybridArchitecture {
                 "http://localhost:4317".to_string(),
             ).await?
         );
-        
+
         let event_driven_architecture = Arc::new(EventDrivenOtlpArchitecture::new());
         let pipeline_filter_architecture = Arc::new(PipelineFilterArchitecture::new());
         let pub_sub_architecture = Arc::new(PubSubArchitecture::new());
         let orchestration_engine = Arc::new(OrchestrationEngine::new());
-        
+
         Ok(Self {
             microservice_integration,
             event_driven_architecture,
@@ -1035,42 +1035,42 @@ impl HybridArchitecture {
             orchestration_engine,
         })
     }
-    
+
     /// 启动混合架构
     pub async fn start(&self) -> Result<(), OtlpError> {
         // 启动微服务集成
         self.microservice_integration.start().await?;
-        
+
         // 启动事件驱动架构
         self.setup_event_handlers().await?;
-        
+
         // 启动管道过滤器架构
         self.setup_pipelines().await?;
-        
+
         // 启动发布订阅架构
         self.setup_pub_sub().await?;
-        
+
         // 启动编排引擎
         self.orchestration_engine.start().await?;
-        
+
         Ok(())
     }
-    
+
     async fn setup_event_handlers(&self) -> Result<(), OtlpError> {
         // 注册事件处理器
         let trace_handler = Arc::new(TraceEventHandler::new(
             self.pipeline_filter_architecture.clone(),
         ));
         self.event_driven_architecture.register_handler(trace_handler).await?;
-        
+
         let metric_handler = Arc::new(MetricEventHandler::new(
             self.pub_sub_architecture.clone(),
         ));
         self.event_driven_architecture.register_handler(metric_handler).await?;
-        
+
         Ok(())
     }
-    
+
     async fn setup_pipelines(&self) -> Result<(), OtlpError> {
         // 创建数据验证管道
         let validation_pipeline = self.pipeline_filter_architecture.create_pipeline(
@@ -1078,7 +1078,7 @@ impl HybridArchitecture {
             "数据验证管道".to_string(),
             vec!["DataValidationFilter".to_string()],
         ).await?;
-        
+
         // 创建数据转换管道
         let transformation_pipeline = self.pipeline_filter_architecture.create_pipeline(
             "transformation".to_string(),
@@ -1088,14 +1088,14 @@ impl HybridArchitecture {
                 "DataTransformationFilter".to_string(),
             ],
         ).await?;
-        
+
         // 启动管道
         self.pipeline_filter_architecture.start_pipeline("validation").await?;
         self.pipeline_filter_architecture.start_pipeline("transformation").await?;
-        
+
         Ok(())
     }
-    
+
     async fn setup_pub_sub(&self) -> Result<(), OtlpError> {
         // 创建主题
         let trace_topic = Topic {
@@ -1105,7 +1105,7 @@ impl HybridArchitecture {
             max_subscribers: 10,
         };
         self.pub_sub_architecture.create_topic(trace_topic).await?;
-        
+
         let metric_topic = Topic {
             name: "metrics".to_string(),
             message_type: "MetricMessage".to_string(),
@@ -1113,7 +1113,7 @@ impl HybridArchitecture {
             max_subscribers: 5,
         };
         self.pub_sub_architecture.create_topic(metric_topic).await?;
-        
+
         Ok(())
     }
 }
@@ -1166,30 +1166,30 @@ impl OrchestrationEngine {
             execution_engine: Arc::new(ExecutionEngine::new()),
         }
     }
-    
+
     pub async fn start(&self) -> Result<(), OtlpError> {
         self.execution_engine.start().await?;
         Ok(())
     }
-    
+
     pub async fn create_workflow(&self, workflow: Workflow) -> Result<(), OtlpError> {
         let mut workflows = self.workflows.write().await;
         workflows.insert(workflow.id.clone(), workflow);
         Ok(())
     }
-    
+
     pub async fn execute_workflow(&self, workflow_id: &str) -> Result<(), OtlpError> {
         let workflow = {
             let workflows = self.workflows.read().await;
             workflows.get(workflow_id).cloned()
         };
-        
+
         if let Some(workflow) = workflow {
             self.execution_engine.execute_workflow(workflow).await?;
         } else {
             return Err(OtlpError::WorkflowNotFound(workflow_id.to_string()));
         }
-        
+
         Ok(())
     }
 }
@@ -1214,12 +1214,12 @@ impl ExecutionEngine {
             running_workflows: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub async fn start(&self) -> Result<(), OtlpError> {
         // 启动执行引擎
         Ok(())
     }
-    
+
     pub async fn execute_workflow(&self, workflow: Workflow) -> Result<(), OtlpError> {
         let execution = WorkflowExecution {
             workflow_id: workflow.id.clone(),
@@ -1228,17 +1228,17 @@ impl ExecutionEngine {
             start_time: Instant::now(),
             end_time: None,
         };
-        
+
         let mut running_workflows = self.running_workflows.write().await;
         running_workflows.insert(workflow.id.clone(), execution);
         drop(running_workflows);
-        
+
         // 执行工作流
         self.execute_workflow_steps(workflow).await?;
-        
+
         Ok(())
     }
-    
+
     async fn execute_workflow_steps(&self, workflow: Workflow) -> Result<(), OtlpError> {
         for (index, step) in workflow.steps.iter().enumerate() {
             match step.step_type {
@@ -1258,48 +1258,48 @@ impl ExecutionEngine {
                     self.execute_parallel_step(step).await?;
                 }
             }
-            
+
             // 更新当前步骤
             let mut running_workflows = self.running_workflows.write().await;
             if let Some(execution) = running_workflows.get_mut(&workflow.id) {
                 execution.current_step = index + 1;
             }
         }
-        
+
         // 标记工作流完成
         let mut running_workflows = self.running_workflows.write().await;
         if let Some(execution) = running_workflows.get_mut(&workflow.id) {
             execution.status = WorkflowStatus::Completed;
             execution.end_time = Some(Instant::now());
         }
-        
+
         Ok(())
     }
-    
+
     async fn execute_data_processing_step(&self, step: &WorkflowStep) -> Result<(), OtlpError> {
         // 实现数据处理步骤
         println!("执行数据处理步骤: {}", step.name);
         Ok(())
     }
-    
+
     async fn execute_event_publishing_step(&self, step: &WorkflowStep) -> Result<(), OtlpError> {
         // 实现事件发布步骤
         println!("执行事件发布步骤: {}", step.name);
         Ok(())
     }
-    
+
     async fn execute_service_call_step(&self, step: &WorkflowStep) -> Result<(), OtlpError> {
         // 实现服务调用步骤
         println!("执行服务调用步骤: {}", step.name);
         Ok(())
     }
-    
+
     async fn execute_conditional_step(&self, step: &WorkflowStep) -> Result<(), OtlpError> {
         // 实现条件步骤
         println!("执行条件步骤: {}", step.name);
         Ok(())
     }
-    
+
     async fn execute_parallel_step(&self, step: &WorkflowStep) -> Result<(), OtlpError> {
         // 实现并行步骤
         println!("执行并行步骤: {}", step.name);
@@ -1331,4 +1331,4 @@ impl ExecutionEngine {
 
 ---
 
-*本文档为OTLP架构与设计组合方式提供了全面的技术分析和实践指导，适用于构建企业级的可观测性系统。*
+_本文档为OTLP架构与设计组合方式提供了全面的技术分析和实践指导，适用于构建企业级的可观测性系统。_

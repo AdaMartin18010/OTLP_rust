@@ -1,8 +1,8 @@
 ﻿# 安全最佳实践完整指南
 
-**Crate:** c11_libraries  
-**主题:** Security Best Practices  
-**Rust 版本:** 1.90.0  
+**Crate:** c11_libraries
+**主题:** Security Best Practices
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -111,13 +111,13 @@ use validator::Validate;
 pub struct UserInput {
     #[validate(email)]
     pub email: String,
-    
+
     #[validate(length(min = 8, max = 128))]
     pub password: String,
-    
+
     #[validate(regex = "USERNAME_REGEX")]
     pub username: String,
-    
+
     #[validate(range(min = 18, max = 120))]
     pub age: u8,
 }
@@ -137,10 +137,10 @@ async fn register_handler(
 ) -> Result<Json<RegisterResponse>> {
     // 1. 验证输入
     validate_user_input(&input)?;
-    
+
     // 2. 进一步业务逻辑
     let user = create_user(input).await?;
-    
+
     Ok(Json(RegisterResponse { user }))
 }
 ```
@@ -166,7 +166,7 @@ pub struct Email(String);
 
 impl FromStr for Email {
     type Err = anyhow::Error;
-    
+
     fn from_str(s: &str) -> Result<Self> {
         // 使用专业的 email 验证库
         if validator::validate_email(s) {
@@ -212,15 +212,15 @@ async fn create_post_handler(
 ) -> Result<Json<Post>> {
     // 清理用户输入的 HTML
     let safe_content = sanitize_user_content(&input.content);
-    
+
     let post = Post {
         title: input.title,
         content: safe_content,
         ..Default::default()
     };
-    
+
     save_post(&post).await?;
-    
+
     Ok(Json(post))
 }
 ```
@@ -260,7 +260,7 @@ async fn best_find_user(pool: &PgPool, username: &str) -> Result<User> {
     )
     .fetch_one(pool)
     .await?;
-    
+
     Ok(user)
 }
 ```
@@ -290,24 +290,24 @@ impl PasswordHasher {
             argon2: Argon2::default(),
         }
     }
-    
+
     /// 哈希密码
     pub fn hash_password(&self, password: &str) -> Result<String> {
         let salt = SaltString::generate(&mut OsRng);
-        
+
         let password_hash = self.argon2
             .hash_password(password.as_bytes(), &salt)
             .map_err(|e| anyhow::anyhow!("Password hashing failed: {}", e))?
             .to_string();
-        
+
         Ok(password_hash)
     }
-    
+
     /// 验证密码
     pub fn verify_password(&self, password: &str, hash: &str) -> Result<bool> {
         let parsed_hash = PasswordHash::new(hash)
             .map_err(|e| anyhow::anyhow!("Invalid password hash: {}", e))?;
-        
+
         Ok(self.argon2
             .verify_password(password.as_bytes(), &parsed_hash)
             .is_ok())
@@ -322,11 +322,11 @@ async fn register_user(
 ) -> Result<User> {
     // 1. 验证密码强度
     validate_password_strength(&password)?;
-    
+
     // 2. 哈希密码
     let hasher = PasswordHasher::new();
     let password_hash = hasher.hash_password(&password)?;
-    
+
     // 3. 存储
     let user = sqlx::query_as!(
         User,
@@ -336,7 +336,7 @@ async fn register_user(
     )
     .fetch_one(pool)
     .await?;
-    
+
     Ok(user)
 }
 
@@ -344,19 +344,19 @@ fn validate_password_strength(password: &str) -> Result<()> {
     if password.len() < 8 {
         return Err(anyhow::anyhow!("Password too short"));
     }
-    
+
     if !password.chars().any(|c| c.is_uppercase()) {
         return Err(anyhow::anyhow!("Password must contain uppercase"));
     }
-    
+
     if !password.chars().any(|c| c.is_lowercase()) {
         return Err(anyhow::anyhow!("Password must contain lowercase"));
     }
-    
+
     if !password.chars().any(|c| c.is_numeric()) {
         return Err(anyhow::anyhow!("Password must contain number"));
     }
-    
+
     Ok(())
 }
 ```
@@ -391,23 +391,23 @@ impl JwtManager {
             decoding_key: DecodingKey::from_secret(secret.as_bytes()),
         }
     }
-    
+
     /// 生成 JWT
     pub fn generate_token(&self, user_id: &str, roles: Vec<String>) -> Result<String> {
         let now = chrono::Utc::now();
         let exp = (now + chrono::Duration::hours(24)).timestamp() as usize;
-        
+
         let claims = Claims {
             sub: user_id.to_string(),
             exp,
             iat: now.timestamp() as usize,
             roles,
         };
-        
+
         encode(&Header::default(), &claims, &self.encoding_key)
             .map_err(|e| anyhow::anyhow!("Token generation failed: {}", e))
     }
-    
+
     /// 验证 JWT
     pub fn verify_token(&self, token: &str) -> Result<Claims> {
         let token_data = decode::<Claims>(
@@ -416,7 +416,7 @@ impl JwtManager {
             &Validation::default(),
         )
         .map_err(|e| anyhow::anyhow!("Token verification failed: {}", e))?;
-        
+
         Ok(token_data.claims)
     }
 }
@@ -433,19 +433,19 @@ pub async fn auth_middleware(
         .get("Authorization")
         .and_then(|h| h.to_str().ok())
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     let token = auth_header
         .strip_prefix("Bearer ")
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     // 2. 验证 token
     let claims = jwt_manager
         .verify_token(token)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
-    
+
     // 3. 将 claims 添加到请求扩展
     request.extensions_mut().insert(claims);
-    
+
     Ok(next.run(request).await)
 }
 ```
@@ -485,7 +485,7 @@ pub struct RbacManager {
 impl RbacManager {
     pub fn new() -> Self {
         let mut role_permissions = HashMap::new();
-        
+
         // Admin: 所有权限
         role_permissions.insert(Role::Admin, vec![
             Permission::Admin,
@@ -496,28 +496,28 @@ impl RbacManager {
             Permission::WritePosts,
             Permission::DeletePosts,
         ]);
-        
+
         // Editor: 内容管理
         role_permissions.insert(Role::Editor, vec![
             Permission::ReadUsers,
             Permission::ReadPosts,
             Permission::WritePosts,
         ]);
-        
+
         // User: 基本权限
         role_permissions.insert(Role::User, vec![
             Permission::ReadPosts,
             Permission::WritePosts,
         ]);
-        
+
         // Guest: 只读
         role_permissions.insert(Role::Guest, vec![
             Permission::ReadPosts,
         ]);
-        
+
         Self { role_permissions }
     }
-    
+
     pub fn has_permission(&self, role: &Role, permission: &Permission) -> bool {
         self.role_permissions
             .get(role)
@@ -541,11 +541,11 @@ pub async fn require_permission(
             false
         }
     });
-    
+
     if !has_permission {
         return Err(StatusCode::FORBIDDEN);
     }
-    
+
     Ok(next.run(request).await)
 }
 
@@ -583,34 +583,34 @@ impl Encryptor {
         let cipher = Aes256Gcm::new(key.into());
         Self { cipher }
     }
-    
+
     /// 加密数据
     pub fn encrypt(&self, plaintext: &[u8]) -> Result<Vec<u8>> {
         // 生成随机 nonce
         let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-        
+
         // 加密
         let ciphertext = self.cipher
             .encrypt(&nonce, plaintext)
             .map_err(|e| anyhow::anyhow!("Encryption failed: {}", e))?;
-        
+
         // 组合 nonce + ciphertext
         let mut result = nonce.to_vec();
         result.extend_from_slice(&ciphertext);
-        
+
         Ok(result)
     }
-    
+
     /// 解密数据
     pub fn decrypt(&self, encrypted: &[u8]) -> Result<Vec<u8>> {
         if encrypted.len() < 12 {
             return Err(anyhow::anyhow!("Invalid encrypted data"));
         }
-        
+
         // 分离 nonce 和 ciphertext
         let (nonce_bytes, ciphertext) = encrypted.split_at(12);
         let nonce = Nonce::from_slice(nonce_bytes);
-        
+
         // 解密
         self.cipher
             .decrypt(nonce, ciphertext)
@@ -626,7 +626,7 @@ async fn store_sensitive_data(
 ) -> Result<()> {
     // 加密 SSN
     let encrypted_ssn = encryptor.encrypt(ssn.as_bytes())?;
-    
+
     // 存储加密数据
     sqlx::query!(
         "INSERT INTO sensitive_data (user_id, encrypted_ssn) VALUES ($1, $2)",
@@ -635,7 +635,7 @@ async fn store_sensitive_data(
     )
     .execute(pool)
     .await?;
-    
+
     Ok(())
 }
 ```
@@ -658,24 +658,24 @@ impl SignatureManager {
     pub fn new() -> Self {
         let mut csprng = OsRng;
         let keypair = Keypair::generate(&mut csprng);
-        
+
         Self { keypair }
     }
-    
+
     pub fn from_keypair(keypair: Keypair) -> Self {
         Self { keypair }
     }
-    
+
     /// 签名数据
     pub fn sign(&self, data: &[u8]) -> Signature {
         self.keypair.sign(data)
     }
-    
+
     /// 验证签名
     pub fn verify(&self, data: &[u8], signature: &Signature) -> bool {
         self.keypair.public.verify(data, signature).is_ok()
     }
-    
+
     pub fn public_key(&self) -> &PublicKey {
         &self.keypair.public
     }
@@ -687,7 +687,7 @@ async fn sign_api_request(
     request_body: &[u8],
 ) -> Result<SignedRequest> {
     let signature = signer.sign(request_body);
-    
+
     Ok(SignedRequest {
         body: request_body.to_vec(),
         signature: signature.to_bytes().to_vec(),
@@ -698,7 +698,7 @@ async fn sign_api_request(
 async fn verify_api_request(request: &SignedRequest) -> Result<bool> {
     let public_key = PublicKey::from_bytes(&request.public_key)?;
     let signature = Signature::from_bytes(&request.signature)?;
-    
+
     Ok(public_key.verify(&request.body, &signature).is_ok())
 }
 ```
@@ -723,14 +723,14 @@ impl KeyDerivation {
     ) -> Result<[u8; 32]> {
         let argon2 = Argon2::default();
         let mut output_key = [0u8; 32];
-        
+
         argon2
             .hash_password_into(password.as_bytes(), salt, &mut output_key)
             .map_err(|e| anyhow::anyhow!("Key derivation failed: {}", e))?;
-        
+
         Ok(output_key)
     }
-    
+
     /// HKDF 密钥派生
     pub fn hkdf(
         master_key: &[u8],
@@ -738,11 +738,11 @@ impl KeyDerivation {
         info: &[u8],
     ) -> [u8; 32] {
         use hkdf::Hkdf;
-        
+
         let hk = Hkdf::<Sha256>::new(Some(salt), master_key);
         let mut okm = [0u8; 32];
         hk.expand(info, &mut okm).unwrap();
-        
+
         okm
     }
 }
@@ -760,7 +760,7 @@ impl MasterKeyManager {
             context.as_bytes(),
         )
     }
-    
+
     pub fn derive_signing_key(&self, context: &str) -> [u8; 32] {
         KeyDerivation::hkdf(
             &self.master_key,
@@ -790,15 +790,15 @@ pub async fn run_https_server(app: Router) -> Result<()> {
         "/path/to/key.pem",
     )
     .await?;
-    
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 443));
-    
+
     println!("HTTPS server listening on {}", addr);
-    
+
     axum_server::bind_rustls(addr, config)
         .serve(app.into_make_service())
         .await?;
-    
+
     Ok(())
 }
 
@@ -810,7 +810,7 @@ pub fn create_secure_tls_config() -> Result<RustlsConfig> {
         .with_protocol_versions(&[&rustls::version::TLS13])?  // 只用 TLS 1.3
         .with_no_client_auth()
         .with_cert_resolver(Arc::new(cert_resolver));
-    
+
     Ok(config)
 }
 ```
@@ -830,33 +830,33 @@ pub fn create_mtls_server_config() -> Result<ServerConfig> {
     let cert_file = &mut BufReader::new(File::open("server-cert.pem")?);
     let key_file = &mut BufReader::new(File::open("server-key.pem")?);
     let ca_file = &mut BufReader::new(File::open("ca-cert.pem")?);
-    
+
     let cert_chain = certs(cert_file)?
         .into_iter()
         .map(Certificate)
         .collect();
-    
+
     let mut keys = pkcs8_private_keys(key_file)?;
     let key = PrivateKey(keys.remove(0));
-    
+
     // 加载 CA 证书（用于验证客户端）
     let ca_certs = certs(ca_file)?
         .into_iter()
         .map(Certificate)
         .collect::<Vec<_>>();
-    
+
     let mut client_auth_roots = RootCertStore::empty();
     for cert in ca_certs {
         client_auth_roots.add(&cert)?;
     }
-    
+
     let client_auth = AllowAnyAuthenticatedClient::new(client_auth_roots);
-    
+
     let config = ServerConfig::builder()
         .with_safe_defaults()
         .with_client_cert_verifier(client_auth)
         .with_single_cert(cert_chain, key)?;
-    
+
     Ok(config)
 }
 ```
@@ -880,7 +880,7 @@ fn bad_execute_command(filename: &str) -> Result<String> {
         .arg("-c")
         .arg(format!("cat {}", filename))  // 注入风险
         .output()?;
-    
+
     Ok(String::from_utf8(output.stdout)?)
 }
 
@@ -890,17 +890,17 @@ fn good_execute_command(filename: &str) -> Result<String> {
     if !filename.chars().all(|c| c.is_alphanumeric() || c == '.' || c == '_') {
         return Err(anyhow::anyhow!("Invalid filename"));
     }
-    
+
     // 2. 使用白名单路径
     let safe_path = Path::new("/safe/directory").join(filename);
-    
+
     if !safe_path.starts_with("/safe/directory") {
         return Err(anyhow::anyhow!("Path traversal detected"));
     }
-    
+
     // 3. 直接使用文件系统 API，不用 shell
     let content = std::fs::read_to_string(safe_path)?;
-    
+
     Ok(content)
 }
 ```
@@ -923,14 +923,14 @@ pub fn sanitize_ldap_input(input: &str) -> String {
 pub fn search_user_safe(ldap: &mut LdapConn, username: &str) -> Result<Vec<SearchEntry>> {
     let safe_username = sanitize_ldap_input(username);
     let filter = format!("(uid={})", safe_username);
-    
+
     let result = ldap.search(
         "ou=users,dc=example,dc=com",
         Scope::Subtree,
         &filter,
         vec!["cn", "mail"],
     )?;
-    
+
     Ok(result.success()?.0)
 }
 ```
@@ -1053,7 +1053,7 @@ impl SecurityLogger {
             );
         }
     }
-    
+
     /// 记录权限拒绝
     pub fn log_access_denied(
         user_id: i64,
@@ -1068,7 +1068,7 @@ impl SecurityLogger {
             "Access denied"
         );
     }
-    
+
     /// 记录敏感操作
     pub fn log_sensitive_operation(
         user_id: i64,
@@ -1083,7 +1083,7 @@ impl SecurityLogger {
             "Sensitive operation performed"
         );
     }
-    
+
     /// 记录异常活动
     pub fn log_suspicious_activity(
         description: &str,
@@ -1123,21 +1123,21 @@ impl BruteForceDetector {
             window,
         }
     }
-    
+
     /// 记录登录尝试
     pub async fn record_attempt(&self, identifier: &str) -> bool {
         let now = Instant::now();
         let mut attempts = self.attempts.write().await;
-        
+
         let user_attempts = attempts.entry(identifier.to_string())
             .or_insert_with(Vec::new);
-        
+
         // 清理过期的尝试
         user_attempts.retain(|&t| now.duration_since(t) < self.window);
-        
+
         // 添加新尝试
         user_attempts.push(now);
-        
+
         // 检查是否超过阈值
         if user_attempts.len() > self.max_attempts {
             SecurityLogger::log_suspicious_activity(
@@ -1146,10 +1146,10 @@ impl BruteForceDetector {
             );
             return false;  // 阻止
         }
-        
+
         true  // 允许
     }
-    
+
     /// 清除尝试记录（登录成功后）
     pub async fn clear_attempts(&self, identifier: &str) {
         let mut attempts = self.attempts.write().await;
@@ -1167,16 +1167,16 @@ async fn login_with_protection(
     if !detector.record_attempt(username).await {
         return Err(anyhow::anyhow!("Too many login attempts"));
     }
-    
+
     // 2. 验证密码
     let user = verify_credentials(username, password).await?;
-    
+
     // 3. 清除尝试记录
     detector.clear_attempts(username).await;
-    
+
     // 4. 生成 token
     let token = generate_token(&user)?;
-    
+
     Ok(token)
 }
 ```
@@ -1201,18 +1201,18 @@ cargo +nightly miri test
 #[cfg(test)]
 mod fuzz_tests {
     use super::*;
-    
+
     #[test]
     fn fuzz_input_validation() {
         use quickcheck::{quickcheck, TestResult};
-        
+
         fn prop(input: String) -> TestResult {
             match validate_input(&input) {
                 Ok(_) => TestResult::passed(),
                 Err(_) => TestResult::passed(),  // 错误处理正确
             }
         }
-        
+
         quickcheck(prop as fn(String) -> TestResult);
     }
 }
@@ -1242,7 +1242,6 @@ mod fuzz_tests {
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **最后更新:** 2025年10月28日
-

@@ -1,8 +1,8 @@
 # 社区文档贡献框架
 
-**版本**: 1.0  
-**日期**: 2025年10月26日  
-**项目**: OTLP 社区文档贡献机制  
+**版本**: 1.0
+**日期**: 2025年10月26日
+**项目**: OTLP 社区文档贡献机制
 **状态**: 🚀 实施中
 
 > **简介**: OTLP Rust 社区文档贡献框架 - 建立活跃、高效、高质量的社区文档贡献生态系统。
@@ -17,18 +17,39 @@
     - [核心目标](#核心目标)
   - [🏗️ 框架架构](#️-框架架构)
     - [1. 整体架构](#1-整体架构)
-    - [2. 贡献平台](#2-贡献平台)
-    - [3. 评审流程](#3-评审流程)
-    - [4. 质量保证](#4-质量保证)
-  - [📝 贡献指南](#-贡献指南)
-  - [🎨 内容模板](#-内容模板)
-  - [🔄 协作流程](#-协作流程)
-  - [✅ 质量标准](#-质量标准)
-  - [🏆 激励机制](#-激励机制)
-  - [📊 指标监控](#-指标监控)
-  - [🛠️ 工具支持](#️-工具支持)
-  - [💡 最佳实践](#-最佳实践)
-  - [📚 参考资源](#-参考资源)
+    - [2. 核心组件](#2-核心组件)
+      - [2.1 贡献平台 (ContributionPlatform)](#21-贡献平台-contributionplatform)
+      - [2.2 评审服务 (ReviewService)](#22-评审服务-reviewservice)
+      - [2.3 质量检查规则](#23-质量检查规则)
+    - [3. 贡献者管理系统](#3-贡献者管理系统)
+      - [3.1 贡献者档案](#31-贡献者档案)
+      - [3.2 激励机制](#32-激励机制)
+  - [🌐 Web 平台实现](#-web-平台实现)
+    - [1. 前端界面](#1-前端界面)
+      - [1.1 贡献者仪表板](#11-贡献者仪表板)
+      - [1.2 贡献创建界面](#12-贡献创建界面)
+      - [1.3 评审界面](#13-评审界面)
+    - [2. API 接口](#2-api-接口)
+      - [2.1 REST API 设计](#21-rest-api-设计)
+  - [📊 分析和报告](#-分析和报告)
+    - [1. 贡献分析](#1-贡献分析)
+      - [1.1 贡献统计](#11-贡献统计)
+      - [1.2 报告生成](#12-报告生成)
+  - [🎯 实施计划](#-实施计划)
+    - [阶段一：基础平台建设 (6-8周)](#阶段一基础平台建设-6-8周)
+      - [第1-2周：需求分析和设计](#第1-2周需求分析和设计)
+      - [第3-4周：核心功能开发](#第3-4周核心功能开发)
+      - [第5-6周：评审系统](#第5-6周评审系统)
+      - [第7-8周：测试和优化](#第7-8周测试和优化)
+    - [阶段二：高级功能 (4-6周)](#阶段二高级功能-4-6周)
+      - [第9-10周：激励机制](#第9-10周激励机制)
+      - [第11-12周：分析报告](#第11-12周分析报告)
+      - [第13-14周：社区功能](#第13-14周社区功能)
+    - [阶段三：推广和优化 (2-4周)](#阶段三推广和优化-2-4周)
+      - [第15-16周：社区推广](#第15-16周社区推广)
+      - [第17-18周：持续改进](#第17-18周持续改进)
+  - [📞 项目联系](#-项目联系)
+  - [🙏 致谢](#-致谢)
 
 ---
 
@@ -59,12 +80,12 @@ graph TB
     E --> F[合并发布]
     F --> G[反馈收集]
     G --> H[持续改进]
-    
+
     I[贡献指南] --> B
     J[模板库] --> B
     K[示例库] --> B
     L[工具支持] --> B
-    
+
     M[评审团队] --> E
     N[质量团队] --> D
     O[社区管理] --> G
@@ -157,7 +178,7 @@ impl ContributionPlatform {
         author: &str,
     ) -> Result<(), Error> {
         let mut contribution = self.db.get_contribution(contribution_id).await?;
-        
+
         if contribution.author != author {
             return Err(Error::Unauthorized);
         }
@@ -188,7 +209,7 @@ impl ContributionPlatform {
         review: ReviewRequest,
     ) -> Result<(), Error> {
         let mut contribution = self.db.get_contribution(contribution_id).await?;
-        
+
         if !matches!(contribution.status, ContributionStatus::UnderReview) {
             return Err(Error::InvalidStatus);
         }
@@ -276,7 +297,7 @@ impl ReviewService {
         contribution: &Contribution,
     ) -> Result<Vec<String>, Error> {
         let mut assigned_reviewers = Vec::new();
-        
+
         // 基于内容类型和专家领域分配评审者
         for (reviewer_id, reviewer) in &self.reviewers {
             if self.should_assign_reviewer(reviewer, contribution) {
@@ -298,7 +319,7 @@ impl ReviewService {
         contribution: &Contribution,
     ) -> Result<Vec<ReviewResult>, Error> {
         let mut results = Vec::new();
-        
+
         for rule in &self.review_rules {
             let result = rule.check(contribution);
             results.push(result);
@@ -597,10 +618,10 @@ impl ContributorManager {
         if let Some(contributor) = self.contributors.get_mut(contributor_id) {
             contributor.contributions.push(contribution.clone());
             contributor.points += contribution.points_earned;
-            
+
             // 检查等级提升
             self.check_level_up(contributor).await?;
-            
+
             // 检查成就解锁
             self.check_achievements(contributor).await?;
         }
@@ -730,10 +751,10 @@ impl RewardSystem {
         for rule in &self.point_rules {
             if rule.action == action {
                 let mut points = rule.points;
-                
+
                 // 应用倍数
                 points = (points as f64 * rule.multiplier) as u32;
-                
+
                 // 检查条件
                 if self.check_conditions(&rule.conditions, contribution).await? {
                     return Ok(points);
@@ -954,7 +975,7 @@ export const CreateContribution: React.FC<CreateContributionProps> = ({
   return (
     <div className="create-contribution">
       <h1>Create New Contribution</h1>
-      
+
       <Form
         form={form}
         layout="vertical"
@@ -1082,11 +1103,11 @@ export const ReviewInterface: React.FC<ReviewInterfaceProps> = ({
             <span>By {contribution.author}</span>
             <span>Created {contribution.createdAt}</span>
           </div>
-          
+
           <div className="contribution-content">
             <h3>Description</h3>
             <p>{contribution.description}</p>
-            
+
             <h3>Content</h3>
             <div className="markdown-content">
               {/* 这里可以渲染 Markdown 内容 */}
@@ -1187,19 +1208,19 @@ pub fn create_api_routes() -> Router {
         .route("/api/contributions/:id/submit", post(submit_for_review))
         .route("/api/contributions/:id/review", post(add_review))
         .route("/api/contributions/:id/merge", post(merge_contribution))
-        
+
         // 贡献者相关
         .route("/api/contributors", get(list_contributors))
         .route("/api/contributors/:id", get(get_contributor))
         .route("/api/contributors/:id/profile", put(update_profile))
         .route("/api/contributors/:id/badges", get(get_badges))
-        
+
         // 评审相关
         .route("/api/reviews", get(list_reviews))
         .route("/api/reviews/:id", get(get_review))
         .route("/api/reviewers", get(list_reviewers))
         .route("/api/reviewers/:id/assignments", get(get_assignments))
-        
+
         // 统计相关
         .route("/api/stats/contributions", get(get_contribution_stats))
         .route("/api/stats/contributors", get(get_contributor_stats))
@@ -1214,7 +1235,7 @@ pub async fn create_contribution(
     let contribution = contribution_platform
         .create_contribution(&auth.user_id, request)
         .await?;
-    
+
     Ok(Json(contribution))
 }
 
@@ -1225,7 +1246,7 @@ pub async fn list_contributions(
     let contributions = contribution_platform
         .list_contributions(params)
         .await?;
-    
+
     Ok(Json(contributions))
 }
 
@@ -1237,7 +1258,7 @@ pub async fn submit_for_review(
     contribution_platform
         .submit_for_review(&contribution_id, &auth.user_id)
         .await?;
-    
+
     Ok(Json(()))
 }
 
@@ -1250,7 +1271,7 @@ pub async fn add_review(
     contribution_platform
         .add_review(&contribution_id, &auth.user_id, request)
         .await?;
-    
+
     Ok(Json(()))
 }
 ```
@@ -1275,16 +1296,16 @@ impl ContributionAnalytics {
         time_range: TimeRange,
     ) -> Result<ContributionStats, Error> {
         let contributions = self.db.get_contributions_in_range(time_range).await?;
-        
+
         let total_contributions = contributions.len();
         let approved_contributions = contributions.iter()
             .filter(|c| matches!(c.status, ContributionStatus::Approved | ContributionStatus::Merged))
             .count();
-        
+
         let category_stats = self.calculate_category_stats(&contributions);
         let quality_stats = self.calculate_quality_stats(&contributions);
         let contributor_stats = self.calculate_contributor_stats(&contributions);
-        
+
         Ok(ContributionStats {
             total_contributions,
             approved_contributions,
@@ -1301,7 +1322,7 @@ impl ContributionAnalytics {
         limit: usize,
     ) -> Result<Vec<ContributorRanking>, Error> {
         let contributors = self.db.get_top_contributors(limit).await?;
-        
+
         let mut rankings = Vec::new();
         for (rank, contributor) in contributors.iter().enumerate() {
             rankings.push(ContributorRanking {
@@ -1314,7 +1335,7 @@ impl ContributionAnalytics {
                 average_quality_score: self.calculate_average_quality(&contributor.contributions),
             });
         }
-        
+
         Ok(rankings)
     }
 
@@ -1323,24 +1344,24 @@ impl ContributionAnalytics {
         time_range: TimeRange,
     ) -> Result<QualityTrends, Error> {
         let contributions = self.db.get_contributions_in_range(time_range).await?;
-        
+
         let mut daily_scores = std::collections::HashMap::new();
         for contribution in &contributions {
             let date = contribution.created_at.date();
             let score = self.calculate_contribution_quality_score(contribution).await?;
-            
+
             daily_scores.entry(date)
                 .or_insert_with(Vec::new)
                 .push(score);
         }
-        
+
         let trend_data = daily_scores.into_iter()
             .map(|(date, scores)| {
                 let average_score = scores.iter().sum::<f64>() / scores.len() as f64;
                 TrendPoint { date, value: average_score }
             })
             .collect();
-        
+
         Ok(QualityTrends { trend_data })
     }
 }
@@ -1545,9 +1566,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
 ## 📞 项目联系
 
-**项目负责人**: 社区管理团队  
-**技术负责人**: 全栈开发工程师  
-**产品负责人**: 社区产品经理  
+**项目负责人**: 社区管理团队
+**技术负责人**: 全栈开发工程师
+**产品负责人**: 社区产品经理
 **运营负责人**: 社区运营专家
 
 **联系方式**:
@@ -1571,8 +1592,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
 ---
 
-**框架版本**: v1.0.0  
-**最后更新**: 2025年1月  
+**框架版本**: v1.0.0
+**最后更新**: 2025年1月
 **状态**: 实施中
 
 👥 **让我们一起建设最活跃的开源社区！** 🚀

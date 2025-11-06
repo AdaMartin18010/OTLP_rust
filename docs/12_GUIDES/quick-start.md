@@ -1,7 +1,7 @@
 # 🚀 快速入门教程
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 快速入门教程 - 5分钟上手 OTLP Rust，从环境准备到第一个应用的完整流程。
@@ -95,7 +95,7 @@ use std::time::Duration;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 启动 OTLP 客户端...");
-    
+
     // 创建 OTLP 客户端
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")  // OTLP Collector 地址
@@ -105,24 +105,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_connect_timeout(Duration::from_secs(5))
         .build()
         .await?;
-    
+
     println!("✅ OTLP 客户端创建成功！");
-    
+
     // 创建追踪器
     let tracer = client.tracer("main-component");
     let mut span = tracer.start("my-first-operation");
-    
+
     // 添加属性
     span.set_attribute("user.id", "12345");
     span.set_attribute("operation.type", "demo");
-    
+
     // 模拟一些工作
     println!("📊 执行业务逻辑...");
     tokio::time::sleep(Duration::from_millis(100)).await;
-    
+
     // 结束 span
     span.end();
-    
+
     println!("🎉 第一个 OTLP 应用运行成功！");
     Ok(())
 }
@@ -214,9 +214,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志
     tracing_subscriber::fmt::init();
-    
+
     println!("🚀 启动完整的 OTLP 示例应用...");
-    
+
     // 创建 OTLP 客户端
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
@@ -225,19 +225,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_http_transport()
         .build()
         .await?;
-    
+
     // 1. 分布式追踪示例
     println!("📊 演示分布式追踪...");
     demo_tracing(&client).await?;
-    
+
     // 2. 指标收集示例
     println!("📈 演示指标收集...");
     demo_metrics(&client).await?;
-    
+
     // 3. 日志记录示例
     println!("📝 演示日志记录...");
     demo_logging(&client).await?;
-    
+
     println!("🎉 所有示例运行完成！");
     Ok(())
 }
@@ -245,34 +245,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 // 分布式追踪示例
 async fn demo_tracing(client: &EnhancedOtlpClient) -> Result<(), Box<dyn std::error::Error>> {
     let tracer = client.tracer("demo-tracer");
-    
+
     // 创建根 span
     let mut root_span = tracer.start_with_kind("user-request", SpanKind::Server);
     root_span.set_attribute("user.id", "12345");
     root_span.set_attribute("request.method", "GET");
     root_span.set_attribute("request.path", "/api/users");
-    
+
     // 模拟数据库查询
     let mut db_span = tracer.start_with_kind("database-query", SpanKind::Client);
     db_span.set_attribute("db.system", "postgresql");
     db_span.set_attribute("db.operation", "SELECT");
-    
+
     tokio::time::sleep(Duration::from_millis(50)).await;
     db_span.set_status(StatusCode::Ok, "Query successful".to_string());
     db_span.end();
-    
+
     // 模拟外部 API 调用
     let mut api_span = tracer.start_with_kind("external-api-call", SpanKind::Client);
     api_span.set_attribute("http.method", "GET");
     api_span.set_attribute("http.url", "https://api.example.com/data");
-    
+
     tokio::time::sleep(Duration::from_millis(30)).await;
     api_span.set_status(StatusCode::Ok, "API call successful".to_string());
     api_span.end();
-    
+
     root_span.set_status(StatusCode::Ok, "Request completed".to_string());
     root_span.end();
-    
+
     println!("  ✅ 追踪数据已发送");
     Ok(())
 }
@@ -280,35 +280,35 @@ async fn demo_tracing(client: &EnhancedOtlpClient) -> Result<(), Box<dyn std::er
 // 指标收集示例
 async fn demo_metrics(client: &EnhancedOtlpClient) -> Result<(), Box<dyn std::error::Error>> {
     let meter = client.meter("demo-metrics");
-    
+
     // 创建计数器
     let request_counter = meter
         .u64_counter("requests_total")
         .with_description("Total number of requests")
         .with_unit(Unit::new("1"))
         .init();
-    
+
     // 创建直方图
     let response_time_histogram = meter
         .f64_histogram("response_time_seconds")
         .with_description("Response time in seconds")
         .with_unit(Unit::new("s"))
         .init();
-    
+
     // 记录一些指标
     for i in 0..10 {
         let mut attributes = HashMap::new();
         attributes.insert("method".to_string(), "GET".into());
         attributes.insert("status_code".to_string(), "200".into());
-        
+
         request_counter.add(1, &attributes);
-        
+
         let response_time = 0.1 + (i as f64 * 0.01);
         response_time_histogram.record(response_time, &attributes);
-        
+
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
-    
+
     println!("  ✅ 指标数据已发送");
     Ok(())
 }
@@ -316,12 +316,12 @@ async fn demo_metrics(client: &EnhancedOtlpClient) -> Result<(), Box<dyn std::er
 // 日志记录示例
 async fn demo_logging(client: &EnhancedOtlpClient) -> Result<(), Box<dyn std::error::Error>> {
     use otlp::data::{LogData, LogSeverity, AttributeValue};
-    
+
     let mut attributes = HashMap::new();
     attributes.insert("service.name".to_string(), AttributeValue::String("demo-app".to_string()));
     attributes.insert("user.id".to_string(), AttributeValue::String("12345".to_string()));
     attributes.insert("request.id".to_string(), AttributeValue::String("req-001".to_string()));
-    
+
     let log_entries = vec![
         LogData {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos() as u64,
@@ -342,9 +342,9 @@ async fn demo_logging(client: &EnhancedOtlpClient) -> Result<(), Box<dyn std::er
             resource: None,
         },
     ];
-    
+
     client.export_logs(log_entries).await?;
-    
+
     println!("  ✅ 日志数据已发送");
     Ok(())
 }
@@ -391,14 +391,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         randomization_factor: 0.1,
         retryable_errors: vec![ErrorType::Network, ErrorType::Timeout],
     };
-    
+
     let batch_config = BatchConfig {
         max_batch_size: 1000,
         batch_timeout: Duration::from_secs(5),
         max_queue_size: 10000,
         strategy: BatchStrategy::Hybrid,
     };
-    
+
     let client = EnhancedOtlpClient::builder()
         .with_endpoint("http://localhost:4317")
         .with_service_name("advanced-app")
@@ -408,7 +408,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_grpc_transport()
         .build()
         .await?;
-    
+
     println!("✅ 高级配置的 OTLP 客户端创建成功！");
     Ok(())
 }
@@ -422,7 +422,7 @@ use otlp::{core::EnhancedOtlpClient, error::OtlpError};
 async fn robust_operation(client: &EnhancedOtlpClient) -> Result<(), OtlpError> {
     let tracer = client.tracer("robust-component");
     let mut span = tracer.start("robust-operation");
-    
+
     match risky_operation().await {
         Ok(result) => {
             span.set_attribute("operation.status", "success");
@@ -458,29 +458,29 @@ use std::time::Instant;
 async fn monitored_operation(client: &EnhancedOtlpClient) -> Result<(), Box<dyn std::error::Error>> {
     let tracer = client.tracer("performance-monitor");
     let meter = client.meter("performance-metrics");
-    
+
     let mut span = tracer.start("monitored-operation");
     let start_time = Instant::now();
-    
+
     // 执行业务逻辑
     let result = business_logic().await?;
-    
+
     let duration = start_time.elapsed();
-    
+
     // 记录性能指标
     let duration_counter = meter
         .f64_histogram("operation_duration_seconds")
         .init();
-    
+
     let mut attributes = HashMap::new();
     attributes.insert("operation.type".to_string(), "business_logic".into());
-    
+
     duration_counter.record(duration.as_secs_f64(), &attributes);
-    
+
     span.set_attribute("operation.duration_ms", duration.as_millis() as i64);
     span.set_attribute("operation.result", result);
     span.end();
-    
+
     Ok(())
 }
 
@@ -680,5 +680,5 @@ otlp = { path = "../crates/otlp", features = ["full"] }
 
 ---
 
-*最后更新: 2025年10月20日*  
-*教程版本: 1.0.0*
+_最后更新: 2025年10月20日_
+_教程版本: 1.0.0_

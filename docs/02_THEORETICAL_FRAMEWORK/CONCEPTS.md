@@ -1,7 +1,7 @@
 ﻿# 理论框架核心概念
 
-**版本**: 1.0  
-**日期**: 2025年10月28日  
+**版本**: 1.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
@@ -24,10 +24,12 @@
 #### 定义
 
 **形式化定义**: 操作语义定义为状态转换系统 (Σ, →)，其中：
+
 - Σ: 系统状态集合
 - →: 状态转换关系, → ⊆ Σ × Σ
 
 **转换规则**: σ' = δ(σ, e)
+
 - σ: 当前状态
 - e: 执行操作
 - σ': 新状态
@@ -106,6 +108,7 @@ sm.transition(Event::Finish);     // Running(1) → Done(1)
 ⟦·⟧: Syntax → Semantics
 
 其中：
+
 - Syntax: 语法结构
 - Semantics: 语义域（通常是数学对象）
 - ⟦·⟧: 语义函数
@@ -184,11 +187,13 @@ assert_eq!(expr.denote(), 14);  // ⟦2 + 3 * 4⟧ = 14
 {P} C {Q}
 
 其中：
+
 - P: 前置条件 (Precondition)
 - C: 程序命令 (Command)
 - Q: 后置条件 (Postcondition)
 
 **霍尔逻辑规则**:
+
 - 赋值: {Q[x/e]} x := e {Q}
 - 顺序: {P} C₁ {Q}, {Q} C₂ {R} ⇒ {P} C₁; C₂ {R}
 - 条件: {P ∧ B} C₁ {Q}, {P ∧ ¬B} C₂ {Q} ⇒ {P} if B then C₁ else C₂ {Q}
@@ -212,29 +217,29 @@ assert_eq!(expr.denote(), 14);  // ⟦2 + 3 * 4⟧ = 14
 ```rust
 // 公理语义示例：带断言的函数
 /// 霍尔三元组: {x >= 0} increment(x) {result > x}
-/// 
+///
 /// 前置条件: x >= 0
 /// 后置条件: result > x
 fn increment(x: i32) -> i32 {
     // 前置条件断言
     assert!(x >= 0, "Precondition violated: x must be >= 0");
-    
+
     let result = x + 1;
-    
+
     // 后置条件断言
     assert!(result > x, "Postcondition violated: result must be > x");
-    
+
     result
 }
 
 // 更复杂的例子：数组查找
-/// {array.len() > 0 && value存在于array中} 
-/// find(array, value) 
+/// {array.len() > 0 && value存在于array中}
+/// find(array, value)
 /// {result < array.len() && array[result] == value}
 fn find<T: Eq>(array: &[T], value: &T) -> Option<usize> {
     // 前置条件
     assert!(!array.is_empty(), "Array must not be empty");
-    
+
     for (i, item) in array.iter().enumerate() {
         if item == value {
             // 后置条件在此满足
@@ -243,7 +248,7 @@ fn find<T: Eq>(array: &[T], value: &T) -> Option<usize> {
             return Some(i);
         }
     }
-    
+
     None  // value不存在
 }
 ```
@@ -257,6 +262,7 @@ fn find<T: Eq>(array: &[T], value: &T) -> Option<usize> {
 #### 定义
 
 **形式化定义**: Petri网是一个五元组 PN = (P, T, F, W, M₀)，其中：
+
 - P: 库所(Place)集合
 - T: 变迁(Transition)集合
 - F ⊆ (P × T) ∪ (T × P): 流关系
@@ -264,6 +270,7 @@ fn find<T: Eq>(array: &[T], value: &T) -> Option<usize> {
 - M₀: P → ℕ: 初始标识
 
 **触发规则**:
+
 - 变迁t使能: ∀p ∈ •t, M(p) ≥ W(p, t)
 - 触发后: M'(p) = M(p) - W(p, t) + W(t, p)
 
@@ -311,25 +318,25 @@ impl PetriNet {
             self.places[*place_id].tokens >= *weight
         })
     }
-    
+
     // 触发变迁
     fn fire(&mut self, transition_id: usize) -> Result<(), String> {
         let transition = &self.transitions[transition_id];
-        
+
         if !self.is_enabled(transition) {
             return Err("Transition not enabled".to_string());
         }
-        
+
         // 从输入库所移除令牌
         for (place_id, weight) in &transition.input_places {
             self.places[*place_id].tokens -= weight;
         }
-        
+
         // 向输出库所添加令牌
         for (place_id, weight) in &transition.output_places {
             self.places[*place_id].tokens += weight;
         }
-        
+
         Ok(())
     }
 }
@@ -342,11 +349,13 @@ impl PetriNet {
 #### 定义
 
 **形式化定义**: Actor = (Identity, Behavior, Mailbox)，其中：
+
 - Identity: 唯一标识符
 - Behavior: 行为函数 B: Message → Action
 - Mailbox: 消息队列
 
 **消息传递语义**:
+
 - 异步发送: send(actor, message)
 - 顺序处理: 消息按接收顺序处理
 - 位置透明: Actor可在不同机器上
@@ -387,7 +396,7 @@ impl Actor for Counter {
 // 实现消息处理
 impl Handler<Increment> for Counter {
     type Result = i32;
-    
+
     fn handle(&mut self, msg: Increment, _ctx: &mut Context<Self>) -> Self::Result {
         self.count += msg.0;
         self.count
@@ -398,7 +407,7 @@ impl Handler<Increment> for Counter {
 #[actix::main]
 async fn main() {
     let counter = Counter { count: 0 }.start();
-    
+
     // 异步发送消息
     let result = counter.send(Increment(5)).await.unwrap();
     println!("Count: {}", result);  // Count: 5
@@ -414,6 +423,7 @@ async fn main() {
 #### 定义
 
 **形式化定义**: MAPE-K = (M, A, P, E, K)，其中：
+
 - M: Monitor（监控）
 - A: Analyze（分析）
 - P: Plan（规划）
@@ -421,6 +431,7 @@ async fn main() {
 - K: Knowledge（知识库）
 
 **循环过程**:
+
 ```
 Monitor → Analyze → Plan → Execute → Monitor
     ↓         ↓       ↓       ↓
@@ -452,22 +463,22 @@ impl<T> MapeK<T> {
     async fn run_cycle(&mut self) -> Result<(), Error> {
         // 1. Monitor: 收集数据
         let observations = self.monitor.collect().await?;
-        
+
         // 2. Analyze: 分析问题
         let issues = self.analyzer.analyze(&observations).await?;
-        
+
         // 3. Plan: 制定计划
         let knowledge = self.knowledge.read().await;
         let plan = self.planner.plan(&issues, &knowledge).await?;
         drop(knowledge);
-        
+
         // 4. Execute: 执行计划
         self.executor.execute(&plan).await?;
-        
+
         // 5. Update Knowledge: 更新知识库
         let mut knowledge = self.knowledge.write().await;
         knowledge.update(observations, plan);
-        
+
         Ok(())
     }
 }
@@ -483,6 +494,7 @@ impl<T> MapeK<T> {
 u(t) = Kₚe(t) + Kᵢ∫₀ᵗe(τ)dτ + Kd(de(t)/dt)
 
 其中：
+
 - e(t): 误差 = 设定值 - 测量值
 - Kₚ: 比例系数
 - Kᵢ: 积分系数
@@ -504,7 +516,7 @@ struct PidController {
     kp: f64,  // 比例系数
     ki: f64,  // 积分系数
     kd: f64,  // 微分系数
-    
+
     integral: f64,
     last_error: f64,
 }
@@ -513,18 +525,18 @@ impl PidController {
     fn update(&mut self, setpoint: f64, measurement: f64, dt: f64) -> f64 {
         // 计算误差
         let error = setpoint - measurement;
-        
+
         // 比例项
         let p = self.kp * error;
-        
+
         // 积分项
         self.integral += error * dt;
         let i = self.ki * self.integral;
-        
+
         // 微分项
         let d = self.kd * (error - self.last_error) / dt;
         self.last_error = error;
-        
+
         // PID输出
         p + i + d
     }
@@ -554,10 +566,12 @@ let adjustment = pid.update(target_cpu, current_cpu, 1.0);
 #### 定义
 
 **形式化定义**: 流 S = (e₁, e₂, ..., eₙ, ...)，其中：
+
 - eᵢ: 第i个事件
 - 时间有序: t(eᵢ) ≤ t(eᵢ₊₁)
 
 **操作语义**:
+
 - map: S → S'
 - filter: S → S' ⊆ S
 - reduce: S → v
@@ -586,7 +600,7 @@ async fn process_telemetry_stream() {
         .for_each(|batch| async move {
             send_to_backend(batch).await;
         });
-        
+
     stream.await;
 }
 ```
@@ -600,11 +614,13 @@ async fn process_telemetry_stream() {
 #### 定义
 
 **形式化定义**: 自适应函数 A: (S, C) → S'，其中：
+
 - S: 当前系统状态
 - C: 环境上下文
 - S': 适配后状态
 
 **约束条件**:
+
 - 目标保持: Goals(S') ⊇ Goals(S)
 - 资源约束: Resources(S') ≤ Available(C)
 - 质量保证: Quality(S') ≥ QoS_min
@@ -618,12 +634,12 @@ impl AdaptiveSystem {
     async fn adapt(&mut self, context: &Context) -> Result<(), Error> {
         // 评估当前状态
         let current_qos = self.measure_qos().await?;
-        
+
         // 决定是否需要适配
         if current_qos < self.qos_threshold {
             // 分析环境
             let load = context.current_load;
-            
+
             // 选择适配策略
             let strategy = if load > 0.8 {
                 AdaptStrategy::ScaleOut
@@ -632,11 +648,11 @@ impl AdaptiveSystem {
             } else {
                 AdaptStrategy::Optimize
             };
-            
+
             // 执行适配
             self.execute_strategy(strategy).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -651,11 +667,13 @@ impl AdaptiveSystem {
 #### 定义
 
 **形式化定义**: M ⊨ φ，其中：
+
 - M: 系统模型（通常是状态转换系统）
 - φ: 时序逻辑公式（如LTL、CTL）
 - ⊨: 满足关系
 
 **验证过程**:
+
 1. 建立系统模型 M
 2. 编写性质规约 φ
 3. 自动检查 M 是否满足 φ
@@ -671,12 +689,12 @@ impl AdaptiveSystem {
 fn verify_increment() {
     let x: i32 = kani::any();
     kani::assume(x < i32::MAX);
-    
+
     let result = increment(x);
-    
+
     // 验证性质：result > x
     assert!(result > x);
-    
+
     // 验证性质：不会溢出
     assert!(result != i32::MIN);
 }
@@ -693,8 +711,7 @@ fn verify_increment() {
 
 ---
 
-**版本**: 1.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28  
+**版本**: 1.0
+**创建日期**: 2025-10-28
+**最后更新**: 2025-10-28
 **维护团队**: OTLP_rust理论团队
-

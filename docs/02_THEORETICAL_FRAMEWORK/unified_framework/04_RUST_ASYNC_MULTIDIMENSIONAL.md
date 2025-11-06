@@ -1,8 +1,8 @@
 ﻿# OTLP 统一理论框架 - 第四部分
 
-**版本**: 2.0  
-**创建日期**: 2025年10月26日  
-**前置文档**: 第一、二、三部分  
+**版本**: 2.0
+**创建日期**: 2025年10月26日
+**前置文档**: 第一、二、三部分
 **状态**: 🟢 活跃维护
 
 > **简介**: 统一理论框架第四部分 - Rust异步/并发模型与OTLP的多维度转换关系。
@@ -10,8 +10,9 @@
 ---
 
 ## 📋 目录
+
 - [OTLP 统一理论框架 - 第四部分](#otlp-统一理论框架---第四部分)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [第六部分: Rust异步/并发模型与OTLP的转换关系](#第六部分-rust异步并发模型与otlp的转换关系)
     - [6.1 Future语义与Span的对应](#61-future语义与span的对应)
       - [6.1.1 Future的形式化语义](#611-future的形式化语义)
@@ -107,7 +108,7 @@ future_to_span: Future<T> → Span
 每次poll对应一个Span event:
 
 Future生命周期 → Span生命周期:
-  
+
   Created    → Span created (start_time set)
   Polled(1)  → Event("first_poll")
   Pending    → Event("suspended")
@@ -189,34 +190,34 @@ pub struct TracedFuture<F> {
 
 impl<F: Future> Future for TracedFuture<F> {
     type Output = F::Output;
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = unsafe { self.get_unchecked_mut() };
         let poll_count = this.tracer.poll_count.fetch_add(1, Ordering::Relaxed);
-        
+
         // 第一次poll: 创建Span
         if poll_count == 0 {
             let span = this.tracer.tracer.start_span(&this.name);
             span.add_event("future_created", vec![]);
             this.tracer.span_id = Some(span.span_id);
         }
-        
+
         let span = this.tracer.tracer.get_span(this.tracer.span_id.unwrap());
-        
+
         // 记录poll事件
         span.add_event(
             if poll_count == 0 { "first_poll" } else { "resumed" },
             vec![("poll_count", poll_count.to_string().into())],
         );
-        
+
         // Poll内部Future
         let start = Instant::now();
         let result = unsafe { Pin::new_unchecked(&mut this.inner) }.poll(cx);
         let poll_duration = start.elapsed();
-        
+
         span.set_attribute("total_polls", (poll_count + 1) as i64);
         span.set_attribute("last_poll_duration_us", poll_duration.as_micros() as i64);
-        
+
         match &result {
             Poll::Ready(_) => {
                 span.add_event("future_ready", vec![
@@ -230,7 +231,7 @@ impl<F: Future> Future for TracedFuture<F> {
                 ]);
             }
         }
-        
+
         result
     }
 }
@@ -240,7 +241,7 @@ impl<F> Drop for TracedFuture<F> {
         if let Some(span_id) = self.tracer.span_id {
             let span = self.tracer.tracer.get_span(span_id);
             let poll_count = self.tracer.poll_count.load(Ordering::Relaxed);
-            
+
             // 如果Future被drop但没有Ready,说明被取消了
             span.add_event("future_dropped", vec![
                 ("completed", "false".into()),
@@ -254,7 +255,7 @@ impl<F> Drop for TracedFuture<F> {
 /// 追踪Future组合子
 pub mod combinators {
     use super::*;
-    
+
     /// 追踪map
     pub async fn trace_map<F, T, U, Func>(
         future: F,
@@ -265,18 +266,18 @@ pub mod combinators {
         Func: FnOnce(T) -> U,
     {
         let mut span = get_global_tracer().start_span("future_map");
-        
+
         // 等待原Future完成
         let result = future.await;
         span.add_event("inner_future_ready", vec![]);
-        
+
         // 应用映射函数
         let mapped = f(result);
         span.add_event("map_function_applied", vec![]);
-        
+
         mapped
     }
-    
+
     /// 追踪join
     pub async fn trace_join<F1, F2, T, U>(
         future1: F1,
@@ -288,21 +289,21 @@ pub mod combinators {
     {
         let mut span = get_global_tracer().start_span("future_join");
         span.set_attribute("concurrent", true);
-        
+
         let start = Instant::now();
-        
+
         // 并发执行两个Future
         let (r1, r2) = tokio::join!(
             TracedFuture::trace("join_left", future1),
             TracedFuture::trace("join_right", future2)
         );
-        
+
         let duration = start.elapsed();
         span.set_attribute("total_duration_ms", duration.as_millis() as i64);
-        
+
         (r1, r2)
     }
-    
+
     /// 追踪select
     pub async fn trace_select<F1, F2, T>(
         future1: F1,
@@ -314,7 +315,7 @@ pub mod combinators {
     {
         let mut span = get_global_tracer().start_span("future_select");
         span.set_attribute("racing", true);
-        
+
         let result = tokio::select! {
             r1 = TracedFuture::trace("select_left", future1) => {
                 span.add_event("left_won", vec![]);
@@ -325,7 +326,7 @@ pub mod combinators {
                 Either::Right(r2)
             }
         };
-        
+
         result
     }
 }
@@ -412,7 +413,7 @@ impl TokioRuntimeTracer {
     /// 创建带追踪的运行时
     pub fn build_traced_runtime() -> (Runtime, TokioRuntimeTracer) {
         let tracer = get_global_tracer();
-        
+
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(num_cpus::get())
             .thread_name("otlp-worker")
@@ -426,17 +427,17 @@ impl TokioRuntimeTracer {
             })
             .build()
             .unwrap();
-        
+
         let worker_tracers = (0..num_cpus::get())
             .map(|i| WorkerTracer::new(tracer.clone(), i))
             .collect();
-        
+
         (runtime, TokioRuntimeTracer {
             tracer,
             worker_tracers,
         })
     }
-    
+
     /// 追踪任务spawn
     pub fn spawn<F>(&self, future: F) -> JoinHandle<F::Output>
     where
@@ -445,19 +446,19 @@ impl TokioRuntimeTracer {
     {
         let mut span = self.tracer.start_span("task_spawn");
         span.set_attribute("task_type", std::any::type_name::<F>());
-        
+
         let task_id = generate_task_id();
         span.set_attribute("task_id", task_id.to_string());
-        
+
         tokio::spawn(async move {
             let mut exec_span = get_global_tracer().start_span("task_execution");
             exec_span.set_attribute("task_id", task_id.to_string());
             exec_span.set_attribute("worker_id", get_worker_id().to_string());
-            
+
             let start = Instant::now();
             let result = future.await;
             let duration = start.elapsed();
-            
+
             exec_span.set_attribute("duration_ms", duration.as_millis() as i64);
             result
         })
@@ -483,21 +484,21 @@ impl WorkerTracer {
             tasks_yielded: AtomicU64::new(0),
         }
     }
-    
+
     /// 记录任务执行
     pub fn record_task_execution(&self) {
         self.tasks_executed.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     /// 记录任务窃取
     pub fn record_task_steal(&self, from_worker: usize) {
         self.tasks_stolen.fetch_add(1, Ordering::Relaxed);
-        
+
         let mut span = self.tracer.start_span("task_stolen");
         span.set_attribute("from_worker", from_worker as i64);
         span.set_attribute("to_worker", self.worker_id as i64);
     }
-    
+
     /// 获取统计信息
     pub fn get_stats(&self) -> WorkerStats {
         WorkerStats {
@@ -507,21 +508,21 @@ impl WorkerTracer {
             tasks_yielded: self.tasks_yielded.load(Ordering::Relaxed),
         }
     }
-    
+
     /// 定期报告统计
     pub async fn report_periodically(&self) {
         let mut interval = tokio::time::interval(Duration::from_secs(10));
-        
+
         loop {
             interval.tick().await;
-            
+
             let stats = self.get_stats();
             let mut span = self.tracer.start_span("worker_stats");
             span.set_attribute("worker_id", stats.worker_id as i64);
             span.set_attribute("tasks_executed", stats.tasks_executed as i64);
             span.set_attribute("tasks_stolen", stats.tasks_stolen as i64);
             span.set_attribute("tasks_yielded", stats.tasks_yielded as i64);
-            
+
             let steal_rate = stats.tasks_stolen as f64 / stats.tasks_executed.max(1) as f64;
             span.set_attribute("steal_rate", steal_rate);
         }
@@ -541,15 +542,15 @@ impl IoTracer {
     {
         let mut span = self.tracer.start_span("io_operation");
         span.set_attribute("io_type", op_type);
-        
+
         span.add_event("io_queued", vec![]);
-        
+
         let start = Instant::now();
         let result = io_op.await;
         let duration = start.elapsed();
-        
+
         span.set_attribute("duration_us", duration.as_micros() as i64);
-        
+
         match &result {
             Ok(_) => {
                 span.add_event("io_completed", vec![]);
@@ -562,22 +563,22 @@ impl IoTracer {
                 span.set_status(SpanStatus::Error);
             }
         }
-        
+
         result.map_err(|e| OtlpError::IoError(e))
     }
-    
+
     /// 追踪TCP连接
     pub async fn trace_tcp_connect(&self, addr: &str) -> Result<TcpStream, OtlpError> {
         self.trace_io("tcp_connect", async move {
             TcpStream::connect(addr).await
         }).await
     }
-    
+
     /// 追踪文件读取
     pub async fn trace_file_read(&self, path: &str) -> Result<Vec<u8>, OtlpError> {
         let mut span = self.tracer.start_span("file_read");
         span.set_attribute("file_path", path);
-        
+
         self.trace_io("file_io", async move {
             tokio::fs::read(path).await
         }).await
@@ -594,7 +595,7 @@ impl IoTracer {
 
 1. Await链:
    a().await → b().await → c().await
-   
+
    Span表示:
    span_a {
      children: [span_b {
@@ -604,7 +605,7 @@ impl IoTracer {
 
 2. 并发执行:
    tokio::join!(a(), b(), c())
-   
+
    Span表示:
    span_parent {
      children: [span_a, span_b, span_c],
@@ -613,7 +614,7 @@ impl IoTracer {
 
 3. 条件await:
    if cond { a().await } else { b().await }
-   
+
    Span表示:
    span_parent {
      children: [span_winner],
@@ -624,7 +625,7 @@ impl IoTracer {
    for item in items {
      process(item).await
    }
-   
+
    Span表示:
    span_parent {
      children: [span_iter_0, span_iter_1, ...],
@@ -673,22 +674,22 @@ impl AsyncControlFlowTracer {
         F3: FnOnce(T2) -> Future<Output = T3>,
     {
         let mut span = self.tracer.start_span("await_chain");
-        
+
         span.add_event("stage_1_start", vec![]);
         let r1 = op1.await;
         span.add_event("stage_1_complete", vec![]);
-        
+
         span.add_event("stage_2_start", vec![]);
         let r2 = op2(r1).await;
         span.add_event("stage_2_complete", vec![]);
-        
+
         span.add_event("stage_3_start", vec![]);
         let r3 = op3(r2).await;
         span.add_event("stage_3_complete", vec![]);
-        
+
         r3
     }
-    
+
     /// 追踪并发join
     pub async fn trace_concurrent_join<F1, F2, T1, T2>(
         &self,
@@ -700,9 +701,9 @@ impl AsyncControlFlowTracer {
     {
         let mut span = self.tracer.start_span("concurrent_join");
         span.set_attribute("task_count", futures.len() as i64);
-        
+
         let start = Instant::now();
-        
+
         let handles: Vec<_> = futures.into_iter()
             .enumerate()
             .map(|(i, future)| {
@@ -710,22 +711,22 @@ impl AsyncControlFlowTracer {
                 tokio::spawn(async move {
                     let mut task_span = tracer.start_span(&format!("concurrent_task_{}", i));
                     task_span.set_attribute("task_index", i as i64);
-                    
+
                     let task_start = Instant::now();
                     let result = future.await;
                     let task_duration = task_start.elapsed();
-                    
+
                     task_span.set_attribute("duration_ms", task_duration.as_millis() as i64);
                     result
                 })
             })
             .collect();
-        
+
         let results = futures::future::join_all(handles).await;
         let total_duration = start.elapsed();
-        
+
         span.set_attribute("total_duration_ms", total_duration.as_millis() as i64);
-        
+
         // 计算并行加速
         let sequential_time: u128 = results.iter()
             .filter_map(|r| r.as_ref().ok())
@@ -733,10 +734,10 @@ impl AsyncControlFlowTracer {
             .sum();
         let speedup = sequential_time as f64 / total_duration.as_millis() as f64;
         span.set_attribute("speedup", speedup);
-        
+
         results.into_iter().filter_map(|r| r.ok()).collect()
     }
-    
+
     /// 追踪条件异步分支
     pub async fn trace_conditional_await<F1, F2, T>(
         &self,
@@ -750,7 +751,7 @@ impl AsyncControlFlowTracer {
     {
         let mut span = self.tracer.start_span("conditional_await");
         span.set_attribute("condition", condition);
-        
+
         if condition {
             span.add_event("then_branch_taken", vec![]);
             let result = then_branch.await;
@@ -763,7 +764,7 @@ impl AsyncControlFlowTracer {
             result
         }
     }
-    
+
     /// 追踪异步循环
     pub async fn trace_async_loop<F, T, I>(
         &self,
@@ -775,25 +776,25 @@ impl AsyncControlFlowTracer {
         I: IntoIterator,
     {
         let mut span = self.tracer.start_span("async_loop");
-        
+
         let mut results = Vec::new();
         let mut iteration = 0;
-        
+
         for item in items {
             span.add_event("iteration_start", vec![
                 ("iteration", iteration.to_string().into()),
             ]);
-            
+
             let result = processor(item).await;
             results.push(result);
-            
+
             span.add_event("iteration_complete", vec![
                 ("iteration", iteration.to_string().into()),
             ]);
-            
+
             iteration += 1;
         }
-        
+
         span.set_attribute("iteration_count", iteration as i64);
         results
     }
@@ -809,22 +810,22 @@ pub struct StreamTracer<S> {
 
 impl<S: Stream> Stream for StreamTracer<S> {
     type Item = S::Item;
-    
+
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = unsafe { self.get_unchecked_mut() };
-        
+
         // 首次poll: 创建span
         if this.span.is_none() {
             let span = this.tracer.start_span("stream_processing");
             span.add_event("stream_started", vec![]);
             this.span = Some(span);
         }
-        
+
         let span = this.span.as_mut().unwrap();
-        
+
         // Poll底层stream
         let result = unsafe { Pin::new_unchecked(&mut this.stream) }.poll_next(cx);
-        
+
         match &result {
             Poll::Ready(Some(_)) => {
                 this.item_count += 1;
@@ -843,7 +844,7 @@ impl<S: Stream> Stream for StreamTracer<S> {
                 span.add_event("stream_pending", vec![]);
             }
         }
-        
+
         result
     }
 }
@@ -937,7 +938,7 @@ impl OlapCube {
     pub async fn build_from_traces(&mut self, traces: &[Trace]) -> Result<(), OtlpError> {
         let mut span = self.tracer.start_span("build_olap_cube");
         span.set_attribute("trace_count", traces.len() as i64);
-        
+
         for trace in traces {
             for span in &trace.spans {
                 // 提取维度值
@@ -950,7 +951,7 @@ impl OlapCube {
                         format!("{:?}", span.status),
                     ],
                 };
-                
+
                 // 计算度量值
                 let measures = MeasureValues {
                     values: vec![
@@ -959,7 +960,7 @@ impl OlapCube {
                         if span.status == SpanStatus::Error { 1.0 } else { 0.0 },  // error
                     ],
                 };
-                
+
                 // 更新或插入fact
                 self.facts.entry(dim_key)
                     .and_modify(|e| {
@@ -970,11 +971,11 @@ impl OlapCube {
                     .or_insert(measures);
             }
         }
-        
+
         span.set_attribute("fact_count", self.facts.len() as i64);
         Ok(())
     }
-    
+
     /// Roll-Up操作
     pub async fn rollup(
         &self,
@@ -984,12 +985,12 @@ impl OlapCube {
         let mut span = self.tracer.start_span("olap_rollup");
         span.set_attribute("from_dimension", from_dim);
         span.set_attribute("to_dimension", to_dim);
-        
+
         let from_idx = self.dimension_index(from_dim).unwrap();
         let to_idx = self.dimension_index(to_dim).unwrap();
-        
+
         let mut rolled_up = HashMap::new();
-        
+
         for (key, measures) in &self.facts {
             // 创建新的粗粒度key
             let mut new_key = key.clone();
@@ -998,7 +999,7 @@ impl OlapCube {
                 from_dim,
                 to_dim,
             );
-            
+
             // 聚合度量
             rolled_up.entry(new_key)
                 .and_modify(|e: &mut MeasureValues| {
@@ -1008,11 +1009,11 @@ impl OlapCube {
                 })
                 .or_insert(measures.clone());
         }
-        
+
         span.set_attribute("result_count", rolled_up.len() as i64);
         rolled_up
     }
-    
+
     /// Drill-Down操作
     pub async fn drilldown(
         &self,
@@ -1022,18 +1023,18 @@ impl OlapCube {
         let mut span = self.tracer.start_span("olap_drilldown");
         span.set_attribute("dimension", dimension);
         span.set_attribute("value", value);
-        
+
         let dim_idx = self.dimension_index(dimension).unwrap();
-        
+
         let filtered: HashMap<_, _> = self.facts.iter()
             .filter(|(key, _)| key.values[dim_idx].starts_with(value))
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
-        
+
         span.set_attribute("result_count", filtered.len() as i64);
         filtered
     }
-    
+
     /// Slice操作
     pub async fn slice(
         &self,
@@ -1043,18 +1044,18 @@ impl OlapCube {
         let mut span = self.tracer.start_span("olap_slice");
         span.set_attribute("dimension", dimension);
         span.set_attribute("value", value);
-        
+
         let dim_idx = self.dimension_index(dimension).unwrap();
-        
+
         let sliced: HashMap<_, _> = self.facts.iter()
             .filter(|(key, _)| key.values[dim_idx] == value)
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
-        
+
         span.set_attribute("result_count", sliced.len() as i64);
         sliced
     }
-    
+
     /// 多维聚合查询
     pub async fn aggregate_query(
         &self,
@@ -1065,7 +1066,7 @@ impl OlapCube {
         let mut span = self.tracer.start_span("aggregate_query");
         span.set_attribute("group_by", group_by.join(","));
         span.set_attribute("agg_func", format!("{:?}", agg_func));
-        
+
         let filtered_facts = if let Some(pred) = filter {
             self.facts.iter()
                 .filter(|(k, _)| pred.eval(k))
@@ -1073,13 +1074,13 @@ impl OlapCube {
         } else {
             self.facts.iter().collect()
         };
-        
+
         let mut aggregated = HashMap::new();
-        
+
         for (key, measures) in filtered_facts {
             // 创建分组key(只保留group_by维度)
             let group_key = self.project_key(key, &group_by);
-            
+
             // 聚合
             let value = match agg_func {
                 AggregationFunction::Sum => measures.values[agg_func.measure_index()],
@@ -1088,12 +1089,12 @@ impl OlapCube {
                 AggregationFunction::Max => measures.values[agg_func.measure_index()],
                 AggregationFunction::Min => measures.values[agg_func.measure_index()],
             };
-            
+
             aggregated.entry(group_key)
                 .and_modify(|e| *e = agg_func.combine(*e, value))
                 .or_insert(value);
         }
-        
+
         span.set_attribute("result_count", aggregated.len() as i64);
         aggregated
     }
@@ -1154,30 +1155,30 @@ impl CorrelationAnalyzer {
     ) -> Result<f64, OtlpError> {
         let mut span = self.tracer.start_span("pearson_correlation");
         span.set_attribute("sample_size", x.len() as i64);
-        
+
         if x.len() != y.len() {
             return Err(OtlpError::DimensionMismatch);
         }
-        
+
         let n = x.len() as f64;
         let mean_x = x.iter().sum::<f64>() / n;
         let mean_y = y.iter().sum::<f64>() / n;
-        
+
         let cov: f64 = x.iter().zip(y.iter())
             .map(|(xi, yi)| (xi - mean_x) * (yi - mean_y))
             .sum::<f64>() / n;
-        
+
         let std_x = (x.iter().map(|xi| (xi - mean_x).powi(2)).sum::<f64>() / n).sqrt();
         let std_y = (y.iter().map(|yi| (yi - mean_y).powi(2)).sum::<f64>() / n).sqrt();
-        
+
         let correlation = cov / (std_x * std_y);
-        
+
         span.set_attribute("correlation", correlation);
         span.set_attribute("strength", classify_correlation(correlation));
-        
+
         Ok(correlation)
     }
-    
+
     /// 构建相关矩阵
     pub async fn correlation_matrix(
         &self,
@@ -1186,9 +1187,9 @@ impl CorrelationAnalyzer {
         let mut span = self.tracer.start_span("correlation_matrix");
         let n = metrics.len();
         span.set_attribute("metric_count", n as i64);
-        
+
         let mut matrix = Matrix::zeros(n, n);
-        
+
         for i in 0..n {
             for j in 0..n {
                 if i == j {
@@ -1200,10 +1201,10 @@ impl CorrelationAnalyzer {
                 }
             }
         }
-        
+
         Ok(matrix)
     }
-    
+
     /// 部分相关分析
     pub async fn partial_correlation(
         &self,
@@ -1213,20 +1214,20 @@ impl CorrelationAnalyzer {
     ) -> Result<f64, OtlpError> {
         let mut span = self.tracer.start_span("partial_correlation");
         span.set_attribute("control_variables", control.len() as i64);
-        
+
         // 对X回归control,得到残差
         let x_residuals = self.regress_out(x, control).await?;
-        
+
         // 对Y回归control,得到残差
         let y_residuals = self.regress_out(y, control).await?;
-        
+
         // 计算残差的相关性
         let partial_corr = self.pearson_correlation(&x_residuals, &y_residuals).await?;
-        
+
         span.set_attribute("partial_correlation", partial_corr);
         Ok(partial_corr)
     }
-    
+
     /// 格兰杰因果检验
     pub async fn granger_causality(
         &self,
@@ -1236,25 +1237,25 @@ impl CorrelationAnalyzer {
     ) -> Result<GrangerResult, OtlpError> {
         let mut span = self.tracer.start_span("granger_causality");
         span.set_attribute("max_lag", max_lag as i64);
-        
+
         // 受限模型: Y只由自身历史预测
         let restricted_model = self.ar_model(effect, max_lag).await?;
         let rss_restricted = restricted_model.residual_sum_squares;
-        
+
         // 非受限模型: Y由自身历史和X历史预测
         let unrestricted_model = self.var_model(effect, cause, max_lag).await?;
         let rss_unrestricted = unrestricted_model.residual_sum_squares;
-        
+
         // F检验
         let f_stat = ((rss_restricted - rss_unrestricted) / max_lag as f64) /
                      (rss_unrestricted / (effect.len() - 2 * max_lag - 1) as f64);
-        
+
         let p_value = f_distribution_cdf(f_stat, max_lag, effect.len() - 2 * max_lag - 1);
-        
+
         span.set_attribute("f_statistic", f_stat);
         span.set_attribute("p_value", p_value);
         span.set_attribute("is_causal", p_value < 0.05);
-        
+
         Ok(GrangerResult {
             f_statistic: f_stat,
             p_value,

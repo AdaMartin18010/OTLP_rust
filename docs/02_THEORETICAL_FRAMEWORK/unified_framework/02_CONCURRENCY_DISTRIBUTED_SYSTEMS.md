@@ -1,8 +1,8 @@
 ﻿# OTLP 统一理论框架 - 第二部分
 
-**版本**: 2.0  
-**创建日期**: 2025年10月26日  
-**前置**: 第一部分 - 形式化基础与三流分析  
+**版本**: 2.0
+**创建日期**: 2025年10月26日
+**前置**: 第一部分 - 形式化基础与三流分析
 **状态**: 🟢 活跃维护
 
 > **简介**: 统一理论框架第二部分 - 图灵可计算性、并发理论和分布式系统。
@@ -10,8 +10,9 @@
 ---
 
 ## 📋 目录
+
 - [OTLP 统一理论框架 - 第二部分](#otlp-统一理论框架---第二部分)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [第三部分: 图灵可计算性与并发并行理论](#第三部分-图灵可计算性与并发并行理论)
     - [3.1 图灵机模型与OTLP](#31-图灵机模型与otlp)
       - [3.1.1 图灵机的形式化定义](#311-图灵机的形式化定义)
@@ -133,7 +134,7 @@ Config_Span = {
   无法通过OTLP预先判断计算是否会终止
 
 但可以设置超时:
-  timeout_halts(tm, input, timeout) = 
+  timeout_halts(tm, input, timeout) =
     trace_length(tm, input) ≤ timeout
 ```
 
@@ -152,16 +153,16 @@ impl TuringMachineTracer {
     /// 执行一步并追踪
     pub async fn step(&mut self) -> Result<bool, OtlpError> {
         let mut span = self.tracer.start_span("tm_step");
-        
+
         // 记录当前配置
         span.set_attribute("state", &self.state);
         span.set_attribute("head_position", self.head as i64);
         span.set_attribute("symbol_read", self.tape[self.head].to_string());
-        
+
         // 应用转移函数
-        let (new_state, write_symbol, direction) = 
+        let (new_state, write_symbol, direction) =
             self.transition(&self.state, self.tape[self.head])?;
-        
+
         // 记录转移
         span.add_event("transition", vec![
             ("from_state", self.state.clone().into()),
@@ -169,7 +170,7 @@ impl TuringMachineTracer {
             ("symbol_written", write_symbol.to_string().into()),
             ("direction", direction.to_string().into()),
         ]);
-        
+
         // 更新配置
         self.tape[self.head] = write_symbol;
         self.state = new_state;
@@ -177,19 +178,19 @@ impl TuringMachineTracer {
             Direction::Right => self.head + 1,
             Direction::Left => self.head.saturating_sub(1),
         };
-        
+
         // 检查是否停机
         let halted = self.state == "accept" || self.state == "reject";
         span.set_attribute("halted", halted);
-        
+
         Ok(halted)
     }
-    
+
     /// 运行直到停机或超时
     pub async fn run(&mut self, max_steps: usize) -> Result<TmResult, OtlpError> {
         let mut trace_span = self.tracer.start_span("tm_execution");
         trace_span.set_attribute("max_steps", max_steps as i64);
-        
+
         let mut steps = 0;
         while steps < max_steps {
             if self.step().await? {
@@ -199,7 +200,7 @@ impl TuringMachineTracer {
             }
             steps += 1;
         }
-        
+
         trace_span.set_attribute("result", "timeout");
         Ok(TmResult::Timeout)
     }
@@ -378,14 +379,14 @@ ch是动态创建的通道名
 
 【OTLP Context传播建模】
 
-ContextPropagator = 
+ContextPropagator =
   (νctx)(
-    Parent⟨ctx⟩ | 
+    Parent⟨ctx⟩ |
     Child₁⟨ctx⟩ |
     Child₂⟨ctx⟩
   )
 
-Parent(ctx) = 
+Parent(ctx) =
   ctx̄⟨trace_id⟩.ctx̄⟨span_id⟩.0
 
 Child(ctx) =
@@ -418,7 +419,7 @@ impl PiCalculusContext {
         self.channels.write().await.insert(name, channel);
         channel
     }
-    
+
     /// 发送 x̄⟨y⟩
     pub async fn send(&self, channel: &str, value: ContextValue) -> Result<(), OtlpError> {
         let channels = self.channels.read().await;
@@ -426,14 +427,14 @@ impl PiCalculusContext {
         ch.tx.send(value).await?;
         Ok(())
     }
-    
+
     /// 接收 x(y)
     pub async fn receive(&self, channel: &str) -> Result<ContextValue, OtlpError> {
         let mut channels = self.channels.write().await;
         let ch = channels.get_mut(channel).ok_or(OtlpError::ChannelNotFound)?;
         ch.rx.recv().await.ok_or(OtlpError::ChannelClosed)
     }
-    
+
     /// 并行组合 P | Q
     pub async fn parallel<F1, F2, R1, R2>(&self, p: F1, q: F2) -> (R1, R2)
     where
@@ -442,7 +443,7 @@ impl PiCalculusContext {
     {
         tokio::join!(p, q)
     }
-    
+
     /// 复制 !P
     pub async fn replicate<F, R>(&self, process: F, count: usize) -> Vec<R>
     where
@@ -480,21 +481,21 @@ DataRace(p₁, p₂, x) ⟺
 
 顺序一致性(Sequential Consistency):
   执行结果等价于某个顺序执行
-  
+
   ∀execution. ∃sequential_order.
     program_order ⊆ sequential_order ∧
     result(execution) = result(sequential_order)
 
 因果一致性(Causal Consistency):
   因果相关的操作保持顺序
-  
+
   op₁ causally_precedes op₂ ⟹
     op₁在所有进程中都在op₂之前可见
 
 最终一致性(Eventual Consistency):
   如果没有新的更新,最终所有副本收敛
-  
-  ∀replicas. 
+
+  ∀replicas.
     no_new_updates ⟹
     eventually ∀r₁, r₂. value(r₁) = value(r₂)
 
@@ -512,23 +513,23 @@ impl LockTracer {
     pub async fn lock<T>(&self, mutex: &Mutex<T>, name: &str) -> MutexGuard<T> {
         let mut span = self.tracer.start_span("lock_acquire");
         span.set_attribute("lock_name", name);
-        
+
         let start = Instant::now();
         let guard = mutex.lock().await;
         let wait_time = start.elapsed();
-        
+
         span.set_attribute("wait_time_ms", wait_time.as_millis() as i64);
         span.add_event("lock_acquired", vec![]);
-        
+
         guard
     }
-    
+
     pub fn unlock<T>(&self, guard: MutexGuard<T>) {
         let mut span = self.tracer.start_span("lock_release");
         span.add_event("lock_released", vec![]);
         drop(guard);
     }
-    
+
     /// 检测死锁
     pub fn detect_deadlock(&self, trace: &Trace) -> Vec<Deadlock> {
         let wait_for_graph = self.build_wait_for_graph(trace);
@@ -550,7 +551,7 @@ Message Passing Model = (Processes, Channels)
 
 同步Channel:
   send(ch, msg) 和 recv(ch) 同时发生
-  
+
 异步Channel:
   send(ch, msg) 不阻塞 (缓冲队列)
 
@@ -580,24 +581,24 @@ impl<T> ChannelTracer<T> {
         let mut span = self.tracer.start_span("channel_send");
         span.set_attribute("channel_name", &self.name);
         span.set_attribute("channel_size", self.channel.0.capacity() as i64);
-        
+
         let start = Instant::now();
         self.channel.0.send(msg).await?;
         let send_time = start.elapsed();
-        
+
         span.set_attribute("send_time_us", send_time.as_micros() as i64);
         Ok(())
     }
-    
+
     pub async fn recv(&self) -> Result<T, OtlpError> {
         let mut span = self.tracer.start_span("channel_recv");
         span.set_attribute("channel_name", &self.name);
-        
+
         let start = Instant::now();
         let msg = self.channel.1.recv().await
             .ok_or(OtlpError::ChannelClosed)?;
         let recv_time = start.elapsed();
-        
+
         span.set_attribute("wait_time_us", recv_time.as_micros() as i64);
         Ok(msg)
     }
@@ -637,19 +638,19 @@ spawn(behavior):
 ```rust
 pub trait TracedActor: Actor {
     fn tracer(&self) -> &Tracer;
-    
+
     async fn traced_handle(&mut self, msg: Self::Msg) -> Result<(), OtlpError> {
         let mut span = self.tracer().start_span("actor_handle");
         span.set_attribute("actor_type", std::any::type_name::<Self>());
         span.set_attribute("message_type", std::any::type_name::<Self::Msg>());
-        
+
         let result = self.handle(msg).await;
-        
+
         span.set_attribute("result", match &result {
             Ok(_) => "ok",
             Err(_) => "error",
         });
-        
+
         result
     }
 }
@@ -662,7 +663,7 @@ pub struct SupervisorTracer {
 impl SupervisorTracer {
     pub async fn supervise<A: TracedActor>(&self, actor: &mut A) {
         let mut span = self.tracer.start_span("actor_supervision");
-        
+
         loop {
             match actor.run().await {
                 Ok(_) => {
@@ -673,7 +674,7 @@ impl SupervisorTracer {
                     span.add_event("actor_failed", vec![
                         ("error", e.to_string().into()),
                     ]);
-                    
+
                     // 应用监督策略
                     match self.supervision_strategy(&e) {
                         Strategy::Restart => {
@@ -743,9 +744,9 @@ impl ParallelPerformanceTracer {
     {
         let mut span = self.tracer.start_span("parallel_execution");
         span.set_attribute("task_count", tasks.len() as i64);
-        
+
         let start = Instant::now();
-        
+
         // 并行执行所有任务
         let handles: Vec<_> = tasks.into_iter()
             .enumerate()
@@ -754,33 +755,33 @@ impl ParallelPerformanceTracer {
                 tokio::spawn(async move {
                     let mut task_span = tracer.start_span(&format!("task_{}", i));
                     let task_start = Instant::now();
-                    
+
                     let result = task.await;
-                    
+
                     let task_time = task_start.elapsed();
                     task_span.set_attribute("duration_ms", task_time.as_millis() as i64);
                     result
                 })
             })
             .collect();
-        
+
         let results = futures::future::join_all(handles).await;
-        
+
         let total_time = start.elapsed();
         span.set_attribute("total_time_ms", total_time.as_millis() as i64);
-        
+
         // 计算并行性能指标
         let sequential_time: u128 = results.iter()
             .filter_map(|r| r.as_ref().ok())
             .map(|_| 100)  // 假设每个任务100ms
             .sum();
-        
+
         let speedup = sequential_time as f64 / total_time.as_millis() as f64;
         let efficiency = speedup / results.len() as f64;
-        
+
         span.set_attribute("speedup", speedup);
         span.set_attribute("efficiency", efficiency);
-        
+
         results.into_iter().filter_map(|r| r.ok()).collect()
     }
 }
@@ -821,47 +822,47 @@ impl SimdMetricAggregator {
         let mut span = self.tracer.start_span("simd_aggregation");
         span.set_attribute("value_count", values.len() as i64);
         span.set_attribute("simd_width", 4);  // AVX2: 4×f64
-        
+
         let start = Instant::now();
-        
+
         let mut sum = _mm256_setzero_pd();
         let chunks = values.chunks_exact(4);
-        
+
         for chunk in chunks {
             let v = _mm256_loadu_pd(chunk.as_ptr());
             sum = _mm256_add_pd(sum, v);
         }
-        
+
         // 水平求和
         let result = {
             let mut arr = [0.0; 4];
             _mm256_storeu_pd(arr.as_mut_ptr(), sum);
             arr.iter().sum::<f64>()
         };
-        
+
         // 处理剩余元素
         let remainder: f64 = chunks.remainder().iter().sum();
         let total = result + remainder;
-        
+
         let duration = start.elapsed();
         span.set_attribute("duration_us", duration.as_micros() as i64);
         span.set_attribute("result", total);
-        
+
         total
     }
-    
+
     /// 对比标量版本
     pub fn scalar_sum(&self, values: &[f64]) -> f64 {
         let mut span = self.tracer.start_span("scalar_aggregation");
         span.set_attribute("value_count", values.len() as i64);
-        
+
         let start = Instant::now();
         let result = values.iter().sum();
         let duration = start.elapsed();
-        
+
         span.set_attribute("duration_us", duration.as_micros() as i64);
         span.set_attribute("result", result);
-        
+
         result
     }
 }
@@ -969,8 +970,8 @@ trade-off:
 
 【形式化】
 
-∀consensus_algorithm. 
-  ∃execution. 
+∀consensus_algorithm.
+  ∃execution.
     ∃crashed_process.
       consensus_algorithm无法终止 ∨
       consensus_algorithm违反共识性质
@@ -1070,7 +1071,7 @@ impl VectorClock {
     pub fn tick(&mut self, node: NodeId) {
         *self.clock.entry(node).or_insert(0) += 1;
     }
-    
+
     /// 合并远程时钟
     pub fn merge(&mut self, other: &VectorClock) {
         for (node, time) in &other.clock {
@@ -1078,14 +1079,14 @@ impl VectorClock {
             *entry = (*entry).max(*time);
         }
     }
-    
+
     /// 判断happens-before关系
     pub fn happens_before(&self, other: &VectorClock) -> bool {
         self.clock.iter().all(|(node, time)| {
             other.clock.get(node).map_or(false, |t| time <= t)
         }) && self != other
     }
-    
+
     /// 判断并发
     pub fn concurrent(&self, other: &VectorClock) -> bool {
         !self.happens_before(other) && !other.happens_before(self)
@@ -1095,40 +1096,40 @@ impl VectorClock {
 impl CausalConsistencyTracker {
     pub async fn trace_operation(&self, op: Operation) -> Result<(), OtlpError> {
         let mut span = self.tracer.start_span("causal_operation");
-        
+
         // 读取当前向量时钟
         let mut vc = self.vector_clock.write().await;
         vc.tick(current_node_id());
-        
+
         // 记录向量时钟到span
         span.set_attribute("vector_clock", format!("{:?}", vc.clock));
-        
+
         // 执行操作
         let result = op.execute().await;
-        
+
         // 如果是分布式操作,传播向量时钟
         if let Some(remote_node) = op.remote_node() {
             let clock_bytes = bincode::serialize(&*vc)?;
             send_with_metadata(remote_node, op.data(), &clock_bytes).await?;
         }
-        
+
         result
     }
-    
+
     pub async fn receive_operation(&self, data: &[u8], metadata: &[u8]) -> Result<(), OtlpError> {
         let mut span = self.tracer.start_span("receive_causal_operation");
-        
+
         // 解析远程向量时钟
         let remote_vc: VectorClock = bincode::deserialize(metadata)?;
         span.set_attribute("remote_clock", format!("{:?}", remote_vc.clock));
-        
+
         // 合并到本地时钟
         let mut vc = self.vector_clock.write().await;
         vc.merge(&remote_vc);
         vc.tick(current_node_id());
-        
+
         span.set_attribute("merged_clock", format!("{:?}", vc.clock));
-        
+
         Ok(())
     }
 }
@@ -1187,27 +1188,27 @@ impl PaxosTracer {
         span.set_attribute("phase", "1a");
         span.set_attribute("proposal_number", proposal_n as i64);
         span.set_attribute("role", "proposer");
-        
+
         let promises = Vec::new();
         // 发送Prepare到所有Acceptors
         for acceptor in get_acceptors() {
             let promise = self.send_prepare(acceptor, proposal_n).await?;
             promises.push(promise);
         }
-        
+
         span.set_attribute("promise_count", promises.len() as i64);
         Ok(promises)
     }
-    
+
     /// Phase 1b: Promise
     pub async fn on_prepare(&self, proposal_n: u64) -> Result<Promise, OtlpError> {
         let mut span = self.tracer.start_span("paxos_promise");
         span.set_attribute("phase", "1b");
         span.set_attribute("proposal_number", proposal_n as i64);
         span.set_attribute("role", "acceptor");
-        
+
         let mut state = get_acceptor_state();
-        
+
         if proposal_n > state.max_n {
             state.max_n = proposal_n;
             span.add_event("promise_given", vec![]);
@@ -1223,27 +1224,27 @@ impl PaxosTracer {
             Err(OtlpError::ProposalRejected)
         }
     }
-    
+
     /// Phase 2a: Accept
     pub async fn accept(&self, proposal_n: u64, value: Value) -> Result<Vec<Accepted>, OtlpError> {
         let mut span = self.tracer.start_span("paxos_accept");
         span.set_attribute("phase", "2a");
         span.set_attribute("proposal_number", proposal_n as i64);
         span.set_attribute("value", value.to_string());
-        
+
         let accepted = Vec::new();
         for acceptor in get_acceptors() {
             let ack = self.send_accept(acceptor, proposal_n, value.clone()).await?;
             accepted.push(ack);
         }
-        
+
         let majority = accepted.len() > get_acceptors().len() / 2;
         span.set_attribute("consensus_reached", majority);
-        
+
         if majority {
             span.add_event("value_chosen", vec![("value", value.to_string().into())]);
         }
-        
+
         Ok(accepted)
     }
 }
@@ -1291,10 +1292,10 @@ impl RaftTracer {
         let mut span = self.tracer.start_span("raft_election");
         span.set_attribute("term", term as i64);
         span.set_attribute("candidate", self.node_id.to_string());
-        
+
         let mut votes = 1;  // 投票给自己
         span.add_event("voted_for_self", vec![]);
-        
+
         for node in get_other_nodes() {
             let response = self.request_vote(node, term).await?;
             if response.vote_granted {
@@ -1304,11 +1305,11 @@ impl RaftTracer {
                 ]);
             }
         }
-        
+
         let majority = votes > get_cluster_size() / 2;
         span.set_attribute("votes_received", votes as i64);
         span.set_attribute("election_won", majority);
-        
+
         if majority {
             span.add_event("became_leader", vec![]);
             Ok(ElectionResult::Won)
@@ -1316,17 +1317,17 @@ impl RaftTracer {
             Ok(ElectionResult::Lost)
         }
     }
-    
+
     /// 日志复制
     pub async fn replicate_log(&self, entry: LogEntry) -> Result<(), OtlpError> {
         let mut span = self.tracer.start_span("raft_log_replication");
         span.set_attribute("entry_index", entry.index as i64);
         span.set_attribute("entry_term", entry.term as i64);
-        
+
         // Leader追加到本地日志
         append_to_local_log(&entry);
         span.add_event("appended_locally", vec![]);
-        
+
         // 并行复制到Followers
         let mut acks = 1;  // 本地算作一个确认
         let followers = get_followers();
@@ -1337,29 +1338,29 @@ impl RaftTracer {
                 tokio::spawn(async move {
                     let mut append_span = tracer.start_span("append_entries");
                     append_span.set_attribute("follower", follower.to_string());
-                    
+
                     send_append_entries(*follower, entry).await
                 })
             })
             .collect();
-        
+
         for handle in handles {
             if handle.await??.success {
                 acks += 1;
                 span.add_event("follower_acknowledged", vec![]);
             }
         }
-        
+
         // 检查是否达到多数
         let committed = acks > (followers.len() + 1) / 2;
         span.set_attribute("acks_received", acks as i64);
         span.set_attribute("committed", committed);
-        
+
         if committed {
             commit_log_entry(entry.index);
             span.add_event("entry_committed", vec![]);
         }
-        
+
         Ok(())
     }
 }
@@ -1416,21 +1417,21 @@ impl HappensBeforeAnalyzer {
     pub fn build_hb_graph(&self, trace: &Trace) -> HappensBefore Graph {
         let mut span = self.tracer.start_span("build_hb_graph");
         span.set_attribute("span_count", trace.spans.len() as i64);
-        
+
         let mut graph = Graph::new();
-        
+
         // 添加所有span作为节点
         for span in &trace.spans {
             graph.add_node(span.span_id);
         }
-        
+
         // 添加因果边
         for span in &trace.spans {
             // Parent-child关系
             if let Some(parent_id) = span.parent_span_id {
                 graph.add_edge(parent_id, span.span_id, EdgeType::ParentChild);
             }
-            
+
             // Link关系
             for link in &span.links {
                 graph.add_edge(
@@ -1439,7 +1440,7 @@ impl HappensBeforeAnalyzer {
                     EdgeType::Link,
                 );
             }
-            
+
             // 时序关系(同一resource)
             for other in &trace.spans {
                 if same_resource(span, other) &&
@@ -1448,31 +1449,31 @@ impl HappensBeforeAnalyzer {
                 }
             }
         }
-        
+
         // 计算传递闭包
         graph.transitive_closure();
-        
+
         span.set_attribute("edge_count", graph.edge_count() as i64);
         graph
     }
-    
+
     /// 判断happens-before关系
     pub fn happens_before(&self, graph: &HappensBeforeGraph, a: SpanId, b: SpanId) -> bool {
         graph.has_path(a, b)
     }
-    
+
     /// 判断并发
     pub fn concurrent(&self, graph: &HappensBeforeGraph, a: SpanId, b: SpanId) -> bool {
         !self.happens_before(graph, a, b) && !self.happens_before(graph, b, a)
     }
-    
+
     /// 检测因果异常
     pub fn detect_causality_violations(&self, trace: &Trace) -> Vec<CausalityViolation> {
         let mut span = self.tracer.start_span("detect_causality_violations");
         let mut violations = Vec::new();
-        
+
         let graph = self.build_hb_graph(trace);
-        
+
         for span_a in &trace.spans {
             for span_b in &trace.spans {
                 // 时序矛盾: a的timestamp晚于b,但a happens-before b
@@ -1486,7 +1487,7 @@ impl HappensBeforeAnalyzer {
                 }
             }
         }
-        
+
         span.set_attribute("violation_count", violations.len() as i64);
         violations
     }
