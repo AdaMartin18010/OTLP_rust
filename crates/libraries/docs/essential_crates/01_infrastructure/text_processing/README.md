@@ -1,6 +1,6 @@
 # 文本处理
 
-> **核心库**: regex, once_cell, lazy_static  
+> **核心库**: regex, once_cell, lazy_static
 > **适用场景**: 正则表达式、字符串处理、Unicode 支持
 
 ---
@@ -84,12 +84,12 @@ use regex::Regex;
 
 fn main() {
     let re = Regex::new(r"\d{4}-\d{2}-\d{2}").unwrap();
-    
+
     let text = "今天是 2025-10-20";
     if re.is_match(text) {
         println!("找到日期格式!");
     }
-    
+
     // 提取匹配
     if let Some(caps) = re.find(text) {
         println!("日期: {}", caps.as_str());
@@ -104,7 +104,7 @@ use regex::Regex;
 
 fn parse_email(email: &str) -> Option<(String, String)> {
     let re = Regex::new(r"^([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$").unwrap();
-    
+
     re.captures(email).map(|caps| {
         let user = caps.get(1).unwrap().as_str().to_string();
         let domain = caps.get(2).unwrap().as_str().to_string();
@@ -126,7 +126,7 @@ use regex::Regex;
 
 fn extract_numbers(text: &str) -> Vec<i32> {
     let re = Regex::new(r"\d+").unwrap();
-    
+
     re.find_iter(text)
         .filter_map(|m| m.as_str().parse().ok())
         .collect()
@@ -145,11 +145,11 @@ use regex::Regex;
 
 fn main() {
     let re = Regex::new(r"\b(\w+)\b").unwrap();
-    
+
     // 简单替换
     let result = re.replace_all("hello world", "***");
     println!("{}", result); // "*** ***"
-    
+
     // 带函数的替换
     let result = re.replace_all("hello world", |caps: &regex::Captures| {
         caps[0].to_uppercase()
@@ -169,7 +169,7 @@ fn parse_log_entry(log: &str) -> Option<(String, String, String)> {
     let re = Regex::new(
         r"(?P<level>\w+)\s+(?P<timestamp>\d{4}-\d{2}-\d{2})\s+(?P<message>.+)"
     ).unwrap();
-    
+
     re.captures(log).map(|caps| {
         let level = caps.name("level").unwrap().as_str().to_string();
         let timestamp = caps.name("timestamp").unwrap().as_str().to_string();
@@ -194,13 +194,13 @@ use regex::Regex;
 fn main() {
     // 匹配任何 Unicode 字母
     let re = Regex::new(r"\p{L}+").unwrap();
-    
+
     let text = "Hello 世界 мир";
     for mat in re.find_iter(text) {
         println!("{}", mat.as_str());
     }
     // 输出: Hello, 世界, мир
-    
+
     // 匹配中文字符
     let re_chinese = Regex::new(r"\p{Han}+").unwrap();
     let chinese: Vec<_> = re_chinese
@@ -245,7 +245,7 @@ fn extract_urls(text: &str) -> Vec<String> {
 
 fn main() {
     assert!(validate_email("test@example.com"));
-    
+
     let urls = extract_urls("访问 https://example.com 或 http://rust-lang.org");
     println!("{:?}", urls);
 }
@@ -261,7 +261,7 @@ lazy_static! {
     static ref PHONE_REGEX: Regex = Regex::new(
         r"^1[3-9]\d{9}$"
     ).unwrap();
-    
+
     static ref IP_REGEX: Regex = Regex::new(
         r"^(\d{1,3}\.){3}\d{1,3}$"
     ).unwrap();
@@ -309,11 +309,11 @@ fn main() {
     let s1 = "café"; // 使用组合字符
     let nfd: String = s1.nfd().collect();
     println!("NFD: {} (字节数: {})", nfd, nfd.len());
-    
+
     // NFC: 组合形式 (é = é)
     let nfc: String = s1.nfc().collect();
     println!("NFC: {} (字节数: {})", nfc, nfc.len());
-    
+
     // 比较前应该规范化
     let s2 = "café"; // 使用单个字符 é
     assert_ne!(s1, s2); // 字节不同
@@ -333,16 +333,16 @@ use unicode_segmentation::UnicodeSegmentation;
 
 fn main() {
     let s = "👨‍👩‍👧‍👦hello世界";
-    
+
     // 按字形簇分割
     let graphemes: Vec<&str> = s.graphemes(true).collect();
     println!("字形簇: {:?}", graphemes);
     // ["👨‍👩‍👧‍👦", "h", "e", "l", "l", "o", "世", "界"]
-    
+
     // 计数正确的字符数
     println!("字符数: {}", s.graphemes(true).count()); // 8
     println!("字节数: {}", s.len()); // 远大于 8
-    
+
     // 按单词分割
     let words: Vec<&str> = s.split_word_bounds().collect();
     println!("单词: {:?}", words);
@@ -354,16 +354,16 @@ fn main() {
 ```rust
 fn main() {
     let s = "Rust 编程";
-    
+
     // 简单转换
     println!("大写: {}", s.to_uppercase()); // RUST 编程
     println!("小写: {}", s.to_lowercase()); // rust 编程
-    
+
     // Unicode 大小写折叠（用于不区分大小写的比较）
     let s1 = "HELLO";
     let s2 = "hello";
     assert_ne!(s1, s2);
-    
+
     // 使用 unicase crate 进行不区分大小写的比较
     use unicase::UniCase;
     assert_eq!(UniCase::new(s1), UniCase::new(s2));
@@ -421,14 +421,14 @@ use thiserror::Error;
 pub enum ValidationError {
     #[error("无效的邮箱格式: {0}")]
     InvalidEmail(String),
-    
+
     #[error("正则表达式编译失败: {0}")]
     RegexError(#[from] regex::Error),
 }
 
 pub fn validate_email(email: &str) -> Result<(), ValidationError> {
     let re = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")?;
-    
+
     if re.is_match(email) {
         Ok(())
     } else {
@@ -472,11 +472,11 @@ let s = "👨‍👩‍👧‍👦hello";
 fn build_large_string(items: &[&str]) -> String {
     let total_len: usize = items.iter().map(|s| s.len()).sum();
     let mut result = String::with_capacity(total_len);
-    
+
     for item in items {
         result.push_str(item);
     }
-    
+
     result
 }
 ```
@@ -516,7 +516,7 @@ static SANITIZE_REGEX: Lazy<Regex> = Lazy::new(|| {
 pub fn sanitize_filename(name: &str) -> String {
     // 1. 预分配
     let mut result = String::with_capacity(name.len());
-    
+
     // 2. 使用缓存的正则表达式
     for segment in SANITIZE_REGEX.split(name) {
         if !segment.is_empty() {
@@ -526,19 +526,19 @@ pub fn sanitize_filename(name: &str) -> String {
             result.push_str(segment);
         }
     }
-    
+
     // 3. 限制长度
     if result.len() > 255 {
         result.truncate(255);
     }
-    
+
     result
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_sanitize() {
         assert_eq!(sanitize_filename("hello world!"), "hello_world");
@@ -589,5 +589,5 @@ assert!(re.is_match("HELLO"));
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

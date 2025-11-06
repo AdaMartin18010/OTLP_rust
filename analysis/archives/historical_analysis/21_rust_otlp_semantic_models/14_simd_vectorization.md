@@ -1,7 +1,7 @@
 # SIMD 向量化加速详解
 
-> **版本**: Rust 1.90 & AVX2/AVX-512  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90 & AVX2/AVX-512
+> **日期**: 2025年10月2日
 > **主题**: SIMD 优化、向量化算法、性能提升
 
 ---
@@ -93,14 +93,14 @@ unsafe fn simd_add_avx2(a: &[f32; 8], b: &[f32; 8]) -> [f32; 8] {
     // 加载数据到 256-bit 寄存器
     let va = _mm256_loadu_ps(a.as_ptr());
     let vb = _mm256_loadu_ps(b.as_ptr());
-    
+
     // 向量加法
     let vc = _mm256_add_ps(va, vb);
-    
+
     // 存储结果
     let mut result = [0.0f32; 8];
     _mm256_storeu_ps(result.as_mut_ptr(), vc);
-    
+
     result
 }
 ```
@@ -117,15 +117,15 @@ use std::simd::*;
 fn simd_add_portable(a: &[f32], b: &[f32]) -> Vec<f32> {
     let lanes = f32x8::LANES;
     let mut result = Vec::with_capacity(a.len());
-    
+
     for i in (0..a.len()).step_by(lanes) {
         let va = f32x8::from_slice(&a[i..i+lanes]);
         let vb = f32x8::from_slice(&b[i..i+lanes]);
         let vc = va + vb; // 自动向量化
-        
+
         result.extend_from_slice(vc.as_array());
     }
-    
+
     result
 }
 ```
@@ -169,19 +169,19 @@ unsafe fn simd_string_match(haystack: &[u8], needle: &[u8; 32]) -> bool {
     if haystack.len() < 32 {
         return haystack == &needle[..haystack.len()];
     }
-    
+
     let needle_vec = _mm256_loadu_si256(needle.as_ptr() as *const __m256i);
-    
+
     for chunk in haystack.chunks_exact(32) {
         let chunk_vec = _mm256_loadu_si256(chunk.as_ptr() as *const __m256i);
         let cmp = _mm256_cmpeq_epi8(chunk_vec, needle_vec);
         let mask = _mm256_movemask_epi8(cmp);
-        
+
         if mask == -1 {
             return true;
         }
     }
-    
+
     false
 }
 ```
@@ -197,7 +197,7 @@ unsafe fn simd_string_match(haystack: &[u8], needle: &[u8; 32]) -> bool {
 #[target_feature(enable = "avx2")]
 unsafe fn encode_varint_simd(values: &[u64]) -> Vec<u8> {
     let mut output = Vec::with_capacity(values.len() * 10);
-    
+
     for &value in values {
         let mut v = value;
         while v >= 0x80 {
@@ -206,7 +206,7 @@ unsafe fn encode_varint_simd(values: &[u64]) -> Vec<u8> {
         }
         output.push(v as u8);
     }
-    
+
     output
 }
 
@@ -239,22 +239,22 @@ unsafe fn hash_fnv1a_simd(data: &[[u8; 16]]) -> Vec<u64> {
     let mut hashes = Vec::with_capacity(data.len());
     const FNV_PRIME: u64 = 0x100000001b3;
     const FNV_OFFSET: u64 = 0xcbf29ce484222325;
-    
+
     for chunk in data {
         let mut hash = FNV_OFFSET;
-        
+
         // 向量化处理 16 字节
         let vec = _mm_loadu_si128(chunk.as_ptr() as *const __m128i);
         let bytes: [u8; 16] = std::mem::transmute(vec);
-        
+
         for &byte in &bytes {
             hash ^= byte as u64;
             hash = hash.wrapping_mul(FNV_PRIME);
         }
-        
+
         hashes.push(hash);
     }
-    
+
     hashes
 }
 ```
@@ -270,13 +270,13 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn benchmark_simd_vs_scalar(c: &mut Criterion) {
     let data: Vec<f32> = (0..10000).map(|i| i as f32).collect();
-    
+
     c.bench_function("scalar_sum", |b| {
         b.iter(|| {
             black_box(data.iter().sum::<f32>())
         });
     });
-    
+
     #[cfg(target_arch = "x86_64")]
     c.bench_function("simd_sum", |b| {
         b.iter(|| unsafe {
@@ -289,14 +289,14 @@ fn benchmark_simd_vs_scalar(c: &mut Criterion) {
 #[target_feature(enable = "avx2")]
 unsafe fn simd_sum_avx2(data: &[f32]) -> f32 {
     use std::arch::x86_64::*;
-    
+
     let mut sum_vec = _mm256_setzero_ps();
-    
+
     for chunk in data.chunks_exact(8) {
         let vec = _mm256_loadu_ps(chunk.as_ptr());
         sum_vec = _mm256_add_ps(sum_vec, vec);
     }
-    
+
     // 水平求和
     let sum_array: [f32; 8] = std::mem::transmute(sum_vec);
     sum_array.iter().sum()
@@ -360,20 +360,20 @@ unsafe fn good_load(data: &[f32]) -> __m256 {
 // ✅ 正确处理非整数倍数据
 fn simd_process_all(data: &[f32]) -> Vec<f32> {
     let mut result = Vec::new();
-    
+
     // SIMD 处理主体
     let chunks = data.chunks_exact(8);
     let remainder = chunks.remainder();
-    
+
     for chunk in chunks {
         // SIMD 处理
     }
-    
+
     // 标量处理余数
     for &value in remainder {
         result.push(value * 2.0);
     }
-    
+
     result
 }
 ```
@@ -389,5 +389,5 @@ fn simd_process_all(data: &[f32]) -> Vec<f32> {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

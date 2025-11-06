@@ -1,7 +1,7 @@
 # OTLP Rust - Crate 快速参考
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: Crate 快速参考 - 一页纸速查手册，快速了解各 Crate 的职责和使用场景。
@@ -12,8 +12,8 @@
 
 ### `otlp-core`
 
-**用途**: OTLP 核心数据模型和类型  
-**依赖**: 最小化 (serde, chrono, uuid)  
+**用途**: OTLP 核心数据模型和类型
+**依赖**: 最小化 (serde, chrono, uuid)
 **场景**: 需要 OTLP 类型定义但不需要网络传输时
 
 ```rust
@@ -28,8 +28,8 @@ let trace = TraceData::new()
 
 ### `otlp-proto`
 
-**用途**: Protocol Buffers 编解码  
-**依赖**: otlp-core, prost, opentelemetry-proto  
+**用途**: Protocol Buffers 编解码
+**依赖**: otlp-core, prost, opentelemetry-proto
 **场景**: 自定义序列化/反序列化 OTLP 数据
 
 ```rust
@@ -44,8 +44,8 @@ let decoded = codec.decode(&bytes)?;
 
 ### `otlp-transport`
 
-**用途**: 网络传输层 (gRPC/HTTP)  
-**依赖**: otlp-core, otlp-proto, tokio, tonic/hyper  
+**用途**: 网络传输层 (gRPC/HTTP)
+**依赖**: otlp-core, otlp-proto, tokio, tonic/hyper
 **场景**: 自定义 OTLP 客户端/服务器传输
 
 ```rust
@@ -56,7 +56,7 @@ let client = GrpcClient::builder()
     .with_tls()
     .build()
     .await?;
-    
+
 client.send_traces(traces).await?;
 ```
 
@@ -66,8 +66,8 @@ client.send_traces(traces).await?;
 
 ### `otlp` ⭐ (主 Crate)
 
-**用途**: 完整的 OTLP 客户端实现  
-**依赖**: otlp-core, otlp-proto, otlp-transport, opentelemetry  
+**用途**: 完整的 OTLP 客户端实现
+**依赖**: otlp-core, otlp-proto, otlp-transport, opentelemetry
 **场景**: 最常用，功能完整的 OTLP 集成
 
 ```rust
@@ -99,8 +99,8 @@ otlp = { version = "0.2", features = ["client", "monitoring", "performance"] }
 
 ### `reliability`
 
-**用途**: 统一可靠性框架  
-**依赖**: otlp-core (轻量), 可选 otlp (完整集成)  
+**用途**: 统一可靠性框架
+**依赖**: otlp-core (轻量), 可选 otlp (完整集成)
 **场景**: 错误处理、容错机制、自动恢复
 
 ```rust
@@ -136,8 +136,8 @@ reliability = { version = "0.2", features = ["async", "fault-tolerance"] }
 
 ### `otlp-microservices`
 
-**用途**: 微服务架构支持  
-**依赖**: otlp, reliability  
+**用途**: 微服务架构支持
+**依赖**: otlp, reliability
 **场景**: 服务发现、负载均衡、熔断
 
 ```rust
@@ -162,8 +162,8 @@ circuit_breaker.call(endpoint, request).await?;
 
 ### `otlp-reliability-bridge`
 
-**用途**: OTLP + Reliability 深度整合  
-**依赖**: otlp, reliability  
+**用途**: OTLP + Reliability 深度整合
+**依赖**: otlp, reliability
 **场景**: 统一可观测性和可靠性
 
 ```rust
@@ -190,8 +190,8 @@ unified.execute_with_full_observability(|| async {
 
 ### `otlp-integrations`
 
-**用途**: 外部系统集成  
-**依赖**: otlp + 各种客户端库  
+**用途**: 外部系统集成
+**依赖**: otlp + 各种客户端库
 **场景**: Kubernetes、Prometheus、Grafana、Jaeger
 
 ```rust
@@ -216,7 +216,7 @@ let prom_exporter = PrometheusExporter::new()
 
 ### `otlp-cli`
 
-**用途**: 命令行工具  
+**用途**: 命令行工具
 **使用**:
 
 ```bash
@@ -369,5 +369,5 @@ otlp = { version = "0.2", default-features = false, features = ["client"] }
 
 ---
 
-**版本**: 1.0  
+**版本**: 1.0
 **更新**: 2025-10-20

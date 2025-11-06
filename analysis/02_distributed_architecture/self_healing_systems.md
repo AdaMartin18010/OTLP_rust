@@ -80,19 +80,19 @@ impl SelfHealingSystem {
     pub async fn start(&mut self) -> Result<(), SystemError> {
         // 启动监控层
         self.monitor.start().await?;
-        
+
         // 启动分析层
         self.analyzer.start().await?;
-        
+
         // 启动决策层
         self.decision_engine.start().await?;
-        
+
         // 启动执行层
         self.action_executor.start().await?;
-        
+
         // 启动反馈循环
         self.feedback_loop.start().await?;
-        
+
         Ok(())
     }
 }
@@ -114,23 +114,23 @@ pub struct SystemMonitor {
 impl SystemMonitor {
     pub async fn collect_system_state(&self) -> Result<SystemState, MonitoringError> {
         let mut system_state = SystemState::new();
-        
+
         // 收集指标数据
         let metrics = self.metrics_collector.collect().await?;
         system_state.add_metrics(metrics);
-        
+
         // 收集日志数据
         let logs = self.log_collector.collect().await?;
         system_state.add_logs(logs);
-        
+
         // 收集追踪数据
         let traces = self.trace_collector.collect().await?;
         system_state.add_traces(traces);
-        
+
         // 执行健康检查
         let health_status = self.health_checker.check_health().await?;
         system_state.set_health_status(health_status);
-        
+
         Ok(system_state)
     }
 }
@@ -150,19 +150,19 @@ impl IntelligentAlertManager {
     pub async fn process_alerts(&mut self, system_state: &SystemState) -> Result<(), AlertError> {
         // 1. 检查告警规则
         let triggered_alerts = self.check_alert_rules(system_state).await?;
-        
+
         // 2. 告警关联分析
         let correlated_alerts = self.correlation_engine
             .correlate_alerts(&triggered_alerts).await?;
-        
+
         // 3. 告警去重和聚合
         let deduplicated_alerts = self.deduplicate_alerts(&correlated_alerts).await?;
-        
+
         // 4. 告警升级
         for alert in deduplicated_alerts {
             self.escalation_policy.process_alert(&alert).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -183,23 +183,23 @@ pub struct AnomalyAnalyzer {
 impl AnomalyAnalyzer {
     pub async fn detect_anomalies(&self, data: &TimeSeriesData) -> Result<Vec<Anomaly>, AnalysisError> {
         let mut all_anomalies = Vec::new();
-        
+
         // 1. 统计异常检测
         let statistical_anomalies = self.statistical_detector.detect(data).await?;
         all_anomalies.extend(statistical_anomalies);
-        
+
         // 2. 机器学习异常检测
         let ml_anomalies = self.ml_detector.detect(data).await?;
         all_anomalies.extend(ml_anomalies);
-        
+
         // 3. 基于规则的异常检测
         let rule_anomalies = self.rule_based_detector.detect(data).await?;
         all_anomalies.extend(rule_anomalies);
-        
+
         // 4. 集成检测结果
         let final_anomalies = self.ensemble_detector
             .combine_results(&all_anomalies).await?;
-        
+
         Ok(final_anomalies)
     }
 }
@@ -219,26 +219,26 @@ impl RootCauseAnalyzer {
     pub async fn analyze_root_cause(&self, anomalies: &[Anomaly]) -> Result<Vec<RootCause>, AnalysisError> {
         // 1. 构建因果图
         let causal_graph = self.causal_graph.build_from_anomalies(anomalies).await?;
-        
+
         // 2. 使用图神经网络分析
         let gnn_results = self.graph_neural_network
             .analyze_causal_graph(&causal_graph).await?;
-        
+
         // 3. 时间序列分析
         let temporal_results = self.temporal_analyzer
             .analyze_temporal_patterns(anomalies).await?;
-        
+
         // 4. 依赖关系分析
         let dependency_results = self.dependency_analyzer
             .analyze_dependencies(anomalies).await?;
-        
+
         // 5. 综合根因分析
         let root_causes = self.synthesize_root_causes(
             &gnn_results,
             &temporal_results,
             &dependency_results
         ).await?;
-        
+
         Ok(root_causes)
     }
 }
@@ -265,19 +265,19 @@ impl DecisionEngine {
         // 1. 生成候选策略
         let candidate_strategies = self.strategy_generator
             .generate_strategies(root_causes, system_state).await?;
-        
+
         // 2. 评估每个策略的风险
         let risk_assessments = self.risk_assessor
             .assess_risks(&candidate_strategies).await?;
-        
+
         // 3. 分析修复成本
         let cost_analyses = self.cost_analyzer
             .analyze_costs(&candidate_strategies).await?;
-        
+
         // 4. 预测修复效果
         let effectiveness_predictions = self.effectiveness_predictor
             .predict_effectiveness(&candidate_strategies).await?;
-        
+
         // 5. 选择最优策略
         let optimal_strategy = self.select_optimal_strategy(
             &candidate_strategies,
@@ -285,7 +285,7 @@ impl DecisionEngine {
             &cost_analyses,
             &effectiveness_predictions,
         ).await?;
-        
+
         Ok(optimal_strategy)
     }
 }
@@ -303,20 +303,20 @@ pub struct RiskAssessor {
 impl RiskAssessor {
     pub async fn assess_risks(&self, strategies: &[RepairStrategy]) -> Result<Vec<RiskAssessment>, AssessmentError> {
         let mut risk_assessments = Vec::new();
-        
+
         for strategy in strategies {
             // 1. 分析影响范围
             let impact = self.impact_analyzer.analyze_impact(strategy).await?;
-            
+
             // 2. 估计失败概率
             let probability = self.probability_estimator.estimate_failure_probability(strategy).await?;
-            
+
             // 3. 分析缓解措施
             let mitigations = self.mitigation_analyzer.analyze_mitigations(strategy).await?;
-            
+
             // 4. 计算风险分数
             let risk_score = self.calculate_risk_score(&impact, &probability, &mitigations);
-            
+
             risk_assessments.push(RiskAssessment {
                 strategy: strategy.clone(),
                 impact,
@@ -325,7 +325,7 @@ impl RiskAssessor {
                 risk_score,
             });
         }
-        
+
         Ok(risk_assessments)
     }
 }
@@ -350,13 +350,13 @@ impl ActionExecutor {
     ) -> Result<ExecutionResult, ExecutionError> {
         // 1. 创建执行计划
         let execution_plan = self.create_execution_plan(strategy).await?;
-        
+
         // 2. 创建回滚点
         let rollback_point = self.rollback_manager.create_rollback_point().await?;
-        
+
         // 3. 执行修复动作
         let mut execution_result = ExecutionResult::new();
-        
+
         for action in &execution_plan.actions {
             match action.action_type {
                 ActionType::ResourceAdjustment => {
@@ -377,11 +377,11 @@ impl ActionExecutor {
                 }
             }
         }
-        
+
         // 4. 验证修复效果
         let verification_result = self.verify_repair_effectiveness(&execution_result).await?;
         execution_result.set_verification_result(verification_result);
-        
+
         Ok(execution_result)
     }
 }
@@ -400,13 +400,13 @@ impl RollbackManager {
     pub async fn create_rollback_point(&self) -> Result<RollbackPoint, RollbackError> {
         // 1. 创建系统状态快照
         let system_snapshot = self.state_snapshots.create_snapshot().await?;
-        
+
         // 2. 创建配置快照
         let config_snapshot = self.create_config_snapshot().await?;
-        
+
         // 3. 创建资源快照
         let resource_snapshot = self.create_resource_snapshot().await?;
-        
+
         let rollback_point = RollbackPoint {
             id: Uuid::new_v4(),
             timestamp: chrono::Utc::now(),
@@ -414,26 +414,26 @@ impl RollbackManager {
             config_snapshot,
             resource_snapshot,
         };
-        
+
         Ok(rollback_point)
     }
-    
+
     pub async fn execute_rollback(&self, rollback_point: &RollbackPoint) -> Result<(), RollbackError> {
         // 1. 验证回滚点有效性
         self.rollback_validator.validate_rollback_point(rollback_point).await?;
-        
+
         // 2. 执行系统状态回滚
         self.state_snapshots.restore_snapshot(&rollback_point.system_snapshot).await?;
-        
+
         // 3. 执行配置回滚
         self.restore_config_snapshot(&rollback_point.config_snapshot).await?;
-        
+
         // 4. 执行资源回滚
         self.restore_resource_snapshot(&rollback_point.resource_snapshot).await?;
-        
+
         // 5. 验证回滚效果
         self.verify_rollback_effectiveness(rollback_point).await?;
-        
+
         Ok(())
     }
 }
@@ -484,17 +484,17 @@ impl LearningEngine {
     pub async fn learn_from_incident(&mut self, incident: &Incident) -> Result<(), LearningError> {
         // 1. 提取事件模式
         let pattern = self.pattern_learner.extract_pattern(incident).await?;
-        
+
         // 2. 更新知识库
         self.update_knowledge_base(&pattern).await?;
-        
+
         // 3. 优化修复策略
         self.strategy_optimizer.optimize_strategies(&pattern).await?;
-        
+
         // 4. 分析反馈
         let feedback = self.feedback_analyzer.analyze_feedback(incident).await?;
         self.incorporate_feedback(feedback).await?;
-        
+
         Ok(())
     }
 }
@@ -519,22 +519,22 @@ impl FeedbackLoop {
         // 1. 测量修复效果
         let effectiveness_metrics = self.effectiveness_measurer
             .measure_effectiveness(repair_result).await?;
-        
+
         // 2. 跟踪性能变化
         let performance_metrics = self.performance_tracker
             .track_performance_changes(repair_result).await?;
-        
+
         // 3. 分析改进机会
         let improvement_opportunities = self.improvement_analyzer
             .analyze_improvements(repair_result).await?;
-        
+
         let report = EffectivenessReport {
             effectiveness_metrics,
             performance_metrics,
             improvement_opportunities,
             timestamp: chrono::Utc::now(),
         };
-        
+
         Ok(report)
     }
 }
@@ -553,15 +553,15 @@ impl ContinuousImprovement {
     pub async fn plan_improvements(&self, feedback: &EffectivenessReport) -> Result<ImprovementPlan, PlanningError> {
         // 1. 分析改进机会
         let opportunities = self.analyze_improvement_opportunities(feedback).await?;
-        
+
         // 2. 制定改进计划
         let improvement_plan = self.improvement_planner
             .create_improvement_plan(&opportunities).await?;
-        
+
         // 3. 设计A/B测试
         let ab_test_plan = self.a_b_tester
             .design_test_plan(&improvement_plan).await?;
-        
+
         Ok(ImprovementPlan {
             opportunities,
             improvement_plan,
@@ -589,20 +589,20 @@ impl MicroserviceSelfHealing {
         if !self.is_service_healthy(failed_service).await? {
             // 2. 启动熔断器
             self.circuit_breaker.trip(failed_service).await?;
-            
+
             // 3. 调整负载均衡
             self.load_balancer.remove_service(failed_service).await?;
-            
+
             // 4. 自动扩缩容
             self.auto_scaler.scale_up_healthy_services().await?;
-            
+
             // 5. 尝试重启服务
             self.restart_service(failed_service).await?;
-            
+
             // 6. 验证恢复效果
             self.verify_service_recovery(failed_service).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -622,19 +622,19 @@ impl DatabaseSelfHealing {
     pub async fn optimize_database_performance(&mut self, performance_metrics: &DatabaseMetrics) -> Result<(), OptimizationError> {
         // 1. 分析慢查询
         let slow_queries = self.query_analyzer.identify_slow_queries(performance_metrics).await?;
-        
+
         // 2. 优化索引
         for query in slow_queries {
             let index_suggestions = self.index_optimizer.suggest_indexes(&query).await?;
             self.apply_index_optimizations(&index_suggestions).await?;
         }
-        
+
         // 3. 调整连接池
         self.connection_pool_manager.optimize_pool_size(performance_metrics).await?;
-        
+
         // 4. 优化缓存策略
         self.cache_manager.optimize_cache_strategy(performance_metrics).await?;
-        
+
         Ok(())
     }
 }
@@ -655,16 +655,16 @@ impl ParallelSelfHealing {
     pub async fn execute_parallel_healing(&self, healing_tasks: Vec<HealingTask>) -> Result<Vec<HealingResult>, HealingError> {
         // 1. 分析任务依赖
         let task_dependencies = self.analyze_task_dependencies(&healing_tasks).await?;
-        
+
         // 2. 创建执行计划
         let execution_plan = self.create_parallel_execution_plan(&healing_tasks, &task_dependencies).await?;
-        
+
         // 3. 并行执行任务
         let results = self.task_executor.execute_parallel(&execution_plan).await?;
-        
+
         // 4. 协调结果
         let coordinated_results = self.coordination_service.coordinate_results(&results).await?;
-        
+
         Ok(coordinated_results)
     }
 }
@@ -683,14 +683,14 @@ impl ResourceOptimizer {
     pub async fn optimize_healing_resources(&self, healing_operations: &[HealingOperation]) -> Result<OptimizationResult, OptimizationError> {
         // 1. 监控资源使用
         let resource_usage = self.resource_monitor.monitor_usage().await?;
-        
+
         // 2. 计算优化成本
         let optimization_costs = self.cost_calculator.calculate_costs(healing_operations).await?;
-        
+
         // 3. 执行资源优化
         let optimization_result = self.optimization_engine
             .optimize_resources(&resource_usage, &optimization_costs).await?;
-        
+
         Ok(optimization_result)
     }
 }

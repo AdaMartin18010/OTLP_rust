@@ -1,17 +1,43 @@
 ﻿# 文档索引知识图谱
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
 
 ## 📋 目录
 
-- [文档体系全景图](#1-文档体系全景图)
-- [学习路径图](#2-学习路径图)
-- [文档关系网络](#3-文档关系网络)
-- [快速导航图](#4-快速导航图)
+- [文档索引知识图谱](#文档索引知识图谱)
+  - [📋 目录](#-目录)
+  - [🌐 文档体系全景图](#-文档体系全景图)
+    - [1.1 完整架构](#11-完整架构)
+    - [1.2 文档分层](#12-文档分层)
+  - [🔗 学习路径图](#-学习路径图)
+    - [2.1 角色学习路径](#21-角色学习路径)
+    - [2.2 时间线路径](#22-时间线路径)
+  - [📊 文档关系网络](#-文档关系网络)
+    - [3.1 文档依赖关系](#31-文档依赖关系)
+    - [3.2 文档交叉引用](#32-文档交叉引用)
+  - [💡 快速导航图](#-快速导航图)
+    - [4.1 按需求导航](#41-按需求导航)
+    - [4.2 快速查找表](#42-快速查找表)
+  - [⚙️ 文档完成度地图](#️-文档完成度地图)
+    - [5.1 完成度可视化](#51-完成度可视化)
+    - [5.2 优先级地图](#52-优先级地图)
+  - [📚 文档质量地图](#-文档质量地图)
+    - [6.1 质量热力图](#61-质量热力图)
+  - [🔍 学习成就地图](#-学习成就地图)
+    - [7.1 技能树](#71-技能树)
+  - [💻 使用统计](#-使用统计)
+    - [8.1 文档使用频率](#81-文档使用频率)
+  - [📚 导航建议](#-导航建议)
+    - [9.1 首次使用者](#91-首次使用者)
+    - [9.2 老用户](#92-老用户)
+  - [✅ 总结](#-总结)
+    - [10.1 文档体系特点](#101-文档体系特点)
+    - [10.2 使用建议](#102-使用建议)
+  - [🔗 相关资源](#-相关资源)
 
 ---
 
@@ -22,31 +48,31 @@
 ```mermaid
 graph TB
     Root[OTLP_rust 文档体系]
-    
+
     Root --> Entry[入门层]
     Root --> Practice[实践层]
     Root --> Advanced[高级层]
     Root --> Reference[参考层]
-    
+
     Entry --> P01[01_GETTING_STARTED<br/>快速入门]
     Entry --> P11[11_EXAMPLES<br/>示例集合]
     Entry --> P00[00_INDEX<br/>索引导航]
-    
+
     Practice --> P07[07_INTEGRATION<br/>集成方案]
     Practice --> P05[05_IMPLEMENTATION<br/>实施指南]
     Practice --> P06[06_DEPLOYMENT<br/>部署运维]
     Practice --> P10[10_DEVELOPMENT<br/>开发指南]
-    
+
     Advanced --> P12[12_GUIDES<br/>最佳实践]
     Advanced --> P02[02_THEORETICAL<br/>理论框架]
     Advanced --> P04[04_ARCHITECTURE<br/>架构设计]
     Advanced --> P14[14_TECHNICAL<br/>技术细节]
-    
+
     Reference --> P03[03_API_REFERENCE<br/>API参考]
     Reference --> P08[08_REFERENCE<br/>参考文档]
     Reference --> P09[09_CRATES<br/>Crates说明]
     Reference --> P13[13_PLANNING<br/>项目规划]
-    
+
     style Root fill:#f9f,stroke:#333,stroke-width:4px
     style Entry fill:#bfb,stroke:#333,stroke-width:2px
     style Practice fill:#bbf,stroke:#333,stroke-width:2px
@@ -56,7 +82,7 @@ graph TB
 
 ### 1.2 文档分层
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 文档体系分层 (Bottom-Up)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -96,46 +122,46 @@ Layer 1: 入门层 (Entry)
 ```mermaid
 graph LR
     Start([开始])
-    
+
     Start --> Role{你的角色?}
-    
+
     Role -->|新手开发者| Beginner[新手路径]
     Role -->|中级开发者| Intermediate[进阶路径]
     Role -->|高级开发者| Expert[专家路径]
     Role -->|架构师| Architect[架构路径]
-    
+
     Beginner --> B1[01_GETTING_STARTED]
     B1 --> B2[11_EXAMPLES]
     B2 --> B3[03_API_REFERENCE]
     B3 --> B4[07_INTEGRATION]
-    
+
     Intermediate --> I1[05_IMPLEMENTATION]
     I1 --> I2[06_DEPLOYMENT]
     I2 --> I3[10_DEVELOPMENT]
     I3 --> I4[12_GUIDES]
-    
+
     Expert --> E1[12_GUIDES]
     E1 --> E2[02_THEORETICAL]
     E2 --> E3[14_TECHNICAL]
     E3 --> E4[04_ARCHITECTURE]
-    
+
     Architect --> A1[04_ARCHITECTURE]
     A1 --> A2[13_PLANNING]
     A2 --> A3[08_REFERENCE]
     A3 --> A4[12_GUIDES]
-    
+
     B4 --> Success([掌握])
     I4 --> Success
     E4 --> Success
     A4 --> Success
-    
+
     style Start fill:#f9f,stroke:#333,stroke-width:3px
     style Success fill:#6f9,stroke:#333,stroke-width:3px
 ```
 
 ### 2.2 时间线路径
 
-```
+```text
 Week 1: 入门阶段
 Day 1-2: 01_GETTING_STARTED
 Day 3-4: 11_EXAMPLES
@@ -173,26 +199,26 @@ graph TD
     ARCH[04_ARCHITECTURE]
     THEO[02_THEORETICAL]
     REF[08_REFERENCE]
-    
+
     START --> EXAMPLES
     EXAMPLES --> INTEGRATION
     START --> API
     API --> INTEGRATION
-    
+
     INTEGRATION --> IMPL
     IMPL --> DEPLOY
-    
+
     DEPLOY --> DEV
     DEV --> GUIDES
-    
+
     GUIDES --> THEO
     GUIDES --> ARCH
-    
+
     REF -.-> START
     REF -.-> API
     REF -.-> INTEGRATION
     REF -.-> IMPL
-    
+
     style START fill:#bfb,stroke:#333,stroke-width:2px
     style GUIDES fill:#fbf,stroke:#333,stroke-width:2px
     style REF fill:#ffb,stroke:#333,stroke-width:2px
@@ -200,7 +226,7 @@ graph TD
 
 ### 3.2 文档交叉引用
 
-```
+```text
 核心引用链:
 01_GETTING_STARTED
   ↓ 引用
@@ -227,7 +253,7 @@ graph TD
 ```mermaid
 graph TD
     Need{我需要...}
-    
+
     Need -->|快速上手| N1[01_GETTING_STARTED]
     Need -->|代码示例| N2[11_EXAMPLES]
     Need -->|API查询| N3[03_API_REFERENCE]
@@ -236,7 +262,7 @@ graph TD
     Need -->|部署方案| N6[06_DEPLOYMENT]
     Need -->|技术选型| N7[08_REFERENCE]
     Need -->|架构设计| N8[04_ARCHITECTURE]
-    
+
     N1 --> T1[5分钟快速开始]
     N2 --> T2[30+完整示例]
     N3 --> T3[API完整文档]
@@ -245,13 +271,13 @@ graph TD
     N6 --> T6[Docker/K8s]
     N7 --> T7[协议/SDK对比]
     N8 --> T8[系统架构]
-    
+
     style Need fill:#f9f,stroke:#333,stroke-width:3px
 ```
 
 ### 4.2 快速查找表
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 快速查找表
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -274,7 +300,7 @@ API怎么用?        03_API_REFERENCE    索引
 
 ### 5.1 完成度可视化
 
-```
+```text
 完成度图谱 (2025-10-28)
 
 100% ████████████ 01_GETTING_STARTED ✅
@@ -300,7 +326,7 @@ API怎么用?        03_API_REFERENCE    索引
 
 ### 5.2 优先级地图
 
-```
+```text
 高优先级 (已完成 83%):
 ✅ 01_GETTING_STARTED
 ✅ 03_API_REFERENCE
@@ -329,7 +355,7 @@ API怎么用?        03_API_REFERENCE    索引
 
 ### 6.1 质量热力图
 
-```
+```text
 质量评分 (满分100)
 
 98 🔥🔥🔥🔥🔥 01_GETTING_STARTED
@@ -352,7 +378,7 @@ API怎么用?        03_API_REFERENCE    索引
 
 ### 7.1 技能树
 
-```
+```text
 OTLP技能树
 
 Level 1: 新手 (完成 01, 11)
@@ -387,7 +413,7 @@ Level 5: 专家 (完成 02, 14)
 
 ### 8.1 文档使用频率
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 预期使用频率
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -415,7 +441,7 @@ Level 5: 专家 (完成 02, 14)
 
 ### 9.1 首次使用者
 
-```
+```text
 第1步: 看这里！
 └─ 00_INDEX/CONCEPTS.md
    └─ 了解文档体系
@@ -434,7 +460,7 @@ Level 5: 专家 (完成 02, 14)
 
 ### 9.2 老用户
 
-```
+```text
 快速查询:
 └─ 03_API_REFERENCE/ 或 08_REFERENCE/
 
@@ -454,7 +480,7 @@ Level 5: 专家 (完成 02, 14)
 
 ### 10.1 文档体系特点
 
-```
+```text
 ✅ 分层清晰 (4层结构)
 ✅ 标准统一 (3类文档)
 ✅ 质量卓越 (98/100)
@@ -464,7 +490,7 @@ Level 5: 专家 (完成 02, 14)
 
 ### 10.2 使用建议
 
-```
+```text
 新手:
 1. 从 00_INDEX 开始了解体系
 2. 阅读 01_GETTING_STARTED 快速上手
@@ -495,12 +521,11 @@ Level 5: 专家 (完成 02, 14)
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
+**最后更新**: 2025-10-28
 **维护团队**: OTLP_rust文档团队
 
 ---
 
 > **💡 导航提示**: 本知识图谱是整个文档体系的地图。建议收藏本页，迷路时回来看看！记住：从Layer 1开始，逐层向上是最佳学习路径。
-

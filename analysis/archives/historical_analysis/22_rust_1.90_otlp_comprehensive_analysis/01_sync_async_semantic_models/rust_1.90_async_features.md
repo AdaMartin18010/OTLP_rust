@@ -1,7 +1,7 @@
 # Rust 1.90 异步特性与 OTLP 集成深度分析
 
-> **版本**: Rust 1.90+  
-> **日期**: 2025年10月3日  
+> **版本**: Rust 1.90+
+> **日期**: 2025年10月3日
 > **主题**: 异步编程、AFIT、零拷贝、性能优化
 
 ---
@@ -71,7 +71,7 @@ impl AsyncExporter for OtlpExporter {
             .body(data)
             .send()
             .await?;
-        
+
         Ok(())
     }
 }
@@ -132,7 +132,7 @@ use std::pin::Pin;
 
 trait ComplexAsyncTrait {
     type Output;
-    
+
     fn complex_operation<'a>(
         &'a self,
         data: &'a [u8],
@@ -142,7 +142,7 @@ trait ComplexAsyncTrait {
 // Rust 1.90 编译速度提升 30%+
 impl ComplexAsyncTrait for OtlpExporter {
     type Output = Result<(), Error>;
-    
+
     fn complex_operation<'a>(
         &'a self,
         data: &'a [u8],
@@ -165,19 +165,19 @@ use tokio::task::JoinSet;
 
 async fn otlp_concurrent_export() -> Result<(), Error> {
     let mut set = JoinSet::new();
-    
+
     // 并发导出多个批次
     for batch in 0..10 {
         set.spawn(async move {
             export_batch(batch).await
         });
     }
-    
+
     // 等待所有任务完成
     while let Some(result) = set.join_next().await {
         result??;
     }
-    
+
     Ok(())
 }
 
@@ -210,19 +210,19 @@ pub trait OtlpExporter: Send + Sync {
         &self,
         traces: Vec<ResourceSpans>,
     ) -> Result<ExportResult, ExportError>;
-    
+
     /// 导出指标数据
     async fn export_metrics(
         &self,
         metrics: Vec<ResourceMetrics>,
     ) -> Result<ExportResult, ExportError>;
-    
+
     /// 导出日志数据
     async fn export_logs(
         &self,
         logs: Vec<ResourceLogs>,
     ) -> Result<ExportResult, ExportError>;
-    
+
     /// 关闭导出器
     async fn shutdown(&self) -> Result<(), ExportError>;
 }
@@ -239,27 +239,27 @@ impl OtlpExporter for GrpcExporter {
         traces: Vec<ResourceSpans>,
     ) -> Result<ExportResult, ExportError> {
         use prost::Message;
-        
+
         // 序列化
         let request = ExportTraceServiceRequest {
             resource_spans: traces,
         };
-        
+
         let mut buf = Vec::new();
         request.encode(&mut buf)?;
-        
+
         // 发送 gRPC 请求
         let response = tokio::time::timeout(
             self.timeout,
             self.send_grpc_request(buf),
         ).await??;
-        
+
         Ok(ExportResult {
             accepted: response.accepted_spans,
             rejected: response.rejected_spans,
         })
     }
-    
+
     async fn export_metrics(
         &self,
         _metrics: Vec<ResourceMetrics>,
@@ -267,7 +267,7 @@ impl OtlpExporter for GrpcExporter {
         // 类似实现
         Ok(ExportResult::default())
     }
-    
+
     async fn export_logs(
         &self,
         _logs: Vec<ResourceLogs>,
@@ -275,7 +275,7 @@ impl OtlpExporter for GrpcExporter {
         // 类似实现
         Ok(ExportResult::default())
     }
-    
+
     async fn shutdown(&self) -> Result<(), ExportError> {
         Ok(())
     }
@@ -331,7 +331,7 @@ impl prost::Message for ExportTraceServiceRequest {
     fn encode_raw<B>(&self, _buf: &mut B) where B: bytes::BufMut {
         // 实现编码
     }
-    
+
     fn merge_field<B>(
         &mut self,
         _tag: u32,
@@ -341,11 +341,11 @@ impl prost::Message for ExportTraceServiceRequest {
     ) -> Result<(), prost::DecodeError> where B: bytes::Buf {
         Ok(())
     }
-    
+
     fn encoded_len(&self) -> usize {
         0
     }
-    
+
     fn clear(&mut self) {}
 }
 
@@ -402,13 +402,13 @@ fn benchmark_static_vs_dynamic(c: &mut Criterion) {
             .connect_lazy(),
         timeout: std::time::Duration::from_secs(5),
     };
-    
+
     c.bench_function("static_dispatch", |b| {
         b.to_async(&rt).iter(|| async {
             export_with_static(&exporter, black_box(vec![])).await.ok();
         });
     });
-    
+
     // 动态分发版本需要特殊处理
     // c.bench_function("dynamic_dispatch", |b| { ... });
 }
@@ -453,11 +453,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await?,
         timeout: std::time::Duration::from_secs(5),
     };
-    
+
     // 导出数据
     let result = exporter.export_traces(vec![]).await?;
     println!("Exported: {:?}", result);
-    
+
     Ok(())
 }
 ```
@@ -487,13 +487,13 @@ impl TraceContext {
 /// 跨 spawn 边界传播
 async fn propagate_context() {
     let ctx = Arc::new(TraceContext::new());
-    
+
     // 方式 1: Clone Arc
     let ctx_clone = Arc::clone(&ctx);
     task::spawn(async move {
         println!("Trace ID: {}", ctx_clone.trace_id);
     });
-    
+
     // 方式 2: 使用 tokio::task::LocalSet
     let local = task::LocalSet::new();
     local.run_until(async {
@@ -521,17 +521,17 @@ impl BatchExporter {
     pub fn new(exporter: Arc<dyn OtlpExporter>, batch_size: usize) -> Self {
         let (tx, rx) = mpsc::channel(1000);
         let flush_interval = Duration::from_secs(5);
-        
+
         // 后台批处理任务
         tokio::spawn(Self::batch_worker(rx, exporter, batch_size, flush_interval));
-        
+
         Self {
             sender: tx,
             batch_size,
             flush_interval,
         }
     }
-    
+
     async fn batch_worker(
         mut receiver: mpsc::Receiver<ResourceSpans>,
         exporter: Arc<dyn OtlpExporter>,
@@ -540,36 +540,36 @@ impl BatchExporter {
     ) {
         let mut buffer = Vec::with_capacity(batch_size);
         let mut ticker = interval(flush_interval);
-        
+
         loop {
             tokio::select! {
                 // 接收新数据
                 Some(span) = receiver.recv() => {
                     buffer.push(span);
-                    
+
                     if buffer.len() >= batch_size {
                         Self::flush(&exporter, &mut buffer).await;
                     }
                 }
-                
+
                 // 定时刷新
                 _ = ticker.tick() => {
                     if !buffer.is_empty() {
                         Self::flush(&exporter, &mut buffer).await;
                     }
                 }
-                
+
                 // 通道关闭
                 else => break,
             }
         }
-        
+
         // 最后刷新
         if !buffer.is_empty() {
             Self::flush(&exporter, &mut buffer).await;
         }
     }
-    
+
     async fn flush(
         exporter: &Arc<dyn OtlpExporter>,
         buffer: &mut Vec<ResourceSpans>,
@@ -577,11 +577,11 @@ impl BatchExporter {
         if buffer.is_empty() {
             return;
         }
-        
+
         let batch = std::mem::take(buffer);
         match exporter.export_traces(batch).await {
             Ok(result) => {
-                println!("Flushed: accepted={}, rejected={}", 
+                println!("Flushed: accepted={}, rejected={}",
                     result.accepted, result.rejected);
             }
             Err(e) => {
@@ -589,7 +589,7 @@ impl BatchExporter {
             }
         }
     }
-    
+
     /// 发送 Span
     pub async fn send(&self, span: ResourceSpans) -> Result<(), mpsc::error::SendError<ResourceSpans>> {
         self.sender.send(span).await
@@ -638,7 +638,7 @@ impl ProductionExporter {
         let client = tonic::transport::Channel::from_shared(config.endpoint.clone())?
             .connect()
             .await?;
-        
+
         Ok(Self {
             inner: Arc::new(RwLock::new(ExporterState {
                 client,
@@ -656,11 +656,11 @@ impl OtlpExporter for ProductionExporter {
     ) -> Result<ExportResult, ExportError> {
         let mut state = self.inner.write().await;
         state.metrics.total_exports += 1;
-        
+
         // 重试逻辑
         let mut attempts = 0;
         let mut last_error = None;
-        
+
         while attempts < self.config.max_retries {
             match self.try_export(&state.client, &traces).await {
                 Ok(result) => {
@@ -670,7 +670,7 @@ impl OtlpExporter for ProductionExporter {
                 Err(e) => {
                     attempts += 1;
                     last_error = Some(e);
-                    
+
                     if attempts < self.config.max_retries {
                         // 指数退避
                         let delay = Duration::from_millis(100 * 2_u64.pow(attempts));
@@ -679,19 +679,19 @@ impl OtlpExporter for ProductionExporter {
                 }
             }
         }
-        
+
         state.metrics.failed_exports += 1;
         Err(last_error.unwrap())
     }
-    
+
     async fn export_metrics(&self, _metrics: Vec<ResourceMetrics>) -> Result<ExportResult, ExportError> {
         Ok(ExportResult::default())
     }
-    
+
     async fn export_logs(&self, _logs: Vec<ResourceLogs>) -> Result<ExportResult, ExportError> {
         Ok(ExportResult::default())
     }
-    
+
     async fn shutdown(&self) -> Result<(), ExportError> {
         Ok(())
     }
@@ -724,11 +724,11 @@ use prost::Message;
 pub fn serialize_zero_copy(traces: &[ResourceSpans]) -> Result<Bytes, prost::EncodeError> {
     let size = traces.iter().map(|t| t.encoded_len()).sum();
     let mut buf = BytesMut::with_capacity(size);
-    
+
     for trace in traces {
         trace.encode(&mut buf)?;
     }
-    
+
     Ok(buf.freeze())
 }
 ```
@@ -760,15 +760,15 @@ impl OtlpExporter for RateLimitedExporter {
         let _permit = self.semaphore.acquire().await.unwrap();
         self.exporter.export_traces(traces).await
     }
-    
+
     async fn export_metrics(&self, metrics: Vec<ResourceMetrics>) -> Result<ExportResult, ExportError> {
         self.exporter.export_metrics(metrics).await
     }
-    
+
     async fn export_logs(&self, logs: Vec<ResourceLogs>) -> Result<ExportResult, ExportError> {
         self.exporter.export_logs(logs).await
     }
-    
+
     async fn shutdown(&self) -> Result<(), ExportError> {
         self.exporter.shutdown().await
     }

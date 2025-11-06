@@ -4,7 +4,7 @@
 
 ## 📚 文档列表
 
-### [COMPREHENSIVE_SUMMARY.md](./COMPREHENSIVE_SUMMARY.md)
+## [COMPREHENSIVE_SUMMARY.md](./COMPREHENSIVE_SUMMARY.md)
 
 Rust 1.90 与 OTLP 语义模型综合分析总结，包含：
 
@@ -84,4 +84,3 @@ Rust 所有权系统在并发可观测性系统中的应用：
 ---
 
 _本目录由 OTLP Rust 项目维护，持续更新中。_
-

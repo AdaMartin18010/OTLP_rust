@@ -1,6 +1,6 @@
 # 解析器与解析组合子
 
-> **核心库**: nom, pest, serde, winnow  
+> **核心库**: nom, pest, serde, winnow
 > **适用场景**: 文本解析、协议解析、配置文件、编译器前端
 
 ---
@@ -332,5 +332,5 @@ fn parse_ini_section(input: &str) -> IResult<&str, Vec<(&str, &str)>> {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

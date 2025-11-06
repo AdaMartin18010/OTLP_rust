@@ -1,7 +1,7 @@
 # 生产环境部署 - Production Deployment
 
-**创建日期**: 2025年10月29日  
-**适用环境**: Kubernetes, Docker, Cloud Native  
+**创建日期**: 2025年10月29日
+**适用环境**: Kubernetes, Docker, Cloud Native
 **状态**: ✅ 生产验证
 
 ---
@@ -124,7 +124,7 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-  
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -138,7 +138,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  
+
   redis:
     image: redis:7-alpine
     volumes:
@@ -148,7 +148,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
-  
+
   # OpenTelemetry Collector
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -160,7 +160,7 @@ services:
       - "4318:4318"   # OTLP HTTP
       - "8888:8888"   # Prometheus metrics
       - "13133:13133" # Health check
-  
+
   # Jaeger (可选)
   jaeger:
     image: jaegertracing/all-in-one:latest
@@ -224,12 +224,12 @@ spec:
                   values:
                   - web-api
               topologyKey: kubernetes.io/hostname
-      
+
       containers:
       - name: web-api
         image: your-registry/web-api:1.0.0
         imagePullPolicy: IfNotPresent
-        
+
         ports:
         - name: http
           containerPort: 8080
@@ -237,7 +237,7 @@ spec:
         - name: metrics
           containerPort: 9090
           protocol: TCP
-        
+
         env:
         - name: RUST_LOG
           value: "info"
@@ -265,7 +265,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        
+
         # 资源限制
         resources:
           requests:
@@ -274,7 +274,7 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "2000m"
-        
+
         # 健康检查
         livenessProbe:
           httpGet:
@@ -284,7 +284,7 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 3
-        
+
         readinessProbe:
           httpGet:
             path: /ready
@@ -293,7 +293,7 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
-        
+
         # 启动探针 (给应用足够启动时间)
         startupProbe:
           httpGet:
@@ -303,13 +303,13 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 30
-        
+
         # 生命周期钩子
         lifecycle:
           preStop:
             exec:
               command: ["/bin/sh", "-c", "sleep 15"]
-        
+
         # 安全上下文
         securityContext:
           runAsNonRoot: true
@@ -319,7 +319,7 @@ spec:
           capabilities:
             drop:
             - ALL
-        
+
         # 挂载卷
         volumeMounts:
         - name: tmp
@@ -327,7 +327,7 @@ spec:
         - name: config
           mountPath: /app/config
           readOnly: true
-      
+
       volumes:
       - name: tmp
         emptyDir: {}
@@ -421,19 +421,19 @@ data:
       host: 0.0.0.0
       port: 8080
       workers: 4
-    
+
     observability:
       otlp_endpoint: http://otel-collector:4317
       service_name: web-api
       service_version: 1.0.0
       sampling_rate: 0.1  # 10% 采样率
-    
+
     database:
       max_connections: 20
       min_connections: 5
       connect_timeout: 10s
       idle_timeout: 60s
-    
+
     cache:
       ttl: 300s
       max_size: 1000
@@ -512,7 +512,7 @@ pub fn create_load_balanced_client(endpoints: Vec<String>) -> impl Service {
                 .unwrap()
         })
         .collect();
-    
+
     // P2C (Power of Two Choices) 负载均衡
     Balance::new(ServiceList::new(services))
 }
@@ -552,7 +552,7 @@ spec:
       target:
         type: Utilization
         averageUtilization: 70
-  
+
   # 自定义指标: 请求延迟
   - type: Pods
     pods:
@@ -561,7 +561,7 @@ spec:
       target:
         type: AverageValue
         averageValue: "200m"  # 200ms
-  
+
   # 自定义指标: 活跃连接数
   - type: Pods
     pods:
@@ -570,7 +570,7 @@ spec:
       target:
         type: AverageValue
         averageValue: "1000"
-  
+
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 60
@@ -582,7 +582,7 @@ spec:
         value: 5    # 或者增加5个pod
         periodSeconds: 60
       selectPolicy: Max
-    
+
     scaleDown:
       stabilizationWindowSeconds: 300
       policies:
@@ -645,7 +645,7 @@ impl CircuitBreaker {
             meter,
         }
     }
-    
+
     // 执行with熔断保护
     #[instrument(skip(self, f))]
     pub async fn call<F, T>(&self, f: F) -> Result<T>
@@ -655,7 +655,7 @@ impl CircuitBreaker {
         // 检查状态
         {
             let state = self.state.read().await;
-            
+
             match state.state {
                 CircuitState::Open => {
                     // 检查是否应该进入半开状态
@@ -678,7 +678,7 @@ impl CircuitBreaker {
                 }
             }
         }
-        
+
         // 执行请求
         match f.await {
             Ok(result) => {
@@ -691,14 +691,14 @@ impl CircuitBreaker {
             }
         }
     }
-    
+
     async fn on_success(&self) {
         let mut state = self.state.write().await;
-        
+
         match state.state {
             CircuitState::HalfOpen => {
                 state.success_count += 1;
-                
+
                 if state.success_count >= self.config.success_threshold {
                     tracing::info!("Circuit breaker transitioning to CLOSED");
                     state.state = CircuitState::Closed;
@@ -714,14 +714,14 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     async fn on_failure(&self) {
         let mut state = self.state.write().await;
-        
+
         match state.state {
             CircuitState::Closed => {
                 state.failure_count += 1;
-                
+
                 if state.failure_count >= self.config.failure_threshold {
                     tracing::warn!("Circuit breaker transitioning to OPEN");
                     state.state = CircuitState::Open;
@@ -740,7 +740,7 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     async fn transition_to_half_open(&self) {
         let mut state = self.state.write().await;
         tracing::info!("Circuit breaker transitioning to HALF_OPEN");
@@ -748,7 +748,7 @@ impl CircuitBreaker {
         state.success_count = 0;
         self.record_state("half_open");
     }
-    
+
     fn record_state(&self, state: &str) {
         self.meter
             .u64_counter("circuit_breaker.state_changes")
@@ -781,27 +781,27 @@ async fn security_middleware(
 ) -> Response {
     let client_ip = extract_client_ip(&request);
     let user_id = extract_user_id(&request);
-    
+
     // 检查IP黑名单
     if is_blacklisted(&client_ip).await {
         tracing::warn!(
             client_ip = %client_ip,
             "Blocked request from blacklisted IP"
         );
-        
+
         record_security_event(SecurityEvent::SuspiciousActivity {
             details: format!("Blacklisted IP: {}", client_ip),
         });
-        
+
         return Response::builder()
             .status(403)
             .body("Forbidden".into())
             .unwrap();
     }
-    
+
     // 执行请求
     let response = next.run(request).await;
-    
+
     // 记录敏感操作
     if is_sensitive_operation(&request) {
         record_security_event(SecurityEvent::DataAccess {
@@ -809,13 +809,13 @@ async fn security_middleware(
             resource: request.uri().path().to_string(),
         });
     }
-    
+
     response
 }
 
 fn record_security_event(event: SecurityEvent) {
     tracing::warn!(event = ?event, "Security event recorded");
-    
+
     // 发送到SIEM系统
     // send_to_siem(event);
 }
@@ -858,16 +858,16 @@ async fn graceful_shutdown(server: Server) {
     }
 
     tracing::info!("Starting graceful shutdown...");
-    
+
     // 等待所有请求完成 (最多30秒)
     tokio::time::timeout(
         Duration::from_secs(30),
         server.graceful_shutdown()
     ).await.ok();
-    
+
     // 关闭追踪提供者
     global::shutdown_tracer_provider();
-    
+
     tracing::info!("Shutdown complete");
 }
 ```

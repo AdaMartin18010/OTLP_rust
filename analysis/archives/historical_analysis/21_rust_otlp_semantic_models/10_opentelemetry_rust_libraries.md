@@ -1,7 +1,7 @@
 # OpenTelemetry Rust 生态库深度分析
 
-> **版本**: opentelemetry-rust 0.27+ (2025年)  
-> **日期**: 2025年10月2日  
+> **版本**: opentelemetry-rust 0.27+ (2025年)
+> **日期**: 2025年10月2日
 > **主题**: 核心库、传输层、集成库、最佳实践
 
 ---
@@ -101,7 +101,7 @@ use opentelemetry::{Context, KeyValue};
 /// Tracer: 创建 Span 的工厂
 pub trait Tracer {
     type Span: Span;
-    
+
     fn span_builder(&self, name: &str) -> SpanBuilder;
     fn build(&self, builder: SpanBuilder) -> Self::Span;
 }
@@ -166,7 +166,7 @@ use opentelemetry_sdk::Resource;
 /// 创建 TracerProvider
 pub fn create_tracer_provider() -> TracerProvider {
     let exporter = /* 任意导出器 */;
-    
+
     TracerProvider::builder()
         .with_config(
             Config::default()
@@ -198,7 +198,7 @@ use opentelemetry_sdk::metrics::{
 
 pub fn create_meter_provider() -> SdkMeterProvider {
     let exporter = /* 任意导出器 */;
-    
+
     SdkMeterProvider::builder()
         .with_reader(
             PeriodicReader::builder(exporter, opentelemetry_sdk::runtime::Tokio)
@@ -232,7 +232,7 @@ pub fn create_grpc_exporter() -> opentelemetry_otlp::SpanExporter {
         "x-api-key",
         MetadataValue::try_from("secret-key").unwrap(),
     );
-    
+
     new_exporter()
         .tonic()
         .with_endpoint("http://localhost:4317")
@@ -285,11 +285,11 @@ use opentelemetry::global;
 /// 初始化 tracing
 pub fn init_tracing() {
     let tracer = global::tracer("app");
-    
+
     let subscriber = Registry::default()
         .with(OpenTelemetryLayer::new(tracer))
         .with(tracing_subscriber::fmt::layer());
-    
+
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to set subscriber");
 }
@@ -321,7 +321,7 @@ impl<'a> Extractor for HeaderExtractor<'a> {
     fn get(&self, key: &str) -> Option<&str> {
         self.0.headers().get(key)?.to_str().ok()
     }
-    
+
     fn keys(&self) -> Vec<&str> {
         self.0.headers().keys().map(|k| k.as_str()).collect()
     }
@@ -335,13 +335,13 @@ async fn tracing_middleware(
     let parent_cx = global::get_text_map_propagator(|prop| {
         prop.extract(&HeaderExtractor(&req))
     });
-    
+
     let span = global::tracer("http-server")
         .span_builder(format!("{} {}", req.method(), req.path()))
         .start_with_context(&global::tracer("http-server"), &parent_cx);
-    
+
     let _guard = opentelemetry::Context::current_with_span(span).attach();
-    
+
     next.call(req).await
 }
 ```
@@ -361,14 +361,14 @@ pub fn tracing_interceptor(
             metadata: req.metadata(),
         })
     });
-    
+
     let span = global::tracer("grpc-server")
         .span_builder("gRPC Request")
         .start_with_context(&global::tracer("grpc-server"), &parent_cx);
-    
+
     // 将 Span 存储在 Request extensions
     req.extensions_mut().insert(span);
-    
+
     Ok(req)
 }
 ```
@@ -396,7 +396,7 @@ async fn execute_query(
     let rows = sqlx::query(query)
         .fetch_all(pool)
         .await?;
-    
+
     Ok(rows.into_iter().map(|r| r.get(0)).collect())
 }
 ```
@@ -421,7 +421,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .tonic()
         .with_endpoint("http://localhost:4317")
         .build_span_exporter()?;
-    
+
     // 2. 创建 TracerProvider
     let provider = trace::TracerProvider::builder()
         .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
@@ -434,48 +434,48 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ]))
         )
         .build();
-    
+
     global::set_tracer_provider(provider);
-    
+
     // 3. 初始化 tracing
     let telemetry = tracing_opentelemetry::layer()
         .with_tracer(global::tracer("payment-service"));
-    
+
     let subscriber = Registry::default()
         .with(telemetry)
         .with(tracing_subscriber::fmt::layer());
-    
+
     tracing::subscriber::set_global_default(subscriber)?;
-    
+
     // 4. 运行应用
     run_server().await?;
-    
+
     // 5. 优雅关闭
     global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 
 #[instrument]
 async fn run_server() -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting payment service");
-    
+
     // 模拟处理请求
     process_payment(100.0).await?;
-    
+
     Ok(())
 }
 
 #[instrument(fields(amount = %amount))]
 async fn process_payment(amount: f64) -> Result<(), Box<dyn std::error::Error>> {
     info!("Processing payment of ${}", amount);
-    
+
     // 调用数据库
     charge_credit_card(amount).await?;
-    
+
     // 发送通知
     send_notification("Payment successful").await?;
-    
+
     Ok(())
 }
 
@@ -530,16 +530,16 @@ pub fn create_resource() -> Resource {
     Resource::new(vec![
         // 必填
         KeyValue::new(semconv::resource::SERVICE_NAME, "my-service"),
-        
+
         // 推荐
         KeyValue::new(semconv::resource::SERVICE_VERSION, env!("CARGO_PKG_VERSION")),
         KeyValue::new(semconv::resource::DEPLOYMENT_ENVIRONMENT, "production"),
         KeyValue::new(semconv::resource::SERVICE_NAMESPACE, "backend"),
-        
+
         // Kubernetes
         KeyValue::new("k8s.pod.name", std::env::var("HOSTNAME").unwrap_or_default()),
         KeyValue::new("k8s.namespace.name", std::env::var("K8S_NAMESPACE").unwrap_or_default()),
-        
+
         // 主机信息
         KeyValue::new(semconv::resource::HOST_NAME, hostname::get().unwrap().to_string_lossy().to_string()),
         KeyValue::new(semconv::resource::HOST_ARCH, std::env::consts::ARCH),
@@ -609,5 +609,5 @@ pub fn low_latency_batch_config() -> BatchConfig {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

@@ -1,7 +1,7 @@
 # Tokio 异步运行时深度分析
 
-> **版本**: Tokio 1.47+ & Rust 1.90  
-> **日期**: 2025年10月2日  
+> **版本**: Tokio 1.47+ & Rust 1.90
+> **日期**: 2025年10月2日
 > **主题**: 异步运行时、任务调度、I/O 模型、性能优化
 
 ---
@@ -129,15 +129,15 @@ pub fn current_thread_runtime() -> Runtime {
 /// 使用运行时
 fn main() {
     let rt = multi_thread_runtime();
-    
+
     rt.block_on(async {
         println!("Running in async context");
-        
+
         // 生成并发任务
         let handle = tokio::spawn(async {
             println!("Spawned task");
         });
-        
+
         handle.await.unwrap();
     });
 }
@@ -180,10 +180,10 @@ async fn spawn_tasks_example() {
         println!("Task on thread {:?}", std::thread::current().id());
         42
     });
-    
+
     let result = handle.await.unwrap();
     assert_eq!(result, 42);
-    
+
     // 方式 2: tokio::task::spawn_local (单线程运行时)
     let local_set = task::LocalSet::new();
     local_set.run_until(async {
@@ -235,11 +235,11 @@ impl PriorityExecutor {
             tasks: BinaryHeap::new(),
         }
     }
-    
+
     pub fn add_task(&mut self, priority: u8, task: Box<dyn FnOnce() + Send>) {
         self.tasks.push(PriorityTask { priority, task });
     }
-    
+
     pub fn run(&mut self) {
         while let Some(task) = self.tasks.pop() {
             (task.task)();
@@ -272,11 +272,11 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 pub async fn tcp_server() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
     println!("Listening on {}", listener.local_addr()?);
-    
+
     loop {
         let (socket, addr) = listener.accept().await?;
         println!("Accepted connection from {}", addr);
-        
+
         // 为每个连接生成独立任务
         tokio::spawn(handle_client(socket));
     }
@@ -284,15 +284,15 @@ pub async fn tcp_server() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn handle_client(mut socket: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
     let mut buf = vec![0; 1024];
-    
+
     loop {
         let n = socket.read(&mut buf).await?;
-        
+
         if n == 0 {
             // 连接关闭
             return Ok(());
         }
-        
+
         // Echo back
         socket.write_all(&buf[0..n]).await?;
     }
@@ -311,10 +311,10 @@ use tokio::io;
 pub async fn zero_copy_file_transfer() -> io::Result<()> {
     let mut reader = File::open("source.txt").await?;
     let mut writer = File::create("dest.txt").await?;
-    
+
     // 零拷贝传输 (底层使用 sendfile)
     io::copy(&mut reader, &mut writer).await?;
-    
+
     Ok(())
 }
 ```
@@ -328,11 +328,11 @@ use tokio::io::{AsyncWriteExt, BufWriter};
 pub async fn buffered_write() -> io::Result<()> {
     let file = File::create("output.txt").await?;
     let mut writer = BufWriter::new(file);
-    
+
     for i in 0..1000 {
         writer.write_all(format!("Line {}\n", i).as_bytes()).await?;
     }
-    
+
     writer.flush().await?;  // 显式刷新
     Ok(())
 }
@@ -373,7 +373,7 @@ pub async fn sleep_example() {
 /// Interval (周期性任务)
 pub async fn interval_example() {
     let mut interval = interval(Duration::from_secs(1));
-    
+
     for _ in 0..5 {
         interval.tick().await;
         println!("Tick at {:?}", Instant::now());
@@ -386,12 +386,12 @@ pub async fn timeout_example() -> Result<(), Box<dyn std::error::Error>> {
         sleep(Duration::from_secs(10)).await;
         42
     };
-    
+
     match timeout(Duration::from_secs(2), future).await {
         Ok(result) => println!("Completed: {}", result),
         Err(_) => println!("Timeout!"),
     }
-    
+
     Ok(())
 }
 ```
@@ -426,7 +426,7 @@ pub struct TaskPool {
 impl TaskPool {
     pub fn new(workers: usize) -> Self {
         let (tx, mut rx) = mpsc::channel::<Box<dyn FnOnce() + Send>>(100);
-        
+
         for _ in 0..workers {
             let mut rx = rx.clone();
             tokio::spawn(async move {
@@ -435,11 +435,11 @@ impl TaskPool {
                 }
             });
         }
-        
+
         Self { tx }
     }
-    
-    pub async fn execute<F>(&self, task: F) 
+
+    pub async fn execute<F>(&self, task: F)
     where
         F: FnOnce() + Send + 'static
     {
@@ -472,7 +472,7 @@ async fn blocking_correct() {
 /// OTLP 批量发送优化
 pub async fn batch_send_optimized(spans: Vec<Span>) {
     const BATCH_SIZE: usize = 100;
-    
+
     for chunk in spans.chunks(BATCH_SIZE) {
         // 批量发送减少系统调用
         send_batch(chunk).await;
@@ -503,22 +503,22 @@ pub struct OtlpClient {
 impl OtlpClient {
     pub fn new() -> Self {
         let (tx, mut rx) = mpsc::channel(10000);
-        
+
         // 后台批处理任务
         tokio::spawn(async move {
             let mut buffer = Vec::with_capacity(1000);
             let mut ticker = interval(Duration::from_secs(5));
-            
+
             loop {
                 tokio::select! {
                     Some(data) = rx.recv() => {
                         buffer.push(data);
-                        
+
                         if buffer.len() >= 1000 {
                             Self::flush(&mut buffer).await;
                         }
                     }
-                    
+
                     _ = ticker.tick() => {
                         if !buffer.is_empty() {
                             Self::flush(&mut buffer).await;
@@ -527,14 +527,14 @@ impl OtlpClient {
                 }
             }
         });
-        
+
         Self { tx }
     }
-    
+
     pub async fn send(&self, data: TelemetryData) {
         self.tx.send(data).await.unwrap();
     }
-    
+
     async fn flush(buffer: &mut Vec<TelemetryData>) {
         println!("Flushing {} items", buffer.len());
         // 实际发送逻辑
@@ -564,7 +564,7 @@ impl RateLimiter {
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
         }
     }
-    
+
     pub async fn execute<F, T>(&self, f: F) -> T
     where
         F: FnOnce() -> T,
@@ -633,7 +633,7 @@ fn correct_pattern_1() {
 /// ❌ 陷阱 2: 持有锁跨 await
 async fn anti_pattern_2() {
     let mutex = std::sync::Mutex::new(0);
-    
+
     {
         let _guard = mutex.lock().unwrap();
         // ❌ 锁被持有跨 await 点
@@ -644,7 +644,7 @@ async fn anti_pattern_2() {
 /// ✅ 正确: 使用异步锁或缩小锁作用域
 async fn correct_pattern_2() {
     let mutex = tokio::sync::Mutex::new(0);
-    
+
     {
         let _guard = mutex.lock().await;
         // ✅ 异步锁安全
@@ -664,10 +664,10 @@ use tokio::runtime::Handle;
 pub fn runtime_metrics() {
     let handle = Handle::current();
     let metrics = handle.metrics();
-    
+
     println!("Workers: {}", metrics.num_workers());
     println!("Blocking threads: {}", metrics.num_blocking_threads());
-    
+
     for i in 0..metrics.num_workers() {
         println!("Worker {}: {} tasks", i, metrics.worker_total_busy_duration(i).as_secs());
     }
@@ -685,5 +685,5 @@ pub fn runtime_metrics() {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

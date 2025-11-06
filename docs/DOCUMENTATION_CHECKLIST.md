@@ -1,7 +1,7 @@
 # 文档质量检查清单
 
-**版本**: 1.0  
-**日期**: 2025年10月28日  
+**版本**: 1.0
+**日期**: 2025年10月28日
 **用途**: 确保文档符合标准
 
 ---
@@ -50,6 +50,7 @@ folder_name/
 ```
 
 **检查命令**:
+
 ```bash
 ls docs/*/KNOWLEDGE_GRAPH.md | wc -l  # 应为14
 ls docs/*/COMPARISON_MATRIX.md | wc -l  # 应为14
@@ -218,24 +219,24 @@ ERRORS=0
 
 for folder in docs/*/; do
     folder_name=$(basename "$folder")
-    
+
     # 跳过archives和reports
     if [[ "$folder_name" == "archives" || "$folder_name" == "reports" ]]; then
         continue
     fi
-    
+
     echo "检查: $folder_name"
-    
+
     if [ ! -f "$folder/KNOWLEDGE_GRAPH.md" ]; then
         echo "  ❌ 缺少 KNOWLEDGE_GRAPH.md"
         ERRORS=$((ERRORS + 1))
     fi
-    
+
     if [ ! -f "$folder/COMPARISON_MATRIX.md" ]; then
         echo "  ❌ 缺少 COMPARISON_MATRIX.md"
         ERRORS=$((ERRORS + 1))
     fi
-    
+
     if [ ! -f "$folder/CONCEPTS.md" ]; then
         echo "  ❌ 缺少 CONCEPTS.md"
         ERRORS=$((ERRORS + 1))
@@ -314,6 +315,7 @@ markdownlint docs/**/*.md --config .markdownlint.json
 **症状**: 使用A. B. C.或I. II. III.
 
 **修复**:
+
 ```bash
 # 全局替换
 sed -i 's/^## A\. /## 1. /g' file.md
@@ -331,6 +333,7 @@ sed -i 's/^### A\.1 /### 1.1 /g' file.md
 **症状**: \`\`\` 而非 \`\`\`rust
 
 **修复**:
+
 ```bash
 # 手动添加语言标识
 ```
@@ -340,6 +343,7 @@ sed -i 's/^### A\.1 /### 1.1 /g' file.md
 **症状**: 点击链接404
 
 **修复**:
+
 1. 检查文件路径
 2. 更新相对路径
 3. 确认文件存在
@@ -383,7 +387,6 @@ sed -i 's/^### A\.1 /### 1.1 /g' file.md
 
 ---
 
-**检查清单版本**: 1.0  
-**最后更新**: 2025-10-28  
+**检查清单版本**: 1.0
+**最后更新**: 2025-10-28
 **维护者**: OTLP_rust文档团队
-

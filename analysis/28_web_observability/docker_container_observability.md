@@ -1,8 +1,8 @@
 # Docker 容器可观测性 - Docker Container Observability
 
-**创建日期**: 2025年10月29日  
-**最后更新**: 2025年10月29日  
-**状态**: ✅ 完整  
+**创建日期**: 2025年10月29日
+**最后更新**: 2025年10月29日
+**状态**: ✅ 完整
 **优先级**: 🔴 高
 
 ---
@@ -513,12 +513,12 @@ pub fn build_container_resource() -> Resource {
         // 基础服务信息
         KeyValue::new("service.name", env::var("OTLP_SERVICE_NAME").unwrap_or_else(|_| "unknown".to_string())),
         KeyValue::new("service.version", env::var("OTLP_SERVICE_VERSION").unwrap_or_else(|_| "0.0.0".to_string())),
-        
+
         // 容器信息
         KeyValue::new("container.id", get_container_id()),
         KeyValue::new("container.name", hostname()),
         KeyValue::new("container.runtime", "docker"),
-        
+
         // 部署信息
         KeyValue::new("deployment.environment", env::var("OTLP_DEPLOYMENT_ENVIRONMENT").unwrap_or_else(|_| "development".to_string())),
     ];
@@ -538,7 +538,7 @@ pub fn build_container_resource() -> Resource {
 /// 获取容器ID（从cgroup信息）
 fn get_container_id() -> String {
     use std::fs;
-    
+
     // 从 /proc/self/cgroup 读取容器ID
     if let Ok(content) = fs::read_to_string("/proc/self/cgroup") {
         for line in content.lines() {
@@ -549,7 +549,7 @@ fn get_container_id() -> String {
             }
         }
     }
-    
+
     // 备选：从 HOSTNAME 环境变量获取
     env::var("HOSTNAME").unwrap_or_else(|_| "unknown".to_string())
 }
@@ -572,7 +572,7 @@ services:
       io.opentelemetry.service.name: "web-service"
       io.opentelemetry.service.version: "1.0.0"
       io.opentelemetry.deployment.environment: "production"
-      
+
       # 自定义业务标签
       app.team: "platform"
       app.component: "api-gateway"
@@ -589,17 +589,17 @@ use bollard::container::InspectContainerOptions;
 pub async fn load_config_from_labels() -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
     let docker = Docker::connect_with_local_defaults()?;
     let container_id = get_container_id();
-    
+
     let container = docker
         .inspect_container(&container_id, None::<InspectContainerOptions>)
         .await?;
-    
+
     if let Some(config) = container.config {
         if let Some(labels) = config.labels {
             return Ok(labels);
         }
     }
-    
+
     Ok(HashMap::new())
 }
 ```
@@ -629,36 +629,36 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. 初始化追踪
     let tracer_provider = init_tracer_provider()?;
-    
+
     // 2. 设置全局追踪器
     opentelemetry::global::set_tracer_provider(tracer_provider.clone());
-    
+
     // 3. 初始化 tracing subscriber
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .with(tracing_subscriber::fmt::layer())
         .with(tracing_opentelemetry::layer().with_tracer(tracer_provider.tracer("web-service")))
         .init();
-    
+
     // 4. 构建应用
     let app = Router::new()
         .route("/", get(handler))
         .route("/health", get(health_check))
         .layer(TraceLayer::new_for_http())
         .layer(Extension(tracer_provider));
-    
+
     // 5. 启动服务器
     let addr = "0.0.0.0:8080".parse()?;
     tracing::info!("Starting server on {}", addr);
-    
+
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await?;
-    
+
     // 6. 清理
     opentelemetry::global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 
@@ -666,11 +666,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn init_tracer_provider() -> Result<opentelemetry::sdk::trace::TracerProvider, Box<dyn std::error::Error>> {
     let endpoint = env::var("OTLP_EXPORTER_ENDPOINT")
         .unwrap_or_else(|_| "http://localhost:4317".to_string());
-    
+
     let otlp_exporter = opentelemetry_otlp::new_exporter()
         .tonic()
         .with_endpoint(&endpoint);
-    
+
     let tracer_provider = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(otlp_exporter)
@@ -680,7 +680,7 @@ fn init_tracer_provider() -> Result<opentelemetry::sdk::trace::TracerProvider, B
                 .with_sampler(opentelemetry::sdk::trace::Sampler::AlwaysOn)
         )
         .install_batch(opentelemetry::runtime::Tokio)?;
-    
+
     Ok(tracer_provider)
 }
 
@@ -699,7 +699,7 @@ async fn health_check() -> &'static str {
 /// 优雅关闭信号
 async fn shutdown_signal() {
     use tokio::signal;
-    
+
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -866,18 +866,18 @@ services:
         reservations:
           cpus: '1.0'
           memory: 512M
-    
+
     # 日志驱动优化
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-    
+
     # 安全选项
     security_opt:
       - no-new-privileges:true
-    
+
     # 只读根文件系统
     read_only: true
     tmpfs:
@@ -1150,6 +1150,6 @@ tail -f /var/log/app.log
 
 ---
 
-**维护者**: OTLP_rust 项目团队  
-**最后更新**: 2025年10月29日  
+**维护者**: OTLP_rust 项目团队
+**最后更新**: 2025年10月29日
 **下一步**: 探索 [WasmEdge 可观测性](./wasmedge_observability.md)

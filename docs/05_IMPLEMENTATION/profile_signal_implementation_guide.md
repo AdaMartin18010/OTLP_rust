@@ -1,9 +1,9 @@
 # 🎯 Profile 信号实现指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
-**适用于**: OTLP Rust v2.0+  
-**OTLP 版本**: 1.3.0+ (Profile Signal Type)  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
+**适用于**: OTLP Rust v2.0+
+**OTLP 版本**: 1.3.0+ (Profile Signal Type)
 **状态**: 🟢 活跃维护
 
 > **简介**: Profile 信号完整实现指南 - CPU/Memory Profiling、pprof格式、性能分析和最佳实践。
@@ -65,7 +65,7 @@
 Profile 信号是 OTLP 1.3.0+ 引入的新信号类型，用于收集和传输**应用程序性能分析数据**。它支持：
 
 - 🔥 **CPU Profiling** - CPU 使用情况分析
-- 💾 **Memory Profiling** - 内存分配和使用分析  
+- 💾 **Memory Profiling** - 内存分配和使用分析
 - 🔒 **Lock Profiling** - 锁竞争分析
 - 🌐 **Goroutine Profiling** - 并发分析（适用于 Rust 的异步任务）
 
@@ -351,16 +351,16 @@ pub struct ProfileData {
 pub enum ProfileError {
     #[error("Profiler is already running")]
     AlreadyRunning,
-    
+
     #[error("Profiler is not running")]
     NotRunning,
-    
+
     #[error("Failed to initialize profiler: {0}")]
     InitializationFailed(String),
-    
+
     #[error("Failed to generate report: {0}")]
     ReportGenerationFailed(String),
-    
+
     #[error("Failed to serialize profile data: {0}")]
     SerializationFailed(String),
 }
@@ -417,7 +417,7 @@ impl ProfileProcessor {
         exporter: Arc<dyn ProfileExporter>,
     ) -> Self {
         let (tx, rx) = mpsc::channel(config.max_queue_size);
-        
+
         let processor = Self {
             config: config.clone(),
             tx,
@@ -1080,8 +1080,8 @@ let processor_config = ProfileProcessorConfig {
 
 ---
 
-**文档完成度**: 100%  
-**示例代码**: 已验证  
+**文档完成度**: 100%
+**示例代码**: 已验证
 **最后审核**: 2025年10月24日
 
 🎯 **需要帮助？** 查看 [故障排除指南](../08_REFERENCE/troubleshooting_guide.md) 或提交 Issue。

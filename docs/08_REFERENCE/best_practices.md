@@ -1,7 +1,7 @@
 # 📋 最佳实践指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 最佳实践 - 开发、部署、运维和安全的完整指南。
@@ -80,17 +80,17 @@ pub struct OtlpClient {
 
 impl OtlpClient {
     /// 创建新的 OTLP 客户端
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `config` - 客户端配置
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// 返回配置好的客户端实例
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// 如果配置无效或网络连接失败，返回错误
     pub async fn new(config: OtlpConfig) -> Result<Self, OtlpError> {
         let inner = ClientInner::new(config.clone()).await?;
@@ -130,7 +130,7 @@ impl Endpoint {
             Err(InvalidEndpoint::new(url))
         }
     }
-    
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -147,7 +147,7 @@ impl BatchSize {
             Err(InvalidBatchSize::new(size))
         }
     }
-    
+
     pub fn get(&self) -> usize {
         self.0
     }
@@ -166,22 +166,22 @@ use thiserror::Error;
 pub enum OtlpError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("gRPC error: {0}")]
     Grpc(#[from] tonic::Status),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     #[error("Configuration error: {0}")]
     Config(#[from] ConfigError),
-    
+
     #[error("Timeout after {duration:?}")]
     Timeout { duration: Duration },
-    
+
     #[error("Batch processing failed: {reason}")]
     Batch { reason: String },
-    
+
     #[error("Authentication failed: {message}")]
     Auth { message: String },
 }
@@ -207,7 +207,7 @@ impl OtlpError {
 pub async fn send_data(&self, data: TelemetryData) -> Result<SendResult, OtlpError> {
     let serialized = serde_json::to_string(&data)?;
     let response = self.transport.send(&serialized).await?;
-    
+
     if response.status().is_success() {
         Ok(SendResult::success())
     } else {
@@ -220,7 +220,7 @@ pub async fn send_data(&self, data: TelemetryData) -> Result<SendResult, OtlpErr
 // ✅ 使用 match 进行详细错误处理
 pub async fn process_with_retry(&self, data: TelemetryData) -> Result<(), OtlpError> {
     let mut last_error = None;
-    
+
     for attempt in 1..=self.config.max_retries {
         match self.send_data(data.clone()).await {
             Ok(_) => return Ok(()),
@@ -232,7 +232,7 @@ pub async fn process_with_retry(&self, data: TelemetryData) -> Result<(), OtlpEr
             }
         }
     }
-    
+
     Err(last_error.unwrap_or_else(|| OtlpError::Custom("Unknown error".to_string())))
 }
 ```
@@ -254,20 +254,20 @@ impl MemoryPool {
         for _ in 0..pool_size {
             buffers.push(Vec::with_capacity(buffer_size));
         }
-        
+
         Self {
             buffers,
             max_size: buffer_size,
         }
     }
-    
+
     pub fn get_buffer(&mut self) -> Option<Vec<u8>> {
         self.buffers.pop().map(|mut buffer| {
             buffer.clear();
             buffer
         })
     }
-    
+
     pub fn return_buffer(&mut self, mut buffer: Vec<u8>) {
         if buffer.capacity() <= self.max_size && self.buffers.len() < self.buffers.capacity() {
             buffer.clear();
@@ -285,7 +285,7 @@ impl<'a> ZeroCopyBuffer<'a> {
     pub fn new(data: &'a [u8]) -> Self {
         Self { data }
     }
-    
+
     pub fn as_slice(&self) -> &[u8] {
         self.data
     }
@@ -306,14 +306,14 @@ impl ConcurrencyLimiter {
             semaphore: Semaphore::new(max_concurrent),
         }
     }
-    
+
     pub async fn execute<F, T>(&self, future: F) -> Result<T, OtlpError>
     where
         F: Future<Output = Result<T, OtlpError>>,
     {
         let _permit = self.semaphore.acquire().await
             .map_err(|_| OtlpError::ConcurrencyLimit)?;
-        
+
         future.await
     }
 }
@@ -323,8 +323,8 @@ pub async fn process_with_timeout(&self, data: TelemetryData) -> Result<(), Otlp
     tokio::select! {
         result = self.send_data(data) => result,
         _ = tokio::time::sleep(self.config.timeout) => {
-            Err(OtlpError::Timeout { 
-                duration: self.config.timeout 
+            Err(OtlpError::Timeout {
+                duration: self.config.timeout
             })
         }
     }
@@ -340,30 +340,30 @@ pub async fn process_with_timeout(&self, data: TelemetryData) -> Result<(), Otlp
 mod tests {
     use super::*;
     use tokio_test;
-    
+
     // ✅ 好的实践：清晰的测试结构
     #[tokio::test]
     async fn test_client_creation_success() {
         // Arrange
         let config = OtlpConfig::default()
             .with_endpoint("http://localhost:4317");
-        
+
         // Act
         let client = OtlpClient::new(config).await;
-        
+
         // Assert
         assert!(client.is_ok());
     }
-    
+
     #[tokio::test]
     async fn test_client_creation_invalid_endpoint() {
         // Arrange
         let config = OtlpConfig::default()
             .with_endpoint("invalid-url");
-        
+
         // Act
         let client = OtlpClient::new(config).await;
-        
+
         // Assert
         assert!(client.is_err());
         match client.unwrap_err() {
@@ -371,7 +371,7 @@ mod tests {
             other => panic!("Expected ConfigError, got {:?}", other),
         }
     }
-    
+
     // ✅ 使用参数化测试
     #[tokio::test]
     async fn test_batch_processing() {
@@ -382,12 +382,12 @@ mod tests {
             (1000, 2),
             (2000, 4),
         ];
-        
+
         for (input_size, expected_batches) in test_cases {
             let processor = BatchProcessor::new(512);
             let data = generate_test_data(input_size);
             let batches = processor.process(data).await.unwrap();
-            
+
             assert_eq!(batches.len(), expected_batches);
         }
     }
@@ -400,23 +400,23 @@ mod tests {
 #[cfg(test)]
 mod integration_tests {
     use super::*;
-    
+
     // ✅ 使用测试容器
     #[tokio::test]
     async fn test_with_testcontainers() {
         let docker = testcontainers::clients::Cli::default();
         let collector = docker.run(testcontainers::images::generic::GenericImage::new("otel/opentelemetry-collector", "latest"));
-        
+
         let config = OtlpConfig::default()
             .with_endpoint(&format!("http://localhost:{}", collector.get_host_port_ipv4(4317)));
-        
+
         let client = OtlpClient::new(config).await.unwrap();
-        
+
         // 测试逻辑
         let result = client.send_trace("test-operation").await;
         assert!(result.is_ok());
     }
-    
+
     // ✅ 模拟外部依赖
     #[tokio::test]
     async fn test_with_mock_server() {
@@ -426,13 +426,13 @@ mod integration_tests {
             .with_status(200)
             .create_async()
             .await;
-        
+
         let config = OtlpConfig::default()
             .with_endpoint(&server.url());
-        
+
         let client = OtlpClient::new(config).await.unwrap();
         let result = client.send_trace("test-operation").await;
-        
+
         assert!(result.is_ok());
         mock.assert_async().await;
     }
@@ -700,15 +700,15 @@ pub fn init_logging() {
 
 // ✅ 使用结构化字段
 pub async fn process_request(request: &Request) -> Result<Response, Error> {
-    let span = tracing::info_span!("process_request", 
+    let span = tracing::info_span!("process_request",
         request_id = %request.id,
         method = %request.method,
         path = %request.path,
         user_id = %request.user_id
     );
-    
+
     let _enter = span.enter();
-    
+
     info!(
         request_id = %request.id,
         method = %request.method,
@@ -716,10 +716,10 @@ pub async fn process_request(request: &Request) -> Result<Response, Error> {
         user_id = %request.user_id,
         "Processing request"
     );
-    
+
     // 处理逻辑
     let result = handle_request(request).await;
-    
+
     match &result {
         Ok(response) => {
             info!(
@@ -738,7 +738,7 @@ pub async fn process_request(request: &Request) -> Result<Response, Error> {
             );
         }
     }
-    
+
     result
 }
 ```
@@ -761,23 +761,23 @@ impl PerformanceMonitor {
             start_time: Instant::now(),
         }
     }
-    
+
     pub fn record_request(&self, method: &str, endpoint: &str, duration: Duration, status: u16) {
         self.metrics.requests_total
             .with_label_values(&[method, endpoint, &status.to_string()])
             .inc();
-        
+
         self.metrics.request_duration
             .with_label_values(&[method, endpoint])
             .observe(duration.as_secs_f64());
     }
-    
+
     pub fn record_error(&self, error_type: &str, endpoint: &str) {
         self.metrics.errors_total
             .with_label_values(&[error_type, endpoint])
             .inc();
     }
-    
+
     pub fn update_connections(&self, count: usize) {
         self.metrics.active_connections.set(count as f64);
     }
@@ -802,20 +802,20 @@ impl HealthChecker {
             interval,
         }
     }
-    
+
     pub fn add_check<C>(&mut self, check: C)
     where
         C: HealthCheck + Send + Sync + 'static,
     {
         self.checks.push(Box::new(check));
     }
-    
+
     pub async fn start_monitoring(&self) -> Result<(), Box<dyn std::error::Error>> {
         let mut interval = tokio::time::interval(self.interval);
-        
+
         loop {
             interval.tick().await;
-            
+
             for check in &self.checks {
                 match check.check().await {
                     Ok(_) => {
@@ -855,12 +855,12 @@ impl CapacityPlanner {
             thresholds,
         }
     }
-    
+
     pub async fn check_capacity(&self) -> CapacityStatus {
         let cpu_usage = self.get_cpu_usage().await;
         let memory_usage = self.get_memory_usage().await;
         let request_rate = self.get_request_rate().await;
-        
+
         CapacityStatus {
             cpu_usage,
             memory_usage,
@@ -868,22 +868,22 @@ impl CapacityPlanner {
             recommendations: self.generate_recommendations(cpu_usage, memory_usage, request_rate),
         }
     }
-    
+
     fn generate_recommendations(&self, cpu: f64, memory: f64, requests: f64) -> Vec<String> {
         let mut recommendations = Vec::new();
-        
+
         if cpu > self.thresholds.cpu_warning {
             recommendations.push("Consider scaling up CPU resources".to_string());
         }
-        
+
         if memory > self.thresholds.memory_warning {
             recommendations.push("Consider scaling up memory resources".to_string());
         }
-        
+
         if requests > self.thresholds.request_rate_warning {
             recommendations.push("Consider horizontal scaling".to_string());
         }
-        
+
         recommendations
     }
 }
@@ -911,18 +911,18 @@ impl JwtAuth {
         let decoding_key = DecodingKey::from_secret(secret.as_bytes());
         let mut validation = Validation::new(Algorithm::HS256);
         validation.set_required_spec_claims(&["exp", "iat", "sub"]);
-        
+
         Self {
             encoding_key,
             decoding_key,
             validation,
         }
     }
-    
+
     pub fn generate_token(&self, claims: &Claims) -> Result<String, JwtError> {
         encode(&Header::default(), claims, &self.encoding_key)
     }
-    
+
     pub fn verify_token(&self, token: &str) -> Result<Claims, JwtError> {
         let token_data = decode::<Claims>(token, &self.decoding_key, &self.validation)?;
         Ok(token_data.claims)
@@ -955,16 +955,16 @@ impl DataEncryption {
     pub fn new(key: &[u8; 32]) -> Self {
         let key = Key::from_slice(key);
         let cipher = Aes256Gcm::new(key);
-        
+
         Self { cipher }
     }
-    
+
     pub fn encrypt(&self, plaintext: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         let nonce = Nonce::from_slice(&[0; 12]); // 在生产环境中使用随机 nonce
         self.cipher.encrypt(nonce, plaintext)
             .map_err(|e| EncryptionError::EncryptionFailed(e.to_string()))
     }
-    
+
     pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         let nonce = Nonce::from_slice(&[0; 12]);
         self.cipher.decrypt(nonce, ciphertext)
@@ -984,17 +984,17 @@ use std::sync::Arc;
 
 pub fn create_secure_client_config() -> Result<ClientConfig, Box<dyn std::error::Error>> {
     let mut root_store = RootCertStore::empty();
-    
+
     // 添加系统根证书
     for cert in rustls_native_certs::load_native_certs()? {
         root_store.add(&rustls::Certificate(cert.0))?;
     }
-    
+
     let config = ClientConfig::builder()
         .with_safe_defaults()
         .with_root_certificates(root_store)
         .with_no_client_auth();
-    
+
     Ok(config)
 }
 ```
@@ -1036,7 +1036,7 @@ impl AuditLogger {
             writer: Arc::new(Mutex::new(writer)),
         }
     }
-    
+
     pub async fn log(&self, log: AuditLog) -> Result<(), Box<dyn std::error::Error>> {
         let json = serde_json::to_string(&log)?;
         let mut writer = self.writer.lock().await;
@@ -1069,14 +1069,14 @@ impl MemoryPool {
         for _ in 0..pool_size {
             pools.push(Vec::with_capacity(buffer_size));
         }
-        
+
         Self {
             pools: Arc::new(Mutex::new(pools)),
             pool_size,
             buffer_size,
         }
     }
-    
+
     pub async fn get_buffer(&self) -> Option<PooledBuffer> {
         let mut pools = self.pools.lock().await;
         pools.pop().map(|mut buffer| {
@@ -1124,7 +1124,7 @@ impl ParallelProcessor {
     pub fn new(num_threads: usize) -> Self {
         Self { num_threads }
     }
-    
+
     pub fn process_batch<T, F, R>(&self, items: Vec<T>, processor: F) -> Vec<R>
     where
         T: Send,
@@ -1156,7 +1156,7 @@ impl AsyncIoProcessor {
     pub fn new(buffer_size: usize) -> Self {
         Self { buffer_size }
     }
-    
+
     pub async fn process_stream<R, W>(
         &self,
         mut reader: R,
@@ -1167,16 +1167,16 @@ impl AsyncIoProcessor {
         W: AsyncWrite + Unpin,
     {
         let mut buffer = vec![0u8; self.buffer_size];
-        
+
         loop {
             let bytes_read = reader.read(&mut buffer).await?;
             if bytes_read == 0 {
                 break;
             }
-            
+
             writer.write_all(&buffer[..bytes_read]).await?;
         }
-        
+
         writer.flush().await?;
         Ok(())
     }
@@ -1204,22 +1204,22 @@ impl<T> ConnectionPool<T> {
             max_connections_per_host,
         }
     }
-    
+
     pub async fn get_connection(&self, host: &str) -> Option<PooledConnection<T>> {
         let mut connections = self.connections.write().await;
         let host_connections = connections.entry(host.to_string()).or_insert_with(Vec::new);
-        
+
         host_connections.pop().map(|conn| PooledConnection {
             connection: conn,
             host: host.to_string(),
             pool: Arc::clone(&self.connections),
         })
     }
-    
+
     pub async fn return_connection(&self, host: &str, connection: T) {
         let mut connections = self.connections.write().await;
         let host_connections = connections.entry(host.to_string()).or_insert_with(Vec::new);
-        
+
         if host_connections.len() < self.max_connections_per_host {
             host_connections.push(connection);
         }
@@ -1238,6 +1238,6 @@ impl<T> ConnectionPool<T> {
 
 ---
 
-**最佳实践指南版本**: 1.0.0  
-**最后更新**: 2025年1月  
+**最佳实践指南版本**: 1.0.0
+**最后更新**: 2025年1月
 **维护者**: OTLP Rust 团队

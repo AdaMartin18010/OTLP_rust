@@ -108,16 +108,16 @@ pub enum TelemetryDataType {
 pub struct TelemetryData {
     /// 数据类型标签
     pub data_type: TelemetryDataType,
-    
+
     /// 时间戳 (纳秒精度)
     pub timestamp: u64,
-    
+
     /// 资源属性 (Resource Schema)
     pub resource_attributes: HashMap<String, AttributeValue>,
-    
+
     /// 作用域属性 (Instrumentation Scope)
     pub scope_attributes: HashMap<String, AttributeValue>,
-    
+
     /// 具体数据内容 (使用 tagged union)
     pub content: TelemetryContent,
 }
@@ -143,7 +143,7 @@ impl TelemetryData {
             ..Default::default()
         }
     }
-    
+
     /// 类型安全的访问器 (编译时检查)
     pub fn as_trace(&self) -> Option<&TraceData> {
         match (&self.data_type, &self.content) {
@@ -151,7 +151,7 @@ impl TelemetryData {
             _ => None,
         }
     }
-    
+
     /// 模式匹配提取 (零成本抽象)
     pub fn into_trace(self) -> Result<TraceData, Self> {
         match self.content {
@@ -196,7 +196,7 @@ use serde::{Serialize, Deserialize};
 pub struct Resource {
     /// 属性键值对
     attributes: HashMap<String, AttributeValue>,
-    
+
     /// Schema URL (可选)
     schema_url: Option<String>,
 }
@@ -206,17 +206,17 @@ impl Resource {
     pub fn builder() -> ResourceBuilder {
         ResourceBuilder::default()
     }
-    
+
     /// 获取服务名称 (强类型访问)
     pub fn service_name(&self) -> Option<&str> {
         self.get_string("service.name")
     }
-    
+
     /// 获取 Pod 名称
     pub fn k8s_pod_name(&self) -> Option<&str> {
         self.get_string("k8s.pod.name")
     }
-    
+
     /// 泛型属性访问
     pub fn get_string(&self, key: &str) -> Option<&str> {
         self.attributes.get(key).and_then(|v| v.as_string())
@@ -242,7 +242,7 @@ impl ResourceBuilder {
         );
         self
     }
-    
+
     pub fn with_k8s_pod(mut self, name: &str, namespace: &str) -> Self {
         self.attributes.insert(
             "k8s.pod.name".to_string(),
@@ -254,7 +254,7 @@ impl ResourceBuilder {
         );
         self
     }
-    
+
     pub fn build(self) -> Resource {
         Resource {
             attributes: self.attributes,
@@ -311,7 +311,7 @@ impl TraceId {
     pub fn new() -> Self {
         Self(rand::random())
     }
-    
+
     /// 从十六进制字符串解析
     pub fn from_hex(s: &str) -> Result<Self, ParseError> {
         let bytes = hex::decode(s)?;
@@ -322,7 +322,7 @@ impl TraceId {
         arr.copy_from_slice(&bytes);
         Ok(Self(arr))
     }
-    
+
     /// 转换为十六进制字符串
     pub fn to_hex(&self) -> String {
         hex::encode(self.0)
@@ -344,34 +344,34 @@ impl SpanId {
 pub struct Span {
     /// 追踪 ID (因果链根)
     pub trace_id: TraceId,
-    
+
     /// 跨度 ID (当前节点)
     pub span_id: SpanId,
-    
+
     /// 父跨度 ID (因果链指针)
     pub parent_span_id: Option<SpanId>,
-    
+
     /// 操作名称
     pub name: String,
-    
+
     /// 跨度类型
     pub kind: SpanKind,
-    
+
     /// 开始时间 (纳秒)
     pub start_time: u64,
-    
+
     /// 结束时间 (纳秒)
     pub end_time: u64,
-    
+
     /// 状态
     pub status: SpanStatus,
-    
+
     /// 属性
     pub attributes: HashMap<String, AttributeValue>,
-    
+
     /// 事件列表
     pub events: Vec<SpanEvent>,
-    
+
     /// 链接列表
     pub links: Vec<SpanLink>,
 }
@@ -432,7 +432,7 @@ impl Span {
             links: Vec::new(),
         }
     }
-    
+
     /// 创建子 Span (继承 trace_id)
     pub fn child(&self, name: impl Into<String>) -> Self {
         Self {
@@ -449,12 +449,12 @@ impl Span {
             links: Vec::new(),
         }
     }
-    
+
     /// 结束 Span
     pub fn end(&mut self) {
         self.end_time = current_time_nanos();
     }
-    
+
     /// 计算持续时间 (纳秒)
     pub fn duration(&self) -> u64 {
         self.end_time.saturating_sub(self.start_time)
@@ -480,7 +480,7 @@ impl SpanContext {
         let traceparent = headers.get("traceparent")?;
         Self::parse_traceparent(traceparent.to_str().ok()?)
     }
-    
+
     /// 解析 W3C Trace Context
     pub fn parse_traceparent(s: &str) -> Option<Self> {
         // 格式: 00-{trace_id}-{span_id}-{flags}
@@ -488,7 +488,7 @@ impl SpanContext {
         if parts.len() != 4 || parts[0] != "00" {
             return None;
         }
-        
+
         Some(Self {
             trace_id: TraceId::from_hex(parts[1]).ok()?,
             span_id: SpanId::from_hex(parts[2]).ok()?,
@@ -496,7 +496,7 @@ impl SpanContext {
             trace_state: None,
         })
     }
-    
+
     /// 注入到 HTTP 头部
     pub fn inject_headers(&self, headers: &mut HeaderMap) {
         let traceparent = format!(
@@ -548,16 +548,16 @@ pub enum MetricType {
 pub struct Metric {
     /// 指标名称
     pub name: String,
-    
+
     /// 描述
     pub description: String,
-    
+
     /// 单位 (如 "ms", "bytes", "1")
     pub unit: String,
-    
+
     /// 指标类型
     pub metric_type: MetricType,
-    
+
     /// 数据点
     pub data_points: Vec<DataPoint>,
 }
@@ -567,10 +567,10 @@ pub struct Metric {
 pub struct DataPoint {
     /// 时间戳
     pub timestamp: u64,
-    
+
     /// 属性 (维度)
     pub attributes: HashMap<String, AttributeValue>,
-    
+
     /// 值
     pub value: DataPointValue,
 }
@@ -580,10 +580,10 @@ pub struct DataPoint {
 pub enum DataPointValue {
     /// 数值型 (Counter, Gauge)
     Number(f64),
-    
+
     /// 直方图
     Histogram(HistogramData),
-    
+
     /// 摘要
     Summary(SummaryData),
 }
@@ -593,10 +593,10 @@ pub enum DataPointValue {
 pub struct HistogramData {
     /// 总样本数
     pub count: u64,
-    
+
     /// 样本总和
     pub sum: f64,
-    
+
     /// 桶分布
     pub buckets: Vec<HistogramBucket>,
 }
@@ -605,7 +605,7 @@ pub struct HistogramData {
 pub struct HistogramBucket {
     /// 上限
     pub upper_bound: f64,
-    
+
     /// 落入该桶的样本数
     pub count: u64,
 }
@@ -619,12 +619,12 @@ impl Metric {
     pub fn counter(name: impl Into<String>) -> MetricBuilder<Counter> {
         MetricBuilder::new(name.into(), MetricType::Counter)
     }
-    
+
     /// 创建 Gauge
     pub fn gauge(name: impl Into<String>) -> MetricBuilder<Gauge> {
         MetricBuilder::new(name.into(), MetricType::Gauge)
     }
-    
+
     /// 创建 Histogram
     pub fn histogram(name: impl Into<String>) -> MetricBuilder<Histogram> {
         MetricBuilder::new(name.into(), MetricType::Histogram)
@@ -655,12 +655,12 @@ impl<T> MetricBuilder<T> {
             _phantom: PhantomData,
         }
     }
-    
+
     pub fn with_description(mut self, desc: impl Into<String>) -> Self {
         self.description = desc.into();
         self
     }
-    
+
     pub fn with_unit(mut self, unit: impl Into<String>) -> Self {
         self.unit = unit.into();
         self
@@ -714,16 +714,16 @@ impl MetricBuilder<Gauge> {
 pub struct LogRecord {
     /// 时间戳
     pub timestamp: u64,
-    
+
     /// 严重程度
     pub severity: LogSeverity,
-    
+
     /// 日志体 (结构化)
     pub body: LogBody,
-    
+
     /// 属性
     pub attributes: HashMap<String, AttributeValue>,
-    
+
     /// 关联的 Trace Context (可选)
     pub trace_context: Option<SpanContext>,
 }
@@ -785,7 +785,7 @@ impl LogRecord {
 pub struct CausalityChain {
     /// 根 Span
     root: Span,
-    
+
     /// 子 Span 树
     children: HashMap<SpanId, Vec<Span>>,
 }
@@ -795,7 +795,7 @@ impl CausalityChain {
     pub fn from_spans(spans: Vec<Span>) -> Self {
         let mut root = None;
         let mut children: HashMap<SpanId, Vec<Span>> = HashMap::new();
-        
+
         for span in spans {
             if span.parent_span_id.is_none() {
                 root = Some(span);
@@ -804,13 +804,13 @@ impl CausalityChain {
                 children.entry(parent_id).or_default().push(span);
             }
         }
-        
+
         Self {
             root: root.expect("No root span found"),
             children,
         }
     }
-    
+
     /// 遍历因果链 (DFS)
     pub fn traverse<F>(&self, mut visitor: F)
     where
@@ -818,13 +818,13 @@ impl CausalityChain {
     {
         self.traverse_impl(&self.root, 0, &mut visitor);
     }
-    
+
     fn traverse_impl<F>(&self, span: &Span, depth: usize, visitor: &mut F)
     where
         F: FnMut(&Span, usize),
     {
         visitor(span, depth);
-        
+
         if let Some(children) = self.children.get(&span.span_id) {
             for child in children {
                 self.traverse_impl(child, depth + 1, visitor);
@@ -861,14 +861,14 @@ impl AttributeValue {
             _ => None,
         }
     }
-    
+
     pub fn as_int(&self) -> Option<i64> {
         match self {
             Self::Int(i) => Some(*i),
             _ => None,
         }
     }
-    
+
     pub fn as_double(&self) -> Option<f64> {
         match self {
             Self::Double(d) => Some(*d),

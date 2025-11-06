@@ -1,7 +1,7 @@
 # HTTP 追踪最佳实践 - HTTP Tracing Best Practices
 
-**创建日期**: 2025年10月29日  
-**技术标准**: W3C Trace Context + OpenTelemetry Semantic Conventions  
+**创建日期**: 2025年10月29日
+**技术标准**: W3C Trace Context + OpenTelemetry Semantic Conventions
 **状态**: ✅ 生产验证
 
 ---
@@ -113,24 +113,24 @@ async fn trace_context_middleware(
 ) -> Response {
     // 1. 提取入站trace context
     let parent_cx = extract_trace_context(request.headers());
-    
+
     // 2. 创建新span并关联到parent context
     let tracer = global::tracer("http-server");
     let span = tracer
         .span_builder("http_request")
         .with_kind(SpanKind::Server)
         .start_with_context(&tracer, &parent_cx);
-    
+
     // 3. 附加到当前上下文
     let cx = Context::current_with_span(span);
     let _guard = cx.attach();
-    
+
     // 4. 处理请求
     let mut response = next.run(request).await;
-    
+
     // 5. 注入trace context到响应头
     inject_trace_context(&cx, response.headers_mut());
-    
+
     response
 }
 ```
@@ -154,22 +154,22 @@ fn set_http_span_attributes(
     span.set_attribute(semconv::trace::HTTP_REQUEST_METHOD.string(
         request.method().to_string()
     ));
-    
+
     // HTTP URL
     span.set_attribute(semconv::trace::URL_FULL.string(
         request.uri().to_string()
     ));
-    
+
     // HTTP版本
     span.set_attribute(semconv::trace::NETWORK_PROTOCOL_VERSION.string(
         format!("{:?}", request.version())
     ));
-    
+
     // HTTP状态码
     span.set_attribute(semconv::trace::HTTP_RESPONSE_STATUS_CODE.i64(
         response.status().as_u16() as i64
     ));
-    
+
     // 服务器地址和端口
     if let Some(host) = request.headers().get("host") {
         if let Ok(host_str) = host.to_str() {
@@ -182,19 +182,19 @@ fn set_http_span_attributes(
             }
         }
     }
-    
+
     // 用户代理
     if let Some(ua) = request.headers().get("user-agent") {
         if let Ok(ua_str) = ua.to_str() {
             span.set_attribute(semconv::trace::USER_AGENT_ORIGINAL.string(ua_str));
         }
     }
-    
+
     // HTTP路由
     if let Some(route) = request.extensions().get::<MatchedPath>() {
         span.set_attribute(semconv::trace::HTTP_ROUTE.string(route.as_str()));
     }
-    
+
     // 请求体大小
     if let Some(len) = request.headers().get("content-length") {
         if let Ok(len_str) = len.to_str() {
@@ -203,7 +203,7 @@ fn set_http_span_attributes(
             }
         }
     }
-    
+
     // 响应体大小
     if let Some(len) = response.headers().get("content-length") {
         if let Ok(len_str) = len.to_str() {
@@ -227,13 +227,13 @@ async fn traced_http_handler(
     request: Request<Body>,
 ) -> Result<Response<Body>, Error> {
     let tracer = global::tracer("http-api");
-    
+
     // 创建server span
     let mut span = tracer
         .span_builder("GET /api/users/:id")
         .with_kind(SpanKind::Server)
         .start(&tracer);
-    
+
     // 设置基本HTTP属性
     span.set_attribute(KeyValue::new("http.method", "GET"));
     span.set_attribute(KeyValue::new("http.url", "/api/users/123"));
@@ -241,13 +241,13 @@ async fn traced_http_handler(
     span.set_attribute(KeyValue::new("http.host", "api.example.com"));
     span.set_attribute(KeyValue::new("http.scheme", "https"));
     span.set_attribute(KeyValue::new("http.route", "/api/users/:id"));
-    
+
     // 设置网络属性
     span.set_attribute(KeyValue::new("net.protocol.name", "http"));
     span.set_attribute(KeyValue::new("net.protocol.version", "1.1"));
     span.set_attribute(KeyValue::new("net.peer.ip", "192.168.1.100"));
     span.set_attribute(KeyValue::new("net.peer.port", 54321));
-    
+
     // 处理请求
     match process_request(request).await {
         Ok(response) => {
@@ -358,13 +358,13 @@ async fn get_user_handler(
     db: &DatabasePool,
 ) -> Result<User, ApiError> {
     info!("Starting user lookup");
-    
+
     // 数据库查询
     let user = db.get_user(user_id).await.map_err(|e| {
         error!("Database error: {}", e);
         ApiError::DatabaseError(e)
     })?;
-    
+
     info!("User found successfully");
     Ok(user)
 }
@@ -375,36 +375,36 @@ async fn get_user_handler(
 ```rust
 async fn complex_operation() -> Result<(), Error> {
     let tracer = global::tracer("api");
-    
+
     // 父span
     let mut parent_span = tracer.start("complex_operation");
     let parent_cx = Context::current_with_span(parent_span);
-    
+
     // 子span 1: 数据库查询
     {
         let mut span = tracer
             .span_builder("database.query")
             .start_with_context(&tracer, &parent_cx);
-        
+
         span.set_attribute(KeyValue::new("db.system", "postgresql"));
         span.set_attribute(KeyValue::new("db.statement", "SELECT * FROM users"));
-        
+
         let result = database_query().await;
         span.end();
         result?;
     }
-    
+
     // 子span 2: 缓存操作
     {
         let mut span = tracer
             .span_builder("cache.set")
             .start_with_context(&tracer, &parent_cx);
-        
+
         span.set_attribute(KeyValue::new("cache.key", "user:123"));
         cache_set("user:123", &data).await?;
         span.end();
     }
-    
+
     Ok(())
 }
 ```
@@ -421,33 +421,33 @@ use reqwest::Client;
 async fn call_downstream_service(user_id: u64) -> Result<Response, Error> {
     let tracer = global::tracer("http-client");
     let mut span = tracer.start("http.client.request");
-    
+
     // 设置span属性
     span.set_attribute(KeyValue::new("http.method", "GET"));
     span.set_attribute(KeyValue::new("http.url", "http://user-service/api/users/123"));
     span.set_attribute(KeyValue::new("peer.service", "user-service"));
-    
+
     // 创建HTTP client
     let client = Client::new();
     let mut headers = HeaderMap::new();
-    
+
     // 注入trace context
     let cx = Context::current_with_span(span);
     inject_trace_context(&cx, &mut headers);
-    
+
     // 发送请求
     let response = client
         .get(&format!("http://user-service/api/users/{}", user_id))
         .headers(headers)
         .send()
         .await?;
-    
+
     // 记录响应
     cx.span().set_attribute(KeyValue::new(
         "http.status_code",
         response.status().as_u16() as i64
     ));
-    
+
     Ok(response)
 }
 ```
@@ -459,17 +459,17 @@ async fn call_downstream_service(user_id: u64) -> Result<Response, Error> {
 async fn api_gateway_handler(request: Request<Body>) -> Response<Body> {
     let tracer = global::tracer("api-gateway");
     let mut span = tracer.start("api_gateway.request");
-    
+
     // 提取入站context
     let cx = extract_trace_context(request.headers());
     let cx = Context::current_with_span(span);
-    
+
     // 调用服务B
     let response_b = call_service_b(&cx).await;
-    
+
     // 调用服务C
     let response_c = call_service_c(&cx).await;
-    
+
     // 聚合响应
     aggregate_responses(response_b, response_c).await
 }
@@ -480,11 +480,11 @@ async fn call_service_b(cx: &Context) -> Result<Response, Error> {
     let mut span = tracer
         .span_builder("user_service.get_user")
         .start_with_context(&tracer, cx);
-    
+
     // 注入context到出站请求
     let mut headers = HeaderMap::new();
     inject_trace_context(cx, &mut headers);
-    
+
     // HTTP请求到服务B
     let client = Client::new();
     client
@@ -500,10 +500,10 @@ async fn call_service_c(cx: &Context) -> Result<Response, Error> {
     let mut span = tracer
         .span_builder("order_service.get_orders")
         .start_with_context(&tracer, cx);
-    
+
     let mut headers = HeaderMap::new();
     inject_trace_context(cx, &mut headers);
-    
+
     let client = Client::new();
     client
         .get("http://order-service/api/orders")
@@ -532,7 +532,7 @@ async fn operation_that_may_fail() -> Result<String, ApiError> {
 async fn manual_error_handling() -> Result<(), Error> {
     let tracer = global::tracer("api");
     let mut span = tracer.start("risky_operation");
-    
+
     match risky_operation().await {
         Ok(result) => {
             span.set_status(Status::Ok);
@@ -541,7 +541,7 @@ async fn manual_error_handling() -> Result<(), Error> {
         Err(e) => {
             // 设置错误状态
             span.set_status(Status::error(e.to_string()));
-            
+
             // 记录异常事件
             span.add_event(
                 "exception",
@@ -551,7 +551,7 @@ async fn manual_error_handling() -> Result<(), Error> {
                     KeyValue::new("exception.stacktrace", format!("{:?}", e)),
                 ],
             );
-            
+
             Err(e)
         }
     }
@@ -566,12 +566,12 @@ async fn http_error_handler(
 ) -> Result<Response<Body>, Error> {
     let tracer = global::tracer("http-api");
     let mut span = tracer.start("http_request");
-    
+
     match handle_request(request).await {
         Ok(response) => {
             let status = response.status();
             span.set_attribute(KeyValue::new("http.status_code", status.as_u16() as i64));
-            
+
             // 根据状态码设置span状态
             if status.is_success() {
                 span.set_status(Status::Ok);
@@ -580,7 +580,7 @@ async fn http_error_handler(
             } else if status.is_server_error() {
                 span.set_status(Status::error("Server error"));
             }
-            
+
             Ok(response)
         }
         Err(e) => {
@@ -631,10 +631,10 @@ impl ShouldSample for CustomSampler {
         let should_sample = attributes
             .iter()
             .any(|kv| {
-                kv.key.as_str() == "http.route" && 
+                kv.key.as_str() == "http.route" &&
                 kv.value.as_str().starts_with("/api/important")
             });
-        
+
         if should_sample {
             SamplingResult {
                 decision: SamplingDecision::RecordAndSample,
@@ -681,10 +681,10 @@ let tracer_provider = opentelemetry_otlp::new_pipeline()
 async fn over_traced() {
     let _span1 = tracer.start("validate_input");  // 不必要
     validate_input();
-    
+
     let _span2 = tracer.start("parse_json");      // 不必要
     parse_json();
-    
+
     let _span3 = tracer.start("check_auth");      // 不必要
     check_auth();
 }
@@ -692,15 +692,15 @@ async fn over_traced() {
 // ✅ 合理追踪 - 只追踪关键操作
 async fn properly_traced() {
     let mut span = tracer.start("process_request");
-    
+
     // 使用events代替sub-spans
     span.add_event("validation_started", vec![]);
     validate_input();
     span.add_event("validation_completed", vec![]);
-    
+
     // 只为重要操作创建sub-span
     let result = database_query().await;
-    
+
     span.end();
 }
 ```

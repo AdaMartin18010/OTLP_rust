@@ -1,8 +1,8 @@
 # 文档自动化工具实现方案
 
-**版本**: 1.0  
-**日期**: 2025年10月26日  
-**项目**: OTLP 文档自动化工具链  
+**版本**: 1.0
+**日期**: 2025年10月26日
+**项目**: OTLP 文档自动化工具链
 **状态**: 🚀 开发中
 
 > **简介**: 文档自动化工具链 - 自动生成、质量检查、链接验证和内容同步。
@@ -35,7 +35,7 @@ graph TB
     D --> E[内容同步器]
     E --> F[报告生成器]
     F --> G[文档仓库]
-    
+
     H[CI/CD 流水线] --> B
     I[定时任务] --> C
     J[Webhook] --> D
@@ -79,14 +79,14 @@ pub enum OutputFormat {
 impl DocGenerator {
     pub async fn generate_docs(&self) -> Result<GenerationResult, Error> {
         let mut results = Vec::new();
-        
+
         for input_path in &self.config.input_paths {
             let modules = self.parser.parse_rust_code(input_path).await?;
-            
+
             for module in modules {
                 let doc_content = self.template_engine.render(&module)?;
                 let output_file = self.generate_output_path(&module.name)?;
-                
+
                 std::fs::write(&output_file, doc_content)?;
                 results.push(GeneratedFile {
                     path: output_file,
@@ -95,7 +95,7 @@ impl DocGenerator {
                 });
             }
         }
-        
+
         Ok(GenerationResult {
             files_generated: results.len(),
             total_lines: results.iter().map(|f| f.lines).sum(),
@@ -121,7 +121,7 @@ impl CodeParser {
     pub async fn parse_rust_code(&self, path: &str) -> Result<Vec<ParsedModule>, Error> {
         let content = std::fs::read_to_string(path)?;
         let syntax_tree = syn::parse_file(&content)?;
-        
+
         let mut modules = Vec::new();
         let mut current_module = ParsedModule {
             name: self.extract_module_name(path),
@@ -132,7 +132,7 @@ impl CodeParser {
             traits: Vec::new(),
             examples: Vec::new(),
         };
-        
+
         for item in syntax_tree.items {
             match item {
                 Item::Fn(func) => {
@@ -158,21 +158,21 @@ impl CodeParser {
                 _ => {}
             }
         }
-        
+
         if self.generate_examples {
             current_module.examples = self.extract_examples(&content)?;
         }
-        
+
         modules.push(current_module);
         Ok(modules)
     }
-    
+
     fn parse_function(&self, func: ItemFn) -> Result<ParsedFunction, Error> {
         let name = func.sig.ident.to_string();
         let doc_comment = self.extract_doc_comment(&func.attrs);
         let parameters = self.parse_parameters(&func.sig.inputs);
         let return_type = self.parse_return_type(&func.sig.output);
-        
+
         Ok(ParsedFunction {
             name,
             doc_comment,
@@ -182,7 +182,7 @@ impl CodeParser {
             async_fn: func.sig.asyncness.is_some(),
         })
     }
-    
+
     fn extract_doc_comment(&self, attrs: &[syn::Attribute]) -> Option<String> {
         for attr in attrs {
             if attr.path.is_ident("doc") {
@@ -214,24 +214,24 @@ impl TemplateEngine {
     pub fn new() -> Result<Self, Error> {
         let mut handlebars = Handlebars::new();
         handlebars.set_strict_mode(true);
-        
+
         let mut engine = Self {
             handlebars,
             templates: std::collections::HashMap::new(),
         };
-        
+
         engine.load_default_templates()?;
         Ok(engine)
     }
-    
+
     pub fn render(&self, module: &ParsedModule) -> Result<String, RenderError> {
         let template = self.templates.get("module_template")
             .ok_or_else(|| RenderError::new("Template not found"))?;
-        
+
         let context = Context::wraps(module)?;
         self.handlebars.render_template(template, &context)
     }
-    
+
     fn load_default_templates(&mut self) -> Result<(), Error> {
         // 模块模板
         let module_template = r#"
@@ -301,7 +301,7 @@ impl TemplateEngine {
 
 {{/each}}
         "#;
-        
+
         self.templates.insert("module_template".to_string(), module_template.to_string());
         Ok(())
     }
@@ -341,32 +341,32 @@ impl QualityChecker {
             rules: Vec::new(),
             config,
         };
-        
+
         checker.register_default_rules();
         checker
     }
-    
+
     pub fn register_rule(&mut self, rule: Box<dyn QualityRule>) {
         self.rules.push(rule);
     }
-    
+
     pub async fn check_document(&self, doc_path: &str) -> Result<QualityReport, Error> {
         let content = std::fs::read_to_string(doc_path)?;
         let document = Document::parse(&content)?;
-        
+
         let mut issues = Vec::new();
         let mut scores = HashMap::new();
-        
+
         for rule in &self.rules {
             let rule_issues = rule.check(&document);
             let rule_score = self.calculate_rule_score(&rule_issues);
-            
+
             issues.extend(rule_issues);
             scores.insert(rule.name().to_string(), rule_score);
         }
-        
+
         let overall_score = self.calculate_overall_score(&scores);
-        
+
         Ok(QualityReport {
             document_path: doc_path.to_string(),
             overall_score,
@@ -375,16 +375,16 @@ impl QualityChecker {
             checked_at: chrono::Utc::now(),
         })
     }
-    
+
     fn register_default_rules(&mut self) {
         self.register_rule(Box::new(DocCoverageRule::new(self.config.min_doc_coverage)));
         self.register_rule(Box::new(LineLengthRule::new(self.config.max_line_length)));
         self.register_rule(Box::new(ExampleRule::new(self.config.require_examples)));
-        
+
         if self.config.check_links {
             self.register_rule(Box::new(LinkValidationRule::new()));
         }
-        
+
         if self.config.validate_markdown {
             self.register_rule(Box::new(MarkdownValidationRule::new()));
         }
@@ -410,21 +410,21 @@ impl QualityRule for DocCoverageRule {
     fn name(&self) -> &str {
         "doc_coverage"
     }
-    
+
     fn check(&self, doc: &Document) -> Vec<QualityIssue> {
         let mut issues = Vec::new();
-        
+
         let total_functions = doc.functions.len();
         let documented_functions = doc.functions.iter()
             .filter(|f| f.doc_comment.is_some())
             .count();
-        
+
         let coverage = if total_functions > 0 {
             documented_functions as f64 / total_functions as f64
         } else {
             1.0
         };
-        
+
         if coverage < self.min_coverage {
             issues.push(QualityIssue {
                 rule: self.name().to_string(),
@@ -438,7 +438,7 @@ impl QualityRule for DocCoverageRule {
                 suggestion: Some("Add documentation comments to undocumented functions".to_string()),
             });
         }
-        
+
         issues
     }
 }
@@ -456,13 +456,13 @@ impl QualityRule for LinkValidationRule {
     fn name(&self) -> &str {
         "link_validation"
     }
-    
+
     fn check(&self, doc: &Document) -> Vec<QualityIssue> {
         let mut issues = Vec::new();
-        
+
         for (line_num, line) in doc.content.lines().enumerate() {
             let links = self.extract_links(line);
-            
+
             for link in links {
                 if let Err(error) = self.validate_link(&link) {
                     issues.push(QualityIssue {
@@ -475,7 +475,7 @@ impl QualityRule for LinkValidationRule {
                 }
             }
         }
-        
+
         issues
     }
 }
@@ -484,16 +484,16 @@ impl LinkValidationRule {
     fn extract_links(&self, line: &str) -> Vec<String> {
         let link_regex = regex::Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").unwrap();
         let mut links = Vec::new();
-        
+
         for cap in link_regex.captures_iter(line) {
             if let Some(url) = cap.get(2) {
                 links.push(url.as_str().to_string());
             }
         }
-        
+
         links
     }
-    
+
     fn validate_link(&self, url: &str) -> Result<(), String> {
         if url.starts_with("http://") || url.starts_with("https://") {
             // 验证外部链接
@@ -508,7 +508,7 @@ impl LinkValidationRule {
             Ok(())
         }
     }
-    
+
     fn validate_external_link(&self, url: &str) -> Result<(), String> {
         // 这里可以实现实际的 HTTP 请求验证
         // 为了演示，我们只做基本检查
@@ -518,13 +518,13 @@ impl LinkValidationRule {
             Ok(())
         }
     }
-    
+
     fn validate_internal_anchor(&self, anchor: &str) -> Result<(), String> {
         // 验证锚点是否存在
         // 这里需要解析文档内容来检查锚点
         Ok(())
     }
-    
+
     fn validate_internal_doc_link(&self, doc_path: &str) -> Result<(), String> {
         // 验证内部文档文件是否存在
         if std::path::Path::new(doc_path).exists() {
@@ -577,37 +577,37 @@ impl LinkValidator {
             .user_agent(&config.user_agent)
             .redirect(reqwest::redirect::Policy::limited(5))
             .build()?;
-        
+
         Ok(Self {
             client,
             cache: HashMap::new(),
             config,
         })
     }
-    
+
     pub async fn validate_document(&self, doc_path: &str) -> Result<LinkValidationReport, Error> {
         let content = std::fs::read_to_string(doc_path)?;
         let links = self.extract_all_links(&content);
-        
+
         let mut results = Vec::new();
         let mut valid_count = 0;
         let mut invalid_count = 0;
-        
+
         for link in links {
             let status = self.validate_single_link(&link).await?;
-            
+
             match &status {
                 LinkStatus::Valid => valid_count += 1,
                 _ => invalid_count += 1,
             }
-            
+
             results.push(LinkResult {
                 url: link.url.clone(),
                 line: link.line,
                 status: status.clone(),
             });
         }
-        
+
         Ok(LinkValidationReport {
             document_path: doc_path.to_string(),
             total_links: results.len(),
@@ -617,13 +617,13 @@ impl LinkValidator {
             validated_at: chrono::Utc::now(),
         })
     }
-    
+
     async fn validate_single_link(&self, link: &ExtractedLink) -> Result<LinkStatus, Error> {
         // 检查缓存
         if let Some(cached_status) = self.cache.get(&link.url) {
             return Ok(cached_status.clone());
         }
-        
+
         let status = if link.url.starts_with("http://") || link.url.starts_with("https://") {
             if self.config.check_external {
                 self.validate_external_link(&link.url).await?
@@ -645,12 +645,12 @@ impl LinkValidator {
         } else {
             LinkStatus::Valid
         };
-        
+
         // 缓存结果
         self.cache.insert(link.url.clone(), status.clone());
         Ok(status)
     }
-    
+
     async fn validate_external_link(&self, url: &str) -> Result<LinkStatus, Error> {
         for attempt in 0..self.config.max_retries {
             match self.client.get(url).send().await {
@@ -679,16 +679,16 @@ impl LinkValidator {
                 }
             }
         }
-        
+
         Ok(LinkStatus::Timeout)
     }
-    
+
     fn validate_internal_anchor(&self, anchor: &str, doc_path: Option<&str>) -> Result<LinkStatus, Error> {
         // 实现内部锚点验证逻辑
         // 这里需要解析文档内容来检查锚点是否存在
         Ok(LinkStatus::Valid)
     }
-    
+
     fn validate_internal_doc_link(&self, doc_path: &str) -> Result<LinkStatus, Error> {
         if std::path::Path::new(doc_path).exists() {
             Ok(LinkStatus::Valid)
@@ -726,7 +726,7 @@ impl ContentSyncer {
         let repo = Repository::open(repo_path)?;
         Ok(Self { repo, config })
     }
-    
+
     pub async fn sync_with_code(&self) -> Result<SyncResult, Error> {
         let mut result = SyncResult {
             files_updated: 0,
@@ -734,64 +734,64 @@ impl ContentSyncer {
             files_deleted: 0,
             errors: Vec::new(),
         };
-        
+
         // 获取当前代码版本
         let current_version = self.get_current_version()?;
-        
+
         // 检查文档版本
         let doc_version = self.get_documentation_version()?;
-        
+
         if current_version != doc_version {
             // 需要同步
             if self.config.backup_before_sync {
                 self.create_backup().await?;
             }
-            
+
             // 同步文档
             let sync_result = self.perform_sync(&current_version).await?;
             result.files_updated = sync_result.files_updated;
             result.files_created = sync_result.files_created;
             result.files_deleted = sync_result.files_deleted;
-            
+
             // 更新文档版本
             self.update_documentation_version(&current_version)?;
-            
+
             if self.config.validate_after_sync {
                 let validation_result = self.validate_synced_content().await?;
                 result.errors.extend(validation_result.errors);
             }
         }
-        
+
         Ok(result)
     }
-    
+
     async fn perform_sync(&self, version: &Version) -> Result<SyncResult, Error> {
         let mut result = SyncResult::default();
-        
+
         // 重新生成 API 文档
         let api_docs = self.generate_api_docs().await?;
         result.files_updated += api_docs.len();
-        
+
         // 更新版本信息
         self.update_version_references(version).await?;
         result.files_updated += 1;
-        
+
         // 同步示例代码
         let examples = self.sync_example_code().await?;
         result.files_created += examples.len();
-        
+
         // 清理过时的文档
         let cleaned = self.cleanup_outdated_docs().await?;
         result.files_deleted += cleaned;
-        
+
         Ok(result)
     }
-    
+
     fn get_current_version(&self) -> Result<Version, Error> {
         // 从 Cargo.toml 读取版本
         let cargo_toml = std::fs::read_to_string("Cargo.toml")?;
         let cargo: toml::Value = toml::from_str(&cargo_toml)?;
-        
+
         if let Some(version) = cargo.get("package")
             .and_then(|p| p.get("version"))
             .and_then(|v| v.as_str()) {
@@ -800,7 +800,7 @@ impl ContentSyncer {
             Err(Error::new("Version not found in Cargo.toml"))
         }
     }
-    
+
     fn get_documentation_version(&self) -> Result<Version, Error> {
         // 从文档中读取版本信息
         let version_file = "docs/VERSION.md";
@@ -809,7 +809,7 @@ impl ContentSyncer {
             let version_line = content.lines()
                 .find(|line| line.starts_with("**版本**: "))
                 .ok_or_else(|| Error::new("Version not found in documentation"))?;
-            
+
             let version_str = version_line.replace("**版本**: ", "").trim().to_string();
             Ok(Version::parse(&version_str)?)
         } else {
@@ -856,14 +856,14 @@ impl ReportGenerator {
             templates: HashMap::new(),
             config,
         };
-        
+
         generator.load_templates()?;
         Ok(generator)
     }
-    
+
     pub async fn generate_quality_report(&self, reports: &[QualityReport]) -> Result<String, Error> {
         let data = self.prepare_quality_data(reports)?;
-        
+
         match self.config.output_format {
             ReportFormat::Html => self.generate_html_report(&data).await,
             ReportFormat::Markdown => self.generate_markdown_report(&data).await,
@@ -871,10 +871,10 @@ impl ReportGenerator {
             ReportFormat::Pdf => self.generate_pdf_report(&data).await,
         }
     }
-    
+
     pub async fn generate_link_report(&self, reports: &[LinkValidationReport]) -> Result<String, Error> {
         let data = self.prepare_link_data(reports)?;
-        
+
         match self.config.output_format {
             ReportFormat::Html => self.generate_html_link_report(&data).await,
             ReportFormat::Markdown => self.generate_markdown_link_report(&data).await,
@@ -882,29 +882,29 @@ impl ReportGenerator {
             ReportFormat::Pdf => self.generate_pdf_link_report(&data).await,
         }
     }
-    
+
     async fn generate_html_report(&self, data: &Value) -> Result<String, Error> {
         let template = self.templates.get("quality_html")
             .ok_or_else(|| Error::new("HTML template not found"))?;
-        
+
         let mut handlebars = handlebars::Handlebars::new();
         handlebars.register_template_string("report", template)?;
-        
+
         let html = handlebars.render("report", data)?;
         Ok(html)
     }
-    
+
     async fn generate_markdown_report(&self, data: &Value) -> Result<String, Error> {
         let template = self.templates.get("quality_markdown")
             .ok_or_else(|| Error::new("Markdown template not found"))?;
-        
+
         let mut handlebars = handlebars::Handlebars::new();
         handlebars.register_template_string("report", template)?;
-        
+
         let markdown = handlebars.render("report", data)?;
         Ok(markdown)
     }
-    
+
     fn load_templates(&mut self) -> Result<(), Error> {
         // HTML 质量报告模板
         let html_template = r#"
@@ -928,7 +928,7 @@ impl ReportGenerator {
         <p>生成时间: {{generated_at}}</p>
         <p>总文档数: {{total_documents}}</p>
     </div>
-    
+
     <div class="summary">
         <h2>📈 总体统计</h2>
         <p>平均质量分数: <strong>{{average_score}}%</strong></p>
@@ -936,14 +936,14 @@ impl ReportGenerator {
         <p>严重问题: <strong>{{critical_issues}}</strong></p>
         <p>警告问题: <strong>{{warning_issues}}</strong></p>
     </div>
-    
+
     {{#if include_charts}}
     <div class="chart">
         <h2>📊 质量分布</h2>
         <!-- 这里可以插入图表 -->
     </div>
     {{/if}}
-    
+
     <div class="issues">
         <h2>🔍 问题详情</h2>
         {{#each documents}}
@@ -963,14 +963,14 @@ impl ReportGenerator {
 </body>
 </html>
         "#;
-        
+
         self.templates.insert("quality_html".to_string(), html_template.to_string());
-        
+
         // Markdown 质量报告模板
         let markdown_template = r#"
 # 📊 文档质量报告
 
-**生成时间**: {{generated_at}}  
+**生成时间**: {{generated_at}}
 **总文档数**: {{total_documents}}
 
 ## 📈 总体统计
@@ -1006,9 +1006,9 @@ impl ReportGenerator {
 
 {{/each}}
         "#;
-        
+
         self.templates.insert("quality_markdown".to_string(), markdown_template.to_string());
-        
+
         Ok(())
     }
 }
@@ -1031,10 +1031,10 @@ use clap::{Parser, Subcommand};
 struct Cli {
     #[command(subcommand)]
     command: Commands,
-    
+
     #[arg(short, long)]
     config: Option<String>,
-    
+
     #[arg(short, long)]
     verbose: bool,
 }
@@ -1045,67 +1045,67 @@ enum Commands {
     Generate {
         #[arg(short, long)]
         input: Vec<String>,
-        
+
         #[arg(short, long)]
         output: String,
-        
+
         #[arg(long)]
         template: Option<String>,
-        
+
         #[arg(long)]
         format: Option<String>,
     },
-    
+
     /// 检查文档质量
     Check {
         #[arg(short, long)]
         path: String,
-        
+
         #[arg(long)]
         rules: Option<Vec<String>>,
-        
+
         #[arg(long)]
         output: Option<String>,
     },
-    
+
     /// 验证链接
     Validate {
         #[arg(short, long)]
         path: String,
-        
+
         #[arg(long)]
         external: bool,
-        
+
         #[arg(long)]
         internal: bool,
-        
+
         #[arg(long)]
         timeout: Option<u64>,
     },
-    
+
     /// 同步内容
     Sync {
         #[arg(long)]
         version: Option<String>,
-        
+
         #[arg(long)]
         backup: bool,
-        
+
         #[arg(long)]
         validate: bool,
     },
-    
+
     /// 生成报告
     Report {
         #[arg(short, long)]
         input: String,
-        
+
         #[arg(short, long)]
         output: String,
-        
+
         #[arg(long)]
         format: String,
-        
+
         #[arg(long)]
         template: Option<String>,
     },
@@ -1114,14 +1114,14 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    
+
     // 设置日志级别
     if cli.verbose {
         env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
     } else {
         env_logger::init();
     }
-    
+
     match cli.command {
         Commands::Generate { input, output, template, format } => {
             generate_docs(input, output, template, format).await?;
@@ -1139,7 +1139,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             generate_report(input, output, format, template).await?;
         }
     }
-    
+
     Ok(())
 }
 
@@ -1161,14 +1161,14 @@ async fn generate_docs(
             _ => OutputFormat::Markdown,
         },
     };
-    
+
     let generator = DocGenerator::new(config)?;
     let result = generator.generate_docs().await?;
-    
+
     println!("✅ 文档生成完成!");
     println!("📄 生成文件数: {}", result.files_generated);
     println!("📝 总行数: {}", result.total_lines);
-    
+
     Ok(())
 }
 
@@ -1184,21 +1184,21 @@ async fn check_quality(
         check_links: true,
         validate_markdown: true,
     };
-    
+
     let checker = QualityChecker::new(config);
     let report = checker.check_document(&path).await?;
-    
+
     println!("📊 质量检查完成!");
     println!("📄 文档: {}", report.document_path);
     println!("⭐ 质量分数: {:.1}%", report.overall_score * 100.0);
     println!("❌ 问题数: {}", report.issues.len());
-    
+
     if let Some(output_path) = output {
         let report_json = serde_json::to_string_pretty(&report)?;
         std::fs::write(output_path, report_json)?;
         println!("📋 报告已保存到: {}", output_path);
     }
-    
+
     Ok(())
 }
 
@@ -1216,16 +1216,16 @@ async fn validate_links(
         check_external: external,
         check_internal: internal,
     };
-    
+
     let validator = LinkValidator::new(config)?;
     let report = validator.validate_document(&path).await?;
-    
+
     println!("🔗 链接验证完成!");
     println!("📄 文档: {}", report.document_path);
     println!("🔗 总链接数: {}", report.total_links);
     println!("✅ 有效链接: {}", report.valid_links);
     println!("❌ 无效链接: {}", report.invalid_links);
-    
+
     if report.invalid_links > 0 {
         println!("\n❌ 无效链接详情:");
         for result in &report.results {
@@ -1234,7 +1234,7 @@ async fn validate_links(
             }
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -1323,17 +1323,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.90.0
         override: true
-    
+
     - name: Install OTLP Docs Tool
       run: |
         cargo install --path tools/otlp-docs
-    
+
     - name: Generate Documentation
       run: |
         otlp-docs generate \
@@ -1341,13 +1341,13 @@ jobs:
           --input otlp/ \
           --output docs/generated/ \
           --format markdown
-    
+
     - name: Check Documentation Quality
       run: |
         otlp-docs check \
           --path docs/ \
           --output reports/quality.json
-    
+
     - name: Validate Links
       run: |
         otlp-docs validate \
@@ -1355,20 +1355,20 @@ jobs:
           --external \
           --internal \
           --timeout 30
-    
+
     - name: Generate Quality Report
       run: |
         otlp-docs report \
           --input reports/quality.json \
           --output reports/quality.html \
           --format html
-    
+
     - name: Upload Reports
       uses: actions/upload-artifact@v3
       with:
         name: documentation-reports
         path: reports/
-    
+
     - name: Commit Generated Docs
       if: github.ref == 'refs/heads/main'
       run: |
@@ -1383,18 +1383,18 @@ jobs:
     if: github.event_name == 'release'
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install OTLP Docs Tool
       run: |
         cargo install --path tools/otlp-docs
-    
+
     - name: Sync Documentation
       run: |
         otlp-docs sync \
           --version ${{ github.event.release.tag_name }} \
           --backup \
           --validate
-    
+
     - name: Commit Synced Docs
       run: |
         git config --local user.email "action@github.com"
@@ -1420,28 +1420,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install OTLP Docs Tool
       run: |
         cargo install --path tools/otlp-docs
-    
+
     - name: Full Documentation Check
       run: |
         # 生成文档
         otlp-docs generate --input src/ --output docs/generated/
-        
+
         # 质量检查
         otlp-docs check --path docs/ --output reports/weekly-quality.json
-        
+
         # 链接验证
         otlp-docs validate --path docs/ --external --internal
-        
+
         # 生成周报
         otlp-docs report \
           --input reports/weekly-quality.json \
           --output reports/weekly-report.html \
           --format html
-    
+
     - name: Create Issue for Problems
       if: failure()
       uses: actions/github-script@v6
@@ -1612,9 +1612,9 @@ cargo run --bin otlp-docs -- generate --input src/ --output docs/
 
 ## 📞 项目联系
 
-**项目负责人**: 文档自动化团队  
-**技术负责人**: 工具开发工程师  
-**质量负责人**: 质量保证工程师  
+**项目负责人**: 文档自动化团队
+**技术负责人**: 工具开发工程师
+**质量负责人**: 质量保证工程师
 **运维负责人**: DevOps 工程师
 
 **联系方式**:
@@ -1637,8 +1637,8 @@ cargo run --bin otlp-docs -- generate --input src/ --output docs/
 
 ---
 
-**工具版本**: v1.0.0  
-**最后更新**: 2025年1月  
+**工具版本**: v1.0.0
+**最后更新**: 2025年1月
 **状态**: 开发中
 
 🤖 **让文档维护变得简单高效！** 🚀

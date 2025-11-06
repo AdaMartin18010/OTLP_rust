@@ -1,8 +1,8 @@
 # 📚 Libraries Crate 使用指南
 
-**版本**: 1.0  
-**定位**: Rust生态成熟的常用开源库的介绍、封装和示例  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**定位**: Rust生态成熟的常用开源库的介绍、封装和示例
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: Libraries Crate 使用指南 - Rust 生态常用开源库的集成和示例。
@@ -136,18 +136,18 @@ use libraries::prelude::*;
 async fn main() -> Result<()> {
     // PostgreSQL 连接
     let db = DatabaseClient::postgres("postgresql://localhost/mydb").await?;
-    
+
     // Redis 缓存
     let cache = CacheClient::redis("redis://localhost").await?;
-    
+
     // Kafka 消息队列
     let mq = MqClient::kafka("localhost:9092").await?;
-    
+
     // Axum Web 服务
     let app = HttpServer::axum()
         .route("/", get(handler))
         .build();
-    
+
     Ok(())
 }
 ```
@@ -180,24 +180,24 @@ async fn main() -> Result<()> {
         .max_connections(20)
         .connect("postgresql://user:password@localhost/mydb")
         .await?;
-    
+
     // 查询示例
     let users = sqlx::query_as::<_, User>("SELECT * FROM users WHERE active = $1")
         .bind(true)
         .fetch_all(&pool)
         .await?;
-    
+
     // 事务示例
     let mut tx = pool.begin().await?;
-    
+
     sqlx::query("INSERT INTO users (name, email) VALUES ($1, $2)")
         .bind("Alice")
         .bind("alice@example.com")
         .execute(&mut *tx)
         .await?;
-    
+
     tx.commit().await?;
-    
+
     Ok(())
 }
 
@@ -235,23 +235,23 @@ struct User {
 
 fn main() -> Result<()> {
     let conn = &mut establish_connection();
-    
+
     // 查询
     let results = users::table
         .filter(users::active.eq(true))
         .select(User::as_select())
         .load(conn)?;
-    
+
     // 插入
     let new_user = NewUser {
         name: "Bob",
         email: "bob@example.com",
     };
-    
+
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(conn)?;
-    
+
     Ok(())
 }
 ```
@@ -288,22 +288,22 @@ impl ActiveModelBehavior for ActiveModel {}
 #[tokio::main]
 async fn main() -> Result<()> {
     let db = Database::connect("postgresql://localhost/mydb").await?;
-    
+
     // 查询
     let users = Entity::find()
         .filter(Column::Active.eq(true))
         .all(&db)
         .await?;
-    
+
     // 插入
     let user = ActiveModel {
         name: Set("Charlie".to_string()),
         email: Set("charlie@example.com".to_string()),
         ..Default::default()
     };
-    
+
     user.insert(&db).await?;
-    
+
     Ok(())
 }
 ```
@@ -340,7 +340,7 @@ use rusqlite::{Connection, Result};
 
 fn main() -> Result<()> {
     let conn = Connection::open("my_database.db")?;
-    
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
@@ -349,12 +349,12 @@ fn main() -> Result<()> {
         )",
         [],
     )?;
-    
+
     conn.execute(
         "INSERT INTO users (name, email) VALUES (?1, ?2)",
         ["Alice", "alice@example.com"],
     )?;
-    
+
     let mut stmt = conn.prepare("SELECT * FROM users")?;
     let users = stmt.query_map([], |row| {
         Ok(User {
@@ -363,7 +363,7 @@ fn main() -> Result<()> {
             email: row.get(2)?,
         })
     })?;
-    
+
     Ok(())
 }
 ```
@@ -388,28 +388,28 @@ use redis::AsyncCommands;
 async fn main() -> Result<()> {
     let client = redis::Client::open("redis://localhost")?;
     let mut conn = client.get_async_connection().await?;
-    
+
     // 字符串操作
     conn.set("key", "value").await?;
     let value: String = conn.get("key").await?;
-    
+
     // 设置过期时间
     conn.set_ex("session:123", "user_data", 3600).await?;
-    
+
     // 哈希操作
     conn.hset("user:1", "name", "Alice").await?;
     conn.hset("user:1", "email", "alice@example.com").await?;
     let name: String = conn.hget("user:1", "name").await?;
-    
+
     // 列表操作
     conn.lpush("queue", "job1").await?;
     conn.lpush("queue", "job2").await?;
     let job: String = conn.rpop("queue", None).await?;
-    
+
     // 发布订阅
     let mut pubsub = conn.into_pubsub();
     pubsub.subscribe("notifications").await?;
-    
+
     Ok(())
 }
 ```
@@ -441,10 +441,10 @@ struct User {
 async fn main() -> Result<()> {
     let client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
     let client = Client::with_options(client_options)?;
-    
+
     let db = client.database("mydb");
     let collection = db.collection::<User>("users");
-    
+
     // 插入
     let user = User {
         name: "Alice".to_string(),
@@ -452,11 +452,11 @@ async fn main() -> Result<()> {
         age: 30,
     };
     collection.insert_one(user, None).await?;
-    
+
     // 查询
     let filter = doc! { "age": { "$gt": 25 } };
     let users = collection.find(filter, None).await?;
-    
+
     Ok(())
 }
 ```
@@ -493,21 +493,21 @@ async fn main() {
         .time_to_live(Duration::from_secs(60))
         .time_to_idle(Duration::from_secs(30))
         .build();
-    
+
     // 插入
     cache.insert("key".to_string(), "value".to_string()).await;
-    
+
     // 获取
     if let Some(value) = cache.get(&"key".to_string()).await {
         println!("Found: {}", value);
     }
-    
+
     // 带加载器
     let value = cache.try_get_with("key".to_string(), async {
         // 如果缓存未命中，执行此函数
         Ok::<String, anyhow::Error>(fetch_from_database().await?)
     }).await?;
-    
+
     // 统计信息
     println!("Cache hit rate: {:.2}%", cache.weighted_size() as f64 / cache.entry_count() as f64);
 }
@@ -532,18 +532,18 @@ use std::sync::Arc;
 #[tokio::main]
 async fn main() {
     let cache: Arc<DashMap<String, i32>> = Arc::new(DashMap::new());
-    
+
     // 插入
     cache.insert("counter".to_string(), 0);
-    
+
     // 读取
     if let Some(value) = cache.get("counter") {
         println!("Counter: {}", *value);
     }
-    
+
     // 修改
     cache.alter("counter", |_, v| v + 1);
-    
+
     // 多线程访问
     let handles: Vec<_> = (0..10).map(|i| {
         let cache = Arc::clone(&cache);
@@ -551,11 +551,11 @@ async fn main() {
             cache.insert(format!("key{}", i), i);
         })
     }).collect();
-    
+
     for handle in handles {
         handle.await.unwrap();
     }
-    
+
     println!("Total entries: {}", cache.len());
 }
 ```
@@ -588,18 +588,18 @@ async fn main() -> Result<()> {
         .set("bootstrap.servers", "localhost:9092")
         .set("message.timeout.ms", "5000")
         .create()?;
-    
+
     let topic = "my-topic";
     let key = "key";
     let payload = "Hello, Kafka!";
-    
+
     producer.send(
         FutureRecord::to(topic)
             .key(key)
             .payload(payload),
         Duration::from_secs(0),
     ).await?;
-    
+
     Ok(())
 }
 ```
@@ -617,9 +617,9 @@ async fn main() -> Result<()> {
         .set("group.id", "my-group")
         .set("auto.offset.reset", "earliest")
         .create()?;
-    
+
     consumer.subscribe(&["my-topic"])?;
-    
+
     loop {
         match consumer.recv().await {
             Ok(msg) => {
@@ -653,22 +653,22 @@ use libraries::mq::nats::*;
 #[tokio::main]
 async fn main() -> Result<()> {
     let nc = async_nats::connect("localhost:4222").await?;
-    
+
     // 发布
     nc.publish("my.subject", "Hello, NATS!".into()).await?;
-    
+
     // 订阅
     let mut sub = nc.subscribe("my.subject").await?;
-    
+
     while let Some(msg) = sub.next().await {
         let data = String::from_utf8_lossy(&msg.payload);
         println!("Received: {}", data);
     }
-    
+
     // Request-Reply
     let response = nc.request("my.service", "request".into()).await?;
     println!("Response: {}", String::from_utf8_lossy(&response.payload));
-    
+
     Ok(())
 }
 ```
@@ -694,15 +694,15 @@ use rumqttc::{AsyncClient, MqttOptions, QoS};
 async fn main() -> Result<()> {
     let mut mqttoptions = MqttOptions::new("client-id", "localhost", 1883);
     mqttoptions.set_keep_alive(Duration::from_secs(5));
-    
+
     let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
-    
+
     // 订阅
     client.subscribe("my/topic", QoS::AtMostOnce).await?;
-    
+
     // 发布
     client.publish("my/topic", QoS::AtLeastOnce, false, "Hello, MQTT!").await?;
-    
+
     // 事件循环
     loop {
         match eventloop.poll().await {
@@ -736,16 +736,16 @@ async fn main() -> Result<()> {
         "amqp://localhost:5672",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     // 声明队列
     channel.queue_declare(
         "my-queue",
         QueueDeclareOptions::default(),
         FieldTable::default(),
     ).await?;
-    
+
     // 发布消息
     channel.basic_publish(
         "",
@@ -754,7 +754,7 @@ async fn main() -> Result<()> {
         b"Hello, RabbitMQ!",
         BasicProperties::default(),
     ).await?;
-    
+
     // 消费消息
     let consumer = channel.basic_consume(
         "my-queue",
@@ -762,7 +762,7 @@ async fn main() -> Result<()> {
         BasicConsumeOptions::default(),
         FieldTable::default(),
     ).await?;
-    
+
     Ok(())
 }
 ```
@@ -802,11 +802,11 @@ async fn main() {
         .route("/", get(|| async { "Hello, Axum!" }))
         .route("/users/:id", get(get_user))
         .route("/users", post(create_user));
-    
+
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -895,29 +895,29 @@ struct ApiResponse {
 #[tokio::main]
 async fn main() -> Result<()> {
     let client = Client::new();
-    
+
     // GET 请求
     let response = client.get("https://api.example.com/data")
         .header("Authorization", "Bearer token")
         .send()
         .await?;
-    
+
     let body: ApiResponse = response.json().await?;
     println!("Data: {}", body.data);
-    
+
     // POST 请求
     let user = User {
         name: "Alice".to_string(),
         email: "alice@example.com".to_string(),
     };
-    
+
     let response = client.post("https://api.example.com/users")
         .json(&user)
         .send()
         .await?;
-    
+
     println!("Status: {}", response.status());
-    
+
     Ok(())
 }
 ```
@@ -948,33 +948,33 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
         println!("Task 1 completed");
     });
-    
+
     let task2 = tokio::spawn(async {
         sleep(Duration::from_secs(1)).await;
         println!("Task 2 completed");
     });
-    
+
     task1.await.unwrap();
     task2.await.unwrap();
-    
+
     // 超时控制
     let result = tokio::time::timeout(
         Duration::from_secs(2),
         slow_operation(),
     ).await;
-    
+
     match result {
         Ok(value) => println!("Completed: {:?}", value),
         Err(_) => println!("Timeout!"),
     }
-    
+
     // 通道
     let (tx, mut rx) = tokio::sync::mpsc::channel(32);
-    
+
     tokio::spawn(async move {
         tx.send("message").await.unwrap();
     });
-    
+
     while let Some(msg) = rx.recv().await {
         println!("Received: {}", msg);
     }
@@ -1009,22 +1009,22 @@ async fn main() {
         task::sleep(Duration::from_secs(1)).await;
         println!("Task 1 completed");
     });
-    
+
     let handle2 = task::spawn(async {
         task::sleep(Duration::from_secs(1)).await;
         println!("Task 2 completed");
     });
-    
+
     handle1.await;
     handle2.await;
-    
+
     // 通道
     let (sender, receiver) = async_std::channel::bounded(10);
-    
+
     task::spawn(async move {
         sender.send("message").await.unwrap();
     });
-    
+
     while let Ok(msg) = receiver.recv().await {
         println!("Received: {}", msg);
     }
@@ -1055,7 +1055,7 @@ fn main() {
             println!("Contents: {}", contents);
         })
         .unwrap();
-    
+
     ex.join().unwrap();
 }
 ```
@@ -1097,13 +1097,13 @@ impl TwoTierCache {
         if let Some(value) = self.l1.get(key).await {
             return Some(value);
         }
-        
+
         // 再查 L2
         if let Ok(value) = self.l2.get::<_, String>(key).await {
             self.l1.insert(key.to_string(), value.clone()).await;
             return Some(value);
         }
-        
+
         None
     }
 }
@@ -1122,7 +1122,7 @@ async fn send_with_retry(
     max_retries: u32,
 ) -> Result<()> {
     let mut attempts = 0;
-    
+
     loop {
         match producer.send(
             FutureRecord::to(topic).key(key).payload(payload),
@@ -1167,7 +1167,7 @@ use std::sync::Arc;
 
 async fn process_with_concurrency_limit(items: Vec<Item>) -> Result<()> {
     let semaphore = Arc::new(Semaphore::new(10)); // 最多10个并发
-    
+
     let tasks: Vec<_> = items.into_iter().map(|item| {
         let semaphore = Arc::clone(&semaphore);
         tokio::spawn(async move {
@@ -1175,11 +1175,11 @@ async fn process_with_concurrency_limit(items: Vec<Item>) -> Result<()> {
             process_item(item).await
         })
     }).collect();
-    
+
     for task in tasks {
         task.await??;
     }
-    
+
     Ok(())
 }
 ```
@@ -1290,6 +1290,6 @@ cargo run --example glommio_performance_comparison
 
 ---
 
-**最后更新**: 2025年10月26日  
-**文档版本**: v1.0.0  
+**最后更新**: 2025年10月26日
+**文档版本**: v1.0.0
 **维护状态**: 🔄 持续维护中

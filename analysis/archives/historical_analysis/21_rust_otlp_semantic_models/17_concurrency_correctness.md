@@ -1,7 +1,7 @@
 # 并发正确性验证
 
-> **版本**: Rust 1.90  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90
+> **日期**: 2025年10月2日
 > **主题**: 并发安全、数据竞争、死锁预防
 
 ---
@@ -50,7 +50,7 @@ use std::thread;
 /// 证明: Arc<T> where T: Send + Sync 是线程安全的
 fn prove_arc_safety<T: Send + Sync + 'static>(data: T) {
     let arc = Arc::new(data);
-    
+
     let handles: Vec<_> = (0..10)
         .map(|_| {
             let arc_clone = Arc::clone(&arc);
@@ -60,7 +60,7 @@ fn prove_arc_safety<T: Send + Sync + 'static>(data: T) {
             })
         })
         .collect();
-    
+
     for h in handles {
         h.join().unwrap();
     }
@@ -79,7 +79,7 @@ fn prove_arc_safety<T: Send + Sync + 'static>(data: T) {
 e₁ → e₂ (e₁ happens-before e₂) ⇔
 
 1. e₁, e₂ 在同一线程且 e₁ 先于 e₂，或
-2. e₁ 是发送，e₂ 是接收同一消息，或  
+2. e₁ 是发送，e₂ 是接收同一消息，或
 3. ∃ e₃, e₁ → e₃ ∧ e₃ → e₂ (传递性)
 
 数据竞争自由 ⇔
@@ -97,7 +97,7 @@ use std::sync::Arc;
 fn release_acquire_example() {
     let flag = Arc::new(AtomicBool::new(false));
     let data = Arc::new(std::sync::Mutex::new(0));
-    
+
     // 线程 1: 写入者
     {
         let flag = Arc::clone(&flag);
@@ -107,7 +107,7 @@ fn release_acquire_example() {
             flag.store(true, Ordering::Release); // Release 写
         });
     }
-    
+
     // 线程 2: 读取者
     {
         let flag = Arc::clone(&flag);
@@ -165,10 +165,10 @@ impl Account {
         } else {
             (&to.balance, &from.balance)
         };
-        
+
         let mut first_lock = first.lock().unwrap();
         let mut second_lock = second.lock().unwrap();
-        
+
         *first_lock -= amount;
         *second_lock += amount;
     }
@@ -195,23 +195,23 @@ impl LockFreeCounter {
             count: AtomicU64::new(0),
         }
     }
-    
+
     /// 原子递增
     fn increment(&self) -> u64 {
         self.count.fetch_add(1, Ordering::SeqCst)
     }
-    
+
     /// CAS 循环
     fn add_if_below_max(&self, value: u64, max: u64) -> Result<u64, u64> {
         let mut current = self.count.load(Ordering::SeqCst);
-        
+
         loop {
             if current >= max {
                 return Err(current);
             }
-            
+
             let new = current + value;
-            
+
             match self.count.compare_exchange(
                 current,
                 new,
@@ -246,12 +246,12 @@ impl LockFreeSpanCollector {
             queue: ArrayQueue::new(capacity),
         }
     }
-    
+
     /// 无锁添加 Span
     pub fn add_span(&self, span: Span) -> Result<(), Span> {
         self.queue.push(span)
     }
-    
+
     /// 批量取出
     pub fn drain(&self) -> Vec<Span> {
         let mut spans = Vec::new();
@@ -285,40 +285,40 @@ impl ConcurrentBatchProcessor {
             batch_size,
             notify: Arc::new(Notify::new()),
         };
-        
+
         // 后台批处理任务
         let buffer = Arc::clone(&processor.buffer);
         let notify = Arc::clone(&processor.notify);
         tokio::spawn(async move {
             loop {
                 notify.notified().await;
-                
+
                 let batch = {
                     let mut buf = buffer.lock().unwrap();
                     std::mem::take(&mut *buf)
                 };
-                
+
                 if !batch.is_empty() {
                     Self::export_batch(batch).await;
                 }
             }
         });
-        
+
         processor
     }
-    
+
     pub fn add_span(&self, span: Span) {
         let should_notify = {
             let mut buffer = self.buffer.lock().unwrap();
             buffer.push(span);
             buffer.len() >= self.batch_size
         };
-        
+
         if should_notify {
             self.notify.notify_one();
         }
     }
-    
+
     async fn export_batch(_batch: Vec<Span>) {
         // 导出逻辑
     }
@@ -327,5 +327,5 @@ impl ConcurrentBatchProcessor {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

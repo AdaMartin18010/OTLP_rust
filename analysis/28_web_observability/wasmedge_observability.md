@@ -1,8 +1,8 @@
 # WasmEdge 与 WebAssembly 可观测性
 
-**创建日期**: 2025年10月29日  
-**最后更新**: 2025年10月29日  
-**状态**: ✅ 完整  
+**创建日期**: 2025年10月29日
+**最后更新**: 2025年10月29日
+**状态**: ✅ 完整
 **优先级**: 🟢 新兴技术
 
 ---
@@ -71,7 +71,7 @@ WebAssembly (Wasm) 是一种**可移植、高性能**的二进制指令格式，
 资源隔离挑战:
   发现: Wasm容器存在资源隔离漏洞
   风险: CPU/内存/文件系统/网络资源可被恶意模块耗尽
-  
+
 防护措施 (必须实施):
   - ✅ 严格的CPU/内存限制
   - ✅ WASI权限最小化
@@ -233,21 +233,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 业务逻辑
     println!("Hello from WebAssembly!");
-    
+
     // 清理
     opentelemetry::global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 
 /// 初始化追踪器（Wasm 优化版本）
 async fn init_tracer() -> Result<opentelemetry::sdk::trace::TracerProvider, Box<dyn Error>> {
     use opentelemetry_otlp::WithExportConfig;
-    
+
     let otlp_exporter = opentelemetry_otlp::new_exporter()
         .http()  // Wasm 更适合 HTTP
         .with_endpoint("http://otel-collector:4318");
-    
+
     let tracer_provider = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(otlp_exporter)
@@ -260,7 +260,7 @@ async fn init_tracer() -> Result<opentelemetry::sdk::trace::TracerProvider, Box<
                 ]))
         )
         .install_simple()?;
-    
+
     Ok(tracer_provider)
 }
 ```
@@ -423,12 +423,12 @@ pub fn wasm_batch_config() -> BatchConfig {
 /// Wasm 友好的追踪器初始化
 pub async fn init_wasm_tracer() -> Result<opentelemetry::sdk::trace::TracerProvider, Box<dyn std::error::Error>> {
     use opentelemetry_otlp::WithExportConfig;
-    
+
     let otlp_exporter = opentelemetry_otlp::new_exporter()
         .http()  // Wasm 必须使用 HTTP
         .with_endpoint(std::env::var("OTLP_EXPORTER_ENDPOINT")?)
         .with_timeout(Duration::from_secs(5));
-    
+
     let tracer_provider = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(otlp_exporter)
@@ -441,7 +441,7 @@ pub async fn init_wasm_tracer() -> Result<opentelemetry::sdk::trace::TracerProvi
         )
         .with_batch_config(wasm_batch_config())
         .install_batch(opentelemetry::runtime::Tokio)?;
-    
+
     Ok(tracer_provider)
 }
 
@@ -471,7 +471,7 @@ async fn main() {
     // 初始化追踪
     let tracer_provider = init_wasm_tracer().await.unwrap();
     let tracer = tracer_provider.tracer("wasm-http-service");
-    
+
     // 定义路由
     let routes = warp::path!("api" / "hello")
         .and(warp::get())
@@ -481,7 +481,7 @@ async fn main() {
                 // 创建 span
                 let span = tracer.start("handle_hello");
                 let cx = Context::current_with_span(span);
-                
+
                 // 处理请求
                 let result = async {
                     Ok::<_, Rejection>(warp::reply::json(&serde_json::json!({
@@ -489,11 +489,11 @@ async fn main() {
                         "runtime": "WasmEdge"
                     })))
                 }.with_context(cx).await;
-                
+
                 result
             }
         });
-    
+
     // 启动服务器
     warp::serve(routes).run(([0, 0, 0, 0], 8080)).await;
 }
@@ -515,19 +515,19 @@ pub struct WasmMetrics {
 impl WasmMetrics {
     pub fn new(meter_provider: &dyn MeterProvider) -> Self {
         let meter = meter_provider.meter("wasm-service");
-        
+
         Self {
             request_counter: meter
                 .u64_counter("http.server.requests")
                 .with_description("Total HTTP requests")
                 .init(),
-            
+
             request_duration: meter
                 .f64_histogram("http.server.duration")
                 .with_description("HTTP request duration")
                 .with_unit("ms")
                 .init(),
-            
+
             memory_usage: meter
                 .u64_histogram("wasm.memory.usage")
                 .with_description("Wasm memory usage")
@@ -535,17 +535,17 @@ impl WasmMetrics {
                 .init(),
         }
     }
-    
+
     pub fn record_request(&self, method: &str, path: &str, duration_ms: f64) {
         let labels = vec![
             KeyValue::new("http.method", method.to_string()),
             KeyValue::new("http.route", path.to_string()),
         ];
-        
+
         self.request_counter.add(1, &labels);
         self.request_duration.record(duration_ms, &labels);
     }
-    
+
     pub fn record_memory(&self, bytes: u64) {
         self.memory_usage.record(bytes, &[]);
     }
@@ -842,6 +842,6 @@ WebAssembly 和 WasmEdge 代表了云原生和边缘计算的未来方向：
 
 ---
 
-**维护者**: OTLP_rust 项目团队  
-**最后更新**: 2025年10月29日  
+**维护者**: OTLP_rust 项目团队
+**最后更新**: 2025年10月29日
 **下一步**: 探索 [虚拟化技术对比](./virtualization_comparison.md)

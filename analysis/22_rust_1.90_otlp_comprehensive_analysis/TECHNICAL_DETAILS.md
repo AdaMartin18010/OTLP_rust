@@ -2,12 +2,33 @@
 
 ## 📋 目录
 
-- [编译器优化](#编译器优化)
-- [宏系统应用](#宏系统应用)
-- [不安全代码管理](#不安全代码管理)
-- [FFI 集成](#ffi-集成)
-- [性能分析工具](#性能分析工具)
-- [调试技巧](#调试技巧)
+- [Rust 1.90 技术细节深入分析](#rust-190-技术细节深入分析)
+  - [📋 目录](#-目录)
+  - [编译器优化](#编译器优化)
+    - [1. LTO (Link-Time Optimization)](#1-lto-link-time-optimization)
+    - [2. PGO (Profile-Guided Optimization)](#2-pgo-profile-guided-optimization)
+    - [3. CPU 特定优化](#3-cpu-特定优化)
+  - [宏系统应用](#宏系统应用)
+    - [1. 声明宏 (Declarative Macros)](#1-声明宏-declarative-macros)
+    - [2. 过程宏 (Procedural Macros)](#2-过程宏-procedural-macros)
+    - [3. 属性宏用于追踪](#3-属性宏用于追踪)
+  - [不安全代码管理](#不安全代码管理)
+    - [1. 安全抽象的不安全实现](#1-安全抽象的不安全实现)
+    - [2. SIMD 不安全代码](#2-simd-不安全代码)
+    - [3. 内存布局优化](#3-内存布局优化)
+  - [FFI 集成](#ffi-集成)
+    - [1. C 互操作](#1-c-互操作)
+    - [2. Python 绑定](#2-python-绑定)
+  - [性能分析工具](#性能分析工具)
+    - [1. 内置性能分析器](#1-内置性能分析器)
+    - [2. 火焰图集成](#2-火焰图集成)
+    - [3. 内存分析](#3-内存分析)
+  - [调试技巧](#调试技巧)
+    - [1. 条件编译调试](#1-条件编译调试)
+    - [2. 断言和不变量](#2-断言和不变量)
+    - [3. 测试和 Mock](#3-测试和-mock)
+  - [总结](#总结)
+
 
 ## 编译器优化
 
@@ -91,10 +112,10 @@ impl SpanBuilder {
 pub struct CustomSpan {
     #[otlp(trace_id)]
     trace: TraceId,
-    
+
     #[otlp(span_id)]
     id: SpanId,
-    
+
     #[otlp(name)]
     span_name: String,
 }
@@ -125,7 +146,7 @@ pub async fn process_request(method: &str, path: &str) -> Result<Response> {
     //     .with_attribute("method", method)
     //     .with_attribute("path", path)
     //     .start();
-    
+
     // 原始函数体
     let response = handle_request(method, path).await?;
     Ok(response)
@@ -150,18 +171,18 @@ impl<T> RingBuffer<T> {
     pub fn push(&self, item: T) -> Result<(), BufferFullError> {
         let head = self.head.load(Ordering::Acquire);
         let tail = self.tail.load(Ordering::Acquire);
-        
+
         let next_tail = (tail + 1) % self.capacity;
         if next_tail == head {
             return Err(BufferFullError);
         }
-        
+
         // 不安全代码块 - 已验证索引边界
         unsafe {
             let ptr = self.buffer.as_ptr() as *mut T;
             ptr.add(tail).write(item);
         }
-        
+
         self.tail.store(next_tail, Ordering::Release);
         Ok(())
     }
@@ -185,7 +206,7 @@ pub fn simd_compare_attributes(
     target: &AttributeValue,
 ) -> Vec<bool> {
     let mut results = Vec::with_capacity(values.len());
-    
+
     // 不安全 SIMD 操作
     unsafe {
         // 批量处理 - 每次 8 个值
@@ -193,7 +214,7 @@ pub fn simd_compare_attributes(
             let cmp_results = match target {
                 AttributeValue::Int(target_val) => {
                     let target_vec = _mm256_set1_epi64x(*target_val);
-                    
+
                     // 加载并比较
                     let vals = _mm256_loadu_si256(chunk.as_ptr() as *const __m256i);
                     let cmp = _mm256_cmpeq_epi64(vals, target_vec);
@@ -201,14 +222,14 @@ pub fn simd_compare_attributes(
                 }
                 _ => unimplemented!(),
             };
-            
+
             // 解析结果
             for i in 0..8 {
                 results.push((cmp_results & (1 << (i * 4))) != 0);
             }
         }
     }
-    
+
     results
 }
 ```
@@ -223,11 +244,11 @@ pub struct CompactSpan {
     trace_id: u128,      // 16 bytes
     span_id: u64,        // 8 bytes
     parent_span_id: u64, // 8 bytes
-    
+
     // 时间戳
     start_ns: u64,       // 8 bytes
     end_ns: u64,         // 8 bytes
-    
+
     // 标志位打包
     flags: u8,           // 1 byte (包含 sampled, debug 等)
     _padding: [u8; 7],   // 填充到 64 字节
@@ -266,7 +287,7 @@ pub extern "C" fn otlp_create_tracer(
             .to_str()
             .expect("Invalid UTF-8")
     };
-    
+
     let tracer = Tracer::new(service_name);
     Box::into_raw(Box::new(tracer))
 }
@@ -305,7 +326,7 @@ impl PyTracer {
             inner: Tracer::new(service_name),
         }
     }
-    
+
     fn start_span(&self, name: &str) -> PySpan {
         let span = self.inner.start_span(name).start();
         PySpan { inner: span }
@@ -341,20 +362,20 @@ impl PerformanceCounter {
             start: Instant::now(),
         }
     }
-    
+
     pub fn record(&mut self) {
         let elapsed = self.start.elapsed();
         self.samples.push(elapsed);
         self.start = Instant::now();
     }
-    
+
     pub fn statistics(&self) -> PerfStats {
         let sum: Duration = self.samples.iter().sum();
         let mean = sum / self.samples.len() as u32;
-        
+
         let mut sorted = self.samples.clone();
         sorted.sort();
-        
+
         PerfStats {
             mean,
             p50: sorted[sorted.len() / 2],
@@ -390,10 +411,10 @@ use jemalloc_ctl::{stats, epoch};
 
 pub fn print_memory_stats() {
     epoch::mib().unwrap().advance().unwrap();
-    
+
     let allocated = stats::allocated::mib().unwrap();
     let resident = stats::resident::mib().unwrap();
-    
+
     println!("Allocated: {} MB", allocated.read().unwrap() / 1024 / 1024);
     println!("Resident: {} MB", resident.read().unwrap() / 1024 / 1024);
 }
@@ -416,7 +437,7 @@ macro_rules! debug_trace {
 
 pub fn process_span(span: &Span) {
     debug_trace!("Processing span: {:?}", span);
-    
+
     // 生产代码
     // ...
 }
@@ -435,10 +456,10 @@ impl SpanProcessor {
     fn add_span(&mut self, span: Span) {
         // 调试断言
         debug_assert!(self.buffer.len() < self.max_size);
-        
+
         // 始终检查的不变量
         assert!(span.end_time >= span.start_time, "Invalid span duration");
-        
+
         self.buffer.push(span);
     }
 }
@@ -451,16 +472,16 @@ impl SpanProcessor {
 mod tests {
     use super::*;
     use mockall::mock;
-    
+
     // Mock trait
     mock! {
         pub SpanExporter {}
-        
+
         impl SpanExporter for SpanExporter {
             async fn export(&self, spans: Vec<Span>) -> Result<()>;
         }
     }
-    
+
     #[tokio::test]
     async fn test_batch_processor() {
         let mut mock_exporter = MockSpanExporter::new();
@@ -468,7 +489,7 @@ mod tests {
             .expect_export()
             .times(1)
             .returning(|_| Ok(()));
-        
+
         let processor = BatchSpanProcessor::new(mock_exporter);
         // 测试逻辑
     }

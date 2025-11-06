@@ -1,7 +1,7 @@
 # OTLP Rust 性能优化指南
 
-> **主题**: 实现模式 - 性能优化  
-> **日期**: 2025年10月3日  
+> **主题**: 实现模式 - 性能优化
+> **日期**: 2025年10月3日
 > **难度**: ⭐⭐⭐⭐ 高级
 
 ---
@@ -58,7 +58,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Benchmark
 
 fn bench_span_creation(c: &mut Criterion) {
     let trace_id = TraceId::random();
-    
+
     c.bench_function("span_creation", |b| {
         b.iter(|| {
             SpanBuilder::new(black_box(trace_id), black_box("test_span"))
@@ -70,19 +70,19 @@ fn bench_span_creation(c: &mut Criterion) {
 
 fn bench_serialization(c: &mut Criterion) {
     let span = create_test_span();
-    
+
     let mut group = c.benchmark_group("serialization");
-    
+
     // JSON 序列化
     group.bench_function("json", |b| {
         b.iter(|| serde_json::to_vec(&span))
     });
-    
+
     // Protobuf 序列化
     group.bench_function("protobuf", |b| {
         b.iter(|| prost::encode_to_vec(&span))
     });
-    
+
     group.finish();
 }
 
@@ -192,18 +192,18 @@ pub fn parse_spans_simd(mut json_bytes: Vec<u8>) -> Result<Vec<Span>, Error> {
 // 基准测试
 fn bench_json_parsing(c: &mut Criterion) {
     let json = create_test_json(1000);  // 1000 spans
-    
+
     let mut group = c.benchmark_group("json_parsing");
-    
+
     group.bench_function("serde_json", |b| {
         b.iter(|| serde_json::from_slice::<Vec<Span>>(black_box(&json)))
     });
-    
+
     group.bench_function("simd_json", |b| {
         let mut data = json.clone();
         b.iter(|| simd_json::from_slice::<Vec<Span>>(black_box(&mut data)))
     });
-    
+
     group.finish();
 }
 ```
@@ -224,13 +224,13 @@ pub fn serialize_batch(spans: &[Span]) -> Vec<u8> {
     let total_size: usize = spans.iter()
         .map(|s| s.encoded_len())
         .sum();
-    
+
     let mut buf = Vec::with_capacity(total_size);  // ← 预分配
-    
+
     for span in spans {
         prost::encode(span, &mut buf).unwrap();
     }
-    
+
     buf
 }
 
@@ -370,7 +370,7 @@ impl SpanCollector {
     pub fn add_span(&mut self, trace_id: TraceId, name: &str) {
         let mut interner = self.interner.write().unwrap();
         let symbol = interner.get_or_intern(name);  // ← 去重
-        
+
         self.spans.push(InternedSpan {
             trace_id,
             name_symbol: symbol,
@@ -473,14 +473,14 @@ impl HttpExporter {
 
     pub async fn export_batch(&self, spans: Vec<Span>) -> Result<(), ExportError> {
         let request = ExportTraceServiceRequest { spans };
-        
+
         self.client
             .post(&format!("{}/v1/traces", self.endpoint))
             .header("content-type", "application/x-protobuf")
             .body(prost::encode_to_vec(&request))
             .send()
             .await?;
-        
+
         Ok(())
     }
 }
@@ -505,13 +505,13 @@ pub async fn export_compressed(
     spans: Vec<Span>,
 ) -> Result<(), ExportError> {
     let serialized = prost::encode_to_vec(&spans);
-    
+
     // 只在数据超过 1KB 时压缩
     if serialized.len() > 1024 {
         let mut encoder = GzipEncoder::new(Vec::new());
         encoder.write_all(&serialized).await?;
         let compressed = encoder.into_inner();
-        
+
         client
             .post(endpoint)
             .header("content-encoding", "gzip")
@@ -525,7 +525,7 @@ pub async fn export_compressed(
             .send()
             .await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -556,7 +556,7 @@ impl AdaptiveBatcher {
 
     pub async fn add(&mut self, span: Span) -> Option<Vec<Span>> {
         self.buffer.push(span);
-        
+
         if self.should_flush() {
             self.last_flush = Instant::now();
             Some(std::mem::take(&mut self.buffer))
@@ -825,6 +825,6 @@ RUSTFLAGS="-C target-feature=+avx2" cargo build --release
 
 ---
 
-**维护者**: OTLP Rust 2025 研究团队  
-**更新日期**: 2025年10月3日  
+**维护者**: OTLP Rust 2025 研究团队
+**更新日期**: 2025年10月3日
 **许可证**: MIT OR Apache-2.0

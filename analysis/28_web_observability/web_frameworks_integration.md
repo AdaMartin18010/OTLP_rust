@@ -1,7 +1,7 @@
 # Web 框架集成指南 - Web Frameworks Integration
 
-**创建日期**: 2025年10月29日  
-**技术版本**: Rust 1.90.0 + OpenTelemetry 0.31.0  
+**创建日期**: 2025年10月29日
+**技术版本**: Rust 1.90.0 + OpenTelemetry 0.31.0
 **状态**: ✅ 生产就绪
 
 ---
@@ -84,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. 初始化OTLP Tracer
     let tracer_provider = init_tracer_provider()?;
     global::set_tracer_provider(tracer_provider.clone());
-    
+
     // 2. 创建应用路由
     let app = Router::new()
         .route("/", get(root))
@@ -104,19 +104,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 })
                 .on_response(DefaultOnResponse::new().level(tracing::Level::INFO))
         );
-    
+
     // 4. 启动服务器
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await?;
-    
+
     println!("🚀 Server running on http://0.0.0.0:3000");
-    
+
     axum::serve(listener, app)
         .await?;
-    
+
     // 5. 清理
     tracer_provider.shutdown()?;
-    
+
     Ok(())
 }
 
@@ -126,7 +126,7 @@ fn init_tracer_provider() -> Result<TracerProvider, Box<dyn std::error::Error>> 
         .tonic()
         .with_endpoint("http://localhost:4317")
         .with_timeout(Duration::from_secs(3));
-    
+
     let tracer_provider = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(exporter)
@@ -138,7 +138,7 @@ fn init_tracer_provider() -> Result<TracerProvider, Box<dyn std::error::Error>> 
                 ]))
         )
         .install_batch(opentelemetry_sdk::runtime::Tokio)?;
-    
+
     Ok(tracer_provider)
 }
 
@@ -190,7 +190,7 @@ async fn get_user_advanced(
     State(db): State<DatabasePool>,
 ) -> Result<Json<User>, AppError> {
     info!("Fetching user from database");
-    
+
     // 数据库查询自动追踪
     let user = db.get_user(user_id)
         .await
@@ -198,7 +198,7 @@ async fn get_user_advanced(
             error!("Database error: {}", e);
             AppError::DatabaseError(e)
         })?;
-    
+
     info!("User found successfully");
     Ok(Json(user))
 }
@@ -206,12 +206,12 @@ async fn get_user_advanced(
 // 手动创建子span
 async fn process_order_with_spans(order: Order) -> Result<(), AppError> {
     let tracer = global::tracer("order-processor");
-    
+
     // 验证订单
     {
         let mut span = tracer.start("validate_order");
         span.set_attribute(KeyValue::new("order.id", order.id.to_string()));
-        
+
         match validate_order(&order).await {
             Ok(_) => span.set_status(Status::Ok),
             Err(e) => {
@@ -221,16 +221,16 @@ async fn process_order_with_spans(order: Order) -> Result<(), AppError> {
             }
         }
     }
-    
+
     // 处理支付
     {
         let mut span = tracer.start("process_payment");
         span.set_attribute(KeyValue::new("order.amount", order.amount));
-        
+
         process_payment(&order).await?;
         span.add_event("payment_completed", vec![]);
     }
-    
+
     Ok(())
 }
 ```
@@ -250,22 +250,22 @@ async fn tracing_middleware<B>(
 ) -> Response {
     let tracer = global::tracer("http-middleware");
     let mut span = tracer.start("http_request");
-    
+
     // 提取请求信息
     span.set_attribute(KeyValue::new("http.method", request.method().to_string()));
     span.set_attribute(KeyValue::new("http.target", request.uri().to_string()));
     span.set_attribute(KeyValue::new("http.scheme", "http"));
-    
+
     // 提取trace context
     let cx = extract_trace_context(&request);
     let _guard = cx.attach();
-    
+
     // 调用下一个处理器
     let response = next.run(request).await;
-    
+
     // 记录响应信息
     span.set_attribute(KeyValue::new("http.status_code", response.status().as_u16() as i64));
-    
+
     response
 }
 
@@ -304,12 +304,12 @@ async fn main() -> std::io::Result<()> {
     // 初始化OTLP
     let tracer_provider = init_tracer_provider();
     global::set_tracer_provider(tracer_provider);
-    
+
     // 初始化tracing订阅器
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .init();
-    
+
     HttpServer::new(|| {
         App::new()
             // 添加追踪中间件
@@ -400,13 +400,13 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let tracer = global::tracer("actix-web");
         let mut span = tracer.start("http_request");
-        
+
         // 设置span属性
         span.set_attribute(KeyValue::new("http.method", req.method().to_string()));
         span.set_attribute(KeyValue::new("http.target", req.path().to_string()));
-        
+
         let fut = self.service.call(req);
-        
+
         Box::pin(async move {
             let res = fut.await?;
             span.set_attribute(KeyValue::new("http.status_code", res.status().as_u16() as i64));
@@ -481,7 +481,7 @@ fn rocket() -> _ {
     // 初始化tracer
     let tracer_provider = init_tracer_provider();
     global::set_tracer_provider(tracer_provider);
-    
+
     rocket::build()
         .attach(TracingFairing)
         .mount("/", routes![index, get_user])
@@ -502,12 +502,12 @@ async fn main() {
     // 初始化tracer
     let tracer_provider = init_tracer_provider();
     global::set_tracer_provider(tracer_provider);
-    
+
     // 创建路由
     let routes = warp::path!("hello" / String)
         .map(|name| format!("Hello, {}!", name))
         .with(trace::request());
-    
+
     warp::serve(routes)
         .run(([0, 0, 0, 0], 3030))
         .await;
@@ -539,17 +539,17 @@ use opentelemetry::trace::{Tracer, SpanKind};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tracer_provider = init_tracer_provider()?;
     global::set_tracer_provider(tracer_provider);
-    
+
     let make_svc = make_service_fn(|_conn| async {
         Ok::<_, hyper::Error>(service_fn(handle_request))
     });
-    
+
     let addr = ([0, 0, 0, 0], 3000).into();
     let server = Server::bind(&addr).serve(make_svc);
-    
+
     println!("Listening on http://{}", addr);
     server.await?;
-    
+
     Ok(())
 }
 
@@ -559,17 +559,17 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>, hyper::Err
         .span_builder("http_request")
         .with_kind(SpanKind::Server)
         .start(&tracer);
-    
+
     // 设置HTTP属性
     span.set_attribute(KeyValue::new("http.method", req.method().to_string()));
     span.set_attribute(KeyValue::new("http.target", req.uri().to_string()));
-    
+
     // 处理请求
     let response = Response::new(Body::from("Hello, World!"));
-    
+
     span.set_attribute(KeyValue::new("http.status_code", response.status().as_u16() as i64));
     span.end();
-    
+
     Ok(response)
 }
 ```
@@ -616,7 +616,7 @@ where
         // 创建span并传播上下文
         let tracer = global::tracer("tower");
         let _span = tracer.start("request");
-        
+
         self.inner.call(req)
     }
 }

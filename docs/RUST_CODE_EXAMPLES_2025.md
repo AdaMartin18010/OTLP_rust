@@ -1,11 +1,11 @@
 ﻿# Rust代码示例集 2025
 
-**版本**: 2.0  
-**创建日期**: 2025年10月28日  
-**更新日期**: 2025年10月28日  
-**Rust版本**: 1.90.0  
-**状态**: ✅ 完整  
-**作者**: OTLP_rust文档团队  
+**版本**: 2.0
+**创建日期**: 2025年10月28日
+**更新日期**: 2025年10月28日
+**Rust版本**: 1.90.0
+**状态**: ✅ 完整
+**作者**: OTLP_rust文档团队
 **审核**: 技术委员会
 
 ---
@@ -14,22 +14,45 @@
 
 本文档提供120+个生产就绪的Rust代码示例，涵盖Web开发、异步编程、并发模式、数据处理等8大类场景。所有代码均经过测试，可直接用于生产环境。
 
-**适用人群**: 中级及以上Rust开发者  
-**预计阅读时长**: 2-4小时（完整）/ 5-10分钟（单个示例）  
+**适用人群**: 中级及以上Rust开发者
+**预计阅读时长**: 2-4小时（完整）/ 5-10分钟（单个示例）
 **前置知识**: Rust基础语法、Cargo使用、异步编程概念
 
 ---
 
 ## 📦 目录
 
-1. [Web服务](#1-web服务)
-2. [异步编程](#2-异步编程)
-3. [并发模式](#3-并发模式)
-4. [数据处理](#4-数据处理)
-5. [错误处理](#5-错误处理)
-6. [性能优化](#6-性能优化)
-7. [OpenTelemetry集成](#7-opentelemetry集成)
-8. [微服务模式](#8-微服务模式)
+- [Rust代码示例集 2025](#rust代码示例集-2025)
+  - [📋 文档概述](#-文档概述)
+  - [📦 目录](#-目录)
+  - [🌐 Web服务](#-web服务)
+    - [1.1 完整的REST API服务器](#11-完整的rest-api服务器)
+    - [1.2 带中间件的完整示例](#12-带中间件的完整示例)
+  - [⚡ 异步编程](#-异步编程)
+    - [2.1 并发HTTP请求](#21-并发http请求)
+    - [2.2 异步流处理](#22-异步流处理)
+  - [🔄 并发模式](#-并发模式)
+    - [3.1 Actor模式](#31-actor模式)
+    - [3.2 工作池模式](#32-工作池模式)
+  - [📊 数据处理](#-数据处理)
+    - [4.1 CSV批量处理](#41-csv批量处理)
+    - [4.2 JSON流式解析](#42-json流式解析)
+  - [❌ 错误处理](#-错误处理)
+    - [5.1 完整的错误类型](#51-完整的错误类型)
+    - [5.2 错误恢复模式](#52-错误恢复模式)
+  - [🚀 性能优化](#-性能优化)
+    - [6.1 零拷贝网络服务](#61-零拷贝网络服务)
+    - [6.2 对象池模式](#62-对象池模式)
+  - [🔭 OpenTelemetry集成](#-opentelemetry集成)
+    - [7.1 完整的追踪设置](#71-完整的追踪设置)
+  - [🌐 微服务模式](#-微服务模式)
+    - [8.1 健康检查和就绪探针](#81-健康检查和就绪探针)
+  - [📚 相关资源](#-相关资源)
+    - [内部链接](#内部链接)
+    - [外部资源](#外部资源)
+  - [🔄 更新计划](#-更新计划)
+  - [📝 贡献指南](#-贡献指南)
+  - [📄 许可证](#-许可证)
 
 ---
 
@@ -104,13 +127,13 @@ async fn create_user(
 ) -> (StatusCode, Json<User>) {
     let mut users = state.users.write().await;
     let id = users.len() as u64 + 1;
-    
+
     let user = User {
         id,
         name: payload.name,
         email: payload.email,
     };
-    
+
     users.push(user.clone());
     (StatusCode::CREATED, Json(user))
 }
@@ -125,19 +148,19 @@ async fn main() {
     let state = AppState {
         users: Arc::new(RwLock::new(Vec::new())),
     };
-    
+
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/users", get(list_users).post(create_user))
         .route("/users/:id", get(get_user))
         .with_state(state);
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     println!("Server running on http://localhost:3000");
-    
+
     axum::serve(listener, app)
         .await
         .unwrap();
@@ -170,7 +193,7 @@ async fn request_id_middleware<B>(
         "x-request-id",
         id.parse().unwrap(),
     );
-    
+
     let response = next.run(request).await;
     response
 }
@@ -184,7 +207,7 @@ async fn auth_middleware<B>(
         .headers()
         .get("authorization")
         .and_then(|h| h.to_str().ok());
-    
+
     match auth_header {
         Some(token) if verify_token(token) => {
             Ok(next.run(request).await)
@@ -213,11 +236,11 @@ async fn main() {
                 .layer(middleware::from_fn(request_id_middleware))
                 .timeout(Duration::from_secs(30))
         );
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 ```
@@ -242,7 +265,7 @@ async fn fetch_with_timeout(
         Duration::from_secs(5),
         client.get(url).send()
     ).await??;
-    
+
     let body = response.text().await?;
     Ok(body)
 }
@@ -250,7 +273,7 @@ async fn fetch_with_timeout(
 // 并发请求多个URL
 async fn fetch_multiple(urls: Vec<String>) -> Vec<Result<String, String>> {
     let client = Client::new();
-    
+
     let futures = urls.iter().map(|url| {
         let client = client.clone();
         let url = url.clone();
@@ -260,7 +283,7 @@ async fn fetch_multiple(urls: Vec<String>) -> Vec<Result<String, String>> {
                 .map_err(|e| e.to_string())
         }
     });
-    
+
     join_all(futures).await
 }
 
@@ -272,9 +295,9 @@ async fn main() {
         "https://api.twitter.com".to_string(),
         "https://api.reddit.com".to_string(),
     ];
-    
+
     let results = fetch_multiple(urls).await;
-    
+
     for (i, result) in results.iter().enumerate() {
         match result {
             Ok(body) => println!("URL {}: {} bytes", i, body.len()),
@@ -312,13 +335,13 @@ async fn consumer(mut rx: mpsc::Receiver<i32>) {
 // 流式处理with批量
 async fn batch_processor() {
     let (tx, rx) = mpsc::channel(100);
-    
+
     // 启动生产者
     tokio::spawn(producer(tx));
-    
+
     // 流式+批量处理
     let stream = ReceiverStream::new(rx);
-    
+
     stream
         .chunks_timeout(10, Duration::from_millis(100))  // 批量或超时
         .for_each(|batch| async move {
@@ -367,7 +390,7 @@ impl Counter {
     fn new(receiver: mpsc::Receiver<Message>) -> Self {
         Counter { value: 0, receiver }
     }
-    
+
     async fn run(mut self) {
         while let Some(msg) = self.receiver.recv().await {
             match msg {
@@ -398,17 +421,17 @@ impl CounterHandle {
         tokio::spawn(actor.run());
         Self { sender: tx }
     }
-    
+
     async fn get(&self) -> i32 {
         let (tx, mut rx) = mpsc::channel(1);
         let _ = self.sender.send(Message::Get { respond_to: tx }).await;
         rx.recv().await.unwrap()
     }
-    
+
     async fn set(&self, value: i32) {
         let _ = self.sender.send(Message::Set(value)).await;
     }
-    
+
     async fn increment(&self) {
         let _ = self.sender.send(Message::Increment).await;
     }
@@ -418,7 +441,7 @@ impl CounterHandle {
 #[tokio::main]
 async fn main() {
     let counter = CounterHandle::new();
-    
+
     // 并发访问
     let handles: Vec<_> = (0..10)
         .map(|_| {
@@ -428,11 +451,11 @@ async fn main() {
             })
         })
         .collect();
-    
+
     for handle in handles {
         handle.await.unwrap();
     }
-    
+
     println!("Final value: {}", counter.get().await);
 }
 ```
@@ -453,18 +476,18 @@ impl WorkerPool {
             semaphore: Arc::new(Semaphore::new(size)),
         }
     }
-    
+
     async fn execute<F, T>(&self, task: F) -> T
     where
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
         let permit = self.semaphore.acquire().await.unwrap();
-        
+
         let result = tokio::task::spawn_blocking(task)
             .await
             .unwrap();
-        
+
         drop(permit);
         result
     }
@@ -474,7 +497,7 @@ impl WorkerPool {
 #[tokio::main]
 async fn main() {
     let pool = Arc::new(WorkerPool::new(4));  // 4个worker
-    
+
     let tasks: Vec<_> = (0..20)
         .map(|i| {
             let pool = pool.clone();
@@ -488,7 +511,7 @@ async fn main() {
             })
         })
         .collect();
-    
+
     for task in tasks {
         let result = task.await.unwrap();
         println!("Result: {}", result);
@@ -524,7 +547,7 @@ fn process_csv_parallel(
     let records: Vec<Record> = reader
         .deserialize()
         .collect::<Result<_, _>>()?;
-    
+
     // 2. 并行处理
     let processed: Vec<Record> = records
         .into_par_iter()
@@ -534,14 +557,14 @@ fn process_csv_parallel(
             record
         })
         .collect();
-    
+
     // 3. 写入结果
     let mut writer = Writer::from_path(output)?;
     for record in processed {
         writer.serialize(record)?;
     }
     writer.flush()?;
-    
+
     Ok(())
 }
 
@@ -552,16 +575,16 @@ fn process_csv_streaming(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut reader = Reader::from_path(input)?;
     let mut writer = Writer::from_path(output)?;
-    
+
     for result in reader.deserialize() {
         let mut record: Record = result?;
-        
+
         // 处理
         record.value = record.value * 1.1;
-        
+
         writer.serialize(record)?;
     }
-    
+
     writer.flush()?;
     Ok(())
 }
@@ -569,7 +592,7 @@ fn process_csv_streaming(
 fn main() {
     // 小文件：并行处理
     process_csv_parallel("input.csv", "output.csv").unwrap();
-    
+
     // 大文件：流式处理
     process_csv_streaming("large.csv", "processed.csv").unwrap();
 }
@@ -594,15 +617,15 @@ struct Event {
 fn process_jsonl(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    
+
     for line in reader.lines() {
         let line = line?;
         let event: Event = serde_json::from_str(&line)?;
-        
+
         // 处理事件
         process_event(event);
     }
-    
+
     Ok(())
 }
 
@@ -610,14 +633,14 @@ fn process_jsonl(path: &str) -> Result<(), Box<dyn std::error::Error>> {
 fn process_json_array(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    
+
     let stream = Deserializer::from_reader(reader).into_iter::<Event>();
-    
+
     for event in stream {
         let event = event?;
         process_event(event);
     }
-    
+
     Ok(())
 }
 
@@ -645,24 +668,24 @@ use std::io;
 pub enum AppError {
     #[error("IO error: {0}")]
     Io(#[from] io::Error),
-    
+
     #[error("Parse error: {0}")]
     Parse(#[from] serde_json::Error),
-    
+
     #[error("HTTP error: {status}")]
     Http {
         status: u16,
         message: String,
     },
-    
+
     #[error("Validation error: {0}")]
     Validation(String),
-    
+
     #[error("Not found: {resource}")]
     NotFound {
         resource: String,
     },
-    
+
     #[error("Internal error: {0}")]
     Internal(String),
 }
@@ -691,13 +714,13 @@ fn validate_user(user: &User) -> Result<()> {
 async fn fetch_user(id: u64) -> Result<User> {
     let response = reqwest::get(&format!("https://api.example.com/users/{}", id))
         .await?;  // 自动转换reqwest::Error
-    
+
     if response.status() == 404 {
         return Err(AppError::NotFound {
             resource: format!("User {}", id),
         });
     }
-    
+
     let user = response.json().await?;
     validate_user(&user)?;
     Ok(user)
@@ -743,7 +766,7 @@ async fn main() {
         || Box::pin(flaky_operation()),
         3,
     ).await;
-    
+
     match result {
         Ok(value) => println!("Success: {:?}", value),
         Err(e) => println!("Failed after retries: {}", e),
@@ -774,14 +797,14 @@ use tokio::net::{TcpListener, TcpStream};
 // 零拷贝echo服务器
 async fn handle_client(mut socket: TcpStream) {
     let mut buf = BytesMut::with_capacity(4096);
-    
+
     loop {
         match socket.read_buf(&mut buf).await {
             Ok(0) => break,  // 连接关闭
             Ok(n) => {
                 // 零拷贝：split提取数据
                 let data = buf.split_to(n).freeze();
-                
+
                 // 零拷贝：直接写入
                 if socket.write_all(&data).await.is_err() {
                     break;
@@ -795,7 +818,7 @@ async fn handle_client(mut socket: TcpStream) {
 #[tokio::main]
 async fn main() {
     let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
-    
+
     loop {
         let (socket, _) = listener.accept().await.unwrap();
         tokio::spawn(handle_client(socket));
@@ -828,16 +851,16 @@ impl<T> Pool<T> {
             max_size,
         }
     }
-    
+
     pub async fn acquire(&self) -> PooledObject<T> {
         let mut objects = self.objects.lock().await;
-        
+
         let obj = if let Some(obj) = objects.pop_front() {
             obj
         } else {
             (self.factory)()
         };
-        
+
         PooledObject {
             object: Some(obj),
             pool: self.objects.clone(),
@@ -882,7 +905,7 @@ async fn main() {
         || vec![0u8; 4096],
         100,
     );
-    
+
     let mut buffer = buffer_pool.acquire().await;
     buffer.fill(42);
     // Drop时自动归还池中
@@ -909,24 +932,24 @@ fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
         .with_http()
         .with_endpoint("http://localhost:4318/v1/traces")
         .build()?;
-    
+
     // 2. 创建TracerProvider
     let provider = TracerProvider::builder()
         .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
         .build();
-    
+
     // 3. 设置全局provider
     global::set_tracer_provider(provider);
-    
+
     // 4. 集成tracing
     let tracer = global::tracer("my-service");
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-    
+
     tracing_subscriber::registry()
         .with(telemetry)
         .with(tracing_subscriber::fmt::layer())
         .init();
-    
+
     Ok(())
 }
 
@@ -934,9 +957,9 @@ fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
 #[instrument]
 async fn fetch_user(user_id: u64) -> Result<User, Error> {
     info!(user_id, "Fetching user");
-    
+
     let user = database_query(user_id).await?;
-    
+
     info!(user_id, user_name = %user.name, "User fetched");
     Ok(user)
 }
@@ -944,17 +967,17 @@ async fn fetch_user(user_id: u64) -> Result<User, Error> {
 // 手动span
 async fn complex_operation() {
     use tracing::Span;
-    
+
     let span = tracing::info_span!("complex_operation");
     let _enter = span.enter();
-    
+
     // 添加属性
     span.record("step", "initialization");
     initialize().await;
-    
+
     span.record("step", "processing");
     process().await;
-    
+
     span.record("step", "completion");
     complete().await;
 }
@@ -962,10 +985,10 @@ async fn complex_operation() {
 #[tokio::main]
 async fn main() {
     init_telemetry().unwrap();
-    
+
     // 现在所有函数都会被追踪
     fetch_user(123).await.unwrap();
-    
+
     // 优雅关闭
     global::shutdown_tracer_provider();
 }
@@ -1026,7 +1049,7 @@ async fn readiness_check(
     State(health): State<Arc<AppHealth>>,
 ) -> (StatusCode, Json<ReadinessStatus>) {
     let mut checks = Vec::new();
-    
+
     // 检查1：数据库连接
     let db_ok = check_database().await;
     checks.push(CheckResult {
@@ -1034,7 +1057,7 @@ async fn readiness_check(
         status: if db_ok { "ok" } else { "fail" }.to_string(),
         message: None,
     });
-    
+
     // 检查2：Redis连接
     let redis_ok = check_redis().await;
     checks.push(CheckResult {
@@ -1042,16 +1065,16 @@ async fn readiness_check(
         status: if redis_ok { "ok" } else { "fail" }.to_string(),
         message: None,
     });
-    
+
     let ready = db_ok && redis_ok;
     health.is_ready.store(ready, Ordering::Relaxed);
-    
+
     let status = if ready {
         StatusCode::OK
     } else {
         StatusCode::SERVICE_UNAVAILABLE
     };
-    
+
     (status, Json(ReadinessStatus {
         ready,
         checks,
@@ -1075,7 +1098,7 @@ fn app_with_probes() -> Router {
         is_ready: AtomicBool::new(false),
         version: "1.0.0",
     });
-    
+
     Router::new()
         .route("/health", get(health_check))
         .route("/ready", get(readiness_check))
@@ -1085,11 +1108,11 @@ fn app_with_probes() -> Router {
 #[tokio::main]
 async fn main() {
     let app = app_with_probes();
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 ```
@@ -1099,12 +1122,14 @@ async fn main() {
 ## 📚 相关资源
 
 ### 内部链接
+
 - 📖 [快速参考手册](./RUST_QUICK_REFERENCE_2025.md)
 - 💡 [FAQ深度解答](./RUST_FAQ_DEEP_DIVE_2025.md)
 - ⚡ [性能优化手册](./PERFORMANCE_OPTIMIZATION_COOKBOOK_2025.md)
 - 🗺️ [知识图谱](./RUST_KNOWLEDGE_GRAPH_2025_10.md)
 
 ### 外部资源
+
 - 🦀 [Rust官方文档](https://doc.rust-lang.org/)
 - 📚 [Rust语言圣经](https://course.rs/)
 - 🎓 [Rust By Example](https://doc.rust-lang.org/rust-by-example/)
@@ -1124,6 +1149,7 @@ async fn main() {
 ## 📝 贡献指南
 
 欢迎贡献新的代码示例！要求：
+
 1. 代码必须可编译运行
 2. 包含完整注释
 3. 遵循最佳实践
@@ -1133,25 +1159,25 @@ async fn main() {
 
 ## 📄 许可证
 
-本文档采用 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可证。  
+本文档采用 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可证。
 代码示例采用 [MIT](https://opensource.org/licenses/MIT) 或 [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) 双许可证。
 
 ---
 
-**文档版本**: 2.0  
-**代码总数**: 120+  
-**测试覆盖**: 80%+  
-**生产就绪**: ✅  
-**最后更新**: 2025年10月28日  
+**文档版本**: 2.0
+**代码总数**: 120+
+**测试覆盖**: 80%+
+**生产就绪**: ✅
+**最后更新**: 2025年10月28日
 **维护者**: OTLP_rust文档团队
 
 ---
 
-> **使用建议**: 
+> **使用建议**:
+>
 > - 所有示例都是生产级代码模板
 > - 可直接用于项目中
 > - 根据实际需求调整和扩展
 > - 建议配合快速参考手册使用
 
 **Happy Coding! 🦀**
-

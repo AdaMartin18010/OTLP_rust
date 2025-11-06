@@ -1,7 +1,7 @@
 # 🚀 性能优化指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 性能优化指南 - 客户端配置、批处理、压缩、异步优化等完整性能调优方案。
@@ -88,17 +88,17 @@ use std::time::Duration;
 let client = EnhancedOtlpClient::builder()
     .with_endpoint("http://localhost:4317")
     .with_service_name("high-performance-app")
-    
+
     // 连接优化
     .with_connect_timeout(Duration::from_secs(5))
     .with_request_timeout(Duration::from_secs(30))
     .with_keep_alive_timeout(Duration::from_secs(60))
     .with_max_idle_connections(100)
-    
+
     // 传输优化
     .with_grpc_transport() // gRPC 比 HTTP 更高效
     .with_compression(Compression::Gzip) // 启用压缩
-    
+
     // 重试优化
     .with_retry_config(RetryConfig {
         max_attempts: 3,
@@ -108,7 +108,7 @@ let client = EnhancedOtlpClient::builder()
         randomization_factor: 0.1,
         retryable_errors: vec![ErrorType::Network, ErrorType::Timeout],
     })
-    
+
     .build()
     .await?;
 ```
@@ -125,7 +125,7 @@ let custom_config = OtlpConfig {
         max_queue_size: 50000,       // 增大队列容量
         strategy: BatchStrategy::Hybrid, // 混合策略
     },
-    
+
     // 连接池配置
     connection_pool: ConnectionPoolConfig {
         max_connections: 200,        // 最大连接数
@@ -134,7 +134,7 @@ let custom_config = OtlpConfig {
         idle_timeout: Duration::from_secs(300),
         keep_alive: true,
     },
-    
+
     // 性能配置
     performance: PerformanceConfig {
         enable_zero_copy: true,      // 零拷贝优化
@@ -142,7 +142,7 @@ let custom_config = OtlpConfig {
         max_memory_usage: 1024 * 1024 * 1024, // 1GB
         gc_threshold: 0.8,           // GC 阈值
     },
-    
+
     // 监控配置
     monitoring: MonitoringConfig {
         enable_metrics: true,
@@ -231,11 +231,11 @@ async fn smart_batching_example() -> Result<(), Box<dyn std::error::Error>> {
         })
         .build()
         .await?;
-    
+
     // 监控批处理性能
     let metrics = client.get_batch_metrics().await?;
     println!("批处理性能: {:?}", metrics);
-    
+
     Ok(())
 }
 ```
@@ -258,7 +258,7 @@ let pool_config = ConnectionPoolConfig {
     keep_alive: true,
     keep_alive_timeout: Duration::from_secs(60),
     max_lifetime: Duration::from_secs(3600),
-    
+
     // 高级选项
     enable_connection_prewarming: true,  // 预热连接
     enable_connection_validation: true, // 连接验证
@@ -290,7 +290,7 @@ async fn optimized_request_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_connection_manager(connection_manager)
         .build()
         .await?;
-    
+
     // 并发请求会复用连接
     let futures: Vec<_> = (0..100)
         .map(|i| async move {
@@ -300,9 +300,9 @@ async fn optimized_request_example() -> Result<(), Box<dyn std::error::Error>> {
             span.end();
         })
         .collect();
-    
+
     futures::future::join_all(futures).await;
-    
+
     Ok(())
 }
 ```
@@ -362,29 +362,29 @@ let client = EnhancedOtlpClient::builder()
 // 压缩性能测试
 async fn compression_performance_test() -> Result<(), Box<dyn std::error::Error>> {
     let test_data = generate_test_spans(1000);
-    
+
     // 测试不同压缩算法
     let compressions = vec![
         Compression::None,
         Compression::Gzip,
         Compression::Brotli,
     ];
-    
+
     for compression in compressions {
         let start = std::time::Instant::now();
-        
+
         let client = EnhancedOtlpClient::builder()
             .with_endpoint("http://localhost:4317")
             .with_compression(compression)
             .build()
             .await?;
-        
+
         client.export_spans(test_data.clone()).await?;
-        
+
         let duration = start.elapsed();
         println!("压缩算法: {:?}, 耗时: {:?}", compression, duration);
     }
-    
+
     Ok(())
 }
 ```
@@ -431,12 +431,12 @@ async fn zero_copy_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_zero_copy_buffer(zero_copy_buffer)
         .build()
         .await?;
-    
+
     // 零拷贝操作
     let mut buffer = client.get_zero_copy_buffer().await?;
     buffer.write_spans(&spans).await?;
     client.send_buffer(buffer).await?;
-    
+
     Ok(())
 }
 ```
@@ -462,11 +462,11 @@ async fn memory_monitoring_example() -> Result<(), Box<dyn std::error::Error>> {
         .with_memory_monitor(memory_monitor)
         .build()
         .await?;
-    
+
     // 获取内存统计
     let memory_stats = client.get_memory_stats().await?;
     println!("内存使用: {:?}", memory_stats);
-    
+
     Ok(())
 }
 ```
@@ -490,7 +490,7 @@ async fn high_concurrency_example() -> Result<(), Box<dyn std::error::Error>> {
             .build()
             .await?
     );
-    
+
     // 创建多个并发任务
     let tasks: Vec<_> = (0..1000)
         .map(|i| {
@@ -499,18 +499,18 @@ async fn high_concurrency_example() -> Result<(), Box<dyn std::error::Error>> {
                 let tracer = client.tracer("concurrent-component");
                 let mut span = tracer.start("concurrent-operation");
                 span.set_attribute("task.id", i);
-                
+
                 // 模拟工作
                 tokio::time::sleep(Duration::from_millis(10)).await;
-                
+
                 span.end();
             })
         })
         .collect();
-    
+
     // 等待所有任务完成
     futures::future::join_all(tasks).await;
-    
+
     Ok(())
 }
 ```
@@ -582,13 +582,13 @@ let client = EnhancedOtlpClient::builder()
 // 获取性能指标
 async fn get_performance_metrics() -> Result<(), Box<dyn std::error::Error>> {
     let metrics = client.get_performance_metrics().await?;
-    
+
     println!("吞吐量: {:.2} spans/s", metrics.throughput);
     println!("平均延迟: {:.2}ms", metrics.avg_latency.as_millis());
     println!("P99延迟: {:.2}ms", metrics.p99_latency.as_millis());
     println!("内存使用: {:.2}MB", metrics.memory_usage / 1024.0 / 1024.0);
     println!("CPU使用: {:.2}%", metrics.cpu_usage * 100.0);
-    
+
     Ok(())
 }
 ```
@@ -632,9 +632,9 @@ use otlp::core::EnhancedOtlpClient;
 
 fn benchmark_otlp_client(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    
+
     let mut group = c.benchmark_group("otlp_client");
-    
+
     // 测试不同批次大小
     for batch_size in [100, 500, 1000, 2000].iter() {
         group.bench_with_input(
@@ -652,14 +652,14 @@ fn benchmark_otlp_client(c: &mut Criterion) {
                         .build()
                         .await
                         .unwrap();
-                    
+
                     let spans = generate_test_spans(batch_size);
                     client.export_spans(spans).await.unwrap();
                 });
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -673,28 +673,28 @@ criterion_main!(benches);
 // 性能测试工具
 async fn performance_test_suite() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 开始性能测试套件");
-    
+
     // 1. 吞吐量测试
     println!("📊 吞吐量测试...");
     let throughput_result = throughput_test().await?;
     println!("吞吐量: {:.2} spans/s", throughput_result);
-    
+
     // 2. 延迟测试
     println!("⏱️ 延迟测试...");
     let latency_result = latency_test().await?;
     println!("平均延迟: {:.2}ms", latency_result.avg.as_millis());
     println!("P99延迟: {:.2}ms", latency_result.p99.as_millis());
-    
+
     // 3. 内存测试
     println!("💾 内存测试...");
     let memory_result = memory_test().await?;
     println!("峰值内存: {:.2}MB", memory_result.peak / 1024.0 / 1024.0);
-    
+
     // 4. 并发测试
     println!("🔄 并发测试...");
     let concurrency_result = concurrency_test().await?;
     println!("并发处理能力: {:.2} requests/s", concurrency_result);
-    
+
     println!("✅ 性能测试完成");
     Ok(())
 }
@@ -713,13 +713,13 @@ fn create_production_client() -> EnhancedOtlpClient {
         .with_endpoint("http://otel-collector:4317")
         .with_service_name("production-app")
         .with_service_version("1.0.0")
-        
+
         // 连接优化
         .with_grpc_transport()
         .with_compression(Compression::Gzip)
         .with_connect_timeout(Duration::from_secs(10))
         .with_request_timeout(Duration::from_secs(60))
-        
+
         // 批处理优化
         .with_batch_config(BatchConfig {
             max_batch_size: 1000,
@@ -727,7 +727,7 @@ fn create_production_client() -> EnhancedOtlpClient {
             max_queue_size: 50000,
             strategy: BatchStrategy::Hybrid,
         })
-        
+
         // 连接池优化
         .with_connection_pool_config(ConnectionPoolConfig {
             max_connections: 100,
@@ -736,7 +736,7 @@ fn create_production_client() -> EnhancedOtlpClient {
             idle_timeout: Duration::from_secs(300),
             keep_alive: true,
         })
-        
+
         // 重试优化
         .with_retry_config(RetryConfig {
             max_attempts: 3,
@@ -746,11 +746,11 @@ fn create_production_client() -> EnhancedOtlpClient {
             randomization_factor: 0.1,
             retryable_errors: vec![ErrorType::Network, ErrorType::Timeout],
         })
-        
+
         // 监控
         .with_performance_monitor(PerformanceMonitor::new())
         .with_memory_monitor(MemoryMonitor::new())
-        
+
         .build()
         .await
         .unwrap()
@@ -794,5 +794,5 @@ fn create_production_client() -> EnhancedOtlpClient {
 
 ---
 
-*最后更新: 2025年10月20日*  
-*版本: 1.0.0*
+_最后更新: 2025年10月20日_
+_版本: 1.0.0_

@@ -1,7 +1,7 @@
 # 分布式追踪模型设计与实现
 
-> **版本**: Rust 1.90 + OpenTelemetry 2025  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90 + OpenTelemetry 2025
+> **日期**: 2025年10月2日
 > **主题**: 分布式追踪、因果链、上下文传播、微服务追踪
 
 ---
@@ -68,7 +68,7 @@ Happens-Before 关系 (Lamport, 1978):
 在分布式系统中：
   - 同一进程内：程序顺序决定因果
   - 跨进程通信：发送 → 接收 建立因果
-  
+
 追踪任务：重建全局因果图
 ```
 
@@ -248,7 +248,7 @@ impl<'a> Extractor for HeaderExtractor<'a> {
     fn get(&self, key: &str) -> Option<&str> {
         self.headers.get(key).map(|v| v.as_str())
     }
-    
+
     fn keys(&self) -> Vec<&str> {
         self.headers.keys().map(|k| k.as_str()).collect()
     }
@@ -261,9 +261,9 @@ fn propagation_example() {
     let mut headers = HashMap::new();
     let propagator = global::get_text_map_propagator(|prop| prop.clone());
     propagator.inject_context(&cx, &mut HeaderInjector { headers: &mut headers });
-    
+
     // headers 现在包含 "traceparent" 和 "tracestate"
-    
+
     // 接收端：提取上下文
     let parent_cx = propagator.extract(&HeaderExtractor { headers: &headers });
     let span = global::tracer("receiver")
@@ -297,7 +297,7 @@ impl<'a> Extractor for GrpcExtractor<'a> {
     fn get(&self, key: &str) -> Option<&str> {
         self.metadata.get(key)?.to_str().ok()
     }
-    
+
     fn keys(&self) -> Vec<&str> {
         self.metadata.keys().map(|k| k.as_str()).collect()
     }
@@ -314,23 +314,23 @@ async fn cross_async_boundary() {
     let cx = Context::current_with_span(
         global::tracer("app").start("parent")
     );
-    
+
     // 方式 1：显式传递
     let handle = task::spawn(async move {
         let _guard = cx.attach();
         // 在新任务中，cx 是当前上下文
         global::tracer("app").start("child");
     });
-    
+
     handle.await.unwrap();
-    
+
     // 方式 2：使用 Instrumented Future
     use opentelemetry::trace::FutureExt;
-    
+
     let future = async {
         global::tracer("app").start("child");
     }.with_current_context();
-    
+
     task::spawn(future).await.unwrap();
 }
 ```
@@ -353,11 +353,11 @@ use tracing_subscriber::{layer::SubscriberExt, Registry};
 pub fn init_tracing() {
     let tracer = global::tracer("app");
     let telemetry = OpenTelemetryLayer::new(tracer);
-    
+
     let subscriber = Registry::default()
         .with(telemetry)
         .with(tracing_subscriber::fmt::layer());
-    
+
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to set subscriber");
 }
@@ -366,9 +366,9 @@ pub fn init_tracing() {
 #[instrument]
 async fn fetch_user(user_id: u64) -> Result<User, Error> {
     info!("Fetching user {}", user_id);
-    
+
     let user = database::get_user(user_id).await?;
-    
+
     info!("User fetched: {:?}", user);
     Ok(user)
 }
@@ -385,10 +385,10 @@ async fn fetch_user(user_id: u64) -> Result<User, Error> {
 async fn process_order(order: Order) -> Result<(), Error> {
     // 自动创建 Span "process_order"
     // 属性: order_id, order_amount
-    
+
     payment::charge(&order).await?;
     inventory::reserve(&order).await?;
-    
+
     Ok(())
 }
 
@@ -419,7 +419,7 @@ use opentelemetry::{
 
 async fn manual_span_example() {
     let tracer = global::tracer("app");
-    
+
     // 创建 Span
     let mut span = tracer
         .span_builder("database_query")
@@ -430,11 +430,11 @@ async fn manual_span_example() {
             KeyValue::new("db.statement", "SELECT * FROM users WHERE id = $1"),
         ])
         .start(&tracer);
-    
+
     // 执行操作
     let cx = Context::current_with_span(span.clone());
     let _guard = cx.attach();
-    
+
     match execute_query().await {
         Ok(result) => {
             span.set_attribute(KeyValue::new("db.rows_affected", result.rows));
@@ -445,7 +445,7 @@ async fn manual_span_example() {
             span.set_status(Status::error(format!("Query failed: {:?}", e)));
         }
     }
-    
+
     span.end();
 }
 
@@ -475,7 +475,7 @@ struct CustomExporter;
 impl SpanExporter for CustomExporter {
     async fn export(&mut self, batch: Vec<SpanData>) -> ExportResult {
         println!("Exporting {} spans", batch.len());
-        
+
         for span in batch {
             println!(
                 "Span: trace_id={:?}, span_id={:?}, name={}",
@@ -484,7 +484,7 @@ impl SpanExporter for CustomExporter {
                 span.name
             );
         }
-        
+
         Ok(())
     }
 }
@@ -492,13 +492,13 @@ impl SpanExporter for CustomExporter {
 /// 配置批处理
 pub fn create_tracer_provider() -> TracerProvider {
     let exporter = CustomExporter;
-    
+
     let batch_config = BatchConfig::default()
         .with_max_queue_size(2048)
         .with_max_export_batch_size(512)
         .with_scheduled_delay(Duration::from_secs(5))
         .with_max_export_timeout(Duration::from_secs(30));
-    
+
     TracerProvider::builder()
         .with_batch_exporter(
             exporter,
@@ -533,7 +533,7 @@ impl<'a> Extractor for RequestExtractor<'a> {
     fn get(&self, key: &str) -> Option<&str> {
         self.req.headers().get(key)?.to_str().ok()
     }
-    
+
     fn keys(&self) -> Vec<&str> {
         self.req.headers().keys().map(|k| k.as_str()).collect()
     }
@@ -542,12 +542,12 @@ impl<'a> Extractor for RequestExtractor<'a> {
 /// HTTP 处理器
 async fn handle_request(req: HttpRequest) -> HttpResponse {
     let tracer = global::tracer("http-server");
-    
+
     // 提取上游 Context
     let parent_cx = global::get_text_map_propagator(|prop| {
         prop.extract(&RequestExtractor { req: &req })
     });
-    
+
     // 创建 Server Span
     let span = tracer
         .span_builder("HTTP GET /api/users")
@@ -558,12 +558,12 @@ async fn handle_request(req: HttpRequest) -> HttpResponse {
             KeyValue::new("http.host", req.uri().host().unwrap_or("")),
         ])
         .start_with_context(&tracer, &parent_cx);
-    
+
     let _guard = opentelemetry::Context::current_with_span(span).attach();
-    
+
     // 业务逻辑
     let users = get_users().await;
-    
+
     HttpResponse::Ok().json(users)
 }
 
@@ -590,14 +590,14 @@ impl my_service_server::MyService for MyService {
         request: Request<GetUserRequest>,
     ) -> Result<Response<User>, Status> {
         let tracer = global::tracer("grpc-server");
-        
+
         // 提取 gRPC Metadata
         let parent_cx = global::get_text_map_propagator(|prop| {
             prop.extract(&GrpcExtractor {
                 metadata: request.metadata(),
             })
         });
-        
+
         // 创建 Server Span
         let span = tracer
             .span_builder("gRPC GetUser")
@@ -608,13 +608,13 @@ impl my_service_server::MyService for MyService {
                 KeyValue::new("rpc.method", "GetUser"),
             ])
             .start_with_context(&tracer, &parent_cx);
-        
+
         let _guard = opentelemetry::Context::current_with_span(span).attach();
-        
+
         // 业务逻辑
         let user_id = request.get_ref().user_id;
         let user = fetch_user(user_id).await?;
-        
+
         Ok(Response::new(user))
     }
 }
@@ -719,16 +719,16 @@ impl ShouldSample for ErrorPrioritySampler {
         let is_error = attributes.iter().any(|kv| {
             kv.key.as_str() == "error" && kv.value.as_str() == "true"
         });
-        
+
         let ratio = if is_error {
             self.error_ratio
         } else {
             self.normal_ratio
         };
-        
+
         // 基于 TraceId 哈希决定采样
         let hash = trace_id.to_bytes()[15] as f64 / 255.0;
-        
+
         if hash < ratio {
             SamplingResult {
                 decision: SamplingDecision::RecordAndSample,
@@ -751,7 +751,7 @@ fn use_custom_sampler() {
         error_ratio: 0.9,   // 90% 错误采样
         normal_ratio: 0.05, // 5% 正常采样
     };
-    
+
     let provider = TracerProvider::builder()
         .with_config(
             opentelemetry_sdk::trace::Config::default()
@@ -781,7 +781,7 @@ impl SpanIdGenerator {
             rng: rand::thread_rng(),
         }
     }
-    
+
     #[inline]
     pub fn generate(&mut self) -> [u8; 8] {
         self.rng.gen()
@@ -809,11 +809,11 @@ impl SpanPool {
             capacity,
         }
     }
-    
+
     pub fn acquire(&self) -> Option<SpanData> {
         self.pool.lock().pop()
     }
-    
+
     pub fn release(&self, mut span: SpanData) {
         span.reset();
         let mut pool = self.pool.lock();
@@ -861,7 +861,7 @@ impl SpanData {
   P₁ 在 Span S₁ 中注入 TraceContext(T, S₁),
   P₂ 从请求中提取得到 TraceContext(T, S₁),
   P₂ 创建 Span S₂ with ParentId = S₁,
-  
+
   则 S₁ → S₂ (因果关系成立)
   且 S₁, S₂ ∈ Trace T (同属一个 Trace)
 ```
@@ -878,5 +878,5 @@ impl SpanData {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

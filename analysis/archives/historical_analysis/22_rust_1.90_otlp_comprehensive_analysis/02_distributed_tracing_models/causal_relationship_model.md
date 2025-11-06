@@ -1,7 +1,7 @@
 # 分布式追踪因果关系模型与形式化证明
 
-> **版本**: Rust 1.90 + OTLP 1.3.0  
-> **日期**: 2025年10月3日  
+> **版本**: Rust 1.90 + OTLP 1.3.0
+> **日期**: 2025年10月3日
 > **主题**: 因果关系、Lamport Clock、Vector Clock、形式化验证
 
 ---
@@ -158,18 +158,18 @@ SpanKind = {Internal, Server, Client, Producer, Consumer}
 算法 BuildCausalGraph(Spans):
     1. V ← Spans  // 顶点集
     2. E ← ∅      // 边集
-    
+
     3. FOR each s ∈ Spans:
         4. IF s.parent_span_id ≠ null:
             5. parent ← FindSpan(Spans, s.parent_span_id)
             6. IF parent ≠ null:
                 7. E ← E ∪ {(parent, s)}
-        
+
         8. FOR each link ∈ s.links:
             9. linked_span ← FindSpan(Spans, link.span_id)
             10. IF linked_span ≠ null:
                 11. E ← E ∪ {(linked_span, s)}
-    
+
     12. RETURN G = (V, E)
 
 复杂度：O(n²) 或 O(n) with HashMap
@@ -189,7 +189,7 @@ use std::cmp::Ordering;
 pub trait CausalRelation {
     /// 判断 self 是否因果先于 other
     fn happens_before(&self, other: &Self) -> bool;
-    
+
     /// 判断是否并发（无因果关系）
     fn concurrent_with(&self, other: &Self) -> bool {
         !self.happens_before(other) && !other.happens_before(self)
@@ -203,27 +203,27 @@ impl CausalRelation for Span {
         if self.trace_id != other.trace_id {
             return false;
         }
-        
+
         // 2. 父子关系
         if let Some(parent_id) = other.parent_span_id {
             if self.span_id == parent_id {
                 return true;
             }
         }
-        
+
         // 3. 时序关系（结束时间 ≤ 开始时间）
-        if self.end_time_unix_nano > 0 && 
+        if self.end_time_unix_nano > 0 &&
            self.end_time_unix_nano <= other.start_time_unix_nano {
             return true;
         }
-        
+
         // 4. Link 关系
         for link in &other.links {
             if link.span_id == self.span_id {
                 return true;
             }
         }
-        
+
         false
     }
 }
@@ -330,7 +330,7 @@ impl CausalGraph {
             span_to_node: HashMap::new(),
         }
     }
-    
+
     /// 添加 Span
     pub fn add_span(&mut self, span: &Span) {
         if !self.span_to_node.contains_key(&span.span_id) {
@@ -338,14 +338,14 @@ impl CausalGraph {
             self.span_to_node.insert(span.span_id, node);
         }
     }
-    
+
     /// 构建因果边
     pub fn build_causal_edges(&mut self, spans: &[Span]) {
         // 1. 添加所有节点
         for span in spans {
             self.add_span(span);
         }
-        
+
         // 2. 构建父子关系边
         for span in spans {
             if let Some(parent_id) = span.parent_span_id {
@@ -357,7 +357,7 @@ impl CausalGraph {
                 }
             }
         }
-        
+
         // 3. 构建 Link 关系边
         for span in spans {
             for link in &span.links {
@@ -370,12 +370,12 @@ impl CausalGraph {
             }
         }
     }
-    
+
     /// 检查是否有环（因果图必须是 DAG）
     pub fn is_acyclic(&self) -> bool {
         !is_cyclic_directed(&self.graph)
     }
-    
+
     /// 拓扑排序（获取因果顺序）
     pub fn topological_order(&self) -> Result<Vec<SpanId>, String> {
         match toposort(&self.graph, None) {
@@ -385,18 +385,18 @@ impl CausalGraph {
             Err(_) => Err("Graph contains cycle".to_string()),
         }
     }
-    
+
     /// 查找所有祖先 Span
     pub fn ancestors(&self, span_id: SpanId) -> HashSet<SpanId> {
         let mut ancestors = HashSet::new();
-        
+
         if let Some(&node) = self.span_to_node.get(&span_id) {
             self.dfs_ancestors(node, &mut ancestors);
         }
-        
+
         ancestors
     }
-    
+
     fn dfs_ancestors(&self, node: NodeIndex, ancestors: &mut HashSet<SpanId>) {
         for parent in self.graph.neighbors_directed(node, petgraph::Direction::Incoming) {
             let parent_span_id = self.graph[parent];
@@ -424,29 +424,29 @@ impl CausalConsistencyChecker {
     /// 验证 Trace 的因果一致性
     pub fn verify(spans: &[Span]) -> Result<(), Vec<CausalViolation>> {
         let mut violations = Vec::new();
-        
+
         // 1. 检查时间戳一致性
         violations.extend(Self::check_timestamp_consistency(spans));
-        
+
         // 2. 检查父子关系有效性
         violations.extend(Self::check_parent_child_validity(spans));
-        
+
         // 3. 检查 DAG 特性（无环）
         violations.extend(Self::check_acyclic(spans));
-        
+
         if violations.is_empty() {
             Ok(())
         } else {
             Err(violations)
         }
     }
-    
+
     fn check_timestamp_consistency(spans: &[Span]) -> Vec<CausalViolation> {
         let mut violations = Vec::new();
-        
+
         for span in spans {
             // 开始时间必须 ≤ 结束时间
-            if span.end_time_unix_nano > 0 && 
+            if span.end_time_unix_nano > 0 &&
                span.start_time_unix_nano > span.end_time_unix_nano {
                 violations.push(CausalViolation::InvalidTimestamp {
                     span_id: span.span_id,
@@ -454,7 +454,7 @@ impl CausalConsistencyChecker {
                     end: span.end_time_unix_nano,
                 });
             }
-            
+
             // 子 Span 不能早于父 Span
             if let Some(parent_id) = span.parent_span_id {
                 if let Some(parent) = spans.iter().find(|s| s.span_id == parent_id) {
@@ -467,14 +467,14 @@ impl CausalConsistencyChecker {
                 }
             }
         }
-        
+
         violations
     }
-    
+
     fn check_parent_child_validity(spans: &[Span]) -> Vec<CausalViolation> {
         let mut violations = Vec::new();
         let span_ids: HashSet<_> = spans.iter().map(|s| s.span_id).collect();
-        
+
         for span in spans {
             if let Some(parent_id) = span.parent_span_id {
                 // 父 Span 必须存在
@@ -484,7 +484,7 @@ impl CausalConsistencyChecker {
                         parent_id,
                     });
                 }
-                
+
                 // 父 Span 必须在同一 Trace
                 if let Some(parent) = spans.iter().find(|s| s.span_id == parent_id) {
                     if parent.trace_id != span.trace_id {
@@ -496,14 +496,14 @@ impl CausalConsistencyChecker {
                 }
             }
         }
-        
+
         violations
     }
-    
+
     fn check_acyclic(spans: &[Span]) -> Vec<CausalViolation> {
         let mut graph = CausalGraph::new();
         graph.build_causal_edges(spans);
-        
+
         if !graph.is_acyclic() {
             vec![CausalViolation::CyclicDependency]
         } else {
@@ -621,25 +621,25 @@ impl OrderedSpans<Unordered> {
             _marker: PhantomData,
         }
     }
-    
+
     /// 构建因果顺序（编译时保证）
     pub fn build_causal_order(self) -> Result<OrderedSpans<CausallyOrdered>, String> {
         let mut graph = CausalGraph::new();
         graph.build_causal_edges(&self.spans);
-        
+
         if !graph.is_acyclic() {
             return Err("Causal graph contains cycle".to_string());
         }
-        
+
         let ordered_ids = graph.topological_order()?;
         let mut ordered_spans = Vec::new();
-        
+
         for span_id in ordered_ids {
             if let Some(span) = self.spans.iter().find(|s| s.span_id == span_id) {
                 ordered_spans.push(span.clone());
             }
         }
-        
+
         Ok(OrderedSpans {
             spans: ordered_spans,
             _marker: PhantomData,
@@ -652,7 +652,7 @@ impl OrderedSpans<CausallyOrdered> {
     pub fn iter(&self) -> impl Iterator<Item = &Span> {
         self.spans.iter()
     }
-    
+
     /// 安全的批量处理（保证因果顺序）
     pub fn process_in_order<F>(&self, mut f: F)
     where
@@ -688,11 +688,11 @@ fn analyze_memory() {
     println!("Span size: {} bytes", size_of::<Span>());
     println!("TraceId size: {} bytes", size_of::<TraceId>());
     println!("SpanId size: {} bytes", size_of::<SpanId>());
-    
+
     // 估算：1000 Spans 的内存占用
     let span_count = 1000;
     let estimated_memory = span_count * size_of::<Span>();
-    println!("Estimated memory for {} spans: {} KB", 
+    println!("Estimated memory for {} spans: {} KB",
         span_count, estimated_memory / 1024);
 }
 ```
@@ -704,27 +704,27 @@ fn analyze_memory() {
 mod benchmarks {
     use super::*;
     use criterion::{black_box, Criterion};
-    
+
     pub fn benchmark_causal_graph(c: &mut Criterion) {
         let spans = generate_test_spans(1000);
-        
+
         c.bench_function("build_causal_graph_1000", |b| {
             b.iter(|| {
                 let mut graph = CausalGraph::new();
                 graph.build_causal_edges(black_box(&spans));
             });
         });
-        
+
         c.bench_function("topological_sort_1000", |b| {
             let mut graph = CausalGraph::new();
             graph.build_causal_edges(&spans);
-            
+
             b.iter(|| {
                 black_box(graph.topological_order().unwrap());
             });
         });
     }
-    
+
     fn generate_test_spans(count: usize) -> Vec<Span> {
         (0..count).map(|i| {
             Span {

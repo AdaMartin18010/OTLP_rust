@@ -1,7 +1,7 @@
 # 并发正确性验证：Rust OTLP 的线程安全分析
 
-> **主题**: 形式化验证 - 并发正确性  
-> **日期**: 2025年10月3日  
+> **主题**: 形式化验证 - 并发正确性
+> **日期**: 2025年10月3日
 > **难度**: ⭐⭐⭐⭐⭐ 专家级
 
 ---
@@ -47,13 +47,13 @@
 
 ### 核心定理
 
-**定理 1 (数据竞争自由)**:  
+**定理 1 (数据竞争自由)**:
 所有通过 Rust 类型检查的 OTLP 并发程序不存在数据竞争。
 
-**定理 2 (线性一致性)**:  
+**定理 2 (线性一致性)**:
 OTLP Span 收集操作满足线性一致性 (Linearizability)。
 
-**定理 3 (无死锁)**:  
+**定理 3 (无死锁)**:
 通过静态分析可以检测并消除潜在的死锁。
 
 ---
@@ -433,9 +433,9 @@ fn bad_push(collector: &SpanCollector, span: Span<Ended>) {
         let spans = collector.spans.lock().unwrap();
         spans.len()  // ← 读取长度
     };  // ← 锁被释放
-    
+
     // ⚠️ 竞争窗口：其他线程可能插入数据
-    
+
     let mut spans = collector.spans.lock().unwrap();
     if len < 1000 {
         spans.push(span);  // ← 可能违反容量限制
@@ -484,7 +484,7 @@ fn transfer_safe(from: &Account, to: &Account, amount: u64) {
 
     let mut first_balance = first.balance.lock().unwrap();
     let mut second_balance = second.balance.lock().unwrap();
-    
+
     if from.id < to.id {
         *first_balance -= amount;
         *second_balance += amount;
@@ -646,6 +646,6 @@ perf script | stackcollapse-perf.pl | flamegraph.pl > flamegraph.svg
 
 ---
 
-**维护者**: OTLP Rust 2025 研究团队  
-**更新日期**: 2025年10月3日  
+**维护者**: OTLP Rust 2025 研究团队
+**更新日期**: 2025年10月3日
 **许可证**: MIT OR Apache-2.0

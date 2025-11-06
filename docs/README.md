@@ -2,8 +2,8 @@
 
 Welcome to the complete documentation for the OTLP Rust project - a high-performance, production-ready OpenTelemetry Protocol (OTLP) client implementation in Rust 1.90.
 
-**Project Status**: ✅ Production Ready  
-**Documentation Version**: 2.0 (Reorganized 2025-10-26)  
+**Project Status**: ✅ Production Ready
+**Documentation Version**: 2.0 (Reorganized 2025-10-26)
 **Rust Version**: 1.90+
 
 ---
@@ -17,6 +17,7 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 <td width="33%">
 
 **🆕 New Users**
+
 - [Quick Start](01_GETTING_STARTED/README.md)
 - [First Application](01_GETTING_STARTED/README.md)
 - [Basic Examples](11_EXAMPLES/basic-examples.md)
@@ -26,6 +27,7 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 <td width="33%">
 
 **👨‍💻 Developers**
+
 - [API Reference](03_API_REFERENCE/README.md)
 - [Architecture Guide](04_ARCHITECTURE/README.md)
 - [Implementation Guide](05_IMPLEMENTATION/README.md)
@@ -35,6 +37,7 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 <td width="33%">
 
 **🔧 DevOps Engineers**
+
 - [Deployment Guide](06_DEPLOYMENT/README.md)
 - [Integration Guide](07_INTEGRATION/README.md)
 - [Monitoring Guide](12_GUIDES/monitoring.md)
@@ -170,18 +173,21 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 ## 🎓 Learning Paths
 
 ### Beginner Path (初学者路径)
+
 1. **Start Here** → [Quick Start Guide](01_GETTING_STARTED/README.md)
 2. **Learn the Basics** → [API Quick Reference](03_API_REFERENCE/API_QUICK_REFERENCE.md)
 3. **Try Examples** → [Basic Examples](11_EXAMPLES/basic-examples.md)
 4. **Build Something** → [Implementation Guide](05_IMPLEMENTATION/README.md)
 
 ### Intermediate Path (中级路径)
+
 1. **Understand Architecture** → [Architecture Design](04_ARCHITECTURE/README.md)
 2. **Deep Dive into APIs** → [Complete API Reference](03_API_REFERENCE/README.md)
 3. **Deploy to Production** → [Deployment Guide](06_DEPLOYMENT/README.md)
 4. **Integrate Systems** → [Integration Guide](07_INTEGRATION/README.md)
 
 ### Advanced Path (高级路径)
+
 1. **Study Theory** → [Theoretical Framework](02_THEORETICAL_FRAMEWORK/INDEX.md)
 2. **Analyze Architecture** → [Technical Analysis](14_TECHNICAL/README.md)
 3. **Contribute Code** → [Development Guide](10_DEVELOPMENT/README.md)
@@ -192,6 +198,7 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 ## 🔍 Quick Search
 
 ### By Feature
+
 - **Traces** → [API Reference](03_API_REFERENCE/README.md), [Implementation](05_IMPLEMENTATION/README.md)
 - **Metrics** → [API Reference](03_API_REFERENCE/README.md), [Examples](11_EXAMPLES/)
 - **Logs** → [API Reference](03_API_REFERENCE/README.md), [Integration](07_INTEGRATION/README.md)
@@ -199,6 +206,7 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 - **Compression** → [API Reference](03_API_REFERENCE/compression_api.md)
 
 ### By Technology
+
 - **gRPC Transport** → [Architecture](04_ARCHITECTURE/README.md), [Deployment](06_DEPLOYMENT/README.md)
 - **HTTP/JSON** → [Architecture](04_ARCHITECTURE/README.md), [Integration](07_INTEGRATION/README.md)
 - **Kubernetes** → [Deployment](06_DEPLOYMENT/README.md), [Integration](07_INTEGRATION/README.md)
@@ -206,6 +214,7 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 - **Service Mesh** → [Integration](07_INTEGRATION/README.md)
 
 ### By Task
+
 - **Install** → [Getting Started](01_GETTING_STARTED/README.md)
 - **Configure** → [API Reference](03_API_REFERENCE/README.md), [Guides](12_GUIDES/)
 - **Deploy** → [Deployment Guide](06_DEPLOYMENT/README.md)
@@ -218,6 +227,7 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 ## 📖 Documentation Features
 
 ### ✨ What's New in 2.0
+
 - 🎯 **Unified Structure**: All docs now use numbered directories (00-14)
 - 🧹 **Cleaned Root**: Only essential files in root directory
 - 📚 **Better Navigation**: New INDEX system with multiple entry points
@@ -227,6 +237,7 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 - 📊 **Quality Metrics**: Completion and quality ratings for each section
 
 ### 🎯 Documentation Quality
+
 - **Completion**: 90%+ (up from 75%)
 - **Consistency**: 95%+ (up from 60%)
 - **Up-to-date**: Latest Rust 1.90 and OTLP 2024-2025 features
@@ -238,16 +249,19 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 ## 🛠️ Documentation Tools
 
 ### For Writers
+
 - [Documentation Guide](00_INDEX/DOCUMENTATION_GUIDE.md) - How to write docs
 - [Maintenance Guide](00_INDEX/MAINTENANCE_GUIDE.md) - How to maintain docs
 - [Template Files](10_DEVELOPMENT/DOCUMENT_TEMPLATE.md) - Document templates
 
 ### For Readers
+
 - [Main Index](00_INDEX/MAIN_INDEX.md) - Complete document index
 - [Knowledge Graph](00_INDEX/KNOWLEDGE_GRAPH.md) - Concept relationships
 - [Visualization Index](00_INDEX/VISUALIZATION_INDEX.md) - All diagrams
 
 ### Build Tools
+
 - **mdBook**: Build web version with `mdbook build`
 - **Format Checker**: Run `scripts/doc_maintenance/format_check.sh`
 - **Link Validator**: Run `scripts/doc_maintenance/link_validator.sh`
@@ -257,12 +271,14 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 ## 💬 Get Help
 
 ### Having Problems?
+
 1. Check [Troubleshooting Guide](08_REFERENCE/troubleshooting_guide.md)
 2. Search [GitHub Issues](https://github.com/your-org/OTLP_rust/issues)
 3. Read [FAQ](12_GUIDES/README.md)
 4. Ask in [Discussions](https://github.com/your-org/OTLP_rust/discussions)
 
 ### Want to Contribute?
+
 1. Read [Contributing Guide](12_GUIDES/CONTRIBUTING.md)
 2. Check [Development Guide](10_DEVELOPMENT/README.md)
 3. Review [Documentation Guide](00_INDEX/DOCUMENTATION_GUIDE.md)
@@ -285,16 +301,19 @@ Welcome to the complete documentation for the OTLP Rust project - a high-perform
 ## 🔗 External Resources
 
 ### Official Resources
+
 - [OpenTelemetry Official Site](https://opentelemetry.io/)
 - [OTLP Specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 - [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/)
 
 ### Rust Resources
+
 - [Rust Language Book](https://doc.rust-lang.org/book/)
 - [Rust 1.90 Release Notes](https://blog.rust-lang.org/2024/09/05/Rust-1.90.0.html)
 - [Tokio Documentation](https://tokio.rs/)
 
 ### Community
+
 - [OpenTelemetry Community](https://opentelemetry.io/community/)
 - [Rust Community](https://www.rust-lang.org/community)
 
@@ -306,8 +325,8 @@ This documentation is licensed under the same license as the OTLP Rust project.
 
 ---
 
-**Documentation Version**: 2.0  
-**Last Updated**: 2025-10-26  
+**Documentation Version**: 2.0
+**Last Updated**: 2025-10-26
 **Maintainers**: OTLP Rust Documentation Team
 
 **Ready to start?** → [Begin with Quick Start](01_GETTING_STARTED/README.md) 🚀

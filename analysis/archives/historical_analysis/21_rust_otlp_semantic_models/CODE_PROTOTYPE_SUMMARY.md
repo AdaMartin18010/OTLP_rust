@@ -1,7 +1,7 @@
 # 代码原型实现总结
 
-> **完成时间**: 2025年10月2日  
-> **项目**: 高性能 OTLP Collector 原型  
+> **完成时间**: 2025年10月2日
+> **项目**: 高性能 OTLP Collector 原型
 > **状态**: ✅ 完成
 
 ---
@@ -101,10 +101,10 @@ async fn process_loop(
     running: Arc<tokio::sync::RwLock<bool>>,
 ) {
     let mut ticker = interval(Duration::from_millis(100));
-    
+
     loop {
         ticker.tick().await;
-        
+
         if buffer.len() >= config.batch_size || timeout {
             let batch = buffer.pop_batch(config.batch_size);
             exporter.export(batch).await;
@@ -127,10 +127,10 @@ async fn process_loop(
 async fn export(&self, spans: Vec<Span>) -> Result<ExportResult> {
     // 序列化为 Bytes (零拷贝)
     let data = Self::serialize_spans(&spans)?;
-    
+
     // Arc 包装实现多后端零拷贝共享
     let shared_data = Arc::new(data);
-    
+
     // 并行导出到多个后端
     tokio::join!(
         export_to_backend1(Arc::clone(&shared_data)),
@@ -170,7 +170,7 @@ impl LockFreeBuffer {
     pub fn push(&self, span: Span) -> Result<(), Span> {
         self.queue.push(span) // 无锁操作
     }
-    
+
     pub fn pop_batch(&self, max_size: usize) -> Vec<Span> {
         let mut batch = Vec::with_capacity(max_size);
         for _ in 0..max_size {
@@ -253,19 +253,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         max_retries: 3,
         retry_delay_ms: 100,
     };
-    
+
     // 启动 Collector
     let collector = Collector::new(config).await?;
-    
+
     // 发送 Spans
     for i in 0..10_000 {
         let span = Span::new(format!("span-{}", i));
         collector.collect(span)?;
     }
-    
+
     // 优雅关闭
     collector.shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -407,15 +407,15 @@ reqwest = { version = "0.12", features = ["json"] }
 4. **异步 I/O**: Tokio 运行时，高效任务调度
 5. **背压控制**: 有界队列，防止 OOM
 
-**代码规模**: 1,190+ 行  
-**模块数量**: 6 个核心模块  
-**测试覆盖**: 单元测试 + 基准测试  
+**代码规模**: 1,190+ 行
+**模块数量**: 6 个核心模块
+**测试覆盖**: 单元测试 + 基准测试
 **文档完整性**: README + 示例 + 总结
 
 **项目价值**: 理论与实践结合，可直接用于生产环境或作为学习参考。
 
 ---
 
-**完成日期**: 2025年10月2日  
-**作者**: OTLP Rust 项目组  
+**完成日期**: 2025年10月2日
+**作者**: OTLP Rust 项目组
 **项目地址**: `analysis/21_rust_otlp_semantic_models/code_prototype/`

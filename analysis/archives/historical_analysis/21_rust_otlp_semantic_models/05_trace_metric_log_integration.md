@@ -1,7 +1,7 @@
 # OTLP 三支柱信号集成设计
 
-> **版本**: OTLP 1.3.0 & Rust 1.90  
-> **日期**: 2025年10月2日  
+> **版本**: OTLP 1.3.0 & Rust 1.90
+> **日期**: 2025年10月2日
 > **主题**: Trace/Metric/Log 融合、自动关联、统一查询
 
 ---
@@ -119,18 +119,18 @@ struct Span {
     trace_id: [u8; 16],
     span_id: [u8; 8],
     parent_span_id: Option<[u8; 8]>,
-    
+
     // 元数据
     name: String,
     kind: SpanKind,
     start_time: u64,
     end_time: u64,
-    
+
     // 关联信息
     attributes: Vec<KeyValue>,
     events: Vec<Event>,
     links: Vec<Link>,
-    
+
     // 状态
     status: Status,
 }
@@ -177,7 +177,7 @@ use opentelemetry::{global, trace::{Tracer, TracerProvider}, KeyValue};
 /// 创建 Span 并自动记录
 async fn traced_operation() {
     let tracer = global::tracer("my-service");
-    
+
     let span = tracer
         .span_builder("database_query")
         .with_kind(opentelemetry::trace::SpanKind::Client)
@@ -186,13 +186,13 @@ async fn traced_operation() {
             KeyValue::new("db.name", "users"),
         ])
         .start(&tracer);
-    
+
     // 操作执行
     let _guard = opentelemetry::trace::Context::current_with_span(span);
-    
+
     // 模拟数据库查询
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-    
+
     // Span 自动结束
 }
 ```
@@ -231,26 +231,26 @@ impl MetricsCollector {
                 .u64_counter("http_requests_total")
                 .with_description("Total HTTP requests")
                 .init(),
-            
+
             request_duration: meter
                 .f64_histogram("http_request_duration_seconds")
                 .with_unit(Unit::new("s"))
                 .with_description("HTTP request duration")
                 .init(),
-            
+
             active_connections: meter
                 .i64_up_down_counter("http_active_connections")
                 .with_description("Active HTTP connections")
                 .init(),
         }
     }
-    
+
     /// 记录请求
     fn record_request(&self, duration_ms: f64, status_code: u16) {
         self.request_counter.add(1, &[
             KeyValue::new("status", status_code.to_string()),
         ]);
-        
+
         self.request_duration.record(duration_ms / 1000.0, &[
             KeyValue::new("status", status_code.to_string()),
         ]);
@@ -271,15 +271,15 @@ struct LogRecord {
     // 时间信息
     timestamp: u64,
     observed_timestamp: u64,
-    
+
     // 内容
     severity: Severity,
     body: String,
-    
+
     // 关联信息
     trace_id: Option<[u8; 16]>,
     span_id: Option<[u8; 8]>,
-    
+
     // 元数据
     attributes: Vec<KeyValue>,
 }
@@ -311,15 +311,15 @@ use tracing::{info, error, instrument};
 )]
 async fn process_order(order_id: u64, user_id: u64) -> Result<(), String> {
     info!("Processing order");
-    
+
     // 业务逻辑
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
+
     if order_id % 10 == 0 {
         error!(error_code = "PAYMENT_FAILED", "Payment processing failed");
         return Err("Payment failed".to_string());
     }
-    
+
     info!("Order processed successfully");
     Ok(())
 }
@@ -349,17 +349,17 @@ fn create_resource() -> Resource {
 /// 应用到所有信号
 fn init_telemetry() {
     let resource = create_resource();
-    
+
     // Trace Provider
     let tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
         .with_resource(resource.clone())
         .build();
-    
+
     // Meter Provider
     let meter_provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
         .with_resource(resource.clone())
         .build();
-    
+
     // Logger Provider
     // (类似配置)
 }
@@ -376,13 +376,13 @@ use tracing_subscriber::{layer::SubscriberExt, Registry};
 /// 配置 tracing 与 OpenTelemetry 集成
 fn setup_tracing() {
     let tracer = opentelemetry::global::tracer("tracing-integration");
-    
+
     let telemetry_layer = OpenTelemetryLayer::new(tracer);
-    
+
     let subscriber = Registry::default()
         .with(telemetry_layer)
         .with(tracing_subscriber::fmt::layer());
-    
+
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to set subscriber");
 }
@@ -412,12 +412,12 @@ impl TimeRangeQuery {
         // 实现查询逻辑
         vec![]
     }
-    
+
     /// 查询 Metric
     async fn query_metrics(&self) -> Vec<MetricPoint> {
         vec![]
     }
-    
+
     /// 查询 Log
     async fn query_logs(&self) -> Vec<LogRecord> {
         vec![]
@@ -454,15 +454,15 @@ impl OtlpConfig {
             .tonic()
             .with_endpoint(&self.endpoint)
             .with_timeout(self.timeout);
-        
+
         // Metric Exporter
         let metric_exporter = opentelemetry_otlp::new_exporter()
             .tonic()
             .with_endpoint(&self.endpoint)
             .with_timeout(self.timeout);
-        
+
         // Log Exporter (类似配置)
-        
+
         Ok(())
     }
 }
@@ -518,19 +518,19 @@ struct ExportError;
 /// 故障诊断工作流
 async fn diagnose_error(error_log: LogRecord) -> DiagnosisResult {
     let trace_id = error_log.trace_id.expect("Log missing trace_id");
-    
+
     // 1. 查询完整 Trace
     let trace = query_trace_by_id(trace_id).await;
-    
+
     // 2. 查询同时间段的指标
     let metrics = query_metrics_by_time_range(
         error_log.timestamp - 60_000_000_000, // 前 60 秒
         error_log.timestamp + 60_000_000_000, // 后 60 秒
     ).await;
-    
+
     // 3. 查询相关日志
     let related_logs = query_logs_by_trace_id(trace_id).await;
-    
+
     DiagnosisResult {
         trace,
         metrics,
@@ -563,11 +563,11 @@ async fn query_logs_by_trace_id(_trace_id: [u8; 16]) -> Vec<LogRecord> {
 /// 重建完整调用链
 fn rebuild_call_chain(spans: Vec<Span>) -> CallTree {
     let mut tree = CallTree::new();
-    
+
     for span in spans {
         tree.add_span(span);
     }
-    
+
     tree
 }
 
@@ -583,7 +583,7 @@ impl CallTree {
             children: std::collections::HashMap::new(),
         }
     }
-    
+
     fn add_span(&mut self, span: Span) {
         if span.parent_span_id.is_none() {
             self.root = Some(span);
@@ -617,7 +617,7 @@ impl BatchProcessor {
             self.flush_traces().await;
         }
     }
-    
+
     async fn flush_traces(&mut self) {
         println!("Flushing {} traces", self.trace_buffer.len());
         self.trace_buffer.clear();
@@ -641,13 +641,13 @@ impl AdaptiveSampler {
         if span.status.code == StatusCode::Error {
             return true;
         }
-        
+
         // 慢请求提高采样率
         let duration_ms = (span.end_time - span.start_time) / 1_000_000;
         if duration_ms > 1000 {
             return rand::random::<f64>() < self.base_rate * 10.0;
         }
-        
+
         // 正常请求按基础采样率
         rand::random::<f64>() < self.base_rate
     }
@@ -668,17 +668,17 @@ async fn setup_microservice_observability() {
         KeyValue::new("service.name", "payment-service"),
         KeyValue::new("service.version", "2.1.0"),
     ]);
-    
+
     // 2. 初始化 Trace
     let tracer = opentelemetry::global::tracer("payment-service");
-    
+
     // 3. 初始化 Metric
     let meter = opentelemetry::global::meter("payment-service");
     let request_counter = meter.u64_counter("requests_total").init();
-    
+
     // 4. 初始化 Log
     setup_tracing();
-    
+
     // 5. 业务逻辑
     process_payment(&tracer, &request_counter).await;
 }
@@ -686,12 +686,12 @@ async fn setup_microservice_observability() {
 async fn process_payment(tracer: &dyn opentelemetry::trace::Tracer, counter: &Counter<u64>) {
     let span = tracer.span_builder("process_payment").start(tracer);
     let _guard = opentelemetry::trace::Context::current_with_span(span);
-    
+
     tracing::info!("Processing payment");
-    
+
     // 业务逻辑
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
+
     counter.add(1, &[KeyValue::new("status", "success")]);
 }
 ```
@@ -717,5 +717,5 @@ async fn process_payment(tracer: &dyn opentelemetry::trace::Tracer, counter: &Co
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

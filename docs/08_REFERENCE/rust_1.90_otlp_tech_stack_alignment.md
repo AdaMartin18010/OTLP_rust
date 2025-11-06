@@ -1,9 +1,9 @@
 ﻿# 🦀 Rust 1.90 + OTLP 技术栈对齐文档
 
-**版本**: 1.0  
-**Rust 版本**: 1.90+  
-**OTLP 版本**: v1.3.2  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**Rust 版本**: 1.90+
+**OTLP 版本**: v1.3.2
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: Rust 1.90 + OTLP 技术栈 - 核心依赖、最佳实践、性能优化和生态系统完整对齐。
@@ -14,15 +14,15 @@
 
 - [🦀 Rust 1.90 + OTLP 技术栈对齐文档](#-rust-190--otlp-技术栈对齐文档)
   - [📋 目录](#-目录)
-  - [1. 概述](#1-概述)
+  - [🎯 概述](#-概述)
     - [1.1 技术栈定位](#11-技术栈定位)
     - [1.2 核心目标](#12-核心目标)
     - [1.3 适用场景](#13-适用场景)
-  - [2. Rust 1.90 核心特性](#2-rust-190-核心特性)
+  - [📝 Rust 1.90 核心特性](#-rust-190-核心特性)
     - [2.1 语言特性演进](#21-语言特性演进)
     - [2.2 异步生态成熟度](#22-异步生态成熟度)
     - [2.3 性能优化能力](#23-性能优化能力)
-  - [3. 核心依赖库清单](#3-核心依赖库清单)
+  - [💡 核心依赖库清单](#-核心依赖库清单)
     - [3.1 异步运行时层](#31-异步运行时层)
       - [3.1.1 Tokio - 异步运行时](#311-tokio---异步运行时)
       - [3.1.2 async-std - 替代运行时](#312-async-std---替代运行时)
@@ -48,46 +48,46 @@
     - [3.7 测试工具层](#37-测试工具层)
       - [3.7.1 Criterion - 性能基准](#371-criterion---性能基准)
       - [3.7.2 Proptest - 属性测试](#372-proptest---属性测试)
-  - [4. 技术选型对比](#4-技术选型对比)
+  - [🔧 技术选型对比](#-技术选型对比)
     - [4.1 异步运行时对比](#41-异步运行时对比)
     - [4.2 gRPC 框架对比](#42-grpc-框架对比)
     - [4.3 HTTP 客户端对比](#43-http-客户端对比)
     - [4.4 序列化库对比](#44-序列化库对比)
-  - [5. 依赖版本管理](#5-依赖版本管理)
+  - [📊 依赖版本管理](#-依赖版本管理)
     - [5.1 生产环境依赖清单](#51-生产环境依赖清单)
     - [5.2 开发环境依赖清单](#52-开发环境依赖清单)
     - [5.3 版本兼容性矩阵](#53-版本兼容性矩阵)
-  - [6. 使用方式与最佳实践](#6-使用方式与最佳实践)
+  - [🚀 使用方式与最佳实践](#-使用方式与最佳实践)
     - [6.1 项目结构最佳实践](#61-项目结构最佳实践)
     - [6.2 依赖管理最佳实践](#62-依赖管理最佳实践)
     - [6.3 异步编程最佳实践](#63-异步编程最佳实践)
     - [6.4 错误处理最佳实践](#64-错误处理最佳实践)
     - [6.5 性能优化最佳实践](#65-性能优化最佳实践)
-  - [7. 成熟案例与方案](#7-成熟案例与方案)
+  - [🔍 成熟案例与方案](#-成熟案例与方案)
     - [7.1 案例1: 高性能 OTLP Exporter](#71-案例1-高性能-otlp-exporter)
     - [7.2 案例2: 分布式追踪系统](#72-案例2-分布式追踪系统)
     - [7.3 案例3: 实时监控平台](#73-案例3-实时监控平台)
-  - [8. 标准化方案](#8-标准化方案)
+  - [💻 标准化方案](#-标准化方案)
     - [8.1 代码规范](#81-代码规范)
     - [8.2 文档规范](#82-文档规范)
     - [8.3 测试规范](#83-测试规范)
-  - [9. 性能基准](#9-性能基准)
+  - [📚 性能基准](#-性能基准)
     - [9.1 序列化性能](#91-序列化性能)
     - [9.2 网络传输性能](#92-网络传输性能)
     - [9.3 并发处理性能](#93-并发处理性能)
-  - [10. 安全性考量](#10-安全性考量)
+  - [✅ 安全性考量](#-安全性考量)
     - [10.1 依赖安全审计](#101-依赖安全审计)
     - [10.2 内存安全保证](#102-内存安全保证)
     - [10.3 并发安全保证](#103-并发安全保证)
-  - [11. 持续集成方案](#11-持续集成方案)
+  - [🌟 持续集成方案](#-持续集成方案)
     - [11.1 CI 配置](#111-ci-配置)
     - [11.2 自动化测试](#112-自动化测试)
     - [11.3 性能回归检测](#113-性能回归检测)
-  - [12. 升级策略](#12-升级策略)
+  - [🎓 升级策略](#-升级策略)
     - [12.1 依赖升级流程](#121-依赖升级流程)
     - [12.2 破坏性变更处理](#122-破坏性变更处理)
     - [12.3 长期支持策略](#123-长期支持策略)
-  - [13. 参考资源](#13-参考资源)
+  - [🔗 参考资源](#-参考资源)
     - [13.1 官方文档](#131-官方文档)
     - [13.2 社区资源](#132-社区资源)
     - [13.3 学习路径](#133-学习路径)
@@ -162,12 +162,12 @@ use std::future::Future;
 
 pub trait OtlpExporter {
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     async fn export(&self, data: &[u8]) -> Result<(), Self::Error>;
 }
 
 // 自动推导复杂的 trait bounds
-impl<T> OtlpClient<T> 
+impl<T> OtlpClient<T>
 where
     T: OtlpExporter + Clone,
     T::Error: Into<OtlpError>,
@@ -272,7 +272,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         async_task_1(),
         async_task_2(),
     );
-    
+
     Ok(())
 }
 
@@ -419,19 +419,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let channel = Channel::from_static("http://localhost:4317")
         .connect()
         .await?;
-    
+
     // 2. 创建客户端
     let mut client = TraceServiceClient::new(channel);
-    
+
     // 3. 发送请求
     let request = tonic::Request::new(ExportTraceServiceRequest {
         resource_spans: vec![/* ... */],
     });
-    
+
     let response = client.export(request).await?;
-    
+
     println!("Response: {:?}", response);
-    
+
     Ok(())
 }
 ```
@@ -446,7 +446,7 @@ async fn create_tls_channel() -> Result<Channel, Box<dyn std::error::Error>> {
     let tls = ClientTlsConfig::new()
         .domain_name("example.com")
         .ca_certificate(tokio::fs::read("ca.pem").await?);
-    
+
     let channel = Channel::from_static("https://localhost:4317")
         .tls_config(tls)?
         .tcp_keepalive(Some(Duration::from_secs(60)))
@@ -455,7 +455,7 @@ async fn create_tls_channel() -> Result<Channel, Box<dyn std::error::Error>> {
         .http2_keep_alive_interval(Duration::from_secs(30))
         .connect()
         .await?;
-    
+
     Ok(channel)
 }
 ```
@@ -537,7 +537,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .timeout(Duration::from_secs(30))
         .pool_max_idle_per_host(20)
         .build()?;
-    
+
     // 2. 发送 JSON 请求
     let response = client
         .post("http://localhost:4318/v1/traces")
@@ -547,12 +547,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }))
         .send()
         .await?;
-    
+
     // 3. 处理响应
     if response.status().is_success() {
         println!("Success!");
     }
-    
+
     Ok(())
 }
 ```
@@ -568,22 +568,22 @@ fn create_http_client() -> Result<Client, reqwest::Error> {
         // 超时配置
         .timeout(Duration::from_secs(30))
         .connect_timeout(Duration::from_secs(10))
-        
+
         // 连接池配置
         .pool_max_idle_per_host(20)
         .pool_idle_timeout(Duration::from_secs(90))
-        
+
         // HTTP/2 配置
         .http2_prior_knowledge()
         .http2_keep_alive_interval(Some(Duration::from_secs(30)))
-        
+
         // 压缩
         .gzip(true)
         .brotli(true)
-        
+
         // TLS 配置
         .use_rustls_tls()
-        
+
         .build()
 }
 ```
@@ -746,10 +746,10 @@ use serde::{Serialize, Deserialize, Serializer};
 struct Span {
     #[serde(rename = "traceId")]
     trace_id: String,
-    
+
     #[serde(skip_serializing_if = "Vec::is_empty")]
     attributes: Vec<Attribute>,
-    
+
     #[serde(with = "timestamp_format")]
     start_time: SystemTime,
 }
@@ -758,7 +758,7 @@ struct Span {
 mod timestamp_format {
     use serde::{Serializer, Deserializer};
     use std::time::SystemTime;
-    
+
     pub fn serialize<S>(time: &SystemTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -829,7 +829,7 @@ use tracing::{info, warn, error, instrument};
 #[instrument]
 async fn export_traces(spans: Vec<Span>) -> Result<(), OtlpError> {
     info!(span_count = spans.len(), "Starting trace export");
-    
+
     // 自动记录函数参数和返回值
     match send_to_collector(&spans).await {
         Ok(_) => {
@@ -863,7 +863,7 @@ fn init_tracing_otlp() {
         .tracing()
         .install_batch(opentelemetry_sdk::runtime::Tokio)
         .unwrap();
-    
+
     tracing_subscriber::registry()
         .with(OpenTelemetryLayer::new(tracer))
         .with(tracing_subscriber::fmt::layer())
@@ -905,10 +905,10 @@ use metrics::{counter, histogram, gauge};
 fn export_traces(spans: Vec<Span>) {
     // Counter: 递增计数
     counter!("otlp.traces.exported").increment(spans.len() as u64);
-    
+
     // Histogram: 记录分布
     histogram!("otlp.export.duration_ms").record(elapsed_ms);
-    
+
     // Gauge: 当前值
     gauge!("otlp.queue.size").set(queue_len as f64);
 }
@@ -1075,16 +1075,16 @@ use thiserror::Error;
 pub enum OtlpError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("gRPC error: {0}")]
     Grpc(#[from] tonic::Status),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] prost::DecodeError),
-    
+
     #[error("Timeout after {timeout_ms}ms")]
     Timeout { timeout_ms: u64 },
-    
+
     #[error("Invalid configuration: {reason}")]
     Config { reason: String },
 }
@@ -1112,11 +1112,11 @@ use anyhow::{Result, Context};
 async fn export_traces() -> Result<()> {
     let client = create_client()
         .context("Failed to create OTLP client")?;
-    
+
     client.send(data)
         .await
         .context("Failed to send traces")?;
-    
+
     Ok(())
 }
 ```
@@ -1154,7 +1154,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn bench_span_serialization(c: &mut Criterion) {
     let span = create_test_span();
-    
+
     c.bench_function("span serialization", |b| {
         b.iter(|| {
             let mut buf = Vec::new();
@@ -1191,11 +1191,11 @@ proptest! {
             trace_id: trace_id.clone(),
             ..Default::default()
         };
-        
+
         let mut buf = Vec::new();
         span.encode(&mut buf).unwrap();
         let decoded = Span::decode(&buf[..]).unwrap();
-        
+
         prop_assert_eq!(span.trace_id, decoded.trace_id);
     }
 }
@@ -1487,7 +1487,7 @@ async fn with_timeout() -> Result<Response, Error> {
 pub enum OtlpError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("Configuration error: {reason}")]
     Config { reason: String },
 }
@@ -1501,11 +1501,11 @@ use anyhow::{Result, Context};
 async fn main() -> Result<()> {
     let client = create_client()
         .context("Failed to create client")?;
-    
+
     client.send(data)
         .await
         .context("Failed to send data")?;
-    
+
     Ok(())
 }
 ```
@@ -1537,7 +1537,7 @@ impl BufferPool {
         self.buffers.lock().await.pop()
             .unwrap_or_else(|| Vec::with_capacity(4096))
     }
-    
+
     pub async fn return_buffer(&self, mut buf: Vec<u8>) {
         buf.clear();
         self.buffers.lock().await.push(buf);
@@ -1557,12 +1557,12 @@ struct BatchProcessor {
 impl BatchProcessor {
     pub async fn add(&mut self, span: Span) {
         self.batch.push(span);
-        
+
         if self.batch.len() >= self.max_size {
             self.flush().await;
         }
     }
-    
+
     async fn flush(&mut self) {
         if !self.batch.is_empty() {
             send_batch(&self.batch).await;
@@ -1630,18 +1630,18 @@ impl OtlpTraceExporter {
         let channel = Channel::from_shared(endpoint)?
             .connect()
             .await?;
-        
+
         let client = TraceServiceClient::new(channel);
-        
+
         // 2. 创建批处理通道
         let (batch_tx, mut batch_rx) = mpsc::channel(1000);
-        
+
         // 3. 启动批处理任务
         let mut client_clone = client.clone();
         tokio::spawn(async move {
             let mut batch = Vec::new();
             let mut interval = tokio::time::interval(Duration::from_secs(5));
-            
+
             loop {
                 tokio::select! {
                     Some(span) = batch_rx.recv() => {
@@ -1658,16 +1658,16 @@ impl OtlpTraceExporter {
                 }
             }
         });
-        
+
         Ok(Self { client, batch_tx })
     }
-    
+
     pub async fn export(&self, span: Span) -> Result<(), OtlpError> {
         self.batch_tx.send(span).await
             .map_err(|_| OtlpError::ChannelClosed)?;
         Ok(())
     }
-    
+
     async fn flush_batch(
         client: &mut TraceServiceClient<Channel>,
         batch: &mut Vec<Span>
@@ -1675,7 +1675,7 @@ impl OtlpTraceExporter {
         let request = ExportTraceServiceRequest {
             resource_spans: std::mem::take(batch),
         };
-        
+
         match client.export(request).await {
             Ok(_) => { /* success */ },
             Err(e) => eprintln!("Export failed: {}", e),
@@ -1710,7 +1710,7 @@ use tracing_opentelemetry::OpenTelemetryLayer;
 async fn handle_request(req: Request) -> Response {
     // 自动创建 span
     let user_id = extract_user_id(&req);
-    
+
     // 子操作自动继承 trace context
     let data = fetch_user_data(user_id).await;
     process_data(data).await
@@ -1745,11 +1745,11 @@ async fn main() {
     PrometheusBuilder::new()
         .install()
         .unwrap();
-    
+
     // 收集指标
     loop {
         let start = Instant::now();
-        
+
         match process_request().await {
             Ok(_) => {
                 counter!("requests.success").increment(1);
@@ -1758,7 +1758,7 @@ async fn main() {
                 counter!("requests.error").increment(1);
             }
         }
-        
+
         histogram!("request.duration").record(start.elapsed().as_secs_f64());
     }
 }
@@ -1836,14 +1836,14 @@ pub struct OtlpTraceExporter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // 1. 单元测试
     #[test]
     fn test_span_creation() {
         let span = Span::new("test");
         assert_eq!(span.name, "test");
     }
-    
+
     // 2. 异步测试
     #[tokio::test]
     async fn test_async_export() {
@@ -1851,7 +1851,7 @@ mod tests {
         let result = exporter.export(test_span()).await;
         assert!(result.is_ok());
     }
-    
+
     // 3. 集成测试
     #[tokio::test]
     #[ignore] // 需要外部服务
@@ -1859,7 +1859,7 @@ mod tests {
         let exporter = OtlpTraceExporter::new("http://localhost:4317").await.unwrap();
         // ...
     }
-    
+
     // 4. 属性测试
     proptest! {
         #[test]
@@ -1892,7 +1892,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn bench_serialization(c: &mut Criterion) {
     let span = create_test_span();
-    
+
     c.bench_function("prost serialize", |b| {
         b.iter(|| {
             let mut buf = Vec::new();
@@ -2012,24 +2012,24 @@ jobs:
     strategy:
       matrix:
         rust: [1.90.0, stable]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
-      
+
       - name: Check
         run: cargo check --all-features
-      
+
       - name: Test
         run: cargo test --all-features
-      
+
       - name: Clippy
         run: cargo clippy -- -D warnings
-      
+
       - name: Format
         run: cargo fmt -- --check
 
@@ -2156,8 +2156,8 @@ cargo tarpaulin --out Html
 
 ---
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025年10月26日  
+**文档版本**: 1.0.0
+**最后更新**: 2025年10月26日
 **下一次审查**: 2026年1月26日
 
 **🎉 Rust 1.90 + OTLP 技术栈全面对齐完成！**

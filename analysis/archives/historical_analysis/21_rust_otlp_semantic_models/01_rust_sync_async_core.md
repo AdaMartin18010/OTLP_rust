@@ -1,7 +1,7 @@
 # Rust 1.90 同步/异步核心机制深度解析
 
-> **版本**: Rust 1.90+  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90+
+> **日期**: 2025年10月2日
 > **主题**: 同步/异步编程模型、Future Trait、Tokio 运行时
 
 ---
@@ -76,7 +76,7 @@ fn basic_threading() {
     let handle = thread::spawn(|| {
         println!("Hello from spawned thread!");
     });
-    
+
     handle.join().unwrap();
 }
 
@@ -84,7 +84,7 @@ fn basic_threading() {
 fn shared_state_concurrency() {
     let counter = Arc::new(Mutex::new(0));
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         let counter = Arc::clone(&counter);
         let handle = thread::spawn(move || {
@@ -93,11 +93,11 @@ fn shared_state_concurrency() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("Result: {}", *counter.lock().unwrap());
 }
 ```
@@ -115,13 +115,13 @@ use std::sync::Arc;
 
 fn thread_safety_example() {
     let data = Arc::new(vec![1, 2, 3]);
-    
+
     let data_clone = Arc::clone(&data);
     thread::spawn(move || {
         // data_clone 的所有权移动到新线程
         println!("Thread data: {:?}", data_clone);
     });
-    
+
     // 主线程仍持有 data 的所有权
     println!("Main data: {:?}", data);
 }
@@ -144,13 +144,13 @@ impl TelemetryBuffer {
             buffer: Mutex::new(Vec::new()),
         }
     }
-    
+
     pub fn push(&self, data: String) {
         let mut buffer = self.buffer.lock().unwrap();
         buffer.push(data);
         // 锁在离开作用域时自动释放
     }
-    
+
     pub fn drain(&self) -> Vec<String> {
         let mut buffer = self.buffer.lock().unwrap();
         std::mem::take(&mut *buffer)
@@ -174,13 +174,13 @@ impl ConfigStore {
             config: RwLock::new(HashMap::new()),
         }
     }
-    
+
     // 多个读者可同时访问
     pub fn get(&self, key: &str) -> Option<String> {
         let config = self.config.read().unwrap();
         config.get(key).cloned()
     }
-    
+
     // 写者独占访问
     pub fn set(&self, key: String, value: String) {
         let mut config = self.config.write().unwrap();
@@ -198,7 +198,7 @@ use std::thread;
 /// MPSC (Multiple Producer, Single Consumer) Channel
 pub fn message_passing_example() {
     let (tx, rx) = mpsc::channel();
-    
+
     // 多个生产者
     for i in 0..5 {
         let tx_clone = tx.clone();
@@ -207,7 +207,7 @@ pub fn message_passing_example() {
         });
     }
     drop(tx); // 关闭发送端
-    
+
     // 单个消费者
     for received in rx {
         println!("Received: {}", received);
@@ -237,10 +237,10 @@ async fn fetch_data(url: &str) -> Result<String, reqwest::Error> {
 async fn concurrent_fetch() {
     let future1 = fetch_data("https://api.example.com/v1");
     let future2 = fetch_data("https://api.example.com/v2");
-    
+
     // 并发执行两个请求
     let (result1, result2) = tokio::join!(future1, future2);
-    
+
     println!("Result 1: {:?}", result1);
     println!("Result 2: {:?}", result2);
 }
@@ -257,7 +257,7 @@ use std::task::{Context, Poll};
 /// Future Trait (简化版)
 pub trait Future {
     type Output;
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output>;
 }
 
@@ -293,7 +293,7 @@ impl TimerFuture {
 
 impl Future for TimerFuture {
     type Output = ();
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if self.start.elapsed() >= self.duration {
             Poll::Ready(())
@@ -333,7 +333,7 @@ fn pin_example() {
         pointer: std::ptr::null(),
     };
     value.pointer = &value.data;
-    
+
     // 使用 Pin 固定内存位置
     let pinned = Box::pin(value);
     // pinned 不能被移动，保证指针有效
@@ -383,7 +383,7 @@ enum ExampleStateMachine {
 
 impl Future for ExampleStateMachine {
     type Output = Output;
-    
+
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         loop {
             match *self {
@@ -472,7 +472,7 @@ pub fn current_thread_runtime() -> Runtime {
 /// 使用运行时
 fn use_runtime() {
     let runtime = multi_threaded_runtime();
-    
+
     runtime.block_on(async {
         // 异步代码在此运行
         println!("Running in async context");
@@ -491,16 +491,16 @@ async fn spawn_tasks() {
         // 任务 1
         "result1"
     });
-    
+
     let handle2 = task::spawn(async {
         // 任务 2
         "result2"
     });
-    
+
     // 等待任务完成
     let result1 = handle1.await.unwrap();
     let result2 = handle2.await.unwrap();
-    
+
     println!("{}, {}", result1, result2);
 }
 
@@ -511,7 +511,7 @@ async fn spawn_blocking_task() {
         std::thread::sleep(std::time::Duration::from_secs(1));
         "blocking result"
     }).await.unwrap();
-    
+
     println!("{}", result);
 }
 ```
@@ -545,13 +545,13 @@ use tokio::task;
 async fn call_sync_from_async() {
     // ❌ 错误：直接调用阻塞代码会阻塞整个线程
     // std::thread::sleep(Duration::from_secs(1));
-    
+
     // ✅ 正确：使用 spawn_blocking
     let result = task::spawn_blocking(|| {
         std::thread::sleep(std::time::Duration::from_secs(1));
         "sync result"
     }).await.unwrap();
-    
+
     println!("{}", result);
 }
 ```
@@ -563,12 +563,12 @@ use tokio::runtime::Runtime;
 
 fn call_async_from_sync() {
     let runtime = Runtime::new().unwrap();
-    
+
     // 方式 1: block_on
     let result = runtime.block_on(async {
         fetch_data("https://example.com").await
     });
-    
+
     // 方式 2: handle
     runtime.spawn(async {
         let _ = fetch_data("https://example.com").await;
@@ -596,19 +596,19 @@ impl OtlpClient {
             runtime: Arc::new(AsyncRwLock::new(Runtime::new().unwrap())),
         }
     }
-    
+
     /// 异步初始化
     pub async fn initialize(&self) -> Result<(), Box<dyn std::error::Error>> {
         // 异步初始化逻辑
         Ok(())
     }
-    
+
     /// 异步发送数据
     pub async fn send_trace(&self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
         // 异步发送逻辑
         Ok(())
     }
-    
+
     /// 同步关闭（内部调用异步）
     pub fn shutdown(self) {
         let runtime = Runtime::new().unwrap();
@@ -623,14 +623,14 @@ fn usage_example() {
     // 同步配置
     let config = OtlpConfig::default();
     let client = OtlpClient::new(config);
-    
+
     // 异步执行
     let runtime = Runtime::new().unwrap();
     runtime.block_on(async {
         client.initialize().await.unwrap();
         client.send_trace("test").await.unwrap();
     });
-    
+
     // 同步关闭
     client.shutdown();
 }
@@ -655,17 +655,17 @@ pub struct BatchProcessor {
 impl BatchProcessor {
     pub fn new(batch_size: usize, batch_timeout: Duration) -> Self {
         let (sender, receiver) = mpsc::channel(1000);
-        
+
         // 启动后台批处理任务
         tokio::spawn(Self::batch_worker(receiver, batch_size, batch_timeout));
-        
+
         Self {
             sender,
             batch_size,
             batch_timeout,
         }
     }
-    
+
     async fn batch_worker(
         mut receiver: mpsc::Receiver<TelemetryData>,
         batch_size: usize,
@@ -673,18 +673,18 @@ impl BatchProcessor {
     ) {
         let mut buffer = Vec::with_capacity(batch_size);
         let mut timer = interval(batch_timeout);
-        
+
         loop {
             tokio::select! {
                 // 接收数据
                 Some(data) = receiver.recv() => {
                     buffer.push(data);
-                    
+
                     if buffer.len() >= batch_size {
                         Self::flush_batch(&mut buffer).await;
                     }
                 }
-                
+
                 // 定时刷新
                 _ = timer.tick() => {
                     if !buffer.is_empty() {
@@ -694,13 +694,13 @@ impl BatchProcessor {
             }
         }
     }
-    
+
     async fn flush_batch(buffer: &mut Vec<TelemetryData>) {
         // 发送批量数据
         println!("Flushing {} items", buffer.len());
         buffer.clear();
     }
-    
+
     pub async fn send(&self, data: TelemetryData) -> Result<(), Box<dyn std::error::Error>> {
         self.sender.send(data).await?;
         Ok(())
@@ -729,7 +729,7 @@ impl ConcurrencyLimiter {
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
         }
     }
-    
+
     pub async fn execute<F, T>(&self, f: F) -> T
     where
         F: FnOnce() -> T,
@@ -742,7 +742,7 @@ impl ConcurrencyLimiter {
 /// 使用示例
 async fn use_limiter() {
     let limiter = ConcurrencyLimiter::new(10);
-    
+
     let mut tasks = vec![];
     for i in 0..100 {
         let limiter = limiter.clone();
@@ -753,7 +753,7 @@ async fn use_limiter() {
         });
         tasks.push(task);
     }
-    
+
     for task in tasks {
         task.await.unwrap();
     }
@@ -772,11 +772,11 @@ use tokio::net::TcpStream;
 
 async fn zero_copy_example() -> Result<(), Box<dyn std::error::Error>> {
     let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
-    
+
     // 使用 bytes::Bytes 实现零拷贝
     let data = bytes::Bytes::from_static(b"hello world");
     stream.write_all(&data).await?;
-    
+
     Ok(())
 }
 ```
@@ -820,7 +820,7 @@ fn sync_benchmark(c: &mut Criterion) {
 
 fn async_benchmark(c: &mut Criterion) {
     let runtime = tokio::runtime::Runtime::new().unwrap();
-    
+
     c.bench_function("async_operation", |b| {
         b.to_async(&runtime).iter(|| async {
             // 异步操作
@@ -877,12 +877,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 fn happens_before_example() {
     let flag = Arc::new(AtomicBool::new(false));
     let flag_clone = Arc::clone(&flag);
-    
+
     // 线程 1: 写
     std::thread::spawn(move || {
         flag_clone.store(true, Ordering::Release); // Release 写
     });
-    
+
     // 线程 2: 读
     std::thread::spawn(move || {
         while !flag.load(Ordering::Acquire) {  // Acquire 读
@@ -942,5 +942,5 @@ poll(Compose(F₁, F₂, f), cx) →
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

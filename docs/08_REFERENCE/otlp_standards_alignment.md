@@ -1,10 +1,10 @@
 # 🎯 OTLP 标准对齐文档
 
-**版本**: 1.0  
-**OTLP 版本**: 1.3.2 (2024-2025)  
-**OpenTelemetry**: 0.31.0  
-**Rust版本**: 1.90+  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**OTLP 版本**: 1.3.2 (2024-2025)
+**OpenTelemetry**: 0.31.0
+**Rust版本**: 1.90+
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP 标准对齐 - 完整的协议规范、数据模型、语义约定和实现细节对照文档。
@@ -214,18 +214,18 @@ impl HttpTransport {
         let mut request = self.client
             .post(&format!("{}/v1/traces", self.endpoint))
             .header(header::CONTENT_TYPE, "application/x-protobuf");
-        
+
         // 添加压缩头
         if let Some(comp) = compression {
             request = request.header(header::CONTENT_ENCODING, comp.as_str());
         }
-        
+
         let response = request
             .body(data)
             .send()
             .await
             .map_err(|e| OtlpError::Network(e))?;
-        
+
         Ok(response)
     }
 }
@@ -364,7 +364,7 @@ use opentelemetry_proto::tonic::trace::v1::{
 pub struct OtlpSpan {
     // 完全符合 OTLP Span 规范
     pub trace_id: [u8; 16],      // ✅ 16字节 TraceId
-    pub span_id: [u8; 8],        // ✅ 8字节 SpanId  
+    pub span_id: [u8; 8],        // ✅ 8字节 SpanId
     pub parent_span_id: Option<[u8; 8]>,  // ✅ 可选的父Span
     pub name: String,            // ✅ Span名称
     pub kind: SpanKind,          // ✅ Span类型
@@ -423,14 +423,14 @@ pub enum MetricData {
         value: f64,
         attributes: HashMap<String, AttributeValue>,
     },
-    
+
     // ✅ Gauge - 瞬时值
     Gauge {
         name: String,
         value: f64,
         attributes: HashMap<String, AttributeValue>,
     },
-    
+
     // ✅ Histogram - 直方图
     Histogram {
         name: String,
@@ -439,7 +439,7 @@ pub enum MetricData {
         buckets: Vec<HistogramBucket>,
         attributes: HashMap<String, AttributeValue>,
     },
-    
+
     // ✅ ExponentialHistogram - 指数直方图 (OTLP v1.1+)
     ExponentialHistogram {
         name: String,
@@ -449,7 +449,7 @@ pub enum MetricData {
         positive: ExponentialBuckets,
         negative: ExponentialBuckets,
     },
-    
+
     // ✅ Summary - 摘要
     Summary {
         name: String,
@@ -736,13 +736,13 @@ pub fn calculate_retry_delay(
 ) -> Duration {
     let base_delay = config.initial_retry_delay.as_millis() as f64;
     let multiplier = config.retry_delay_multiplier;
-    
+
     // 指数退避
     let delay = base_delay * multiplier.powi(attempt as i32);
-    
+
     // 应用最大延迟限制
     let delay = delay.min(config.max_retry_delay.as_millis() as f64);
-    
+
     // 添加随机抖动 (±25%)
     let delay = if config.randomize_retry_delay {
         let jitter = delay * 0.25;
@@ -750,7 +750,7 @@ pub fn calculate_retry_delay(
     } else {
         delay
     };
-    
+
     Duration::from_millis(delay as u64)
 }
 ```
@@ -789,12 +789,12 @@ pub async fn process_batch(&mut self) {
                     self.flush().await;
                 }
             }
-            
+
             // 队列满触发
             _ = self.buffer_full.notified() => {
                 self.flush().await;
             }
-            
+
             // 关闭信号
             _ = self.shutdown_signal.recv() => {
                 self.flush().await;
@@ -830,19 +830,19 @@ pub async fn process_batch(&mut self) {
 pub enum OtlpError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),           // ✅ 可重试
-    
+
     #[error("gRPC error: {0}")]
     Grpc(#[from] tonic::Status),               // ✅ 根据状态码判断
-    
+
     #[error("Serialization error: {0}")]
     Serialization(String),                     // ❌ 不可重试
-    
+
     #[error("Configuration error: {0}")]
     Config(String),                            // ❌ 不可重试
-    
+
     #[error("Timeout error")]
     Timeout,                                   // ✅ 可重试
-    
+
     #[error("Rate limit exceeded")]
     RateLimit,                                 // ✅ 可重试（带延迟）
 }
@@ -929,14 +929,14 @@ pub fn create_tls_config() -> Result<ClientConfig, OtlpError> {
             )
         })
     );
-    
+
     let config = ClientConfig::builder()
         .with_safe_default_cipher_suites()
         .with_safe_default_kx_groups()
         .with_safe_default_protocol_versions()?
         .with_root_certificates(root_store)
         .with_no_client_auth();
-    
+
     Ok(config)
 }
 ```
@@ -1098,6 +1098,6 @@ pub struct PrivacyConfig {
 
 ---
 
-**文档维护**: OTLP Rust 团队  
-**最后审查**: 2025年10月24日  
+**文档维护**: OTLP Rust 团队
+**最后审查**: 2025年10月24日
 **下次审查**: 2026年1月24日 (或OTLP重大更新时)

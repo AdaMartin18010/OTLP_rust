@@ -2,15 +2,41 @@
 
 ## 📋 目录
 
-- [概述](#概述)
-- [Rust 1.90 新特性](#rust-190-新特性)
-- [类型系统高级应用](#类型系统高级应用)
-- [异步编程模式](#异步编程模式)
-- [内存管理优化](#内存管理优化)
-- [错误处理机制](#错误处理机制)
-- [性能基准测试](#性能基准测试)
-- [生产环境部署](#生产环境部署)
-- [最佳实践总结](#最佳实践总结)
+- [Rust 1.90 与 OTLP 综合技术分析](#rust-190-与-otlp-综合技术分析)
+  - [📋 目录](#-目录)
+  - [概述](#概述)
+    - [技术栈](#技术栈)
+  - [Rust 1.90 新特性](#rust-190-新特性)
+    - [1. 改进的类型推导](#1-改进的类型推导)
+    - [2. 改进的错误处理](#2-改进的错误处理)
+    - [3. 更好的 const 泛型](#3-更好的-const-泛型)
+  - [类型系统高级应用](#类型系统高级应用)
+    - [1. 高级 Trait 约束](#1-高级-trait-约束)
+    - [2. 泛型特化 (Specialization)](#2-泛型特化-specialization)
+    - [3. 生命周期高级用法](#3-生命周期高级用法)
+  - [异步编程模式](#异步编程模式)
+    - [1. Tokio 运行时深度集成](#1-tokio-运行时深度集成)
+    - [2. 异步 Stream 处理](#2-异步-stream-处理)
+    - [3. 异步错误处理](#3-异步错误处理)
+  - [内存管理优化](#内存管理优化)
+    - [1. 智能指针使用](#1-智能指针使用)
+    - [2. 内存池实现](#2-内存池实现)
+    - [3. 零拷贝优化](#3-零拷贝优化)
+  - [错误处理机制](#错误处理机制)
+    - [1. 自定义错误类型](#1-自定义错误类型)
+    - [2. 错误恢复策略](#2-错误恢复策略)
+  - [性能基准测试](#性能基准测试)
+    - [基准测试框架](#基准测试框架)
+    - [性能测试结果](#性能测试结果)
+  - [生产环境部署](#生产环境部署)
+    - [1. 配置管理](#1-配置管理)
+    - [2. 健康检查](#2-健康检查)
+  - [最佳实践总结](#最佳实践总结)
+    - [1. 代码组织](#1-代码组织)
+    - [2. 性能优化](#2-性能优化)
+    - [3. 错误处理](#3-错误处理)
+    - [4. 测试](#4-测试)
+    - [5. 文档](#5-文档)
 
 ## 概述
 
@@ -62,7 +88,7 @@ pub fn process_telemetry_data(data: RawData) -> Result<ProcessedData, TelemetryE
         let enriched = enrich_data(parsed)?;
         enriched
     };
-    
+
     result
 }
 ```
@@ -83,7 +109,7 @@ impl<T: Default + Copy, const N: usize> FixedSizeBuffer<T, N> {
             len: 0,
         }
     }
-    
+
     pub fn push(&mut self, item: T) -> Result<(), BufferFullError> {
         if self.len >= N {
             return Err(BufferFullError);
@@ -111,7 +137,7 @@ use std::hash::Hash;
 pub trait TelemetryData: Send + Sync + Debug + Clone {
     type Id: Copy + Hash + Eq;
     type Attributes: IntoIterator<Item = (String, AttributeValue)>;
-    
+
     fn id(&self) -> Self::Id;
     fn attributes(&self) -> Self::Attributes;
     fn validate(&self) -> Result<(), ValidationError>;
@@ -121,15 +147,15 @@ pub trait TelemetryData: Send + Sync + Debug + Clone {
 impl TelemetryData for Span {
     type Id = SpanId;
     type Attributes = Vec<(String, AttributeValue)>;
-    
+
     fn id(&self) -> Self::Id {
         self.span_id
     }
-    
+
     fn attributes(&self) -> Self::Attributes {
         self.attributes.clone()
     }
-    
+
     fn validate(&self) -> Result<(), ValidationError> {
         if self.name.is_empty() {
             return Err(ValidationError::EmptySpanName);
@@ -181,7 +207,7 @@ impl<'a> SpanContext<'a> {
         self.trace_id = id;
         self
     }
-    
+
     /// 借用分离 (Borrow Splitting)
     pub fn split(&mut self) -> (&TraceId, &SpanId) {
         (self.trace_id, self.span_id)
@@ -189,7 +215,7 @@ impl<'a> SpanContext<'a> {
 }
 
 /// 高阶生命周期约束
-pub fn process_spans<'a, F>(spans: &'a [Span], mut f: F) 
+pub fn process_spans<'a, F>(spans: &'a [Span], mut f: F)
 where
     F: for<'b> FnMut(&'b Span) -> Option<&'b str>
 {
@@ -224,18 +250,18 @@ impl OtlpRuntime {
             .enable_all()
             .build()
             .expect("Failed to create runtime");
-        
+
         Self {
             runtime,
             shutdown_tx: None,
         }
     }
-    
+
     /// 启动遥测收集服务
     pub fn spawn_collector(&self) -> CollectorHandle {
         let (tx, rx) = mpsc::channel(10000);
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
-        
+
         self.runtime.spawn(async move {
             tokio::select! {
                 _ = collector_loop(rx) => {
@@ -246,7 +272,7 @@ impl OtlpRuntime {
                 }
             }
         });
-        
+
         CollectorHandle { tx, shutdown_tx }
     }
 }
@@ -254,19 +280,19 @@ impl OtlpRuntime {
 async fn collector_loop(mut rx: mpsc::Receiver<Span>) {
     let mut buffer = Vec::with_capacity(512);
     let mut interval = tokio::time::interval(Duration::from_secs(5));
-    
+
     loop {
         tokio::select! {
             // 接收新 Span
             Some(span) = rx.recv() => {
                 buffer.push(span);
-                
+
                 if buffer.len() >= 512 {
                     export_batch(&buffer).await;
                     buffer.clear();
                 }
             }
-            
+
             // 定期刷新缓冲区
             _ = interval.tick() => {
                 if !buffer.is_empty() {
@@ -274,7 +300,7 @@ async fn collector_loop(mut rx: mpsc::Receiver<Span>) {
                     buffer.clear();
                 }
             }
-            
+
             // 优雅关闭
             else => break,
         }
@@ -289,20 +315,20 @@ use futures::{Stream, StreamExt};
 use tokio_stream::wrappers::ReceiverStream;
 
 /// 异步流式 Span 处理
-pub async fn process_span_stream<S>(mut stream: S) 
+pub async fn process_span_stream<S>(mut stream: S)
 where
     S: Stream<Item = Span> + Unpin,
 {
     // 批量处理
     let mut batch_stream = stream.ready_chunks(100);
-    
+
     while let Some(batch) = batch_stream.next().await {
         // 并行处理批次
         let futures: Vec<_> = batch
             .into_iter()
             .map(|span| tokio::spawn(process_single_span(span)))
             .collect();
-        
+
         // 等待所有任务完成
         for future in futures {
             let _ = future.await;
@@ -321,7 +347,7 @@ impl BackpressureController {
             semaphore: Arc::new(tokio::sync::Semaphore::new(max_concurrent)),
         }
     }
-    
+
     pub async fn acquire(&self) -> SemaphoreGuard {
         let permit = self.semaphore.acquire().await.unwrap();
         SemaphoreGuard { permit }
@@ -338,10 +364,10 @@ use thiserror::Error;
 pub enum AsyncExportError {
     #[error("网络超时")]
     Timeout,
-    
+
     #[error("连接失败: {0}")]
     ConnectionFailed(String),
-    
+
     #[error("重试次数超限")]
     RetryExhausted,
 }
@@ -353,7 +379,7 @@ pub async fn export_with_retry(
 ) -> Result<(), AsyncExportError> {
     let mut retries = 0;
     let mut backoff = Duration::from_millis(100);
-    
+
     loop {
         match export_spans(&spans).await {
             Ok(_) => return Ok(()),
@@ -428,7 +454,7 @@ impl<T: Send> ObjectPool<T> {
             factory: Box::new(factory),
         }
     }
-    
+
     pub fn acquire(&self) -> PooledObject<T> {
         let obj = self.objects.lock().pop().unwrap_or_else(|| (self.factory)());
         PooledObject {
@@ -436,7 +462,7 @@ impl<T: Send> ObjectPool<T> {
             pool: self,
         }
     }
-    
+
     fn release(&self, obj: T) {
         self.objects.lock().push(obj);
     }
@@ -458,7 +484,7 @@ impl<'a, T> Drop for PooledObject<'a, T> {
 
 impl<'a, T> std::ops::Deref for PooledObject<'a, T> {
     type Target = T;
-    
+
     fn deref(&self) -> &Self::Target {
         self.object.as_ref().unwrap()
     }
@@ -484,19 +510,19 @@ pub struct ZeroCopySerializer {
 impl ZeroCopySerializer {
     pub fn serialize_span(&mut self, span: &Span) -> Bytes {
         self.buffer.clear();
-        
+
         // 预分配空间
         self.buffer.reserve(estimate_span_size(span));
-        
+
         // 直接写入缓冲区
         self.buffer.put_u64(span.trace_id.as_u64());
         self.buffer.put_u64(span.span_id.as_u64());
         self.put_string(&span.name);
-        
+
         // 冻结并返回不可变视图 - 零拷贝
         self.buffer.split().freeze()
     }
-    
+
     fn put_string(&mut self, s: &str) {
         self.buffer.put_u32(s.len() as u32);
         self.buffer.put_slice(s.as_bytes());
@@ -519,16 +545,16 @@ pub enum OtlpError {
         message: String,
         backtrace: Backtrace,
     },
-    
+
     #[error("序列化失败")]
     SerializationError(#[from] prost::EncodeError),
-    
+
     #[error("网络错误: {0}")]
     NetworkError(#[from] reqwest::Error),
-    
+
     #[error("验证失败: {0}")]
     ValidationError(String),
-    
+
     #[error("超时 (等待 {timeout:?})")]
     Timeout {
         timeout: Duration,
@@ -560,14 +586,14 @@ impl ErrorRecoveryContext {
     {
         let mut attempts = 0;
         let mut last_error = None;
-        
+
         while attempts <= self.max_retries {
             match operation().await {
                 Ok(result) => return Ok(result),
                 Err(e) => {
                     last_error = Some(e);
                     attempts += 1;
-                    
+
                     if attempts <= self.max_retries {
                         let backoff = self.backoff_strategy.next_backoff(attempts);
                         tokio::time::sleep(backoff).await;
@@ -575,13 +601,13 @@ impl ErrorRecoveryContext {
                 }
             }
         }
-        
+
         // 尝试降级策略
         if let Some(fallback) = &self.fallback_exporter {
             eprintln!("主导出器失败，尝试降级导出器");
             // 使用降级导出器
         }
-        
+
         Err(last_error.unwrap())
     }
 }
@@ -596,7 +622,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Benchmark
 
 fn benchmark_span_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("span_creation");
-    
+
     for size in [10, 100, 1000].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             b.iter(|| {
@@ -607,20 +633,20 @@ fn benchmark_span_creation(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
 fn benchmark_serialization(c: &mut Criterion) {
     let span = create_large_span();
-    
+
     c.bench_function("protobuf_serialization", |b| {
         b.iter(|| {
             let bytes = serialize_protobuf(black_box(&span));
             black_box(bytes);
         });
     });
-    
+
     c.bench_function("json_serialization", |b| {
         b.iter(|| {
             let bytes = serialize_json(black_box(&span));
@@ -668,7 +694,7 @@ impl OtlpConfig {
             .add_source(File::with_name("config/production").required(false))
             .add_source(Environment::with_prefix("OTLP"))
             .build()?;
-        
+
         config.try_deserialize()
     }
 }
@@ -735,4 +761,3 @@ async fn readiness_check() -> Result<&'static str, StatusCode> {
 ---
 
 _本文档基于 Rust 1.90 和生产环境最佳实践编写，持续更新中。_
-

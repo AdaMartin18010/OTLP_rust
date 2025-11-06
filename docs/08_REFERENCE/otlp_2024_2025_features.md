@@ -1,9 +1,9 @@
 # 🚀 OTLP 2024-2025 最新特性与发展趋势
 
-**版本**: 1.0  
-**覆盖时期**: 2024 Q1 - 2025 Q4  
-**OTLP版本**: v1.2.0 - v1.3.2  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**覆盖时期**: 2024 Q1 - 2025 Q4
+**OTLP版本**: v1.2.0 - v1.3.2
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP 2024-2025 最新发展 - Profile/Event信号、OTLP/Arrow传输、语义约定更新和未来roadmap。
@@ -125,14 +125,14 @@ message ResourceProfiles {
 message Profile {
   // 唯一标识符
   bytes profile_id = 1;              // 16 bytes UUID
-  
+
   // 时间范围
   fixed64 start_time_unix_nano = 2;
   fixed64 duration_nanos = 3;
-  
+
   // Profile 类型
   ProfileType profile_type = 4;
-  
+
   // 采样信息
   message Sample {
     repeated uint64 location_index = 1;
@@ -140,7 +140,7 @@ message Profile {
     repeated Label label = 3;
   }
   repeated Sample samples = 5;
-  
+
   // 位置信息
   message Location {
     uint64 id = 1;
@@ -149,7 +149,7 @@ message Profile {
     repeated Line line = 4;
   }
   repeated Location locations = 6;
-  
+
   // 函数信息
   message Function {
     uint64 id = 1;
@@ -159,7 +159,7 @@ message Profile {
     int64 start_line = 5;
   }
   repeated Function functions = 7;
-  
+
   // 属性
   repeated KeyValue attributes = 8;
   uint32 dropped_attributes_count = 9;
@@ -257,21 +257,21 @@ async fn collect_cpu_profile() -> Result<(), OtlpError> {
         .with_profile_type(ProfileType::Cpu)
         .with_sampling_frequency(100)  // 100 Hz
         .with_duration(Duration::from_secs(30));
-    
+
     // 创建 Profile 收集器
     let collector = ProfileCollector::new(config).await?;
-    
+
     // 开始收集
     collector.start().await?;
-    
+
     // 执行业务逻辑
     perform_cpu_intensive_work().await?;
-    
+
     // 停止收集并导出
     let profile = collector.stop().await?;
     let client = OtlpClient::new(otlp_config).await?;
     client.export_profile(profile).await?;
-    
+
     Ok(())
 }
 
@@ -280,16 +280,16 @@ async fn collect_memory_profile() -> Result<(), OtlpError> {
     let config = ProfileConfig::new()
         .with_profile_type(ProfileType::Heap)
         .with_sampling_rate(512 * 1024);  // 每512KB采样一次
-    
+
     let collector = ProfileCollector::new(config).await?;
     collector.start().await?;
-    
+
     // 业务逻辑...
     allocate_memory_intensive_structures().await?;
-    
+
     let profile = collector.stop().await?;
     client.export_profile(profile).await?;
-    
+
     Ok(())
 }
 ```
@@ -354,13 +354,13 @@ async fn process_request(request_id: &str) {
     let span = tracing::Span::current();
     let trace_id = span.context().span().span_context().trace_id();
     let span_id = span.context().span().span_context().span_id();
-    
+
     // 日志会自动包含 trace_id 和 span_id
     info!(
         request_id = request_id,
         "Processing request"  // 自动关联 trace context
     );
-    
+
     // 发送到 OTLP 后端后，可以在 Jaeger 等工具中查看:
     // Span -> Logs (点击查看关联的日志)
     // Log  -> Span (点击查看关联的 Span)
@@ -374,18 +374,18 @@ pub struct EnhancedLogRecord {
     pub timestamp: u64,
     pub observed_timestamp: u64,
     pub severity: LogSeverity,
-    
+
     // ✅ 新增: 结构化 body
     pub body: LogBody,
-    
+
     // ✅ 新增: 自动关联 Trace Context
     pub trace_id: Option<[u8; 16]>,
     pub span_id: Option<[u8; 8]>,
     pub trace_flags: u8,
-    
+
     // ✅ 新增: Instrumentation Scope
     pub scope: InstrumentationScope,
-    
+
     pub attributes: Vec<KeyValue>,
     pub dropped_attributes_count: u32,
 }
@@ -410,7 +410,7 @@ use serde_json::json;
 
 async fn send_structured_log() -> Result<(), OtlpError> {
     let client = OtlpClient::new(config).await?;
-    
+
     // 发送结构化日志
     let log = LogBuilder::new()
         .with_severity(LogSeverity::Info)
@@ -429,7 +429,7 @@ async fn send_structured_log() -> Result<(), OtlpError> {
         .with_attribute("event.name", "user.login")
         .with_attribute("event.domain", "authentication")
         .build();
-    
+
     client.send_log(log).await?;
     Ok(())
 }
@@ -465,11 +465,11 @@ message Event {
   string name = 2;
   repeated KeyValue attributes = 3;
   uint32 dropped_attributes_count = 4;
-  
+
   // 关联信息
   bytes trace_id = 5;
   bytes span_id = 6;
-  
+
   // 业务领域
   string domain = 7;
 }
@@ -507,13 +507,13 @@ impl EventBuilder {
             },
         }
     }
-    
+
     pub fn with_domain(mut self, domain: &str) -> Self {
         self.event.domain = domain.to_string();
         self
     }
-    
-    pub fn with_attribute<K, V>(mut self, key: K, value: V) -> Self 
+
+    pub fn with_attribute<K, V>(mut self, key: K, value: V) -> Self
     where
         K: Into<String>,
         V: Into<AttributeValue>,
@@ -524,17 +524,17 @@ impl EventBuilder {
         });
         self
     }
-    
+
     pub fn with_trace_context(
-        mut self, 
-        trace_id: [u8; 16], 
+        mut self,
+        trace_id: [u8; 16],
         span_id: [u8; 8]
     ) -> Self {
         self.event.trace_id = Some(trace_id);
         self.event.span_id = Some(span_id);
         self
     }
-    
+
     pub fn build(self) -> Event {
         self.event
     }
@@ -548,7 +548,7 @@ use otlp::event::EventBuilder;
 
 async fn emit_business_event() -> Result<(), OtlpError> {
     let client = OtlpClient::new(config).await?;
-    
+
     // 创建业务事件
     let event = EventBuilder::new("order.created")
         .with_domain("ecommerce")
@@ -558,9 +558,9 @@ async fn emit_business_event() -> Result<(), OtlpError> {
         .with_attribute("order.currency", "USD")
         .with_attribute("order.items_count", 3)
         .build();
-    
+
     client.send_event(event).await?;
-    
+
     Ok(())
 }
 
@@ -568,21 +568,21 @@ async fn emit_business_event() -> Result<(), OtlpError> {
 #[instrument]
 async fn emit_event_with_trace() -> Result<(), OtlpError> {
     let client = OtlpClient::new(config).await?;
-    
+
     // 获取当前 Trace Context
     let span = tracing::Span::current();
     let trace_id = span.context().span().span_context().trace_id().to_bytes();
     let span_id = span.context().span().span_context().span_id().to_bytes();
-    
+
     let event = EventBuilder::new("payment.completed")
         .with_domain("payment")
         .with_attribute("payment.method", "credit_card")
         .with_attribute("payment.amount", 299.99)
         .with_trace_context(trace_id, span_id)  // ✅ 关联 Trace
         .build();
-    
+
     client.send_event(event).await?;
-    
+
     Ok(())
 }
 ```
@@ -619,7 +619,7 @@ use otlp::trace::SpanBuilder;
 
 async fn call_openai_api() -> Result<(), OtlpError> {
     let client = OtlpClient::new(config).await?;
-    
+
     let span = client.tracer("ai-service")
         .span_builder("openai.chat.completion")
         .with_attribute("gen_ai.system", "openai")
@@ -627,14 +627,14 @@ async fn call_openai_api() -> Result<(), OtlpError> {
         .with_attribute("gen_ai.request.max_tokens", 4096)
         .with_attribute("gen_ai.request.temperature", 0.7)
         .start();
-    
+
     // 调用 OpenAI API
     let response = make_openai_request().await?;
-    
+
     span.set_attribute("gen_ai.response.id", response.id);
     span.set_attribute("gen_ai.usage.prompt_tokens", response.usage.prompt_tokens);
     span.set_attribute("gen_ai.usage.completion_tokens", response.usage.completion_tokens);
-    
+
     span.end();
     Ok(())
 }
@@ -780,7 +780,7 @@ pub struct AdaptiveBatcher {
 impl AdaptiveBatcher {
     pub async fn adjust_batch_size(&mut self) {
         let avg_latency = self.latency_tracker.average();
-        
+
         if avg_latency > self.config.target_latency {
             // 延迟过高，减小批量
             let new_size = self.current_batch_size.load(Ordering::Relaxed) / 2;
@@ -983,6 +983,6 @@ impl AdaptiveBatcher {
 
 ---
 
-**文档维护**: OTLP Rust 团队  
-**最后更新**: 2025年10月24日  
+**文档维护**: OTLP Rust 团队
+**最后更新**: 2025年10月24日
 **下次更新**: 2025年1月 (或重大特性发布时)

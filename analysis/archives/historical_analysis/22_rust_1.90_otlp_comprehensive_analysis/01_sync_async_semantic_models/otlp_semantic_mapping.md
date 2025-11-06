@@ -1,7 +1,7 @@
 # OTLP 语义模型到 Rust 类型系统的完整映射
 
-> **版本**: Rust 1.90 + OTLP 1.3.0  
-> **日期**: 2025年10月3日  
+> **版本**: Rust 1.90 + OTLP 1.3.0
+> **日期**: 2025年10月3日
 > **主题**: 语义模型、类型安全、零拷贝、形式化验证
 
 ---
@@ -177,7 +177,7 @@ impl ResourceBuilder {
             attributes: HashMap::new(),
         }
     }
-    
+
     /// 设置服务信息
     pub fn with_service(mut self, name: impl Into<String>, version: impl Into<String>) -> Self {
         self.attributes.insert(
@@ -190,7 +190,7 @@ impl ResourceBuilder {
         );
         self
     }
-    
+
     /// 设置 Kubernetes 信息
     pub fn with_k8s_pod(
         mut self,
@@ -207,7 +207,7 @@ impl ResourceBuilder {
         );
         self
     }
-    
+
     /// 设置主机信息
     pub fn with_host(mut self, name: impl Into<String>) -> Self {
         self.attributes.insert(
@@ -216,7 +216,7 @@ impl ResourceBuilder {
         );
         self
     }
-    
+
     /// 构建 Resource
     pub fn build(self) -> Resource {
         Resource {
@@ -272,7 +272,7 @@ impl ResourceExt for Resource {
                 }
             })
     }
-    
+
     fn service_version(&self) -> Option<&str> {
         self.attributes
             .iter()
@@ -285,7 +285,7 @@ impl ResourceExt for Resource {
                 }
             })
     }
-    
+
     fn k8s_namespace(&self) -> Option<&str> {
         self.attributes
             .iter()
@@ -298,7 +298,7 @@ impl ResourceExt for Resource {
                 }
             })
     }
-    
+
     fn k8s_pod_name(&self) -> Option<&str> {
         self.attributes
             .iter()
@@ -319,7 +319,7 @@ fn use_resource(resource: &Resource) {
     if let Some(name) = resource.service_name() {
         println!("Service: {}", name);
     }
-    
+
     // ❌ 编译错误：类型不匹配
     // let version: u32 = resource.service_version();
 }
@@ -395,20 +395,20 @@ impl TraceId {
         }
         Self(bytes)
     }
-    
+
     pub fn from_hex(hex: &str) -> Result<Self, ParseError> {
         if hex.len() != 32 {
             return Err(ParseError::InvalidLength);
         }
-        
+
         let mut bytes = [0u8; 16];
         for i in 0..16 {
             bytes[i] = u8::from_str_radix(&hex[i*2..i*2+2], 16)?;
         }
-        
+
         Ok(Self(bytes))
     }
-    
+
     pub fn to_hex(&self) -> String {
         self.0.iter()
             .map(|b| format!("{:02x}", b))
@@ -428,20 +428,20 @@ impl SpanId {
         }
         Self(bytes)
     }
-    
+
     pub fn from_hex(hex: &str) -> Result<Self, ParseError> {
         if hex.len() != 16 {
             return Err(ParseError::InvalidLength);
         }
-        
+
         let mut bytes = [0u8; 8];
         for i in 0..8 {
             bytes[i] = u8::from_str_radix(&hex[i*2..i*2+2], 16)?;
         }
-        
+
         Ok(Self(bytes))
     }
-    
+
     pub fn to_hex(&self) -> String {
         self.0.iter()
             .map(|b| format!("{:02x}", b))
@@ -535,17 +535,17 @@ impl SpanBuilder {
             links: Vec::new(),
         }
     }
-    
+
     pub fn with_kind(mut self, kind: SpanKind) -> Self {
         self.kind = kind;
         self
     }
-    
+
     pub fn with_parent(mut self, parent: SpanContext) -> Self {
         self.parent = Some(parent);
         self
     }
-    
+
     pub fn with_attribute(mut self, key: impl Into<String>, value: AnyValue) -> Self {
         self.attributes.push(KeyValue {
             key: key.into(),
@@ -553,25 +553,25 @@ impl SpanBuilder {
         });
         self
     }
-    
+
     pub fn with_link(mut self, link: SpanLink) -> Self {
         self.links.push(link);
         self
     }
-    
+
     pub fn start(self) -> Span {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         let trace_id = self.parent
             .as_ref()
             .map(|p| p.trace_id)
             .unwrap_or_else(TraceId::random);
-        
+
         let parent_span_id = self.parent.as_ref().map(|p| p.span_id);
-        
+
         Span {
             trace_id,
             span_id: SpanId::random(),
@@ -597,14 +597,14 @@ fn create_span_with_parent() {
         trace_id: TraceId::random(),
         span_id: SpanId::random(),
     };
-    
+
     let span = SpanBuilder::new("database_query")
         .with_kind(SpanKind::Client)
         .with_parent(parent_ctx)
         .with_attribute("db.system", AnyValue::String("postgresql".to_string()))
         .with_attribute("db.statement", AnyValue::String("SELECT * FROM users".to_string()))
         .start();
-    
+
     println!("Span created: {:?}", span.name);
 }
 ```
@@ -725,17 +725,17 @@ impl CounterBuilder {
             unit: String::new(),
         }
     }
-    
+
     pub fn with_description(mut self, desc: impl Into<String>) -> Self {
         self.description = desc.into();
         self
     }
-    
+
     pub fn with_unit(mut self, unit: impl Into<String>) -> Self {
         self.unit = unit.into();
         self
     }
-    
+
     pub fn build(self) -> Counter {
         Counter {
             name: self.name,
@@ -757,7 +757,7 @@ impl Counter {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         SumDataPoint {
             attributes,
             start_time_unix_nano: now,
@@ -774,7 +774,7 @@ fn record_http_requests() {
         .with_description("Total HTTP requests")
         .with_unit("1")
         .build();
-    
+
     let data_point = counter.add(
         1,
         vec![
@@ -788,7 +788,7 @@ fn record_http_requests() {
             },
         ],
     );
-    
+
     println!("Recorded: {:?}", data_point);
 }
 ```
@@ -828,7 +828,7 @@ impl TypedSpan<Started> {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
-        
+
         TypedSpan {
             inner,
             _state: PhantomData,
@@ -852,18 +852,18 @@ impl Resource {
         let has_service_name = self.attributes
             .iter()
             .any(|kv| kv.key == "service.name");
-        
+
         if !has_service_name {
             return Err(ValidationError::MissingServiceName);
         }
-        
+
         // 属性键不能为空
         for kv in &self.attributes {
             if kv.key.is_empty() {
                 return Err(ValidationError::EmptyAttributeKey);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -879,7 +879,7 @@ fn validate_resource() -> Result<(), ValidationError> {
     let resource = ResourceBuilder::new()
         .with_service("my-service", "1.0.0")
         .build();
-    
+
     resource.validate()?;
     Ok(())
 }
@@ -898,10 +898,10 @@ use bytes::BytesMut;
 pub fn serialize_span_zero_copy(span: &Span) -> BytesMut {
     let capacity = estimate_span_size(span);
     let mut buf = BytesMut::with_capacity(capacity);
-    
+
     // 直接写入缓冲区，避免中间分配
     write_span(&mut buf, span);
-    
+
     buf
 }
 
@@ -931,7 +931,7 @@ impl SpanPool {
             pool: Arc::new(Mutex::new(Vec::with_capacity(capacity))),
         }
     }
-    
+
     pub fn acquire(&self) -> Span {
         self.pool.lock().pop().unwrap_or_else(|| {
             // 池为空时创建新对象
@@ -953,14 +953,14 @@ impl SpanPool {
             }
         })
     }
-    
+
     pub fn release(&self, mut span: Span) {
         // 重置 Span
         span.name.clear();
         span.attributes.clear();
         span.events.clear();
         span.links.clear();
-        
+
         let mut pool = self.pool.lock();
         if pool.len() < pool.capacity() {
             pool.push(span);

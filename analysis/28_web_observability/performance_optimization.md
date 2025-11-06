@@ -1,21 +1,31 @@
 # Web 性能优化 - Web Performance Optimization
 
-**创建日期**: 2025年10月29日  
-**基于**: 生产环境可观测性数据  
+**创建日期**: 2025年10月29日
+**基于**: 生产环境可观测性数据
 **状态**: ✅ 生产验证
 
 ---
 
 ## 📋 目录
 
-- [概述](#概述)
-- [性能分析方法](#性能分析方法)
-- [热路径优化](#热路径优化)
-- [缓存策略](#缓存策略)
-- [数据库优化](#数据库优化)
-- [连接池优化](#连接池优化)
-- [并发控制](#并发控制)
-- [监控和告警](#监控和告警)
+- [Web 性能优化 - Web Performance Optimization](#web-性能优化---web-performance-optimization)
+  - [📋 目录](#-目录)
+  - [概述](#概述)
+  - [性能分析方法](#性能分析方法)
+    - [基于追踪的性能分析](#基于追踪的性能分析)
+  - [热路径优化](#热路径优化)
+    - [识别和优化热路径](#识别和优化热路径)
+  - [缓存策略](#缓存策略)
+    - [多层缓存架构](#多层缓存架构)
+  - [数据库优化](#数据库优化)
+    - [慢查询优化](#慢查询优化)
+  - [连接池优化](#连接池优化)
+    - [HTTP客户端连接池](#http客户端连接池)
+  - [并发控制](#并发控制)
+    - [请求限流和负载控制](#请求限流和负载控制)
+  - [监控和告警](#监控和告警)
+    - [性能监控仪表板](#性能监控仪表板)
+  - [总结](#总结)
 
 ---
 
@@ -53,7 +63,7 @@ impl PerformanceAnalyzer {
             slow_threshold,
         }
     }
-    
+
     // 分析请求性能
     #[instrument(skip(self), fields(
         request.path = %path,
@@ -61,21 +71,21 @@ impl PerformanceAnalyzer {
     ))]
     pub async fn analyze_request(&self, path: &str, method: &str) -> RequestPerformance {
         let start = Instant::now();
-        
+
         // 收集span数据
         let span_data = self.collect_span_data().await;
-        
+
         // 分析各阶段耗时
         let breakdown = self.analyze_breakdown(&span_data);
-        
+
         // 识别慢查询
         let slow_queries = self.identify_slow_queries(&span_data);
-        
+
         // 识别N+1问题
         let n1_issues = self.detect_n1_patterns(&span_data);
-        
+
         let total_duration = start.elapsed();
-        
+
         RequestPerformance {
             total_duration,
             breakdown,
@@ -83,11 +93,11 @@ impl PerformanceAnalyzer {
             n1_issues,
         }
     }
-    
+
     // 分析性能分解
     fn analyze_breakdown(&self, spans: &[SpanData]) -> PerformanceBreakdown {
         let mut breakdown = PerformanceBreakdown::default();
-        
+
         for span in spans {
             match span.name.as_str() {
                 name if name.starts_with("db.") => {
@@ -107,10 +117,10 @@ impl PerformanceAnalyzer {
                 }
             }
         }
-        
+
         breakdown
     }
-    
+
     // 识别慢查询
     fn identify_slow_queries(&self, spans: &[SpanData]) -> Vec<SlowQuery> {
         spans
@@ -158,7 +168,7 @@ impl PerformanceBreakdown {
             self.percentage(self.other_time, total),
         )
     }
-    
+
     fn percentage(&self, part: Duration, total: Duration) -> f64 {
         if total.as_millis() == 0 {
             return 0.0;
@@ -199,17 +209,17 @@ impl HotPathTracker {
             paths: Arc::new(DashMap::new()),
         }
     }
-    
+
     // 记录请求
     pub fn record(&self, path: &str, duration: Duration) {
         let stats = self.paths
             .entry(path.to_string())
             .or_insert_with(PathStats::default);
-        
+
         stats.hit_count.fetch_add(1, Ordering::Relaxed);
         stats.total_duration.fetch_add(duration.as_micros() as u64, Ordering::Relaxed);
     }
-    
+
     // 获取热路径 (Top N)
     pub fn hot_paths(&self, top_n: usize) -> Vec<(String, HotPathMetrics)> {
         let mut paths: Vec<_> = self.paths
@@ -219,13 +229,13 @@ impl HotPathTracker {
                 let stats = entry.value();
                 let hit_count = stats.hit_count.load(Ordering::Relaxed);
                 let total_duration = stats.total_duration.load(Ordering::Relaxed);
-                
+
                 let avg_duration = if hit_count > 0 {
                     Duration::from_micros(total_duration / hit_count)
                 } else {
                     Duration::ZERO
                 };
-                
+
                 (
                     path,
                     HotPathMetrics {
@@ -238,7 +248,7 @@ impl HotPathTracker {
                 )
             })
             .collect();
-        
+
         // 按hit_count排序
         paths.sort_by(|a, b| b.1.hit_count.cmp(&a.1.hit_count));
         paths.truncate(top_n);
@@ -267,11 +277,11 @@ async fn optimized_hot_path(
         tracing::debug!("Cache hit");
         return Ok(user);
     }
-    
+
     // 2. 缓存未命中,查数据库
     tracing::debug!("Cache miss, querying database");
     let user = db.get_user(user_id).await?;
-    
+
     // 3. 异步更新缓存 (不阻塞响应)
     let cache_clone = cache.clone();
     let user_clone = user.clone();
@@ -280,7 +290,7 @@ async fn optimized_hot_path(
             tracing::warn!(error = %e, "Failed to update cache");
         }
     });
-    
+
     Ok(user)
 }
 ```
@@ -316,7 +326,7 @@ impl MultiLayerCache {
             meter,
         })
     }
-    
+
     // 获取数据
     #[instrument(skip(self), fields(cache.key = %key))]
     pub async fn get<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>> {
@@ -326,7 +336,7 @@ impl MultiLayerCache {
             self.record_hit("l1");
             return Ok(Some(bincode::deserialize(&data)?));
         }
-        
+
         // 2. 尝试L2缓存
         let mut conn = self.l2.get_async_connection().await?;
         if let Some(data) = redis::cmd("GET")
@@ -336,24 +346,24 @@ impl MultiLayerCache {
         {
             tracing::debug!("L2 cache hit");
             self.record_hit("l2");
-            
+
             // 回填L1
             self.l1.insert(key.to_string(), Arc::new(data.clone())).await;
-            
+
             return Ok(Some(bincode::deserialize(&data)?));
         }
-        
+
         tracing::debug!("Cache miss");
         self.record_miss();
         Ok(None)
     }
-    
+
     // 设置数据
     #[instrument(skip(self, value), fields(cache.key = %key))]
     pub async fn set<T: Serialize>(&self, key: &str, value: &T, ttl: Duration) -> Result<()> {
         let data = bincode::serialize(value)?;
         let data_arc = Arc::new(data.clone());
-        
+
         // 并发写入两层缓存
         let l1_fut = self.l1.insert(key.to_string(), data_arc);
         let l2_fut = async {
@@ -365,20 +375,20 @@ impl MultiLayerCache {
                 .query_async(&mut conn)
                 .await
         };
-        
+
         tokio::try_join!(l1_fut, l2_fut)?;
-        
+
         tracing::debug!("Data cached in L1 and L2");
         Ok(())
     }
-    
+
     // 记录缓存命中
     fn record_hit(&self, layer: &str) {
         self.meter
             .u64_counter("cache.hits")
             .add(1, &[KeyValue::new("layer", layer.to_string())]);
     }
-    
+
     // 记录缓存未命中
     fn record_miss(&self) {
         self.meter
@@ -397,10 +407,10 @@ impl CacheWarmer {
     #[instrument(skip(self))]
     pub async fn warm_popular_data(&self) -> Result<()> {
         tracing::info!("Starting cache warming");
-        
+
         // 1. 获取热门数据列表
         let popular_users = self.db.get_popular_users(100).await?;
-        
+
         // 2. 并发预热
         let futures: Vec<_> = popular_users
             .into_iter()
@@ -409,16 +419,16 @@ impl CacheWarmer {
                 self.cache.set(&key, &user, Duration::from_secs(300)).await
             })
             .collect();
-        
+
         let results = futures::future::join_all(futures).await;
         let success_count = results.iter().filter(|r| r.is_ok()).count();
-        
+
         tracing::info!(
             total = results.len(),
             success = success_count,
             "Cache warming completed"
         );
-        
+
         Ok(())
     }
 }
@@ -447,7 +457,7 @@ impl TrackedDatabase {
             meter,
         }
     }
-    
+
     // 执行查询with追踪
     #[instrument(
         skip(self, query),
@@ -462,18 +472,18 @@ impl TrackedDatabase {
     {
         let span = tracing::Span::current();
         span.record("db.statement", &query);
-        
+
         let start = Instant::now();
         let result = sqlx::query_as::<_, T>(query)
             .fetch_all(&self.pool)
             .await;
         let duration = start.elapsed();
-        
+
         // 记录查询时间
         self.meter
             .f64_histogram("db.query.duration")
             .record(duration.as_secs_f64(), &[]);
-        
+
         // 检测慢查询
         if duration > self.slow_threshold {
             tracing::warn!(
@@ -481,32 +491,32 @@ impl TrackedDatabase {
                 duration_ms = duration.as_millis(),
                 "Slow query detected"
             );
-            
+
             self.meter
                 .u64_counter("db.slow_queries")
                 .add(1, &[]);
         }
-        
+
         result.map_err(Into::into)
     }
-    
+
     // 批量查询优化
     #[instrument(skip(self, ids))]
     pub async fn get_users_batch(&self, ids: &[u64]) -> Result<HashMap<u64, User>> {
         if ids.is_empty() {
             return Ok(HashMap::new());
         }
-        
+
         // 使用IN查询代替多次单独查询
         let query = format!(
             "SELECT * FROM users WHERE id = ANY($1)"
         );
-        
+
         let users: Vec<User> = sqlx::query_as(&query)
             .bind(ids)
             .fetch_all(&self.pool)
             .await?;
-        
+
         Ok(users.into_iter().map(|u| (u.id, u)).collect())
     }
 }
@@ -516,7 +526,7 @@ pub async fn monitor_connection_pool(pool: &sqlx::PgPool, meter: &Meter) {
     let connections = pool.size() as i64;
     let idle = pool.num_idle() as i64;
     let active = connections - idle;
-    
+
     meter
         .i64_observable_gauge("db.pool.connections")
         .with_callback(move |observer| {
@@ -543,20 +553,20 @@ pub fn create_optimized_client() -> Client {
         // 连接池设置
         .pool_max_idle_per_host(10)
         .pool_idle_timeout(Duration::from_secs(90))
-        
+
         // 超时设置
         .connect_timeout(Duration::from_secs(10))
         .timeout(Duration::from_secs(30))
-        
+
         // TCP设置
         .tcp_nodelay(true)
         .tcp_keepalive(Duration::from_secs(60))
-        
+
         // HTTP/2
         .http2_adaptive_window(true)
         .http2_keep_alive_interval(Some(Duration::from_secs(30)))
         .http2_keep_alive_timeout(Duration::from_secs(20))
-        
+
         .build()
         .expect("Failed to create HTTP client")
 }
@@ -587,7 +597,7 @@ impl ConcurrencyLimiter {
             meter,
         }
     }
-    
+
     // 受限执行
     #[instrument(skip(self, f))]
     pub async fn execute<F, T>(&self, f: F) -> Result<T>
@@ -596,15 +606,15 @@ impl ConcurrencyLimiter {
     {
         // 尝试获取许可
         let permit = self.semaphore.acquire().await?;
-        
+
         let current = self.max_concurrent - self.semaphore.available_permits();
-        
+
         tracing::debug!(
             concurrent_requests = current,
             max_concurrent = self.max_concurrent,
             "Request acquired permit"
         );
-        
+
         // 记录并发数
         self.meter
             .i64_observable_gauge("http.concurrent_requests")
@@ -612,13 +622,13 @@ impl ConcurrencyLimiter {
                 observer.observe(current as i64, &[]);
             })
             .init();
-        
+
         // 执行请求
         let result = f.await;
-        
+
         // 许可自动释放
         drop(permit);
-        
+
         result
     }
 }
@@ -643,10 +653,10 @@ impl PerformanceMetrics {
         meter.f64_histogram("http.server.duration").init();
         meter.u64_counter("http.server.requests").init();
         meter.u64_counter("http.server.errors").init();
-        
+
         Self { meter }
     }
-    
+
     // 记录请求性能
     pub fn record_request(
         &self,
@@ -660,17 +670,17 @@ impl PerformanceMetrics {
             KeyValue::new("http.route", path.to_string()),
             KeyValue::new("http.status_code", status as i64),
         ];
-        
+
         // 记录延迟
         self.meter
             .f64_histogram("http.server.duration")
             .record(duration.as_secs_f64(), &attributes);
-        
+
         // 记录请求数
         self.meter
             .u64_counter("http.server.requests")
             .add(1, &attributes);
-        
+
         // 记录错误
         if status >= 500 {
             self.meter
@@ -683,7 +693,7 @@ impl PerformanceMetrics {
 // SLO告警
 pub async fn check_slo_violations(metrics: &PerformanceMetrics) -> Vec<SLOViolation> {
     let mut violations = Vec::new();
-    
+
     // 检查P99延迟
     if let Some(p99) = get_p99_latency().await {
         if p99 > Duration::from_millis(200) {
@@ -695,7 +705,7 @@ pub async fn check_slo_violations(metrics: &PerformanceMetrics) -> Vec<SLOViolat
             });
         }
     }
-    
+
     // 检查错误率
     if let Some(error_rate) = get_error_rate().await {
         if error_rate > 0.01 {  // 1%
@@ -707,7 +717,7 @@ pub async fn check_slo_violations(metrics: &PerformanceMetrics) -> Vec<SLOViolat
             });
         }
     }
-    
+
     violations
 }
 ```

@@ -1,8 +1,8 @@
 # OTLP Collector部署架构全面分析
 
-**创建日期**: 2025年10月29日  
-**最后更新**: 2025年10月29日  
-**状态**: ✅ 完整  
+**创建日期**: 2025年10月29日
+**最后更新**: 2025年10月29日
+**状态**: ✅ 完整
 **优先级**: 🔴 生产必读
 
 ---
@@ -115,7 +115,7 @@ spec:
           limits:
             cpu: 1000m
             memory: 1Gi
-      
+
       # OTLP Collector Sidecar
       - name: otel-collector
         image: otel/opentelemetry-collector-contrib:0.91.0
@@ -134,7 +134,7 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-        
+
         # 健康检查
         livenessProbe:
           httpGet:
@@ -148,7 +148,7 @@ spec:
             port: 13133
           initialDelaySeconds: 5
           periodSeconds: 5
-      
+
       volumes:
       - name: otel-collector-config
         configMap:
@@ -168,12 +168,12 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-    
+
     processors:
       batch:
         timeout: 10s
         send_batch_size: 1024
-      
+
       # 添加K8s元数据
       resource:
         attributes:
@@ -183,13 +183,13 @@ data:
           - key: k8s.namespace.name
             value: ${env:MY_POD_NAMESPACE}
             action: insert
-      
+
       # 内存限制器
       memory_limiter:
         check_interval: 1s
         limit_mib: 400  # 80% of 512Mi limit
         spike_limit_mib: 100
-    
+
     exporters:
       # 导出到后端Gateway
       otlp/gateway:
@@ -206,23 +206,23 @@ data:
           initial_interval: 5s
           max_interval: 30s
           max_elapsed_time: 300s
-      
+
       # 本地日志（调试用）
       logging:
         loglevel: info
-    
+
     service:
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, batch, resource]
           exporters: [otlp/gateway, logging]
-        
+
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch, resource]
           exporters: [otlp/gateway]
-      
+
       # 遥测配置
       telemetry:
         logs:
@@ -325,24 +325,24 @@ spec:
   selector:
     matchLabels:
       app: otel-collector
-  
+
   # 更新策略
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1  # 一次更新一个节点
-  
+
   template:
     metadata:
       labels:
         app: otel-collector
     spec:
       serviceAccountName: otel-collector
-      
+
       # 节点选择器（可选）
       nodeSelector:
         kubernetes.io/os: linux
-      
+
       # 容忍度（确保在所有节点运行）
       tolerations:
       - key: node-role.kubernetes.io/master
@@ -350,16 +350,16 @@ spec:
       - key: node.kubernetes.io/not-ready
         effect: NoExecute
         tolerationSeconds: 300
-      
+
       # Host网络模式（可选，用于节点级监控）
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      
+
       containers:
       - name: otel-collector
         image: otel/opentelemetry-collector-contrib:0.91.0
         args: ["--config=/etc/otelcol/config.yaml"]
-        
+
         ports:
         - containerPort: 4317
           hostPort: 4317  # 暴露到主机
@@ -369,7 +369,7 @@ spec:
           name: otlp-http
         - containerPort: 8888
           name: metrics
-        
+
         env:
         - name: MY_NODE_NAME
           valueFrom:
@@ -379,7 +379,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        
+
         volumeMounts:
         - name: config
           mountPath: /etc/otelcol
@@ -390,7 +390,7 @@ spec:
         - name: varlibdockercontainers
           mountPath: /var/lib/docker/containers
           readOnly: true
-        
+
         resources:
           requests:
             cpu: 200m
@@ -398,21 +398,21 @@ spec:
           limits:
             cpu: 1000m
             memory: 2Gi
-        
+
         livenessProbe:
           httpGet:
             path: /
             port: 13133
           initialDelaySeconds: 10
           periodSeconds: 10
-        
+
         readinessProbe:
           httpGet:
             path: /
             port: 13133
           initialDelaySeconds: 5
           periodSeconds: 5
-      
+
       volumes:
       - name: config
         configMap:
@@ -438,7 +438,7 @@ data:
             endpoint: ${env:MY_POD_IP}:4317
           http:
             endpoint: ${env:MY_POD_IP}:4318
-      
+
       # 主机指标
       hostmetrics:
         collection_interval: 30s
@@ -450,12 +450,12 @@ data:
           memory:
           network:
           paging:
-      
+
       # K8s事件
       k8s_events:
         auth_type: serviceAccount
         namespaces: [default, production, staging]
-      
+
       # 文件日志（可选）
       filelog:
         include:
@@ -467,12 +467,12 @@ data:
             timestamp:
               parse_from: attributes.time
               layout: '%Y-%m-%dT%H:%M:%S.%LZ'
-    
+
     processors:
       batch:
         timeout: 10s
         send_batch_size: 2048
-      
+
       # K8s属性处理器
       k8sattributes:
         auth_type: serviceAccount
@@ -491,7 +491,7 @@ data:
             - tag_name: version
               key: version
               from: pod
-      
+
       # 资源处理器
       resource:
         attributes:
@@ -501,13 +501,13 @@ data:
           - key: collector.type
             value: daemonset
             action: insert
-      
+
       # 内存限制
       memory_limiter:
         check_interval: 1s
         limit_mib: 1536  # 75% of 2Gi
         spike_limit_mib: 512
-    
+
     exporters:
       # 导出到Gateway
       otlp/gateway:
@@ -522,7 +522,7 @@ data:
           enabled: true
           initial_interval: 5s
           max_interval: 30s
-      
+
       # 本地Prometheus导出（节点级指标）
       prometheus:
         endpoint: "0.0.0.0:8889"
@@ -530,24 +530,24 @@ data:
         const_labels:
           collector: daemonset
           node: ${env:MY_NODE_NAME}
-    
+
     service:
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, k8sattributes, batch, resource]
           exporters: [otlp/gateway]
-        
+
         metrics:
           receivers: [otlp, hostmetrics]
           processors: [memory_limiter, k8sattributes, batch, resource]
           exporters: [otlp/gateway, prometheus]
-        
+
         logs:
           receivers: [otlp, filelog, k8s_events]
           processors: [memory_limiter, k8sattributes, batch, resource]
           exporters: [otlp/gateway]
-      
+
       telemetry:
         metrics:
           address: 0.0.0.0:8888
@@ -566,9 +566,9 @@ pub fn init_tracing_daemonset() -> Result<()> {
     // 使用主机网络，连接到节点IP
     let node_ip = std::env::var("MY_NODE_IP")
         .unwrap_or_else(|_| "localhost".to_string());
-    
+
     let endpoint = format!("http://{}:4318", node_ip);
-    
+
     let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(
@@ -584,7 +584,7 @@ pub fn init_tracing_daemonset() -> Result<()> {
                 ]))
         )
         .install_batch(opentelemetry::runtime::Tokio)?;
-    
+
     Ok(())
 }
 ```
@@ -669,17 +669,17 @@ metadata:
   namespace: observability
 spec:
   replicas: 3  # 高可用
-  
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
-  
+
   selector:
     matchLabels:
       app: otel-gateway
-  
+
   template:
     metadata:
       labels:
@@ -689,7 +689,7 @@ spec:
         prometheus.io/port: "8888"
     spec:
       serviceAccountName: otel-gateway
-      
+
       # Pod反亲和性：分散到不同节点
       affinity:
         podAntiAffinity:
@@ -701,12 +701,12 @@ spec:
                 values:
                 - otel-gateway
             topologyKey: "kubernetes.io/hostname"
-      
+
       containers:
       - name: otel-collector
         image: otel/opentelemetry-collector-contrib:0.91.0
         args: ["--config=/etc/otelcol/config.yaml"]
-        
+
         ports:
         - containerPort: 4317
           name: otlp-grpc
@@ -716,11 +716,11 @@ spec:
           name: metrics
         - containerPort: 13133
           name: health
-        
+
         volumeMounts:
         - name: config
           mountPath: /etc/otelcol
-        
+
         resources:
           requests:
             cpu: 1000m
@@ -728,17 +728,17 @@ spec:
           limits:
             cpu: 4000m
             memory: 8Gi
-        
+
         livenessProbe:
           httpGet:
             path: /
             port: 13133
-        
+
         readinessProbe:
           httpGet:
             path: /
             port: 13133
-      
+
       volumes:
       - name: config
         configMap:
@@ -823,24 +823,24 @@ data:
             max_concurrent_streams: 100
           http:
             endpoint: 0.0.0.0:4318
-    
+
     processors:
       # 大批次处理
       batch:
         timeout: 10s
         send_batch_size: 10000
         send_batch_max_size: 11000
-      
+
       # 内存限制器
       memory_limiter:
         check_interval: 1s
         limit_percentage: 75
         spike_limit_percentage: 20
-      
+
       # 采样（可选）
       probabilistic_sampler:
         sampling_percentage: 10  # 10%采样
-      
+
       # 尾部采样（高级）
       tail_sampling:
         decision_wait: 10s
@@ -862,7 +862,7 @@ data:
             type: probabilistic
             probabilistic:
               sampling_percentage: 10
-    
+
     exporters:
       # Jaeger
       otlp/jaeger:
@@ -876,14 +876,14 @@ data:
           queue_size: 50000
         retry_on_failure:
           enabled: true
-      
+
       # Prometheus Remote Write
       prometheusremotewrite:
         endpoint: http://prometheus.observability.svc.cluster.local:9090/api/v1/write
         external_labels:
           cluster: prod
           collector: gateway
-      
+
       # Loki (日志)
       loki:
         endpoint: http://loki-gateway.observability.svc.cluster.local:3100/loki/api/v1/push
@@ -891,28 +891,28 @@ data:
           attributes:
             service.name: "service_name"
             k8s.namespace.name: "namespace"
-      
+
       # 调试
       logging:
         loglevel: info
-    
+
     service:
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, tail_sampling, batch]
           exporters: [otlp/jaeger, logging]
-        
+
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
           exporters: [prometheusremotewrite]
-        
+
         logs:
           receivers: [otlp]
           processors: [memory_limiter, batch]
           exporters: [loki, logging]
-      
+
       telemetry:
         metrics:
           level: detailed
@@ -999,7 +999,7 @@ data:
   - 原型和开发环境
   - 极小规模部署 (< 5个服务)
   - 临时测试
-  
+
 不推荐生产使用!
 ```
 
@@ -1317,19 +1317,19 @@ data:
           # 使用Unix Domain Socket（零拷贝）
           grpc:
             endpoint: unix:///var/run/otel/otel.sock
-    
+
     processors:
       # 小批次，快速导出
       batch:
         timeout: 1s
         send_batch_size: 100
-      
+
       # 严格的内存限制
       memory_limiter:
         check_interval: 1s
         limit_mib: 100
         spike_limit_mib: 20
-    
+
     exporters:
       otlp/gateway:
         endpoint: gateway:4317
@@ -1338,7 +1338,7 @@ data:
         # 小队列
         sending_queue:
           queue_size: 500
-    
+
     service:
       pipelines:
         traces:
@@ -1440,7 +1440,7 @@ Sidecar模式:
   - P99延迟: 0.8ms
 
 DaemonSet模式:
-  - 总吞吐量: 500,000 traces/sec  
+  - 总吞吐量: 500,000 traces/sec
   - CPU使用: 2 cores (10个节点 × 200m)
   - 内存使用: 4 GB
   - P99延迟: 3ms
@@ -1694,8 +1694,8 @@ DON'Ts ❌:
 
 ---
 
-**文档版本**: v1.0  
-**创建日期**: 2025年10月29日  
+**文档版本**: v1.0
+**创建日期**: 2025年10月29日
 **维护者**: OTLP_rust项目团队
 
 ---

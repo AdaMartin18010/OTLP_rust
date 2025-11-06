@@ -1,7 +1,7 @@
 # OPAMP 协议深度分析与 Rust 实现
 
-> **版本**: OPAMP 1.0 + Rust 1.90  
-> **日期**: 2025年10月3日  
+> **版本**: OPAMP 1.0 + Rust 1.90
+> **日期**: 2025年10月3日
 > **主题**: 控制平面、Agent 管理、动态配置、灰度发布
 
 ---
@@ -91,7 +91,7 @@
 service OpAMPService {
     // Agent → Server：心跳与状态上报
     rpc AgentToServer(AgentToServerMessage) returns (ServerToAgentMessage);
-    
+
     // Server → Agent：推送配置（可选 Stream）
     rpc ServerToAgent(stream ServerToAgentMessage) returns (stream AgentToServerMessage);
 }
@@ -100,16 +100,16 @@ service OpAMPService {
 message AgentToServerMessage {
     // Agent 实例标识
     string instance_uid = 1;
-    
+
     // Agent 能力声明
     AgentCapabilities capabilities = 2;
-    
+
     // 健康状态
     AgentHealth health = 3;
-    
+
     // 远程配置状态
     RemoteConfigStatus remote_config_status = 4;
-    
+
     // 软件包状态
     PackageStatuses package_statuses = 5;
 }
@@ -118,16 +118,16 @@ message AgentToServerMessage {
 message ServerToAgentMessage {
     // 实例 UID（回显）
     string instance_uid = 1;
-    
+
     // 远程配置
     RemoteConfig remote_config = 2;
-    
+
     // 证书
     CertificateUpdate certificates = 3;
-    
+
     // 软件包下载 URL
     PackagesAvailable packages_available = 4;
-    
+
     // 连接设置
     ConnectionSettings connection_settings = 5;
 }
@@ -139,16 +139,16 @@ message ServerToAgentMessage {
 message AgentCapabilities {
     // 支持远程配置
     bool accepts_remote_config = 1;
-    
+
     // 支持证书轮转
     bool accepts_certificate_updates = 2;
-    
+
     // 支持软件包升级
     bool accepts_packages = 3;
-    
+
     // 支持连接设置更新
     bool accepts_connection_settings = 4;
-    
+
     // 支持 OTTL
     bool accepts_ottl = 5;
 }
@@ -160,10 +160,10 @@ message AgentCapabilities {
 message RemoteConfig {
     // 配置内容（YAML/JSON）
     bytes config_payload = 1;
-    
+
     // 配置哈希（用于幂等性）
     bytes config_hash = 2;
-    
+
     // OTTL 脚本（可选）
     string ottl_script = 3;
 }
@@ -171,10 +171,10 @@ message RemoteConfig {
 message RemoteConfigStatus {
     // 上次接收的配置哈希
     bytes last_remote_config_hash = 1;
-    
+
     // 应用状态
     ConfigApplyStatus status = 2;
-    
+
     // 错误消息
     string error_message = 3;
 }
@@ -202,16 +202,16 @@ use std::time::Duration;
 pub struct OpampAgent {
     /// Agent 实例 UID（全局唯一）
     instance_uid: String,
-    
+
     /// Agent 能力
     capabilities: AgentCapabilities,
-    
+
     /// 当前配置状态
     config_state: Arc<RwLock<ConfigState>>,
-    
+
     /// gRPC 客户端
     client: Option<OpampServiceClient>,
-    
+
     /// 心跳间隔
     heartbeat_interval: Duration,
 }
@@ -260,34 +260,34 @@ impl OpampAgent {
             heartbeat_interval: Duration::from_secs(30),
         }
     }
-    
+
     /// 连接到 OPAMP Server
     pub async fn connect(&mut self, server_endpoint: String) -> Result<(), Box<dyn std::error::Error>> {
         let channel = tonic::transport::Channel::from_shared(server_endpoint)?
             .connect()
             .await?;
-        
+
         self.client = Some(OpampServiceClient { _channel: channel });
         Ok(())
     }
-    
+
     /// 启动 Agent（心跳循环）
     pub async fn run(self: Arc<Self>) {
         let mut interval = tokio::time::interval(self.heartbeat_interval);
-        
+
         loop {
             interval.tick().await;
-            
+
             if let Err(e) = self.send_heartbeat().await {
                 eprintln!("Heartbeat failed: {:?}", e);
             }
         }
     }
-    
+
     /// 发送心跳消息
     async fn send_heartbeat(&self) -> Result<(), Box<dyn std::error::Error>> {
         let config_state = self.config_state.read().await;
-        
+
         let message = AgentToServerMessage {
             instance_uid: self.instance_uid.clone(),
             capabilities: self.capabilities.clone(),
@@ -302,15 +302,15 @@ impl OpampAgent {
             }),
             package_statuses: None,
         };
-        
+
         // 发送消息并接收响应
         if let Some(response) = self.send_to_server(message).await? {
             self.handle_server_message(response).await?;
         }
-        
+
         Ok(())
     }
-    
+
     async fn send_to_server(
         &self,
         _message: AgentToServerMessage,
@@ -318,7 +318,7 @@ impl OpampAgent {
         // gRPC 调用实现
         Ok(None)
     }
-    
+
     /// 处理 Server 消息
     async fn handle_server_message(
         &self,
@@ -328,53 +328,53 @@ impl OpampAgent {
         if let Some(remote_config) = message.remote_config {
             self.apply_remote_config(remote_config).await?;
         }
-        
+
         // 2. 处理证书更新
         if let Some(certificates) = message.certificates {
             self.update_certificates(certificates).await?;
         }
-        
+
         // 3. 处理软件包升级
         if let Some(packages) = message.packages_available {
             self.upgrade_packages(packages).await?;
         }
-        
+
         Ok(())
     }
-    
+
     /// 应用远程配置
     async fn apply_remote_config(
         &self,
         config: RemoteConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut state = self.config_state.write().await;
-        
+
         // 1. 检查配置哈希（幂等性）
         if state.last_config_hash == config.config_hash {
             println!("Config already applied, skipping");
             return Ok(());
         }
-        
+
         // 2. 标记为"应用中"
         state.apply_status = ConfigApplyStatus::Applying;
         drop(state);  // 释放锁
-        
+
         // 3. 解析配置
         let config_yaml = String::from_utf8(config.config_payload.clone())?;
         println!("Applying config:\n{}", config_yaml);
-        
+
         // 4. 验证配置
         match Self::validate_config(&config_yaml) {
             Ok(_) => {
                 // 5. 应用配置（热重载）
                 Self::reload_config(&config_yaml).await?;
-                
+
                 // 6. 更新状态
                 let mut state = self.config_state.write().await;
                 state.last_config_hash = config.config_hash;
                 state.apply_status = ConfigApplyStatus::Applied;
                 state.error_message.clear();
-                
+
                 println!("Config applied successfully");
             }
             Err(e) => {
@@ -382,24 +382,24 @@ impl OpampAgent {
                 let mut state = self.config_state.write().await;
                 state.apply_status = ConfigApplyStatus::ApplyFailed;
                 state.error_message = e.to_string();
-                
+
                 eprintln!("Config apply failed: {}", e);
             }
         }
-        
+
         Ok(())
     }
-    
+
     fn validate_config(_config_yaml: &str) -> Result<(), Box<dyn std::error::Error>> {
         // YAML schema 验证
         Ok(())
     }
-    
+
     async fn reload_config(_config_yaml: &str) -> Result<(), Box<dyn std::error::Error>> {
         // 重新加载配置（不重启进程）
         Ok(())
     }
-    
+
     /// 更新证书
     async fn update_certificates(
         &self,
@@ -409,7 +409,7 @@ impl OpampAgent {
         // 证书热轮转实现
         Ok(())
     }
-    
+
     /// 升级软件包
     async fn upgrade_packages(
         &self,
@@ -482,7 +482,7 @@ use std::collections::HashMap;
 pub struct OpampServer {
     /// 已连接的 Agent 列表
     agents: Arc<RwLock<HashMap<String, AgentInfo>>>,
-    
+
     /// 配置模板库
     config_templates: Arc<RwLock<HashMap<String, ConfigTemplate>>>,
 }
@@ -516,14 +516,14 @@ impl OpampServer {
             config_templates: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     /// 处理 Agent 心跳
     pub async fn handle_agent_message(
         &self,
         message: AgentToServerMessage,
     ) -> Result<ServerToAgentMessage, Box<dyn std::error::Error>> {
         let instance_uid = message.instance_uid.clone();
-        
+
         // 1. 更新 Agent 信息
         let mut agents = self.agents.write().await;
         agents.insert(instance_uid.clone(), AgentInfo {
@@ -534,10 +534,10 @@ impl OpampServer {
             labels: HashMap::new(),  // 从注册时获取
         });
         drop(agents);
-        
+
         // 2. 确定需要下发的配置
         let config_to_apply = self.select_config_for_agent(&instance_uid).await?;
-        
+
         // 3. 构建响应
         let response = ServerToAgentMessage {
             instance_uid,
@@ -546,10 +546,10 @@ impl OpampServer {
             packages_available: None,
             connection_settings: None,
         };
-        
+
         Ok(response)
     }
-    
+
     /// 根据标签选择器匹配配置
     async fn select_config_for_agent(
         &self,
@@ -557,7 +557,7 @@ impl OpampServer {
     ) -> Result<Option<RemoteConfig>, Box<dyn std::error::Error>> {
         let agents = self.agents.read().await;
         let templates = self.config_templates.read().await;
-        
+
         if let Some(agent) = agents.get(instance_uid) {
             // 遍历所有配置模板，找到匹配的
             for template in templates.values() {
@@ -570,10 +570,10 @@ impl OpampServer {
                 }
             }
         }
-        
+
         Ok(None)
     }
-    
+
     fn matches_selector(
         &self,
         agent_labels: &HashMap<String, String>,
@@ -586,7 +586,7 @@ impl OpampServer {
         }
         true
     }
-    
+
     /// 创建配置模板（灰度发布）
     pub async fn create_config_template(
         &self,
@@ -595,20 +595,20 @@ impl OpampServer {
         selector: LabelSelector,
     ) -> Result<(), Box<dyn std::error::Error>> {
         use sha2::{Sha256, Digest};
-        
+
         // 计算配置哈希
         let hash = Sha256::digest(&content).to_vec();
-        
+
         let template = ConfigTemplate {
             name: name.clone(),
             content,
             hash,
             selector,
         };
-        
+
         let mut templates = self.config_templates.write().await;
         templates.insert(name, template);
-        
+
         Ok(())
     }
 }
@@ -635,30 +635,30 @@ pub async fn setup_mtls() -> Result<TlsAcceptor, Box<dyn std::error::Error>> {
     // 1. 加载服务端证书
     let cert_pem = fs::read("server.crt")?;
     let key_pem = fs::read("server.key")?;
-    
+
     let certs = rustls_pemfile::certs(&mut &cert_pem[..])
         .collect::<Result<Vec<_>, _>>()?;
     let key = rustls_pemfile::private_key(&mut &key_pem[..])?
         .ok_or("No private key found")?;
-    
+
     // 2. 加载客户端 CA（验证 Agent 证书）
     let client_ca_pem = fs::read("client-ca.crt")?;
     let client_ca = rustls_pemfile::certs(&mut &client_ca_pem[..])
         .collect::<Result<Vec<_>, _>>()?;
-    
+
     // 3. 配置 mTLS
     let mut root_store = rustls::RootCertStore::empty();
     for cert in client_ca {
         root_store.add(cert)?;
     }
-    
+
     let client_auth = rustls::server::WebPkiClientVerifier::builder(Arc::new(root_store))
         .build()?;
-    
+
     let config = rustls::ServerConfig::builder()
         .with_client_cert_verifier(client_auth)
         .with_single_cert(certs, key)?;
-    
+
     Ok(TlsAcceptor::from(Arc::new(config)))
 }
 ```
@@ -676,9 +676,9 @@ pub fn verify_config_signature(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let verifying_key = VerifyingKey::from_bytes(public_key)?;
     let signature = Signature::from_bytes(signature.try_into()?);
-    
+
     verifying_key.verify(config_payload, &signature)?;
-    
+
     Ok(())
 }
 ```
@@ -694,7 +694,7 @@ pub fn verify_config_signature(
 pub struct CanaryDeployment {
     /// 金丝雀比例 (0.0 - 1.0)
     canary_percentage: f64,
-    
+
     /// 金丝雀标签
     canary_selector: LabelSelector,
 }
@@ -710,24 +710,24 @@ impl CanaryDeployment {
             },
         }
     }
-    
+
     /// 选择是否为金丝雀实例
     pub fn is_canary(&self, agent_labels: &HashMap<String, String>) -> bool {
         // 1. 检查显式标签
         if agent_labels.get("deployment.canary") == Some(&"true".to_string()) {
             return true;
         }
-        
+
         // 2. 基于哈希的随机选择
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         if let Some(instance_uid) = agent_labels.get("instance.uid") {
             instance_uid.hash(&mut hasher);
             let hash_value = hasher.finish();
             let normalized = (hash_value % 10000) as f64 / 10000.0;
-            
+
             normalized < self.canary_percentage
         } else {
             false
@@ -760,7 +760,7 @@ impl ConfigHistory {
             current: 0,
         }
     }
-    
+
     /// 添加新版本
     pub fn add_version(&mut self, content: Vec<u8>, hash: Vec<u8>) {
         let version = ConfigVersion {
@@ -769,11 +769,11 @@ impl ConfigHistory {
             hash,
             timestamp: std::time::SystemTime::now(),
         };
-        
+
         self.versions.push(version);
         self.current = self.versions.len() - 1;
     }
-    
+
     /// 回滚到上一版本
     pub fn rollback(&mut self) -> Option<&ConfigVersion> {
         if self.current > 0 {
@@ -783,7 +783,7 @@ impl ConfigHistory {
             None
         }
     }
-    
+
     /// 获取当前版本
     pub fn current_version(&self) -> Option<&ConfigVersion> {
         self.versions.get(self.current)
@@ -818,12 +818,12 @@ pub async fn tencent_rollout_strategy() {
     let canary = CanaryDeployment::new(0.01);
     deploy_config_with_selector(&canary.canary_selector).await;
     tokio::time::sleep(Duration::from_secs(3600)).await; // 观察 1 小时
-    
+
     // 阶段 2：小规模 (10% = 1800 节点)
     let small_scale = CanaryDeployment::new(0.10);
     deploy_config_with_selector(&small_scale.canary_selector).await;
     tokio::time::sleep(Duration::from_secs(3600)).await;
-    
+
     // 阶段 3：全量发布 (100%)
     deploy_config_to_all().await;
 }

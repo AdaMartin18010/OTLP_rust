@@ -1,7 +1,7 @@
 # Rust 形式化验证方法与安全性证明
 
-> **版本**: Rust 1.90+  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90+
+> **日期**: 2025年10月2日
 > **主题**: 形式化验证、类型安全、并发正确性、内存安全证明
 
 ---
@@ -117,7 +117,7 @@ Rust 所有权 ≈ 线性类型 + 借用
 fn ownership_move_proof() {
     let s = String::from("hello");
     let t = s;  // s 的所有权移动到 t
-    
+
     // println!("{}", s);  // ❌ 编译错误: s 已移动
     println!("{}", t);     // ✅ 正确: t 拥有所有权
 }
@@ -151,11 +151,11 @@ fn ownership_move_proof() {
 /// 定理: 可变借用期间无法创建其他引用
 fn borrow_exclusivity_proof() {
     let mut v = vec![1, 2, 3];
-    
+
     let r1 = &mut v;
     // let r2 = &v;        // ❌ 编译错误: 已存在可变借用
     // let r3 = &mut v;    // ❌ 编译错误: 已存在可变借用
-    
+
     r1.push(4);            // ✅ 正确
 }
 
@@ -185,8 +185,8 @@ fn borrow_exclusivity_proof() {
 
 ```rust
 /// 定理: 返回引用的生命周期不能超出输入
-fn lifetime_correctness<'a, 'b>(x: &'a str, y: &'b str) -> &'a str 
-where 
+fn lifetime_correctness<'a, 'b>(x: &'a str, y: &'b str) -> &'a str
+where
     'b: 'a  // 约束: 'b 至少和 'a 一样长
 {
     if x.len() > y.len() {
@@ -228,23 +228,23 @@ pub unsafe auto trait Sync {}
 ```text
 证明:
   设类型 T: Send + Sync
-  
+
   1. 数据竞争定义:
      ∃ t ∈ Time, ∃ x: T,
        (∃ thread t₁, t₁ 写 x 在 t) ∧
        (∃ thread t₂ ≠ t₁, t₂ 访问 x 在 t)
-  
+
   2. Rust 规则:
      - 写操作需要 &mut T (独占借用)
      - 读操作需要 &T (共享借用)
      - 可变与不可变借用互斥
-  
+
   3. 推导:
      若 t₁ 写 x ⇒ t₁ 持有 &mut T
      ⇒ 在 t 时刻，不存在其他引用 &T 或 &mut T
      ⇒ t₂ 无法访问 x
      ⇒ 矛盾
-  
+
   ∴ 不存在数据竞争
 ```
 
@@ -256,7 +256,7 @@ use std::sync::{Arc, Mutex};
 /// 定理: Arc<Mutex<T>> 是 Send + Sync (当 T: Send)
 fn arc_mutex_thread_safety() {
     let data = Arc::new(Mutex::new(vec![1, 2, 3]));
-    
+
     let handles: Vec<_> = (0..10)
         .map(|i| {
             let data = Arc::clone(&data);
@@ -266,11 +266,11 @@ fn arc_mutex_thread_safety() {
             })
         })
         .collect();
-    
+
     for h in handles {
         h.join().unwrap();
     }
-    
+
     // 证明: 所有写操作都通过 Mutex 独占保护
 }
 ```
@@ -300,7 +300,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 fn release_acquire_proof() {
     let flag = Arc::new(AtomicBool::new(false));
     let data = Arc::new(Mutex::new(0));
-    
+
     // 线程 1: 写
     {
         let flag = Arc::clone(&flag);
@@ -310,7 +310,7 @@ fn release_acquire_proof() {
             flag.store(true, Ordering::Release); // Release 写
         });
     }
-    
+
     // 线程 2: 读
     {
         let flag = Arc::clone(&flag);
@@ -341,13 +341,13 @@ fn release_acquire_proof() {
 
 证明 (反证法):
   假设存在死锁 ⇒ 存在循环等待
-  
+
   设锁序列: L₁, L₂, ..., Lₙ
   设线程: T₁ 持有 Lᵢ 等待 Lⱼ, T₂ 持有 Lⱼ 等待 Lₖ, ..., Tₙ 持有 Lₘ 等待 Lᵢ
-  
+
   由锁获取规则: Lᵢ < Lⱼ < Lₖ < ... < Lₘ < Lᵢ
   ⇒ Lᵢ < Lᵢ (矛盾: < 是偏序，反自反)
-  
+
   ∴ 不存在死锁
 ```
 
@@ -370,10 +370,10 @@ impl Account {
         } else {
             (&to.balance, &from.balance)
         };
-        
+
         let mut first_lock = first.lock().unwrap();
         let mut second_lock = second.lock().unwrap();
-        
+
         *first_lock -= amount;
         *second_lock += amount;
     }
@@ -397,20 +397,20 @@ impl Account {
 ```text
 证明:
   假设存在 use-after-free ⇒
-  
+
   存在指针 p: &T 指向已释放内存 m
-  
+
   情况 1: p 是唯一所有者
     ⇒ m 的生命周期 = p 的作用域
     ⇒ m 在 p 失效后才释放
     ⇒ 矛盾
-  
+
   情况 2: p 是借用
     ⇒ ∃ 所有者 o: T, lifetime(p) ⊆ lifetime(o)
     ⇒ o 在 p 失效后才释放
     ⇒ m 在 p 失效后才释放
     ⇒ 矛盾
-  
+
   ∴ use-after-free 不可能
 ```
 
@@ -424,7 +424,7 @@ fn use_after_free_impossible() {
         let s = String::from("hello");
         r = &s;
     } // s 被释放
-    
+
     // println!("{}", r);  // ❌ 编译错误: s 的生命周期已结束
 }
 ```
@@ -436,14 +436,14 @@ fn use_after_free_impossible() {
 ```text
 证明:
   假设存在 double-free ⇒
-  
+
   存在内存 m 被释放两次
-  
+
   由线性类型:
     ∀ x: T, x 恰好被消费一次
-  
+
   Drop::drop(x) 消费 x ⇒ x 仅被 drop 一次
-  
+
   ∴ double-free 不可能
 ```
 
@@ -456,7 +456,7 @@ fn use_after_free_impossible() {
 fn null_pointer_safety(opt: Option<String>) {
     // ❌ 无法直接解引用
     // let s = *opt;
-    
+
     // ✅ 必须显式处理 None 情况
     match opt {
         Some(s) => println!("{}", s),
@@ -492,7 +492,7 @@ impl Span {
     fn new(trace_id: TraceId, parent: Option<&Span>) -> Self {
         let span_id = SpanId(rand::random());
         let parent_span_id = parent.map(|p| p.span_id);
-        
+
         // 验证: 如果有父 Span，则继承其 trace_id
         if let Some(parent) = parent {
             assert_eq!(
@@ -501,7 +501,7 @@ impl Span {
                 "Span must inherit parent's trace_id"
             );
         }
-        
+
         Self {
             trace_id,
             span_id,
@@ -522,19 +522,19 @@ use std::collections::HashMap;
 fn context_propagation_correctness() {
     let original_trace_id = "trace-123";
     let original_span_id = "span-456";
-    
+
     // 注入
     let mut headers = HashMap::new();
-    headers.insert("traceparent".to_string(), 
+    headers.insert("traceparent".to_string(),
                    format!("00-{}-{}-01", original_trace_id, original_span_id));
-    
+
     // 提取
     let traceparent = headers.get("traceparent").unwrap();
     let parts: Vec<&str> = traceparent.split('-').collect();
-    
+
     let extracted_trace_id = parts[1];
     let extracted_span_id = parts[2];
-    
+
     // 验证: 提取的值必须与原始值相同
     assert_eq!(original_trace_id, extracted_trace_id);
     assert_eq!(original_span_id, extracted_span_id);
@@ -549,15 +549,15 @@ fn context_propagation_correctness() {
 /// 验证批处理的原子性
 async fn batch_atomicity_proof(spans: Vec<Span>) -> Result<(), Error> {
     let mut transaction = Vec::new();
-    
+
     // 阶段 1: 准备 (可回滚)
     for span in &spans {
         transaction.push(serialize(span)?);
     }
-    
+
     // 阶段 2: 提交 (原子操作)
     send_batch(transaction).await?;
-    
+
     // 不变量: 所有 Span 一起发送，或全部失败
     Ok(())
 }
@@ -625,7 +625,7 @@ fn max(v: &[i32]) -> i32 {
 fn verify_no_overflow() {
     let x: u32 = kani::any();
     let y: u32 = kani::any();
-    
+
     if let Some(sum) = x.checked_add(y) {
         assert!(sum >= x && sum >= y);
     }
@@ -651,7 +651,7 @@ impl SpanGenerator {
     fn new() -> Self {
         Self { counter: 0 }
     }
-    
+
     #[requires(self.counter < u64::MAX)]
     #[ensures(self.counter == old(self.counter) + 1)]
     #[ensures(result == old(self.counter))]
@@ -696,5 +696,5 @@ const BATCH_SIZE: usize = 1000;
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

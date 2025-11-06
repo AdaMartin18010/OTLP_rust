@@ -116,13 +116,13 @@ OTLP 自我运维模式:
 pub struct ObservabilitySystem {
     /// 边缘层 - Agent
     agent: Arc<OtlpAgent>,
-    
+
     /// 中心层 - Gateway
     gateway: Option<Arc<OtlpGateway>>,
-    
+
     /// 控制平面 - OPAMP
     control_plane: Arc<OpampClient>,
-    
+
     /// 配置
     config: Arc<RwLock<SystemConfig>>,
 }
@@ -132,18 +132,18 @@ impl ObservabilitySystem {
     pub async fn start(&self) -> Result<(), Error> {
         // 1. 启动 Agent (边缘层)
         self.agent.start().await?;
-        
+
         // 2. 启动 Gateway (如果是中心节点)
         if let Some(gateway) = &self.gateway {
             gateway.start().await?;
         }
-        
+
         // 3. 连接 OPAMP 控制平面
         self.control_plane.connect().await?;
-        
+
         // 4. 启动健康检查
         self.start_health_check().await;
-        
+
         Ok(())
     }
 }
@@ -173,16 +173,16 @@ use std::sync::Arc;
 pub struct OtlpAgent {
     /// 接收器 - 从应用接收数据
     receiver: mpsc::Receiver<TelemetryData>,
-    
+
     /// 发送器 - 向 Gateway 发送数据
     gateway_client: Arc<GatewayClient>,
-    
+
     /// 本地处理器
     processor: Arc<LocalProcessor>,
-    
+
     /// 边缘分析器
     analyzer: Arc<EdgeAnalyzer>,
-    
+
     /// 配置
     config: Arc<RwLock<AgentConfig>>,
 }
@@ -192,7 +192,7 @@ impl OtlpAgent {
     pub async fn run(&mut self) -> Result<(), Error> {
         let mut batch = Vec::with_capacity(100);
         let mut ticker = tokio::time::interval(Duration::from_secs(5));
-        
+
         loop {
             tokio::select! {
                 // 接收数据
@@ -201,16 +201,16 @@ impl OtlpAgent {
                     if let Some(processed) = self.processor.process(data).await? {
                         batch.push(processed);
                     }
-                    
+
                     // 2. 边缘分析 (异常检测)
                     self.analyzer.analyze(&batch).await?;
-                    
+
                     // 3. 批量发送
                     if batch.len() >= 100 {
                         self.flush_batch(&mut batch).await?;
                     }
                 }
-                
+
                 // 定时发送
                 _ = ticker.tick() => {
                     if !batch.is_empty() {
@@ -220,7 +220,7 @@ impl OtlpAgent {
             }
         }
     }
-    
+
     /// 刷新批次
     async fn flush_batch(&self, batch: &mut Vec<TelemetryData>) -> Result<(), Error> {
         self.gateway_client.send_batch(batch.clone()).await?;
@@ -233,7 +233,7 @@ impl OtlpAgent {
 pub struct LocalProcessor {
     /// 采样器
     sampler: Arc<Sampler>,
-    
+
     /// 过滤器
     filters: Vec<Box<dyn Filter + Send + Sync>>,
 }
@@ -245,7 +245,7 @@ impl LocalProcessor {
         if !self.sampler.should_sample(&data) {
             return Ok(None);
         }
-        
+
         // 2. 应用过滤器
         let mut data = data;
         for filter in &self.filters {
@@ -254,7 +254,7 @@ impl LocalProcessor {
                 None => return Ok(None), // 被过滤掉
             };
         }
-        
+
         Ok(Some(data))
     }
 }
@@ -263,7 +263,7 @@ impl LocalProcessor {
 pub struct EdgeAnalyzer {
     /// EWMA 异常检测
     ewma_detector: Arc<EwmaDetector>,
-    
+
     /// 决策引擎
     decision_engine: Arc<DecisionEngine>,
 }
@@ -303,16 +303,16 @@ impl EdgeAnalyzer {
 pub struct OtlpGateway {
     /// gRPC 服务器
     grpc_server: Arc<GrpcServer>,
-    
+
     /// HTTP 服务器
     http_server: Arc<HttpServer>,
-    
+
     /// 路由器
     router: Arc<Router>,
-    
+
     /// 后端连接池
     backends: Arc<RwLock<Vec<Backend>>>,
-    
+
     /// 全局聚合器
     aggregator: Arc<GlobalAggregator>,
 }
@@ -327,7 +327,7 @@ impl OtlpGateway {
                 server.serve().await
             })
         };
-        
+
         // 2. 启动 HTTP 服务器 (4318)
         let http_handle = {
             let server = self.http_server.clone();
@@ -335,7 +335,7 @@ impl OtlpGateway {
                 server.serve().await
             })
         };
-        
+
         // 3. 启动聚合任务
         let aggregator_handle = {
             let aggregator = self.aggregator.clone();
@@ -343,10 +343,10 @@ impl OtlpGateway {
                 aggregator.run().await
             })
         };
-        
+
         // 等待所有任务
         tokio::try_join!(grpc_handle, http_handle, aggregator_handle)?;
-        
+
         Ok(())
     }
 }
@@ -362,13 +362,13 @@ impl Router {
     pub async fn route(&self, data: &TelemetryData) -> Result<Vec<BackendId>, Error> {
         let rules = self.rules.read().await;
         let mut targets = Vec::new();
-        
+
         for rule in rules.iter() {
             if rule.matches(data) {
                 targets.push(rule.backend_id.clone());
             }
         }
-        
+
         Ok(targets)
     }
 }
@@ -377,13 +377,13 @@ impl Router {
 pub struct RoutingRule {
     /// 规则名称
     name: String,
-    
+
     /// 匹配条件 (OTTL 表达式)
     condition: String,
-    
+
     /// 目标后端
     backend_id: BackendId,
-    
+
     /// 优先级
     priority: u32,
 }
@@ -406,7 +406,7 @@ impl RoutingRule {
 pub trait Backend: Send + Sync {
     /// 发送数据
     async fn send(&self, data: Vec<TelemetryData>) -> Result<(), Error>;
-    
+
     /// 健康检查
     async fn health_check(&self) -> Result<bool, Error>;
 }
@@ -424,7 +424,7 @@ impl Backend for JaegerBackend {
         let spans = convert_to_jaeger_spans(data);
         self.client.send_batch(spans).await
     }
-    
+
     async fn health_check(&self) -> Result<bool, Error> {
         self.client.ping().await
     }
@@ -441,10 +441,10 @@ impl Backend for PrometheusBackend {
     async fn send(&self, data: Vec<TelemetryData>) -> Result<(), Error> {
         // 转换为 Prometheus Remote Write 格式
         let timeseries = convert_to_prometheus(data);
-        
+
         // 使用 Snappy 压缩
         let compressed = snappy_compress(&timeseries);
-        
+
         // 发送
         self.client
             .post(&self.endpoint)
@@ -453,10 +453,10 @@ impl Backend for PrometheusBackend {
             .body(compressed)
             .send()
             .await?;
-        
+
         Ok(())
     }
-    
+
     async fn health_check(&self) -> Result<bool, Error> {
         let resp = self.client.get(&self.endpoint).send().await?;
         Ok(resp.status().is_success())
@@ -497,10 +497,10 @@ Agent (DaemonSet)
 pub struct EwmaDetector {
     /// 平滑因子 (α)
     alpha: f64,
-    
+
     /// 当前 EWMA 值
     ewma: Arc<RwLock<f64>>,
-    
+
     /// 阈值 (标准差倍数)
     threshold: f64,
 }
@@ -513,20 +513,20 @@ impl EwmaDetector {
             threshold,
         }
     }
-    
+
     /// 更新并检测异常
     pub async fn is_anomaly(&self, value: f64) -> bool {
         let mut ewma = self.ewma.write().await;
-        
+
         // 计算新的 EWMA
         let new_ewma = self.alpha * value + (1.0 - self.alpha) * *ewma;
-        
+
         // 计算偏差
         let deviation = (value - new_ewma).abs();
-        
+
         // 更新 EWMA
         *ewma = new_ewma;
-        
+
         // 判断是否异常
         deviation > self.threshold * new_ewma
     }
@@ -540,10 +540,10 @@ impl EwmaDetector {
 pub struct ZScoreDetector {
     /// 滑动窗口
     window: Arc<RwLock<VecDeque<f64>>>,
-    
+
     /// 窗口大小
     window_size: usize,
-    
+
     /// Z-Score 阈值 (通常 2.5 或 3.0)
     threshold: f64,
 }
@@ -552,23 +552,23 @@ impl ZScoreDetector {
     /// 检测异常
     pub async fn is_anomaly(&self, value: f64) -> bool {
         let mut window = self.window.write().await;
-        
+
         // 添加新值
         window.push_back(value);
         if window.len() > self.window_size {
             window.pop_front();
         }
-        
+
         // 计算均值和标准差
         let mean = window.iter().sum::<f64>() / window.len() as f64;
         let variance = window.iter()
             .map(|x| (x - mean).powi(2))
             .sum::<f64>() / window.len() as f64;
         let std_dev = variance.sqrt();
-        
+
         // 计算 Z-Score
         let z_score = ((value - mean) / std_dev).abs();
-        
+
         z_score > self.threshold
     }
 }
@@ -581,7 +581,7 @@ impl ZScoreDetector {
 pub struct DecisionEngine {
     /// 决策规则
     rules: Arc<RwLock<Vec<DecisionRule>>>,
-    
+
     /// 执行器
     executor: Arc<ActionExecutor>,
 }
@@ -590,16 +590,16 @@ pub struct DecisionEngine {
 pub struct DecisionRule {
     /// 规则名称
     name: String,
-    
+
     /// 触发条件
     condition: Condition,
-    
+
     /// 执行动作
     action: Action,
-    
+
     /// 冷却时间 (避免频繁触发)
     cooldown: Duration,
-    
+
     /// 上次执行时间
     last_executed: Arc<RwLock<Option<Instant>>>,
 }
@@ -608,13 +608,13 @@ pub struct DecisionRule {
 pub enum Condition {
     /// CPU 使用率超过阈值
     CpuAbove(f64),
-    
+
     /// 内存使用率超过阈值
     MemoryAbove(f64),
-    
+
     /// 请求错误率超过阈值
     ErrorRateAbove(f64),
-    
+
     /// 请求延迟超过阈值
     LatencyAbove(Duration),
 }
@@ -623,13 +623,13 @@ pub enum Condition {
 pub enum Action {
     /// 限流 (通过 iptables)
     RateLimit { port: u16, rate: u32 },
-    
+
     /// 重启容器
     RestartContainer { pod_name: String },
-    
+
     /// 发送告警
     SendAlert { severity: AlertSeverity, message: String },
-    
+
     /// 降级服务
     Degrade { feature: String },
 }
@@ -638,7 +638,7 @@ impl DecisionEngine {
     /// 处理异常
     pub async fn handle_anomaly(&self, data: &TelemetryData) -> Result<(), Error> {
         let rules = self.rules.read().await;
-        
+
         for rule in rules.iter() {
             // 检查条件是否满足
             if self.check_condition(&rule.condition, data).await {
@@ -650,14 +650,14 @@ impl DecisionEngine {
                     }
                 }
                 drop(last_executed);
-                
+
                 // 执行动作
                 self.executor.execute(&rule.action).await?;
-                
+
                 // 更新执行时间
                 let mut last_executed = rule.last_executed.write().await;
                 *last_executed = Some(Instant::now());
-                
+
                 tracing::info!(
                     "Decision rule executed: {}, action: {:?}",
                     rule.name,
@@ -665,10 +665,10 @@ impl DecisionEngine {
                 );
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 检查条件
     async fn check_condition(&self, condition: &Condition, data: &TelemetryData) -> bool {
         match condition {
@@ -708,7 +708,7 @@ impl ActionExecutor {
             }
         }
     }
-    
+
     /// 应用限流 (iptables)
     async fn apply_rate_limit(&self, port: u16, rate: u32) -> Result<(), Error> {
         let output = tokio::process::Command::new("iptables")
@@ -722,25 +722,25 @@ impl ActionExecutor {
             ])
             .output()
             .await?;
-        
+
         if !output.status.success() {
             return Err(Error::ExecutionFailed("iptables command failed".into()));
         }
-        
+
         Ok(())
     }
-    
+
     /// 重启 Pod (kubectl)
     async fn restart_pod(&self, pod_name: &str) -> Result<(), Error> {
         let output = tokio::process::Command::new("kubectl")
             .args(&["delete", "pod", pod_name])
             .output()
             .await?;
-        
+
         if !output.status.success() {
             return Err(Error::ExecutionFailed("kubectl command failed".into()));
         }
-        
+
         Ok(())
     }
 }
@@ -768,7 +768,7 @@ path = resource.attributes.x | metric.name | span.status.code
 pub struct OttlStatement {
     /// 条件表达式
     condition: Option<Expression>,
-    
+
     /// 动作
     action: Action,
 }
@@ -777,17 +777,17 @@ pub struct OttlStatement {
 pub enum Expression {
     /// 字面量
     Literal(Value),
-    
+
     /// 路径访问
     Path(Vec<String>),
-    
+
     /// 二元操作
     Binary {
         left: Box<Expression>,
         op: BinaryOp,
         right: Box<Expression>,
     },
-    
+
     /// 函数调用
     Function {
         name: String,
@@ -809,13 +809,13 @@ pub enum BinaryOp {
 pub enum OttlAction {
     /// 设置字段
     Set { path: Vec<String>, value: Expression },
-    
+
     /// 保留指定键
     KeepKeys { paths: Vec<Vec<String>> },
-    
+
     /// 限制数组大小
     Limit { path: Vec<String>, max: usize },
-    
+
     /// 删除
     Drop,
 }
@@ -835,7 +835,7 @@ impl OttlInterpreter {
         } else {
             true
         };
-        
+
         // 2. 执行动作
         if should_execute {
             self.execute_action(&stmt.action, data)?;
@@ -844,35 +844,35 @@ impl OttlInterpreter {
             Ok(false)
         }
     }
-    
+
     /// 评估表达式
     fn eval_expression(&self, expr: &Expression, data: &TelemetryData) -> Result<Value, Error> {
         match expr {
             Expression::Literal(v) => Ok(v.clone()),
-            
+
             Expression::Path(path) => {
                 self.resolve_path(path, data)
             }
-            
+
             Expression::Binary { left, op, right } => {
                 let left_val = self.eval_expression(left, data)?;
                 let right_val = self.eval_expression(right, data)?;
                 self.eval_binary_op(&left_val, op, &right_val)
             }
-            
+
             Expression::Function { name, args } => {
                 let func = self.functions.get(name)
                     .ok_or(Error::UnknownFunction(name.clone()))?;
-                
+
                 let arg_values: Result<Vec<_>, _> = args.iter()
                     .map(|arg| self.eval_expression(arg, data))
                     .collect();
-                
+
                 func.call(&arg_values?)
             }
         }
     }
-    
+
     /// 解析路径
     fn resolve_path(&self, path: &[String], data: &TelemetryData) -> Result<Value, Error> {
         // 例如: resource.attributes.service.name
@@ -908,7 +908,7 @@ impl OttlFunction for Sha256Function {
         if args.len() != 1 {
             return Err(Error::InvalidArguments);
         }
-        
+
         let input = args[0].as_string()?;
         let hash = sha2::Sha256::digest(input.as_bytes());
         Ok(Value::String(hex::encode(hash)))
@@ -973,13 +973,13 @@ let stmt = OttlStatement {
 pub struct AgentToServer {
     /// Agent 实例 ID
     pub instance_uid: String,
-    
+
     /// 配置状态
     pub remote_config_status: Option<RemoteConfigStatus>,
-    
+
     /// 健康状态
     pub health: AgentHealth,
-    
+
     /// 能力声明
     pub capabilities: AgentCapabilities,
 }
@@ -989,10 +989,10 @@ pub struct AgentToServer {
 pub struct ServerToAgent {
     /// 远程配置
     pub remote_config: Option<RemoteConfig>,
-    
+
     /// 证书更新
     pub certificates: Option<TlsCertificates>,
-    
+
     /// 二进制包
     pub package_available: Option<PackageAvailable>,
 }
@@ -1002,7 +1002,7 @@ pub struct ServerToAgent {
 pub struct RemoteConfig {
     /// 配置内容 (YAML/JSON)
     pub config: serde_json::Value,
-    
+
     /// 配置哈希 (用于去重)
     pub config_hash: [u8; 32],
 }
@@ -1012,10 +1012,10 @@ pub struct RemoteConfig {
 pub struct AgentCapabilities {
     /// 支持远程配置
     pub accepts_remote_config: bool,
-    
+
     /// 支持 OTTL
     pub accepts_ottl: bool,
-    
+
     /// 支持二进制更新
     pub accepts_package: bool,
 }
@@ -1028,13 +1028,13 @@ pub struct AgentCapabilities {
 pub struct OpampClient {
     /// gRPC 客户端
     client: OpampServiceClient<Channel>,
-    
+
     /// Agent ID
     instance_uid: String,
-    
+
     /// 当前配置
     current_config: Arc<RwLock<Option<RemoteConfig>>>,
-    
+
     /// 配置应用回调
     on_config_update: Arc<dyn Fn(RemoteConfig) -> BoxFuture<'static, Result<(), Error>> + Send + Sync>,
 }
@@ -1043,10 +1043,10 @@ impl OpampClient {
     /// 启动心跳循环
     pub async fn start_heartbeat(&self) -> Result<(), Error> {
         let mut interval = tokio::time::interval(Duration::from_secs(10));
-        
+
         loop {
             interval.tick().await;
-            
+
             // 发送心跳
             let request = AgentToServer {
                 instance_uid: self.instance_uid.clone(),
@@ -1058,35 +1058,35 @@ impl OpampClient {
                     accepts_package: true,
                 },
             };
-            
+
             // 接收响应
             let response = self.client.heartbeat(request).await?;
-            
+
             // 处理响应
             self.handle_server_response(response).await?;
         }
     }
-    
+
     /// 处理 Server 响应
     async fn handle_server_response(&self, response: ServerToAgent) -> Result<(), Error> {
         // 1. 处理远程配置
         if let Some(config) = response.remote_config {
             self.apply_remote_config(config).await?;
         }
-        
+
         // 2. 处理证书更新
         if let Some(certs) = response.certificates {
             self.update_certificates(certs).await?;
         }
-        
+
         // 3. 处理二进制更新
         if let Some(package) = response.package_available {
             self.upgrade_binary(package).await?;
         }
-        
+
         Ok(())
     }
-    
+
     /// 应用远程配置
     async fn apply_remote_config(&self, config: RemoteConfig) -> Result<(), Error> {
         // 检查配置哈希
@@ -1097,14 +1097,14 @@ impl OpampClient {
             }
         }
         drop(current_config);
-        
+
         // 应用新配置
         (self.on_config_update)(config.clone()).await?;
-        
+
         // 更新当前配置
         let mut current_config = self.current_config.write().await;
         *current_config = Some(config);
-        
+
         Ok(())
     }
 }
@@ -1123,22 +1123,22 @@ impl ConfigUpdateHandler {
     pub async fn handle(&self, config: RemoteConfig) -> Result<(), Error> {
         // 解析配置
         let agent_config: AgentConfig = serde_json::from_value(config.config)?;
-        
+
         // 1. 更新采样率
         if let Some(sampling_ratio) = agent_config.sampling_ratio {
             self.agent.update_sampling_ratio(sampling_ratio).await;
         }
-        
+
         // 2. 更新 OTTL 规则
         if let Some(ottl_rules) = agent_config.ottl_rules {
             self.agent.update_ottl_rules(ottl_rules).await?;
         }
-        
+
         // 3. 更新后端地址
         if let Some(endpoint) = agent_config.gateway_endpoint {
             self.agent.update_gateway_endpoint(endpoint).await;
         }
-        
+
         Ok(())
     }
 }
@@ -1171,16 +1171,16 @@ impl ConfigUpdateHandler {
 pub struct SelfOperatingSystem {
     /// 观测层
     observer: Arc<Observer>,
-    
+
     /// 分析层
     analyzer: Arc<Analyzer>,
-    
+
     /// 决策层
     decider: Arc<Decider>,
-    
+
     /// 执行层
     executor: Arc<Executor>,
-    
+
     /// 配置层
     configurator: Arc<Configurator>,
 }
@@ -1191,21 +1191,21 @@ impl SelfOperatingSystem {
         loop {
             // 1. 感知
             let observations = self.observer.collect().await?;
-            
+
             // 2. 分析
             let insights = self.analyzer.analyze(&observations).await?;
-            
+
             // 3. 决策
             let decisions = self.decider.decide(&insights).await?;
-            
+
             // 4. 执行
             for decision in decisions {
                 self.executor.execute(decision).await?;
             }
-            
+
             // 5. 配置反馈
             self.configurator.feedback(&insights).await?;
-            
+
             // 等待下一轮
             tokio::time::sleep(Duration::from_secs(10)).await;
         }
@@ -1234,7 +1234,7 @@ impl CausalityGuarantee {
         let mut clock = self.vector_clock.write().await;
         clock.increment(span.span_id.to_string());
     }
-    
+
     /// 检查因果关系
     pub async fn happens_before(&self, a: &Span, b: &Span) -> bool {
         // 如果 a 是 b 的祖先，则 a happens-before b

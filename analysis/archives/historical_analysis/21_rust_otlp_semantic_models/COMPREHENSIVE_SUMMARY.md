@@ -299,7 +299,7 @@ impl VectorClock {
     pub fn increment(&mut self, node_id: String) {
         *self.clocks.entry(node_id).or_insert(0) += 1;
     }
-    
+
     pub fn happens_before(&self, other: &VectorClock) -> bool {
         self.clocks.iter().all(|(k, &v)| {
             other.clocks.get(k).map_or(false, |&v2| v <= v2)
@@ -324,21 +324,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")
         .with_service("my-service", "1.0.0");
-    
+
     // 2. 创建客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 3. 发送追踪数据
     let trace = TelemetryData::trace("example-operation")
         .with_attribute("user.id", "12345")
         .with_attribute("request.path", "/api/users");
-    
+
     client.send(trace).await?;
-    
+
     // 4. 关闭客户端
     client.shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -354,7 +354,7 @@ let mut batch = Vec::with_capacity(100);
 for i in 0..1000 {
     let data = generate_telemetry(i);
     batch.push(data);
-    
+
     if batch.len() >= 100 {
         client.send_batch(batch.clone()).await?;
         batch.clear();
@@ -390,7 +390,7 @@ impl Sampler for CustomSampler {
         } else {
             self.base_ratio
         };
-        
+
         rand::random::<f64>() < ratio
     }
 }
@@ -452,7 +452,7 @@ impl EbpfProfiler {
         self.bpf.attach_uprobe(pid, "function_name")?;
         Ok(())
     }
-    
+
     pub async fn collect_samples(&self) -> Vec<StackTrace> {
         // 收集栈追踪
         self.bpf.perf_map().collect()
@@ -475,7 +475,7 @@ impl Filter for WasmFilter {
             .get_func("filter")
             .unwrap()
             .call(&[data.into()])?;
-        
+
         result.into()
     }
 }
@@ -494,7 +494,7 @@ impl AiAnomalyDetector {
         // 推理
         let input = ndarray::Array::from_vec(metrics.to_vec());
         let output = self.model.run(vec![input.into()])?;
-        
+
         // 解析结果
         output[0].extract::<f32>()? > 0.8
     }

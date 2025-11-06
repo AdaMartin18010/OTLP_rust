@@ -1,7 +1,7 @@
 # 零拷贝优化深度剖析
 
-> **版本**: Rust 1.90  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90
+> **日期**: 2025年10月2日
 > **主题**: 零拷贝技术、内存优化、性能提升
 
 ---
@@ -71,21 +71,21 @@ use bytes::{Bytes, BytesMut};
 /// 零拷贝克隆
 fn zero_copy_clone() {
     let data = Bytes::from("hello world");
-    
+
     // 仅增加引用计数，无内存拷贝
     let clone1 = data.clone(); // ⏰ O(1)
     let clone2 = data.clone(); // ⏰ O(1)
-    
+
     assert_eq!(data.as_ptr(), clone1.as_ptr()); // 指向同一内存
 }
 
 /// 零拷贝切片
 fn zero_copy_slice() {
     let data = Bytes::from("hello world");
-    
+
     // 切片共享底层内存
     let slice = data.slice(0..5); // "hello"
-    
+
     assert_eq!(slice.as_ptr(), data.as_ptr());
 }
 ```
@@ -119,7 +119,7 @@ fn share_data() {
     let data = SharedData {
         large_buffer: Arc::new(vec![0u8; 10_000_000]), // 10 MB
     };
-    
+
     // 克隆仅增加引用计数
     let clone1 = data.clone(); // ⏰ O(1), 无拷贝
     let clone2 = data.clone(); // ⏰ O(1), 无拷贝
@@ -147,13 +147,13 @@ impl ZeroCopySpanBuilder {
             buffer: BytesMut::with_capacity(4096),
         }
     }
-    
+
     /// 添加 Span (序列化直接写入 buffer)
     pub fn add_span(&mut self, span: &ProtoSpan) -> Result<(), Box<dyn std::error::Error>> {
         span.encode(&mut self.buffer)?;
         Ok(())
     }
-    
+
     /// 零拷贝冻结
     pub fn freeze(self) -> Bytes {
         self.buffer.freeze() // 转换为不可变 Bytes，无拷贝
@@ -166,7 +166,7 @@ impl Message for ProtoSpan {
     fn encode_raw<B>(&self, _buf: &mut B) where B: BufMut {
         // Protobuf 序列化
     }
-    
+
     fn merge_field<B>(
         &mut self,
         _tag: u32,
@@ -179,11 +179,11 @@ impl Message for ProtoSpan {
     {
         Ok(())
     }
-    
+
     fn encoded_len(&self) -> usize {
         0
     }
-    
+
     fn clear(&mut self) {}
 }
 ```
@@ -204,24 +204,24 @@ impl BatchExporter {
             spans: Arc::new(spans),
         }
     }
-    
+
     /// 并行导出到多个后端
     pub async fn export_to_multiple_backends(&self) {
         let backends = vec!["backend1", "backend2", "backend3"];
-        
+
         let mut tasks = Vec::new();
-        
+
         for backend in backends {
             let spans = Arc::clone(&self.spans); // 仅克隆 Arc
-            
+
             tasks.push(tokio::spawn(async move {
                 Self::export_to_backend(backend, &spans).await;
             }));
         }
-        
+
         futures::future::join_all(tasks).await;
     }
-    
+
     async fn export_to_backend(_backend: &str, _spans: &[Bytes]) {
         // 网络发送
     }
@@ -242,7 +242,7 @@ pub async fn send_grpc_zero_copy(
     // tonic 自动使用 Bytes 避免拷贝
     // let request = Request::new(data);
     // client.export(request).await?;
-    
+
     Ok(())
 }
 ```
@@ -258,14 +258,14 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn benchmark_copy_vs_zerocopy(c: &mut Criterion) {
     let data = vec![0u8; 1_000_000]; // 1 MB
-    
+
     c.bench_function("traditional_copy", |b| {
         b.iter(|| {
             let _copy1 = black_box(data.clone()); // 拷贝 1 MB
             let _copy2 = black_box(data.clone()); // 拷贝 1 MB
         });
     });
-    
+
     c.bench_function("zero_copy_arc", |b| {
         let arc_data = Arc::new(data.clone());
         b.iter(|| {
@@ -336,5 +336,5 @@ async fn export_to_custom(_spans: Arc<Vec<Bytes>>) {}
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

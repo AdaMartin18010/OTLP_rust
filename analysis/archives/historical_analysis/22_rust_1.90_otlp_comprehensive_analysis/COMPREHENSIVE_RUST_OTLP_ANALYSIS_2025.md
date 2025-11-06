@@ -1,7 +1,7 @@
 # Rust 1.90 + OTLP 全面综合分析报告 2025
 
-> **版本**: Rust 1.90 + OpenTelemetry 2025  
-> **日期**: 2025年10月3日  
+> **版本**: Rust 1.90 + OpenTelemetry 2025
+> **日期**: 2025年10月3日
 > **主题**: 同步异步机制、语义模型、分布式追踪、形式化验证
 
 ---
@@ -131,24 +131,24 @@ impl OtlpClient {
         let exporter = Arc::new(OtlpExporter::new(config.clone()));
         Ok(Self { config, exporter, /* ... */ })
     }
-    
+
     // 异步执行
     pub async fn send(&self, data: TelemetryData) -> Result<ExportResult> {
         // 采样决策 (同步)
         if !self.should_sample_for(&data) {
             return Ok(ExportResult::success(0, Duration::ZERO));
         }
-        
+
         // 限流检查 (异步读锁)
         if !self.check_tenant_qps_allow(&data).await {
             return Ok(ExportResult::success(0, Duration::ZERO));
         }
-        
+
         // 批处理 (异步)
         if let Some(processor) = self.processor.read().await.as_ref() {
             processor.process(data.clone()).await?;
         }
-        
+
         // 网络传输 (异步)
         let result = self.exporter.export_single(data).await?;
         Ok(result)
@@ -163,7 +163,7 @@ impl OtlpClient {
 #[tokio::main(flavor = "multi_thread", worker_threads = 8)]
 async fn main() -> Result<()> {
     let client = OtlpClient::new(config).await?;
-    
+
     // 并发发送 (spawn 到独立任务)
     let mut handles = vec![];
     for i in 0..1000 {
@@ -176,12 +176,12 @@ async fn main() -> Result<()> {
         });
         handles.push(handle);
     }
-    
+
     // 等待所有任务完成
     for handle in handles {
         handle.await??;
     }
-    
+
     Ok(())
 }
 ```
@@ -222,7 +222,7 @@ impl TraceContext {
             trace_flags: 0x01,  // 采样
         }
     }
-    
+
     /// 创建子 Span (保持因果关系)
     pub fn child(&self) -> Self {
         Self {
@@ -253,20 +253,20 @@ impl Injector for HeaderMap {
 /// 跨服务传播
 async fn call_downstream(ctx: &TraceContext) -> Result<Response> {
     let mut headers = HeaderMap::new();
-    
+
     // 注入 W3C Trace Context
     headers.set("traceparent", format!(
         "00-{}-{}-{:02x}",
         ctx.trace_id, ctx.span_id, ctx.trace_flags
     ));
-    
+
     // HTTP 调用
     let response = reqwest::Client::new()
         .get("http://downstream-service/api")
         .headers(headers)
         .send()
         .await?;
-    
+
     Ok(response)
 }
 ```
@@ -304,7 +304,7 @@ pub struct OpampClient {
 impl OpampClient {
     pub async fn connect(&mut self) -> Result<()> {
         let (ws_stream, _) = tokio_tungstenite::connect_async(&self.ws_url).await?;
-        
+
         loop {
             // 发送心跳
             let heartbeat = AgentToServer {
@@ -313,21 +313,21 @@ impl OpampClient {
                 remote_config_status: self.get_config_status(),
                 health: self.get_health(),
             };
-            
+
             ws_stream.send(Message::Binary(
                 serde_json::to_vec(&heartbeat)?
             )).await?;
-            
+
             // 接收控制命令
             if let Some(msg) = ws_stream.next().await {
                 let server_msg: ServerToAgent = serde_json::from_slice(&msg?)?;
                 self.handle_server_message(server_msg).await?;
             }
-            
+
             tokio::time::sleep(Duration::from_secs(30)).await;
         }
     }
-    
+
     async fn handle_server_message(&mut self, msg: ServerToAgent) -> Result<()> {
         // 动态配置更新
         if let Some(config) = msg.remote_config {
@@ -360,19 +360,19 @@ impl OpampServer {
         // 第一阶段: 1% 节点
         self.deploy_to_percentage(&config, 0.01, &canary.selector).await?;
         tokio::time::sleep(Duration::from_secs(300)).await;
-        
+
         // 检查健康度
         if self.check_health_metrics().await?.error_rate > 0.01 {
             return self.rollback(&config).await;
         }
-        
+
         // 第二阶段: 10% 节点
         self.deploy_to_percentage(&config, 0.10, &canary.selector).await?;
         tokio::time::sleep(Duration::from_secs(600)).await;
-        
+
         // 全量发布
         self.deploy_to_all(&config, &canary.selector).await?;
-        
+
         Ok(DeploymentResult::Success)
     }
 }
@@ -425,20 +425,20 @@ impl OttlEngine {
     pub fn eval(&self, expr: &Expr, ctx: &TelemetryData) -> Result<Value> {
         match expr {
             Expr::Literal(v) => Ok(v.clone()),
-            
+
             Expr::Path(p) => self.resolve_path(p, ctx),
-            
+
             Expr::FunctionCall { name, args } => {
                 let func = self.functions.get(name)
                     .ok_or(OttlError::UnknownFunction(name.clone()))?;
-                    
+
                 let arg_values: Result<Vec<_>> = args.iter()
                     .map(|a| self.eval(a, ctx))
                     .collect();
-                    
+
                 func.call(&arg_values?)
             },
-            
+
             Expr::BinaryOp { left, op, right } => {
                 let l = self.eval(left, ctx)?;
                 let r = self.eval(right, ctx)?;
@@ -467,10 +467,10 @@ impl PathAccessor {
             "resource.attributes" => vec![0, 8],
             _ => return Err(OttlError::InvalidPath(path.to_string())),
         };
-        
+
         Ok(Self { offsets, field_type: FieldType::Map })
     }
-    
+
     /// 运行期零拷贝访问
     pub unsafe fn access<'a>(&self, data: &'a [u8]) -> &'a [u8] {
         let mut ptr = data.as_ptr();
@@ -498,13 +498,13 @@ impl AsyncStackTracer {
     /// 捕获异步调用链
     pub fn capture_async_stack(&self, task_id: u64) -> Vec<Frame> {
         let stacks = self.task_stacks.read();
-        
+
         // 合并同步栈 + 异步链
         let sync_stack = Backtrace::capture();
         let async_chain = stacks.get(&task_id).cloned().unwrap_or_default();
-        
+
         let mut full_stack = Vec::new();
-        
+
         // 同步栈帧
         for frame in sync_stack.frames() {
             full_stack.push(Frame {
@@ -513,10 +513,10 @@ impl AsyncStackTracer {
                 line: frame.lineno().unwrap_or(0),
             });
         }
-        
+
         // 异步链
         full_stack.extend(async_chain);
-        
+
         full_stack
     }
 }
@@ -527,9 +527,9 @@ macro_rules! traced_async {
     ($tracer:expr, $func:expr) => {{
         let task_id = tokio::task::id();
         $tracer.enter_async_fn(task_id, Frame::current());
-        
+
         let result = $func.await;
-        
+
         $tracer.exit_async_fn(task_id);
         result
     }};
@@ -553,7 +553,7 @@ impl EbpfProfiler {
         let mut obj = libbpf_rs::ObjectBuilder::default()
             .open_file("profile.bpf.o")?
             .load()?;
-        
+
         // 附加到 perf event
         let prog = obj.prog_mut("on_cpu_sample").unwrap();
         let _link = prog.attach_perf_event(
@@ -561,7 +561,7 @@ impl EbpfProfiler {
             libbpf_rs::PerfEventSoftware::CpuClock,
             self.frequency_hz,
         )?;
-        
+
         // 读取采样数据
         let perf = PerfBufferBuilder::new(obj.map("events")?)
             .sample_cb(|_cpu, data: &[u8]| {
@@ -569,7 +569,7 @@ impl EbpfProfiler {
                 send_to_otlp(stack);
             })
             .build()?;
-        
+
         loop {
             perf.poll(Duration::from_millis(100))?;
         }
@@ -605,7 +605,7 @@ impl SafeOtlpClient {
     pub async fn read(&self) -> RwLockReadGuard<'_, ClientData> {
         self.data.read().await  // 可多个并发读
     }
-    
+
     pub async fn write(&self) -> RwLockWriteGuard<'_, ClientData> {
         self.data.write().await  // 独占写锁
     }
@@ -627,7 +627,7 @@ impl SafeOtlpClient {
   - t₁ < t₂ (单调性)
   - span.parent.end_time ≥ t₂ (嵌套性)
 
-证明: 
+证明:
 1. 使用 Rust 类型系统强制 RAII 模式
 2. Drop trait 保证 end_time 在作用域结束时自动设置
 3. 借用检查器保证父 Span 生命周期 >= 子 Span ∎
@@ -644,7 +644,7 @@ impl Drop for Span {
     fn drop(&mut self) {
         // 自动设置结束时间
         self.end_time = Some(Instant::now());
-        
+
         // 验证不变量
         debug_assert!(self.start_time <= self.end_time.unwrap());
     }
@@ -668,7 +668,7 @@ EXTENDS Integers, Sequences, TLC
 
 CONSTANTS Services, TraceIds
 
-VARIABLES 
+VARIABLES
     messages,        \* 消息队列
     delivered,       \* 已交付消息
     acknowledged     \* 已确认消息
@@ -725,19 +725,19 @@ impl ServiceMeshIntegration {
     ) -> Result<()> {
         // 提取 Trace Context from Envoy headers
         let trace_context = TraceContext::from_headers(req.headers())?;
-        
+
         // 注入当前 Span
         let span = Span::new("http_request")
             .with_parent(trace_context)
             .with_attribute("http.method", req.method().as_str())
             .with_attribute("http.url", req.uri().to_string());
-        
+
         // 传播到下游
         req.headers_mut().insert(
             "traceparent",
             HeaderValue::from_str(&span.to_w3c_format())?
         );
-        
+
         Ok(())
     }
 }
@@ -758,16 +758,16 @@ impl tonic::service::Interceptor for OtlpInterceptor {
             .get("traceparent")
             .and_then(|v| v.to_str().ok())
             .and_then(|s| TraceContext::from_w3c(s).ok());
-        
+
         // 创建当前 Span
         let span = self.tracer.start_span("grpc_call", parent_ctx);
-        
+
         // 注入元数据
         req.metadata_mut().insert(
             "traceparent",
             MetadataValue::from_str(&span.to_w3c_format())?
         );
-        
+
         Ok(req)
     }
 }
@@ -904,6 +904,6 @@ Go OTLP Client (P99):
 
 ---
 
-**维护者**: OTLP Rust 2025 研究团队  
-**许可证**: MIT OR Apache-2.0  
+**维护者**: OTLP Rust 2025 研究团队
+**许可证**: MIT OR Apache-2.0
 **联系方式**: 见项目根目录 README

@@ -1,7 +1,7 @@
 # 性能优化与基准测试
 
-> **版本**: Rust 1.90 & OTLP 1.3.0  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90 & OTLP 1.3.0
+> **日期**: 2025年10月2日
 > **主题**: 零拷贝、批处理、SIMD、异步优化
 
 ---
@@ -60,11 +60,11 @@ impl ZeroCopySpanBuilder {
             buffer: BytesMut::with_capacity(4096),
         }
     }
-    
+
     fn add_span(&mut self, span_data: &[u8]) {
         self.buffer.extend_from_slice(span_data);
     }
-    
+
     fn freeze(self) -> Bytes {
         self.buffer.freeze()  // 零拷贝转换
     }
@@ -108,7 +108,7 @@ struct BatchProcessor {
 impl BatchProcessor {
     async fn add(&mut self, span: Span) {
         self.buffer.push(span);
-        
+
         if self.buffer.len() >= self.batch_size {
             let batch = std::mem::replace(&mut self.buffer, Vec::with_capacity(self.batch_size));
             let _ = self.tx.send(batch).await;
@@ -134,10 +134,10 @@ use std::arch::x86_64::*;
 unsafe fn simd_filter_attributes(attributes: &[u8], pattern: &[u8; 32]) -> bool {
     let attr_vec = _mm256_loadu_si256(attributes.as_ptr() as *const __m256i);
     let pattern_vec = _mm256_loadu_si256(pattern.as_ptr() as *const __m256i);
-    
+
     let cmp = _mm256_cmpeq_epi8(attr_vec, pattern_vec);
     let mask = _mm256_movemask_epi8(cmp);
-    
+
     mask == -1  // 所有字节匹配
 }
 ```
@@ -161,7 +161,7 @@ async fn fast_export(spans: Vec<Span>) {
     let futures: Vec<_> = spans.into_iter()
         .map(|span| tokio::spawn(export_span(span)))
         .collect();
-    
+
     futures::future::join_all(futures).await;
 }
 
@@ -186,7 +186,7 @@ impl SpanPool {
         self.pool.lock().unwrap().pop()
             .unwrap_or_else(|| Box::new(Span))
     }
-    
+
     fn release(&self, span: Box<Span>) {
         self.pool.lock().unwrap().push(span);
     }
@@ -225,5 +225,5 @@ CPU Overhead: 3.8%
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

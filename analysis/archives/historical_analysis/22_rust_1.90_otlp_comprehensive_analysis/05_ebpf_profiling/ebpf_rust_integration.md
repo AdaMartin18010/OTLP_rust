@@ -1,7 +1,7 @@
 # eBPF Profiling 与 Rust 异步运行时深度集成
 
-> **版本**: eBPF + Rust 1.90 + OTLP Profile Signal 0.4  
-> **日期**: 2025年10月3日  
+> **版本**: eBPF + Rust 1.90 + OTLP Profile Signal 0.4
+> **日期**: 2025年10月3日
 > **主题**: 持续性能分析、异步栈追踪、零开销生产部署
 
 ---
@@ -151,13 +151,13 @@ impl AsyncStackTracer {
             task_stacks: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
         }
     }
-    
+
     /// 在异步函数入口记录
     pub fn enter_async_fn(&self, task_id: u64, frame: Frame) {
         let mut stacks = self.task_stacks.write();
         stacks.entry(task_id).or_insert_with(Vec::new).push(frame);
     }
-    
+
     /// 在异步函数出口清理
     pub fn exit_async_fn(&self, task_id: u64) {
         let mut stacks = self.task_stacks.write();
@@ -165,7 +165,7 @@ impl AsyncStackTracer {
             stack.pop();
         }
     }
-    
+
     /// 获取完整异步栈
     pub fn get_async_stack(&self, task_id: u64) -> Vec<Frame> {
         self.task_stacks.read()
@@ -190,11 +190,11 @@ macro_rules! traced_async {
             file: file!().to_string(),
             line: line!(),
         });
-        
+
         let result = $body.await;
-        
+
         $tracer.exit_async_fn($task_id);
-        
+
         result
     }};
 }
@@ -268,7 +268,7 @@ message Function {
 message ProfileData {
     Resource resource = 1;  // OTLP Resource
     repeated Profile profiles = 2;  // pprof Profile
-    
+
     // Profile 类型语义
     message Attributes {
         string profile_type = 1;  // "cpu", "heap", "goroutine"
@@ -366,12 +366,12 @@ impl StringTable {
             index_map: HashMap::new(),
         }
     }
-    
+
     fn add(&mut self, s: String) -> i64 {
         if let Some(&index) = self.index_map.get(&s) {
             return index as i64;
         }
-        
+
         let index = self.strings.len();
         self.index_map.insert(s.clone(), index);
         self.strings.push(s);
@@ -388,30 +388,30 @@ impl ProfileBuilder {
             strings: StringTable::new(),
         }
     }
-    
+
     /// 添加采样
     pub fn add_sample(&mut self, stack: Vec<StackFrame>, value: i64) {
         let location_ids: Vec<u64> = stack.iter()
             .enumerate()
             .map(|(i, frame)| {
                 let location_id = frame.address;
-                
+
                 // 添加 Location
                 if !self.locations.contains_key(&location_id) {
                     let function_id = frame.address;  // 简化：使用地址作为函数ID
-                    
+
                     // 添加 Function
                     if !self.functions.contains_key(&function_id) {
                         let name_index = self.strings.add(frame.function_name.clone());
                         let filename_index = self.strings.add(frame.file.clone());
-                        
+
                         self.functions.insert(function_id, Function {
                             id: function_id,
                             name_index,
                             filename_index,
                         });
                     }
-                    
+
                     self.locations.insert(location_id, Location {
                         id: location_id,
                         address: frame.address,
@@ -421,25 +421,25 @@ impl ProfileBuilder {
                         }],
                     });
                 }
-                
+
                 location_id
             })
             .collect();
-        
+
         self.samples.push(Sample {
             location_ids,
             values: vec![value],
             labels: Vec::new(),
         });
     }
-    
+
     /// 构建 Profile
     pub fn build(self) -> PprofProfile {
         let sample_type = vec![ValueType {
             type_index: 1,  // "samples"
             unit_index: 2,  // "count"
         }];
-        
+
         PprofProfile {
             samples: self.samples,
             locations: self.locations.into_values().collect(),
@@ -479,10 +479,10 @@ use libbpf_rs::{PerfBufferBuilder, MapFlags, ObjectBuilder};
 pub struct EbpfProfiler {
     /// eBPF 对象
     obj: Option<libbpf_rs::Object>,
-    
+
     /// 采样频率 (Hz)
     sample_freq: u64,
-    
+
     /// Profile 构建器
     profile_builder: ProfileBuilder,
 }
@@ -495,47 +495,47 @@ impl EbpfProfiler {
             profile_builder: ProfileBuilder::new(),
         }
     }
-    
+
     /// 加载 eBPF 程序
     pub fn load_bpf(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // BPF 程序（C 代码编译为字节码）
         let bpf_code = include_bytes!("profile.bpf.o");
-        
+
         let obj = ObjectBuilder::default()
             .open_memory(bpf_code)?
             .load()?;
-        
+
         self.obj = Some(obj);
         Ok(())
     }
-    
+
     /// 开始采样
     pub fn start_sampling(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // 订阅 perf event
         println!("Starting eBPF profiling at {} Hz", self.sample_freq);
-        
+
         // 实际实现需要：
         // 1. perf_event_open(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK)
         // 2. 附加 BPF 程序到 perf event
         // 3. 读取 perf buffer 获取栈数据
-        
+
         Ok(())
     }
-    
+
     /// 处理栈样本
     fn handle_stack_sample(&mut self, stack: Vec<u64>) {
         // 解析符号
         let frames = self.resolve_symbols(stack);
-        
+
         // 添加到 Profile
         self.profile_builder.add_sample(frames, 1);
     }
-    
+
     fn resolve_symbols(&self, _addresses: Vec<u64>) -> Vec<StackFrame> {
         // 使用 addr2line 或 DWARF 解析符号
         vec![]
     }
-    
+
     /// 生成 Profile
     pub fn generate_profile(&self) -> PprofProfile {
         self.profile_builder.clone().build()
@@ -583,18 +583,18 @@ profiler:
   enabled: true
   sampleFrequency: 99  # Hz
   cpuOverhead: 1  # %
-  
+
   # eBPF 配置
   ebpf:
     stackDepth: 127
     mapSize: 10000
-    
+
   # OTLP 导出
   exporter:
     endpoint: "otel-collector:4317"
     protocol: grpc
     compression: gzip
-    
+
   # 资源限制
   resources:
     limits:
@@ -624,7 +624,7 @@ spec:
     spec:
       hostPID: true  # 访问宿主机进程
       hostNetwork: true
-      
+
       containers:
       - name: profiler
         image: profiler:v1.0.0
@@ -634,13 +634,13 @@ spec:
             add:
             - SYS_ADMIN  # BPF 系统调用
             - SYS_RESOURCE  # 增加 locked memory
-        
+
         env:
         - name: SAMPLE_FREQ
           value: "99"
         - name: OTLP_ENDPOINT
           value: "otel-collector:4317"
-        
+
         resources:
           limits:
             cpu: "100m"
@@ -648,14 +648,14 @@ spec:
           requests:
             cpu: "50m"
             memory: "64Mi"
-        
+
         volumeMounts:
         - name: sys
           mountPath: /sys
           readOnly: true
         - name: debugfs
           mountPath: /sys/kernel/debug
-      
+
       volumes:
       - name: sys
         hostPath:
@@ -685,7 +685,7 @@ spec:
 mod benchmarks {
     use super::*;
     use criterion::{black_box, Criterion};
-    
+
     pub fn benchmark_stack_capture(c: &mut Criterion) {
         c.bench_function("ebpf_stack_capture", |b| {
             b.iter(|| {
@@ -695,10 +695,10 @@ mod benchmarks {
             });
         });
     }
-    
+
     pub fn benchmark_symbol_resolution(c: &mut Criterion) {
         let addresses: Vec<u64> = (0..50).map(|i| i * 1000).collect();
-        
+
         c.bench_function("symbol_resolution", |b| {
             b.iter(|| {
                 // 模拟符号解析

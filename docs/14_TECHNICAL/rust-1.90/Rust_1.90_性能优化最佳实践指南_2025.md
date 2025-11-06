@@ -1,8 +1,8 @@
 # Rust 1.90 性能优化最佳实践指南 - 2025年
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
-**Rust版本**: 1.90  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
+**Rust版本**: 1.90
 **状态**: 🟢 活跃维护
 
 > **简介**: Rust 1.90 性能优化指南 - 零拷贝、无锁并发、异步编程等高性能实践。
@@ -39,15 +39,15 @@ impl ZeroCopyDataTransfer {
     // 零拷贝数据共享
     pub fn share_data(&self, data: TelemetryData) -> Arc<TelemetryData> {
         let shared_data = Arc::new(data);
-        
+
         // 添加到数据池
         if let Ok(mut pool) = self.data_pool.write() {
             pool.push(shared_data.clone());
         }
-        
+
         shared_data
     }
-    
+
     // 零拷贝缓冲区管理
     pub fn get_buffer(&self) -> Option<Vec<u8>> {
         if let Ok(mut pool) = self.buffer_pool.write() {
@@ -56,7 +56,7 @@ impl ZeroCopyDataTransfer {
             None
         }
     }
-    
+
     pub fn return_buffer(&self, buffer: Vec<u8>) {
         if let Ok(mut pool) = self.buffer_pool.write() {
             pool.push(buffer);
@@ -91,7 +91,7 @@ impl LockFreeProcessor {
         }
         Ok(())
     }
-    
+
     // 无锁任务处理
     pub async fn process_tasks(&self) -> Result<()> {
         loop {
@@ -102,7 +102,7 @@ impl LockFreeProcessor {
                     None
                 }
             };
-            
+
             if let Some(task) = task {
                 match self.execute_task(task).await {
                     Ok(_) => self.completed_count.fetch_add(1, Ordering::Relaxed),
@@ -113,7 +113,7 @@ impl LockFreeProcessor {
             }
         }
     }
-    
+
     // 获取处理统计
     pub fn get_stats(&self) -> ProcessingStats {
         ProcessingStats {
@@ -146,13 +146,13 @@ impl<T: TelemetryData> TypeSafeProcessor<T> {
         if !self.validator.validate(&data) {
             return Err(Error::InvalidData);
         }
-        
+
         let mut processed_data = data;
-        
+
         for processor in &self.processors {
             processed_data = processor.process(processed_data).await?;
         }
-        
+
         Ok(ProcessedData::new(processed_data))
     }
 }
@@ -193,7 +193,7 @@ impl<T> ObjectPool<T> {
             max_size,
         }
     }
-    
+
     pub fn get(&self) -> Option<T> {
         if let Ok(mut objects) = self.objects.write() {
             objects.pop()
@@ -201,7 +201,7 @@ impl<T> ObjectPool<T> {
             None
         }
     }
-    
+
     pub fn return_object(&self, obj: T) {
         if let Ok(mut objects) = self.objects.write() {
             if objects.len() < self.max_size {
@@ -258,23 +258,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_batch_size(1000)
         .with_batch_timeout(Duration::from_millis(100))
         .with_max_concurrent_requests(100);
-    
+
     let client = OtlpClient::new(config).await?;
-    
+
     // 创建零拷贝传输
     let transfer = ZeroCopyDataTransfer::new();
-    
+
     // 创建无锁处理器
     let processor = LockFreeProcessor::new();
-    
+
     // 启动高性能处理循环
     let mut handles = Vec::new();
-    
+
     for i in 0..num_cpus::get() {
         let client_clone = client.clone();
         let transfer_clone = transfer.clone();
         let processor_clone = processor.clone();
-        
+
         let handle = tokio::spawn(async move {
             loop {
                 if let Some(data) = transfer_clone.get_data() {
@@ -283,21 +283,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         });
-        
+
         handles.push(handle);
     }
-    
+
     // 等待所有任务完成
     for handle in handles {
         handle.await?;
     }
-    
+
     Ok(())
 }
 ```
 
 ---
 
-**指南生成时间**: 2025年1月27日  
-**版本**: v1.0  
+**指南生成时间**: 2025年1月27日
+**版本**: v1.0
 **技术栈**: Rust 1.90 + OTLP + 性能优化

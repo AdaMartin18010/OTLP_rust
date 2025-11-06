@@ -1,7 +1,7 @@
 # 类型系统安全性证明
 
-> **版本**: Rust 1.90  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90
+> **日期**: 2025年10月2日
 > **主题**: 类型安全、编译时验证、形式化证明
 
 ---
@@ -78,7 +78,7 @@
 fn ownership_proof() {
     let s = String::from("hello");
     let t = s; // s 移动到 t
-    
+
     // println!("{}", s); // ❌ 编译错误: s 已移动
     println!("{}", t);    // ✅ 正确
 }
@@ -122,18 +122,18 @@ use std::sync::Arc;
 
 fn prove_arc_thread_safety<T: Send + Sync>(data: T) {
     let arc = Arc::new(data);
-    
+
     let arc1 = Arc::clone(&arc);
     std::thread::spawn(move || {
         // arc1 在新线程中使用
         drop(arc1);
     });
-    
+
     let arc2 = Arc::clone(&arc);
     std::thread::spawn(move || {
         drop(arc2);
     });
-    
+
     // 主线程保留原 arc
 }
 ```
@@ -201,7 +201,7 @@ impl SpanBuilder<New> {
             _state: std::marker::PhantomData,
         }
     }
-    
+
     /// 只有 New 状态可以启动
     pub fn start(self) -> SpanBuilder<Started> {
         SpanBuilder {
@@ -295,5 +295,5 @@ fn use_typed_attrs() {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

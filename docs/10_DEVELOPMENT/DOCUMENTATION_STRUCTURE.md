@@ -1,7 +1,7 @@
 # OTLP Rust 文档结构标准
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 文档结构标准 - 完整的目录组织、命名规范和结构说明。
@@ -14,7 +14,7 @@
 docs/
 ├── README.md                           # 文档中心导航
 ├── DOCUMENTATION_STRUCTURE.md          # 本文档
-├── 
+├──
 ├── 01_GETTING_STARTED/                 # 快速开始
 │   ├── README.md
 │   ├── installation.md

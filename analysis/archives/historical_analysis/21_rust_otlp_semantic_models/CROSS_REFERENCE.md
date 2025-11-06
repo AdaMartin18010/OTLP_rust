@@ -1,6 +1,6 @@
 # 文档交叉引用索引
 
-> **目的**: 建立文档间的关联关系，便于主题导航  
+> **目的**: 建立文档间的关联关系，便于主题导航
 > **日期**: 2025年10月2日
 
 ---
@@ -224,23 +224,23 @@
 ```mermaid
 graph TD
     README[README.md<br/>项目总览]
-    
+
     SYNC[01_rust_sync_async_core.md<br/>同步/异步机制]
     SEMANTIC[04_otlp_semantic_conventions.md<br/>语义约定]
     TRACING[07_distributed_tracing_model.md<br/>分布式追踪]
     LIBS[10_opentelemetry_rust_libraries.md<br/>生态库]
     REPORT[COMPLETION_REPORT.md<br/>完成报告]
-    
+
     README --> SYNC
     README --> SEMANTIC
-    
+
     SYNC --> TRACING
     SEMANTIC --> TRACING
-    
+
     SYNC --> LIBS
     SEMANTIC --> LIBS
     TRACING --> LIBS
-    
+
     SYNC --> REPORT
     SEMANTIC --> REPORT
     TRACING --> REPORT
@@ -296,5 +296,5 @@ graph TD
 
 ---
 
-**维护者**: OTLP Rust 项目组  
+**维护者**: OTLP Rust 项目组
 **最后更新**: 2025年10月2日

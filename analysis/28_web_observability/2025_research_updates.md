@@ -1,8 +1,8 @@
 # 2025年虚拟化与可观测性最新研究成果
 
-**创建日期**: 2025年10月29日  
-**最后更新**: 2025年10月29日  
-**状态**: ✅ 最新  
+**创建日期**: 2025年10月29日
+**最后更新**: 2025年10月29日
+**状态**: ✅ 最新
 **优先级**: 🔴 重要参考
 
 ---
@@ -47,8 +47,8 @@
 
 ### 研究概览
 
-**论文**: _"Goldilocks Isolation: High Performance VMs with Edera"_  
-**来源**: arXiv:2501.04580  
+**论文**: _"Goldilocks Isolation: High Performance VMs with Edera"_
+**来源**: arXiv:2501.04580
 **发布时间**: 2025年1月
 
 ### 核心创新
@@ -150,7 +150,7 @@ pub fn edera_tracer_config() -> Result<TracerProvider> {
                 ]))
         )
         .install_batch(opentelemetry::runtime::Tokio)?;
-    
+
     Ok(provider)
 }
 ```
@@ -168,8 +168,8 @@ pub fn edera_tracer_config() -> Result<TracerProvider> {
 
 ### 研究概览1
 
-**论文**: _"Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers"_  
-**来源**: arXiv:2509.11242  
+**论文**: _"Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers"_
+**来源**: arXiv:2509.11242
 **发布时间**: 2025年9月
 
 ### 核心发现1
@@ -230,15 +230,15 @@ pub fn edera_tracer_config() -> Result<TracerProvider> {
 1. WASI接口限制:
    问题: WASI标准未充分定义资源限制
    影响: 运行时实现各异，安全性不一致
-   
+
 2. 运行时实现缺陷:
    问题: WasmEdge/Wasmtime缺少细粒度资源控制
    影响: 恶意模块可突破预期限制
-   
+
 3. 宿主OS依赖:
    问题: 依赖cgroup等宿主机制，但未强制配置
    影响: 默认配置下缺乏保护
-   
+
 4. 监控盲点:
    问题: 缺少运行时级别的资源监控
    影响: 攻击难以及时发现
@@ -263,7 +263,7 @@ pub fn create_secure_wasm_vm() -> Result<Vm> {
         .with_bulk_memory_operations(false)
         .with_reference_types(false)
         .build()?;
-    
+
     let vm = Vm::new(Some(config))?;
     Ok(vm)
 }
@@ -288,25 +288,25 @@ use std::fs;
 pub fn setup_cgroup_limits(container_id: &str) -> Result<()> {
     let cgroup_path = format!("/sys/fs/cgroup/wasm/{}", container_id);
     fs::create_dir_all(&cgroup_path)?;
-    
+
     // CPU限制 (50% of 1 core)
     fs::write(
         format!("{}/cpu.max", cgroup_path),
         "50000 100000"
     )?;
-    
+
     // 内存限制 (128MB)
     fs::write(
         format!("{}/memory.max", cgroup_path),
         "134217728"
     )?;
-    
+
     // 进程数限制
     fs::write(
         format!("{}/pids.max", cgroup_path),
         "100"
     )?;
-    
+
     Ok(())
 }
 ```
@@ -331,7 +331,7 @@ impl WasmSecurityMonitor {
         self.cpu_usage.record(cpu, &[
             KeyValue::new("instance", instance_id.to_string()),
         ]);
-        
+
         // 告警: CPU使用超过80%
         if cpu > 80.0 {
             tracing::warn!(
@@ -340,13 +340,13 @@ impl WasmSecurityMonitor {
                 "Wasm instance high CPU usage - potential DoS"
             );
         }
-        
+
         // 监控内存使用
         let mem = get_memory_usage(instance_id);
         self.memory_usage.record(mem, &[
             KeyValue::new("instance", instance_id.to_string()),
         ]);
-        
+
         // 告警: 内存使用接近限制
         if mem > 120 * 1024 * 1024 {  // 120MB (接近128MB限制)
             tracing::error!(
@@ -367,7 +367,7 @@ pub struct WasmCircuitBreaker {
 impl WasmCircuitBreaker {
     pub fn should_terminate(&mut self, instance_id: &str) -> bool {
         let violations = self.count_violations(instance_id);
-        
+
         if violations >= self.failure_threshold {
             tracing::error!(
                 instance_id,
@@ -376,7 +376,7 @@ impl WasmCircuitBreaker {
             );
             return true;
         }
-        
+
         false
     }
 }
@@ -424,8 +424,8 @@ impl WasmCircuitBreaker {
 
 ### 研究概览2
 
-**论文**: _"Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum"_  
-**来源**: arXiv:2510.05118  
+**论文**: _"Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum"_
+**来源**: arXiv:2510.05118
 **发布时间**: 2025年10月
 
 ### 核心发现2
@@ -472,7 +472,7 @@ Wasm (AoT编译):   ███ 840 ms (-16% vs Docker) ✅
 Docker容器:
   - P50: 5 ms
   - P99: 15 ms
-  
+
 Wasm (AoT编译):
   - P50: 5.5 ms (+10%)
   - P99: 18 ms (+20%)
@@ -793,20 +793,20 @@ Wasm安全清单 (基于2025年9月研究):
 // 1. 使用AoT编译 (而非解释执行)
 pub fn compile_wasm_ahead_of_time(wasm_path: &str) -> Result<()> {
     use wasmedge_sdk::{CompilerBuilder, config::CompilerConfig};
-    
+
     let compiler_config = CompilerConfig::new()
         .optimization_level(wasmedge_sdk::CompilerOptimizationLevel::O3)
         .output_format(wasmedge_sdk::CompilerOutputFormat::Native);
-    
+
     let compiler = CompilerBuilder::new()
         .config(compiler_config)
         .build()?;
-    
+
     compiler.compile(
         wasm_path,
         &format!("{}.so", wasm_path)  // 编译为native库
     )?;
-    
+
     Ok(())
 }
 
@@ -837,9 +837,9 @@ pub fn choose_export_protocol(environment: &str) -> ExportProtocol {
                 batch_size: 512,     // 大批次
             }
         },
-        _ => ExportProtocol::Http { 
-            compression: true, 
-            batch_size: 128 
+        _ => ExportProtocol::Http {
+            compression: true,
+            batch_size: 128
         },
     }
 }
@@ -932,12 +932,12 @@ Edera及新型Hypervisor:
   - 短期 (2025): Docker容器为主
   - 中期 (2026): 探索Wasm边缘场景
   - 长期 (2027+): 混合架构
-  
+
 中型企业:
   - 短期: 容器+VM混合
   - 中期: 引入Wasm到特定场景
   - 长期: 全面混合部署
-  
+
 大型企业:
   - 立即: 启动Wasm试点项目
   - 1年内: 边缘场景Wasm化
@@ -950,16 +950,16 @@ Edera及新型Hypervisor:
 
 ### 学术论文
 
-1. **Edera研究**  
-   _Goldilocks Isolation: High Performance VMs with Edera_  
+1. **Edera研究**
+   _Goldilocks Isolation: High Performance VMs with Edera_
    arXiv:2501.04580 (2025年1月)
 
-2. **Wasm安全研究**  
-   _Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers_  
+2. **Wasm安全研究**
+   _Exploring and Exploiting the Resource Isolation Attack Surface of WebAssembly Containers_
    arXiv:2509.11242 (2025年9月)
 
-3. **Lumos性能评估**  
-   _Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum_  
+3. **Lumos性能评估**
+   _Lumos: Performance Characterization of WebAssembly as a Serverless Runtime in the Edge-Cloud Continuum_
    arXiv:2510.05118 (2025年10月)
 
 ### 官方文档
@@ -970,9 +970,9 @@ Edera及新型Hypervisor:
 
 ---
 
-**文档版本**: v1.0  
-**创建日期**: 2025年10月29日  
-**维护者**: OTLP_rust项目团队  
+**文档版本**: v1.0
+**创建日期**: 2025年10月29日
+**维护者**: OTLP_rust项目团队
 **联系方式**: 参见项目README
 
 ---

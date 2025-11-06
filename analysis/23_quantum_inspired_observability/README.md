@@ -1,7 +1,7 @@
 ﻿# Quantum-Inspired Observability
 
-**Status**: 🧪 Experimental / Research Phase  
-**Created**: 2025-10-09  
+**Status**: 🧪 Experimental / Research Phase
+**Created**: 2025-10-09
 **Last Updated**: 2025-10-27
 
 ---
@@ -16,7 +16,11 @@ This directory explores quantum-inspired algorithms and approaches for observabi
 
 ## 📋 目录
 
-- [Quantum Algorithms for Observability](quantum_algorithms_for_observability.md)
+- [Quantum-Inspired Observability](#quantum-inspired-observability)
+  - [Overview](#overview)
+  - [📋 目录](#-目录)
+  - [Research Status](#research-status)
+  - [Future Directions](#future-directions)
 
 ---
 
@@ -40,5 +44,5 @@ This directory explores quantum-inspired algorithms and approaches for observabi
 
 ---
 
-**Maintainer**: Research Team  
+**Maintainer**: Research Team
 **Category**: Experimental / Research

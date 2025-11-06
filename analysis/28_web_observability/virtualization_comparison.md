@@ -1,8 +1,8 @@
 # 虚拟化技术对比 - Docker vs Wasm vs VM
 
-**创建日期**: 2025年10月29日  
-**最后更新**: 2025年10月29日  
-**状态**: ✅ 完整  
+**创建日期**: 2025年10月29日
+**最后更新**: 2025年10月29日
+**状态**: ✅ 完整
 **优先级**: 🟢 参考指南
 
 ---
@@ -273,14 +273,14 @@ fn benchmark_startup(c: &mut Criterion) {
             std::thread::sleep(std::time::Duration::from_secs(30));
         });
     });
-    
+
     c.bench_function("docker_startup", |b| {
         b.iter(|| {
             // Docker启动模拟
             std::thread::sleep(std::time::Duration::from_millis(1500));
         });
     });
-    
+
     c.bench_function("wasm_startup", |b| {
         b.iter(|| {
             // Wasm启动（实际测试）
@@ -462,11 +462,11 @@ struct VmMetrics {
     memory_usage: u64,
     disk_io: DiskIO,
     network_io: NetworkIO,
-    
+
     // 虚拟化指标
     vm_cpu_steal: f64,
     hypervisor_overhead: f64,
-    
+
     // 应用指标
     app_metrics: AppMetrics,
 }
@@ -477,12 +477,12 @@ struct DockerMetrics {
     container_cpu: f64,
     container_memory: u64,
     container_network: NetworkIO,
-    
+
     // 元数据
     container_id: String,
     image_name: String,
     labels: HashMap<String, String>,
-    
+
     // 应用指标
     app_metrics: AppMetrics,
 }
@@ -493,10 +493,10 @@ struct WasmMetrics {
     wasm_instance_count: u32,
     wasm_memory_pages: u32,
     wasm_execution_time: Duration,
-    
+
     // 有限的系统信息
     host_provided_metrics: HostMetrics,
-    
+
     // 应用指标
     app_metrics: AppMetrics,
 }
@@ -657,7 +657,7 @@ services:
       - "80:80"
     networks:
       - hybrid-net
-  
+
   # Wasm服务（高性能计算）
   wasm-function:
     image: wasm-function:latest
@@ -665,14 +665,14 @@ services:
     runtime: io.containerd.wasmedge.v1
     networks:
       - hybrid-net
-  
+
   # Docker服务（数据处理）
   data-processor:
     image: data-processor:latest
     platform: linux/amd64
     networks:
       - hybrid-net
-  
+
   # 共享监控
   otel-collector:
     image: otel/opentelemetry-collector:latest
@@ -948,8 +948,8 @@ Wasm管理:
 
 ---
 
-**维护者**: OTLP_rust 项目团队  
-**最后更新**: 2025年10月29日  
+**维护者**: OTLP_rust 项目团队
+**最后更新**: 2025年10月29日
 **参考资源**:
 
 - [Docker 文档](https://docs.docker.com/)

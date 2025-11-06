@@ -1,7 +1,7 @@
 # OTLP 语义约定与资源模型深度解析
 
-> **版本**: OpenTelemetry 1.30+ (2025年规范)  
-> **日期**: 2025年10月2日  
+> **版本**: OpenTelemetry 1.30+ (2025年规范)
+> **日期**: 2025年10月2日
 > **主题**: 语义约定、资源模型、属性架构、自解释数据
 
 ---
@@ -142,7 +142,7 @@ Resource 表示产生遥测数据的 **实体**，是所有信号的共享上下
 message Resource {
   // 属性列表
   repeated KeyValue attributes = 1;
-  
+
   // 已丢弃的属性数量
   uint32 dropped_attributes_count = 2;
 }
@@ -239,7 +239,7 @@ impl Resource {
             dropped_attributes_count: 0,
         }
     }
-    
+
     /// 添加服务信息
     pub fn with_service(mut self, name: &str, version: &str) -> Self {
         self.attributes.insert(
@@ -252,7 +252,7 @@ impl Resource {
         );
         self
     }
-    
+
     /// 添加 Kubernetes 信息
     pub fn with_kubernetes(
         mut self,
@@ -274,7 +274,7 @@ impl Resource {
         );
         self
     }
-    
+
     /// 添加主机信息
     pub fn with_host(mut self, name: &str, arch: &str) -> Self {
         self.attributes.insert(
@@ -287,7 +287,7 @@ impl Resource {
         );
         self
     }
-    
+
     /// 添加云平台信息
     pub fn with_cloud(mut self, provider: &str, region: &str) -> Self {
         self.attributes.insert(
@@ -309,7 +309,7 @@ fn resource_example() {
         .with_kubernetes("production", "payment-pod-abc", "prod-cluster")
         .with_host("node-01", "amd64")
         .with_cloud("aws", "us-west-2");
-    
+
     println!("{:?}", resource);
 }
 ```
@@ -353,9 +353,9 @@ async fn http_request_span(tracer: &dyn Tracer) {
             KeyValue::new("http.status_code", 200),
         ])
         .start(tracer);
-    
+
     // 执行请求...
-    
+
     drop(span); // 结束 Span
 }
 ```
@@ -487,7 +487,7 @@ pub fn create_tracer() -> trace::Tracer {
         .with_endpoint("http://localhost:4317")
         .build_span_exporter()
         .expect("Failed to create exporter");
-    
+
     let provider = trace::TracerProvider::builder()
         .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
         .with_config(
@@ -497,7 +497,7 @@ pub fn create_tracer() -> trace::Tracer {
                 .with_max_attributes_per_span(128),
         )
         .build();
-    
+
     opentelemetry::global::set_tracer_provider(provider.clone());
     provider.tracer("otlp-example")
 }
@@ -505,7 +505,7 @@ pub fn create_tracer() -> trace::Tracer {
 /// 分布式追踪示例
 async fn distributed_trace_example() {
     let tracer = create_tracer();
-    
+
     // 父 Span (服务端)
     let mut parent_span = tracer
         .span_builder("handle_request")
@@ -515,7 +515,7 @@ async fn distributed_trace_example() {
             KeyValue::new("http.target", "/api/v1/order"),
         ])
         .start(&tracer);
-    
+
     // 嵌套 Span (内部操作)
     {
         let _guard = parent_span.enter();
@@ -523,13 +523,13 @@ async fn distributed_trace_example() {
             .span_builder("process_payment")
             .with_kind(SpanKind::Internal)
             .start(&tracer);
-        
+
         // 业务逻辑...
-        
+
         internal_span.set_attribute(KeyValue::new("payment.amount", 99.99));
         internal_span.set_status(Status::Ok);
     }
-    
+
     // 子 Span (客户端调用)
     {
         let _guard = parent_span.enter();
@@ -541,12 +541,12 @@ async fn distributed_trace_example() {
                 KeyValue::new("rpc.system", "grpc"),
             ])
             .start(&tracer);
-        
+
         // gRPC 调用...
-        
+
         client_span.set_status(Status::Ok);
     }
-    
+
     parent_span.set_status(Status::Ok);
 }
 ```
@@ -571,7 +571,7 @@ fn counter_example(meter_provider: &dyn MeterProvider) {
         .with_description("HTTP 请求总数")
         .with_unit("{request}")
         .build();
-    
+
     counter.add(1, &[
         KeyValue::new("http.method", "GET"),
         KeyValue::new("http.status_code", 200),
@@ -593,7 +593,7 @@ fn gauge_example(meter_provider: &dyn MeterProvider) {
         .with_description("CPU 使用率")
         .with_unit("1")  // 无单位
         .build();
-    
+
     gauge.record(75, &[
         KeyValue::new("cpu.id", "0"),
     ]);
@@ -614,7 +614,7 @@ fn histogram_example(meter_provider: &dyn MeterProvider) {
         .with_description("HTTP 请求时长")
         .with_unit("ms")
         .build();
-    
+
     histogram.record(123.45, &[
         KeyValue::new("http.method", "POST"),
         KeyValue::new("http.route", "/api/v1/users"),
@@ -683,7 +683,7 @@ use opentelemetry::KeyValue;
 
 fn log_example() {
     let logger = opentelemetry::global::logger("app");
-    
+
     logger.emit(
         LogRecord::builder()
             .with_severity_number(Severity::Error)
@@ -788,7 +788,7 @@ pub fn ottl_slow_request_detection() {
         and span.attributes["http.method"] == "GET"
         and duration > 3s
     "#;
-    
+
     // OTTL 引擎可在 Collector 中实时执行
 }
 
@@ -797,7 +797,7 @@ pub fn semantic_routing() {
     let ottl_rule = r#"
         route() where resource.attributes["tenant"] == "premium"
         → kafka_exporter(topic="premium-traces")
-        
+
         route() where resource.attributes["tenant"] == "free"
         → sampling_processor(ratio=0.01)
         → kafka_exporter(topic="free-traces")
@@ -841,7 +841,7 @@ pub async fn init_otlp_client() -> Result<(), Box<dyn std::error::Error>> {
         KeyValue::new("k8s.pod.name", "my-pod-abc"),
         KeyValue::new("k8s.namespace.name", "default"),
     ]);
-    
+
     // 2. 初始化 Trace Provider
     let tracer_provider = sdk_trace::TracerProvider::builder()
         .with_batch_exporter(
@@ -858,9 +858,9 @@ pub async fn init_otlp_client() -> Result<(), Box<dyn std::error::Error>> {
                 .with_sampler(Sampler::TraceIdRatioBased(0.1)),
         )
         .build();
-    
+
     global::set_tracer_provider(tracer_provider.clone());
-    
+
     // 3. 初始化 Meter Provider
     let meter_provider = sdk_metrics::MeterProvider::builder()
         .with_reader(
@@ -878,9 +878,9 @@ pub async fn init_otlp_client() -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_resource(resource.clone())
         .build();
-    
+
     global::set_meter_provider(meter_provider);
-    
+
     // 4. 初始化 Logger Provider
     let logger_provider = sdk_logs::LoggerProvider::builder()
         .with_batch_exporter(
@@ -891,9 +891,9 @@ pub async fn init_otlp_client() -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_resource(resource)
         .build();
-    
+
     global::set_logger_provider(logger_provider);
-    
+
     Ok(())
 }
 
@@ -902,12 +902,12 @@ pub async fn use_three_pillars() {
     // Trace
     let tracer = global::tracer("my-tracer");
     let span = tracer.span_builder("my-operation").start(&tracer);
-    
+
     // Metric
     let meter = global::meter("my-meter");
     let counter = meter.u64_counter("my_counter").build();
     counter.add(1, &[KeyValue::new("key", "value")]);
-    
+
     // Log
     let logger = global::logger("my-logger");
     // logger.emit(...);
@@ -926,5 +926,5 @@ pub async fn use_three_pillars() {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

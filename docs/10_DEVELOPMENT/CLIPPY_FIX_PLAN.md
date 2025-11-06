@@ -1,8 +1,8 @@
 # Clippy警告修复计划
 
-**版本**: 1.0  
-**创建日期**: 2025年10月26日  
-**状态**: 待执行  
+**版本**: 1.0
+**创建日期**: 2025年10月26日
+**状态**: 待执行
 **优先级**: P1 (高优先级)
 
 > **简介**: Clippy 警告系统性修复计划 - 19个警告的详细分析和修复策略。
@@ -45,7 +45,7 @@
 
 #### 1.1 len_zero (简单)
 
-**影响**: 可读性提升  
+**影响**: 可读性提升
 **修复方法**: 替换所有 `x.len() == 0` 为 `x.is_empty()`
 
 ```bash
@@ -58,7 +58,7 @@ rg "\.len\(\)\s*==\s*0" crates/otlp/src/
 
 #### 1.2 useless_conversion (简单)
 
-**影响**: 代码简洁性  
+**影响**: 代码简洁性
 **修复方法**: 移除无用的 `.into()`, `From::from()` 等调用
 
 ```bash
@@ -70,7 +70,7 @@ cargo clippy --fix -- -W clippy::useless_conversion
 
 #### 1.3 collapsible_if (简单)
 
-**影响**: 可读性  
+**影响**: 可读性
 **修复方法**: 合并嵌套的if语句
 
 ```rust
@@ -91,7 +91,7 @@ if condition1 && condition2 {
 
 #### 1.4 vec_init_then_push (简单)
 
-**影响**: 代码简洁性  
+**影响**: 代码简洁性
 **修复方法**: 使用vec![]宏
 
 ```rust
@@ -108,7 +108,7 @@ let v = vec![1, 2];
 
 #### 1.5 bool_assert_comparison (简单)
 
-**影响**: 代码简洁性  
+**影响**: 代码简洁性
 **修复方法**: 简化assert表达式
 
 ```rust
@@ -125,7 +125,7 @@ assert!(value);
 
 #### 2.1 new_without_default (中等)
 
-**影响**: API一致性  
+**影响**: API一致性
 **修复方法**: 为有new()方法的类型实现Default trait
 
 ```rust
@@ -150,7 +150,7 @@ impl Default for MyStruct {
 
 #### 2.2 manual_strip (中等)
 
-**影响**: 使用标准库API  
+**影响**: 使用标准库API
 **修复方法**: 使用 `strip_prefix()` / `strip_suffix()`
 
 ```rust
@@ -169,7 +169,7 @@ if let Some(result) = s.strip_prefix("prefix") {
 
 #### 2.3 while_let_on_iterator (中等)
 
-**影响**: 惯用Rust代码  
+**影响**: 惯用Rust代码
 **修复方法**: 使用for循环
 
 ```rust
@@ -188,7 +188,7 @@ for item in iter {
 
 #### 2.4 field_reassign_with_default (中等)
 
-**影响**: 代码简洁性  
+**影响**: 代码简洁性
 **修复方法**: 使用结构体更新语法
 
 ```rust
@@ -211,7 +211,7 @@ let config = Config {
 
 #### 3.1 excessive_nesting (复杂)
 
-**影响**: 可维护性  
+**影响**: 可维护性
 **修复方法**: 重构深层嵌套的代码，提取函数
 
 **策略**:
@@ -224,7 +224,7 @@ let config = Config {
 
 #### 3.2 missing_safety_doc (重要)
 
-**影响**: 安全性文档  
+**影响**: 安全性文档
 **修复方法**: 为所有unsafe函数添加# Safety部分
 
 ```rust
@@ -245,7 +245,7 @@ pub unsafe fn deref_ptr<T>(ptr: *const T) -> &'static T {
 
 #### 3.3 overly_complex_bool_expr (复杂)
 
-**影响**: 可读性  
+**影响**: 可读性
 **修复方法**: 简化复杂的布尔表达式，提取为命名变量
 
 ```rust
@@ -266,7 +266,7 @@ if condition1 && condition2 {
 
 #### 3.4 not_unsafe_ptr_arg_deref (复杂)
 
-**影响**: 安全性  
+**影响**: 安全性
 **修复方法**: 将接受指针的函数标记为unsafe
 
 ```rust
@@ -289,7 +289,7 @@ unsafe fn process(ptr: *const Data) {
 
 #### 4.1 let_underscore_future
 
-**影响**: 异步代码正确性  
+**影响**: 异步代码正确性
 **修复方法**: 确保future被正确await或spawn
 
 ```rust
@@ -297,7 +297,7 @@ unsafe fn process(ptr: *const Data) {
 let _ = async_function();  // Future不会执行
 
 // After
-tokio::spawn(async_function());  // 或 
+tokio::spawn(async_function());  // 或
 // async_function().await;
 ```
 
@@ -431,10 +431,10 @@ warnings=(
 for warning in "${warnings[@]}"; do
     echo "Fixing clippy::$warning..."
     cargo clippy --fix --allow-dirty -- -W "clippy::$warning"
-    
+
     # 运行测试确保没有破坏功能
     cargo test --lib --no-fail-fast
-    
+
     # 提交修复
     git add .
     git commit -m "fix(clippy): resolve $warning warnings"
@@ -503,6 +503,6 @@ cargo clippy --all-targets --all-features 2>&1 | grep -c "warning:"
 
 ---
 
-**文档版本**: 1.0  
-**最后更新**: 2025-10-23  
+**文档版本**: 1.0
+**最后更新**: 2025-10-23
 **维护者**: 开发团队

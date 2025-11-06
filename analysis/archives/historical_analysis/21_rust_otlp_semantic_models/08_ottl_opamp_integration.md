@@ -1,7 +1,7 @@
 # OTTL 与 OPAMP 集成机制
 
-> **版本**: OTLP 1.3.0 & Rust 1.90  
-> **日期**: 2025年10月2日  
+> **版本**: OTLP 1.3.0 & Rust 1.90
+> **日期**: 2025年10月2日
 > **主题**: 数据转换语言、远程配置管理、动态更新
 
 ---
@@ -199,7 +199,7 @@ struct OpampClient {
 impl OpampClient {
     async fn connect(&self) -> Result<(), Box<dyn std::error::Error>> {
         let (mut ws_stream, _) = connect_async(&self.server_url).await?;
-        
+
         // 发送初始状态
         let status = OpampMessage {
             message_type: MessageType::AgentToServer,
@@ -210,9 +210,9 @@ impl OpampClient {
             }),
             config_update: None,
         };
-        
+
         ws_stream.send(Message::Text(serde_json::to_string(&status)?)).await?;
-        
+
         // 接收配置更新
         while let Some(msg) = ws_stream.next().await {
             if let Ok(Message::Text(text)) = msg {
@@ -222,10 +222,10 @@ impl OpampClient {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
+
     async fn apply_config(&self, _config: &str) -> Result<(), Box<dyn std::error::Error>> {
         println!("Applying new configuration");
         Ok(())
@@ -251,7 +251,7 @@ impl DynamicSampler {
         *rate = new_rate;
         println!("Sample rate updated to: {}", new_rate);
     }
-    
+
     fn should_sample(&self) -> bool {
         let rate = self.sample_rate.read().unwrap();
         rand::random::<f64>() < *rate
@@ -274,7 +274,7 @@ fn redact_sensitive_data(span: &mut Span) {
             key: "credit_card".to_string(),
         },
     ];
-    
+
     for rule in ottl_rules {
         apply_ottl(span, &rule);
     }
@@ -283,5 +283,5 @@ fn redact_sensitive_data(span: &mut Span) {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

@@ -1,7 +1,7 @@
 # 生产环境部署指南
 
-> **版本**: Rust 1.90 & OTLP 1.3.0  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90 & OTLP 1.3.0
+> **日期**: 2025年10月2日
 > **主题**: 部署架构、监控告警、故障恢复、最佳实践
 
 ---
@@ -179,12 +179,12 @@ impl Metrics {
             Opts::new("otlp_spans_exported_total", "Total spans exported")
         )?;
         registry.register(Box::new(spans_exported.clone()))?;
-        
+
         let export_duration = Histogram::with_opts(
             prometheus::HistogramOpts::new("otlp_export_duration_seconds", "Export duration")
         )?;
         registry.register(Box::new(export_duration.clone()))?;
-        
+
         Ok(Self {
             spans_exported,
             export_duration,
@@ -223,7 +223,7 @@ fn init_logging() {
         .with_max_level(Level::INFO)
         .json()
         .finish();
-    
+
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to set subscriber");
 }
@@ -234,9 +234,9 @@ async fn production_handler() {
         version = "1.0.0",
         "Service started"
     );
-    
+
     // 业务逻辑
-    
+
     error!(
         error_code = "DB_TIMEOUT",
         "Database connection timeout"
@@ -256,7 +256,7 @@ async fn export_with_retry<T>(
     max_retries: u32,
 ) -> Result<T, Box<dyn std::error::Error>> {
     let mut attempt = 0;
-    
+
     loop {
         match operation().await {
             Ok(result) => return Ok(result),
@@ -301,12 +301,12 @@ async fn create_secure_exporter() -> Result<(), Box<dyn std::error::Error>> {
         .ca_certificate(tonic::transport::Certificate::from_pem(
             std::fs::read("ca.pem")?
         ));
-    
+
     let exporter = opentelemetry_otlp::new_exporter()
         .tonic()
         .with_endpoint("https://otlp.example.com:4317")
         .with_tls_config(tls);
-    
+
     Ok(())
 }
 ```
@@ -333,7 +333,7 @@ async fn start_health_server() {
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/ready", get(readiness_check));
-    
+
     axum::Server::bind(&"0.0.0.0:8080".parse().unwrap())
         .serve(app.into_make_service())
         .await
@@ -343,5 +343,5 @@ async fn start_health_server() {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

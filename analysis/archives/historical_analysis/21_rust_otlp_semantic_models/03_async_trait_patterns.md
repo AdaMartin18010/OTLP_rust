@@ -1,7 +1,7 @@
 # Rust 异步 Trait 模式与设计
 
-> **版本**: Rust 1.90+  
-> **日期**: 2025年10月2日  
+> **版本**: Rust 1.90+
+> **日期**: 2025年10月2日
 > **主题**: 异步 Trait、AFIT、动态分发、零成本抽象
 
 ---
@@ -95,10 +95,10 @@ struct MyService;
 trait OtlpExporter {
     /// 发送追踪数据
     async fn export_traces(&self, spans: Vec<Span>) -> Result<(), ExportError>;
-    
+
     /// 发送指标数据
     async fn export_metrics(&self, metrics: Vec<Metric>) -> Result<(), ExportError>;
-    
+
     /// 关闭 Exporter
     async fn shutdown(&self) -> Result<(), ExportError>;
 }
@@ -113,11 +113,11 @@ impl OtlpExporter for GrpcExporter {
         // 实际网络调用
         Ok(())
     }
-    
+
     async fn export_metrics(&self, metrics: Vec<Metric>) -> Result<(), ExportError> {
         Ok(())
     }
-    
+
     async fn shutdown(&self) -> Result<(), ExportError> {
         Ok(())
     }
@@ -257,13 +257,13 @@ use std::time::Duration;
 trait OtlpExporter: Send + Sync {
     /// 数据类型
     type Data: Send;
-    
+
     /// 导出数据
     async fn export(&self, data: Self::Data) -> Result<(), ExportError>;
-    
+
     /// 关闭 Exporter
     async fn shutdown(&self, timeout: Duration) -> Result<(), ExportError>;
-    
+
     /// 健康检查
     async fn health_check(&self) -> bool {
         true  // 默认实现
@@ -278,12 +278,12 @@ struct TraceExporter {
 #[async_trait]
 impl OtlpExporter for TraceExporter {
     type Data = Vec<Span>;
-    
+
     async fn export(&self, data: Self::Data) -> Result<(), ExportError> {
         println!("Exporting {} spans to {}", data.len(), self.endpoint);
         Ok(())
     }
-    
+
     async fn shutdown(&self, timeout: Duration) -> Result<(), ExportError> {
         println!("Shutting down with timeout: {:?}", timeout);
         Ok(())
@@ -298,13 +298,13 @@ impl OtlpExporter for TraceExporter {
 #[async_trait]
 trait BatchProcessor: Send + Sync {
     type Item: Send;
-    
+
     /// 添加项目
     async fn add(&self, item: Self::Item) -> Result<(), ProcessError>;
-    
+
     /// 强制刷新
     async fn flush(&self) -> Result<(), ProcessError>;
-    
+
     /// 获取统计信息
     async fn stats(&self) -> ProcessorStats;
 }
@@ -326,17 +326,17 @@ struct SpanProcessor {
 #[async_trait]
 impl BatchProcessor for SpanProcessor {
     type Item = Span;
-    
+
     async fn add(&self, item: Self::Item) -> Result<(), ProcessError> {
         // 添加到批处理队列
         Ok(())
     }
-    
+
     async fn flush(&self) -> Result<(), ProcessError> {
         // 刷新所有待处理项
         Ok(())
     }
-    
+
     async fn stats(&self) -> ProcessorStats {
         ProcessorStats {
             queued: 0,
@@ -356,7 +356,7 @@ use std::collections::HashMap;
 trait Propagator: Send + Sync {
     /// 注入上下文到载体
     fn inject(&self, context: &Context, carrier: &mut HashMap<String, String>);
-    
+
     /// 从载体提取上下文
     fn extract(&self, carrier: &HashMap<String, String>) -> Option<Context>;
 }
@@ -376,7 +376,7 @@ impl Propagator for W3CPropagator {
             format!("00-{}-{}-01", context.trace_id, context.span_id),
         );
     }
-    
+
     fn extract(&self, carrier: &HashMap<String, String>) -> Option<Context> {
         carrier.get("traceparent").and_then(|header| {
             let parts: Vec<&str> = header.split('-').collect();
@@ -407,7 +407,7 @@ use bytes::Bytes;
 trait ZeroCopyExporter {
     /// 使用 Bytes 避免拷贝
     async fn export_bytes(&self, data: Bytes) -> Result<(), ExportError>;
-    
+
     /// 借用模式
     async fn export_ref<'a>(&self, data: &'a [u8]) -> Result<(), ExportError>;
 }
@@ -421,7 +421,7 @@ impl ZeroCopyExporter for OptimizedExporter {
         println!("Exporting {} bytes (zero-copy)", data.len());
         Ok(())
     }
-    
+
     async fn export_ref<'a>(&self, data: &'a [u8]) -> Result<(), ExportError> {
         // 借用数据，无需所有权
         println!("Exporting {} bytes (borrowed)", data.len());
@@ -437,7 +437,7 @@ impl ZeroCopyExporter for OptimizedExporter {
 #[async_trait]
 trait BatchExporter {
     type Item;
-    
+
     /// 批量导出
     async fn export_batch(&self, items: Vec<Self::Item>) -> Result<BatchResult, ExportError>;
 }
@@ -452,7 +452,7 @@ struct FastBatchExporter;
 #[async_trait]
 impl BatchExporter for FastBatchExporter {
     type Item = Span;
-    
+
     async fn export_batch(&self, items: Vec<Self::Item>) -> Result<BatchResult, ExportError> {
         let count = items.len();
         // 批量发送
@@ -474,7 +474,7 @@ use futures::stream::Stream;
 trait StreamProcessor {
     type Item;
     type Error;
-    
+
     /// 处理数据流
     async fn process_stream<S>(&self, stream: S) -> Result<usize, Self::Error>
     where
@@ -502,7 +502,7 @@ enum OtlpError {
 trait ResilientExporter {
     /// 可恢复的错误返回 Result
     async fn try_export(&self, data: Vec<u8>) -> Result<(), OtlpError>;
-    
+
     /// 可选操作返回 Option
     async fn try_health_check(&self) -> Option<HealthStatus>;
 }
@@ -519,7 +519,7 @@ struct HealthStatus {
 trait RetryStrategy: Send + Sync {
     /// 计算下次重试延迟
     async fn next_delay(&self, attempt: u32) -> Option<Duration>;
-    
+
     /// 是否应该重试
     fn should_retry(&self, error: &OtlpError) -> bool;
 }
@@ -539,7 +539,7 @@ impl RetryStrategy for ExponentialBackoff {
             Some(self.base_delay * 2_u32.pow(attempt))
         }
     }
-    
+
     fn should_retry(&self, error: &OtlpError) -> bool {
         matches!(error, OtlpError::Network(_) | OtlpError::Timeout)
     }
@@ -569,7 +569,7 @@ trait CircuitBreaker: Send + Sync {
         F: FnOnce() -> std::pin::Pin<Box<dyn Future<Output = Result<T, E>> + Send>> + Send,
         T: Send,
         E: Send;
-    
+
     /// 获取当前状态
     fn state(&self) -> CircuitState;
 }
@@ -592,18 +592,18 @@ impl CircuitBreaker for SimpleCircuitBreaker {
             // 熔断器打开，快速失败
             return Err(unsafe { std::mem::zeroed() }); // 简化示例
         }
-        
+
         let result = f().await;
-        
+
         if result.is_err() {
             self.failure_count.fetch_add(1, Ordering::SeqCst);
         } else {
             self.failure_count.store(0, Ordering::SeqCst);
         }
-        
+
         result
     }
-    
+
     fn state(&self) -> CircuitState {
         if self.failure_count.load(Ordering::SeqCst) >= self.threshold {
             CircuitState::Open
@@ -637,16 +637,16 @@ impl DynExporter for MockExporter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_mock_exporter() {
         let mock = MockExporter {
             exported_data: Arc::new(tokio::sync::Mutex::new(Vec::new())),
         };
-        
+
         mock.export(vec![1, 2, 3]).await.unwrap();
         mock.export(vec![4, 5, 6]).await.unwrap();
-        
+
         let data = mock.exported_data.lock().await;
         assert_eq!(data.len(), 2);
         assert_eq!(data[0], vec![1, 2, 3]);
@@ -662,7 +662,7 @@ async fn test_exporter_pipeline() {
     let exporter: Box<dyn DynExporter> = Box::new(MockExporter {
         exported_data: Arc::new(tokio::sync::Mutex::new(Vec::new())),
     });
-    
+
     // 模拟实际使用场景
     use_dynamic_exporter(exporter).await;
 }
@@ -748,5 +748,5 @@ trait GoodReader {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

@@ -1,7 +1,7 @@
 # 📦 可运行示例代码索引
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 可运行示例代码索引 - 38+ 个 Rust 示例的完整目录和快速运行指南。
@@ -362,7 +362,7 @@ cargo run --example advanced_patterns --package otlp
 
 #### 1. 基础使用
 
-**文件**: `crates/reliability/examples/reliability_basic_usage.rs`  
+**文件**: `crates/reliability/examples/reliability_basic_usage.rs`
 **行数**: 474
 
 完整的可靠性框架入门教程。
@@ -381,7 +381,7 @@ cargo run --example reliability_basic_usage --package reliability
 
 #### 2. 简单 Rust 1.90 演示
 
-**文件**: `crates/reliability/examples/simple_rust_190_demo.rs`  
+**文件**: `crates/reliability/examples/simple_rust_190_demo.rs`
 **行数**: 109
 
 展示 Rust 1.90 新特性在可靠性框架中的应用。
@@ -402,7 +402,7 @@ cargo run --example simple_rust_190_demo --package reliability
 
 #### 3. Rust 1.90 特性演示
 
-**文件**: `crates/reliability/examples/rust_190_features_demo.rs`  
+**文件**: `crates/reliability/examples/rust_190_features_demo.rs`
 **行数**: 220
 
 深入展示 Rust 1.90 特性。
@@ -421,7 +421,7 @@ cargo run --example rust_190_features_demo --package reliability
 
 #### 4. 运行时环境
 
-**文件**: `crates/reliability/examples/runtime_environment_example.rs`  
+**文件**: `crates/reliability/examples/runtime_environment_example.rs`
 **行数**: 456
 
 运行时环境检测和适配。
@@ -546,7 +546,7 @@ cargo run --example enhanced_anomaly_detection --package reliability
 
 #### 11. 编排器（最小版）
 
-**文件**: `crates/reliability/examples/orchestrator_minimal.rs`  
+**文件**: `crates/reliability/examples/orchestrator_minimal.rs`
 **行数**: 57
 
 服务编排器的最小实现。
@@ -565,7 +565,7 @@ cargo run --example orchestrator_minimal --package reliability
 
 #### 12. 监督器（最小版）
 
-**文件**: `crates/reliability/examples/supervisor_minimal.rs`  
+**文件**: `crates/reliability/examples/supervisor_minimal.rs`
 **行数**: 44
 
 监督器模式的最小实现。
@@ -738,9 +738,9 @@ cargo run --example runtime_environment_example --package reliability
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("=== 示例标题 ===\n");
-        
+
         // 示例代码
-        
+
         println!("\n✅ 示例完成！");
         Ok(())
     }
@@ -754,12 +754,12 @@ cargo run --example runtime_environment_example --package reliability
 
 ### 优秀示例的特征
 
-✅ **清晰的目的**: 每个示例专注一个主题  
-✅ **完整的文档**: 包含用途、运行方式、学习内容  
-✅ **可运行性**: 无需额外配置即可运行  
-✅ **详细注释**: 关键代码有清晰注释  
-✅ **错误处理**: 正确处理错误情况  
-✅ **输出友好**: 有清晰的输出信息  
+✅ **清晰的目的**: 每个示例专注一个主题
+✅ **完整的文档**: 包含用途、运行方式、学习内容
+✅ **可运行性**: 无需额外配置即可运行
+✅ **详细注释**: 关键代码有清晰注释
+✅ **错误处理**: 正确处理错误情况
+✅ **输出友好**: 有清晰的输出信息
 
 ### 示例分类标准
 
@@ -827,8 +827,8 @@ cargo run --example runtime_environment_example --package reliability
 
 ---
 
-*最后更新: 2025年10月20日*  
-*维护者: OTLP Rust Team*  
-*版本: 1.0.0*
+_最后更新: 2025年10月20日_
+_维护者: OTLP Rust Team_
+_版本: 1.0.0_
 
 **Happy Coding! 🚀**-

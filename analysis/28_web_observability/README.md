@@ -1,8 +1,8 @@
 # Web 可观测性 - Web Observability
 
-**创建日期**: 2025年10月29日  
-**最后更新**: 2025年10月29日  
-**状态**: ✅ 完整  
+**创建日期**: 2025年10月29日
+**最后更新**: 2025年10月29日
+**状态**: ✅ 完整
 **优先级**: 🔴 高
 
 ---
@@ -273,12 +273,12 @@ use opentelemetry::trace::TracerProvider;
 async fn main() {
     // 初始化追踪
     let tracer_provider = init_tracer_provider();
-    
+
     // 创建应用
     let app = Router::new()
         .route("/", get(handler))
         .layer(TraceLayer::new(tracer_provider));
-    
+
     // 启动服务器
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
@@ -390,27 +390,27 @@ Week 3-4: 生产实践
 
 ### 案例1: 电商API服务
 
-**场景**: 高并发电商REST API  
-**流量**: 10K+ req/s  
-**技术**: Axum + PostgreSQL + Redis  
+**场景**: 高并发电商REST API
+**流量**: 10K+ req/s
+**技术**: Axum + PostgreSQL + Redis
 **成果**: P99延迟降低40%
 
 → [完整案例](./rest_api_observability.md#案例-电商api)
 
 ### 案例2: 实时聊天服务
 
-**场景**: WebSocket实时通信  
-**连接**: 100K+ 并发连接  
-**技术**: Actix-web + WebSocket + Redis Pub/Sub  
+**场景**: WebSocket实时通信
+**连接**: 100K+ 并发连接
+**技术**: Actix-web + WebSocket + Redis Pub/Sub
 **成果**: 消息延迟 < 50ms
 
 → [完整案例](./websocket_tracing.md#案例-实时聊天)
 
 ### 案例3: GraphQL网关
 
-**场景**: 微服务GraphQL聚合  
-**服务**: 20+ 后端服务  
-**技术**: Async-graphql + Axum  
+**场景**: 微服务GraphQL聚合
+**服务**: 20+ 后端服务
+**技术**: Async-graphql + Axum
 **成果**: N+1查询减少90%
 
 → [完整案例](./graphql_monitoring.md#案例-graphql网关)
@@ -459,8 +459,8 @@ Week 3-4: 生产实践
 
 ---
 
-**维护者**: OTLP_rust 项目团队  
-**联系方式**: 通过GitHub Issues  
+**维护者**: OTLP_rust 项目团队
+**联系方式**: 通过GitHub Issues
 **最后审查**: 2025年10月29日
 
 ---

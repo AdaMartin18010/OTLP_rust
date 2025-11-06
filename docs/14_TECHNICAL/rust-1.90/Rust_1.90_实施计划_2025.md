@@ -1,9 +1,9 @@
 # Rust 1.90 Edition=2024 实施计划
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
-**Rust版本**: 1.90  
-**Edition**: 2024  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
+**Rust版本**: 1.90
+**Edition**: 2024
 **状态**: 🟢 进行中
 
 > **简介**: Rust 1.90 Edition=2024 实施计划 - 全面升级到最新 Rust 版本的详细路线图。
@@ -160,7 +160,7 @@ async fn test_async_closure_migration() {
     let result = optimizer.call_with_async_closure(|| async {
         Ok::<i32, anyhow::Error>(42)
     }).await;
-    
+
     assert!(result.is_ok());
 }
 ```
@@ -253,12 +253,12 @@ pub fn process_with_cow(&self, data: Cow<'_, [u8]>) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_optimization_feature() {
         // 测试新特性
     }
-    
+
     #[test]
     fn test_backward_compatibility() {
         // 测试向后兼容性
@@ -369,4 +369,4 @@ async fn test_stress_performance() {
 
 ---
 
-*本实施计划将根据实际执行情况进行动态调整，确保项目成功升级到Rust 1.90 edition=2024。*
+_本实施计划将根据实际执行情况进行动态调整，确保项目成功升级到Rust 1.90 edition=2024。_

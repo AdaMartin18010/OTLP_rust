@@ -1,7 +1,7 @@
 # Docs 目录重组分析报告
 
-**日期**: 2025年10月26日  
-**分析范围**: `docs/` 目录完整结构  
+**日期**: 2025年10月26日
+**分析范围**: `docs/` 目录完整结构
 **总文件数**: 101 个 Markdown 文件
 
 ---
@@ -16,6 +16,7 @@
 | `architecture/` | `04_ARCHITECTURE/` | 3 vs 1 | 已标记迁移 | 合并内容 |
 
 **详细说明**:
+
 - `api/README.md` 包含迁移通知，指向 `03_API_REFERENCE/`
 - `architecture/README.md` 包含迁移通知，指向 `04_ARCHITECTURE/`
 - `architecture/` 包含实质内容（`system-architecture.md`, `module-design.md`），需要合并
@@ -27,6 +28,7 @@
 ### 3. 📂 目录命名混乱
 
 **编号目录** (9个):
+
 - 01_GETTING_STARTED (1 file)
 - 02_THEORETICAL_FRAMEWORK (19 files)
 - 03_API_REFERENCE (6 files)
@@ -38,6 +40,7 @@
 - 09_CRATES (5 files)
 
 **非编号目录** (10个):
+
 - api/ (3 files) - 待归档
 - architecture/ (3 files) - 待合并
 - design/ (0 files) - 待删除
@@ -52,6 +55,7 @@
 ### 4. 📝 根目录文档过多
 
 根目录有 **9个顶级文档**:
+
 1. INDEX.md (10KB, 279 lines)
 2. README.md (8.7KB, 208 lines)
 3. SUMMARY.md (2.8KB, 114 lines)
@@ -79,6 +83,7 @@
 ### Phase 1: 合并重复目录
 
 #### 1.1 API 文档合并
+
 ```bash
 # 保留 03_API_REFERENCE/ 作为主目录
 # 归档 api/ 到 archives/deprecated_structure/
@@ -86,6 +91,7 @@ docs/api/ → docs/archives/deprecated_structure/api/
 ```
 
 #### 1.2 架构文档合并
+
 ```bash
 # 将 architecture/ 的完整内容合并到 04_ARCHITECTURE/
 docs/architecture/system-architecture.md → docs/04_ARCHITECTURE/system_architecture.md
@@ -95,6 +101,7 @@ docs/architecture/ → docs/archives/deprecated_structure/architecture/
 ```
 
 ### Phase 2: 清理空目录
+
 ```bash
 # 删除完全空的目录
 rm -rf docs/design/
@@ -103,12 +110,14 @@ rm -rf docs/design/
 ### Phase 3: 统一非编号目录
 
 #### 3.1 Development 文档整合
+
 ```bash
 # 移动到新的 10_DEVELOPMENT/ 目录
 docs/development/ → docs/10_DEVELOPMENT/
 ```
 
 #### 3.2 Examples 文档整合
+
 ```bash
 # 检查是否与 EXAMPLES_INDEX.md 重复，然后移动
 docs/examples/ → docs/11_EXAMPLES/
@@ -116,12 +125,14 @@ docs/EXAMPLES_INDEX.md → docs/11_EXAMPLES/INDEX.md
 ```
 
 #### 3.3 Guides 文档整合
+
 ```bash
 # 移动到新的 12_GUIDES/ 目录
 docs/guides/ → docs/12_GUIDES/
 ```
 
 #### 3.4 Planning & Roadmap 整合
+
 ```bash
 # 合并到新的 13_PLANNING/ 目录
 docs/planning/ → docs/13_PLANNING/
@@ -129,6 +140,7 @@ docs/roadmap/ → docs/13_PLANNING/roadmap/
 ```
 
 #### 3.5 Technical 文档整合
+
 ```bash
 # 移动到新的 14_TECHNICAL/ 目录
 docs/technical/ → docs/14_TECHNICAL/
@@ -137,6 +149,7 @@ docs/technical/ → docs/14_TECHNICAL/
 ### Phase 4: 重组根目录文档
 
 #### 4.1 创建 00_INDEX/ 目录
+
 ```bash
 # 移动所有索引和指南文档
 docs/INDEX.md → docs/00_INDEX/MAIN_INDEX.md
@@ -149,7 +162,9 @@ docs/VISUALIZATION_INDEX.md → docs/00_INDEX/VISUALIZATION_INDEX.md
 ```
 
 #### 4.2 根目录最终状态
+
 保留：
+
 - README.md - 文档主入口
 - book.toml - mdBook 配置
 - archives/ - 历史文档归档
@@ -158,6 +173,7 @@ docs/VISUALIZATION_INDEX.md → docs/00_INDEX/VISUALIZATION_INDEX.md
 ### Phase 5: 填充不完整内容
 
 #### 5.1 完善 04_ARCHITECTURE/
+
 ```bash
 # 从 architecture/ 合并后，目录应包含：
 - README.md (概览和导航)
@@ -170,6 +186,7 @@ docs/VISUALIZATION_INDEX.md → docs/00_INDEX/VISUALIZATION_INDEX.md
 ```
 
 #### 5.2 完善 01_GETTING_STARTED/
+
 ```bash
 # 从 guides/ 移动快速开始内容
 docs/guides/quick-start.md → docs/01_GETTING_STARTED/quick_start.md
@@ -184,6 +201,7 @@ docs/guides/installation.md → docs/01_GETTING_STARTED/installation.md
 ### Phase 6: 创建统一导航
 
 #### 6.1 更新 README.md
+
 ```markdown
 # OTLP Rust Documentation
 
@@ -214,7 +232,9 @@ docs/guides/installation.md → docs/01_GETTING_STARTED/installation.md
 ```
 
 #### 6.2 创建 00_INDEX/MAIN_INDEX.md
+
 完整的文档索引，包含：
+
 - 按主题分类的文档列表
 - 按角色分类的推荐阅读路径
 - 文档质量等级标注
@@ -307,6 +327,7 @@ docs/
 ## 📊 统计对比
 
 ### 重组前
+
 - 顶级 Markdown 文件: 9 个
 - 编号目录: 9 个 (01-09)
 - 非编号目录: 10 个
@@ -315,6 +336,7 @@ docs/
 - 总文件数: 101 个
 
 ### 重组后
+
 - 顶级 Markdown 文件: 1 个 (README.md)
 - 编号目录: 15 个 (00-14)
 - 非编号目录: 2 个 (archives/, reports/)
@@ -348,7 +370,6 @@ docs/
 
 ---
 
-**分析完成时间**: 2025年10月26日  
-**预计执行时间**: 2-3小时  
+**分析完成时间**: 2025年10月26日
+**预计执行时间**: 2-3小时
 **风险等级**: 低 (所有旧内容归档，可回滚)
-

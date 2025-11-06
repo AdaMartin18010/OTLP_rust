@@ -1,11 +1,11 @@
 ﻿# Rust 1.90 快速参考手册 2025
 
-**版本**: 2.0  
-**创建日期**: 2025年10月28日  
-**更新日期**: 2025年10月28日  
-**Rust版本**: 1.90.0  
-**状态**: ✅ 完整  
-**作者**: OTLP_rust文档团队  
+**版本**: 2.0
+**创建日期**: 2025年10月28日
+**更新日期**: 2025年10月28日
+**Rust版本**: 1.90.0
+**状态**: ✅ 完整
+**作者**: OTLP_rust文档团队
 **审核**: 技术委员会
 
 ---
@@ -14,66 +14,97 @@
 
 本手册是Rust 1.90开发的快速参考指南，涵盖语言特性、性能优化、常用命令、可靠性模式等核心主题，旨在5分钟内快速定位所需信息。
 
-**适用人群**: 中级及以上Rust开发者  
-**预计阅读时长**: 30-60分钟（全文）/ 2-5分钟（单项查询）  
+**适用人群**: 中级及以上Rust开发者
+**预计阅读时长**: 30-60分钟（全文）/ 2-5分钟（单项查询）
 **前置知识**: Rust基础语法、Cargo基本使用
 
 ---
 
 ## 📋 目录
 
-- [Rust 1.90 新特性](#1-rust-190-新特性)
-
-- [OpenTelemetry集成](#2-opentelemetry集成)
-   - 2.1 [快速初始化](#21-快速初始化)
-   - 2.2 [三大信号](#22-三大信号)
-   - 2.3 [常用宏](#23-常用宏)
-   - 2.4 [性能基准](#24-性能基准)
-
-- [分布式系统模式](#3-分布式系统模式)
-   - 3.1 [熔断器模式](#31-熔断器模式)
-   - 3.2 [限流器模式](#32-限流器模式)
-   - 3.3 [重试机制](#33-重试机制)
-   - 3.4 [超时控制](#34-超时控制)
-
-- [编译期优化](#4-编译期优化)
-   - 4.1 [Cargo配置](#41-cargo配置)
-   - 4.2 [链接器选择](#42-链接器选择)
-   - 4.3 [CPU指令集](#43-cpu指令集)
-   - 4.4 [优化效果对比](#44-优化效果对比)
-
-- [运行时优化](#5-运行时优化)
-   - 5.1 [零拷贝技术](#51-零拷贝技术)
-   - 5.2 [内存对齐](#52-内存对齐)
-   - 5.3 [无锁并发](#53-无锁并发)
-   - 5.4 [SIMD加速](#54-simd加速)
-
-- [Cargo命令速查](#6-cargo命令速查)
-   - 6.1 [项目管理](#61-项目管理)
-   - 6.2 [依赖管理](#62-依赖管理)
-   - 6.3 [代码质量](#63-代码质量)
-   - 6.4 [工作区操作](#64-工作区操作)
-
-- [Rustup命令速查](#7-rustup命令速查)
-   - 7.1 [工具链管理](#71-工具链管理)
-   - 7.2 [组件管理](#72-组件管理)
-   - 7.3 [目标平台](#73-目标平台)
-
-- [常见编译错误](#8-常见编译错误)
-   - 8.1 [所有权错误](#81-所有权错误)
-   - 8.2 [借用检查错误](#82-借用检查错误)
-   - 8.3 [生命周期错误](#83-生命周期错误)
-   - 8.4 [类型错误](#84-类型错误)
-
-- [延迟目标](#9-延迟目标)
-- [吞吐量目标](#10-吞吐量目标)
-- [资源使用标准](#11-资源使用标准)
-
-- [技术选型速查](#12-技术选型速查)
-   - 12.1 [异步运行时](#121-异步运行时)
-   - 12.2 [Web框架](#122-web框架)
-   - 12.3 [数据库驱动](#123-数据库驱动)
-   - 12.4 [序列化库](#124-序列化库)
+- [Rust 1.90 快速参考手册 2025](#rust-190-快速参考手册-2025)
+  - [📋 文档概述](#-文档概述)
+  - [📋 目录](#-目录)
+  - [🆕 Rust 1.90 新特性](#-rust-190-新特性)
+    - [1.1 LLD链接器优化](#11-lld链接器优化)
+      - [1.1.1 自动启用](#111-自动启用)
+      - [1.1.2 性能提升数据](#112-性能提升数据)
+    - [1.2 Const API稳定化](#12-const-api稳定化)
+      - [1.2.1 浮点数操作](#121-浮点数操作)
+      - [1.2.2 整数混合运算](#122-整数混合运算)
+    - [1.3 工作区发布](#13-工作区发布)
+      - [1.3.1 一键发布](#131-一键发布)
+      - [1.3.2 依赖统一管理](#132-依赖统一管理)
+    - [1.4 性能提升数据](#14-性能提升数据)
+      - [1.4.1 编译速度](#141-编译速度)
+      - [1.4.2 增量编译](#142-增量编译)
+  - [🔭 OpenTelemetry集成](#-opentelemetry集成)
+    - [2.1 快速初始化](#21-快速初始化)
+      - [2.1.1 HTTP导出器](#211-http导出器)
+    - [2.2 三大信号](#22-三大信号)
+      - [2.2.1 Traces（分布式追踪）](#221-traces分布式追踪)
+      - [2.2.2 Metrics（指标监控）](#222-metrics指标监控)
+      - [2.2.3 Logs（结构化日志）](#223-logs结构化日志)
+    - [2.3 常用宏](#23-常用宏)
+      - [2.3.1 span宏](#231-span宏)
+      - [2.3.2 事件宏](#232-事件宏)
+    - [2.4 性能基准](#24-性能基准)
+      - [2.4.1 端到端延迟](#241-端到端延迟)
+      - [2.4.2 资源占用](#242-资源占用)
+  - [🌐 分布式系统模式](#-分布式系统模式)
+    - [3.1 熔断器模式](#31-熔断器模式)
+      - [3.1.1 基本实现](#311-基本实现)
+    - [3.2 限流器模式](#32-限流器模式)
+      - [3.2.1 Token Bucket实现](#321-token-bucket实现)
+    - [3.3 重试机制](#33-重试机制)
+      - [3.3.1 指数退避](#331-指数退避)
+    - [3.4 超时控制](#34-超时控制)
+      - [3.4.1 基本超时](#341-基本超时)
+  - [⚙️ 编译期优化](#️-编译期优化)
+    - [4.1 Cargo配置](#41-cargo配置)
+      - [4.1.1 Release优化](#411-release优化)
+    - [4.2 链接器选择](#42-链接器选择)
+      - [4.2.1 LLD配置](#421-lld配置)
+    - [4.3 CPU指令集](#43-cpu指令集)
+      - [4.3.1 本机优化](#431-本机优化)
+    - [4.4 优化效果对比](#44-优化效果对比)
+  - [⚡ 运行时优化](#-运行时优化)
+    - [5.1 零拷贝技术](#51-零拷贝技术)
+      - [5.1.1 Bytes库](#511-bytes库)
+    - [5.2 内存对齐](#52-内存对齐)
+      - [5.2.1 结构体优化](#521-结构体优化)
+    - [5.3 无锁并发](#53-无锁并发)
+      - [5.3.1 原子操作](#531-原子操作)
+    - [5.4 SIMD加速](#54-simd加速)
+      - [5.4.1 自动向量化](#541-自动向量化)
+  - [📦 Cargo命令速查](#-cargo命令速查)
+    - [6.1 项目管理](#61-项目管理)
+    - [6.2 依赖管理](#62-依赖管理)
+    - [6.3 代码质量](#63-代码质量)
+    - [6.4 工作区操作](#64-工作区操作)
+  - [🛠️ Rustup命令速查](#️-rustup命令速查)
+    - [7.1 工具链管理](#71-工具链管理)
+    - [7.2 组件管理](#72-组件管理)
+    - [7.3 目标平台](#73-目标平台)
+  - [❌ 常见编译错误](#-常见编译错误)
+    - [8.1 所有权错误](#81-所有权错误)
+    - [8.2 借用检查错误](#82-借用检查错误)
+    - [8.3 生命周期错误](#83-生命周期错误)
+    - [8.4 类型错误](#84-类型错误)
+  - [📈 延迟目标](#-延迟目标)
+  - [📊 吞吐量目标](#-吞吐量目标)
+  - [🌟 资源使用标准](#-资源使用标准)
+  - [🎓 技术选型速查](#-技术选型速查)
+    - [12.1 异步运行时](#121-异步运行时)
+    - [12.2 Web框架](#122-web框架)
+    - [12.3 数据库驱动](#123-数据库驱动)
+    - [12.4 序列化库](#124-序列化库)
+  - [📚 相关资源](#-相关资源)
+    - [内部链接](#内部链接)
+    - [外部资源](#外部资源)
+  - [🔄 更新计划](#-更新计划)
+  - [📝 贡献指南](#-贡献指南)
+  - [📄 许可证](#-许可证)
 
 ---
 
@@ -86,6 +117,7 @@
 **特性**: Rust 1.90在Linux x86_64平台自动启用LLD链接器
 
 **验证命令**:
+
 ```bash
 rustc --version
 # 输出: rustc 1.90.0 (stable)
@@ -95,6 +127,7 @@ rustc --print=cfg | grep lld
 ```
 
 **手动启用（其他平台）**:
+
 ```bash
 # 方式1: 环境变量
 export RUSTFLAGS="-C link-arg=-fuse-ld=lld"
@@ -123,6 +156,7 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 #### 1.2.1 浮点数操作
 
 **新稳定API**:
+
 ```rust
 // ✅ Rust 1.90稳定
 const fn const_float_ops() {
@@ -132,7 +166,7 @@ const fn const_float_ops() {
     const PI_ROUND: f64 = 3.14159_f64.round();      // 3.0
     const PI_TRUNC: f64 = 3.14159_f64.trunc();      // 3.0
     const PI_FRACT: f64 = 3.14159_f64.fract();      // 0.14159
-    
+
     // 比较运算
     const IS_POSITIVE: bool = 3.14_f64.is_sign_positive(); // true
     const IS_FINITE: bool = 3.14_f64.is_finite();          // true
@@ -140,6 +174,7 @@ const fn const_float_ops() {
 ```
 
 **应用场景**:
+
 ```rust
 // 编译期数学常量
 pub const BUFFER_SIZE: usize = (1024.5_f64.ceil() as usize); // 1025
@@ -155,13 +190,14 @@ pub const MAX_CONNECTIONS: u32 = {
 #### 1.2.2 整数混合运算
 
 **新增方法**:
+
 ```rust
 const fn const_int_ops() {
     // 有符号/无符号混合运算（Rust 1.90）
     const RESULT1: u32 = 100_u32.checked_add_signed(-50).unwrap();  // 50
     const RESULT2: u32 = 100_u32.checked_add_signed(50).unwrap();   // 150
     const RESULT3: u32 = 100_u32.wrapping_add_signed(-150);         // u32::MAX - 49
-    
+
     // 实用示例
     const OFFSET: i32 = -10;
     const BASE: u32 = 100;
@@ -170,6 +206,7 @@ const fn const_int_ops() {
 ```
 
 **性能优势**:
+
 - ✅ 编译期计算，零运行时开销
 - ✅ 类型安全，避免溢出
 - ✅ 常量传播优化
@@ -181,6 +218,7 @@ const fn const_int_ops() {
 #### 1.3.1 一键发布
 
 **命令**:
+
 ```bash
 # Rust 1.90新增：发布整个工作区
 cargo publish --workspace
@@ -193,6 +231,7 @@ cargo tree --workspace
 ```
 
 **配置示例**:
+
 ```toml
 # Cargo.toml (workspace root)
 [workspace]
@@ -209,6 +248,7 @@ publish = true
 #### 1.3.2 依赖统一管理
 
 **Cargo.toml配置**:
+
 ```toml
 [workspace]
 members = ["crates/*"]
@@ -231,6 +271,7 @@ axum = { workspace = true }
 ```
 
 **优势**:
+
 - ✅ 版本一致性：避免版本冲突
 - ✅ 易于维护：统一升级
 - ✅ 减少重复：DRY原则
@@ -277,6 +318,7 @@ axum = { workspace = true }
 #### 2.1.1 HTTP导出器
 
 **完整示例**:
+
 ```rust
 use opentelemetry::global;
 use opentelemetry_sdk::trace::TracerProvider;
@@ -284,11 +326,11 @@ use opentelemetry_otlp::{SpanExporter, TonicExporterBuilder};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// 初始化OpenTelemetry追踪
-/// 
+///
 /// # 参数
 /// * `endpoint` - OTLP收集器端点，如 "http://localhost:4318"
 /// * `service_name` - 服务名称
-/// 
+///
 /// # 返回
 /// Result<(), Box<dyn std::error::Error>>
 ///
@@ -297,7 +339,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 /// init_telemetry("http://localhost:4318", "my-service")?;
 /// ```
 fn init_telemetry(
-    endpoint: &str, 
+    endpoint: &str,
     service_name: &str
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 1. 创建HTTP导出器
@@ -306,7 +348,7 @@ fn init_telemetry(
         .with_endpoint(format!("{}/v1/traces", endpoint))
         .with_timeout(std::time::Duration::from_secs(3))
         .build()?;
-    
+
     // 2. 配置TracerProvider
     let provider = TracerProvider::builder()
         .with_batch_exporter(
@@ -320,20 +362,20 @@ fn init_telemetry(
             ])
         )
         .build();
-    
+
     // 3. 设置全局provider
     global::set_tracer_provider(provider);
-    
+
     // 4. 集成tracing
     let tracer = global::tracer(service_name);
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-    
+
     tracing_subscriber::registry()
         .with(telemetry)
         .with(tracing_subscriber::fmt::layer())
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
-    
+
     Ok(())
 }
 
@@ -341,18 +383,19 @@ fn init_telemetry(
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化
     init_telemetry("http://localhost:4318", "demo-service")?;
-    
+
     // 使用
     tracing::info!("Service started");
-    
+
     // 优雅关闭
     global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 ```
 
 **性能开销**:
+
 - 追踪开销: ~1-2% CPU
 - 内存开销: ~10MB
 - 延迟增加: ~50μs/span
@@ -364,6 +407,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### 2.2.1 Traces（分布式追踪）
 
 **性能指标**:
+
 | 指标 | 值 | 说明 |
 |------|---|------|
 | **吞吐量** | 18,000 spans/s | 单实例 |
@@ -372,6 +416,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 | **内存** | 5MB | 10K spans缓存 |
 
 **使用示例**:
+
 ```rust
 use tracing::{info, instrument, Span};
 
@@ -387,12 +432,12 @@ use tracing::{info, instrument, Span};
 async fn fetch_user(db: &Database, user_id: u64) -> Result<User, Error> {
     // 函数执行自动创建span
     info!("Fetching user from database");
-    
+
     let user = db.query_user(user_id).await?;
-    
+
     // 添加运行时属性
     Span::current().record("user_name", &user.name);
-    
+
     info!("User fetched successfully");
     Ok(user)
 }
@@ -401,6 +446,7 @@ async fn fetch_user(db: &Database, user_id: u64) -> Result<User, Error> {
 #### 2.2.2 Metrics（指标监控）
 
 **性能指标**:
+
 | 指标 | 值 | 说明 |
 |------|---|------|
 | **吞吐量** | 50,000 metrics/s | 单实例 |
@@ -409,6 +455,7 @@ async fn fetch_user(db: &Database, user_id: u64) -> Result<User, Error> {
 | **内存** | 2MB | 1K指标 |
 
 **使用示例**:
+
 ```rust
 use opentelemetry::metrics::{Counter, Histogram, Meter};
 use opentelemetry::global;
@@ -421,13 +468,13 @@ struct Metrics {
 impl Metrics {
     fn new() -> Self {
         let meter = global::meter("my-service");
-        
+
         Self {
             request_counter: meter
                 .u64_counter("http.requests")
                 .with_description("Total HTTP requests")
                 .init(),
-            
+
             request_duration: meter
                 .f64_histogram("http.duration")
                 .with_description("HTTP request duration (seconds)")
@@ -435,7 +482,7 @@ impl Metrics {
                 .init(),
         }
     }
-    
+
     fn record_request(&self, duration_ms: f64, status: u16) {
         // 计数
         self.request_counter.add(
@@ -444,7 +491,7 @@ impl Metrics {
                 opentelemetry::KeyValue::new("status", status.to_string()),
             ]
         );
-        
+
         // 记录时长
         self.request_duration.record(
             duration_ms / 1000.0,  // 转换为秒
@@ -459,6 +506,7 @@ impl Metrics {
 #### 2.2.3 Logs（结构化日志）
 
 **性能指标**:
+
 | 指标 | 值 | 说明 |
 |------|---|------|
 | **吞吐量** | 100,000 logs/s | 单实例 |
@@ -467,6 +515,7 @@ impl Metrics {
 | **内存** | 3MB | 缓冲区 |
 
 **使用示例**:
+
 ```rust
 use tracing::{info, warn, error, debug};
 
@@ -586,6 +635,7 @@ CPU使用       10%      11.5%     +15%
 **定义**: 当服务调用失败率超过阈值时，自动切断请求，避免级联故障。
 
 **状态转换**:
+
 ```
 Closed（关闭） ──失败率>阈值──> Open（开启）
     ↑                            │
@@ -595,6 +645,7 @@ Closed（关闭） ──失败率>阈值──> Open（开启）
 ```
 
 **完整实现**:
+
 ```rust
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
@@ -642,7 +693,7 @@ impl CircuitBreaker {
             config,
         }
     }
-    
+
     fn get_state(&self) -> CircuitState {
         match self.state.load(Ordering::Relaxed) {
             0 => CircuitState::Closed,
@@ -651,17 +702,17 @@ impl CircuitBreaker {
             _ => CircuitState::Closed,
         }
     }
-    
+
     fn set_state(&self, state: CircuitState) {
         self.state.store(state as u8, Ordering::Relaxed);
     }
-    
+
     /// 执行受保护的操作
     ///
     /// # 示例
     /// ```no_run
     /// let cb = CircuitBreaker::new(Default::default());
-    /// 
+    ///
     /// let result = cb.call(|| async {
     ///     risky_operation().await
     /// }).await;
@@ -688,7 +739,7 @@ impl CircuitBreaker {
             }
             _ => {}
         }
-        
+
         // 执行操作
         match f().await {
             Ok(result) => {
@@ -701,7 +752,7 @@ impl CircuitBreaker {
             }
         }
     }
-    
+
     fn on_success(&self) {
         match self.get_state() {
             CircuitState::HalfOpen => {
@@ -719,10 +770,10 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     fn on_failure(&self) {
         let count = self.failure_count.fetch_add(1, Ordering::Relaxed) + 1;
-        
+
         match self.get_state() {
             CircuitState::Closed => {
                 if count >= self.config.failure_threshold {
@@ -756,7 +807,7 @@ async fn main() {
         success_threshold: 2,
         timeout: Duration::from_secs(10),
     });
-    
+
     for i in 0..10 {
         match cb.call(|| async {
             // 模拟可能失败的操作
@@ -774,13 +825,14 @@ async fn main() {
                 println!("Operation failed: {}", e);
             }
         }
-        
+
         sleep(Duration::from_millis(100)).await;
     }
 }
 ```
 
 **性能指标**:
+
 - 开销: <100ns/次调用
 - 内存: ~200字节/实例
 - 并发安全: ✅ 无锁实现
@@ -794,6 +846,7 @@ async fn main() {
 **算法**: 以固定速率向桶中添加令牌，请求需要获取令牌才能执行
 
 **完整实现**:
+
 ```rust
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -827,7 +880,7 @@ impl RateLimiter {
             last_refill: Arc::new(Mutex::new(Instant::now())),
         }
     }
-    
+
     /// 尝试获取令牌
     ///
     /// # 返回
@@ -835,14 +888,14 @@ impl RateLimiter {
     /// * `Err(RateLimitError)` - 超过限流
     pub async fn acquire(&self) -> Result<(), RateLimitError> {
         self.refill().await;
-        
+
         // 尝试获取令牌
         loop {
             let current = self.tokens.load(Ordering::Relaxed);
             if current < 1000 {
                 return Err(RateLimitError::RateLimitExceeded);
             }
-            
+
             if self.tokens.compare_exchange(
                 current,
                 current - 1000,
@@ -853,18 +906,18 @@ impl RateLimiter {
             }
         }
     }
-    
+
     /// 尝试获取多个令牌
     pub async fn acquire_many(&self, count: u64) -> Result<(), RateLimitError> {
         self.refill().await;
-        
+
         let required = count * 1000;
         loop {
             let current = self.tokens.load(Ordering::Relaxed);
             if current < required {
                 return Err(RateLimitError::RateLimitExceeded);
             }
-            
+
             if self.tokens.compare_exchange(
                 current,
                 current - required,
@@ -875,22 +928,22 @@ impl RateLimiter {
             }
         }
     }
-    
+
     /// 补充令牌
     async fn refill(&self) {
         let mut last_refill = self.last_refill.lock().await;
         let now = Instant::now();
         let elapsed = now.duration_since(*last_refill);
-        
+
         if elapsed.as_millis() > 0 {
             let tokens_to_add = (elapsed.as_millis() as u64 * self.rate) / 1000;
-            
+
             if tokens_to_add > 0 {
                 let max_tokens = self.capacity * 1000;
                 loop {
                     let current = self.tokens.load(Ordering::Relaxed);
                     let new_tokens = std::cmp::min(current + tokens_to_add, max_tokens);
-                    
+
                     if self.tokens.compare_exchange(
                         current,
                         new_tokens,
@@ -900,12 +953,12 @@ impl RateLimiter {
                         break;
                     }
                 }
-                
+
                 *last_refill = now;
             }
         }
     }
-    
+
     /// 获取当前可用令牌数
     pub fn available_tokens(&self) -> u64 {
         self.tokens.load(Ordering::Relaxed) / 1000
@@ -922,10 +975,10 @@ pub enum RateLimitError {
 async fn main() {
     // 创建限流器：容量100，每秒10个令牌
     let limiter = Arc::new(RateLimiter::new(100, 10.0));
-    
+
     // 模拟并发请求
     let mut handles = vec![];
-    
+
     for i in 0..20 {
         let limiter = limiter.clone();
         let handle = tokio::spawn(async move {
@@ -941,16 +994,17 @@ async fn main() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.await.unwrap();
     }
-    
+
     println!("Available tokens: {}", limiter.available_tokens());
 }
 ```
 
 **性能指标**:
+
 - 开销: <50ns/次调用
 - 内存: ~150字节/实例
 - 吞吐量: >1M requests/s（单实例）
@@ -964,6 +1018,7 @@ async fn main() {
 **算法**: 每次重试的等待时间呈指数增长
 
 **完整实现**:
+
 ```rust
 use std::time::Duration;
 use tokio::time::sleep;
@@ -1010,7 +1065,7 @@ where
 {
     let mut attempt = 0;
     let mut delay = config.initial_delay;
-    
+
     loop {
         match operation().await {
             Ok(result) => {
@@ -1032,7 +1087,7 @@ where
             }
             Err(e) => {
                 attempt += 1;
-                
+
                 // 计算延迟
                 let mut actual_delay = delay;
                 if config.jitter {
@@ -1042,16 +1097,16 @@ where
                         (actual_delay.as_millis() as f64 * jitter_factor) as u64
                     );
                 }
-                
+
                 tracing::warn!(
                     "Attempt {} failed: {}. Retrying in {:?}",
                     attempt,
                     e,
                     actual_delay
                 );
-                
+
                 sleep(actual_delay).await;
-                
+
                 // 增加延迟（指数退避）
                 delay = Duration::from_millis(
                     ((delay.as_millis() as f64 * config.multiplier) as u64)
@@ -1082,7 +1137,7 @@ async fn main() {
             }
         }
     ).await;
-    
+
     match result {
         Ok(value) => println!("Final result: {}", value),
         Err(e) => println!("Failed after all retries: {}", e),
@@ -1091,6 +1146,7 @@ async fn main() {
 ```
 
 **退避时间表**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 指数退避时间序列（初始100ms，倍数2.0）
@@ -1112,6 +1168,7 @@ async fn main() {
 #### 3.4.1 基本超时
 
 **实现**:
+
 ```rust
 use tokio::time::{timeout, Duration};
 
@@ -1146,7 +1203,7 @@ async fn example() {
             Ok("Done")
         }
     ).await;
-    
+
     match result {
         Ok(value) => println!("Success: {}", value),
         Err(TimeoutError::Timeout) => println!("Operation timed out"),
@@ -1164,6 +1221,7 @@ async fn example() {
 #### 4.1.1 Release优化
 
 **Cargo.toml**:
+
 ```toml
 [profile.release]
 # 最高优化级别（速度优先）
@@ -1189,6 +1247,7 @@ overflow-checks = false
 ```
 
 **效果对比**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 优化配置效果（中型项目）
@@ -1211,6 +1270,7 @@ overflow-checks = false
 #### 4.2.1 LLD配置
 
 **.cargo/config.toml**:
+
 ```toml
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
@@ -1224,6 +1284,7 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 ```
 
 **链接器对比**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 链接器性能对比（大型项目）
@@ -1244,6 +1305,7 @@ mold            8s       1.5GB     极速
 #### 4.3.1 本机优化
 
 **.cargo/config.toml**:
+
 ```toml
 [build]
 rustflags = [
@@ -1253,6 +1315,7 @@ rustflags = [
 ```
 
 **指令集层级**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 x86_64 CPU特性层级
@@ -1272,6 +1335,7 @@ native      所有本机特性        最优
 ### 4.4 优化效果对比
 
 **综合测试**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 编译优化综合效果（Web服务项目）
@@ -1299,6 +1363,7 @@ CPU使用       25%      12%       8%
 **原理**: 通过引用计数共享数据，避免拷贝
 
 **示例**:
+
 ```rust
 use bytes::{Bytes, BytesMut};
 
@@ -1316,7 +1381,7 @@ fn good_sharing(data: Bytes) -> (Bytes, Bytes) {
 fn benchmark() {
     let data_vec = vec![0u8; 1_000_000];  // 1MB
     let data_bytes = Bytes::from(vec![0u8; 1_000_000]);
-    
+
     // Vec拷贝：~1ms
     let start = std::time::Instant::now();
     for _ in 0..1000 {
@@ -1324,7 +1389,7 @@ fn benchmark() {
     }
     println!("Vec: {:?}", start.elapsed());
     // 输出: Vec: 1.2s (1000次 * 1ms)
-    
+
     // Bytes拷贝：~10ns
     let start = std::time::Instant::now();
     for _ in 0..1000 {
@@ -1332,12 +1397,13 @@ fn benchmark() {
     }
     println!("Bytes: {:?}", start.elapsed());
     // 输出: Bytes: 10μs (1000次 * 10ns)
-    
+
     // 性能提升：120,000倍
 }
 ```
 
 **性能数据**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 零拷贝性能对比（1MB数据，1000次操作）
@@ -1357,6 +1423,7 @@ slice(0..100)    0.1ms        0.01ns       10,000x
 #### 5.2.1 结构体优化
 
 **对齐规则**:
+
 ```rust
 // ❌ 未优化（24字节）
 #[repr(C)]
@@ -1382,11 +1449,13 @@ assert_eq!(std::mem::size_of::<Optimized>(), 16);
 ```
 
 **优化原则**:
+
 1. 按大小降序排列字段
 2. 大字段在前，小字段在后
 3. 使用`#[repr(C)]`保证布局稳定
 
 **性能影响**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 内存对齐性能影响（100万个实例）
@@ -1406,6 +1475,7 @@ assert_eq!(std::mem::size_of::<Optimized>(), 16);
 #### 5.3.1 原子操作
 
 **性能对比**:
+
 ```rust
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -1431,6 +1501,7 @@ fn atomic_counter(count: Arc<AtomicU64>) {
 ```
 
 **并发数据结构**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 无锁vs有锁性能对比（8线程）
@@ -1451,6 +1522,7 @@ fn atomic_counter(count: Arc<AtomicU64>) {
 #### 5.4.1 自动向量化
 
 **示例**:
+
 ```rust
 // 自动SIMD（编译器优化）
 fn sum_auto(data: &[f32]) -> f32 {
@@ -1463,20 +1535,20 @@ use std::simd::{f32x8, SimdFloat};
 fn sum_simd(data: &[f32]) -> f32 {
     let mut sum = f32x8::splat(0.0);
     let chunks = data.len() / 8;
-    
+
     for i in 0..chunks {
         let idx = i * 8;
         let v = f32x8::from_slice(&data[idx..idx+8]);
         sum += v;
     }
-    
+
     let mut result = sum.reduce_sum();
-    
+
     // 处理剩余元素
     for &x in &data[chunks*8..] {
         result += x;
     }
-    
+
     result
 }
 
@@ -1487,6 +1559,7 @@ fn sum_simd(data: &[f32]) -> f32 {
 ```
 
 **性能提升**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SIMD加速效果（不同操作）
@@ -1873,6 +1946,7 @@ Bincode      bincode      最快      最小
 ## 📚 相关资源
 
 ### 内部链接
+
 - 📖 [常见问题深度解答](./RUST_FAQ_DEEP_DIVE_2025.md)
 - 💻 [代码示例集](./RUST_CODE_EXAMPLES_2025.md)
 - ⚡ [性能优化手册](./PERFORMANCE_OPTIMIZATION_COOKBOOK_2025.md)
@@ -1880,6 +1954,7 @@ Bincode      bincode      最快      最小
 - 📊 [实用指南索引](./PRACTICAL_GUIDES_INDEX_2025.md)
 
 ### 外部资源
+
 - 🦀 [Rust官方文档](https://doc.rust-lang.org/)
 - 📚 [Rust语言圣经](https://course.rs/)
 - 🎓 [Rust By Example](https://doc.rust-lang.org/rust-by-example/)
@@ -1909,21 +1984,18 @@ Bincode      bincode      最快      最小
 
 ---
 
-**文档版本**: 2.0  
-**最后更新**: 2025年10月28日  
-**维护者**: OTLP_rust文档团队  
+**文档版本**: 2.0
+**最后更新**: 2025年10月28日
+**维护者**: OTLP_rust文档团队
 **审核者**: 技术委员会
 
 ---
 
-> **使用提示**: 
+> **使用提示**:
+>
 > - 🔍 使用Ctrl+F快速搜索
 > - 📌 建议添加书签
 > - 🖨️ 支持打印（A4纸）
 > - 📱 移动端友好
 
 **Happy Coding! 🦀**
-
-
-
-

@@ -1,7 +1,7 @@
 # gRPC 与 HTTP 传输层实现
 
-> **版本**: OTLP 1.3.0 & Rust 1.90  
-> **日期**: 2025年10月2日  
+> **版本**: OTLP 1.3.0 & Rust 1.90
+> **日期**: 2025年10月2日
 > **主题**: 传输协议、性能对比、安全通信、负载均衡
 
 ---
@@ -59,22 +59,22 @@ use tonic::metadata::{MetadataMap, MetadataValue};
 async fn create_grpc_exporter() -> Result<(), Box<dyn std::error::Error>> {
     let mut metadata = MetadataMap::new();
     metadata.insert("x-api-key", MetadataValue::from_static("my-secret-key"));
-    
+
     let exporter = opentelemetry_otlp::new_exporter()
         .tonic()
         .with_endpoint("http://localhost:4317")
         .with_timeout(std::time::Duration::from_secs(10))
         .with_metadata(metadata);
-    
+
     let provider = TracerProvider::builder()
         .with_batch_exporter(
             exporter.build_span_exporter()?,
             opentelemetry_sdk::runtime::Tokio,
         )
         .build();
-    
+
     opentelemetry::global::set_tracer_provider(provider);
-    
+
     Ok(())
 }
 ```
@@ -89,7 +89,7 @@ async fn create_advanced_grpc_client() -> Result<Channel, Box<dyn std::error::Er
     let tls_config = ClientTlsConfig::new()
         .ca_certificate(tonic::transport::Certificate::from_pem(include_bytes!("../ca.pem")))
         .domain_name("otlp.example.com");
-    
+
     let channel = Channel::from_static("https://otlp.example.com:4317")
         .tls_config(tls_config)?
         .tcp_keepalive(Some(std::time::Duration::from_secs(30)))
@@ -97,7 +97,7 @@ async fn create_advanced_grpc_client() -> Result<Channel, Box<dyn std::error::Er
         .keep_alive_timeout(std::time::Duration::from_secs(20))
         .connect()
         .await?;
-    
+
     Ok(channel)
 }
 ```
@@ -127,7 +127,7 @@ impl HttpProtobufExporter {
             endpoint,
         }
     }
-    
+
     async fn export_traces(&self, serialized_data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
         let response = self.client
             .post(&format!("{}/v1/traces", self.endpoint))
@@ -135,7 +135,7 @@ impl HttpProtobufExporter {
             .body(serialized_data)
             .send()
             .await?;
-        
+
         if response.status().is_success() {
             Ok(())
         } else {
@@ -166,14 +166,14 @@ struct JsonSpan {
 /// HTTP/JSON Exporter
 async fn export_json_traces(spans: Vec<JsonSpan>) -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    
+
     let response = client
         .post("http://localhost:4318/v1/traces")
         .header("Content-Type", "application/json")
         .json(&spans)
         .send()
         .await?;
-    
+
     response.error_for_status()?;
     Ok(())
 }
@@ -209,16 +209,16 @@ async fn create_mtls_client() -> Result<Channel, Box<dyn std::error::Error>> {
     let server_root_ca_cert = std::fs::read("certs/ca.pem")?;
     let client_cert = std::fs::read("certs/client.pem")?;
     let client_key = std::fs::read("certs/client-key.pem")?;
-    
+
     let tls_config = ClientTlsConfig::new()
         .ca_certificate(Certificate::from_pem(server_root_ca_cert))
         .identity(Identity::from_pem(client_cert, client_key));
-    
+
     let channel = Channel::from_static("https://otlp.example.com:4317")
         .tls_config(tls_config)?
         .connect()
         .await?;
-    
+
     Ok(channel)
 }
 ```
@@ -240,15 +240,15 @@ impl LoadBalancedExporter {
         for _ in 0..self.endpoints.len() {
             let index = self.current_index.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             let endpoint = &self.endpoints[index % self.endpoints.len()];
-            
+
             if let Ok(_) = self.try_export(endpoint, &data).await {
                 return Ok(());
             }
         }
-        
+
         Err("All endpoints failed".into())
     }
-    
+
     async fn try_export(&self, _endpoint: &str, _data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
@@ -271,5 +271,5 @@ impl LoadBalancedExporter {
 
 ---
 
-**最后更新**: 2025年10月2日  
+**最后更新**: 2025年10月2日
 **作者**: OTLP Rust 项目组

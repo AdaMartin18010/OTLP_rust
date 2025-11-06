@@ -1,9 +1,9 @@
 # OTLP Rust 项目 - Crate 架构规划
 
-**版本**: 1.0  
-**规划日期**: 2025年10月26日  
-**Rust 版本**: 1.90+  
-**OpenTelemetry 版本**: 0.31.0  
+**版本**: 1.0
+**规划日期**: 2025年10月26日
+**Rust 版本**: 1.90+
+**OpenTelemetry 版本**: 0.31.0
 **状态**: 🟢 活跃维护
 
 > **简介**: Crate 架构规划 - 完整的 crate 分层设计、职责划分和实施计划。
@@ -834,12 +834,12 @@ docs/book/
   - [ ] 迁移 `validation/` 模块
   - [ ] 创建核心错误类型
   - [ ] 编写单元测试
-  
+
 - [ ] 创建 `otlp-proto` crate
   - [ ] 设置 protobuf 构建
   - [ ] 实现编解码器
   - [ ] 类型转换函数
-  
+
 - [ ] 创建 `otlp-transport` crate
   - [ ] 迁移 gRPC 传输
   - [ ] 迁移 HTTP 传输
@@ -856,7 +856,7 @@ docs/book/
   - [ ] 简化模块结构
   - [ ] 清理冗余代码
   - [ ] 更新示例
-  
+
 - [ ] 增强 `reliability` crate
   - [ ] 添加对 `otlp-core` 的依赖
   - [ ] 可选的完整 `otlp` 集成
@@ -871,7 +871,7 @@ docs/book/
 - [ ] 创建 `otlp-microservices`
   - [ ] 从 `otlp/src/microservices/` 迁移
   - [ ] 集成 `reliability` 容错
-  
+
 - [ ] 创建 `otlp-integrations`
   - [ ] Kubernetes 集成
   - [ ] Prometheus 导出器
@@ -959,7 +959,7 @@ performance = ["simd", "zero-copy"]
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_core_functionality() {
         // ...
@@ -988,7 +988,7 @@ fn benchmark(c: &mut Criterion) {
 
 ```rust
 //! # Crate 级别文档
-//! 
+//!
 //! 概述、快速开始、架构说明
 //!
 //! ## 示例
@@ -1001,7 +1001,7 @@ fn benchmark(c: &mut Criterion) {
 /// 函数级别文档
 ///
 /// # 参数
-/// 
+///
 /// * `param` - 参数说明
 ///
 /// # 返回
@@ -1032,10 +1032,10 @@ use thiserror::Error;
 pub enum CrateError {
     #[error("配置错误: {0}")]
     Config(String),
-    
+
     #[error("网络错误")]
     Network(#[from] std::io::Error),
-    
+
     #[error("OTLP 错误")]
     Otlp(#[from] otlp_core::Error),
 }
@@ -1056,16 +1056,16 @@ members = [
     "otlp-core",
     "otlp-proto",
     "otlp-transport",
-    
+
     # 功能 crates
     "otlp",
     "reliability",
     "otlp-microservices",
-    
+
     # 整合 crates
     "otlp-reliability-bridge",
     "otlp-integrations",
-    
+
     # 工具 crates
     "otlp-cli",
 ]
@@ -1130,11 +1130,11 @@ async fn main() -> Result<()> {
         .with_service_name("my-service")
         .build()
         .await?;
-    
+
     // 创建带容错的追踪器
     let tracer = client.tracer("my-component");
     let circuit_breaker = CircuitBreaker::new(5, Duration::from_secs(60));
-    
+
     // 执行带监控的操作
     circuit_breaker.execute(|| async {
         let span = tracer.start("operation");
@@ -1142,7 +1142,7 @@ async fn main() -> Result<()> {
         drop(span);
         Ok(())
     }).await?;
-    
+
     Ok(())
 }
 ```
@@ -1161,13 +1161,13 @@ async fn main() -> Result<()> {
         .with_error_trace_correlation()
         .build()
         .await?;
-    
+
     // 自动记录追踪、错误和恢复
     unified.execute_with_full_observability(|| async {
         // 业务逻辑
         Ok(())
     }).await?;
-    
+
     Ok(())
 }
 ```
@@ -1222,6 +1222,6 @@ MIT OR Apache-2.0
 
 ---
 
-**文档版本**: 1.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 1.0
+**最后更新**: 2025-10-20
 **维护者**: OTLP Rust Team

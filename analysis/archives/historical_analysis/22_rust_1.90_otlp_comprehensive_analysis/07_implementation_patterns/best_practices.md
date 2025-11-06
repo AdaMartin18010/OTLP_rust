@@ -1,7 +1,7 @@
 # Rust OTLP 实现最佳实践
 
-> **主题**: 实现模式 - 最佳实践  
-> **日期**: 2025年10月3日  
+> **主题**: 实现模式 - 最佳实践
+> **日期**: 2025年10月3日
 > **难度**: ⭐⭐⭐ 中级
 
 ---
@@ -287,7 +287,7 @@ impl OtlpExporter for HttpExporter {
             .json(&request)
             .send()
             .await?;
-        
+
         if response.status().is_success() {
             Ok(ExportResult::Success)
         } else {
@@ -460,18 +460,18 @@ use anyhow::{Context, Result};
 async fn run_exporter() -> Result<()> {
     let config = load_config()
         .context("Failed to load configuration")?;
-    
+
     let exporter = HttpExporter::new(config.endpoint)
         .context("Failed to create exporter")?;
-    
+
     let traces = collect_traces()
         .await
         .context("Failed to collect traces")?;
-    
+
     exporter.export_traces(traces)
         .await
         .context("Failed to export traces")?;
-    
+
     Ok(())
 }
 ```
@@ -570,7 +570,7 @@ impl SmartBatcher {
     pub async fn collect(&self, span: Span) -> Option<Vec<Span>> {
         let mut buffer = self.buffer.lock();
         buffer.push(span);
-        
+
         // 达到批大小，立即刷新
         if buffer.len() >= self.batch_size {
             Some(std::mem::take(&mut *buffer))
@@ -646,11 +646,11 @@ proptest! {
     fn test_trace_id_roundtrip(bytes in prop::array::uniform16(any::<u8>())) {
         // 排除全零情况
         prop_assume!(bytes != [0; 16]);
-        
+
         let trace_id = TraceId::new(bytes).unwrap();
         let hex = trace_id.to_string();
         let parsed = TraceId::from_hex(&hex).unwrap();
-        
+
         prop_assert_eq!(trace_id, parsed);
     }
 
@@ -667,7 +667,7 @@ proptest! {
         let span = SpanBuilder::new(trace_id, name.clone())
             .with_kind(kind)
             .build();
-        
+
         prop_assert_eq!(span.name, name);
         prop_assert_eq!(span.kind, kind);
     }
@@ -685,19 +685,19 @@ use tokio::test;
 async fn test_end_to_end_export() {
     // 启动测试服务器
     let server = start_mock_server().await;
-    
+
     // 创建导出器
     let exporter = HttpExporter::new(server.url());
-    
+
     // 创建并导出 Span
     let trace_id = TraceId::random();
     let span = SpanBuilder::new(trace_id, "test_span")
         .with_attribute("test.key", "test_value")
         .build();
-    
+
     let result = exporter.export_traces(vec![span]).await;
     assert!(result.is_ok());
-    
+
     // 验证服务器收到数据
     let received = server.received_spans().await;
     assert_eq!(received.len(), 1);
@@ -714,7 +714,7 @@ use otlp_rust::*;
 
 fn bench_span_creation(c: &mut Criterion) {
     let trace_id = TraceId::random();
-    
+
     c.bench_function("span_creation", |b| {
         b.iter(|| {
             SpanBuilder::new(black_box(trace_id), black_box("test_span"))
@@ -727,7 +727,7 @@ fn bench_span_creation(c: &mut Criterion) {
 fn bench_batch_export(c: &mut Criterion) {
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let exporter = HttpExporter::new("http://localhost:4318");
-    
+
     let mut group = c.benchmark_group("batch_export");
     for size in [10, 100, 1000] {
         group.bench_with_input(BenchmarkId::from_parameter(size), &size, |b, &size| {
@@ -768,12 +768,12 @@ criterion_main!(benches);
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let exporter = HttpExporter::new("http://localhost:4318");
-//!     
+//!
 //!     let trace_id = TraceId::random();
 //!     let span = SpanBuilder::new(trace_id, "example_span")
 //!         .with_attribute("http.method", "GET")
 //!         .build();
-//!     
+//!
 //!     exporter.export_traces(vec![span]).await?;
 //!     Ok(())
 //! }
@@ -906,14 +906,14 @@ fn default_timeout() -> u64 {
 impl OtlpConfig {
     pub fn from_env() -> Result<Self, ConfigError> {
         let mut config = Self::default();
-        
+
         if let Ok(endpoint) = std::env::var("OTLP_ENDPOINT") {
             config.endpoint = endpoint;
         }
         if let Ok(batch_size) = std::env::var("OTLP_BATCH_SIZE") {
             config.batch_size = batch_size.parse()?;
         }
-        
+
         Ok(config)
     }
 }
@@ -931,7 +931,7 @@ pub async fn export_traces_instrumented(
     traces: Vec<Span>,
 ) -> Result<ExportResult, OtlpError> {
     info!("Starting trace export");
-    
+
     match exporter.export_traces(traces).await {
         Ok(result) => {
             info!("Trace export successful");
@@ -1027,6 +1027,6 @@ pub async fn run_with_graceful_shutdown(
 
 ---
 
-**维护者**: OTLP Rust 2025 研究团队  
-**更新日期**: 2025年10月3日  
+**维护者**: OTLP Rust 2025 研究团队
+**更新日期**: 2025年10月3日
 **许可证**: MIT OR Apache-2.0

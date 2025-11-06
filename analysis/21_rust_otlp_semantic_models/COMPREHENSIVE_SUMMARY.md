@@ -2,15 +2,45 @@
 
 ## 📋 目录
 
-- [概述](#概述)
-- [语义同构理论](#语义同构理论)
-- [零成本抽象](#零成本抽象)
-- [并发安全保证](#并发安全保证)
-- [自运维架构](#自运维架构)
-- [性能优化技术](#性能优化技术)
-- [实现示例](#实现示例)
-- [最佳实践](#最佳实践)
-- [结论](#结论)
+- [Rust 1.90 与 OTLP 语义模型综合分析](#rust-190-与-otlp-语义模型综合分析)
+  - [📋 目录](#-目录)
+  - [概述](#概述)
+    - [核心优势](#核心优势)
+  - [语义同构理论](#语义同构理论)
+    - [OTLP 与 Rust 类型系统的映射](#otlp-与-rust-类型系统的映射)
+      - [1. 资源 (Resource) 的类型表示](#1-资源-resource-的类型表示)
+      - [2. Span 的生命周期语义](#2-span-的生命周期语义)
+      - [3. 信号的代数语义](#3-信号的代数语义)
+    - [形式化验证](#形式化验证)
+      - [类型系统的正确性保证](#类型系统的正确性保证)
+  - [零成本抽象](#零成本抽象)
+    - [1. 泛型的单态化 (Monomorphization)](#1-泛型的单态化-monomorphization)
+    - [2. 内联优化](#2-内联优化)
+    - [3. 迭代器零成本抽象](#3-迭代器零成本抽象)
+  - [并发安全保证](#并发安全保证)
+    - [1. 所有权系统与并发](#1-所有权系统与并发)
+    - [2. 异步运行时集成](#2-异步运行时集成)
+    - [3. 无锁数据结构](#3-无锁数据结构)
+  - [自运维架构](#自运维架构)
+    - [三层架构设计](#三层架构设计)
+    - [自适应优化示例](#自适应优化示例)
+  - [性能优化技术](#性能优化技术)
+    - [1. SIMD 加速](#1-simd-加速)
+    - [2. 零拷贝序列化](#2-零拷贝序列化)
+    - [3. 内存池](#3-内存池)
+    - [4. 批量处理](#4-批量处理)
+  - [实现示例](#实现示例)
+    - [完整的 Tracer 实现](#完整的-tracer-实现)
+    - [使用示例](#使用示例)
+  - [最佳实践](#最佳实践)
+    - [1. 错误处理](#1-错误处理)
+    - [2. 配置管理](#2-配置管理)
+    - [3. 测试策略](#3-测试策略)
+  - [结论](#结论)
+    - [语义同构的优势](#语义同构的优势)
+    - [关键数据对比](#关键数据对比)
+    - [未来方向](#未来方向)
+
 
 ## 概述
 
@@ -120,7 +150,7 @@ impl<'a> Exportable for Signal<'a> {
             Signal::Logs(data) => data.export(),
         }
     }
-    
+
     fn validate(&self) -> Result<(), ValidationError> {
         // 语义约束验证
         match self {
@@ -206,8 +236,8 @@ pub fn create_trace_id() -> TraceId {
 
 /// 强制内联 - 关键路径优化
 #[inline(always)]
-pub fn fast_attribute_lookup(map: &HashMap<String, AttributeValue>, key: &str) 
-    -> Option<&AttributeValue> 
+pub fn fast_attribute_lookup(map: &HashMap<String, AttributeValue>, key: &str)
+    -> Option<&AttributeValue>
 {
     map.get(key)
 }
@@ -265,7 +295,7 @@ impl BatchSpanProcessor {
     pub async fn add_span(&self, span: Span<'static>) {
         let mut buffer = self.buffer.lock().unwrap();
         buffer.push(span);
-        
+
         if buffer.len() >= 100 {
             // 批量发送 - 克隆 Arc，无数据复制
             let spans = std::mem::take(&mut *buffer);
@@ -295,10 +325,10 @@ pub struct AsyncExporter {
 impl AsyncExporter {
     pub async fn run(&self) {
         let mut ticker = interval(self.export_interval);
-        
+
         loop {
             ticker.tick().await;
-            
+
             // 异步导出，不阻塞数据收集
             let spans = self.processor.flush().await;
             tokio::spawn(async move {
@@ -331,7 +361,7 @@ impl LockFreeLogBuffer {
         // 原子操作，无锁竞争
         self.queue.push(record)
     }
-    
+
     pub fn pop(&self) -> Option<LogRecord> {
         self.queue.pop()
     }
@@ -364,7 +394,7 @@ pub mod control_layer {
         sampling_strategy: Box<dyn SamplingStrategy>,
         rate_limiter: AdaptiveRateLimiter,
     }
-    
+
     impl PolicyEngine {
         /// 根据系统负载动态调整采样率
         pub fn adjust_sampling_rate(&mut self, cpu_usage: f64) {
@@ -380,20 +410,20 @@ pub mod control_layer {
 /// 3. 智能决策层 - AI 驱动的自动化
 pub mod intelligence_layer {
     use crate::ml::AnomalyDetector;
-    
+
     pub struct IntelligentOrchestrator {
         anomaly_detector: AnomalyDetector,
         auto_scaler: AutoScaler,
     }
-    
+
     impl IntelligentOrchestrator {
         pub async fn monitor_and_adapt(&mut self) {
             let metrics = self.collect_system_metrics().await;
-            
+
             // AI 异常检测
             if let Some(anomaly) = self.anomaly_detector.detect(&metrics) {
                 eprintln!("检测到异常: {:?}", anomaly);
-                
+
                 // 自动扩容
                 self.auto_scaler.scale_up().await;
             }
@@ -414,7 +444,7 @@ pub struct AdaptiveBatcher {
 impl AdaptiveBatcher {
     pub fn adjust_batch_size(&self, actual_latency: Duration) {
         let current = self.current_batch_size.load(Ordering::Relaxed);
-        
+
         let new_size = if actual_latency > self.latency_target {
             // 延迟过高，减小批次
             (current * 9 / 10).max(10)
@@ -422,7 +452,7 @@ impl AdaptiveBatcher {
             // 延迟可接受，增大批次
             (current * 11 / 10).min(1000)
         };
-        
+
         self.current_batch_size.store(new_size, Ordering::Relaxed);
     }
 }
@@ -440,12 +470,12 @@ use std::arch::x86_64::*;
 pub unsafe fn simd_filter_log_level(levels: &[u8], target: u8) -> Vec<usize> {
     let mut indices = Vec::new();
     let target_vec = _mm256_set1_epi8(target as i8);
-    
+
     for (i, chunk) in levels.chunks_exact(32).enumerate() {
         let data = _mm256_loadu_si256(chunk.as_ptr() as *const __m256i);
         let cmp = _mm256_cmpeq_epi8(data, target_vec);
         let mask = _mm256_movemask_epi8(cmp);
-        
+
         // 提取匹配位置
         for bit in 0..32 {
             if (mask & (1 << bit)) != 0 {
@@ -453,7 +483,7 @@ pub unsafe fn simd_filter_log_level(levels: &[u8], target: u8) -> Vec<usize> {
             }
         }
     }
-    
+
     indices
 }
 ```
@@ -471,16 +501,16 @@ pub struct ZeroCopySpanSerializer {
 impl ZeroCopySpanSerializer {
     pub fn serialize(&mut self, span: &Span) -> Bytes {
         self.buffer.clear();
-        
+
         // 直接写入缓冲区，无额外分配
         self.write_u64(span.trace_id.0);
         self.write_u64(span.span_id.0);
         self.write_string(&span.name);
-        
+
         // 冻结缓冲区，返回不可变视图
         self.buffer.split().freeze()
     }
-    
+
     #[inline]
     fn write_u64(&mut self, value: u64) {
         self.buffer.extend_from_slice(&value.to_be_bytes());
@@ -502,12 +532,12 @@ impl SpanPool {
     pub fn acquire(&self) -> Box<Span<'static>> {
         self.pool.pop().unwrap_or_else(|| Box::new(Span::default()))
     }
-    
+
     pub fn release(&self, mut span: Box<Span<'static>>) {
         // 重置状态
         span.attributes.clear();
         span.end_time = None;
-        
+
         self.pool.push(span);
     }
 }
@@ -519,17 +549,17 @@ impl SpanPool {
 /// 批量导出 - 摊销网络开销
 pub async fn batch_export_spans(spans: Vec<Span<'_>>) -> Result<(), ExportError> {
     const BATCH_SIZE: usize = 500;
-    
+
     for batch in spans.chunks(BATCH_SIZE) {
         let proto = encode_batch_protobuf(batch)?;
-        
+
         // HTTP/2 多路复用
         http_client.post("/v1/traces")
             .body(proto)
             .send()
             .await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -554,7 +584,7 @@ pub struct Tracer {
 impl Tracer {
     pub fn start_span(&self, name: &str) -> SpanBuilder {
         let should_sample = self.sampler.should_sample(name);
-        
+
         SpanBuilder {
             name: name.to_string(),
             trace_id: create_trace_id(),
@@ -580,12 +610,12 @@ impl SpanBuilder {
         self.parent_span_id = Some(parent);
         self
     }
-    
+
     pub fn with_attribute(mut self, key: &str, value: AttributeValue) -> Self {
         self.attributes.push((key.to_string(), value));
         self
     }
-    
+
     pub fn start(self) -> ActiveSpan {
         let span = Span {
             name: self.name,
@@ -594,7 +624,7 @@ impl SpanBuilder {
             start_time: SystemTime::now(),
             /* ... */
         };
-        
+
         ActiveSpan {
             span,
             processor: self.processor,
@@ -629,16 +659,16 @@ async fn main() {
         .with_sampler(AlwaysOnSampler)
         .with_processor(BatchSpanProcessor::new())
         .build();
-    
+
     // RAII 模式 - Span 自动结束
     {
         let span = tracer.start_span("process_request")
             .with_attribute("http.method", "GET")
             .start();
-        
+
         // 业务逻辑
         process_request().await;
-        
+
     } // span 在此处自动结束并导出
 }
 ```
@@ -654,10 +684,10 @@ use thiserror::Error;
 pub enum TracingError {
     #[error("序列化失败: {0}")]
     SerializationError(#[from] prost::EncodeError),
-    
+
     #[error("网络错误: {0}")]
     NetworkError(#[from] reqwest::Error),
-    
+
     #[error("无效的 Span 状态")]
     InvalidSpanState,
 }
@@ -679,10 +709,10 @@ use serde::{Deserialize, Serialize};
 pub struct TracerConfig {
     #[serde(default = "default_endpoint")]
     pub endpoint: String,
-    
+
     #[serde(default = "default_batch_size")]
     pub batch_size: usize,
-    
+
     #[serde(default)]
     pub sampling_rate: f64,
 }
@@ -709,28 +739,28 @@ impl TracerConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_span_lifecycle() {
         let span = Span::new("test");
         assert!(span.end_time.is_none());
-        
+
         let completed = span.end(SystemTime::now());
         assert!(completed.inner.end_time.is_some());
     }
-    
+
     #[tokio::test]
     async fn test_batch_processor() {
         let processor = BatchSpanProcessor::new();
-        
+
         for i in 0..100 {
             processor.add_span(create_test_span(i)).await;
         }
-        
+
         let exported = processor.flush().await;
         assert_eq!(exported.len(), 100);
     }
-    
+
     // 基准测试
     #[bench]
     fn bench_span_creation(b: &mut Bencher) {
