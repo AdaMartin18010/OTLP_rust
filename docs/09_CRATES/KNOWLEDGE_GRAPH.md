@@ -78,7 +78,7 @@ graph TB
 
 ### 1.2 依赖层次
 
-```
+```text
 Layer 4: 应用层
   └─ Your Application
 
@@ -154,7 +154,7 @@ graph LR
 
 ### 2.2 功能组合推荐
 
-```
+```text
 组合1: 分布式追踪
 otlp.Trace + reliability.CircuitBreaker + libraries.ObjectPool
 效果: 可靠的分布式追踪
@@ -240,7 +240,7 @@ graph TD
 
 ### 4.1 Crate核心概念列表
 
-```
+```text
 otlp (10个核心概念):
 ├─ Tracer - 追踪器
 ├─ Span - 跨度
@@ -281,7 +281,7 @@ libraries (5个核心概念):
 
 ### 4.2 概念关系网络
 
-```
+```text
 追踪链路:
 Tracer → Span → SpanContext → Exporter → Collector
 
@@ -339,7 +339,7 @@ graph TD
 
 ## 🚀 学习路径
 
-```
+```text
 新手路径 (推荐):
 Step 1: libraries (1天)
   └─ 学习对象池和缓存

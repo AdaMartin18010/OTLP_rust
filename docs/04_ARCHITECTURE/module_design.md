@@ -1,7 +1,7 @@
 # 模块设计文档
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: OTLP Rust 模块设计 - 各模块的设计理念、接口定义和实现细节。
@@ -14,13 +14,6 @@
   - [📋 目录](#-目录)
   - [概述](#概述)
   - [项目结构](#项目结构)
-  - [核心模块](#核心模块)
-    - [OTLP 核心 (otlp)](#otlp-核心-otlp)
-    - [可靠性框架 (reliability)](#可靠性框架-reliability)
-  - [模块关系](#模块关系)
-  - [接口设计](#接口设计)
-  - [扩展机制](#扩展机制)
-  - [最佳实践](#最佳实践)
 
 ---
 
@@ -208,13 +201,13 @@ pub struct BatchConfig {
 pub enum OtlpError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     #[error("Configuration error: {0}")]
     Configuration(String),
-    
+
     #[error("Validation error: {0}")]
     Validation(String),
 }
@@ -322,13 +315,13 @@ pub struct HttpTransport {
 pub enum UnifiedError {
     #[error("System error: {0}")]
     System(String),
-    
+
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("Configuration error: {0}")]
     Configuration(String),
-    
+
     #[error("Timeout error: {0}")]
     Timeout(String),
 }
@@ -512,12 +505,12 @@ graph TD
     A[OTLP Core] --> B[Network Layer]
     A --> C[Performance Layer]
     A --> D[Monitoring Layer]
-    
+
     E[Reliability Framework] --> A
     E --> F[Error Handling]
     E --> G[Fault Tolerance]
     E --> H[Runtime Monitoring]
-    
+
     B --> I[Transport Layer]
     C --> J[Optimization Layer]
     D --> K[Alert System]
@@ -532,7 +525,7 @@ sequenceDiagram
     participant Rel as Reliability
     participant Net as Network
     participant Backend as Backend Service
-    
+
     App->>OTLP: Send Telemetry Data
     OTLP->>Rel: Apply Reliability Checks
     Rel->>OTLP: Return Processed Data
@@ -607,4 +600,4 @@ sequenceDiagram
 
 ---
 
-*本文档最后更新: 2025年10月20日*-
+_本文档最后更新: 2025年10月20日_-

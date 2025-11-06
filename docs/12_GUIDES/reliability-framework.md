@@ -1,8 +1,8 @@
 # 可靠性框架使用指南
 
-**版本**: 1.0  
-**最后更新**: 2025年10月26日  
-**Crate**: `reliability`  
+**版本**: 1.0
+**最后更新**: 2025年10月26日
+**Crate**: `reliability`
 **状态**: 🟢 活跃维护
 
 > **简介**: Reliability Crate 完整使用指南 - 统一的错误处理、容错机制、运行时监控和环境适配。
@@ -17,17 +17,27 @@
   - [🚀 快速开始](#-快速开始)
     - [1. 安装依赖](#1-安装依赖)
     - [2. 初始化框架](#2-初始化框架)
-  - [🔧 核心功能](#-核心功能)
-    - [1. 统一错误处理](#1-统一错误处理)
-    - [2. 容错机制](#2-容错机制)
-    - [3. 运行时监控](#3-运行时监控)
-    - [4. 环境适配](#4-环境适配)
-  - [💡 使用示例](#-使用示例)
-  - [⚡ 高级功能](#-高级功能)
-  - [📈 性能考虑](#-性能考虑)
-  - [🔍 故障排查](#-故障排查)
-  - [💡 最佳实践](#-最佳实践)
-  - [📚 参考资源](#-参考资源)
+  - [错误处理](#错误处理)
+    - [统一错误类型](#统一错误类型)
+    - [错误上下文](#错误上下文)
+    - [错误监控](#错误监控)
+  - [容错机制](#容错机制)
+    - [断路器模式](#断路器模式)
+    - [重试策略](#重试策略)
+    - [超时控制](#超时控制)
+    - [舱壁模式](#舱壁模式)
+  - [运行时监控](#运行时监控)
+    - [健康检查](#健康检查)
+    - [性能监控](#性能监控)
+    - [资源监控](#资源监控)
+  - [环境适配](#环境适配)
+    - [自动环境检测](#自动环境检测)
+  - [混沌工程](#混沌工程)
+    - [故障注入](#故障注入)
+  - [最佳实践](#最佳实践)
+    - [1. 组合使用容错机制](#1-组合使用容错机制)
+    - [2. 监控和告警](#2-监控和告警)
+    - [3. 配置管理](#3-配置管理)
 
 ---
 
@@ -58,13 +68,13 @@ use reliability::prelude::*;
 async fn main() -> Result<(), UnifiedError> {
     // 初始化可靠性框架
     reliability::init().await?;
-    
+
     // 你的业务逻辑
     // ...
-    
+
     // 优雅关闭
     reliability::shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -83,22 +93,22 @@ async fn example_operation() -> Result<String, UnifiedError> {
     if some_condition {
         return Err(UnifiedError::System("Something went wrong".to_string()));
     }
-    
+
     // 网络错误
     let response = reqwest::get("https://api.example.com").await?;
-    
+
     // 配置错误
     let config = load_config().map_err(|e| {
         UnifiedError::Configuration(format!("Failed to load config: {}", e))
     })?;
-    
+
     // 超时错误
     let result = tokio::time::timeout(
         Duration::from_secs(5),
         async_operation()
     ).await
     .map_err(|_| UnifiedError::Timeout("Operation timed out".to_string()))?;
-    
+
     Ok(result)
 }
 ```
@@ -126,7 +136,7 @@ async fn operation_with_context() -> Result<(), UnifiedError> {
         stack_trace: None,
         metrics: HashMap::new(),
     };
-    
+
     match risky_operation().await {
         Ok(result) => Ok(result),
         Err(error) => {
@@ -149,7 +159,7 @@ use reliability::prelude::*;
 async fn main() -> Result<(), UnifiedError> {
     // 初始化错误监控
     GlobalErrorMonitor::init().await?;
-    
+
     // 执行业务操作
     for i in 0..100 {
         match operation().await {
@@ -164,16 +174,16 @@ async fn main() -> Result<(), UnifiedError> {
                     stack_trace: None,
                     metrics: HashMap::new(),
                 };
-                
+
                 GlobalErrorMonitor::record_error(e, context).await?;
             }
         }
     }
-    
+
     // 获取错误统计
     let stats = GlobalErrorMonitor::get_error_stats();
     println!("错误统计: {:?}", stats);
-    
+
     Ok(())
 }
 ```
@@ -191,13 +201,13 @@ use reliability::prelude::*;
 async fn main() -> Result<(), UnifiedError> {
     // 创建断路器：失败阈值 5，恢复超时 60 秒
     let circuit_breaker = CircuitBreaker::new(5, Duration::from_secs(60));
-    
+
     // 使用断路器执行操作
     let result = circuit_breaker.execute(|| async {
         // 可能失败的操作
         external_api_call().await
     }).await?;
-    
+
     println!("操作结果: {}", result);
     Ok(())
 }
@@ -205,7 +215,7 @@ async fn main() -> Result<(), UnifiedError> {
 async fn external_api_call() -> Result<String, UnifiedError> {
     // 模拟外部 API 调用
     tokio::time::sleep(Duration::from_millis(100)).await;
-    
+
     // 随机失败
     if rand::random::<f64>() < 0.3 {
         Err(UnifiedError::System("API call failed".to_string()))
@@ -231,12 +241,12 @@ async fn main() -> Result<(), UnifiedError> {
         Duration::from_secs(5),              // 最大延迟
         2.0,                                  // 乘数
     );
-    
+
     // 使用重试策略执行操作
     let result = retry_policy.execute(|| async {
         unreliable_operation().await
     }).await?;
-    
+
     println!("最终结果: {}", result);
     Ok(())
 }
@@ -244,7 +254,7 @@ async fn main() -> Result<(), UnifiedError> {
 async fn unreliable_operation() -> Result<String, UnifiedError> {
     // 模拟不可靠的操作
     tokio::time::sleep(Duration::from_millis(50)).await;
-    
+
     if rand::random::<f64>() < 0.7 {
         Err(UnifiedError::System("Temporary failure".to_string()))
     } else {
@@ -267,12 +277,12 @@ async fn main() -> Result<(), UnifiedError> {
         Duration::from_secs(30),
         TimeoutStrategy::FailFast
     );
-    
+
     // 使用超时控制执行操作
     let result = timeout.execute(|| async {
         slow_operation().await
     }).await?;
-    
+
     println!("操作结果: {}", result);
     Ok(())
 }
@@ -295,7 +305,7 @@ use reliability::prelude::*;
 async fn main() -> Result<(), UnifiedError> {
     // 创建舱壁：最大并发数 10
     let bulkhead = Bulkhead::new(10);
-    
+
     // 并发执行多个操作
     let mut handles = Vec::new();
     for i in 0..20 {
@@ -309,13 +319,13 @@ async fn main() -> Result<(), UnifiedError> {
         });
         handles.push(handle);
     }
-    
+
     // 等待所有操作完成
     for handle in handles {
         let result = handle.await??;
         println!("{}", result);
     }
-    
+
     Ok(())
 }
 ```
@@ -337,7 +347,7 @@ struct DatabaseHealthCheck {
 impl HealthCheckTrait for DatabaseHealthCheck {
     async fn check(&self) -> HealthCheckResult {
         let start = Instant::now();
-        
+
         // 检查数据库连接
         match check_database_connection(&self.connection_string).await {
             Ok(_) => HealthCheckResult {
@@ -354,7 +364,7 @@ impl HealthCheckTrait for DatabaseHealthCheck {
             },
         }
     }
-    
+
     fn name(&self) -> &str {
         "database"
     }
@@ -368,10 +378,10 @@ async fn main() -> Result<(), UnifiedError> {
         timeout: Duration::from_secs(5),
         failure_threshold: 3,
     };
-    
+
     // 创建健康检查器
     let mut health_checker = HealthChecker::new(config);
-    
+
     // 注册健康检查
     health_checker.register_checker(
         "database".to_string(),
@@ -379,15 +389,15 @@ async fn main() -> Result<(), UnifiedError> {
             connection_string: "postgresql://localhost/mydb".to_string(),
         }),
     );
-    
+
     // 执行健康检查
     let results = health_checker.check_all().await;
-    
+
     for (name, result) in results {
-        println!("{}: {:?} - {}", name, result.status, 
+        println!("{}: {:?} - {}", name, result.status,
                 result.message.unwrap_or_default());
     }
-    
+
     Ok(())
 }
 ```
@@ -410,7 +420,7 @@ impl MetricCollector for RequestMetricsCollector {
         let count = self.request_count.load(Ordering::Relaxed);
         let sum = self.response_time_sum.load(Ordering::Relaxed);
         let avg = if count > 0 { sum as f64 / count as f64 } else { 0.0 };
-        
+
         vec![
             Metric {
                 name: "request_count".to_string(),
@@ -426,7 +436,7 @@ impl MetricCollector for RequestMetricsCollector {
             },
         ]
     }
-    
+
     fn name(&self) -> &str {
         "request_metrics"
     }
@@ -444,42 +454,42 @@ async fn main() -> Result<(), UnifiedError> {
             thresholds
         },
     };
-    
+
     // 创建性能监控器
     let mut monitor = PerformanceMonitor::new(config);
-    
+
     // 注册指标收集器
     let collector = Arc::new(RequestMetricsCollector {
         request_count: AtomicU64::new(0),
         response_time_sum: AtomicU64::new(0),
     });
-    
+
     monitor.register_collector(
         "request_metrics".to_string(),
         Box::new(collector.clone()),
     );
-    
+
     // 模拟请求处理
     for i in 0..100 {
         let start = Instant::now();
-        
+
         // 处理请求
         tokio::time::sleep(Duration::from_millis(rand::random::<u64>() % 100)).await;
-        
+
         let duration = start.elapsed();
         collector.request_count.fetch_add(1, Ordering::Relaxed);
         collector.response_time_sum.fetch_add(
-            duration.as_millis() as u64, 
+            duration.as_millis() as u64,
             Ordering::Relaxed
         );
     }
-    
+
     // 收集指标
     let metrics = monitor.collect_all().await;
     for (name, metric_list) in metrics {
         println!("{}: {:?}", name, metric_list);
     }
-    
+
     Ok(())
 }
 ```
@@ -504,13 +514,13 @@ async fn main() -> Result<(), UnifiedError> {
             network_threshold: 70.0,
         },
     };
-    
+
     // 创建资源监控器
     let mut monitor = ResourceMonitor::new(config);
-    
+
     // 开始监控
     monitor.start_monitoring().await;
-    
+
     // 模拟高负载
     for i in 0..10 {
         tokio::spawn(async move {
@@ -521,23 +531,23 @@ async fn main() -> Result<(), UnifiedError> {
             }
         });
     }
-    
+
     // 监控一段时间
     tokio::time::sleep(Duration::from_secs(30)).await;
-    
+
     // 检查告警
     let alerts = monitor.check_alerts();
     for alert in alerts {
         println!("资源告警: {:?}", alert);
     }
-    
+
     // 获取资源使用历史
     let history = monitor.get_usage_history();
     for usage in history.iter().rev().take(5) {
-        println!("CPU: {:.1}%, Memory: {:.1}%", 
+        println!("CPU: {:.1}%, Memory: {:.1}%",
                 usage.cpu_usage, usage.memory_usage);
     }
-    
+
     Ok(())
 }
 ```
@@ -553,19 +563,19 @@ use reliability::prelude::*;
 async fn main() -> Result<(), UnifiedError> {
     // 创建环境管理器
     let mut env_manager = RuntimeEnvironmentManager::new();
-    
+
     // 自动检测环境
     let environment = env_manager.auto_detect().await;
     println!("检测到环境: {:?}", environment);
-    
+
     // 获取环境信息
     let info = env_manager.get_environment_info().await;
     println!("环境信息: {:?}", info);
-    
+
     // 获取环境能力
     let capabilities = env_manager.get_environment_capabilities();
     println!("环境能力: {:?}", capabilities);
-    
+
     // 根据环境调整配置
     match environment {
         RuntimeEnvironment::Container => {
@@ -585,7 +595,7 @@ async fn main() -> Result<(), UnifiedError> {
             // 标准配置
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -608,14 +618,14 @@ async fn main() -> Result<(), UnifiedError> {
         duration: Duration::from_secs(60),
         scope: FaultScope::Global,
     };
-    
+
     // 创建故障注入器
     let mut fault_injector = FaultInjector::new(config);
-    
+
     // 注入故障
     let result = fault_injector.inject_fault().await?;
     println!("故障注入结果: {:?}", result);
-    
+
     // 在故障期间执行业务逻辑
     for i in 0..100 {
         match business_operation().await {
@@ -624,21 +634,21 @@ async fn main() -> Result<(), UnifiedError> {
         }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
-    
+
     // 停止故障注入
     fault_injector.stop_fault_injection().await;
-    
+
     // 分析故障影响
     let analysis = fault_injector.analyze_fault_impact().await;
     println!("故障影响分析: {:?}", analysis);
-    
+
     Ok(())
 }
 
 async fn business_operation() -> Result<String, UnifiedError> {
     // 模拟业务操作
     tokio::time::sleep(Duration::from_millis(50)).await;
-    
+
     if rand::random::<f64>() < 0.05 {
         Err(UnifiedError::System("Business operation failed".to_string()))
     } else {
@@ -659,7 +669,7 @@ async fn robust_operation() -> Result<String, UnifiedError> {
     let circuit_breaker = CircuitBreaker::new(5, Duration::from_secs(60));
     let retry_policy = RetryPolicy::exponential_backoff(3, Duration::from_millis(100), Duration::from_secs(5), 2.0);
     let timeout = Timeout::new(Duration::from_secs(30), TimeoutStrategy::FailFast);
-    
+
     // 组合使用
     circuit_breaker.execute(|| async {
         timeout.execute(|| async {
@@ -684,19 +694,19 @@ async fn main() -> Result<(), UnifiedError> {
         timeout: Duration::from_secs(5),
         failure_threshold: 3,
     });
-    
+
     let mut performance_monitor = PerformanceMonitor::new(MonitoringConfig {
         collection_interval: Duration::from_secs(10),
         retention_period: Duration::from_secs(3600),
         alert_thresholds: HashMap::new(),
     });
-    
+
     // 启动监控任务
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(Duration::from_secs(30));
         loop {
             interval.tick().await;
-            
+
             // 健康检查
             let health_results = health_checker.check_all().await;
             for (name, result) in health_results {
@@ -704,7 +714,7 @@ async fn main() -> Result<(), UnifiedError> {
                     eprintln!("健康检查失败: {} - {}", name, result.message.unwrap_or_default());
                 }
             }
-            
+
             // 性能监控
             let metrics = performance_monitor.collect_all().await;
             for (name, metric_list) in metrics {
@@ -716,10 +726,10 @@ async fn main() -> Result<(), UnifiedError> {
             }
         }
     });
-    
+
     // 业务逻辑
     // ...
-    
+
     Ok(())
 }
 ```
@@ -763,4 +773,4 @@ memory_threshold = 85.0
 
 ---
 
-*本文档最后更新: 2025年10月20日*-
+_本文档最后更新: 2025年10月20日_-

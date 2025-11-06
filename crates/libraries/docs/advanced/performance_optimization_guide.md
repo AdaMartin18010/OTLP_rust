@@ -385,7 +385,7 @@ mod benches {
 
 #### 性能提升
 
-```
+```text
 标量: 1000 次操作 ~250ns
 SIMD:  1000 次操作 ~65ns
 提升: 3.8x
@@ -502,7 +502,7 @@ fn update_soa(particles: &mut ParticlesSoA) {
 
 #### 性能对比
 
-```
+```text
 AoS: 10000 粒子更新 ~150μs
 SoA: 10000 粒子更新 ~80μs
 提升: 1.9x
@@ -595,7 +595,7 @@ async fn read_multiple_files(paths: Vec<String>) -> Vec<String> {
 
 #### 性能对比
 
-```
+```text
 同步读取 10 个文件: ~500ms (串行)
 异步读取 10 个文件: ~50ms (并发)
 提升: 10x
@@ -655,7 +655,7 @@ async fn better_write_logs(logs: &[String]) -> tokio::io::Result<()> {
 
 #### 性能对比
 
-```
+```text
 频繁小写入: 1000 次写入 ~2000ms
 批量写入:   1000 次写入 ~50ms
 提升: 40x
@@ -738,7 +738,7 @@ async fn query_with_pool(pool: &PgPool, user_id: i64) -> Result<User> {
 
 #### 性能对比
 
-```
+```text
 无连接池: 1000 次查询 ~50s (每次建立连接)
 有连接池: 1000 次查询 ~2s
 提升: 25x
@@ -809,7 +809,7 @@ async fn better_insert_users(pool: &PgPool, users: &[User]) -> Result<()> {
 
 #### 性能对比
 
-```
+```text
 逐条插入: 1000 条 ~30s
 批量插入: 1000 条 ~300ms
 提升: 100x
@@ -840,7 +840,7 @@ SELECT * FROM users WHERE is_active = true AND id > 1000;
 
 #### 性能对比
 
-```
+```text
 无索引: 100万条记录查询 ~2000ms
 有索引: 100万条记录查询 ~5ms
 提升: 400x
@@ -942,7 +942,7 @@ async fn good_get_users_with_posts(pool: &PgPool) -> Result<Vec<UserWithPosts>> 
 
 #### 性能对比
 
-```
+```text
 N+1 查询: 100 用户 ~1000ms (101 次查询)
 JOIN 查询: 100 用户 ~50ms (1 次查询)
 提升: 20x
@@ -956,7 +956,7 @@ JOIN 查询: 100 用户 ~50ms (1 次查询)
 
 #### 架构
 
-```
+```text
 请求 → 内存缓存 → Redis 缓存 → 数据库
 ```
 
@@ -1031,7 +1031,7 @@ impl MultiLevelCache {
 
 #### 性能对比
 
-```
+```text
 直接查数据库: ~10ms
 Redis 缓存:   ~1ms
 内存缓存:     ~0.01ms
@@ -1191,7 +1191,7 @@ criterion_main!(benches);
 
 #### 运行结果
 
-```
+```text
 fib recursive 20    time:   [26.4 µs 26.5 µs 26.6 µs]
 fib iterative 20    time:   [45.2 ns 45.4 ns 45.6 ns]
 
@@ -1332,7 +1332,7 @@ async fn get_user_handler(
 
 ### 性能指标
 
-```
+```text
 优化前:
 - 响应时间: 500ms (p50), 2000ms (p99)
 - QPS: 100

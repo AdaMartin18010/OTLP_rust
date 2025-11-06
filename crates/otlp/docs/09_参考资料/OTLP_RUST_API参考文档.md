@@ -2,14 +2,14 @@
 
 ## 📋 目录
 
-1. [核心API](#核心api)
-2. [传输层API](#传输层api)
-3. [数据处理API](#数据处理api)
-4. [分布式协调API](#分布式协调api)
-5. [机器学习API](#机器学习api)
-6. [监控API](#监控api)
-7. [配置API](#配置api)
-8. [工具API](#工具api)
+- [核心API](#核心api)
+- [传输层API](#传输层api)
+- [数据处理API](#数据处理api)
+- [分布式协调API](#分布式协调api)
+- [机器学习API](#机器学习api)
+- [监控API](#监控api)
+- [配置API](#配置api)
+- [工具API](#工具api)
 
 ## 示例与运行
 
@@ -824,3 +824,4 @@ profiler.generate_flame_graph(&profile_result, "flame-graph.svg").await?;
 8. **工具API**：DiagnosticTool、BenchmarkTool、Profiler等工具接口
 
 这些API提供了完整的OTLP Rust项目功能，支持高性能、高可用的分布式可观测性系统构建。通过合理使用这些API，您可以构建出满足各种需求的监控和追踪系统。
+

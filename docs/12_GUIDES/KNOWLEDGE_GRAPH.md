@@ -1,18 +1,18 @@
 ﻿# 最佳实践知识图谱
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
 
 ## 📋 目录
 
-1. [Rust最佳实践全景图](#1-rust最佳实践全景图)
-2. [性能优化知识网络](#2-性能优化知识网络)
-3. [并发模式关系图](#3-并发模式关系图)
-4. [错误处理决策树](#4-错误处理决策树)
-5. [设计模式应用映射](#5-设计模式应用映射)
+- [Rust最佳实践全景图](#1-rust最佳实践全景图)
+- [性能优化知识网络](#2-性能优化知识网络)
+- [并发模式关系图](#3-并发模式关系图)
+- [错误处理决策树](#4-错误处理决策树)
+- [设计模式应用映射](#5-设计模式应用映射)
 
 ---
 
@@ -23,43 +23,43 @@
 ```mermaid
 graph TB
     BP[Rust最佳实践]
-    
+
     BP --> Type[类型系统]
     BP --> Perf[性能优化]
     BP --> Conc[并发编程]
     BP --> Err[错误处理]
     BP --> API[API设计]
     BP --> Test[测试策略]
-    
+
     Type --> Newtype[Newtype模式]
     Type --> Typestate[Typestate模式]
     Type --> Phantom[PhantomData]
     Type --> Safety[编译时安全]
-    
+
     Perf --> ZeroCopy[零拷贝]
     Perf --> Pool[对象池]
     Perf --> Batch[批处理]
     Perf --> Parallel[并行化]
-    
+
     Conc --> Async[async/await]
     Conc --> Rayon[Rayon]
     Conc --> Channel[Channel]
     Conc --> Actor[Actor模型]
-    
+
     Err --> Thiserror[thiserror]
     Err --> Anyhow[anyhow]
     Err --> Recovery[恢复策略]
     Err --> Context[错误上下文]
-    
+
     API --> Builder[Builder模式]
     API --> Trait[Trait抽象]
     API --> Macro[宏简化]
-    
+
     Test --> Unit[单元测试]
     Test --> Integration[集成测试]
     Test --> Property[属性测试]
     Test --> Bench[性能测试]
-    
+
     style BP fill:#f9f,stroke:#333,stroke-width:4px
     style Type fill:#bbf,stroke:#333,stroke-width:2px
     style Perf fill:#bfb,stroke:#333,stroke-width:2px
@@ -114,39 +114,39 @@ graph TB
 ```mermaid
 graph LR
     Opt[性能优化]
-    
+
     Opt --> Algo[算法优化]
     Opt --> Data[数据结构]
     Opt --> Memory[内存优化]
     Opt --> Compute[计算优化]
     Opt --> IO[I/O优化]
-    
+
     Algo --> Complexity[降低复杂度]
     Algo --> Cache[缓存策略]
-    
+
     Data --> Choose[选择正确结构]
     Data --> Custom[自定义结构]
-    
+
     Memory --> ZeroCopy[零拷贝]
     Memory --> Pool[对象池]
     Memory --> Arena[Arena分配]
     Memory --> Stack[栈分配优先]
-    
+
     Compute --> Parallel[并行计算]
     Compute --> SIMD[SIMD]
     Compute --> Lazy[延迟求值]
-    
+
     IO --> Async[异步I/O]
     IO --> Batch[批处理]
     IO --> Buffer[缓冲]
-    
+
     Parallel --> Rayon[Rayon]
     Parallel --> Tokio[Tokio]
-    
+
     ZeroCopy --> Bytes[Bytes]
     ZeroCopy --> Arc[Arc]
     ZeroCopy --> Ref[引用传递]
-    
+
     style Opt fill:#f96,stroke:#333,stroke-width:4px
     style Memory fill:#bfb,stroke:#333,stroke-width:2px
     style Compute fill:#bbf,stroke:#333,stroke-width:2px
@@ -183,29 +183,29 @@ P3      内联优化          低      低      中
 ```mermaid
 graph TD
     Start{选择并发模式}
-    
+
     Start --> IOorCPU{I/O or CPU?}
-    
+
     IOorCPU -->|I/O密集| Async[async/await]
     IOorCPU -->|CPU密集| CPU{需要通信?}
-    
+
     CPU -->|无| Rayon[Rayon并行]
     CPU -->|有| CommType{通信类型?}
-    
+
     CommType -->|消息传递| Channel[Channel]
     CommType -->|共享状态| Shared{读写?}
-    
+
     Shared -->|只读| ArcOnly[Arc]
     Shared -->|读写| ArcMutex[Arc+Mutex]
-    
+
     Async --> Many{并发数?}
     Many -->|大量| Tokio[Tokio Runtime]
     Many -->|少量| Spawn[spawn task]
-    
+
     Rayon --> DataType{数据类型?}
     DataType -->|集合| ParIter[par_iter]
     DataType -->|递归| Join[join]
-    
+
     style Start fill:#f9f,stroke:#333,stroke-width:3px
     style Async fill:#bfb,stroke:#333,stroke-width:2px
     style Rayon fill:#bbf,stroke:#333,stroke-width:2px
@@ -233,27 +233,27 @@ graph TD
 ```mermaid
 graph TD
     Error{错误类型?}
-    
+
     Error -->|预期错误| Expected{谁处理?}
     Error -->|编程错误| Panic[panic!]
     Error -->|系统错误| System[尝试恢复]
-    
+
     Expected -->|调用者| Result[Result<T, E>]
     Expected -->|当前函数| Handle[直接处理]
-    
+
     Result -->|库代码| Library{需要类型安全?}
     Result -->|应用代码| App[anyhow]
-    
+
     Library -->|是| Thiserror[thiserror]
     Library -->|否| Custom[自定义enum]
-    
+
     Thiserror --> Context1[添加上下文]
     App --> Context2[添加上下文]
-    
+
     System --> Retry{可重试?}
     Retry -->|是| RetryLogic[重试逻辑]
     Retry -->|否| Fallback[降级处理]
-    
+
     style Error fill:#f96,stroke:#333,stroke-width:3px
     style Result fill:#bfb,stroke:#333,stroke-width:2px
     style Thiserror fill:#bbf,stroke:#333,stroke-width:2px
@@ -298,32 +298,32 @@ graph TD
 ```mermaid
 graph LR
     Need{需求}
-    
+
     Need -->|复杂配置| Builder[Builder模式]
     Need -->|类型安全| Newtype[Newtype模式]
     Need -->|状态机| Typestate[Typestate模式]
     Need -->|算法抽象| Strategy[Strategy模式]
     Need -->|扩展功能| Extension[Extension Trait]
     Need -->|资源管理| RAII[RAII模式]
-    
+
     Builder --> Fluent[流式API]
     Builder --> Validation[编译时验证]
-    
+
     Newtype --> Zero[零成本]
     Newtype --> Semantic[语义明确]
-    
+
     Typestate --> Compile[编译时检查]
     Typestate --> Invalid[防止非法状态]
-    
+
     Strategy --> Trait[Trait Object]
     Strategy --> Generic[泛型]
-    
+
     Extension --> Method[方法扩展]
     Extension --> Default[默认实现]
-    
+
     RAII --> Drop[Drop trait]
     RAII --> Scope[作用域管理]
-    
+
     style Need fill:#f9f,stroke:#333,stroke-width:3px
     style Builder fill:#bfb,stroke:#333,stroke-width:2px
     style Newtype fill:#bbf,stroke:#333,stroke-width:2px
@@ -351,37 +351,37 @@ graph LR
 ```mermaid
 graph TB
     App[应用程序]
-    
+
     App --> Instrument[埋点层]
     Instrument --> SDK[OTLP SDK]
     SDK --> Processor[处理器]
     Processor --> Exporter[导出器]
     Exporter --> Backend[后端]
-    
+
     Instrument --> Manual[手动埋点]
     Instrument --> Auto[自动埋点]
-    
+
     Auto --> Middleware[HTTP中间件]
     Auto --> DB[DB自动追踪]
     Auto --> RPC[RPC自动追踪]
-    
+
     Processor --> Batch[批处理]
     Processor --> Sample[采样]
-    
+
     Batch --> Pool[对象池]
     Batch --> ZC[零拷贝]
-    
+
     Sample --> Fixed[固定比例]
     Sample --> Smart[智能采样]
-    
+
     Exporter --> GRPC[gRPC]
     Exporter --> HTTP[HTTP]
     Exporter --> File[文件]
-    
+
     Backend --> Jaeger[Jaeger]
     Backend --> Tempo[Tempo]
     Backend --> Cloud[云服务]
-    
+
     style App fill:#f9f,stroke:#333,stroke-width:3px
     style SDK fill:#bfb,stroke:#333,stroke-width:2px
     style Processor fill:#bbf,stroke:#333,stroke-width:2px
@@ -610,9 +610,9 @@ CI/CD层:
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
+**最后更新**: 2025-10-28
 **维护团队**: OTLP_rust指南团队
 
 ---

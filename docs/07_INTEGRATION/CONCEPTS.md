@@ -1,17 +1,49 @@
 ﻿# 集成核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
 
 ## 📋 目录
 
-1. [SDK集成模式](#1-sdk集成模式)
-2. [中间件埋点](#2-中间件埋点)
-3. [自动追踪](#3-自动追踪)
-4. [采样策略](#4-采样策略)
+- [集成核心概念](#集成核心概念)
+  - [📋 目录](#-目录)
+  - [📖 SDK集成模式](#-sdk集成模式)
+    - [1.1 直接SDK集成](#11-直接sdk集成)
+      - [定义](#定义)
+      - [内涵（本质特征）](#内涵本质特征)
+      - [外延（涵盖范围）](#外延涵盖范围)
+      - [属性](#属性)
+      - [关系](#关系)
+      - [示例](#示例)
+  - [🔍 中间件埋点](#-中间件埋点)
+    - [2.1 HTTP中间件](#21-http中间件)
+      - [定义](#定义-1)
+      - [内涵（本质特征）](#内涵本质特征-1)
+      - [外延（涵盖范围）](#外延涵盖范围-1)
+      - [属性](#属性-1)
+      - [关系](#关系-1)
+      - [示例](#示例-1)
+  - [💡 自动追踪](#-自动追踪)
+    - [3.1 自动埋点](#31-自动埋点)
+      - [定义](#定义-2)
+      - [内涵（本质特征）](#内涵本质特征-2)
+      - [外延（涵盖范围）](#外延涵盖范围-2)
+      - [属性](#属性-2)
+      - [关系](#关系-2)
+      - [示例](#示例-2)
+  - [⚙️ 采样策略](#️-采样策略)
+    - [4.1 智能采样](#41-智能采样)
+      - [定义](#定义-3)
+      - [内涵（本质特征）](#内涵本质特征-3)
+      - [外延（涵盖范围）](#外延涵盖范围-3)
+      - [属性](#属性-3)
+      - [关系](#关系-3)
+      - [示例](#示例-3)
+  - [🔗 相关资源](#-相关资源)
+
 
 ---
 
@@ -22,12 +54,14 @@
 #### 定义
 
 **形式化定义**: SDK Integration SI = (init, instrument, export)，其中：
+
 - init: 初始化TracerProvider
 - instrument: 代码埋点
 - export: 数据导出
 
 **集成流程**:
-```
+
+```text
 应用启动 → SDK初始化 → 创建Tracer → 埋点 → 采集 → 导出
 ```
 
@@ -72,36 +106,36 @@ fn init_tracer() -> Result<()> {
         .tonic()
         .with_endpoint("http://collector:4317")
         .build()?;
-    
+
     let tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
         .with_batch_exporter(exporter)
         .with_resource(Resource::new(vec![
             KeyValue::new("service.name", "my-service"),
         ]))
         .build();
-    
+
     global::set_tracer_provider(tracer_provider);
-    
+
     Ok(())
 }
 
 // 2. 使用Tracer埋点
 async fn handle_request(req: Request) -> Result<Response> {
     let tracer = global::tracer("my-service");
-    
+
     // 创建Span
     let mut span = tracer
         .span_builder("handle_request")
         .with_kind(SpanKind::Server)
         .start(&tracer);
-    
+
     // 设置属性
     span.set_attribute(KeyValue::new("http.method", req.method));
     span.set_attribute(KeyValue::new("http.url", req.url));
-    
+
     // 业务逻辑
     let result = process_request(&req).await;
-    
+
     // 记录结果
     match result {
         Ok(resp) => {
@@ -112,7 +146,7 @@ async fn handle_request(req: Request) -> Result<Response> {
             span.set_status(Status::error(e.to_string()));
         }
     }
-    
+
     result
 }
 
@@ -122,11 +156,11 @@ use tracing::{instrument, info, error};
 #[instrument]
 async fn process_request(req: &Request) -> Result<Response> {
     info!("Processing request");
-    
+
     // 自动创建Span并传播
     let data = fetch_data().await?;
     let result = transform_data(data).await?;
-    
+
     Ok(Response::new(result))
 }
 
@@ -143,14 +177,14 @@ async fn fetch_data() -> Result<Data> {
 async fn main() -> Result<()> {
     // 初始化
     init_tracer()?;
-    
+
     // 启动服务
     let server = Server::new();
     server.serve().await?;
-    
+
     // 清理
     global::shutdown_tracer_provider();
-    
+
     Ok(())
 }
 
@@ -177,7 +211,8 @@ async fn main() -> Result<()> {
 **形式化定义**: Middleware M = (request_hook, response_hook, error_hook)
 
 **执行流程**:
-```
+
+```text
 请求 → 中间件前置 → 创建Span → 处理器 → 中间件后置 → 结束Span → 响应
 ```
 
@@ -237,37 +272,37 @@ async fn otlp_middleware(
     next: Next,
 ) -> Result<Response, StatusCode> {
     let tracer = global::tracer("http-server");
-    
+
     // 提取或创建trace context
     let parent_cx = extract_context(&req);
-    
+
     // 创建Span
     let mut span = tracer
         .span_builder(format!("{} {}", req.method(), req.uri().path()))
         .with_kind(SpanKind::Server)
         .start_with_context(&tracer, &parent_cx);
-    
+
     // 添加请求属性
     span.set_attribute(KeyValue::new("http.method", req.method().to_string()));
     span.set_attribute(KeyValue::new("http.url", req.uri().to_string()));
     span.set_attribute(KeyValue::new("http.target", req.uri().path()));
-    
+
     // 执行请求处理
     let start = Instant::now();
     let response = next.run(req).await;
     let duration = start.elapsed();
-    
+
     // 添加响应属性
     span.set_attribute(KeyValue::new("http.status_code", response.status().as_u16()));
     span.set_attribute(KeyValue::new("http.response_time_ms", duration.as_millis()));
-    
+
     // 根据状态设置Span状态
     if response.status().is_server_error() {
         span.set_status(Status::error("Server error"));
     } else if response.status().is_client_error() {
         span.set_status(Status::error("Client error"));
     }
-    
+
     Ok(response)
 }
 
@@ -313,27 +348,27 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let tracer = global::tracer("actix-server");
-        
+
         // 创建Span
         let span = tracer
             .span_builder(format!("{} {}", req.method(), req.path()))
             .with_kind(SpanKind::Server)
             .start(&tracer);
-        
+
         // 将Span附加到请求
         req.extensions_mut().insert(span.clone());
-        
+
         let fut = self.service.call(req);
-        
+
         Box::pin(async move {
             let res = fut.await?;
-            
+
             // 更新Span
             span.set_attribute(KeyValue::new(
                 "http.status_code",
                 res.status().as_u16()
             ));
-            
+
             Ok(res)
         })
     }
@@ -358,6 +393,7 @@ HttpServer::new(|| {
 **形式化定义**: Auto-instrumentation AI = (detection, injection, propagation)
 
 **工作原理**:
+
 - detection: 检测调用点（HTTP/DB/RPC）
 - injection: 自动注入追踪代码
 - propagation: 自动传播上下文
@@ -464,7 +500,7 @@ async fn fetch_user_data(user_id: i64) -> Result<User> {
         .await?
         .json::<ApiUser>()
         .await?;
-    
+
     // 数据库查询（自动追踪）
     let db_data = sqlx::query_as::<_, DbUser>(
         "SELECT * FROM users WHERE id = $1"
@@ -472,11 +508,11 @@ async fn fetch_user_data(user_id: i64) -> Result<User> {
     .bind(user_id)
     .fetch_one(&pool)
     .await?;
-    
+
     // Redis缓存（自动追踪）
     let cache_key = format!("user:{}", user_id);
     redis_conn.set(&cache_key, &user_data).await?;
-    
+
     Ok(User::from(api_data, db_data))
 }
 
@@ -500,8 +536,9 @@ fetch_user_data (父Span)
 **形式化定义**: Sampling Strategy SS = (rate, decision, adjustment)
 
 **决策函数**:
-```
-sample(trace) = 
+
+```text
+sample(trace) =
     if error(trace) then true
     else if latency(trace) > threshold then true
     else random() < rate
@@ -578,22 +615,22 @@ impl Sampler for SmartSampler {
         // 1. 检查是否是错误
         let is_error = attributes.iter()
             .any(|kv| kv.key.as_str() == "error" && kv.value == "true");
-        
+
         if is_error {
             return SamplingResult::RecordAndSample;  // 100%采样错误
         }
-        
+
         // 2. 检查是否是慢请求
         let is_slow = attributes.iter()
             .find(|kv| kv.key.as_str() == "duration")
             .and_then(|kv| kv.value.as_i64())
             .map(|d| Duration::from_millis(d as u64) > self.slow_threshold)
             .unwrap_or(false);
-        
+
         if is_slow {
             return SamplingResult::RecordAndSample;  // 100%采样慢请求
         }
-        
+
         // 3. 正常请求：固定比例
         let mut rng = rand::thread_rng();
         if rng.gen::<f64>() < self.base_rate {
@@ -617,14 +654,14 @@ impl AdaptiveSampler {
         let current_rate = f64::from_bits(
             self.current_rate.load(Ordering::Relaxed)
         );
-        
+
         // 根据实际QPS动态调整
         let new_rate = if actual_qps > self.target_qps {
             (current_rate * 0.9).max(0.01)  // 降低采样率
         } else {
             (current_rate * 1.1).min(0.5)   // 提高采样率
         };
-        
+
         self.current_rate.store(
             new_rate.to_bits(),
             Ordering::Relaxed
@@ -678,9 +715,9 @@ let tracer_provider = TracerProvider::builder()
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
+**最后更新**: 2025-10-28
 **维护团队**: OTLP_rust集成团队
 
 ---

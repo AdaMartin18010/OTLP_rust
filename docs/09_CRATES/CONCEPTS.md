@@ -68,7 +68,7 @@
 
 **项目结构**:
 
-```
+```text
 OTLP_rust/
 ├── Cargo.toml (workspace root)
 ├── crates/
@@ -104,7 +104,7 @@ OTLP_rust/
 
 #### 关系图
 
-```
+```text
 依赖关系 (从上到下):
 ┌─────────────┐
 │    otlp     │ (协议层)
@@ -135,7 +135,7 @@ OTLP_rust/
 
 **核心功能**:
 
-```
+```text
 otlp/
 ├── src/
 │   ├── exporter/    # 导出器实现
@@ -193,7 +193,7 @@ let tracer = provider.tracer("my-service");
 
 **核心功能**:
 
-```
+```text
 model/
 ├── src/
 │   ├── concurrency/  # 并发模型
@@ -247,7 +247,7 @@ if limiter.check() {
 
 **核心功能**:
 
-```
+```text
 reliability/
 ├── src/
 │   ├── circuit_breaker/  # 熔断器
@@ -311,7 +311,7 @@ retry.execute(|| {
 
 **核心功能**:
 
-```
+```text
 libraries/
 ├── src/
 │   ├── pool/       # 对象池
@@ -362,7 +362,7 @@ let value = cache.get("key");
 
 ### 3.1 依赖图
 
-```
+```text
 otlp
 ├─ reliability (内部依赖)
 │  ├─ model (内部依赖)
@@ -391,7 +391,7 @@ libraries
 
 ### 3.2 依赖统计
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Crate依赖统计
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -480,7 +480,7 @@ async fn process_with_tracing(span: impl AsRef<Span>) -> Result<(), &'static str
 
 ### 4.3 按需选择
 
-```
+```text
 场景1: 只需OTLP追踪
 └─ 依赖: otlp
 
@@ -509,7 +509,7 @@ async fn process_with_tracing(span: impl AsRef<Span>) -> Result<(), &'static str
 
 ### 5.2 性能对比
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Crate性能影响
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

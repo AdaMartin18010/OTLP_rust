@@ -1,4 +1,4 @@
-# Kubernetes Deployment API 完整文档
+﻿# Kubernetes Deployment API 完整文档
 
 **Crate:** c10_otlp
 **模块:** k8s_deployment
@@ -9,14 +9,14 @@
 
 ## 📋 目录
 
-1. [概述](#概述)
-2. [核心类型系统](#核心类型系统)
-3. [部署模式](#部署模式)
-4. [Collector 配置](#collector-配置)
-5. [RBAC 配置](#rbac-配置)
-6. [使用示例](#使用示例)
-7. [最佳实践](#最佳实践)
-8. [故障排除](#故障排除)
+- [概述](#概述)
+- [核心类型系统](#核心类型系统)
+- [部署模式](#部署模式)
+- [Collector 配置](#collector-配置)
+- [RBAC 配置](#rbac-配置)
+- [使用示例](#使用示例)
+- [最佳实践](#最佳实践)
+- [故障排除](#故障排除)
 
 ---
 
@@ -1005,3 +1005,4 @@ deployment.update_config(new_config).await?;
 **文档贡献者:** AI Assistant
 **审核状态:** ✅ 已完成
 **代码覆盖率:** 100%
+

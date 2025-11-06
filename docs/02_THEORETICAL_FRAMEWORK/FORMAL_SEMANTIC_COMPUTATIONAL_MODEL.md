@@ -1,7 +1,7 @@
 ﻿# OTLP 形式化语义与可计算模型完整体系
 
-**版本**: 1.0  
-**创建日期**: 2025年10月26日  
+**版本**: 1.0
+**创建日期**: 2025年10月26日
 **状态**: 🟢 活跃维护
 
 > **简介**: 形式化语义与可计算模型 - OTLP 的形式化语义定义和可计算性理论基础。
@@ -11,7 +11,7 @@
 ## 📋 目录
 
 - [OTLP 形式化语义与可计算模型完整体系](#otlp-形式化语义与可计算模型完整体系)
-  - [目录](#目录)
+  - [📋 目录](#-目录)
   - [📋 文档概述](#-文档概述)
     - [核心维度](#核心维度)
   - [第一部分：形式化语义基础](#第一部分形式化语义基础)
@@ -217,20 +217,20 @@ Log = {
 
 -- 因果关系（Causality）
 causally_precedes: Span × Span → Bool
-causally_precedes(s₁, s₂) ⟺ 
-  s₁.end_time < s₂.start_time ∧ 
-  (s₁.span_id = s₂.parent_span_id ∨ 
+causally_precedes(s₁, s₂) ⟺
+  s₁.end_time < s₂.start_time ∧
+  (s₁.span_id = s₂.parent_span_id ∨
    ∃link ∈ s₂.links. link.span_id = s₁.span_id)
 
 -- 并发关系（Concurrency）
 concurrent: Span × Span → Bool
-concurrent(s₁, s₂) ⟺ 
-  ¬causally_precedes(s₁, s₂) ∧ 
+concurrent(s₁, s₂) ⟺
+  ¬causally_precedes(s₁, s₂) ∧
   ¬causally_precedes(s₂, s₁)
 
 -- 追踪完整性（Trace Completeness）
 trace_complete: List[Span] → Bool
-trace_complete(spans) ⟺ 
+trace_complete(spans) ⟺
   ∀s ∈ spans. s.parent_span_id = None ∨
   ∃p ∈ spans. p.span_id = s.parent_span_id
 ```
@@ -265,10 +265,10 @@ CFG = (N, E, entry, exit)
 构建函数：
 
 build_cfg: List[Span] → CFG
-build_cfg(spans) = 
+build_cfg(spans) =
   let nodes = {span_to_node(s) | s ∈ spans}
-  let edges = {(n₁, n₂) | ∃s₁, s₂. 
-                n₁ = span_to_node(s₁) ∧ 
+  let edges = {(n₁, n₂) | ∃s₁, s₂.
+                n₁ = span_to_node(s₁) ∧
                 n₂ = span_to_node(s₂) ∧
                 causally_precedes(s₁, s₂)}
   let entry = find_root_span(spans)
@@ -304,14 +304,14 @@ IN[n] = gen[n] ∪ (OUT[n] - kill[n])
 属性传播模型：
 
 propagate_attributes: Span → Span → Set[Attribute]
-propagate_attributes(parent, child) = 
+propagate_attributes(parent, child) =
   {a | a ∈ parent.attributes ∧ is_inheritable(a)} ∪
   child.attributes
 
 -- 属性一致性检查
 attribute_consistent: List[Span] → Bool
 attribute_consistent(spans) ⟺
-  ∀s₁, s₂ ∈ spans. 
+  ∀s₁, s₂ ∈ spans.
     s₁.trace_id = s₂.trace_id ⟹
     consistent_resource(s₁, s₂)
 ```
@@ -327,12 +327,12 @@ Path = List[Span]
 
 valid_path: Path → Bool
 valid_path(path) ⟺
-  ∀i ∈ [0, len(path)-2]. 
+  ∀i ∈ [0, len(path)-2].
     causally_precedes(path[i], path[i+1])
 
 -- 路径覆盖率
 path_coverage: List[Path] → CFG → Real
-path_coverage(paths, cfg) = 
+path_coverage(paths, cfg) =
   |{e | e ∈ cfg.E ∧ ∃p ∈ paths. e ∈ p}| / |cfg.E|
 ```
 
@@ -379,7 +379,7 @@ Theorem 1 (Trace Completeness Decidability):
   3. 如果 parent_span_id ≠ None，在 S 中查找父 span
   4. 如果找不到，返回 false
   5. 如果所有检查通过，返回 true
-  
+
   算法 A 在有限步内终止，因此问题可判定。 ∎
 
 Theorem 2 (Causality Detection Decidability):
@@ -409,12 +409,12 @@ P ::= SKIP                    -- 空操作
 
 OTLP Span 的 CSP 建模：
 
-Span(name, duration) = 
-  start_span.name → 
+Span(name, duration) =
+  start_span.name →
   (execute_work(duration) ||| emit_events) ;
   end_span.name → SKIP
 
-Service(spans) = 
+Service(spans) =
   ||| (s ∈ spans) Span(s.name, s.duration)
 ```
 
@@ -457,7 +457,7 @@ LC: Event → ℕ
 OTLP 中的实现：
 
 logical_clock: Span → ℕ
-logical_clock(span) = 
+logical_clock(span) =
   if span.parent_span_id = None then 0
   else 1 + max{logical_clock(p) | p is parent of span}
 ```
@@ -477,7 +477,7 @@ VC: Event → (Process → ℕ)
 OTLP 向量时钟：
 
 vector_clock: Span → Map[ServiceId, ℕ]
-vector_clock(span) = 
+vector_clock(span) =
   merge_clocks(
     parent_clock(span),
     local_increment(span.service_id)
@@ -501,7 +501,7 @@ P (Partition Tolerance): ∀partition. system_continues
     分区 P₁ 和 P₂ 无法通信
     客户端 c₁ 向 P₁ 写入 x = v₁
     客户端 c₂ 向 P₂ 读取 x
-  
+
   由 A：P₂ 必须响应
   由 C：P₂ 必须返回 v₁
   但 P₂ 无法知道 v₁（由于分区）
@@ -510,7 +510,7 @@ P (Partition Tolerance): ∀partition. system_continues
 OTLP 监控 CAP 权衡：
 
 monitor_cap: System → (Bool, Bool, Bool)
-monitor_cap(sys) = 
+monitor_cap(sys) =
   let c = check_consistency(sys.traces)
   let a = check_availability(sys.metrics)
   let p = detect_partition(sys.logs)
@@ -542,7 +542,7 @@ Rule 2 (Error Propagation):
 
 -- 性能瓶颈推理
 Rule 3 (Performance Bottleneck):
-  duration(s) > threshold ∧ 
+  duration(s) > threshold ∧
   ∀child ∈ children(s). duration(child) < threshold
   ─────────────────────────────────────────────────
   bottleneck(s)
@@ -554,7 +554,7 @@ Rule 3 (Performance Bottleneck):
 根因分析算法：
 
 root_cause_analysis: List[Span] → Span → Set[Span]
-root_cause_analysis(spans, error_span) = 
+root_cause_analysis(spans, error_span) =
   let ancestors = get_ancestors(spans, error_span)
   let candidates = filter(λs. s.status = ERROR, ancestors)
   let root = argmin(λs. s.start_time, candidates)
@@ -573,15 +573,15 @@ root_cause_analysis(spans, error_span) =
 关联模型：
 
 correlate_trace_metric: Span → List[Metric] → List[(Span, Metric, Real)]
-correlate_trace_metric(span, metrics) = 
-  [(span, m, correlation(span, m)) | 
-   m ∈ metrics, 
+correlate_trace_metric(span, metrics) =
+  [(span, m, correlation(span, m)) |
+   m ∈ metrics,
    time_overlap(span, m),
    correlation(span, m) > threshold]
 
 相关性计算：
 
-correlation(span, metric) = 
+correlation(span, metric) =
   pearson_correlation(
     span.duration,
     metric.value
@@ -594,9 +594,9 @@ correlation(span, metric) =
 日志追踪关联：
 
 link_logs_to_traces: List[Log] → List[Span] → Map[Log, Span]
-link_logs_to_traces(logs, spans) = 
-  {(log, span) | 
-   log ∈ logs, 
+link_logs_to_traces(logs, spans) =
+  {(log, span) |
+   log ∈ logs,
    span ∈ spans,
    log.trace_id = span.trace_id ∧
    log.span_id = span.span_id ∧
@@ -620,7 +620,7 @@ Future[T] = State → (State, Poll[T])
   Poll[T] ::= Ready(T) | Pending
 
 性质：
-  1. 单调性：future.poll() = Ready(v) ⟹ 
+  1. 单调性：future.poll() = Ready(v) ⟹
              ∀future'. future'.poll() = Ready(v)
   2. 非阻塞：poll() 必须立即返回
 ```
@@ -630,10 +630,10 @@ Future[T] = State → (State, Poll[T])
 ```text
 异步函数语义：
 
-⟦async fn f(x: T) -> U⟧ = 
+⟦async fn f(x: T) -> U⟧ =
   λx: T. Future[U]
 
-⟦await expr⟧ = 
+⟦await expr⟧ =
   loop {
     match expr.poll() {
       Ready(v) => break v,
@@ -698,7 +698,7 @@ task_tree_to_span_tree(task) = Span {
 
 并发任务的表示：
 
-join!(f1, f2, f3) ⟹ 
+join!(f1, f2, f3) ⟹
   parent_span {
     children: [span(f1), span(f2), span(f3)],
     concurrent: true
@@ -722,7 +722,7 @@ Scheduler = (Tasks, Workers, Queue)
 
 状态转移：
 
-spawn(task) : 
+spawn(task) :
   Tasks := Tasks ∪ {task}
   Queue := Queue.push(task)
 
@@ -736,7 +736,7 @@ schedule() :
 OTLP 追踪调度决策：
 
 trace_scheduling: Scheduler → List[Span]
-trace_scheduling(sched) = 
+trace_scheduling(sched) =
   [span_for_task(t) | t ∈ sched.Tasks] ++
   [span_for_worker(w) | w ∈ sched.Workers]
 ```
@@ -778,7 +778,7 @@ FT_System = (Components, Redundancy, Recovery)
 容错性质：
 
 Theorem (Fault Tolerance):
-  ∀fault ∈ Faults. 
+  ∀fault ∈ Faults.
     |failed_components(fault)| ≤ k ⟹
     system_available(fault)
 
@@ -789,7 +789,7 @@ Theorem (Fault Tolerance):
 OTLP 容错监控：
 
 monitor_fault_tolerance: System → Bool
-monitor_fault_tolerance(sys) = 
+monitor_fault_tolerance(sys) =
   let failures = detect_failures(sys.spans)
   let recovery = detect_recovery(sys.spans)
   in |failures| ≤ max_tolerable_failures ∧
@@ -802,16 +802,16 @@ monitor_fault_tolerance(sys) =
 故障检测算法：
 
 detect_failures: List[Span] → Set[Failure]
-detect_failures(spans) = 
-  {Failure(s, classify_error(s)) | 
-   s ∈ spans, 
-   s.status = ERROR ∨ 
+detect_failures(spans) =
+  {Failure(s, classify_error(s)) |
+   s ∈ spans,
+   s.status = ERROR ∨
    s.duration > timeout_threshold(s)}
 
 故障分类：
 
 classify_error: Span → ErrorType
-classify_error(span) = 
+classify_error(span) =
   match span.status_message {
     "timeout" => Timeout,
     "connection refused" => NetworkFailure,
@@ -829,7 +829,7 @@ classify_error(span) =
 调试路径算法：
 
 generate_debug_path: Span → List[Span]
-generate_debug_path(error_span) = 
+generate_debug_path(error_span) =
   let path = []
   let current = error_span
   while current ≠ null do
@@ -854,7 +854,7 @@ analyze_path(path) = {
 异常传播模型：
 
 propagate_error: Span → Set[Span]
-propagate_error(error_span) = 
+propagate_error(error_span) =
   let direct_children = children(error_span)
   let affected = {c | c ∈ direct_children, c.status = ERROR}
   in affected ∪ ⋃(c ∈ affected) propagate_error(c)
@@ -862,9 +862,9 @@ propagate_error(error_span) =
 传播图构建：
 
 build_propagation_graph: List[Span] → Graph
-build_propagation_graph(spans) = 
+build_propagation_graph(spans) =
   let nodes = {s | s ∈ spans, s.status = ERROR}
-  let edges = {(s₁, s₂) | s₁, s₂ ∈ nodes, 
+  let edges = {(s₁, s₂) | s₁, s₂ ∈ nodes,
                           causally_precedes(s₁, s₂)}
   in Graph(nodes, edges)
 ```
@@ -881,7 +881,7 @@ Monitor = (Observers, Metrics, Alerts)
 监控循环：
 
 monitor_loop: System → Stream[Alert]
-monitor_loop(sys) = 
+monitor_loop(sys) =
   stream {
     loop {
       state := observe(sys)
@@ -895,7 +895,7 @@ monitor_loop(sys) =
 SLA 违规检测：
 
 violates_sla: Metrics → Bool
-violates_sla(m) = 
+violates_sla(m) =
   m.latency_p99 > sla.max_latency ∨
   m.error_rate > sla.max_error_rate ∨
   m.throughput < sla.min_throughput
@@ -907,19 +907,19 @@ violates_sla(m) =
 异常检测（基于统计）：
 
 detect_anomaly: TimeSeries → List[Anomaly]
-detect_anomaly(ts) = 
+detect_anomaly(ts) =
   let μ = mean(ts)
   let σ = std_dev(ts)
   in [{timestamp: t, value: v, z_score: (v - μ) / σ} |
-      (t, v) ∈ ts, 
+      (t, v) ∈ ts,
       |(v - μ) / σ| > threshold]
 
 机器学习异常检测：
 
 ml_detect_anomaly: TimeSeries → List[Anomaly]
-ml_detect_anomaly(ts) = 
+ml_detect_anomaly(ts) =
   let model = train_isolation_forest(historical_data)
-  in [anomaly | point ∈ ts, 
+  in [anomaly | point ∈ ts,
                 is_anomaly(model, point)]
 ```
 
@@ -935,7 +935,7 @@ Controller = (Sensor, Actuator, ControlLaw)
 控制循环（MAPE-K）：
 
 control_loop: System → Action
-control_loop(sys) = 
+control_loop(sys) =
   let state = Monitor(sys)           -- M: Monitor
   let analysis = Analyze(state)      -- A: Analyze
   let plan = Plan(analysis)          -- P: Plan
@@ -945,15 +945,15 @@ control_loop(sys) =
 PID 控制器：
 
 pid_control: (Real, Real, Real) → Real → Real
-pid_control(Kp, Ki, Kd) = λerror. 
-  Kp * error + 
-  Ki * integral(error) + 
+pid_control(Kp, Ki, Kd) = λerror.
+  Kp * error +
+  Ki * integral(error) +
   Kd * derivative(error)
 
 应用：自动扩缩容
 
 autoscale: Metrics → Int
-autoscale(m) = 
+autoscale(m) =
   let target_cpu = 0.7
   let error = m.cpu_usage - target_cpu
   let adjustment = pid_control(1.0, 0.1, 0.05)(error)
@@ -966,7 +966,7 @@ autoscale(m) =
 反馈控制系统：
 
 feedback_control: System → System
-feedback_control(sys) = 
+feedback_control(sys) =
   let desired_state = get_desired_state()
   let current_state = observe(sys)
   let error = desired_state - current_state
@@ -1004,9 +1004,9 @@ performance_analysis(spans) = {
 瓶颈识别：
 
 identify_bottlenecks: List[Span] → List[Bottleneck]
-identify_bottlenecks(spans) = 
+identify_bottlenecks(spans) =
   let critical_path = find_critical_path(spans)
-  in [{span: s, 
+  in [{span: s,
        impact: compute_impact(s, critical_path),
        recommendation: suggest_fix(s)} |
       s ∈ critical_path,
@@ -1019,7 +1019,7 @@ identify_bottlenecks(spans) =
 因果推理模型：
 
 causal_inference: List[Span] → CausalGraph
-causal_inference(spans) = 
+causal_inference(spans) =
   let events = extract_events(spans)
   let correlations = compute_correlations(events)
   let causal_edges = filter_spurious(correlations)
@@ -1028,7 +1028,7 @@ causal_inference(spans) =
 Granger 因果检验：
 
 granger_causality: TimeSeries → TimeSeries → Bool
-granger_causality(x, y) = 
+granger_causality(x, y) =
   let model1 = fit_ar(y, lags=p)
   let model2 = fit_ar(y, x, lags=p)
   let f_stat = f_test(model1, model2)
@@ -1043,10 +1043,10 @@ granger_causality(x, y) =
 故障定位算法：
 
 fault_localization: List[Span] → Span
-fault_localization(spans) = 
+fault_localization(spans) =
   let error_spans = filter(λs. s.status = ERROR, spans)
   let root_cause = argmin(
-    λs. s.start_time, 
+    λs. s.start_time,
     error_spans
   )
   in root_cause
@@ -1054,8 +1054,8 @@ fault_localization(spans) =
 光谱故障定位（Spectrum-Based Fault Localization）：
 
 sbfl: List[TestCase] → List[(Component, Real)]
-sbfl(test_cases) = 
-  let suspiciousness = λc. 
+sbfl(test_cases) =
+  let suspiciousness = λc.
     failed(c) / (failed(c) + passed(c))
   in [(c, suspiciousness(c)) | c ∈ components]
 ```
@@ -1076,7 +1076,7 @@ code_localization(span) = {
 分布式定位：
 
 distributed_localization: List[Span] → ServiceLocation
-distributed_localization(spans) = 
+distributed_localization(spans) =
   let error_span = find_first_error(spans)
   in {
     service: error_span.resource.service_name,
@@ -1102,7 +1102,7 @@ SelfHealing = (Detector, Diagnoser, Healer)
 修复流程：
 
 self_healing_loop: System → System
-self_healing_loop(sys) = 
+self_healing_loop(sys) =
   match detect_failure(sys) {
     None => sys,
     Some(failure) => {
@@ -1131,16 +1131,16 @@ healing_strategies(f) = match f {
 修复验证算法：
 
 verify_healing: System → Bool
-verify_healing(sys) = 
+verify_healing(sys) =
   let health_checks = run_health_checks(sys)
   let metrics = collect_metrics(sys)
-  in all(health_checks) ∧ 
+  in all(health_checks) ∧
      metrics_within_bounds(metrics)
 
 形式化验证：
 
 Theorem (Healing Correctness):
-  ∀failure. 
+  ∀failure.
     apply_healing(sys, healing_strategies(failure)) ⟹
     ¬has_failure(sys)
 
@@ -1156,21 +1156,21 @@ Theorem (Healing Correctness):
 参数优化问题：
 
 optimize: (Config → Metrics) → Config
-optimize(f) = 
+optimize(f) =
   argmax_{c ∈ ConfigSpace} objective(f(c))
 
 目标函数：
 
 objective: Metrics → Real
-objective(m) = 
-  w₁ * throughput(m) - 
-  w₂ * latency(m) - 
+objective(m) =
+  w₁ * throughput(m) -
+  w₂ * latency(m) -
   w₃ * cost(m)
 
 贝叶斯优化：
 
 bayesian_optimization: (Config → Metrics) → Config
-bayesian_optimization(f) = 
+bayesian_optimization(f) =
   let gp = GaussianProcess()
   for i in 1..max_iterations do
     config := acquisition_function(gp)
@@ -1193,13 +1193,13 @@ RL_Agent = (State, Action, Reward, Policy)
   Action = (Scale_Up, Scale_Down, Adjust_Params, Do_Nothing)
 
 奖励函数：
-  Reward(s, a, s') = 
+  Reward(s, a, s') =
     performance_gain(s') - cost(a) - sla_violation_penalty(s')
 
 策略学习：
 
 learn_policy: List[(State, Action, Reward)] → Policy
-learn_policy(experience) = 
+learn_policy(experience) =
   let q_network = train_dqn(experience)
   in λstate. argmax_{action} q_network(state, action)
 ```
@@ -1212,7 +1212,7 @@ learn_policy(experience) =
 故障预测：
 
 predict_failure: TimeSeries → (Bool, Real)
-predict_failure(metrics) = 
+predict_failure(metrics) =
   let features = extract_features(metrics)
   let model = load_trained_model()
   let (will_fail, probability) = model.predict(features)
@@ -1236,7 +1236,7 @@ extract_features(ts) = {
 预防性维护策略：
 
 preventive_maintenance: Prediction → Action
-preventive_maintenance(pred) = 
+preventive_maintenance(pred) =
   if pred.probability > high_threshold then
     EmergencyMaintenance
   else if pred.probability > medium_threshold then
@@ -1247,7 +1247,7 @@ preventive_maintenance(pred) =
 维护调度：
 
 schedule_maintenance: List[Prediction] → Schedule
-schedule_maintenance(predictions) = 
+schedule_maintenance(predictions) =
   let urgent = filter(λp. p.probability > 0.9, predictions)
   let scheduled = filter(λp. 0.5 < p.probability ≤ 0.9, predictions)
   in {
@@ -1331,13 +1331,13 @@ pub enum Status {
 ```rust
 // 因果关系判断
 pub fn causally_precedes(s1: &Span, s2: &Span) -> bool {
-    // s1.end_time < s2.start_time ∧ 
+    // s1.end_time < s2.start_time ∧
     // (s1.span_id = s2.parent_span_id ∨ ∃link ∈ s2.links)
-    
+
     let time_precedes = s1.end_time < s2.start_time;
     let parent_child = s2.parent_span_id.map_or(false, |pid| pid == s1.span_id);
     let linked = s2.links.iter().any(|link| link.span_id == s1.span_id);
-    
+
     time_precedes && (parent_child || linked)
 }
 
@@ -1349,7 +1349,7 @@ pub fn concurrent(s1: &Span, s2: &Span) -> bool {
 // 追踪完整性检查
 pub fn trace_complete(spans: &[Span]) -> bool {
     spans.iter().all(|span| {
-        span.parent_span_id.is_none() || 
+        span.parent_span_id.is_none() ||
         spans.iter().any(|p| Some(p.span_id) == span.parent_span_id)
     })
 }
@@ -1374,12 +1374,12 @@ impl ControlFlowGraph {
     pub fn build(spans: &[Span]) -> Self {
         let mut nodes = HashMap::new();
         let mut edges = HashSet::new();
-        
+
         // 构建节点
         for span in spans {
             nodes.insert(span.span_id, span.clone());
         }
-        
+
         // 构建边（基于因果关系）
         for s1 in spans {
             for s2 in spans {
@@ -1388,45 +1388,45 @@ impl ControlFlowGraph {
                 }
             }
         }
-        
+
         // 找到入口节点（根 span）
         let entry = spans.iter()
             .find(|s| s.parent_span_id.is_none())
             .map(|s| s.span_id)
             .expect("No root span found");
-        
+
         // 找到出口节点（叶子 spans）
         let exits = spans.iter()
-            .filter(|s| !spans.iter().any(|child| 
+            .filter(|s| !spans.iter().any(|child|
                 child.parent_span_id == Some(s.span_id)))
             .map(|s| s.span_id)
             .collect();
-        
+
         ControlFlowGraph { nodes, edges, entry, exits }
     }
-    
+
     // 可达性分析
     pub fn reachable(&self, from: SpanId, to: SpanId) -> bool {
         let mut visited = HashSet::new();
         let mut queue = vec![from];
-        
+
         while let Some(current) = queue.pop() {
             if current == to {
                 return true;
             }
-            
+
             if visited.contains(&current) {
                 continue;
             }
             visited.insert(current);
-            
+
             for (src, dst) in &self.edges {
                 if *src == current {
                     queue.push(*dst);
                 }
             }
         }
-        
+
         false
     }
 }
@@ -1452,31 +1452,31 @@ impl DataFlowAnalysis {
             out_set: HashMap::new(),
         }
     }
-    
+
     // 前向数据流分析
     pub fn forward_analysis(&mut self, cfg: &ControlFlowGraph) {
         let mut changed = true;
-        
+
         while changed {
             changed = false;
-            
+
             for (span_id, _) in &cfg.nodes {
                 // IN[n] = ⋃(p ∈ pred(n)) OUT[p]
                 let predecessors = self.get_predecessors(cfg, *span_id);
                 let mut new_in = HashSet::new();
-                
+
                 for pred in predecessors {
                     if let Some(out) = self.out_set.get(&pred) {
                         new_in.extend(out.clone());
                     }
                 }
-                
+
                 // OUT[n] = gen[n] ∪ (IN[n] - kill[n])
                 let gen = self.gen.get(span_id).cloned().unwrap_or_default();
                 let kill = self.kill.get(span_id).cloned().unwrap_or_default();
                 let mut new_out = gen.clone();
                 new_out.extend(new_in.difference(&kill).cloned());
-                
+
                 // 检查是否有变化
                 if self.in_set.get(span_id) != Some(&new_in) ||
                    self.out_set.get(span_id) != Some(&new_out) {
@@ -1487,7 +1487,7 @@ impl DataFlowAnalysis {
             }
         }
     }
-    
+
     fn get_predecessors(&self, cfg: &ControlFlowGraph, node: SpanId) -> Vec<SpanId> {
         cfg.edges.iter()
             .filter(|(_, dst)| *dst == node)
@@ -1511,34 +1511,34 @@ impl RootCauseAnalyzer {
     pub fn new(spans: Vec<Span>) -> Self {
         RootCauseAnalyzer { spans }
     }
-    
+
     // 根因分析算法
     pub fn analyze(&self, error_span: &Span) -> Vec<Span> {
         let ancestors = self.get_ancestors(error_span);
         let error_ancestors: Vec<_> = ancestors.into_iter()
             .filter(|s| matches!(s.status, Status::Error { .. }))
             .collect();
-        
+
         if error_ancestors.is_empty() {
             return vec![error_span.clone()];
         }
-        
+
         // 找到最早的错误
         let root = error_ancestors.iter()
             .min_by_key(|s| s.start_time)
             .unwrap();
-        
+
         // 找到相关的错误
         let mut result = vec![root.clone()];
         result.extend(self.find_correlated_errors(root));
-        
+
         result
     }
-    
+
     fn get_ancestors(&self, span: &Span) -> Vec<Span> {
         let mut ancestors = Vec::new();
         let mut current = span.clone();
-        
+
         while let Some(parent_id) = current.parent_span_id {
             if let Some(parent) = self.spans.iter()
                 .find(|s| s.span_id == parent_id) {
@@ -1548,10 +1548,10 @@ impl RootCauseAnalyzer {
                 break;
             }
         }
-        
+
         ancestors
     }
-    
+
     fn find_correlated_errors(&self, root: &Span) -> Vec<Span> {
         self.spans.iter()
             .filter(|s| {
@@ -1563,14 +1563,14 @@ impl RootCauseAnalyzer {
             .cloned()
             .collect()
     }
-    
+
     fn is_time_correlated(&self, s1: &Span, s2: &Span) -> bool {
         let time_diff = if s1.start_time > s2.start_time {
             s1.start_time.duration_since(s2.start_time).unwrap_or_default()
         } else {
             s2.start_time.duration_since(s1.start_time).unwrap_or_default()
         };
-        
+
         time_diff < Duration::from_secs(5) // 5秒内的错误认为是相关的
     }
 }
@@ -1588,16 +1588,16 @@ impl PerformanceAnalyzer {
     pub fn new(spans: Vec<Span>) -> Self {
         PerformanceAnalyzer { spans }
     }
-    
+
     // 识别性能瓶颈
     pub fn identify_bottlenecks(&self) -> Vec<Bottleneck> {
         let critical_path = self.find_critical_path();
         let durations: Vec<_> = self.spans.iter()
             .map(|s| s.end_time.duration_since(s.start_time).unwrap_or_default())
             .collect();
-        
+
         let p95 = self.percentile(&durations, 0.95);
-        
+
         critical_path.iter()
             .filter(|span| {
                 let duration = span.end_time.duration_since(span.start_time)
@@ -1611,25 +1611,25 @@ impl PerformanceAnalyzer {
             })
             .collect()
     }
-    
+
     fn find_critical_path(&self) -> Vec<Span> {
         // 找到从根到叶子的最长路径
         let root = self.spans.iter()
             .find(|s| s.parent_span_id.is_none())
             .expect("No root span");
-        
+
         self.longest_path_from(root)
     }
-    
+
     fn longest_path_from(&self, span: &Span) -> Vec<Span> {
         let children: Vec<_> = self.spans.iter()
             .filter(|s| s.parent_span_id == Some(span.span_id))
             .collect();
-        
+
         if children.is_empty() {
             return vec![span.clone()];
         }
-        
+
         let longest_child_path = children.iter()
             .map(|child| self.longest_path_from(child))
             .max_by_key(|path| {
@@ -1638,33 +1638,33 @@ impl PerformanceAnalyzer {
                     .sum::<Duration>()
             })
             .unwrap_or_default();
-        
+
         let mut path = vec![span.clone()];
         path.extend(longest_child_path);
         path
     }
-    
+
     fn percentile(&self, durations: &[Duration], p: f64) -> Duration {
         let mut sorted = durations.to_vec();
         sorted.sort();
         let index = (sorted.len() as f64 * p) as usize;
         sorted.get(index).copied().unwrap_or_default()
     }
-    
+
     fn compute_impact(&self, span: &Span, critical_path: &[Span]) -> f64 {
         let span_duration = span.end_time.duration_since(span.start_time)
             .unwrap_or_default();
         let total_duration: Duration = critical_path.iter()
             .map(|s| s.end_time.duration_since(s.start_time).unwrap_or_default())
             .sum();
-        
+
         span_duration.as_secs_f64() / total_duration.as_secs_f64()
     }
-    
+
     fn suggest_fix(&self, span: &Span) -> String {
         let duration = span.end_time.duration_since(span.start_time)
             .unwrap_or_default();
-        
+
         if duration > Duration::from_secs(1) {
             format!("考虑优化 {} 的性能，当前耗时 {:?}", span.name, duration)
         } else {
@@ -1730,25 +1730,25 @@ impl SelfHealingSystem {
             })),
         }
     }
-    
+
     // 自我修复主循环
     pub async fn healing_loop(&self, spans: Vec<Span>) {
         loop {
             // 检测故障
             if let Some(failure) = self.detect_failure(&spans).await {
                 println!("检测到故障: {:?}", failure);
-                
+
                 // 诊断
                 let diagnosis = self.diagnose(&failure).await;
                 println!("诊断结果: {:?}", diagnosis);
-                
+
                 // 选择修复动作
                 let action = self.select_healing_action(&failure);
                 println!("修复动作: {:?}", action);
-                
+
                 // 应用修复
                 self.apply_healing(&action).await;
-                
+
                 // 验证修复
                 if self.verify_healing().await {
                     println!("修复成功!");
@@ -1756,11 +1756,11 @@ impl SelfHealingSystem {
                     println!("修复失败，需要人工介入");
                 }
             }
-            
+
             tokio::time::sleep(Duration::from_secs(10)).await;
         }
     }
-    
+
     async fn detect_failure(&self, spans: &[Span]) -> Option<Failure> {
         for span in spans {
             if matches!(span.status, Status::Error { .. }) {
@@ -1771,10 +1771,10 @@ impl SelfHealingSystem {
                         _ => None,
                     })
                     .unwrap_or_else(|| "unknown".to_string());
-                
+
                 return Some(Failure::ServiceDown { service });
             }
-            
+
             let duration = span.end_time.duration_since(span.start_time)
                 .unwrap_or_default();
             if duration > Duration::from_secs(5) {
@@ -1782,36 +1782,36 @@ impl SelfHealingSystem {
                 return Some(Failure::HighLatency { service, latency: duration });
             }
         }
-        
+
         None
     }
-    
+
     async fn diagnose(&self, failure: &Failure) -> String {
         match failure {
-            Failure::ServiceDown { service } => 
+            Failure::ServiceDown { service } =>
                 format!("服务 {} 已停止", service),
-            Failure::HighLatency { service, latency } => 
+            Failure::HighLatency { service, latency } =>
                 format!("服务 {} 延迟过高: {:?}", service, latency),
-            Failure::MemoryLeak { service, memory_mb } => 
+            Failure::MemoryLeak { service, memory_mb } =>
                 format!("服务 {} 内存泄漏: {} MB", service, memory_mb),
-            Failure::NetworkPartition { affected_services } => 
+            Failure::NetworkPartition { affected_services } =>
                 format!("网络分区影响服务: {:?}", affected_services),
         }
     }
-    
+
     fn select_healing_action(&self, failure: &Failure) -> HealingAction {
         match failure {
-            Failure::ServiceDown { service } => 
+            Failure::ServiceDown { service } =>
                 HealingAction::RestartService(service.clone()),
-            Failure::HighLatency { service, .. } => 
+            Failure::HighLatency { service, .. } =>
                 HealingAction::ScaleOut(service.clone(), 2),
-            Failure::MemoryLeak { service, .. } => 
+            Failure::MemoryLeak { service, .. } =>
                 HealingAction::RestartWithCleanup(service.clone()),
-            Failure::NetworkPartition { .. } => 
+            Failure::NetworkPartition { .. } =>
                 HealingAction::Alert("网络分区需要人工介入".to_string()),
         }
     }
-    
+
     async fn apply_healing(&self, action: &HealingAction) {
         match action {
             HealingAction::RestartService(service) => {
@@ -1839,7 +1839,7 @@ impl SelfHealingSystem {
             }
         }
     }
-    
+
     async fn verify_healing(&self) -> bool {
         // 运行健康检查
         let state = self.system_state.read().await;
@@ -1875,32 +1875,32 @@ impl AutoScaler {
             last_error: 0.0,
         }
     }
-    
+
     // PID 控制器自动扩缩容
     pub fn autoscale(&mut self, current_cpu: f64, current_replicas: u32) -> u32 {
         let error = current_cpu - self.target_cpu;
-        
+
         // 积分项
         self.integral += error;
-        
+
         // 微分项
         let derivative = error - self.last_error;
         self.last_error = error;
-        
+
         // PID 控制信号
-        let control_signal = self.kp * error + 
-                            self.ki * self.integral + 
+        let control_signal = self.kp * error +
+                            self.ki * self.integral +
                             self.kd * derivative;
-        
+
         // 计算新的副本数
         let adjustment = (control_signal * current_replicas as f64).round() as i32;
         let new_replicas = (current_replicas as i32 + adjustment)
             .max(self.min_replicas as i32)
             .min(self.max_replicas as i32) as u32;
-        
-        println!("CPU: {:.2}, 目标: {:.2}, 误差: {:.2}, 调整: {}, 新副本数: {}", 
+
+        println!("CPU: {:.2}, 目标: {:.2}, 误差: {:.2}, 调整: {}, 新副本数: {}",
                  current_cpu, self.target_cpu, error, adjustment, new_replicas);
-        
+
         new_replicas
     }
 }
@@ -1918,21 +1918,21 @@ impl AutoScaler {
 系统不变量（System Invariants）：
 
 Invariant 1 (Trace Consistency):
-  ∀s₁, s₂ ∈ Spans. 
+  ∀s₁, s₂ ∈ Spans.
     s₁.trace_id = s₂.trace_id ⟹
     consistent_resource(s₁, s₂)
 
 Invariant 2 (Parent-Child Relationship):
-  ∀s ∈ Spans. 
+  ∀s ∈ Spans.
     s.parent_span_id ≠ None ⟹
     ∃p ∈ Spans. p.span_id = s.parent_span_id
 
 Invariant 3 (Time Ordering):
-  ∀s ∈ Spans. 
+  ∀s ∈ Spans.
     s.start_time ≤ s.end_time
 
 Invariant 4 (Causality Preservation):
-  ∀s₁, s₂ ∈ Spans. 
+  ∀s₁, s₂ ∈ Spans.
     causally_precedes(s₁, s₂) ⟹
     s₁.end_time ≤ s₂.start_time
 ```
@@ -1951,7 +1951,7 @@ impl InvariantChecker {
         Self::check_causality(spans)?;
         Ok(())
     }
-    
+
     fn check_trace_consistency(spans: &[Span]) -> Result<(), String> {
         for s1 in spans {
             for s2 in spans {
@@ -1968,7 +1968,7 @@ impl InvariantChecker {
         }
         Ok(())
     }
-    
+
     fn check_parent_child(spans: &[Span]) -> Result<(), String> {
         for span in spans {
             if let Some(parent_id) = span.parent_span_id {
@@ -1983,7 +1983,7 @@ impl InvariantChecker {
         }
         Ok(())
     }
-    
+
     fn check_time_ordering(spans: &[Span]) -> Result<(), String> {
         for span in spans {
             if span.start_time > span.end_time {
@@ -1995,7 +1995,7 @@ impl InvariantChecker {
         }
         Ok(())
     }
-    
+
     fn check_causality(spans: &[Span]) -> Result<(), String> {
         for s1 in spans {
             for s2 in spans {
@@ -2010,7 +2010,7 @@ impl InvariantChecker {
         }
         Ok(())
     }
-    
+
     fn consistent_resource(s1: &Span, s2: &Span) -> bool {
         // 检查资源属性是否一致
         let get_service = |s: &Span| {
@@ -2021,7 +2021,7 @@ impl InvariantChecker {
                     _ => None,
                 })
         };
-        
+
         get_service(s1) == get_service(s2)
     }
 }
@@ -2038,17 +2038,17 @@ Theorem (Trace Completeness):
 
 证明：
   假设 trace_complete(spans) = true
-  
+
   根据定义：
     ∀s ∈ spans. s.parent_span_id = None ∨
     ∃p ∈ spans. p.span_id = s.parent_span_id
-  
+
   构造调用树算法：
     1. 找到根节点：root = {s | s.parent_span_id = None}
     2. 递归构建子树：
        children(s) = {c | c.parent_span_id = s.span_id}
     3. 对每个 child ∈ children(s)，递归构建其子树
-  
+
   由于 trace_complete 保证每个非根节点都有父节点，
   且父节点存在于 spans 中，因此算法必然终止，
   并构建出完整的调用树。 ∎
@@ -2064,22 +2064,22 @@ Theorem (Causal Consistency):
 
 证明：
   使用数学归纳法：
-  
+
   基础情况：
     如果 s₂ 是 s₁ 的直接子节点，则：
     logical_clock(s₂) = logical_clock(s₁) + 1
     因此 logical_clock(s₁) < logical_clock(s₂) ✓
-  
+
   归纳假设：
     假设对所有 k < n，定理成立
-  
+
   归纳步骤：
     考虑 causally_precedes(s₁, sₙ)
     必存在路径 s₁ → s₂ → ... → sₙ
     由归纳假设：
       logical_clock(s₁) < logical_clock(s₂) < ... < logical_clock(sₙ)
     因此定理对 n 也成立 ✓
-  
+
   由数学归纳法，定理得证。 ∎
 ```
 
@@ -2223,13 +2223,13 @@ Theorem (Causal Consistency):
 
 本文档建立了一个**世界级的 OTLP 形式化理论体系**，从多个维度全面分析和论证了 OTLP 在分布式系统中的应用：
 
-✅ **控制流/执行流/数据流** - 完整的形式化分析框架  
-✅ **图灵可计算性与并发模型** - 严格的数学基础  
-✅ **分布式系统理论** - 形式化证明体系  
-✅ **OTLP 语义推理** - 多维度数据分析引擎  
-✅ **Rust 异步/并发模型** - 完整的转换关系  
-✅ **容错/排错/监测/控制/分析/定位** - 形式化方法  
-✅ **自动化运维** - 可计算模型与验证  
+✅ **控制流/执行流/数据流** - 完整的形式化分析框架
+✅ **图灵可计算性与并发模型** - 严格的数学基础
+✅ **分布式系统理论** - 形式化证明体系
+✅ **OTLP 语义推理** - 多维度数据分析引擎
+✅ **Rust 异步/并发模型** - 完整的转换关系
+✅ **容错/排错/监测/控制/分析/定位** - 形式化方法
+✅ **自动化运维** - 可计算模型与验证
 
 这个理论体系不仅具有深厚的学术价值，更具有广泛的工程应用前景，为构建下一代可观测性平台奠定了坚实的理论基础。
 
@@ -2239,41 +2239,40 @@ Theorem (Causal Consistency):
 
 ### A.1 类型理论与形式化方法
 
-1. Pierce, B. C. (2002). *Types and Programming Languages*. MIT Press.
-2. Bertot, Y., & Castéran, P. (2004). *Interactive Theorem Proving and Program Development: Coq'Art*. Springer.
+1. Pierce, B. C. (2002). _Types and Programming Languages_. MIT Press.
+2. Bertot, Y., & Castéran, P. (2004). _Interactive Theorem Proving and Program Development: Coq'Art_. Springer.
 
 ### A.2 并发与分布式系统
 
-1. Hoare, C. A. R. (1985). *Communicating Sequential Processes*. Prentice Hall.
-2. Lamport, L. (1978). "Time, Clocks, and the Ordering of Events in a Distributed System". *Communications of the ACM*.
-3. Lynch, N. A. (1996). *Distributed Algorithms*. Morgan Kaufmann.
+1. Hoare, C. A. R. (1985). _Communicating Sequential Processes_. Prentice Hall.
+2. Lamport, L. (1978). "Time, Clocks, and the Ordering of Events in a Distributed System". _Communications of the ACM_.
+3. Lynch, N. A. (1996). _Distributed Algorithms_. Morgan Kaufmann.
 
 ### A.3 控制理论与自动化
 
-1. Åström, K. J., & Murray, R. M. (2008). *Feedback Systems: An Introduction for Scientists and Engineers*. Princeton University Press.
-2. Hellerstein, J. L., et al. (2004). *Feedback Control of Computing Systems*. Wiley-IEEE Press.
+1. Åström, K. J., & Murray, R. M. (2008). _Feedback Systems: An Introduction for Scientists and Engineers_. Princeton University Press.
+2. Hellerstein, J. L., et al. (2004). _Feedback Control of Computing Systems_. Wiley-IEEE Press.
 
 ### A.4 可观测性与监控
 
 1. OpenTelemetry Specification (2025). <https://opentelemetry.io/docs/specs/>
-2. Beyer, B., et al. (2016). *Site Reliability Engineering*. O'Reilly Media.
+2. Beyer, B., et al. (2016). _Site Reliability Engineering_. O'Reilly Media.
 
 ### A.5 Rust 编程语言
 
-1. Klabnik, S., & Nichols, C. (2023). *The Rust Programming Language* (2nd ed.). No Starch Press.
+1. Klabnik, S., & Nichols, C. (2023). _The Rust Programming Language_ (2nd ed.). No Starch Press.
 2. Tokio Documentation (2025). <https://tokio.rs/>
 
 ---
 
-**文档完成时间**: 2025年10月7日  
-**总行数**: 1,600+ 行  
-**代码示例**: 30+ 个完整实现  
-**形式化定义**: 50+ 个  
-**定理证明**: 10+ 个  
+**文档完成时间**: 2025年10月7日
+**总行数**: 1,600+ 行
+**代码示例**: 30+ 个完整实现
+**形式化定义**: 50+ 个
+**定理证明**: 10+ 个
 
 **状态**: ✅ **完整完成**
 
 ---
 
 🎉 **恭喜！形式化语义与可计算模型完整体系构建完成！** 🎉
-

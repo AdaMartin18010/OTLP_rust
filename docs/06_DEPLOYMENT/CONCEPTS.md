@@ -1,17 +1,49 @@
 ﻿# 部署核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
 
 ## 📋 目录
 
-1. [容器化部署](#1-容器化部署)
-2. [Kubernetes部署](#2-kubernetes部署)
-3. [服务发现](#3-服务发现)
-4. [配置管理](#4-配置管理)
+- [部署核心概念](#部署核心概念)
+  - [📋 目录](#-目录)
+  - [📖 容器化部署](#-容器化部署)
+    - [1.1 Docker多阶段构建](#11-docker多阶段构建)
+      - [定义](#定义)
+      - [内涵（本质特征）](#内涵本质特征)
+      - [外延（涵盖范围）](#外延涵盖范围)
+      - [属性](#属性)
+      - [关系](#关系)
+      - [示例](#示例)
+  - [🔍 Kubernetes部署](#-kubernetes部署)
+    - [2.1 Deployment资源](#21-deployment资源)
+      - [定义](#定义-1)
+      - [内涵（本质特征）](#内涵本质特征-1)
+      - [外延（涵盖范围）](#外延涵盖范围-1)
+      - [属性](#属性-1)
+      - [关系](#关系-1)
+      - [示例](#示例-1)
+  - [💡 服务发现](#-服务发现)
+    - [3.1 Consul服务注册](#31-consul服务注册)
+      - [定义](#定义-2)
+      - [内涵（本质特征）](#内涵本质特征-2)
+      - [外延（涵盖范围）](#外延涵盖范围-2)
+      - [属性](#属性-2)
+      - [关系](#关系-2)
+      - [示例](#示例-2)
+  - [⚙️ 配置管理](#️-配置管理)
+    - [4.1 12-Factor配置](#41-12-factor配置)
+      - [定义](#定义-3)
+      - [内涵（本质特征）](#内涵本质特征-3)
+      - [外延（涵盖范围）](#外延涵盖范围-3)
+      - [属性](#属性-3)
+      - [关系](#关系-3)
+      - [示例](#示例-3)
+  - [🔗 相关资源](#-相关资源)
+
 
 ---
 
@@ -22,12 +54,14 @@
 #### 定义
 
 **形式化定义**: Multi-stage Build = (build_stage, runtime_stage, artifacts)，其中：
+
 - build_stage: 编译阶段
 - runtime_stage: 运行阶段
 - artifacts: build → runtime 传递的文件
 
 **优化目标**:
-```
+
+```部署核心概念
 minimize(image_size)
 maximize(build_cache_hit_rate)
 ensure(reproducibility)
@@ -205,13 +239,15 @@ docker run -d \
 #### 定义
 
 **形式化定义**: K8s Deployment D = (replicas, selector, template, strategy)，其中：
+
 - replicas: 副本数量
 - selector: Pod选择器
 - template: Pod模板
 - strategy: 更新策略 (RollingUpdate | Recreate)
 
 **高可用要求**:
-```
+
+```text
 replicas ≥ 3
 spread_across_zones = true
 anti_affinity = preferred
@@ -262,22 +298,22 @@ metadata:
 spec:
   # 副本数
   replicas: 3
-  
+
   # 选择器（匹配Pod标签）
   selector:
     matchLabels:
       app: otlp-receiver
-  
+
   # 更新策略
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1  # 最多1个Pod不可用
       maxSurge: 1        # 最多额外1个Pod
-  
+
   # 最小就绪时间（防止快速失败）
   minReadySeconds: 10
-  
+
   # Pod模板
   template:
     metadata:
@@ -288,11 +324,11 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8888"
         prometheus.io/path: "/metrics"
-    
+
     spec:
       # 服务账户
       serviceAccountName: otlp-receiver
-      
+
       # Pod反亲和性（分散到不同节点）
       affinity:
         podAntiAffinity:
@@ -306,13 +342,13 @@ spec:
                   values:
                   - otlp-receiver
               topologyKey: kubernetes.io/hostname
-      
+
       # 容器配置
       containers:
       - name: otlp-receiver
         image: otlp-receiver:1.0.0
         imagePullPolicy: IfNotPresent
-        
+
         # 端口
         ports:
         - name: grpc
@@ -324,7 +360,7 @@ spec:
         - name: metrics
           containerPort: 8888
           protocol: TCP
-        
+
         # 环境变量
         env:
         - name: RUST_LOG
@@ -337,7 +373,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        
+
         # 资源限制
         resources:
           requests:
@@ -346,7 +382,7 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "1000m"
-        
+
         # 存活探针
         livenessProbe:
           httpGet:
@@ -356,7 +392,7 @@ spec:
           periodSeconds: 20
           timeoutSeconds: 3
           failureThreshold: 3
-        
+
         # 就绪探针
         readinessProbe:
           httpGet:
@@ -367,7 +403,7 @@ spec:
           timeoutSeconds: 3
           successThreshold: 1
           failureThreshold: 3
-        
+
         # 启动探针（处理慢启动）
         startupProbe:
           httpGet:
@@ -377,7 +413,7 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 30
-        
+
         # 挂载配置
         volumeMounts:
         - name: config
@@ -386,7 +422,7 @@ spec:
           readOnly: true
         - name: data
           mountPath: /data
-      
+
       # 卷配置
       volumes:
       - name: config
@@ -482,18 +518,18 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-    
+
     processors:
       batch:
         timeout: 5s
         send_batch_size: 512
-    
+
     exporters:
       logging:
         loglevel: info
       otlp:
         endpoint: backend:4317
-    
+
     service:
       pipelines:
         traces:
@@ -549,6 +585,7 @@ kubectl scale deployment/otlp-receiver --replicas=5 -n observability
 **形式化定义**: Service Discovery SD = (register, deregister, query, health_check)
 
 **服务注册信息**:
+
 ```json
 {
   "ID": "otlp-receiver-1",
@@ -615,7 +652,7 @@ impl ConsulRegistry {
     ) -> Result<Self> {
         let client = Client::new(consul_addr)?;
         let service_id = format!("{}-{}", service_name, uuid::Uuid::new_v4());
-        
+
         Ok(Self {
             client,
             service_id,
@@ -623,7 +660,7 @@ impl ConsulRegistry {
             address,
         })
     }
-    
+
     // 注册服务
     pub async fn register(&self) -> Result<()> {
         let registration = AgentServiceRegistration {
@@ -649,36 +686,36 @@ impl ConsulRegistry {
             }),
             ..Default::default()
         };
-        
+
         self.client.agent().service_register(&registration).await?;
-        
+
         tracing::info!(
             service_id = %self.service_id,
             "Service registered with Consul"
         );
-        
+
         Ok(())
     }
-    
+
     // 注销服务
     pub async fn deregister(&self) -> Result<()> {
         self.client.agent().service_deregister(&self.service_id).await?;
-        
+
         tracing::info!(
             service_id = %self.service_id,
             "Service deregistered from Consul"
         );
-        
+
         Ok(())
     }
-    
+
     // 发现服务
     pub async fn discover(&self, service_name: &str) -> Result<Vec<ServiceInstance>> {
         let services = self.client
             .health()
             .service(service_name, None, true) // only_passing=true
             .await?;
-        
+
         let instances = services.into_iter()
             .map(|entry| ServiceInstance {
                 id: entry.service.id,
@@ -690,7 +727,7 @@ impl ConsulRegistry {
                 tags: entry.service.tags,
             })
             .collect();
-        
+
         Ok(instances)
     }
 }
@@ -709,16 +746,16 @@ async fn main() -> Result<()> {
     // 启动服务
     let addr = "0.0.0.0:4317".parse()?;
     let server = OtlpServer::new(addr);
-    
+
     // 注册到Consul
     let registry = ConsulRegistry::new(
         "http://consul:8500",
         "otlp-receiver".to_string(),
         addr,
     ).await?;
-    
+
     registry.register().await?;
-    
+
     // 优雅关闭
     tokio::select! {
         _ = server.serve() => {},
@@ -726,7 +763,7 @@ async fn main() -> Result<()> {
             registry.deregister().await?;
         }
     }
-    
+
     Ok(())
 }
 
@@ -737,20 +774,20 @@ pub async fn create_client_with_discovery() -> Result<OtlpClient> {
         "otlp-receiver".to_string(),
         "0.0.0.0:0".parse()?,
     ).await?;
-    
+
     // 发现服务实例
     let instances = registry.discover("otlp-receiver").await?;
-    
+
     if instances.is_empty() {
         return Err(Error::NoInstancesAvailable);
     }
-    
+
     // 选择一个实例（轮询/随机/最少连接）
     let instance = &instances[0];
-    
+
     // 创建客户端
     let client = OtlpClient::connect(&instance.address).await?;
-    
+
     Ok(client)
 }
 ```
@@ -848,36 +885,36 @@ impl AppConfig {
             .set_default("server.workers", num_cpus::get())?
             .set_default("logging.level", "info")?
             .set_default("logging.format", "json")?;
-        
+
         // 2. 从配置文件加载（按环境）
         let env = std::env::var("ENV").unwrap_or_else(|_| "development".to_string());
-        
+
         builder = builder
             .add_source(File::with_name("config/default").required(false))
             .add_source(File::with_name(&format!("config/{}", env)).required(false));
-        
+
         // 3. 从环境变量覆盖（前缀APP_）
         builder = builder
             .add_source(
                 Environment::with_prefix("APP")
                     .separator("__")  // APP__SERVER__PORT
             );
-        
+
         let config = builder.build()?;
-        
+
         config.try_deserialize()
     }
-    
+
     // 验证配置
     pub fn validate(&self) -> Result<()> {
         if self.server.port == 0 {
             return Err(Error::InvalidConfig("port must be > 0"));
         }
-        
+
         if self.otlp.batch_size == 0 || self.otlp.batch_size > 10000 {
             return Err(Error::InvalidConfig("batch_size must be 1-10000"));
         }
-        
+
         Ok(())
     }
 }
@@ -888,15 +925,15 @@ async fn main() -> Result<()> {
     // 加载配置
     let config = AppConfig::load()?;
     config.validate()?;
-    
+
     tracing::info!("Config loaded: {:?}", config);
-    
+
     // 使用配置
     let server = OtlpServer::new(
         format!("{}:{}", config.server.host, config.server.port).parse()?,
         config.otlp,
     );
-    
+
     server.serve().await
 }
 ```
@@ -962,9 +999,9 @@ kubectl create secret generic otlp-secrets \
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
-**最后更新**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
+**最后更新**: 2025-10-28
 **维护团队**: OTLP_rust部署团队
 
 ---

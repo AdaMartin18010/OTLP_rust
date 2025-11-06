@@ -1,17 +1,17 @@
 ﻿# 示例集合核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
 
 ## 📋 目录
 
-1. [示例分类](#1-示例分类)
-2. [快速开始示例](#2-快速开始示例)
-3. [集成示例](#3-集成示例)
-4. [高级示例](#4-高级示例)
+- [示例分类](#1-示例分类)
+- [快速开始示例](#2-快速开始示例)
+- [集成示例](#3-集成示例)
+- [高级示例](#4-高级示例)
 
 ---
 
@@ -80,28 +80,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider = TracerProvider::builder()
         .with_simple_exporter()
         .build();
-    
+
     // 2. 获取Tracer
     let tracer = provider.tracer("hello-otlp");
-    
+
     // 3. 创建Span
     let span = tracer.start("hello");
-    
+
     println!("Hello, OTLP!");
-    
+
     // 4. 结束Span
     span.end();
-    
+
     Ok(())
 }
 ```
 
 **运行**:
+
 ```bash
 cargo run --example 01_hello_otlp
 ```
 
 **输出**:
+
 ```
 Hello, OTLP!
 Span exported: hello (duration: 1.2ms)
@@ -122,12 +124,12 @@ async fn main() {
     let provider = TracerProvider::builder()
         .with_endpoint("http://localhost:4317")
         .build();
-    
+
     // 创建路由
     let app = Router::new()
         .route("/", get(handler))
         .layer(Layer::new(provider));
-    
+
     // 启动服务
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
@@ -141,6 +143,7 @@ async fn handler() -> &'static str {
 ```
 
 **运行**:
+
 ```bash
 # 终端1: 启动Collector
 docker run -p 4317:4317 otel/opentelemetry-collector
@@ -176,21 +179,21 @@ async fn main() {
         .with_endpoint("http://localhost:4317")
         .with_service_name("axum-example")
         .build();
-    
+
     let tracer = Arc::new(provider.tracer("http-server"));
-    
+
     // 2. 创建路由
     let app = Router::new()
         .route("/", get(index))
         .route("/user", post(create_user))
         .route("/user/:id", get(get_user))
         .with_state(AppState { tracer });
-    
+
     // 3. 启动服务
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -207,13 +210,13 @@ async fn create_user(
 ) -> Json<User> {
     let span = state.tracer.start("POST /user");
     span.set_attribute("user.name", &payload.name);
-    
+
     // 创建用户逻辑
     let user = User {
         id: 1,
         name: payload.name,
     };
-    
+
     span.end();
     Json(user)
 }
@@ -224,13 +227,13 @@ async fn get_user(
 ) -> Json<User> {
     let span = state.tracer.start("GET /user/:id");
     span.set_attribute("user.id", id);
-    
+
     // 查询用户逻辑
     let user = User {
         id,
         name: "John".to_string(),
     };
-    
+
     span.end();
     Json(user)
 }
@@ -243,6 +246,7 @@ struct User {
 ```
 
 **测试**:
+
 ```bash
 # 创建用户
 curl -X POST http://localhost:3000/user \
@@ -274,24 +278,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .failure_threshold(5)
         .timeout(Duration::from_secs(60))
         .build();
-    
+
     // 2. 连接gRPC服务
     let channel = Channel::from_static("http://[::1]:50051")
         .connect()
         .await?;
-    
+
     let mut client = MyServiceClient::new(channel);
-    
+
     // 3. 使用熔断器执行请求
     for i in 0..100 {
         let span = tracer.start(format!("request-{}", i));
-        
+
         let result = circuit_breaker.call(|| async {
             client.my_method(Request::new(MyRequest {
                 data: format!("data-{}", i),
             })).await
         }).await;
-        
+
         match result {
             Ok(response) => {
                 span.set_status(SpanStatus::Ok);
@@ -303,11 +307,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Error: {}", e);
             }
         }
-        
+
         span.end();
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
-    
+
     Ok(())
 }
 ```
@@ -340,20 +344,20 @@ async fn main() {
             max_export_batch_size: 512,
         })
         .build();
-    
+
     let tracer = Arc::new(provider.tracer("main"));
-    
+
     let circuit_breaker = Arc::new(
         CircuitBreaker::new()
             .failure_threshold(10)
             .timeout(Duration::from_secs(30))
             .build()
     );
-    
+
     let rate_limiter = Arc::new(RateLimiter::new(100)); // 100 req/s
-    
+
     let span_pool = Arc::new(ObjectPool::new(1000, || Span::default()));
-    
+
     // 2. 创建应用状态
     let state = AppState {
         tracer,
@@ -361,21 +365,21 @@ async fn main() {
         rate_limiter,
         span_pool,
     };
-    
+
     // 3. 创建路由
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/api/users", get(list_users))
         .route("/api/process", get(process_data))
         .with_state(state);
-    
+
     // 4. 启动服务
     println!("🚀 Server running at http://0.0.0.0:3000");
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -396,11 +400,11 @@ async fn list_users(State(state): State<AppState>) -> Json<Vec<User>> {
     if !state.rate_limiter.check() {
         return Json(vec![]);
     }
-    
+
     // 2. 从对象池获取Span
     let span = state.span_pool.get();
     let _guard = state.tracer.start_with_span("list_users", span.as_ref());
-    
+
     // 3. 使用熔断器执行数据库查询
     let users = state.circuit_breaker.call(|| async {
         // 模拟数据库查询
@@ -410,14 +414,14 @@ async fn list_users(State(state): State<AppState>) -> Json<Vec<User>> {
             User { id: 2, name: "Bob".to_string() },
         ]
     }).await.unwrap_or_default();
-    
+
     Json(users)
 }
 
 async fn process_data(State(state): State<AppState>) -> &'static str {
     let span = state.span_pool.get();
     let _guard = state.tracer.start_with_span("process_data", span.as_ref());
-    
+
     // 复杂的数据处理逻辑
     "Processed"
 }
@@ -475,10 +479,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
 **最后更新**: 2025-10-28
 
 ---
 
 > **💡 提示**: 从`01_hello_otlp`开始，逐步尝试更复杂的示例。所有示例都可以直接运行！
+

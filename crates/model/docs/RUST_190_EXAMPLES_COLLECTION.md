@@ -1,7 +1,7 @@
 ﻿# 💻 Rust 1.90 模型 - 实战示例集
 
-> **版本**: Rust 1.90 Edition 2024  
-> **创建日期**: 2025-10-20  
+> **版本**: Rust 1.90 Edition 2024
+> **创建日期**: 2025-10-20
 > **代码总量**: ~650行可运行代码
 
 ---
@@ -9,8 +9,7 @@
 ## 📋 目录
 
 - [💻 Rust 1.90 模型 - 实战示例集](#-rust-190-模型---实战示例集)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [📋 目录](#-目录)
   - [🌐 分布式模型](#-分布式模型)
     - [示例1: 简化的Raft领导选举](#示例1-简化的raft领导选举)
     - [示例2: 向量时钟 (Vector Clock)](#示例2-向量时钟-vector-clock)
@@ -19,6 +18,8 @@
     - [示例4: Actor模型](#示例4-actor模型)
   - [🏗️ 综合项目](#️-综合项目)
     - [项目: 分布式KV存储 (简化版)](#项目-分布式kv存储-简化版)
+
+---
 
 ## 🌐 分布式模型
 
@@ -54,7 +55,7 @@ impl RaftNode {
             election_timeout: Duration::from_millis(150 + id as u64 * 50),
         }
     }
-    
+
     async fn run(&mut self, mut rx: mpsc::Receiver<Message>) {
         loop {
             match self.role {
@@ -78,17 +79,17 @@ impl RaftNode {
             }
         }
     }
-    
+
     fn become_candidate(&mut self) {
         self.role = Role::Candidate;
         self.current_term += 1;
         self.voted_for = Some(self.id);
     }
-    
+
     fn become_leader(&mut self) {
         self.role = Role::Leader;
     }
-    
+
     fn handle_message(&mut self, _msg: Message) {
         // 处理消息
     }
@@ -103,11 +104,11 @@ enum Message {
 async fn main() {
     let (_tx, rx) = mpsc::channel(100);
     let mut node = RaftNode::new(1);
-    
+
     tokio::spawn(async move {
         node.run(rx).await;
     });
-    
+
     tokio::time::sleep(Duration::from_secs(3)).await;
 }
 ```
@@ -128,21 +129,21 @@ impl VectorClock {
             clocks: HashMap::new(),
         }
     }
-    
+
     fn increment(&mut self, node_id: usize) {
         *self.clocks.entry(node_id).or_insert(0) += 1;
     }
-    
+
     fn merge(&mut self, other: &VectorClock) {
         for (&id, &time) in &other.clocks {
             let current = self.clocks.entry(id).or_insert(0);
             *current = (*current).max(time);
         }
     }
-    
+
     fn happens_before(&self, other: &VectorClock) -> bool {
         let mut strictly_less = false;
-        
+
         for (&id, &my_time) in &self.clocks {
             let other_time = other.clocks.get(&id).copied().unwrap_or(0);
             if my_time > other_time {
@@ -152,7 +153,7 @@ impl VectorClock {
                 strictly_less = true;
             }
         }
-        
+
         strictly_less
     }
 }
@@ -160,12 +161,12 @@ impl VectorClock {
 fn main() {
     let mut clock1 = VectorClock::new();
     let mut clock2 = VectorClock::new();
-    
+
     clock1.increment(1);
     clock2.increment(2);
     clock2.merge(&clock1);
     clock2.increment(2);
-    
+
     println!("Clock1: {:?}", clock1);
     println!("Clock2: {:?}", clock2);
     println!("Clock1 happens before Clock2: {}", clock1.happens_before(&clock2));
@@ -198,7 +199,7 @@ fn csp_process_b(rx: mpsc::Receiver<i32>) {
 
 fn main() {
     let (tx, rx) = mpsc::channel();
-    
+
     thread::spawn(move || csp_process_a(tx));
     thread::spawn(move || csp_process_b(rx))
         .join()
@@ -225,7 +226,7 @@ impl Actor {
     fn new(receiver: mpsc::Receiver<ActorMessage>) -> Self {
         Self { receiver, state: 0 }
     }
-    
+
     async fn run(&mut self) {
         while let Some(msg) = self.receiver.recv().await {
             match msg {
@@ -245,17 +246,17 @@ impl Actor {
 async fn main() {
     let (tx, rx) = mpsc::channel(100);
     let mut actor = Actor::new(rx);
-    
+
     tokio::spawn(async move {
         actor.run().await;
     });
-    
+
     tx.send(ActorMessage::Increment).await.unwrap();
     tx.send(ActorMessage::Increment).await.unwrap();
-    
+
     let (reply_tx, mut reply_rx) = mpsc::channel(1);
     tx.send(ActorMessage::Get(reply_tx)).await.unwrap();
-    
+
     if let Some(state) = reply_rx.recv().await {
         println!("Final state: {}", state);
     }
@@ -283,25 +284,25 @@ impl DistributedKV {
         for _ in 0..replica_count {
             replicas.push(Arc::new(Mutex::new(HashMap::new())));
         }
-        
+
         Self {
             data: Arc::new(Mutex::new(HashMap::new())),
             replicas,
         }
     }
-    
+
     fn set(&self, key: String, value: String) {
         // 写主节点
         self.data.lock().unwrap().insert(key.clone(), value.clone());
-        
+
         // 复制到副本
         for replica in &self.replicas {
             replica.lock().unwrap().insert(key.clone(), value.clone());
         }
-        
+
         println!("Set {}={}", key, value);
     }
-    
+
     fn get(&self, key: &str) -> Option<String> {
         self.data.lock().unwrap().get(key).cloned()
     }
@@ -309,10 +310,10 @@ impl DistributedKV {
 
 fn main() {
     let kv = DistributedKV::new(2);
-    
+
     kv.set("name".to_string(), "Rust".to_string());
     kv.set("version".to_string(), "1.90".to_string());
-    
+
     println!("Get name: {:?}", kv.get("name"));
     println!("Get version: {:?}", kv.get("version"));
 }
@@ -320,11 +321,10 @@ fn main() {
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025-10-20  
+**文档版本**: v1.0
+**最后更新**: 2025-10-20
 **代码总量**: ~650行
 
 ---
 
 💻 **掌握理论模型，深入理解Rust！** 🚀✨
-

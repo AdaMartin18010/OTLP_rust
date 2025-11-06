@@ -1,17 +1,48 @@
 ﻿# 参考文档核心概念
 
-**版本**: 2.0  
-**日期**: 2025年10月28日  
+**版本**: 2.0
+**日期**: 2025年10月28日
 **状态**: ✅ 完整
 
 ---
 
 ## 📋 目录
 
-1. [语义约定](#1-语义约定)
-2. [资源属性](#2-资源属性)
-3. [Span属性](#3-span属性)
-4. [指标命名](#4-指标命名)
+- [参考文档核心概念](#参考文档核心概念)
+  - [📋 目录](#-目录)
+  - [📖 语义约定](#-语义约定)
+    - [1.1 OpenTelemetry语义约定](#11-opentelemetry语义约定)
+      - [定义](#定义)
+      - [内涵（本质特征）](#内涵本质特征)
+      - [外延（涵盖范围）](#外延涵盖范围)
+      - [属性](#属性)
+      - [关系](#关系)
+      - [示例](#示例)
+  - [🔍 资源属性](#-资源属性)
+    - [2.1 标准资源属性](#21-标准资源属性)
+      - [定义](#定义-1)
+      - [内涵（本质特征）](#内涵本质特征-1)
+      - [外延（涵盖范围）](#外延涵盖范围-1)
+      - [属性](#属性-1)
+      - [关系](#关系-1)
+      - [示例](#示例-1)
+  - [💡 Span属性](#-span属性)
+    - [3.1 Span生命周期](#31-span生命周期)
+      - [定义](#定义-2)
+      - [内涵（本质特征）](#内涵本质特征-2)
+      - [外延（涵盖范围）](#外延涵盖范围-2)
+      - [属性](#属性-2)
+      - [关系](#关系-2)
+      - [示例](#示例-2)
+  - [⚙️ 指标命名](#️-指标命名)
+    - [4.1 指标命名约定](#41-指标命名约定)
+      - [定义](#定义-3)
+      - [内涵（本质特征）](#内涵本质特征-3)
+      - [外延（涵盖范围）](#外延涵盖范围-3)
+      - [属性](#属性-3)
+      - [关系](#关系-3)
+      - [示例](#示例-3)
+  - [🔗 相关资源](#-相关资源)
 
 ---
 
@@ -24,7 +55,8 @@
 **形式化定义**: Semantic Conventions SC = (namespace, attributes, conventions)
 
 **命名规范**:
-```
+
+```text
 namespace.attribute_name
 
 示例:
@@ -76,23 +108,23 @@ fn add_http_attributes(span: &mut Span, req: &Request, resp: &Response) {
         semconv::trace::HTTP_METHOD,  // "http.method"
         req.method().to_string()
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::HTTP_URL,     // "http.url"
         req.uri().to_string()
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::HTTP_TARGET,  // "http.target"
         req.uri().path()
     ));
-    
+
     // 响应属性
     span.set_attribute(KeyValue::new(
         semconv::trace::HTTP_STATUS_CODE,  // "http.status_code"
         resp.status().as_u16()
     ));
-    
+
     // 客户端信息
     if let Some(user_agent) = req.headers().get("user-agent") {
         span.set_attribute(KeyValue::new(
@@ -108,28 +140,28 @@ fn add_db_attributes(span: &mut Span, query: &Query) {
         semconv::trace::DB_SYSTEM,     // "db.system"
         "postgresql"
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::DB_NAME,       // "db.name"
         query.database()
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::DB_STATEMENT,  // "db.statement"
         query.sql()
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::DB_OPERATION,  // "db.operation"
         query.operation()  // SELECT, INSERT, UPDATE, DELETE
     ));
-    
+
     // 连接信息
     span.set_attribute(KeyValue::new(
         semconv::trace::NET_PEER_NAME,  // "net.peer.name"
         query.host()
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::NET_PEER_PORT,  // "net.peer.port"
         query.port()
@@ -142,17 +174,17 @@ fn add_rpc_attributes(span: &mut Span, call: &RpcCall) {
         semconv::trace::RPC_SYSTEM,    // "rpc.system"
         "grpc"
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::RPC_SERVICE,   // "rpc.service"
         call.service()
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::RPC_METHOD,    // "rpc.method"
         call.method()
     ));
-    
+
     // gRPC特定
     span.set_attribute(KeyValue::new(
         "rpc.grpc.status_code",        // gRPC状态码
@@ -166,22 +198,22 @@ fn add_messaging_attributes(span: &mut Span, msg: &Message) {
         semconv::trace::MESSAGING_SYSTEM,     // "messaging.system"
         "kafka"
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::MESSAGING_DESTINATION,  // "messaging.destination"
         msg.topic()
     ));
-    
+
     span.set_attribute(KeyValue::new(
         semconv::trace::MESSAGING_OPERATION,   // "messaging.operation"
         "publish"  // 或 "receive", "process"
     ));
-    
+
     span.set_attribute(KeyValue::new(
         "messaging.message_id",               // 消息ID
         msg.id()
     ));
-    
+
     span.set_attribute(KeyValue::new(
         "messaging.kafka.partition",          // Kafka特定
         msg.partition()
@@ -198,13 +230,13 @@ fn add_messaging_attributes(span: &mut Span, msg: &Message) {
 )]
 async fn handle_http_request(req: Request) -> Result<Response> {
     let span = Span::current();
-    
+
     // 处理请求
     let response = process_request(&req).await?;
-    
+
     // 记录响应状态
     span.record("http.status_code", response.status().as_u16());
-    
+
     Ok(response)
 }
 
@@ -223,8 +255,8 @@ async fn handle_http_request(req: Request) -> Result<Response> {
    - 自动生成有意义的图表
 
 示例查询：
-SELECT * FROM spans 
-WHERE "http.method" = 'POST' 
+SELECT * FROM spans
+WHERE "http.method" = 'POST'
   AND "http.status_code" >= 500
   AND "db.system" = 'postgresql'
 */
@@ -241,7 +273,8 @@ WHERE "http.method" = 'POST'
 **形式化定义**: Resource R = {(key, value)} where key ∈ StandardAttributes
 
 **常用属性**:
-```
+
+```text
 service.name         - 服务名称 (必需)
 service.version      - 服务版本
 service.namespace    - 命名空间
@@ -295,7 +328,7 @@ pub fn create_resource() -> Resource {
     Resource::new(vec![
         // 服务信息 (必需)
         KeyValue::new(
-            semconv::resource::SERVICE_NAME,  
+            semconv::resource::SERVICE_NAME,
             "otlp-receiver"
         ),
         KeyValue::new(
@@ -306,13 +339,13 @@ pub fn create_resource() -> Resource {
             semconv::resource::SERVICE_NAMESPACE,
             "production"
         ),
-        
+
         // 部署信息
         KeyValue::new(
             semconv::resource::DEPLOYMENT_ENVIRONMENT,
             std::env::var("ENVIRONMENT").unwrap_or_else(|_| "dev".to_string())
         ),
-        
+
         // 主机信息
         KeyValue::new(
             semconv::resource::HOST_NAME,
@@ -325,7 +358,7 @@ pub fn create_resource() -> Resource {
             semconv::resource::HOST_ARCH,
             std::env::consts::ARCH
         ),
-        
+
         // 容器信息（如果在容器中）
         KeyValue::new(
             semconv::resource::CONTAINER_NAME,
@@ -335,7 +368,7 @@ pub fn create_resource() -> Resource {
             semconv::resource::CONTAINER_ID,
             read_container_id().unwrap_or_default()
         ),
-        
+
         // Kubernetes信息（如果在K8s中）
         KeyValue::new(
             semconv::resource::K8S_POD_NAME,
@@ -355,35 +388,35 @@ pub fn create_resource() -> Resource {
 // 2. 自动检测Resource
 pub fn create_resource_with_detection() -> Resource {
     let mut resource = Resource::default();
-    
+
     // 检测服务信息
     resource = resource.merge(&Resource::new(vec![
         KeyValue::new(semconv::resource::SERVICE_NAME, detect_service_name()),
         KeyValue::new(semconv::resource::SERVICE_VERSION, detect_version()),
     ]));
-    
+
     // 检测主机信息
     if let Some(host_resource) = detect_host() {
         resource = resource.merge(&host_resource);
     }
-    
+
     // 检测容器信息
     if let Some(container_resource) = detect_container() {
         resource = resource.merge(&container_resource);
     }
-    
+
     // 检测K8s信息
     if let Some(k8s_resource) = detect_kubernetes() {
         resource = resource.merge(&k8s_resource);
     }
-    
+
     resource
 }
 
 // 3. Resource查询示例
 /*
 查询某个服务的所有traces：
-SELECT * FROM traces 
+SELECT * FROM traces
 WHERE resource["service.name"] = 'otlp-receiver'
 
 查询生产环境的错误：
@@ -392,7 +425,7 @@ WHERE resource["deployment.environment"] = 'production'
   AND status = 'ERROR'
 
 按Pod聚合：
-SELECT resource["k8s.pod.name"], COUNT(*) 
+SELECT resource["k8s.pod.name"], COUNT(*)
 FROM traces
 GROUP BY resource["k8s.pod.name"]
 
@@ -416,7 +449,8 @@ WHERE resource["service.name"] = 'otlp-receiver'
 **形式化定义**: Span Lifecycle = (Create, Start, AddAttributes, AddEvents, End)
 
 **状态流转**:
-```
+
+```text
 创建 → 启动 → 活动中 → 结束
            ↓
     添加属性/事件
@@ -460,7 +494,7 @@ use opentelemetry::trace::{Span, Tracer, TracerProvider, Status};
 // 1. 完整的Span生命周期
 async fn process_order(order_id: i64) -> Result<()> {
     let tracer = global::tracer("order-service");
-    
+
     // 创建Span
     let mut span = tracer
         .span_builder("process_order")
@@ -469,24 +503,24 @@ async fn process_order(order_id: i64) -> Result<()> {
             KeyValue::new("order.id", order_id),
         ])
         .start(&tracer);  // 启动（记录开始时间）
-    
+
     // 添加属性
     span.set_attribute(KeyValue::new("order.priority", "high"));
-    
+
     // 记录事件
     span.add_event("validation_started", vec![]);
-    
+
     // 业务逻辑
     validate_order(order_id).await?;
-    
+
     span.add_event("validation_completed", vec![
         KeyValue::new("validation.result", "success"),
     ]);
-    
+
     // 处理订单
     span.add_event("processing_started", vec![]);
     let result = execute_order(order_id).await;
-    
+
     // 根据结果设置状态
     match result {
         Ok(_) => {
@@ -503,7 +537,7 @@ async fn process_order(order_id: i64) -> Result<()> {
             ]);
         }
     }
-    
+
     // Span自动在drop时结束
     result
 }
@@ -519,13 +553,13 @@ use tracing::{instrument, info, error};
 )]
 async fn process_order_simple(order_id: i64) -> Result<()> {
     let span = Span::current();
-    
+
     info!("Validation started");
     validate_order(order_id).await?;
-    
+
     info!("Processing started");
     let result = execute_order(order_id).await?;
-    
+
     span.record("order.status", "completed");
     Ok(result)
 }
@@ -572,7 +606,8 @@ process_order (100ms)
 **形式化定义**: Metric Name = instrument_type.unit.description
 
 **命名规则**:
-```
+
+```text
 <what>.<unit>
 
 示例:
@@ -620,13 +655,13 @@ use opentelemetry::metrics::{Counter, Histogram, Meter};
 pub struct HttpMetrics {
     // 请求计数
     requests_total: Counter<u64>,
-    
+
     // 请求持续时间
     request_duration: Histogram<f64>,
-    
+
     // 请求大小
     request_size: Histogram<u64>,
-    
+
     // 响应大小
     response_size: Histogram<u64>,
 }
@@ -640,21 +675,21 @@ impl HttpMetrics {
                 .with_description("Total HTTP requests")
                 .with_unit("1")
                 .init(),
-            
+
             // 标准命名: http.server.duration
             request_duration: meter
                 .f64_histogram("http.server.duration")
                 .with_description("HTTP request duration")
                 .with_unit("ms")
                 .init(),
-            
+
             // 标准命名: http.server.request.size
             request_size: meter
                 .u64_histogram("http.server.request.size")
                 .with_description("HTTP request body size")
                 .with_unit("bytes")
                 .init(),
-            
+
             // 标准命名: http.server.response.size
             response_size: meter
                 .u64_histogram("http.server.response.size")
@@ -663,7 +698,7 @@ impl HttpMetrics {
                 .init(),
         }
     }
-    
+
     pub fn record_request(
         &self,
         method: &str,
@@ -678,7 +713,7 @@ impl HttpMetrics {
             KeyValue::new("http.route", route.to_string()),
             KeyValue::new("http.status_code", status),
         ];
-        
+
         self.requests_total.add(1, labels);
         self.request_duration.record(duration.as_millis() as f64, labels);
         self.request_size.record(request_size, labels);
@@ -690,10 +725,10 @@ impl HttpMetrics {
 pub struct DatabaseMetrics {
     // db.client.connections.usage
     connections_usage: Histogram<u64>,
-    
+
     // db.client.operation.duration
     operation_duration: Histogram<f64>,
-    
+
     // db.client.operations
     operations_total: Counter<u64>,
 }
@@ -702,10 +737,10 @@ pub struct DatabaseMetrics {
 pub struct SystemMetrics {
     // system.cpu.utilization
     cpu_utilization: Histogram<f64>,
-    
+
     // system.memory.usage
     memory_usage: Histogram<u64>,
-    
+
     // system.network.io
     network_io: Counter<u64>,
 }
@@ -740,8 +775,8 @@ avg(system_cpu_utilization) by (host_name)
 
 ---
 
-**版本**: 2.0  
-**创建日期**: 2025-10-28  
+**版本**: 2.0
+**创建日期**: 2025-10-28
 **最后更新**: 2025-10-28
 **维护团队**: OTLP_rust参考团队
 
