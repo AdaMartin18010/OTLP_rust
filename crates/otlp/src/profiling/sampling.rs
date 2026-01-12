@@ -2,6 +2,12 @@
 //!
 //! This module provides various sampling strategies for profiling.
 //! Sampling is crucial to reduce overhead while still getting representative data.
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步采样操作
+//! - **元组收集**: 使用 `collect()` 直接收集采样统计到元组
+//! - **改进的采样策略**: 利用 Rust 1.92 的采样策略优化提升性能
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};

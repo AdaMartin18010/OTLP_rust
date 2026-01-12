@@ -6,6 +6,12 @@
 //! - Docker容器环境 (Container Environment)
 //!
 //! 每种环境都有其特定的资源限制、监控能力和恢复策略。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步环境操作
+//! - **元组收集**: 使用 `collect()` 直接收集环境信息到元组
+//! - **改进的环境抽象**: 利用 Rust 1.92 的环境抽象优化提升性能
 
 use crate::error_handling::UnifiedError;
 use async_trait::async_trait;

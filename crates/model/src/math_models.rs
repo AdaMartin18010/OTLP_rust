@@ -6,7 +6,7 @@
 use std::f64;
 use serde::{Deserialize, Serialize};
 
-// Rust 1.90 特性：使用常量泛型推断和生命周期改进
+// Rust 1.92 特性：使用常量泛型推断和生命周期改进
 /// 数学配置 - 使用常量泛型参数
 #[derive(Debug, Clone)]
 pub struct MathConfig<const N_DIMENSIONS: usize> {
@@ -597,10 +597,10 @@ mod tests {
 }
 
 // ============================================================================
-// 高级数学模型 - 利用 Rust 1.90 特性
+// 高级数学模型 - 利用 Rust 1.92 特性
 // ============================================================================
 
-/// 高维概率分布 - 使用 Rust 1.90 的常量泛型推断
+/// 高维概率分布 - 使用 Rust 1.92 的常量泛型推断
 #[derive(Debug, Clone)]
 pub struct MultivariateNormalDistribution<const N_DIMS: usize> {
     /// 均值向量
@@ -655,7 +655,7 @@ impl<const N_DIMS: usize> MultivariateNormalDistribution<N_DIMS> {
     }
 }
 
-/// 贝叶斯推理器 - 使用 Rust 1.90 的生命周期改进
+/// 贝叶斯推理器 - 使用 Rust 1.92 的生命周期改进
 #[derive(Debug, Clone)]
 pub struct BayesianInference<const N_PARAMS: usize> {
     /// 先验分布参数
@@ -702,7 +702,7 @@ impl<const N_PARAMS: usize> BayesianInference<N_PARAMS> {
     }
 }
 
-/// 马尔可夫链蒙特卡洛 (MCMC) - 使用 Rust 1.90 的常量泛型推断
+/// 马尔可夫链蒙特卡洛 (MCMC) - 使用 Rust 1.92 的常量泛型推断
 #[derive(Debug, Clone)]
 pub struct MCMCSampler<const N_PARAMS: usize> {
     /// 当前状态
@@ -803,7 +803,7 @@ impl<const N_PARAMS: usize> MCMCSampler<N_PARAMS> {
     }
 }
 
-/// 时间序列分析器 - 使用 Rust 1.90 的生命周期改进
+/// 时间序列分析器 - 使用 Rust 1.92 的生命周期改进
 #[derive(Debug, Clone)]
 pub struct TimeSeriesAnalyzer {
     /// 时间序列数据
@@ -899,7 +899,7 @@ impl TimeSeriesAnalyzer {
     }
 }
 
-/// 高级统计指标 - 使用 Rust 1.90 的改进序列化
+/// 高级统计指标 - 使用 Rust 1.92 的改进序列化
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdvancedStatistics {
     /// 偏度

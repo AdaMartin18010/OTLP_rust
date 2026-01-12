@@ -1,6 +1,12 @@
 //! # 依赖检测器（Dependency Detector）
 //!
 //! 自动检测和分析服务间依赖关系。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步依赖检测操作
+//! - **元组收集**: 使用 `collect()` 直接收集依赖关系到元组
+//! - **改进的依赖检测**: 利用 Rust 1.92 的依赖检测优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

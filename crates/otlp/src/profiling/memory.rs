@@ -2,6 +2,12 @@
 //!
 //! This module provides memory profiling capabilities.
 //! It tracks heap allocations and memory usage patterns.
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步内存分析操作
+//! - **元组收集**: 使用 `collect()` 直接收集内存样本到元组
+//! - **改进的内存分析**: 利用 Rust 1.92 的内存分析优化提升性能
 
 use super::pprof::{PprofBuilder, StackFrame, StackTraceCollector};
 use super::types::{PprofProfile, ProfileType};

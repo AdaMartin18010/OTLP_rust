@@ -23,7 +23,7 @@ use crate::error::{
     Result,
 };
 use crate::resilience::ResilienceManager;
-use crate::rust_1_90_optimizations::AsyncBatchProcessor; // 使用 Rust 1.92 特性
+use crate::rust_1_92_optimizations::AsyncBatchProcessor; // 使用 Rust 1.92 特性
 use crate::utils::{
     PerformanceUtils,
     //BatchUtils,

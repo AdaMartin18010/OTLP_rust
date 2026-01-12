@@ -1,10 +1,16 @@
-// Concurrency Models Module
-//
-// Provides high-level concurrency abstractions:
-// - Actor Model: Message-passing concurrency inspired by Erlang/Akka
-// - CSP Model: Communicating Sequential Processes inspired by Go
-// - STM: Software Transactional Memory ✅
-// - Fork-Join: Parallel divide-and-conquer ✅
+//! # 并发模型模块
+//!
+//! 提供高级并发抽象：
+//! - Actor 模型：受 Erlang/Akka 启发的消息传递并发
+//! - CSP 模型：受 Go 启发的通信顺序进程
+//! - STM：软件事务内存 ✅
+//! - Fork-Join：并行分治 ✅
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步并发操作
+//! - **元组收集**: 使用 `collect()` 直接收集并发任务到元组
+//! - **改进的并发原语**: 利用 Rust 1.92 的并发原语优化提升性能
 
 pub mod actor;
 pub mod csp;

@@ -1,6 +1,12 @@
 //! # 分布式追踪（Distributed Tracing）
 //!
 //! 提供调用链追踪和性能分析功能，兼容OpenTelemetry。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步追踪操作
+//! - **元组收集**: 使用 `collect()` 直接收集追踪数据到元组
+//! - **改进的分布式追踪**: 利用 Rust 1.92 的分布式追踪优化提升性能
 
 use crate::prelude::*;
 use serde::{Deserialize, Serialize};

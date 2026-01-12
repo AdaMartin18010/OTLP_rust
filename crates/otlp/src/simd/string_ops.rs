@@ -1,6 +1,12 @@
-//! SIMD-Optimized String Operations
+//! # SIMD-Optimized String Operations
 //!
 //! Provides vectorized string comparison and matching operations.
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化 SIMD 字符串操作缓冲区大小
+//! - **改进的 SIMD 支持**: 利用 Rust 1.92 的 SIMD 特性提升性能
+//! - **元组收集**: 使用 `collect()` 直接收集字符串操作结果到元组
 
 use super::CpuFeatures;
 

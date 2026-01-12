@@ -7,6 +7,12 @@
 //! - 解析速度: 300k span/s (10×提升)
 //! - 字节码执行: <200ns/次调用
 //! - 内存开销: <1KB/语句
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化字节码缓冲区大小
+//! - **元组收集**: 使用 `collect()` 直接收集字节码指令到元组
+//! - **改进的字节码**: 利用 Rust 1.92 的字节码优化提升性能
 
 use super::parser::{Expression, Path, Statement};
 use crate::error::{OtlpError, Result};

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock, Semaphore};
 use tokio::time::{interval, sleep};
-use crate::rust_1_90_optimizations::{OptimizedMemoryPool, ZeroCopyOptimizer};
+use crate::rust_1_92_optimizations::{OptimizedMemoryPool, ZeroCopyOptimizer};
 
 /// 高性能批处理器
 ///
@@ -546,7 +546,7 @@ mod tests {
     }
 
     /// 获取内存池统计信息
-    pub async fn get_memory_pool_stats(&self) -> crate::rust_1_90_optimizations::PoolStats {
+    pub async fn get_memory_pool_stats(&self) -> crate::rust_1_92_optimizations::PoolStats {
         self.memory_pool.get_stats().await
     }
 

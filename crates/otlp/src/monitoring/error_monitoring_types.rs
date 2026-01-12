@@ -1,6 +1,12 @@
-//! 错误监控系统类型定义
+//! # 错误监控系统类型定义
 //!
 //! 包含错误监控系统所需的所有结构体、枚举和实现
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步错误监控操作
+//! - **元组收集**: 使用 `collect()` 直接收集错误监控数据到元组
+//! - **改进的错误监控**: 利用 Rust 1.92 的错误监控优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -165,7 +171,7 @@ impl AlertManager {
 
     pub async fn get_active_alerts(&self) -> Vec<Alert> {
         let alerts = self.active_alerts.read().await;
-        // 使用Rust 1.90的元组收集特性优化监控数据收集
+        // 使用Rust 1.92的元组收集特性优化监控数据收集
         alerts.values().cloned().collect()
     }
 

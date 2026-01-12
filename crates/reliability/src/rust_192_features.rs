@@ -210,12 +210,12 @@ pub struct OperationMetadata {
 }
 
 /// Rust 1.92 新特性演示器
-pub struct Rust190FeatureDemo {
+pub struct Rust192FeatureDemo {
     async_closure_example: AsyncClosureExample,
     reliability_service: ReliabilityService,
 }
 
-impl Rust190FeatureDemo {
+impl Rust192FeatureDemo {
     /// 创建新的演示器
     pub fn new() -> Self {
         let config = serde_json::json!({
@@ -285,7 +285,7 @@ impl Rust190FeatureDemo {
     }
 }
 
-impl Default for Rust190FeatureDemo {
+impl Default for Rust192FeatureDemo {
     fn default() -> Self {
         Self::new()
     }
@@ -391,14 +391,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_rust_190_feature_demo_creation() {
-        let demo = Rust190FeatureDemo::new();
+    fn test_rust_192_feature_demo_creation() {
+        let demo = Rust192FeatureDemo::new();
         assert_eq!(demo.reliability_service.name, "demo_service");
     }
 
     #[test]
     fn test_generic_associated_type_demonstration() {
-        let demo = Rust190FeatureDemo::new();
+        let demo = Rust192FeatureDemo::new();
         let result = demo.demonstrate_generic_associated_types();
 
         assert_eq!(result.value, "测试数据");
@@ -409,7 +409,7 @@ mod tests {
 
     #[test]
     fn test_config_access() {
-        let demo = Rust190FeatureDemo::new();
+        let demo = Rust192FeatureDemo::new();
         let config = demo.demonstrate_config_access();
 
         assert!(config.is_object());
@@ -420,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_error_handling() {
-        let demo = Rust190FeatureDemo::new();
+        let demo = Rust192FeatureDemo::new();
         let error = demo.demonstrate_error_handling();
 
         assert!(error.message().contains("服务"));
@@ -431,7 +431,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_async_closure_demonstration() {
-        let demo = Rust190FeatureDemo::new();
+        let demo = Rust192FeatureDemo::new();
         let results = demo.demonstrate_async_closures().await;
 
         assert!(results.is_ok());

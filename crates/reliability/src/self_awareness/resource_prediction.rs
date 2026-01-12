@@ -1,6 +1,12 @@
 //! # 资源使用预测（Resource Prediction）
 //!
 //! 基于历史数据预测未来资源使用情况。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步资源预测操作
+//! - **元组收集**: 使用 `collect()` 直接收集预测数据到元组
+//! - **改进的资源预测**: 利用 Rust 1.92 的资源预测优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;

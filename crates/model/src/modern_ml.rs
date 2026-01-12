@@ -1,7 +1,14 @@
-//! 现代机器学习模块
+//! # 现代机器学习模块
 //!
 //! 本模块集成了最新的Rust机器学习库，包括Candle、ndarray等，
 //! 提供高性能的深度学习、计算机视觉和自然语言处理功能。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化模型配置和参数大小
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步训练操作
+//! - **元组收集**: 使用 `collect()` 直接收集训练结果到元组
+//! - **改进的数值计算**: 利用 Rust 1.92 的数值计算优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -895,4 +902,3 @@ mod tests {
         assert!(prediction_value[0] >= 0.0 && prediction_value[0] <= 1.0);
     }
 }
-

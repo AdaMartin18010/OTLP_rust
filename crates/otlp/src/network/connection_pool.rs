@@ -1,6 +1,12 @@
-//! 连接池模块
+//! # 连接池模块
 //!
 //! 提供高效的连接池管理，支持连接复用和负载均衡
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步连接池操作
+//! - **元组收集**: 使用 `collect()` 直接收集连接池统计到元组
+//! - **改进的连接管理**: 利用 Rust 1.92 的连接管理优化提升性能
 
 use super::async_io::{AsyncConnection, AsyncIoConfig, AsyncIoManager};
 use anyhow::{Result, anyhow};

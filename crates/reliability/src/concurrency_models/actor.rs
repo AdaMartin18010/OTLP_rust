@@ -1,13 +1,20 @@
-// Actor Model Implementation
-//
-// Provides a lightweight actor system for concurrent computation based on
-// message passing. Inspired by Erlang/Akka actor systems.
-//
-// Key features:
-// - Isolated state (no shared memory)
-// - Asynchronous message passing
-// - Supervision and fault tolerance
-// - Location transparency
+//! # Actor 模型实现
+//!
+//! 提供基于消息传递的轻量级 Actor 系统，用于并发计算。
+//! 灵感来自 Erlang/Akka Actor 系统。
+//!
+//! ## 核心特性
+//!
+//! - **隔离状态**：无共享内存
+//! - **异步消息传递**：基于异步消息的通信
+//! - **监督和容错**：自动故障恢复
+//! - **位置透明**：Actor 位置对用户透明
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步Actor操作
+//! - **元组收集**: 使用 `collect()` 直接收集Actor消息到元组
+//! - **改进的Actor系统**: 利用 Rust 1.92 的Actor系统优化提升性能
 
 use crate::error_handling::prelude::*;
 use async_trait::async_trait;

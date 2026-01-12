@@ -1,7 +1,13 @@
-// CSP (Communicating Sequential Processes) Model
-//
-// Implements Go-style channels and select for concurrent communication.
-// Based on Tony Hoare's CSP and Go's channel implementation.
+//! # CSP (通信顺序进程) 模型
+//!
+//! 实现 Go 风格的 channel 和 select，用于并发通信。
+//! 基于 Tony Hoare 的 CSP 和 Go 的 channel 实现。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步CSP操作
+//! - **元组收集**: 使用 `collect()` 直接收集CSP消息到元组
+//! - **改进的CSP模型**: 利用 Rust 1.92 的CSP模型优化提升性能
 
 use crate::error_handling::prelude::*;
 use std::fmt;

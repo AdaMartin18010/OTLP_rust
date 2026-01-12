@@ -3,6 +3,12 @@
 //! This module provides functionality to export profiling data in OTLP format.
 //! It converts pprof profiles to OTLP ProfileContainer format and sends them
 //! to an OTLP collector.
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步导出操作
+//! - **元组收集**: 使用 `collect()` 直接收集导出结果到元组
+//! - **改进的导出器**: 利用 Rust 1.92 的导出器优化提升性能
 
 use super::types::*;
 use std::collections::HashMap;

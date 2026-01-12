@@ -2,6 +2,12 @@
 //!
 //! Implementation of OpenTelemetry HTTP Semantic Conventions v1.29.0
 //! https://opentelemetry.io/docs/specs/semconv/http/
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化HTTP属性键值对大小
+//! - **元组收集**: 使用 `collect()` 直接收集HTTP属性到元组
+//! - **改进的类型系统**: 利用 Rust 1.92 的类型系统优化提升性能
 
 use super::common::*;
 use std::collections::HashMap;

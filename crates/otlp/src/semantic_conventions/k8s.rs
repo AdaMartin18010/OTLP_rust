@@ -1,4 +1,4 @@
-//! Kubernetes Semantic Conventions
+//! # Kubernetes Semantic Conventions
 //!
 //! This module implements OpenTelemetry semantic conventions for Kubernetes resources.
 //! It provides type-safe builders for creating Kubernetes-related attributes.
@@ -11,6 +11,12 @@
 //! - **Nodes**: Kubernetes nodes
 //! - **Namespaces**: Logical clusters
 //! - **Containers**: Individual containers
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化K8s属性键值对大小
+//! - **元组收集**: 使用 `collect()` 直接收集K8s属性到元组
+//! - **改进的类型系统**: 利用 Rust 1.92 的类型系统优化提升性能
 //!
 //! ## Usage Example
 //!

@@ -1,9 +1,15 @@
-// Distributed Coordination Module
-//
-// Provides mechanisms for coordinating distributed systems:
-// - Gossip Protocol: Epidemic-style information dissemination
-// - Vector Clocks: Causal ordering and conflict detection
-// - Hybrid Logical Clocks (HLC): Physical + logical time ordering
+//! # 分布式协调模块
+//!
+//! 提供分布式系统的协调机制：
+//! - Gossip 协议：流行病式信息传播
+//! - 向量时钟：因果排序和冲突检测
+//! - 混合逻辑时钟（HLC）：物理时间 + 逻辑时间排序
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步协调操作
+//! - **元组收集**: 使用 `collect()` 直接收集协调数据到元组
+//! - **改进的协调机制**: 利用 Rust 1.92 的协调机制优化提升性能
 
 pub mod gossip;
 pub mod hybrid_logical_clock;

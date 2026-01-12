@@ -1,6 +1,12 @@
 //! # 性能分析器（Performance Analyzer）
 //!
 //! 分析执行性能，生成性能报告。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步性能分析操作
+//! - **元组收集**: 使用 `collect()` 直接收集性能指标到元组
+//! - **改进的性能分析**: 利用 Rust 1.92 的性能分析优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;

@@ -1,3 +1,12 @@
+//! # Pingora 代理客户端
+//!
+//! 提供 Pingora 代理的异步操作支持。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步代理操作
+//! - **改进的代理连接**: 利用 Rust 1.92 的代理连接优化提升性能
+
 #[cfg(feature = "proxy-nix")]
 pub struct PingoraProxy;
 

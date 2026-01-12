@@ -1,4 +1,4 @@
-//! Compression Module
+//! # Compression Module
 //!
 //! This module provides trace data compression capabilities using Tracezip algorithm.
 //! The compression significantly reduces data transmission size while maintaining
@@ -11,6 +11,12 @@
 //! - **String Table**: Optimizes repeated strings
 //! - **Batch Compression**: Efficient batch processing
 //! - **Statistics**: Compression metrics and monitoring
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步压缩操作
+//! - **元组收集**: 使用 `collect()` 直接收集压缩数据到元组
+//! - **改进的压缩**: 利用 Rust 1.92 的压缩优化提升性能
 //!
 //! ## Usage Example
 //!

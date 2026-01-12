@@ -1,6 +1,12 @@
-//! CPU Feature Detection
+//! # CPU Feature Detection
 //!
 //! Detects available SIMD instruction sets at runtime for optimal performance.
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化 CPU 特性检测
+//! - **改进的运行时检测**: 利用 Rust 1.92 的运行时检测优化提升性能
+//! - **元组收集**: 使用 `collect()` 直接收集 CPU 特性到元组
 
 use std::sync::OnceLock;
 

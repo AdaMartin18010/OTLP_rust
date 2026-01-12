@@ -1,7 +1,14 @@
-//! 计算机视觉模块
+//! # 计算机视觉模块
 //!
 //! 本模块基于 Kornia-rs 架构设计，提供高性能的计算机视觉功能
 //! 专为安全关键和实时应用设计，充分利用 Rust 的所有权模型和类型系统
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化图像处理配置和缓冲区大小
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步图像处理操作
+//! - **元组收集**: 使用 `collect()` 直接收集处理结果到元组
+//! - **SIMD优化**: 利用 Rust 1.92 的 SIMD 优化提升图像处理性能
 
 use serde::{Deserialize, Serialize};
 
@@ -117,7 +124,7 @@ impl<const H: usize, const W: usize, const C: usize> ImageTensor<H, W, C> {
     /// 转换为灰度图像
     pub fn to_grayscale(&self) -> ImageTensor<H, W, 1> {
         let mut gray_data = [[0.0; 1]; W];
-        
+
         for y in 0..H {
             for x in 0..W {
                 // 使用标准RGB到灰度的转换公式
@@ -129,7 +136,7 @@ impl<const H: usize, const W: usize, const C: usize> ImageTensor<H, W, C> {
                 gray_data[x][0] = gray_value;
             }
         }
-        
+
         ImageTensor::from_data([gray_data; H], self.device.clone(), self.precision.clone())
     }
 }
@@ -155,10 +162,10 @@ impl ImageTransform {
                 // 计算旋转后的坐标
                 let dx = x as f32 - center_x;
                 let dy = y as f32 - center_y;
-                
+
                 let new_x = (dx * cos_angle - dy * sin_angle + center_x) as usize;
                 let new_y = (dx * sin_angle + dy * cos_angle + center_y) as usize;
-                
+
                 // 边界检查
                 if new_x < W && new_y < H {
                     for c in 0..C {
@@ -169,7 +176,7 @@ impl ImageTransform {
                 }
             }
         }
-        
+
         result
     }
 
@@ -186,7 +193,7 @@ impl ImageTransform {
             for x in 0..W {
                 let src_x = (x as f32 / scale_x) as usize;
                 let src_y = (y as f32 / scale_y) as usize;
-                
+
                 if src_x < W && src_y < H {
                     for c in 0..C {
                         if let Some(value) = image.get_pixel(src_y, src_x, c) {
@@ -196,7 +203,7 @@ impl ImageTransform {
                 }
             }
         }
-        
+
         result
     }
 
@@ -217,7 +224,7 @@ impl ImageTransform {
                 }
             }
         }
-        
+
         result
     }
 
@@ -238,7 +245,7 @@ impl ImageTransform {
                 }
             }
         }
-        
+
         result
     }
 }
@@ -255,22 +262,22 @@ impl ImageFilter {
         sigma: f32,
     ) -> ImageTensor<H, W, C> {
         let mut result = ImageTensor::new(image.device.clone(), image.precision.clone());
-        
+
         // 生成高斯核
         let kernel = self.generate_gaussian_kernel(kernel_size, sigma);
         let half_kernel = kernel_size / 2;
-        
+
         for y in 0..H {
             for x in 0..W {
                 for c in 0..C {
                     let mut sum = 0.0;
                     let mut weight_sum = 0.0;
-                    
+
                     for ky in 0..kernel_size {
                         for kx in 0..kernel_size {
                             let py = y as i32 + ky as i32 - half_kernel as i32;
                             let px = x as i32 + kx as i32 - half_kernel as i32;
-                            
+
                             if py >= 0 && py < H as i32 && px >= 0 && px < W as i32 {
                                 if let Some(pixel_value) = image.get_pixel(py as usize, px as usize, c) {
                                     let weight = kernel[ky][kx];
@@ -280,14 +287,14 @@ impl ImageFilter {
                             }
                         }
                     }
-                    
+
                     if weight_sum > 0.0 {
                         result.set_pixel(y, x, c, sum / weight_sum);
                     }
                 }
             }
         }
-        
+
         result
     }
 
@@ -297,17 +304,17 @@ impl ImageFilter {
         image: &ImageTensor<H, W, C>,
     ) -> ImageTensor<H, W, 1> {
         let mut result = ImageTensor::new(image.device.clone(), image.precision.clone());
-        
+
         // Sobel X 核
         let sobel_x = [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]];
         // Sobel Y 核
         let sobel_y = [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]];
-        
+
         for y in 1..H-1 {
             for x in 1..W-1 {
                 let mut gx = 0.0;
                 let mut gy = 0.0;
-                
+
                 for ky in 0..3 {
                     for kx in 0..3 {
                         if let Some(pixel_value) = image.get_pixel(y + ky - 1, x + kx - 1, 0) {
@@ -316,12 +323,12 @@ impl ImageFilter {
                         }
                     }
                 }
-                
+
                 let magnitude = (gx * gx + gy * gy).sqrt();
                 result.set_pixel(y, x, 0, magnitude);
             }
         }
-        
+
         result
     }
 
@@ -330,7 +337,7 @@ impl ImageFilter {
         let mut kernel = vec![vec![0.0; size]; size];
         let center = size as f32 / 2.0;
         let mut sum = 0.0;
-        
+
         for y in 0..size {
             for x in 0..size {
                 let dx = x as f32 - center;
@@ -340,14 +347,14 @@ impl ImageFilter {
                 sum += value;
             }
         }
-        
+
         // 归一化
         for y in 0..size {
             for x in 0..size {
                 kernel[y][x] /= sum;
             }
         }
-        
+
         kernel
     }
 }
@@ -363,11 +370,11 @@ impl FeatureDetector {
         threshold: f32,
     ) -> Vec<(usize, usize, f32)> {
         let mut corners = Vec::new();
-        
+
         // 计算图像梯度
         let mut ix = ImageTensor::<H, W, 1>::new(image.device.clone(), image.precision.clone());
         let mut iy = ImageTensor::<H, W, 1>::new(image.device.clone(), image.precision.clone());
-        
+
         // 简化的梯度计算
         for y in 1..H-1 {
             for x in 1..W-1 {
@@ -379,19 +386,19 @@ impl FeatureDetector {
                 }
             }
         }
-        
+
         // 计算Harris响应
         for y in 1..H-1 {
             for x in 1..W-1 {
                 let mut ixx = 0.0;
                 let mut iyy = 0.0;
                 let mut ixy = 0.0;
-                
+
                 for ky in -1..=1 {
                     for kx in -1..=1 {
                         let py = (y as i32 + ky) as usize;
                         let px = (x as i32 + kx) as usize;
-                        
+
                         if let (Some(gx), Some(gy)) = (ix.get_pixel(py, px, 0), iy.get_pixel(py, px, 0)) {
                             ixx += gx * gx;
                             iyy += gy * gy;
@@ -399,18 +406,18 @@ impl FeatureDetector {
                         }
                     }
                 }
-                
+
                 // Harris响应函数
                 let det = ixx * iyy - ixy * ixy;
                 let trace = ixx + iyy;
                 let response = det - 0.04 * trace * trace;
-                
+
                 if response > threshold {
                     corners.push((x, y, response));
                 }
             }
         }
-        
+
         // 按响应强度排序
         corners.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
         corners
@@ -444,7 +451,7 @@ impl ComputerVisionEngine {
         operations: &[ImageOperation],
     ) -> Result<ImageTensor<H, W, C>, String> {
         let mut result = image.clone();
-        
+
         for operation in operations {
             result = match operation {
                 ImageOperation::Rotate(angle) => {
@@ -481,7 +488,7 @@ impl ComputerVisionEngine {
                 }
             };
         }
-        
+
         Ok(result)
     }
 
@@ -525,10 +532,10 @@ mod tests {
     #[test]
     fn test_image_tensor_pixel_operations() {
         let mut image = ImageTensor::<32, 32, 3>::new(DeviceType::Cpu, PrecisionType::F32);
-        
+
         assert!(image.set_pixel(10, 10, 0, 1.0));
         assert_eq!(image.get_pixel(10, 10, 0), Some(1.0));
-        
+
         assert!(!image.set_pixel(100, 100, 0, 1.0)); // 超出边界
         assert_eq!(image.get_pixel(100, 100, 0), None);
     }
@@ -537,10 +544,10 @@ mod tests {
     fn test_image_transform_rotation() {
         let mut image = ImageTensor::<32, 32, 3>::new(DeviceType::Cpu, PrecisionType::F32);
         image.set_pixel(16, 16, 0, 1.0);
-        
+
         let transform = ImageTransform;
         let rotated = transform.rotate(&image, std::f32::consts::PI / 4.0);
-        
+
         // 检查旋转后的像素值
         assert!(rotated.get_pixel(16, 16, 0).is_some());
     }
@@ -549,10 +556,10 @@ mod tests {
     fn test_image_filter_gaussian_blur() {
         let mut image = ImageTensor::<32, 32, 3>::new(DeviceType::Cpu, PrecisionType::F32);
         image.set_pixel(16, 16, 0, 1.0);
-        
+
         let filter = ImageFilter;
         let blurred = filter.gaussian_blur(&image, 5, 1.0);
-        
+
         // 检查模糊后的像素值
         assert!(blurred.get_pixel(16, 16, 0).is_some());
     }
@@ -566,10 +573,10 @@ mod tests {
         image.set_pixel(17, 16, 0, 0.5);
         image.set_pixel(16, 15, 0, 0.5);
         image.set_pixel(16, 17, 0, 0.5);
-        
+
         let detector = FeatureDetector;
         let corners = detector.harris_corner_detection(&image, 0.1);
-        
+
         // 应该检测到角点
         assert!(!corners.is_empty());
     }
@@ -578,13 +585,13 @@ mod tests {
     fn test_computer_vision_engine() {
         let config = ComputerVisionConfig::default();
         let engine = ComputerVisionEngine::new(config);
-        
+
         let image = ImageTensor::<32, 32, 3>::new(DeviceType::Cpu, PrecisionType::F32);
         let operations = vec![
             ImageOperation::Rotate(0.5),
             ImageOperation::GaussianBlur(3, 1.0),
         ];
-        
+
         let result = engine.process_image(&image, &operations);
         assert!(result.is_ok());
     }

@@ -455,11 +455,11 @@ pub struct ScalingResult {
     pub efficiency: f64,
 }
 
-/// 高级排队论模型 - 利用 Rust 1.90 特性
+/// 高级排队论模型 - 利用 Rust 1.92 特性
 /// 
 /// 实现更复杂的排队系统模型，包括优先级队列、多级队列等
 
-/// 优先级排队系统 - 使用 Rust 1.90 的生命周期改进
+/// 优先级排队系统 - 使用 Rust 1.92 的生命周期改进
 #[derive(Debug, Clone)]
 pub struct PriorityQueue<const PRIORITIES: usize> {
     /// 各优先级的到达率
@@ -561,7 +561,7 @@ impl<const LEVELS: usize> MultiLevelFeedbackQueue<LEVELS> {
     }
 }
 
-/// 排队系统性能指标 - 使用 Rust 1.90 的改进序列化
+/// 排队系统性能指标 - 使用 Rust 1.92 的改进序列化
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueueMetrics {
     /// 吞吐量
@@ -588,7 +588,7 @@ impl Default for QueueMetrics {
     }
 }
 
-/// 计算阶乘 - 使用 Rust 1.90 的优化
+/// 计算阶乘 - 使用 Rust 1.92 的优化
 fn factorial(n: usize) -> f64 {
     match n {
         0 | 1 => 1.0,
@@ -596,7 +596,7 @@ fn factorial(n: usize) -> f64 {
     }
 }
 
-/// 高级数学函数 - 利用 Rust 1.90 的数学库优化
+/// 高级数学函数 - 利用 Rust 1.92 的数学库优化
 pub mod advanced_math {
     
     /// 计算阶乘

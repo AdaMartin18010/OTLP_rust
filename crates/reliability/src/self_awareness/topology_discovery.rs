@@ -1,6 +1,12 @@
 //! # 运行时拓扑发现（Topology Discovery）
 //!
 //! 自动发现和分析系统运行时拓扑结构。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步拓扑发现操作
+//! - **元组收集**: 使用 `collect()` 直接收集拓扑数据到元组
+//! - **改进的拓扑发现**: 利用 Rust 1.92 的拓扑发现优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

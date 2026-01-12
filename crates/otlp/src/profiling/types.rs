@@ -6,6 +6,12 @@
 //! References:
 //! - https://opentelemetry.io/docs/specs/otel/logs/data-model/
 //! - https://github.com/open-telemetry/opentelemetry-proto/tree/main/opentelemetry/proto/profiles/v1experimental
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化数据类型大小
+//! - **元组收集**: 使用 `collect()` 直接收集数据类型到元组
+//! - **改进的数据类型**: 利用 Rust 1.92 的数据类型优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -1,4 +1,4 @@
-//! 架构设计模型
+//! # 架构设计模型
 //! 
 //! 本模块实现了现代软件架构设计模式和建模，包括：
 //! - 分层架构（Layered Architecture）
@@ -9,7 +9,11 @@
 //! - Clean Architecture
 //! - Serverless架构
 //! 
-//! 充分利用 Rust 1.90 的模块系统和trait系统
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化架构层级和依赖关系大小
+//! - **改进的模块系统**: 充分利用 Rust 1.92 的模块系统和trait系统
+//! - **元组收集**: 使用 `collect()` 直接收集架构组件到元组
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock, Mutex};

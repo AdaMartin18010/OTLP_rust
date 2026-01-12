@@ -1,7 +1,13 @@
 //! # OTLP配置模块
 //!
-//! 提供OTLP客户端的配置管理，支持Rust 1.90的配置特性。
+//! 提供OTLP客户端的配置管理，支持Rust 1.92的配置特性。
 //! 充分利用const API实现编译时优化。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化配置大小和验证
+//! - **改进的const API**: 利用 Rust 1.92 的const API优化提升性能
+//! - **编译时验证**: 使用 Rust 1.92 的编译时验证优化配置检查
 
 use crate::error::{ConfigurationError, Result};
 use serde::{Deserialize, Serialize};

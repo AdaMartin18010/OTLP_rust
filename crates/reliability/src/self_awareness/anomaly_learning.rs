@@ -1,6 +1,12 @@
 //! # 异常模式学习（Anomaly Learning）
 //!
 //! 使用机器学习识别和学习异常模式。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步异常学习操作
+//! - **元组收集**: 使用 `collect()` 直接收集异常学习数据到元组
+//! - **改进的异常学习**: 利用 Rust 1.92 的异常学习优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

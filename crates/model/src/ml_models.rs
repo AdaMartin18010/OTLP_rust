@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::f64;
 use serde::{Deserialize, Serialize};
 
-// Rust 1.90 特性：使用常量泛型推断和生命周期改进
+// Rust 1.92 特性：使用常量泛型推断和生命周期改进
 /// 机器学习模型配置 - 使用常量泛型参数
 #[derive(Debug, Clone)]
 pub struct MLConfig<const N_FEATURES: usize> {
@@ -38,10 +38,10 @@ impl<const N_FEATURES: usize> MLConfig<N_FEATURES> {
     }
 }
 
-/// 线性回归模型 - 使用 Rust 1.90 增强特性
+/// 线性回归模型 - 使用 Rust 1.92 增强特性
 ///
 /// 实现最小二乘法线性回归，使用梯度下降算法进行训练。
-/// 利用 Rust 1.90 的新特性提供更好的类型安全和性能。
+/// 利用 Rust 1.92 的新特性提供更好的类型安全和性能。
 ///
 /// # 数学公式
 /// - 预测函数: ŷ = w₀ + w₁x₁ + w₂x₂ + ... + wₙxₙ
@@ -66,7 +66,7 @@ pub struct LinearRegression {
 }
 
 impl LinearRegression {
-    /// 创建新的线性回归模型 - 使用 Rust 1.90 特性
+    /// 创建新的线性回归模型 - 使用 Rust 1.92 特性
     pub fn new(learning_rate: f64, max_iterations: usize) -> Self {
         Self {
             weights: Vec::new(),
@@ -79,7 +79,7 @@ impl LinearRegression {
         }
     }
     
-    /// 使用配置创建模型 - 利用 Rust 1.90 的常量泛型推断
+    /// 使用配置创建模型 - 利用 Rust 1.92 的常量泛型推断
     pub fn from_config<const N: usize>(config: MLConfig<N>) -> Self {
         Self {
             weights: Vec::new(),
@@ -791,10 +791,10 @@ mod tests {
 }
 
 // ============================================================================
-// 高级机器学习模型 - 利用 Rust 1.90 特性
+// 高级机器学习模型 - 利用 Rust 1.92 特性
 // ============================================================================
 
-/// 支持向量机 (SVM) - 使用 Rust 1.90 的生命周期改进
+/// 支持向量机 (SVM) - 使用 Rust 1.92 的生命周期改进
 #[derive(Debug, Clone)]
 pub struct SupportVectorMachine<const N_FEATURES: usize> {
     /// 支持向量
@@ -895,7 +895,7 @@ impl<const N_FEATURES: usize> SupportVectorMachine<N_FEATURES> {
     }
 }
 
-/// 神经网络模型 - 使用 Rust 1.90 的常量泛型推断
+/// 神经网络模型 - 使用 Rust 1.92 的常量泛型推断
 #[derive(Debug, Clone)]
 pub struct NeuralNetwork<const INPUT_SIZE: usize, const HIDDEN_SIZE: usize, const OUTPUT_SIZE: usize> {
     /// 输入层到隐藏层权重
@@ -1008,7 +1008,7 @@ impl<const INPUT_SIZE: usize, const HIDDEN_SIZE: usize, const OUTPUT_SIZE: usize
     }
 }
 
-/// 机器学习性能指标 - 使用 Rust 1.90 的改进序列化
+/// 机器学习性能指标 - 使用 Rust 1.92 的改进序列化
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MLMetrics {
     /// 准确率

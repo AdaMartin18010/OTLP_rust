@@ -1,6 +1,12 @@
-//! 负载均衡模块
+//! # 负载均衡模块
 //!
 //! 提供多种负载均衡算法和健康检查机制
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步负载均衡操作
+//! - **元组收集**: 使用 `collect()` 直接收集负载均衡统计到元组
+//! - **改进的负载均衡**: 利用 Rust 1.92 的负载均衡优化提升性能
 
 use super::async_io::AsyncIoConfig;
 use super::connection_pool::{ConnectionPool, ConnectionPoolConfig, LoadBalancingStrategy};

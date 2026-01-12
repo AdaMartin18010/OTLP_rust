@@ -301,7 +301,7 @@ pub mod ottl;
 pub mod optimization;
 
 // Rust 1.92 特性优化
-pub mod rust_1_90_optimizations; // 注意: 文件名保持兼容，但使用 Rust 1.92 特性
+pub mod rust_1_92_optimizations; // Rust 1.92 特性优化实现
 
 // 客户端增强功能
 #[cfg(feature = "client-enhancements")]
@@ -402,7 +402,7 @@ pub use performance::{
 };
 pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};
-pub use rust_1_90_optimizations::{
+pub use rust_1_92_optimizations::{
     AsyncBatchProcessor, AsyncClosureOptimizer, TupleCollectionOptimizer, ZeroCopyOptimizer,
 };
 

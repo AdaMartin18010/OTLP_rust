@@ -1,3 +1,12 @@
+//! # SQLite 数据库客户端
+//!
+//! 提供 SQLite 数据库的异步操作支持。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步数据库操作
+//! - **改进的数据库连接**: 利用 Rust 1.92 的数据库连接优化提升性能
+
 #[cfg(feature = "sql-sqlite")]
 use crate::database::sql::{SqlDatabase, SqlRow};
 

@@ -35,7 +35,7 @@ pub mod program_design_models; // 程序设计模型 - 函数式、面向对象�
 pub mod architecture_design_models; // 架构设计模型 - 分层、六边形、事件驱动架构
 
 // Rust 1.92 新特性模块
-pub mod rust_190_features; // Rust 1.92 新特性实现
+pub mod rust_192_features; // Rust 1.92 新特性实现
 
 // 现代机器学习模块
 pub mod modern_ml; // 现代机器学习库集成
@@ -110,8 +110,8 @@ pub use error::{
 };
 
 // Rust 1.92 新特性重新导出
-pub use rust_190_features::{
-    ModelConfig as Rust190ModelConfig, ParameterStatistics, DataProcessor, ProcessingResult, OptimizationEngine,
+pub use rust_192_features::{
+    ModelConfig as Rust192ModelConfig, ParameterStatistics, DataProcessor, ProcessingResult, OptimizationEngine,
     AlgorithmType, OptimizationResult, OptimizedMatrix, ExternalModelChecker, ModelCheckResult,
     PropertyResult,
 };

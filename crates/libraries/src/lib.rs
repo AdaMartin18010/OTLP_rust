@@ -4,11 +4,11 @@ pub mod prelude {
         EnhancedRedisConfig, EnhancedPostgresConfig, EnhancedNatsConfig,
         ConfigFactory, ConfigComposer, ConfigValidator
     };
-    pub use crate::rust190_optimizations::{
+    pub use crate::rust192_optimizations::{
         OptimizedConnectionPool, OptimizedMiddleware, MiddlewareType, MiddlewareConfig,
         OptimizedErrorHandler, OptimizedBuffer, PerformanceMonitor
     };
-    // 注意: 模块名保持 rust190_optimizations 以保持兼容性，但实际使用 Rust 1.92 特性
+    // Rust 1.92 特性优化模块
     pub use crate::benchmarks::{
         BenchmarkResult, OptimizedBenchmarker, MemoryMonitor, MemoryStats,
         ConcurrencyBenchmarker, BenchmarkSuite
@@ -35,7 +35,7 @@ pub mod prelude {
 
 pub mod config;
 pub mod enhanced_config;
-pub mod rust190_optimizations;
+pub mod rust192_optimizations;
 pub mod benchmarks;
 pub mod advanced_benchmarks;
 pub mod glommio_runtime;

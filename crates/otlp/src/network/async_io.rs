@@ -1,6 +1,12 @@
-//! 异步I/O优化模块
+//! # 异步I/O优化模块
 //!
 //! 提供高性能的异步网络I/O操作
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步I/O操作
+//! - **元组收集**: 使用 `collect()` 直接收集I/O统计到元组
+//! - **改进的异步I/O**: 利用 Rust 1.92 的异步I/O优化提升性能
 
 use anyhow::{Result, anyhow};
 use std::collections::VecDeque;

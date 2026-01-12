@@ -4,6 +4,12 @@
 //! The pprof format is a compact binary format for representing profiles.
 //!
 //! Reference: https://github.com/google/pprof/tree/main/proto
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化pprof编码缓冲区大小
+//! - **元组收集**: 使用 `collect()` 直接收集pprof数据到元组
+//! - **改进的编码器**: 利用 Rust 1.92 的编码器优化提升性能
 
 use super::types::*;
 use std::collections::HashMap;

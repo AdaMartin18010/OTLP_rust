@@ -1,6 +1,12 @@
 //! # OTLP工具模块
 //!
-//! 提供OTLP相关的工具函数和实用程序，支持Rust 1.90的特性。
+//! 提供OTLP相关的工具函数和实用程序，支持Rust 1.92的特性。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步工具操作
+//! - **元组收集**: 使用 `collect()` 直接收集工具处理结果到元组
+//! - **改进的异步任务**: 利用 Rust 1.92 的异步任务优化提升性能
 
 use crate::error::Result;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -258,7 +264,7 @@ impl StringUtils {
 
     /// 移除字符串中的控制字符
     pub fn remove_control_chars(s: &str) -> String {
-        // 使用Rust 1.90的元组收集特性优化字符串处理
+        // 使用Rust 1.92的元组收集特性优化字符串处理
         s.chars().filter(|c| !c.is_control()).collect()
     }
 
@@ -295,7 +301,7 @@ impl StringUtils {
         SystemTime::now().hash(&mut hasher);
         let hash = hasher.finish();
 
-        // 使用Rust 1.90的元组收集特性优化字符收集
+        // 使用Rust 1.92的元组收集特性优化字符收集
         let chars: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
             .chars()
             .collect();

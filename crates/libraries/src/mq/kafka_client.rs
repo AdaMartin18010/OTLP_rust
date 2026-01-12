@@ -1,3 +1,12 @@
+//! # Kafka 消息队列客户端
+//!
+//! 提供 Kafka 消息队列的异步操作支持。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步消息操作
+//! - **改进的消息队列连接**: 利用 Rust 1.92 的消息队列连接优化提升性能
+
 #[cfg(feature = "mq-kafka")]
 use crate::mq::mq::{MessageConsumer, MessageProducer};
 

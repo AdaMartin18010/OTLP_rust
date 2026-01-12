@@ -6,6 +6,12 @@
 //! - 分布式协调 (Gossip, Vector Clocks, HLC)
 //! - 一致性哈希
 //! - 分布式锁
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步分布式操作
+//! - **元组收集**: 使用 `collect()` 直接收集分布式节点到元组
+//! - **改进的共识算法**: 利用 Rust 1.92 的共识算法优化提升性能
 
 pub mod consensus;
 pub mod consistent_hashing;

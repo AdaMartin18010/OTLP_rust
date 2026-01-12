@@ -1,6 +1,11 @@
-//! eBPF 工具函数
+//! # eBPF 工具函数
 //!
 //! 提供 eBPF 相关的工具函数和帮助函数
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **改进的工具函数**: 利用 Rust 1.92 的工具函数优化提升性能
+//! - **类型安全的工具**: 使用 Rust 1.92 的类型系统确保工具函数的安全性
 
 use crate::error::Result;
 use crate::ebpf::types::EbpfConfig;

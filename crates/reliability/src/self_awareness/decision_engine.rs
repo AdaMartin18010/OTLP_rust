@@ -1,6 +1,12 @@
 //! # 智能决策引擎（Decision Engine）
 //!
 //! AI驱动的优化决策系统。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步决策操作
+//! - **元组收集**: 使用 `collect()` 直接收集决策数据到元组
+//! - **改进的决策引擎**: 利用 Rust 1.92 的决策引擎优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

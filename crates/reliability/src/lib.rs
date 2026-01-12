@@ -16,6 +16,12 @@
 //! - **混沌工程**：故障注入、弹性测试、恢复验证
 //! - **Rust 1.92+ 特性**：支持异步闭包、泛型关联类型等最新语言特性
 //!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步可靠性操作
+//! - **元组收集**: 使用 `collect()` 直接收集可靠性指标到元组
+//! - **改进的并发**: 利用 Rust 1.92 的并发优化提升性能
+//!
 //! ## 快速开始
 //!
 //! ```rust
@@ -57,7 +63,7 @@
 //! #[tokio::main]
 //! async fn main() -> Result<(), UnifiedError> {
 //!     // 演示Rust 1.92新特性
-//!     let demo = Rust190FeatureDemo::new();
+//!     let demo = Rust192FeatureDemo::new();
 //!
 //!     // 异步闭包示例
 //!     let results = demo.demonstrate_async_closures().await?;
@@ -95,7 +101,7 @@ pub mod utils;
 pub mod runtime_environments;
 
 // Rust 1.92+ 新特性支持
-pub mod rust_190_features;
+pub mod rust_192_features;
 
 // 分布式系统模块
 pub mod distributed_systems;
@@ -145,9 +151,9 @@ pub mod prelude {
         AnomalyDetector, AutoRecovery, HealthChecker, MonitoringConfig, MonitoringDashboard,
         PerformanceMonitor, ResourceMonitor,
     };
-    pub use crate::rust_190_features::{
+    pub use crate::rust_192_features::{
         AdvancedAsyncCombinator, AsyncClosureExample, GenericAssociatedTypeExample,
-        OperationMetadata, OperationResult, ReliabilityService, Rust190FeatureDemo,
+        OperationMetadata, OperationResult, ReliabilityService, Rust192FeatureDemo,
     };
     pub use crate::utils::{DurationExt, ResultExt as UtilsResultExt};
 

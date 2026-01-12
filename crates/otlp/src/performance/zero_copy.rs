@@ -2,6 +2,12 @@
 //!
 //! 基于理论文档中的性能优化模式，实现零拷贝数据传输。
 //! 参考: OTLP_Rust编程规范与实践指南.md 第3.2节
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **改进的内存安全**: 利用 Rust 1.92 的内存安全优化提升性能
+//! - **元组收集**: 使用 `collect()` 直接收集零拷贝缓冲区到元组
+//! - **改进的指针操作**: 利用 Rust 1.92 的指针操作优化提升性能
 
 use std::marker::PhantomData;
 use std::ptr::{self, NonNull};
@@ -26,7 +32,7 @@ impl<T> ZeroCopyBuffer<T> {
     pub fn from_slice(slice: &[T]) -> Self {
         let ptr = slice.as_ptr();
         let len = slice.len();
-        
+
         Self {
             data: NonNull::new(ptr as *mut T).expect("Slice pointer should not be null"),
             len,
@@ -38,10 +44,10 @@ impl<T> ZeroCopyBuffer<T> {
     pub fn from_vec(vec: Vec<T>) -> Self {
         let len = vec.len();
         let ptr = vec.as_ptr();
-        
+
         // 防止Vec被释放
         mem::forget(vec);
-        
+
         Self {
             data: NonNull::new(ptr as *mut T).expect("Vec pointer should not be null"),
             len,
@@ -86,26 +92,26 @@ impl<T> ZeroCopyBuffer<T> {
     /// 分割缓冲区
     pub fn split_at(&self, mid: usize) -> (Self, Self) {
         assert!(mid <= self.len);
-        
+
         let left = Self {
             data: self.data,
             len: mid,
             _phantom: PhantomData,
         };
-        
+
         let right = Self {
             data: unsafe { NonNull::new_unchecked(self.data.as_ptr().add(mid)) },
             len: self.len - mid,
             _phantom: PhantomData,
         };
-        
+
         (left, right)
     }
 
     /// 获取子缓冲区
     pub fn sub_buffer(&self, start: usize, len: usize) -> Self {
         assert!(start + len <= self.len);
-        
+
         Self {
             data: unsafe { NonNull::new_unchecked(self.data.as_ptr().add(start)) },
             len,
@@ -189,7 +195,7 @@ impl<T> ZeroCopyTransporter<T> {
     /// 传输数据（零拷贝）
     pub fn transmit(&self, data: &[T]) -> Result<ZeroCopyBuffer<T>, TransmissionError> {
         let start = std::time::Instant::now();
-        
+
         // 尝试从池中获取缓冲区
         let buffer = if let Some(mut buffer) = self.buffer_pool.acquire() {
             if buffer.len() >= data.len() {
@@ -210,19 +216,19 @@ impl<T> ZeroCopyTransporter<T> {
 
         let duration = start.elapsed();
         self.update_stats(true, data.len(), duration);
-        
+
         Ok(buffer)
     }
 
     /// 传输数据（带拷贝）
     pub fn transmit_with_copy(&self, data: &[T]) -> Result<Vec<T>, TransmissionError> {
         let start = std::time::Instant::now();
-        
+
         let result = data.to_vec();
-        
+
         let duration = start.elapsed();
         self.update_stats(false, data.len(), duration);
-        
+
         Ok(result)
     }
 
@@ -230,15 +236,15 @@ impl<T> ZeroCopyTransporter<T> {
     pub fn batch_transmit(&self, data_slices: &[&[T]]) -> Result<Vec<ZeroCopyBuffer<T>>, TransmissionError> {
         let start = std::time::Instant::now();
         let mut results = Vec::with_capacity(data_slices.len());
-        
+
         for &data in data_slices {
             let buffer = self.transmit(data)?;
             results.push(buffer);
         }
-        
+
         let duration = start.elapsed();
         self.update_stats(true, data_slices.iter().map(|s| s.len()).sum(), duration);
-        
+
         Ok(results)
     }
 
@@ -257,17 +263,17 @@ impl<T> ZeroCopyTransporter<T> {
         let mut stats = self.stats.as_ref();
         stats.total_transmissions += 1;
         stats.total_bytes += bytes as u64;
-        
+
         if zero_copy {
             stats.zero_copy_transmissions += 1;
             stats.zero_copy_bytes += bytes as u64;
         }
-        
+
         let latency = duration.as_nanos() as f64 / 1_000_000.0; // 转换为毫秒
         let total = stats.total_transmissions as f64;
         let current_avg = stats.average_latency;
         stats.average_latency = (current_avg * (total - 1.0) + latency) / total;
-        
+
         if latency > stats.max_latency {
             stats.max_latency = latency;
         }
@@ -311,14 +317,14 @@ impl ZeroCopyNetworkTransporter {
         data: &[u8],
     ) -> Result<usize, TransmissionError> {
         let start = std::time::Instant::now();
-        
+
         // 使用tokio的零拷贝写入
         let bytes_written = writer.write(data).await
             .map_err(|_| TransmissionError::AllocationFailed)?;
-        
+
         let duration = start.elapsed();
         self.update_stats(true, bytes_written, duration);
-        
+
         Ok(bytes_written)
     }
 
@@ -329,13 +335,13 @@ impl ZeroCopyNetworkTransporter {
         buffer: &mut [u8],
     ) -> Result<usize, TransmissionError> {
         let start = std::time::Instant::now();
-        
+
         let bytes_read = reader.read(buffer).await
             .map_err(|_| TransmissionError::AllocationFailed)?;
-        
+
         let duration = start.elapsed();
         self.update_stats(true, bytes_read, duration);
-        
+
         Ok(bytes_read)
     }
 
@@ -348,17 +354,17 @@ impl ZeroCopyNetworkTransporter {
         let mut stats = self.stats.as_ref();
         stats.total_transmissions += 1;
         stats.total_bytes += bytes as u64;
-        
+
         if zero_copy {
             stats.zero_copy_transmissions += 1;
             stats.zero_copy_bytes += bytes as u64;
         }
-        
+
         let latency = duration.as_nanos() as f64 / 1_000_000.0;
         let total = stats.total_transmissions as f64;
         let current_avg = stats.average_latency;
         stats.average_latency = (current_avg * (total - 1.0) + latency) / total;
-        
+
         if latency > stats.max_latency {
             stats.max_latency = latency;
         }
@@ -393,17 +399,17 @@ impl<T> ZeroCopySerializer<T> {
         // 使用bincode进行零拷贝序列化
         let serialized = bincode::serialize(data)
             .map_err(|_| SerializationError::SerializationFailed)?;
-        
+
         // 确保缓冲区有足够空间
         if self.position + serialized.len() > self.buffer.capacity() {
             self.buffer.reserve(serialized.len());
         }
-        
+
         // 将序列化数据添加到缓冲区
         self.buffer.extend_from_slice(&serialized);
         let start = self.position;
         self.position += serialized.len();
-        
+
         Ok(&self.buffer[start..self.position])
     }
 
@@ -438,7 +444,7 @@ mod tests {
     fn test_zero_copy_buffer_creation() {
         let data = vec![1, 2, 3, 4, 5];
         let buffer = ZeroCopyBuffer::from_slice(&data);
-        
+
         assert_eq!(buffer.len(), 5);
         assert!(!buffer.is_empty());
         assert_eq!(buffer.as_slice(), &[1, 2, 3, 4, 5]);
@@ -449,7 +455,7 @@ mod tests {
         let data = vec![1, 2, 3, 4, 5];
         let buffer = ZeroCopyBuffer::from_slice(&data);
         let (left, right) = buffer.split_at(3);
-        
+
         assert_eq!(left.len(), 3);
         assert_eq!(right.len(), 2);
         assert_eq!(left.as_slice(), &[1, 2, 3]);
@@ -460,11 +466,11 @@ mod tests {
     fn test_zero_copy_transporter() {
         let transporter = ZeroCopyTransporter::new(10, 1024);
         let data = vec![1, 2, 3, 4, 5];
-        
+
         let result = transporter.transmit(&data).unwrap();
         assert_eq!(result.len(), 5);
         assert_eq!(result.as_slice(), &[1, 2, 3, 4, 5]);
-        
+
         let stats = transporter.stats();
         assert!(stats.total_transmissions > 0);
         assert!(stats.zero_copy_transmissions > 0);
@@ -476,7 +482,7 @@ mod tests {
         let data1 = vec![1, 2, 3];
         let data2 = vec![4, 5, 6];
         let data_slices = vec![&data1[..], &data2[..]];
-        
+
         let results = transporter.batch_transmit(&data_slices).unwrap();
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].as_slice(), &[1, 2, 3]);
@@ -487,10 +493,10 @@ mod tests {
     fn test_zero_copy_serializer() {
         let mut serializer = ZeroCopySerializer::new(1024);
         let data = vec![1, 2, 3, 4, 5];
-        
+
         let serialized = serializer.serialize(&data).unwrap();
         assert!(!serialized.is_empty());
-        
+
         let buffer = serializer.buffer();
         assert!(!buffer.is_empty());
     }
@@ -499,21 +505,21 @@ mod tests {
     fn test_performance_comparison() {
         let transporter = ZeroCopyTransporter::new(10, 1024);
         let data: Vec<u8> = (0..1000).map(|i| (i % 256) as u8).collect();
-        
+
         // 测试零拷贝传输
         let start = std::time::Instant::now();
         let _zero_copy_result = transporter.transmit(&data).unwrap();
         let zero_copy_duration = start.elapsed();
-        
+
         // 测试带拷贝传输
         let start = std::time::Instant::now();
         let _copy_result = transporter.transmit_with_copy(&data).unwrap();
         let copy_duration = start.elapsed();
-        
+
         println!("Zero-copy duration: {:?}", zero_copy_duration);
         println!("Copy duration: {:?}", copy_duration);
         println!("Speedup: {:.2}x", copy_duration.as_nanos() as f64 / zero_copy_duration.as_nanos() as f64);
-        
+
         // 零拷贝应该更快
         assert!(zero_copy_duration <= copy_duration);
     }

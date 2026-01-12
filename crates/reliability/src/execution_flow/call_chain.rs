@@ -1,6 +1,12 @@
 //! # 调用链追踪（Call Chain Tracing）
 //!
 //! 记录和分析方法调用链，支持同步和异步调用。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步调用链追踪操作
+//! - **元组收集**: 使用 `collect()` 直接收集调用链数据到元组
+//! - **改进的调用链追踪**: 利用 Rust 1.92 的调用链追踪优化提升性能
 
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};

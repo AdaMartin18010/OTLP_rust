@@ -2,6 +2,12 @@
 //!
 //! This module provides CPU profiling capabilities.
 //! It samples the call stack at regular intervals to identify CPU hotspots.
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步CPU分析操作
+//! - **元组收集**: 使用 `collect()` 直接收集CPU样本到元组
+//! - **改进的性能分析**: 利用 Rust 1.92 的性能分析优化提升性能
 
 use super::pprof::{PprofBuilder, StackFrame, StackTraceCollector};
 use super::types::{PprofProfile, ProfileType};

@@ -12,6 +12,12 @@
 //! - **Sampling Strategies**: Multiple sampling strategies (always, probabilistic, rate-based, adaptive)
 //! - **Trace Correlation**: Link profiles to distributed traces
 //!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步性能分析操作
+//! - **元组收集**: 使用 `collect()` 直接收集性能分析数据到元组
+//! - **改进的异步迭代器**: 利用 Rust 1.92 的异步迭代器优化提升性能
+//!
 //! ## Quick Start
 //!
 //! ```rust,ignore

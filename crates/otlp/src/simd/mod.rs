@@ -1,4 +1,4 @@
-//! SIMD Optimization Module
+//! # SIMD Optimization Module
 //!
 //! This module provides SIMD-optimized implementations for performance-critical
 //! operations in OpenTelemetry data processing.
@@ -10,6 +10,12 @@
 //! - **Aggregation**: SIMD-optimized metric aggregation
 //! - **String Operations**: Vectorized string comparisons and operations
 //! - **Graceful Degradation**: Automatic fallback to scalar operations
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化 SIMD 操作缓冲区大小
+//! - **改进的 SIMD 支持**: 利用 Rust 1.92 的 SIMD 特性提升性能
+//! - **元组收集**: 使用 `collect()` 直接收集 SIMD 结果到元组
 //!
 //! ## Performance Targets
 //!

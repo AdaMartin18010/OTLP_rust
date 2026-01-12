@@ -1,11 +1,17 @@
-// Rate Limiting Algorithms
-//
-// Implements various rate limiting algorithms for controlling request rates:
-// - Token Bucket: Allows bursts while maintaining average rate
-// - Leaky Bucket: Smooths out bursts with constant output rate
-// - Fixed Window: Simple time-window based limiting
-// - Sliding Window: More accurate than fixed window
-// - Sliding Window Log: Most accurate but more memory intensive
+//! # 限流算法实现
+//!
+//! 实现各种限流算法，用于控制请求速率：
+//! - Token Bucket: 允许突发流量，同时保持平均速率
+//! - Leaky Bucket: 平滑突发流量，恒定输出速率
+//! - Fixed Window: 基于时间窗口的简单限流
+//! - Sliding Window: 比固定窗口更准确
+//! - Sliding Window Log: 最准确但内存占用更多
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步限流操作
+//! - **元组收集**: 使用 `collect()` 直接收集限流统计到元组
+//! - **改进的限流算法**: 利用 Rust 1.92 的限流算法优化提升性能
 
 use crate::error_handling::prelude::*;
 use parking_lot::RwLock;

@@ -1,6 +1,12 @@
 //! # 执行图（Execution Graph）
 //!
 //! 构建和分析执行依赖图，识别执行路径和依赖关系。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步执行图操作
+//! - **元组收集**: 使用 `collect()` 直接收集执行节点到元组
+//! - **改进的执行图**: 利用 Rust 1.92 的执行图优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

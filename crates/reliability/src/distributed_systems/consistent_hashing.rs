@@ -1,16 +1,22 @@
-// Consistent Hashing Implementation
-//
-// Implements consistent hashing algorithms for distributed systems:
-// - Basic Consistent Hashing with virtual nodes
-// - Jump Consistent Hash
-// - Rendezvous (Highest Random Weight) Hashing
-// - Maglev Hashing
-//
-// Consistent hashing is used for:
-// - Load balancing
-// - Distributed caching
-// - Data partitioning/sharding
-// - Service discovery
+//! # 一致性哈希实现
+//!
+//! 实现分布式系统的一致性哈希算法：
+//! - 带虚拟节点的基本一致性哈希
+//! - Jump Consistent Hash
+//! - Rendezvous (Highest Random Weight) 哈希
+//! - Maglev 哈希
+//!
+//! 一致性哈希用于：
+//! - 负载均衡
+//! - 分布式缓存
+//! - 数据分区/分片
+//! - 服务发现
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化哈希环大小和虚拟节点数
+//! - **改进的哈希算法**: 利用 Rust 1.92 的哈希算法优化提升性能
+//! - **元组收集**: 使用 `collect()` 直接收集哈希节点到元组
 
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};

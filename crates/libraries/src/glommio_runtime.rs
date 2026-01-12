@@ -1,7 +1,13 @@
-//! Glommio 运行时抽象层
+//! # Glommio 运行时抽象层
 //! 
 //! 本模块提供了 Glommio 高性能异步运行时的抽象接口，
 //! 支持基于 io_uring 的高性能 I/O 操作。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步运行时操作
+//! - **元组收集**: 使用 `collect()` 直接收集运行时任务到元组
+//! - **改进的异步I/O**: 利用 Rust 1.92 的异步I/O优化提升性能
 
 #[cfg(all(feature = "glommio", target_os = "linux"))]
 use glommio::prelude::*;

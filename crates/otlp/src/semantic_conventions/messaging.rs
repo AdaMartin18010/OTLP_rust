@@ -1,4 +1,4 @@
-//! Messaging Semantic Conventions
+//! # Messaging Semantic Conventions
 //!
 //! This module implements OpenTelemetry semantic conventions for messaging systems.
 //! It provides type-safe builders for creating messaging-related attributes.
@@ -8,6 +8,12 @@
 //! - **Message Brokers**: Kafka, RabbitMQ, ActiveMQ, etc.
 //! - **Cloud Queues**: AWS SQS, Azure Service Bus, Google Pub/Sub
 //! - **Protocols**: MQTT, AMQP, STOMP
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化消息属性键值对大小
+//! - **元组收集**: 使用 `collect()` 直接收集消息属性到元组
+//! - **改进的类型系统**: 利用 Rust 1.92 的类型系统优化提升性能
 //!
 //! ## Usage Example
 //!
