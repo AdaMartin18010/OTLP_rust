@@ -1,6 +1,6 @@
 # 配置管理 - Rust 应用配置解决方案
 
-> **核心库**: config, figment, dotenvy, envy  
+> **核心库**: config, figment, dotenvy, envy
 > **适用场景**: 配置文件加载、环境变量管理、多环境配置、配置验证
 
 ---
@@ -187,7 +187,7 @@ fn main() -> Result<(), config::ConfigError> {
 
     let app_settings: Settings = settings.try_deserialize()?;
     println!("{:#?}", app_settings);
-    
+
     Ok(())
 }
 ```
@@ -227,10 +227,10 @@ use validator::Validate;
 struct Settings {
     #[validate(range(min = 1024, max = 65535))]
     port: u16,
-    
+
     #[validate(url)]
     database_url: String,
-    
+
     #[validate(email)]
     admin_email: String,
 }
@@ -238,10 +238,10 @@ struct Settings {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = load_config()?;
     let settings: Settings = config.try_deserialize()?;
-    
+
     // 验证配置
     settings.validate()?;
-    
+
     Ok(())
 }
 ```
@@ -327,7 +327,7 @@ impl Provider for DatabaseProvider {
         let mut map = Map::new();
         map.insert("database_url".into(), self.url.clone().into());
         map.insert("max_connections".into(), self.max_connections.into());
-        
+
         Ok(Map::from([(Profile::Default, map)]))
     }
 }
@@ -428,7 +428,7 @@ use dotenvy::from_filename;
 
 fn main() {
     let env = std::env::var("RUST_ENV").unwrap_or_else(|_| "development".into());
-    
+
     // 优先级：.env.{环境}.local > .env.{环境} > .env.local > .env
     from_filename(&format!(".env.{}.local", env)).ok();
     from_filename(&format!(".env.{}", env)).ok();
@@ -449,7 +449,7 @@ use std::path::Path;
 fn main() {
     // 从指定路径加载
     from_path("/etc/myapp/.env").ok();
-    
+
     // 或从项目根目录
     let mut path = std::env::current_dir().unwrap();
     path.push(".env");
@@ -466,7 +466,7 @@ fn main() {
     let loader = EnvLoader::new()
         .sequence_items(".env")
         .sequence_items(".env.local");
-    
+
     for (key, value) in loader.load().unwrap() {
         println!("{} = {}", key, value);
     }
@@ -536,11 +536,11 @@ fn load_config() -> Result<AppConfig, config::ConfigError> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = load_config()?;
-    
+
     // 使用配置启动服务器
     let addr = format!("{}:{}", config.server.host, config.server.port);
     println!("Starting server on {}", addr);
-    
+
     Ok(())
 }
 ```
@@ -578,11 +578,11 @@ impl Provider for ConfigCenterProvider {
             .map_err(|e| figment::Error::from(e.to_string()))?
             .text()
             .map_err(|e| figment::Error::from(e.to_string()))?;
-        
+
         // 解析并返回配置
         let value: figment::value::Value = serde_json::from_str(&config_json)
             .map_err(|e| figment::Error::from(e.to_string()))?;
-        
+
         Ok(figment::value::Map::from([(figment::Profile::Default, value.into_dict().unwrap())]))
     }
 }
@@ -623,11 +623,11 @@ struct Args {
     /// Server host
     #[arg(long, env = "HOST")]
     host: Option<String>,
-    
+
     /// Server port
     #[arg(short, long, env = "PORT")]
     port: Option<u16>,
-    
+
     /// Config file path
     #[arg(short, long, value_name = "FILE")]
     config: Option<String>,
@@ -643,10 +643,10 @@ struct Config {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. 加载.env文件
     dotenv().ok();
-    
+
     // 2. 解析命令行参数
     let args = Args::parse();
-    
+
     // 3. 加载配置文件（如果指定）
     let file_config = if let Some(config_path) = args.config {
         let content = std::fs::read_to_string(config_path)?;
@@ -654,18 +654,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
-    
+
     // 4. 合并配置（优先级：命令行 > 环境变量 > 配置文件）
     let host = args.host
         .or_else(|| file_config.as_ref().map(|c| c.host.clone()))
         .unwrap_or_else(|| "localhost".to_string());
-    
+
     let port = args.port
         .or_else(|| file_config.as_ref().map(|c| c.port))
         .unwrap_or(8080);
-    
+
     println!("Running on {}:{}", host, port);
-    
+
     Ok(())
 }
 ```
@@ -679,19 +679,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```text
 1. 命令行参数 (最高优先级)
    └─ 临时覆盖，适合调试
-   
+
 2. 环境变量
    └─ 部署环境特定，CI/CD友好
-   
+
 3. 环境特定配置文件 (config.production.toml)
    └─ 生产/测试环境差异
-   
+
 4. 本地配置文件 (config.local.toml, git忽略)
    └─ 开发者个人配置
-   
+
 5. 基础配置文件 (config.toml)
    └─ 项目默认配置
-   
+
 6. 代码默认值 (最低优先级)
    └─ 合理默认值
 ```
@@ -709,26 +709,26 @@ fn build_config() -> Result<Config, config::ConfigError> {
         .set_default("server.host", "127.0.0.1")?
         .set_default("server.port", 8080)?
         .set_default("server.workers", 4)?
-        
+
         // 2. 基础配置文件
         .add_source(File::with_name("config/default").required(false))
-        
+
         // 3. 本地配置（git忽略）
         .add_source(File::with_name("config/local").required(false))
-        
+
         // 4. 环境特定配置
         .add_source(
             File::with_name(&format!("config/{}", run_mode))
                 .required(false)
         )
-        
+
         // 5. 环境变量
         .add_source(
             Environment::with_prefix("APP")
                 .separator("__")
                 .try_parsing(true)
         )
-        
+
         // 6. 命令行参数（通过环境变量注入）
         .build()
 }
@@ -776,10 +776,10 @@ use validator::{Validate, ValidationError};
 struct Config {
     #[validate(range(min = 1024, max = 65535))]
     port: u16,
-    
+
     #[validate(url)]
     database_url: String,
-    
+
     #[validate(custom = "validate_log_level")]
     log_level: String,
 }
@@ -793,11 +793,11 @@ fn validate_log_level(level: &str) -> Result<(), ValidationError> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config: Config = load_config()?;
-    
+
     // 验证配置
     config.validate()
         .map_err(|e| format!("Config validation failed: {}", e))?;
-    
+
     Ok(())
 }
 ```
@@ -853,14 +853,14 @@ impl ConfigManager {
             config: Arc::new(RwLock::new(config)),
         }
     }
-    
+
     fn watch(&self) {
         let config = Arc::clone(&self.config);
         let (tx, rx) = std::sync::mpsc::channel();
         let mut watcher = watcher(tx, Duration::from_secs(2)).unwrap();
-        
+
         watcher.watch("config/", RecursiveMode::Recursive).unwrap();
-        
+
         std::thread::spawn(move || {
             loop {
                 match rx.recv() {
@@ -1030,7 +1030,7 @@ let config = Config::builder()
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
-**维护者**: Rust 学习社区  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
+**维护者**: Rust 学习社区
 **文档长度**: 280+ 行

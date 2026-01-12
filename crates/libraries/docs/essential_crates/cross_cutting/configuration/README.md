@@ -1,7 +1,7 @@
 # 配置管理 (Configuration Management)
 
-**类别**: 横切关注点  
-**重要程度**: ⭐⭐⭐⭐ (应用必备)  
+**类别**: 横切关注点
+**重要程度**: ⭐⭐⭐⭐ (应用必备)
 **更新日期**: 2025-10-20
 
 ---
@@ -90,7 +90,7 @@ fn load_config() -> Result<AppConfig, ConfigError> {
         // 4. 环境变量（最高优先级）
         .add_source(Environment::with_prefix("APP").separator("__"))
         .build()?;
-    
+
     config.try_deserialize()
 }
 
@@ -140,7 +140,7 @@ export APP__REDIS__HOST=redis.example.com  # 双下划线表示嵌套
 
 ### 2. figment (类型安全配置 ⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add figment`  
+**添加依赖**: `cargo add figment`
 **用途**: Rocket 框架配置库，类型安全
 
 ```rust
@@ -166,7 +166,7 @@ fn load_config() -> Config {
 
 ### 3. dotenvy (环境变量 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add dotenvy`  
+**添加依赖**: `cargo add dotenvy`
 **用途**: 从 `.env` 文件加载环境变量
 
 #### 基础用法3
@@ -178,15 +178,15 @@ use std::env;
 fn main() {
     // 加载 .env 文件
     dotenv().ok();
-    
+
     let database_url = env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set");
-    
+
     let port: u16 = env::var("PORT")
         .unwrap_or_else(|_| "3000".to_string())
         .parse()
         .expect("PORT must be a number");
-    
+
     println!("Database URL: {}", database_url);
     println!("Port: {}", port);
 }
@@ -216,7 +216,7 @@ RUST_LOG=info
 
 ### 4. envy (环境变量反序列化 💡)
 
-**添加依赖**: `cargo add envy`  
+**添加依赖**: `cargo add envy`
 **用途**: 直接将环境变量反序列化为结构体
 
 ```rust
@@ -239,7 +239,7 @@ fn main() {
 
 ### 5. clap (CLI 参数 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add clap --features derive`  
+**添加依赖**: `cargo add clap --features derive`
 **用途**: 命令行参数解析
 
 ```rust
@@ -252,15 +252,15 @@ struct Cli {
     /// Config file path
     #[arg(short, long, default_value = "config.toml")]
     config: String,
-    
+
     /// Server port
     #[arg(short, long, default_value_t = 3000)]
     port: u16,
-    
+
     /// Log level
     #[arg(short, long, default_value = "info")]
     log_level: String,
-    
+
     /// Enable verbose mode
     #[arg(short, long)]
     verbose: bool,
@@ -268,7 +268,7 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     println!("Config file: {}", cli.config);
     println!("Port: {}", cli.port);
     println!("Log level: {}", cli.log_level);
@@ -310,7 +310,7 @@ struct AppConfig {
 
 fn load_config() -> AppConfig {
     let cli = Cli::parse();
-    
+
     let mut builder = Config::builder()
         // 1. 默认配置
         .add_source(File::with_name("config/default"))
@@ -318,12 +318,12 @@ fn load_config() -> AppConfig {
         .add_source(File::with_name("config/prod").required(false))
         // 3. 环境变量
         .add_source(Environment::with_prefix("APP"));
-    
+
     // 4. CLI 参数（最高优先级）
     if let Some(port) = cli.port {
         builder = builder.set_override("port", port).unwrap();
     }
-    
+
     builder.build().unwrap().try_deserialize().unwrap()
 }
 ```
@@ -362,7 +362,7 @@ use thiserror::Error;
 enum ConfigError {
     #[error("Invalid port: {0}")]
     InvalidPort(u16),
-    
+
     #[error("Invalid database URL: {0}")]
     InvalidDatabaseUrl(String),
 }
@@ -379,14 +379,14 @@ impl AppConfig {
         if self.port < 1024 || self.port > 65535 {
             return Err(ConfigError::InvalidPort(self.port));
         }
-        
+
         // 验证数据库 URL
         if !self.database_url.starts_with("postgres://") {
             return Err(ConfigError::InvalidDatabaseUrl(
                 self.database_url.clone()
             ));
         }
-        
+
         Ok(())
     }
 }
@@ -396,9 +396,9 @@ fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
         .add_source(config::File::with_name("config/default"))
         .build()?
         .try_deserialize()?;
-    
+
     config.validate()?;
-    
+
     Ok(config)
 }
 ```
@@ -515,13 +515,13 @@ pub struct RedisConfig {
 impl AppConfig {
     pub fn new() -> Result<Self, ConfigError> {
         let env = std::env::var("APP_ENV").unwrap_or_else(|_| "dev".into());
-        
+
         let config = Config::builder()
             .add_source(File::with_name("config/default"))
             .add_source(File::with_name(&format!("config/{}", env)).required(false))
             .add_source(Environment::with_prefix("APP").separator("__"))
             .build()?;
-        
+
         config.try_deserialize()
     }
 }
@@ -532,11 +532,11 @@ use crate::config::AppConfig;
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
-    
+
     let config = AppConfig::new().expect("Failed to load config");
-    
+
     println!("Starting server on {}:{}", config.server.host, config.server.port);
-    
+
     // 使用配置启动服务...
 }
 ```

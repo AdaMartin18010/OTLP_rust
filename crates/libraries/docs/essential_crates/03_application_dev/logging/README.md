@@ -1,6 +1,6 @@
 # 日志与追踪
 
-> **核心库**: tracing, log, env_logger, tracing-subscriber  
+> **核心库**: tracing, log, env_logger, tracing-subscriber
 > **适用场景**: 应用日志、分布式追踪、性能分析
 
 ---
@@ -33,16 +33,16 @@ use tracing_subscriber;
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
-    
+
     info!("Application started");
-    
+
     let span = span!(Level::INFO, "request", id = 123);
     let _enter = span.enter();
-    
+
     debug!("Processing request");
     process_data(42).await;
     warn!("Warning message");
-    
+
     info!("Request completed");
 }
 
@@ -63,7 +63,7 @@ use env_logger;
 
 fn main() {
     env_logger::init();
-    
+
     info!("Application started");
     debug!("Debug info");
     warn!("Warning");
@@ -87,7 +87,7 @@ async fn main() {
         .with_level(true)
         .json()
         .init();
-    
+
     info!(
         user_id = 123,
         action = "login",
@@ -98,5 +98,5 @@ async fn main() {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

@@ -1,7 +1,7 @@
 # Resilience Engineering
 
-**Status**: 🧪 Experimental / Research Phase  
-**Created**: 2025-10-09  
+**Status**: 🧪 Experimental / Research Phase
+**Created**: 2025-10-09
 **Last Updated**: 2025-10-27
 
 ---
@@ -34,5 +34,5 @@ This directory explores resilience engineering principles applied to observabili
 
 ---
 
-**Maintainer**: Research Team  
+**Maintainer**: Research Team
 **Category**: Experimental / Research

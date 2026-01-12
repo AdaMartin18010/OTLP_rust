@@ -1,6 +1,6 @@
 # 认证与授权 - Rust Web 安全解决方案
 
-> **核心库**: jsonwebtoken, oauth2, argon2, tower-sessions, tower-cookies  
+> **核心库**: jsonwebtoken, oauth2, argon2, tower-sessions, tower-cookies
 > **适用场景**: JWT认证、OAuth2授权、密码哈希、会话管理、权限控制
 
 ---
@@ -232,14 +232,14 @@ struct CustomClaims {
     // 标准声明
     sub: String,
     exp: i64,
-    
+
     // 自定义声明
     user_id: u32,
     username: String,
     email: String,
     roles: Vec<String>,
     permissions: Vec<String>,
-    
+
     // 业务特定
     tenant_id: Option<String>,
     session_id: String,
@@ -325,7 +325,7 @@ struct KeyManager {
 impl KeyManager {
     fn new() -> Self {
         let mut keys = HashMap::new();
-        
+
         // 不同环境使用不同密钥
         keys.insert(
             KeyType::Development,
@@ -334,7 +334,7 @@ impl KeyManager {
                 DecodingKey::from_secret(b"dev-secret"),
             ),
         );
-        
+
         keys.insert(
             KeyType::Production,
             (
@@ -460,7 +460,7 @@ use argon2::{
 fn hash_password(password: &[u8]) -> Result<String, argon2::password_hash::Error> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    
+
     let password_hash = argon2.hash_password(password, &salt)?;
     Ok(password_hash.to_string())
 }
@@ -468,7 +468,7 @@ fn hash_password(password: &[u8]) -> Result<String, argon2::password_hash::Error
 fn verify_password(password: &[u8], hash: &str) -> Result<bool, argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(hash)?;
     let argon2 = Argon2::default();
-    
+
     match argon2.verify_password(password, &parsed_hash) {
         Ok(()) => Ok(true),
         Err(_) => Ok(false),
@@ -477,15 +477,15 @@ fn verify_password(password: &[u8], hash: &str) -> Result<bool, argon2::password
 
 fn main() {
     let password = b"my-secure-password";
-    
+
     // 哈希密码
     let hash = hash_password(password).unwrap();
     println!("Hash: {}", hash);
-    
+
     // 验证密码
     let is_valid = verify_password(password, &hash).unwrap();
     println!("Valid: {}", is_valid);
-    
+
     // 错误密码
     let is_valid = verify_password(b"wrong-password", &hash).unwrap();
     println!("Valid: {}", is_valid);
@@ -747,7 +747,7 @@ response.headers_mut().insert(
 fn validate_csrf(request: &Request) -> bool {
     let header_token = request.headers().get("X-CSRF-Token");
     let cookie_token = get_csrf_from_cookie(request);
-    
+
     header_token == cookie_token
 }
 ```
@@ -827,15 +827,15 @@ fn validate_password(password: &str) -> Result<(), String> {
     if password.len() < 8 {
         return Err("Password must be at least 8 characters".to_string());
     }
-    
+
     let has_uppercase = password.chars().any(|c| c.is_uppercase());
     let has_lowercase = password.chars().any(|c| c.is_lowercase());
     let has_digit = password.chars().any(|c| c.is_digit(10));
-    
+
     if !(has_uppercase && has_lowercase && has_digit) {
         return Err("Password must contain uppercase, lowercase, and digit".to_string());
     }
-    
+
     Ok(())
 }
 ```
@@ -901,7 +901,7 @@ if blacklist.is_revoked(token) {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
-**维护者**: Rust 学习社区  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
+**维护者**: Rust 学习社区
 **文档长度**: 800+ 行

@@ -1,7 +1,7 @@
 # 测试工具 (Testing Tools)
 
-**类别**: 第5层 - 工具链  
-**重要程度**: ⭐⭐⭐⭐⭐ (必备)  
+**类别**: 第5层 - 工具链
+**重要程度**: ⭐⭐⭐⭐⭐ (必备)
 **更新日期**: 2025-10-20
 
 ---
@@ -141,7 +141,7 @@ pub fn add(a: i32, b: i32) -> i32 {
 
 ### 2. cargo-nextest (强烈推荐 🌟)
 
-**安装**: `cargo install cargo-nextest`  
+**安装**: `cargo install cargo-nextest`
 **用途**: 更快的并行测试运行器
 
 #### 核心优势
@@ -205,7 +205,7 @@ junit = { path = "target/nextest/junit.xml" }
 
 ### 3. cargo-tarpaulin (代码覆盖率 🌟)
 
-**安装**: `cargo install cargo-tarpaulin`  
+**安装**: `cargo install cargo-tarpaulin`
 **用途**: 代码覆盖率测试 (Linux only)
 
 #### 基础用法3
@@ -255,7 +255,7 @@ exclude-panic-coverage = true
 
 ### 4. cargo-llvm-cov (覆盖率 🌟)
 
-**安装**: `cargo install cargo-llvm-cov`  
+**安装**: `cargo install cargo-llvm-cov`
 **用途**: 基于 LLVM 的覆盖率工具（跨平台）
 
 #### 基础用法4
@@ -282,7 +282,7 @@ cargo llvm-cov clean
 
 ### 5. proptest (属性测试 💡)
 
-**添加依赖**: `cargo add --dev proptest`  
+**添加依赖**: `cargo add --dev proptest`
 **用途**: 基于属性的随机测试
 
 #### 示例
@@ -327,7 +327,7 @@ proptest! {
 
 ### 6. mockall (Mock 测试 💡)
 
-**添加依赖**: `cargo add --dev mockall`  
+**添加依赖**: `cargo add --dev mockall`
 **用途**: Mock 对象生成
 
 #### 示例1
@@ -348,14 +348,14 @@ mod tests {
     #[test]
     fn test_user_service() {
         let mut mock_db = MockDatabase::new();
-        
+
         // 设置期望
         mock_db
             .expect_get_user()
             .with(eq(123))
             .times(1)
             .returning(|_| Some(User { id: 123, name: "Alice".into() }));
-        
+
         let service = UserService::new(mock_db);
         let user = service.find_user(123);
         assert_eq!(user.unwrap().name, "Alice");
@@ -367,7 +367,7 @@ mod tests {
 
 ### 7. insta (快照测试 💡)
 
-**添加依赖**: `cargo add --dev insta`  
+**添加依赖**: `cargo add --dev insta`
 **用途**: 快照测试框架
 
 #### 示例2
@@ -477,24 +477,24 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         rust: [stable, beta]
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-      
+
       - name: Install nextest
         uses: taiki-e/install-action@nextest
-      
+
       - name: Run tests
         run: cargo nextest run --all-features
-      
+
       - name: Generate coverage
         run: cargo llvm-cov --lcov --output-path lcov.info
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:

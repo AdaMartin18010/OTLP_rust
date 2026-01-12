@@ -1,7 +1,7 @@
 # ORM 和数据库抽象
 
-> **核心库**: sqlx, diesel, sea-orm  
-> **适用场景**: 对象关系映射、类型安全查询、数据库抽象  
+> **核心库**: sqlx, diesel, sea-orm
+> **适用场景**: 对象关系映射、类型安全查询、数据库抽象
 > **技术栈定位**: 应用开发层 - 数据持久化
 
 ---
@@ -225,7 +225,7 @@ struct User {
 async fn main() -> Result<(), sqlx::Error> {
     // 创建连接池
     let pool = PgPool::connect("postgres://user:pass@localhost/db").await?;
-    
+
     // 查询单行
     let user: User = sqlx::query_as!(
         User,
@@ -234,9 +234,9 @@ async fn main() -> Result<(), sqlx::Error> {
     )
     .fetch_one(&pool)
     .await?;
-    
+
     println!("{:?}", user);
-    
+
     // 查询多行
     let users: Vec<User> = sqlx::query_as!(
         User,
@@ -245,9 +245,9 @@ async fn main() -> Result<(), sqlx::Error> {
     )
     .fetch_all(&pool)
     .await?;
-    
+
     println!("Found {} users", users.len());
-    
+
     Ok(())
 }
 ```
@@ -265,7 +265,7 @@ async fn create_user(pool: &PgPool, name: &str, email: &str) -> Result<i32, sqlx
     .bind(email)
     .fetch_one(pool)
     .await?;
-    
+
     Ok(row.0)
 }
 
@@ -277,7 +277,7 @@ async fn get_user(pool: &PgPool, id: i32) -> Result<Option<User>, sqlx::Error> {
     )
     .fetch_optional(pool)
     .await?;
-    
+
     Ok(user)
 }
 
@@ -289,7 +289,7 @@ async fn update_user(pool: &PgPool, id: i32, email: &str) -> Result<(), sqlx::Er
     )
     .execute(pool)
     .await?;
-    
+
     Ok(())
 }
 
@@ -297,7 +297,7 @@ async fn delete_user(pool: &PgPool, id: i32) -> Result<(), sqlx::Error> {
     sqlx::query!("DELETE FROM users WHERE id = $1", id)
         .execute(pool)
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -316,7 +316,7 @@ async fn transfer_money(
     amount: f64,
 ) -> Result<(), sqlx::Error> {
     let mut tx: Transaction<Postgres> = pool.begin().await?;
-    
+
     // 扣款
     sqlx::query!(
         "UPDATE accounts SET balance = balance - $1 WHERE id = $2",
@@ -325,7 +325,7 @@ async fn transfer_money(
     )
     .execute(&mut *tx)
     .await?;
-    
+
     // 加款
     sqlx::query!(
         "UPDATE accounts SET balance = balance + $1 WHERE id = $2",
@@ -334,7 +334,7 @@ async fn transfer_money(
     )
     .execute(&mut *tx)
     .await?;
-    
+
     tx.commit().await?;
     Ok(())
 }
@@ -353,22 +353,22 @@ async fn search_users(
     let mut query = QueryBuilder::<Postgres>::new(
         "SELECT id, name, email FROM users WHERE 1=1"
     );
-    
+
     if let Some(name) = name_filter {
         query.push(" AND name LIKE ");
         query.push_bind(format!("%{}%", name));
     }
-    
+
     if let Some(age) = min_age {
         query.push(" AND age >= ");
         query.push_bind(age);
     }
-    
+
     let users = query
         .build_query_as::<User>()
         .fetch_all(pool)
         .await?;
-    
+
     Ok(users)
 }
 ```
@@ -450,12 +450,12 @@ use diesel::pg::PgConnection;
 
 pub fn create_user(conn: &mut PgConnection, name: &str, email: &str) -> QueryResult<User> {
     use crate::schema::users;
-    
+
     let new_user = NewUser {
         name: name.to_string(),
         email: email.to_string(),
     };
-    
+
     diesel::insert_into(users::table)
         .values(&new_user)
         .get_result(conn)
@@ -463,13 +463,13 @@ pub fn create_user(conn: &mut PgConnection, name: &str, email: &str) -> QueryRes
 
 pub fn get_user(conn: &mut PgConnection, user_id: i32) -> QueryResult<User> {
     use crate::schema::users::dsl::*;
-    
+
     users.find(user_id).first(conn)
 }
 
 pub fn update_user(conn: &mut PgConnection, user_id: i32, new_email: &str) -> QueryResult<User> {
     use crate::schema::users::dsl::*;
-    
+
     diesel::update(users.find(user_id))
         .set(email.eq(new_email))
         .get_result(conn)
@@ -477,7 +477,7 @@ pub fn update_user(conn: &mut PgConnection, user_id: i32, new_email: &str) -> Qu
 
 pub fn delete_user(conn: &mut PgConnection, user_id: i32) -> QueryResult<usize> {
     use crate::schema::users::dsl::*;
-    
+
     diesel::delete(users.find(user_id)).execute(conn)
 }
 ```
@@ -491,21 +491,21 @@ use diesel::prelude::*;
 
 pub fn get_users_with_posts(conn: &mut PgConnection) -> QueryResult<Vec<(User, Vec<Post>)>> {
     use crate::schema::{users, posts};
-    
+
     let results = users::table
         .inner_join(posts::table)
         .select((User::as_select(), Post::as_select()))
         .load::<(User, Post)>(conn)?;
-    
+
     // 分组
     let mut grouped: std::collections::HashMap<i32, (User, Vec<Post>)> = std::collections::HashMap::new();
-    
+
     for (user, post) in results {
         grouped.entry(user.id)
             .or_insert((user.clone(), vec![]))
             .1.push(post);
     }
-    
+
     Ok(grouped.into_values().collect())
 }
 ```
@@ -565,7 +565,7 @@ async fn create_user(db: &DatabaseConnection, name: &str, email: &str) -> Result
         email: Set(email.to_owned()),
         ..Default::default()
     };
-    
+
     user.insert(db).await
 }
 
@@ -576,7 +576,7 @@ async fn get_user(db: &DatabaseConnection, id: i32) -> Result<Option<Model>, DbE
 async fn update_user(db: &DatabaseConnection, id: i32, new_email: &str) -> Result<Model, DbErr> {
     let user = Entity::find_by_id(id).one(db).await?
         .ok_or(DbErr::RecordNotFound("User not found".to_owned()))?;
-    
+
     let mut user: ActiveModel = user.into();
     user.email = Set(new_email.to_owned());
     user.update(db).await
@@ -633,7 +633,7 @@ impl UserRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
-    
+
     pub async fn create(&self, name: &str, email: &str) -> Result<User, sqlx::Error> {
         sqlx::query_as!(
             User,
@@ -644,19 +644,19 @@ impl UserRepository {
         .fetch_one(&self.pool)
         .await
     }
-    
+
     pub async fn find_all(&self) -> Result<Vec<User>, sqlx::Error> {
         sqlx::query_as!(User, "SELECT id, name, email FROM users")
             .fetch_all(&self.pool)
             .await
     }
-    
+
     pub async fn find_by_id(&self, id: i32) -> Result<Option<User>, sqlx::Error> {
         sqlx::query_as!(User, "SELECT id, name, email FROM users WHERE id = $1", id)
             .fetch_optional(&self.pool)
             .await
     }
-    
+
     pub async fn update(&self, id: i32, name: &str, email: &str) -> Result<User, sqlx::Error> {
         sqlx::query_as!(
             User,
@@ -668,7 +668,7 @@ impl UserRepository {
         .fetch_one(&self.pool)
         .await
     }
-    
+
     pub async fn delete(&self, id: i32) -> Result<(), sqlx::Error> {
         sqlx::query!("DELETE FROM users WHERE id = $1", id)
             .execute(&self.pool)
@@ -691,7 +691,7 @@ async fn create_order(
     items: Vec<OrderItem>,
 ) -> Result<i32, Box<dyn std::error::Error>> {
     let mut tx: Transaction<Postgres> = pool.begin().await?;
-    
+
     // 1. 创建订单
     let order_id: (i32,) = sqlx::query_as(
         "INSERT INTO orders (user_id, total) VALUES ($1, $2) RETURNING id"
@@ -700,7 +700,7 @@ async fn create_order(
     .bind(calculate_total(&items))
     .fetch_one(&mut *tx)
     .await?;
-    
+
     // 2. 创建订单项并扣减库存
     for item in items {
         // 插入订单项
@@ -713,7 +713,7 @@ async fn create_order(
         .bind(item.price)
         .execute(&mut *tx)
         .await?;
-        
+
         // 扣减库存
         let result = sqlx::query(
             "UPDATE products SET stock = stock - $1 WHERE id = $2 AND stock >= $1"
@@ -722,12 +722,12 @@ async fn create_order(
         .bind(item.product_id)
         .execute(&mut *tx)
         .await?;
-        
+
         if result.rows_affected() == 0 {
             return Err("Insufficient stock".into());
         }
     }
-    
+
     tx.commit().await?;
     Ok(order_id.0)
 }
@@ -768,10 +768,10 @@ async fn main() -> Result<(), DbErr> {
     } else {
         connect_db("mysql://localhost/db").await?
     };
-    
+
     let users = get_users(&db).await?;
     println!("Users: {:?}", users);
-    
+
     Ok(())
 }
 ```
@@ -934,6 +934,6 @@ for _ in 0..1000 {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 96/100

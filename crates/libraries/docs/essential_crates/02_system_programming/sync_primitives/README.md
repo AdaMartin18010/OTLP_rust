@@ -78,7 +78,7 @@ use std::thread;
 fn mutex_basic() {
     let counter = Arc::new(Mutex::new(0));
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         let counter = Arc::clone(&counter);
         let handle = thread::spawn(move || {
@@ -89,11 +89,11 @@ fn mutex_basic() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("结果: {}", *counter.lock().unwrap());
 }
 ```
@@ -107,13 +107,13 @@ use std::thread;
 fn lock_poisoning() {
     let data = Arc::new(Mutex::new(0));
     let data_clone = data.clone();
-    
+
     let _ = thread::spawn(move || {
         let mut lock = data_clone.lock().unwrap();
         *lock += 1;
         panic!("线程崩溃！"); // 锁被"中毒"
     }).join();
-    
+
     // 尝试获取锁
     match data.lock() {
         Ok(guard) => println!("值: {}", *guard),
@@ -134,7 +134,7 @@ use std::thread;
 
 fn rwlock_example() {
     let data = Arc::new(RwLock::new(vec![1, 2, 3]));
-    
+
     // 多个读者
     let mut readers = vec![];
     for i in 0..3 {
@@ -145,7 +145,7 @@ fn rwlock_example() {
         });
         readers.push(handle);
     }
-    
+
     // 单个写者
     let data_clone = data.clone();
     let writer = thread::spawn(move || {
@@ -153,12 +153,12 @@ fn rwlock_example() {
         w.push(4);
         println!("写者: 添加了 4");
     });
-    
+
     for handle in readers {
         handle.join().unwrap();
     }
     writer.join().unwrap();
-    
+
     println!("最终: {:?}", *data.read().unwrap());
 }
 ```
@@ -173,28 +173,28 @@ use std::time::Duration;
 fn condvar_example() {
     let pair = Arc::new((Mutex::new(false), Condvar::new()));
     let pair_clone = pair.clone();
-    
+
     // 等待线程
     let waiter = thread::spawn(move || {
         let (lock, cvar) = &*pair_clone;
         let mut started = lock.lock().unwrap();
-        
+
         // 等待条件
         while !*started {
             println!("等待中...");
             started = cvar.wait(started).unwrap();
         }
-        
+
         println!("条件满足，继续执行！");
     });
-    
+
     // 通知线程
     thread::sleep(Duration::from_secs(1));
     let (lock, cvar) = &*pair;
     let mut started = lock.lock().unwrap();
     *started = true;
     cvar.notify_one();
-    
+
     waiter.join().unwrap();
 }
 ```
@@ -208,21 +208,21 @@ use std::thread;
 fn barrier_example() {
     let barrier = Arc::new(Barrier::new(3));
     let mut handles = vec![];
-    
+
     for i in 0..3 {
         let barrier = barrier.clone();
         let handle = thread::spawn(move || {
             println!("线程 {} 准备中...", i);
             thread::sleep(std::time::Duration::from_millis(i * 100));
-            
+
             println!("线程 {} 到达屏障", i);
             barrier.wait(); // 等待所有线程
-            
+
             println!("线程 {} 继续执行", i);
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
@@ -244,7 +244,7 @@ fn expensive_initialization() {
             VAL = 42;
         }
     });
-    
+
     unsafe {
         println!("值: {}", VAL);
     }
@@ -287,7 +287,7 @@ use std::thread;
 fn parking_lot_mutex() {
     let counter = Arc::new(Mutex::new(0));
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         let counter = Arc::clone(&counter);
         let handle = thread::spawn(move || {
@@ -297,11 +297,11 @@ fn parking_lot_mutex() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("结果: {}", *counter.lock());
 }
 ```
@@ -315,12 +315,12 @@ use std::thread;
 
 fn parking_lot_rwlock() {
     let data = Arc::new(RwLock::new(vec![1, 2, 3]));
-    
+
     // 可升级的读锁
     let data_clone = data.clone();
     thread::spawn(move || {
         let upgradable = data_clone.upgradable_read();
-        
+
         if upgradable.len() < 5 {
             // 升级为写锁
             let mut write_guard = upgradable.upgrade();
@@ -328,7 +328,7 @@ fn parking_lot_rwlock() {
             write_guard.push(5);
         }
     }).join().unwrap();
-    
+
     println!("{:?}", *data.read());
 }
 ```
@@ -374,7 +374,7 @@ use std::thread;
 fn fair_mutex_example() {
     let counter = Arc::new(FairMutex::new(0));
     let mut handles = vec![];
-    
+
     // 公平锁确保按请求顺序获得锁
     for i in 0..5 {
         let counter = Arc::clone(&counter);
@@ -386,7 +386,7 @@ fn fair_mutex_example() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
@@ -407,13 +407,13 @@ use std::time::Duration;
 fn parker_example() {
     let parker = Parker::new();
     let unparker = parker.unparker().clone();
-    
+
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(1));
         println!("唤醒主线程");
         unparker.unpark();
     });
-    
+
     println!("等待中...");
     parker.park();
     println!("已唤醒！");
@@ -431,7 +431,7 @@ fn sharded_lock_example() {
     // 分片锁，减少读者竞争
     let lock = Arc::new(ShardedLock::new(vec![1, 2, 3]));
     let mut handles = vec![];
-    
+
     // 多个并发读者
     for i in 0..10 {
         let lock = lock.clone();
@@ -441,7 +441,7 @@ fn sharded_lock_example() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
@@ -456,7 +456,7 @@ use std::thread;
 
 fn wait_group_example() {
     let wg = WaitGroup::new();
-    
+
     for i in 0..5 {
         let wg = wg.clone();
         thread::spawn(move || {
@@ -466,7 +466,7 @@ fn wait_group_example() {
             drop(wg); // 通知完成
         });
     }
-    
+
     println!("等待所有工作者完成...");
     wg.wait(); // 等待所有完成
     println!("全部完成！");
@@ -488,7 +488,7 @@ fn atomic_example() {
     let counter = Arc::new(AtomicUsize::new(0));
     let flag = Arc::new(AtomicBool::new(false));
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         let counter = counter.clone();
         let handle = thread::spawn(move || {
@@ -497,11 +497,11 @@ fn atomic_example() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("计数: {}", counter.load(Ordering::SeqCst));
 }
 ```
@@ -516,19 +516,19 @@ use std::thread;
 fn memory_ordering_example() {
     let flag = Arc::new(AtomicBool::new(false));
     let flag_clone = flag.clone();
-    
+
     // 写者
     thread::spawn(move || {
         // Relaxed: 最弱的保证，最高性能
         flag_clone.store(true, Ordering::Relaxed);
-        
+
         // Release: 保证之前的写操作可见
         flag_clone.store(true, Ordering::Release);
-        
+
         // SeqCst: 顺序一致性，最强保证
         flag_clone.store(true, Ordering::SeqCst);
     });
-    
+
     // 读者
     thread::spawn(move || {
         // Acquire: 保证之后的读操作看到最新值
@@ -547,7 +547,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 fn cas_example() {
     let value = AtomicUsize::new(0);
-    
+
     // 尝试将 0 替换为 42
     let result = value.compare_exchange(
         0,                    // 期望值
@@ -555,7 +555,7 @@ fn cas_example() {
         Ordering::SeqCst,     // 成功时的顺序
         Ordering::SeqCst,     // 失败时的顺序
     );
-    
+
     match result {
         Ok(old) => println!("成功！旧值: {}", old),
         Err(current) => println!("失败！当前值: {}", current),
@@ -583,7 +583,7 @@ impl<T> SpinLock<T> {
             data: UnsafeCell::new(data),
         }
     }
-    
+
     pub fn lock(&self) -> SpinLockGuard<T> {
         // 自旋等待
         while self.locked.swap(true, Ordering::Acquire) {
@@ -605,7 +605,7 @@ impl<'a, T> Drop for SpinLockGuard<'a, T> {
 
 impl<'a, T> std::ops::Deref for SpinLockGuard<'a, T> {
     type Target = T;
-    
+
     fn deref(&self) -> &T {
         unsafe { &*self.lock.data.get() }
     }
@@ -647,15 +647,15 @@ impl SharedCounter {
             count: Arc::new(Mutex::new(0)),
         }
     }
-    
+
     fn increment(&self) {
         *self.count.lock() += 1;
     }
-    
+
     fn get(&self) -> usize {
         *self.count.lock()
     }
-    
+
     fn clone_handle(&self) -> Self {
         Self {
             count: self.count.clone(),
@@ -666,7 +666,7 @@ impl SharedCounter {
 fn shared_counter_example() {
     let counter = SharedCounter::new();
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         let counter = counter.clone_handle();
         let handle = thread::spawn(move || {
@@ -676,11 +676,11 @@ fn shared_counter_example() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("最终计数: {}", counter.get());
 }
 ```
@@ -702,15 +702,15 @@ impl<K: Eq + std::hash::Hash, V: Clone> Cache<K, V> {
             data: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     fn get(&self, key: &K) -> Option<V> {
         self.data.read().get(key).cloned()
     }
-    
+
     fn insert(&self, key: K, value: V) {
         self.data.write().insert(key, value);
     }
-    
+
     fn contains_key(&self, key: &K) -> bool {
         self.data.read().contains_key(key)
     }
@@ -718,10 +718,10 @@ impl<K: Eq + std::hash::Hash, V: Clone> Cache<K, V> {
 
 fn cache_example() {
     let cache = Cache::new();
-    
+
     cache.insert("key1", "value1");
     cache.insert("key2", "value2");
-    
+
     if let Some(value) = cache.get(&"key1") {
         println!("找到: {}", value);
     }
@@ -751,27 +751,27 @@ impl<T> BoundedQueue<T> {
             capacity,
         }
     }
-    
+
     fn push(&self, item: T) {
         let mut queue = self.queue.lock().unwrap();
-        
+
         // 等待空间
         while queue.len() >= self.capacity {
             queue = self.not_full.wait(queue).unwrap();
         }
-        
+
         queue.push_back(item);
         self.not_empty.notify_one();
     }
-    
+
     fn pop(&self) -> T {
         let mut queue = self.queue.lock().unwrap();
-        
+
         // 等待数据
         while queue.is_empty() {
             queue = self.not_empty.wait(queue).unwrap();
         }
-        
+
         let item = queue.pop_front().unwrap();
         self.not_full.notify_one();
         item
@@ -780,7 +780,7 @@ impl<T> BoundedQueue<T> {
 
 fn bounded_queue_example() {
     let queue = Arc::new(BoundedQueue::new(5));
-    
+
     // 生产者
     let q = queue.clone();
     let producer = thread::spawn(move || {
@@ -789,7 +789,7 @@ fn bounded_queue_example() {
             println!("生产: {}", i);
         }
     });
-    
+
     // 消费者
     let consumer = thread::spawn(move || {
         for _ in 0..10 {
@@ -797,7 +797,7 @@ fn bounded_queue_example() {
             println!("消费: {}", item);
         }
     });
-    
+
     producer.join().unwrap();
     consumer.join().unwrap();
 }
@@ -875,7 +875,7 @@ fn deadlock_free(lock1: &Mutex<i32>, lock2: &Mutex<i32>) {
     } else {
         (lock2, lock1)
     };
-    
+
     let _g1 = locks.0.lock();
     let _g2 = locks.1.lock();
 }
@@ -888,13 +888,13 @@ use parking_lot::Mutex;
 
 fn raii_guards() {
     let data = Mutex::new(vec![1, 2, 3]);
-    
+
     // ✅ 守卫自动释放
     {
         let mut guard = data.lock();
         guard.push(4);
     } // 锁在这里释放
-    
+
     // ❌ 手动管理容易出错
     // data.lock();
     // // ... 代码 ...
@@ -919,7 +919,7 @@ fn good_pattern(data: &Mutex<Vec<i32>>) {
         let guard = data.lock();
         guard.clone()
     }; // 锁释放
-    
+
     external_function(&copy);
 }
 

@@ -79,7 +79,7 @@ use std::task::{Context, Poll};
 // Future 的核心定义
 pub trait Future {
     type Output;
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output>;
 }
 
@@ -215,7 +215,7 @@ async fn load_profile(id: u32) {
         fetch_user(id),
         fetch_posts(id)
     );
-    
+
     println!("用户: {}, 帖子数: {}", user, posts.len());
 }
 ```
@@ -239,7 +239,7 @@ async fn load_all() -> Result<(), std::io::Error> {
         fetch_data(),
         fetch_config()
     )?;
-    
+
     println!("数据: {}, 配置: {}", data, config);
     Ok(())
 }
@@ -273,7 +273,7 @@ use futures::stream::{self, StreamExt};
 async fn stream_basics() {
     // 从迭代器创建
     let mut stream = stream::iter(vec![1, 2, 3, 4, 5]);
-    
+
     // 消费 stream
     while let Some(item) = stream.next().await {
         println!("项: {}", item);
@@ -288,14 +288,14 @@ use futures::stream::{self, StreamExt};
 
 async fn stream_transformations() {
     let stream = stream::iter(1..=10);
-    
+
     let result: Vec<_> = stream
         .filter(|x| async move { x % 2 == 0 })  // 过滤偶数
         .map(|x| x * 2)                          // 乘以2
         .take(3)                                 // 取前3个
         .collect()                               // 收集到 Vec
         .await;
-    
+
     println!("{:?}", result); // [4, 8, 12]
 }
 ```
@@ -307,7 +307,7 @@ use futures::stream::{self, StreamExt};
 
 async fn concurrent_processing() {
     let stream = stream::iter(1..=10);
-    
+
     // 并发处理（最多3个同时）
     let results: Vec<_> = stream
         .map(|x| async move {
@@ -317,7 +317,7 @@ async fn concurrent_processing() {
         .buffer_unordered(3)  // 并发度为3
         .collect()
         .await;
-    
+
     println!("{:?}", results);
 }
 ```
@@ -330,15 +330,15 @@ use futures::channel::mpsc;
 
 async fn sink_example() {
     let (mut tx, mut rx) = mpsc::channel(10);
-    
+
     // 发送数据
     tx.send(1).await.unwrap();
     tx.send(2).await.unwrap();
     tx.send(3).await.unwrap();
-    
+
     // 关闭发送端
     tx.close().await.unwrap();
-    
+
     // 接收数据
     while let Some(item) = rx.next().await {
         println!("收到: {}", item);
@@ -355,10 +355,10 @@ async fn async_io_example() {
     // 异步读取
     let mut reader = futures::io::Cursor::new(b"Hello, World!");
     let mut buffer = [0u8; 5];
-    
+
     reader.read_exact(&mut buffer).await.unwrap();
     println!("{:?}", std::str::from_utf8(&buffer).unwrap());
-    
+
     // 异步写入
     let mut writer = Vec::new();
     writer.write_all(b"Async write").await.unwrap();
@@ -404,13 +404,13 @@ async fn rate_limited_tasks() {
             i
         })
         .collect();
-    
+
     // 最多5个并发任务
     let results: Vec<_> = stream::iter(tasks)
         .buffer_unordered(5)
         .collect()
         .await;
-    
+
     println!("完成 {} 个任务", results.len());
 }
 ```
@@ -434,7 +434,7 @@ async fn unreliable_operation() -> Result<String, &'static str> {
 
 async fn retry_with_backoff() {
     let mut delay = Duration::from_millis(100);
-    
+
     for attempt in 1..=5 {
         match unreliable_operation().await {
             Ok(result) => {
@@ -448,7 +448,7 @@ async fn retry_with_backoff() {
             }
         }
     }
-    
+
     println!("所有尝试都失败了");
 }
 ```
@@ -460,7 +460,7 @@ use futures::stream::{self, StreamExt};
 
 async fn pipeline() {
     let numbers = stream::iter(1..=10);
-    
+
     let result = numbers
         // 阶段1: 过滤
         .filter(|x| async move { x % 2 == 0 })
@@ -470,7 +470,7 @@ async fn pipeline() {
         // 阶段3: 累加
         .fold(0, |acc, x| async move { acc + x })
         .await;
-    
+
     println!("结果: {}", result); // 2² + 4² + 6² + 8² + 10² = 220
 }
 ```
@@ -484,20 +484,20 @@ use tokio::sync::oneshot;
 
 async fn cancellable_task() {
     let (cancel_tx, mut cancel_rx) = oneshot::channel::<()>();
-    
+
     let task = tokio::spawn(async move {
         loop {
             println!("工作中...");
             sleep(Duration::from_millis(500)).await;
         }
     });
-    
+
     // 2秒后取消
     tokio::spawn(async move {
         sleep(Duration::from_secs(2)).await;
         let _ = cancel_tx.send(());
     });
-    
+
     select! {
         _ = task => println!("任务完成"),
         _ = cancel_rx => {
@@ -532,12 +532,12 @@ use tokio::select;
 
 async fn cancellation_safe() {
     let mut data = Vec::new();
-    
+
     loop {
         select! {
             // 使用 biased 确保取消优先
             biased;
-            
+
             _ = tokio::signal::ctrl_c() => {
                 println!("正在清理...");
                 // 清理逻辑
@@ -587,11 +587,11 @@ use tokio::io::AsyncWriteExt;
 
 async fn resource_management() -> std::io::Result<()> {
     let mut file = tokio::fs::File::create("output.txt").await?;
-    
+
     // 即使出错，Drop 也会确保资源清理
     file.write_all(b"Hello, async world!").await?;
     file.sync_all().await?;
-    
+
     Ok(())
 } // file 自动关闭
 ```
@@ -625,7 +625,7 @@ async fn flat_good() {
             return;
         }
     };
-    
+
     let posts = match fetch_posts(user.id).await {
         Some(p) => p,
         None => {
@@ -633,7 +633,7 @@ async fn flat_good() {
             return;
         }
     };
-    
+
     for post in posts {
         println!("{}", post);
     }
@@ -664,7 +664,7 @@ use futures::stream::{self, StreamExt};
 
 async fn batch_processing() {
     let items = stream::iter(1..=100);
-    
+
     items
         .chunks(10)  // 每次处理10个
         .for_each(|batch| async move {
@@ -689,7 +689,7 @@ async fn prefetching() {
             expensive_operation(x).await
         })
         .buffered(10);  // 预取10个
-    
+
     stream.for_each(|result| async move {
         println!("结果: {}", result);
     }).await;

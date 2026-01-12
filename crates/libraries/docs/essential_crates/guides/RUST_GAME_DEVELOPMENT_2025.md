@@ -5,43 +5,42 @@
 ## 📋 目录
 
 - [Rust 游戏开发指南 (2025)](#rust-游戏开发指南-2025)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
-  - [1. 游戏开发概述](#1-游戏开发概述)
+  - [📋 目录](#-目录)
+  - [📖 游戏开发概述](#-游戏开发概述)
     - [1.1 为什么选择 Rust?](#11-为什么选择-rust)
     - [1.2 Rust 游戏生态](#12-rust-游戏生态)
     - [1.3 开发环境搭建](#13-开发环境搭建)
-  - [2. Bevy 游戏引擎](#2-bevy-游戏引擎)
+  - [📝 Bevy 游戏引擎](#-bevy-游戏引擎)
     - [2.1 ECS 架构](#21-ecs-架构)
     - [2.2 核心概念](#22-核心概念)
     - [2.3 Hello World 游戏](#23-hello-world-游戏)
-  - [3. 游戏架构设计](#3-游戏架构设计)
+  - [🔍 游戏架构设计](#-游戏架构设计)
     - [3.1 游戏循环](#31-游戏循环)
     - [3.2 场景管理](#32-场景管理)
     - [3.3 资源管理](#33-资源管理)
-  - [4. 渲染系统](#4-渲染系统)
+  - [🔧 渲染系统](#-渲染系统)
     - [4.1 2D 渲染](#41-2d-渲染)
     - [4.2 3D 渲染](#42-3d-渲染)
     - [4.3 着色器编程](#43-着色器编程)
-  - [5. 物理引擎](#5-物理引擎)
+  - [📊 物理引擎](#-物理引擎)
     - [5.1 Rapier 物理引擎](#51-rapier-物理引擎)
     - [5.2 碰撞检测](#52-碰撞检测)
     - [5.3 刚体动力学](#53-刚体动力学)
-  - [6. 音频系统](#6-音频系统)
+  - [🌟 音频系统](#-音频系统)
     - [6.1 音效播放](#61-音效播放)
     - [6.2 背景音乐](#62-背景音乐)
     - [6.3 空间音频](#63-空间音频)
-  - [7. 输入处理](#7-输入处理)
+  - [🔬 输入处理](#-输入处理)
     - [7.1 键盘鼠标](#71-键盘鼠标)
     - [7.2 游戏手柄](#72-游戏手柄)
     - [7.3 触摸屏](#73-触摸屏)
-  - [8. 实战案例](#8-实战案例)
+  - [💻 实战案例](#-实战案例)
     - [8.1 案例1: 太空射击游戏](#81-案例1-太空射击游戏)
     - [8.2 案例2: 2D 平台跳跃游戏](#82-案例2-2d-平台跳跃游戏)
     - [8.3 案例3: 3D 第一人称游戏](#83-案例3-3d-第一人称游戏)
-  - [9. 最佳实践](#9-最佳实践)
-  - [10. 常见问题](#10-常见问题)
-  - [11. 参考资源](#11-参考资源)
+  - [📚 最佳实践](#-最佳实践)
+  - [✅ 常见问题](#-常见问题)
+  - [🌈 参考资源](#-参考资源)
 
 ## 📖 游戏开发概述
 
@@ -287,7 +286,7 @@ fn setup(
 ) {
     // 生成相机
     commands.spawn(Camera2dBundle::default());
-    
+
     // 生成玩家
     commands.spawn((
         SpriteBundle {
@@ -325,10 +324,10 @@ fn input(
     mut query: Query<&mut Velocity, With<Player>>,
 ) {
     let mut velocity = query.single_mut();
-    
+
     velocity.vx = 0.0;
     velocity.vy = 0.0;
-    
+
     if keyboard.pressed(KeyCode::KeyW) {
         velocity.vy = 200.0;
     }
@@ -512,7 +511,7 @@ fn load_assets(
         bullet_texture: asset_server.load("sprites/bullet.png"),
         explosion_sound: asset_server.load("sounds/explosion.ogg"),
     };
-    
+
     commands.insert_resource(assets);
 }
 
@@ -545,7 +544,7 @@ fn create_pool(mut commands: Commands) {
     let mut pool = BulletPool {
         inactive: VecDeque::new(),
     };
-    
+
     // 预创建 100 颗子弹
     for _ in 0..100 {
         let entity = commands
@@ -557,10 +556,10 @@ fn create_pool(mut commands: Commands) {
                 Bullet,
             ))
             .id();
-        
+
         pool.inactive.push_back(entity);
     }
-    
+
     commands.insert_resource(pool);
 }
 
@@ -643,7 +642,7 @@ fn animate_sprites(
 ) {
     for (mut anim, mut texture) in query.iter_mut() {
         anim.timer.tick(time.delta());
-        
+
         if anim.timer.just_finished() {
             anim.current_frame = (anim.current_frame + 1) % anim.frames.len();
             *texture = anim.frames[anim.current_frame].clone();
@@ -661,7 +660,7 @@ fn spawn_animated_sprite(
         asset_server.load("walk_3.png"),
         asset_server.load("walk_4.png"),
     ];
-    
+
     commands.spawn((
         SpriteBundle {
             texture: frames[0].clone(),
@@ -693,7 +692,7 @@ fn spawn_3d_model(
             .looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     });
-    
+
     // 生成光源
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -703,7 +702,7 @@ fn spawn_3d_model(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..default()
     });
-    
+
     // 加载 GLTF 模型
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/character.glb#Scene0"),
@@ -733,7 +732,7 @@ fn create_custom_material(
         normal_map_texture: Some(asset_server.load("textures/normal.png")),
         ..default()
     });
-    
+
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material,
@@ -848,7 +847,7 @@ fn main() {
 fn setup_physics(mut commands: Commands) {
     // 生成相机
     commands.spawn(Camera2dBundle::default());
-    
+
     // 生成地面 (静态刚体)
     commands.spawn((
         SpriteBundle {
@@ -863,7 +862,7 @@ fn setup_physics(mut commands: Commands) {
         RigidBody::Fixed,
         Collider::cuboid(400.0, 10.0),
     ));
-    
+
     // 生成动态方块
     commands.spawn((
         SpriteBundle {
@@ -938,9 +937,9 @@ fn player_movement(
     mut query: Query<&mut ExternalImpulse, With<Player>>,
 ) {
     let mut impulse = query.single_mut();
-    
+
     impulse.impulse = Vec2::ZERO;
-    
+
     if keyboard.pressed(KeyCode::KeyW) {
         impulse.impulse.y += 500.0;
     }
@@ -1027,7 +1026,7 @@ fn play_background_music(
             PlaybackSettings::LOOP.with_volume(bevy::audio::Volume::new_relative(0.3)),
         )
     );
-    
+
     commands.insert_resource(BackgroundMusic { handle });
 }
 
@@ -1085,12 +1084,12 @@ fn keyboard_input(
     if keyboard.pressed(KeyCode::Space) {
         println!("空格键按下");
     }
-    
+
     // 检查按键是否刚按下
     if keyboard.just_pressed(KeyCode::Enter) {
         println!("回车键刚按下");
     }
-    
+
     // 检查按键是否刚释放
     if keyboard.just_released(KeyCode::Escape) {
         println!("ESC 键刚释放");
@@ -1111,10 +1110,10 @@ fn mouse_input(
 ) {
     if mouse.just_pressed(MouseButton::Left) {
         let window = window_query.single();
-        
+
         if let Some(cursor_position) = window.cursor_position() {
             let (camera, camera_transform) = camera_query.single();
-            
+
             // 将屏幕坐标转换为世界坐标
             if let Some(world_position) = camera.viewport_to_world_2d(
                 camera_transform,
@@ -1145,7 +1144,7 @@ fn gamepad_input(
         if button_inputs.just_pressed(GamepadButton::new(gamepad, GamepadButtonType::South)) {
             println!("A 按钮按下 (手柄 {:?})", gamepad);
         }
-        
+
         // 摇杆输入
         if let Some(left_stick_x) = axes.get(GamepadAxis::new(gamepad, GamepadAxisType::LeftStickX)) {
             if left_stick_x.abs() > 0.1 {
@@ -1227,7 +1226,7 @@ fn setup(
     asset_server: Res<AssetServer>,
 ) {
     commands.spawn(Camera2dBundle::default());
-    
+
     // 生成玩家
     commands.spawn((
         SpriteBundle {
@@ -1249,7 +1248,7 @@ fn player_movement(
 ) {
     let mut transform = query.single_mut();
     let speed = 300.0;
-    
+
     if keyboard.pressed(KeyCode::KeyA) {
         transform.translation.x -= speed * time.delta_seconds();
     }
@@ -1266,7 +1265,7 @@ fn player_shoot(
 ) {
     if keyboard.just_pressed(KeyCode::Space) {
         let player_transform = query.single();
-        
+
         commands.spawn((
             SpriteBundle {
                 texture: asset_server.load("bullet.png"),
@@ -1293,7 +1292,7 @@ fn bullet_lifetime(
 ) {
     for (entity, mut bullet) in query.iter_mut() {
         bullet.lifetime.tick(time.delta());
-        
+
         if bullet.lifetime.finished() {
             commands.entity(entity).despawn();
         }
@@ -1362,7 +1361,7 @@ fn player_jump(
     mut query: Query<(&mut Player, &mut Velocity)>,
 ) {
     let (mut player, mut velocity) = query.single_mut();
-    
+
     if keyboard.just_pressed(KeyCode::Space) && player.on_ground {
         velocity.linvel.y = 400.0;  // 跳跃速度
         player.on_ground = false;
@@ -1374,12 +1373,12 @@ fn check_ground_collision(
     rapier_context: Res<RapierContext>,
 ) {
     let (player_entity, mut player) = player_query.single_mut();
-    
+
     // 射线检测地面
     let ray_origin = Vec2::new(0.0, 0.0);
     let ray_dir = Vec2::new(0.0, -1.0);
     let max_distance = 1.0;
-    
+
     if let Some((_, _)) = rapier_context.cast_ray(
         ray_origin,
         ray_dir,
@@ -1414,13 +1413,13 @@ fn camera_look(
 ) {
     let camera = camera_query.single();
     let mut transform = query.single_mut();
-    
+
     for event in motion_events.read() {
         let delta = event.delta;
-        
+
         // 左右旋转 (Yaw)
         transform.rotate_y(-delta.x * camera.sensitivity * 0.01);
-        
+
         // 上下旋转 (Pitch)
         transform.rotate_local_x(-delta.y * camera.sensitivity * 0.01);
     }
@@ -1433,10 +1432,10 @@ fn player_movement_3d(
 ) {
     let mut transform = query.single_mut();
     let speed = 5.0;
-    
+
     let forward = transform.forward();
     let right = transform.right();
-    
+
     if keyboard.pressed(KeyCode::KeyW) {
         transform.translation += forward * speed * time.delta_seconds();
     }
@@ -1564,13 +1563,13 @@ fn save_game(
     level: Res<Level>,
 ) {
     let transform = player_query.single();
-    
+
     let save_data = SaveData {
         player_position: (transform.translation.x, transform.translation.y),
         score: score.value,
         level: level.current,
     };
-    
+
     let json = serde_json::to_string(&save_data).unwrap();
     std::fs::write("save.json", json).unwrap();
 }
@@ -1584,7 +1583,7 @@ fn load_game(
             let mut transform = player_query.single_mut();
             transform.translation.x = save_data.player_position.0;
             transform.translation.y = save_data.player_position.1;
-            
+
             commands.insert_resource(Score { value: save_data.score });
             commands.insert_resource(Level { current: save_data.level });
         }

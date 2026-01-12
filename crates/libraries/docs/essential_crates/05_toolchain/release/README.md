@@ -1,7 +1,7 @@
 # 发布管理工具 (Release Management Tools)
 
-**类别**: 第5层 - 工具链  
-**重要程度**: ⭐⭐⭐  
+**类别**: 第5层 - 工具链
+**重要程度**: ⭐⭐⭐
 **更新日期**: 2025-10-20
 
 ---
@@ -47,7 +47,7 @@
 
 ### 1. cargo-release (推荐 🌟)
 
-**安装**: `cargo install cargo-release`  
+**安装**: `cargo install cargo-release`
 **用途**: 自动化 crate 发布流程
 
 #### 基础用法
@@ -111,7 +111,7 @@ pre-release-hook = ["./scripts/pre-release.sh"]
 
 ### 2. cargo-dist (推荐 💡)
 
-**安装**: `cargo install cargo-dist`  
+**安装**: `cargo install cargo-dist`
 **用途**: 自动生成多平台二进制发布包
 
 #### 初始化
@@ -177,19 +177,19 @@ jobs:
             target: x86_64-apple-darwin
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      
+
       - name: Install cargo-dist
         run: cargo install cargo-dist
-      
+
       - name: Build release
         run: cargo dist build --target ${{ matrix.target }}
-      
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -201,7 +201,7 @@ jobs:
 
 ### 3. git-cliff (变更日志 💡)
 
-**安装**: `cargo install git-cliff`  
+**安装**: `cargo install git-cliff`
 **用途**: 自动生成变更日志
 
 #### 基础用法3
@@ -269,7 +269,7 @@ commit_parsers = [
 
 ### 4. semantic-release (可选)
 
-**安装**: `npm install -g semantic-release @semantic-release/changelog @semantic-release/git`  
+**安装**: `npm install -g semantic-release @semantic-release/changelog @semantic-release/git`
 **用途**: 完全自动化的语义化版本发布
 
 #### .releaserc.json 配置

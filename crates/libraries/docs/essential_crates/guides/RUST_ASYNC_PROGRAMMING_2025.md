@@ -1,108 +1,108 @@
 ﻿# Rust 异步编程实战指南 2025
 
-> **最后更新**: 2025-10-20  
-> **Rust 版本**: 1.83+  
+> **最后更新**: 2025-10-20
+> **Rust 版本**: 1.83+
 > **难度**: ⭐⭐⭐⭐ (中高级)
 
 ## 📋 目录
 
 - [Rust 异步编程实战指南 2025](#rust-异步编程实战指南-2025)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [📋 目录1](#-目录1)
-  - [1. 异步编程基础](#1-异步编程基础)
+  - [📖 异步编程基础](#-异步编程基础)
     - [1.1 为什么需要异步编程](#11-为什么需要异步编程)
     - [1.2 Future 和 Poll 机制](#12-future-和-poll-机制)
     - [1.3 async/await 语法](#13-asyncawait-语法)
-  - [2. Tokio 运行时深入](#2-tokio-运行时深入)
+  - [📝 Tokio 运行时深入](#-tokio-运行时深入)
     - [2.1 运行时架构](#21-运行时架构)
     - [2.2 多线程调度器](#22-多线程调度器)
     - [2.3 Work-Stealing 算法](#23-work-stealing-算法)
     - [2.4 运行时配置](#24-运行时配置)
-  - [3. 异步 IO 操作](#3-异步-io-操作)
+  - [🔍 异步 IO 操作](#-异步-io-操作)
     - [3.1 文件 IO](#31-文件-io)
     - [3.2 网络 IO](#32-网络-io)
     - [3.3 IO 多路复用 (epoll/kqueue)](#33-io-多路复用-epollkqueue)
-  - [4. 任务和并发](#4-任务和并发)
+  - [🔧 任务和并发](#-任务和并发)
     - [4.1 spawn 和 join](#41-spawn-和-join)
     - [4.2 select 多路选择](#42-select-多路选择)
     - [4.3 并发限制](#43-并发限制)
     - [4.4 超时和取消](#44-超时和取消)
-  - [5. 异步通信](#5-异步通信)
+  - [📊 异步通信](#-异步通信)
     - [5.1 Channel (mpsc)](#51-channel-mpsc)
     - [5.2 Broadcast Channel](#52-broadcast-channel)
     - [5.3 Watch Channel](#53-watch-channel)
     - [5.4 Oneshot Channel](#54-oneshot-channel)
-  - [6. 异步锁和同步原语](#6-异步锁和同步原语)
+  - [🌟 异步锁和同步原语](#-异步锁和同步原语)
     - [6.1 Mutex 和 RwLock](#61-mutex-和-rwlock)
     - [6.2 Semaphore (信号量)](#62-semaphore-信号量)
     - [6.3 Barrier](#63-barrier)
     - [6.4 Notify](#64-notify)
-  - [7. 实战案例](#7-实战案例)
+  - [🔬 实战案例](#-实战案例)
     - [7.1 异步 Web 爬虫](#71-异步-web-爬虫)
     - [7.2 实时聊天服务器](#72-实时聊天服务器)
     - [7.3 异步批处理系统](#73-异步批处理系统)
-  - [8. 性能优化](#8-性能优化)
+  - [💻 性能优化](#-性能优化)
     - [8.1 减少分配](#81-减少分配)
     - [8.2 避免不必要的 await](#82-避免不必要的-await)
     - [8.3 批处理优化](#83-批处理优化)
     - [8.4 零拷贝技术](#84-零拷贝技术)
-  - [9. 调试和诊断](#9-调试和诊断)
+  - [📚 调试和诊断](#-调试和诊断)
     - [9.1 tokio-console](#91-tokio-console)
     - [9.2 tracing 集成](#92-tracing-集成)
     - [9.3 死锁检测](#93-死锁检测)
-  - [10. 最佳实践](#10-最佳实践)
-  - [11. 常见陷阱](#11-常见陷阱)
-  - [12. 参考资源](#12-参考资源)
+  - [✅ 最佳实践](#-最佳实践)
+  - [🌈 常见陷阱](#-常见陷阱)
+  - [🎓 参考资源](#-参考资源)
 
 ## 📋 目录1
 
 - [Rust 异步编程实战指南 2025](#rust-异步编程实战指南-2025)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [📋 目录1](#-目录1)
-  - [1. 异步编程基础](#1-异步编程基础)
+  - [📖 异步编程基础](#-异步编程基础)
     - [1.1 为什么需要异步编程](#11-为什么需要异步编程)
     - [1.2 Future 和 Poll 机制](#12-future-和-poll-机制)
     - [1.3 async/await 语法](#13-asyncawait-语法)
-  - [2. Tokio 运行时深入](#2-tokio-运行时深入)
+  - [📝 Tokio 运行时深入](#-tokio-运行时深入)
     - [2.1 运行时架构](#21-运行时架构)
     - [2.2 多线程调度器](#22-多线程调度器)
     - [2.3 Work-Stealing 算法](#23-work-stealing-算法)
     - [2.4 运行时配置](#24-运行时配置)
-  - [3. 异步 IO 操作](#3-异步-io-操作)
+  - [🔍 异步 IO 操作](#-异步-io-操作)
     - [3.1 文件 IO](#31-文件-io)
     - [3.2 网络 IO](#32-网络-io)
     - [3.3 IO 多路复用 (epoll/kqueue)](#33-io-多路复用-epollkqueue)
-  - [4. 任务和并发](#4-任务和并发)
+  - [🔧 任务和并发](#-任务和并发)
     - [4.1 spawn 和 join](#41-spawn-和-join)
     - [4.2 select 多路选择](#42-select-多路选择)
     - [4.3 并发限制](#43-并发限制)
     - [4.4 超时和取消](#44-超时和取消)
-  - [5. 异步通信](#5-异步通信)
+  - [📊 异步通信](#-异步通信)
     - [5.1 Channel (mpsc)](#51-channel-mpsc)
     - [5.2 Broadcast Channel](#52-broadcast-channel)
     - [5.3 Watch Channel](#53-watch-channel)
     - [5.4 Oneshot Channel](#54-oneshot-channel)
-  - [6. 异步锁和同步原语](#6-异步锁和同步原语)
+  - [🌟 异步锁和同步原语](#-异步锁和同步原语)
     - [6.1 Mutex 和 RwLock](#61-mutex-和-rwlock)
     - [6.2 Semaphore (信号量)](#62-semaphore-信号量)
     - [6.3 Barrier](#63-barrier)
     - [6.4 Notify](#64-notify)
-  - [7. 实战案例](#7-实战案例)
+  - [🔬 实战案例](#-实战案例)
     - [7.1 异步 Web 爬虫](#71-异步-web-爬虫)
     - [7.2 实时聊天服务器](#72-实时聊天服务器)
     - [7.3 异步批处理系统](#73-异步批处理系统)
-  - [8. 性能优化](#8-性能优化)
+  - [💻 性能优化](#-性能优化)
     - [8.1 减少分配](#81-减少分配)
     - [8.2 避免不必要的 await](#82-避免不必要的-await)
     - [8.3 批处理优化](#83-批处理优化)
     - [8.4 零拷贝技术](#84-零拷贝技术)
-  - [9. 调试和诊断](#9-调试和诊断)
+  - [📚 调试和诊断](#-调试和诊断)
     - [9.1 tokio-console](#91-tokio-console)
     - [9.2 tracing 集成](#92-tracing-集成)
     - [9.3 死锁检测](#93-死锁检测)
-  - [10. 最佳实践](#10-最佳实践)
-  - [11. 常见陷阱](#11-常见陷阱)
-  - [12. 参考资源](#12-参考资源)
+  - [✅ 最佳实践](#-最佳实践)
+  - [🌈 常见陷阱](#-常见陷阱)
+  - [🎓 参考资源](#-参考资源)
 
 ---
 
@@ -153,7 +153,7 @@ use std::task::{Context, Poll};
 // 简化的 Future trait
 pub trait Future {
     type Output;
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output>;
 }
 
@@ -189,7 +189,7 @@ impl Delay {
 
 impl Future for Delay {
     type Output = ();
-    
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if Instant::now() >= self.when {
             // 时间已到，返回 Ready
@@ -243,20 +243,20 @@ async fn main() -> std::io::Result<()> {
     // 1. 顺序执行 (总耗时 = t1 + t2)
     let content1 = read_file("file1.txt").await?;
     let content2 = read_file("file2.txt").await?;
-    
+
     // 2. 并发执行 (总耗时 = max(t1, t2))
     let (content1, content2) = tokio::join!(
         read_file("file1.txt"),
         read_file("file2.txt"),
     );
-    
+
     // 3. 并发执行 + 错误处理
     let results = tokio::try_join!(
         read_file("file1.txt"),
         read_file("file2.txt"),
         read_file("file3.txt"),
     )?;
-    
+
     Ok(())
 }
 ```
@@ -314,11 +314,11 @@ fn main() {
         .enable_all()                     // 启用所有功能
         .build()
         .unwrap();
-    
+
     rt.block_on(async {
         println!("运行在多线程运行时");
     });
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 2. 单线程运行时 (适合 IO 密集型)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -326,11 +326,11 @@ fn main() {
         .enable_all()
         .build()
         .unwrap();
-    
+
     rt.block_on(async {
         println!("运行在单线程运行时");
     });
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 3. 自定义配置 (高级)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -435,12 +435,12 @@ async fn main() -> std::io::Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let content = tokio::fs::read_to_string("file.txt").await?;
     println!("文件内容: {}", content);
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 2. 写入文件
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     tokio::fs::write("output.txt", "Hello, Tokio!").await?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 3. 追加写入
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -449,20 +449,20 @@ async fn main() -> std::io::Result<()> {
         .append(true)
         .open("log.txt")
         .await?;
-    
+
     file.write_all(b"新日志行\n").await?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 4. 逐行读取 (大文件)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let file = File::open("large.txt").await?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
-    
+
     while let Some(line) = lines.next_line().await? {
         println!("行: {}", line);
     }
-    
+
     Ok(())
 }
 ```
@@ -480,11 +480,11 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 async fn main() -> std::io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
     println!("服务器启动: {}", listener.local_addr()?);
-    
+
     loop {
         let (socket, addr) = listener.accept().await?;
         println!("新连接: {}", addr);
-        
+
         // 为每个连接生成一个任务
         tokio::spawn(async move {
             if let Err(e) = handle_client(socket).await {
@@ -496,14 +496,14 @@ async fn main() -> std::io::Result<()> {
 
 async fn handle_client(mut socket: TcpStream) -> std::io::Result<()> {
     let mut buf = [0; 1024];
-    
+
     loop {
         let n = socket.read(&mut buf).await?;
-        
+
         if n == 0 {
             return Ok(()); // 连接关闭
         }
-        
+
         // 回显数据
         socket.write_all(&buf[0..n]).await?;
     }
@@ -514,15 +514,15 @@ async fn handle_client(mut socket: TcpStream) -> std::io::Result<()> {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async fn tcp_client() -> std::io::Result<()> {
     let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
-    
+
     // 发送数据
     stream.write_all(b"Hello, Server!").await?;
-    
+
     // 接收数据
     let mut buf = [0; 1024];
     let n = stream.read(&mut buf).await?;
     println!("收到响应: {}", String::from_utf8_lossy(&buf[0..n]));
-    
+
     Ok(())
 }
 ```
@@ -577,34 +577,34 @@ async fn main() {
         tokio::time::sleep(Duration::from_secs(1)).await;
         "任务1完成"
     });
-    
+
     let task2 = task::spawn(async {
         tokio::time::sleep(Duration::from_secs(2)).await;
         "任务2完成"
     });
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 2. join: 等待任务完成
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let result1 = task1.await.unwrap();
     let result2 = task2.await.unwrap();
-    
+
     println!("{}, {}", result1, result2);
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 3. JoinSet: 管理多个任务
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     use tokio::task::JoinSet;
-    
+
     let mut set = JoinSet::new();
-    
+
     for i in 0..10 {
         set.spawn(async move {
             tokio::time::sleep(Duration::from_millis(100 * i)).await;
             i
         });
     }
-    
+
     // 等待所有任务完成
     while let Some(res) = set.join_next().await {
         println!("任务完成: {:?}", res);
@@ -624,12 +624,12 @@ async fn main() {
     // 1. select! 宏: 同时等待多个 Future
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let (tx, mut rx) = mpsc::channel(32);
-    
+
     tokio::spawn(async move {
         sleep(Duration::from_secs(2)).await;
         tx.send("消息").await.unwrap();
     });
-    
+
     tokio::select! {
         msg = rx.recv() => {
             println!("收到消息: {:?}", msg);
@@ -638,13 +638,13 @@ async fn main() {
             println!("超时！");
         }
     }
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 2. biased 模式: 优先级选择
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     tokio::select! {
         biased; // 按顺序检查分支
-        
+
         msg = rx.recv() => {
             println!("高优先级: 消息");
         }
@@ -668,23 +668,23 @@ use std::sync::Arc;
 async fn main() {
     let semaphore = Arc::new(Semaphore::new(10)); // 最多 10 个并发
     let mut tasks = vec![];
-    
+
     for i in 0..100 {
         let sem = Arc::clone(&semaphore);
-        
+
         let task = tokio::spawn(async move {
             let _permit = sem.acquire().await.unwrap(); // 获取许可
-            
+
             // 执行耗时操作
             println!("处理任务 {}", i);
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-            
+
             // _permit 被 drop 时自动释放
         });
-        
+
         tasks.push(task);
     }
-    
+
     // 等待所有任务完成
     for task in tasks {
         task.await.unwrap();
@@ -707,20 +707,20 @@ async fn main() {
         tokio::time::sleep(Duration::from_secs(5)).await;
         "完成"
     }).await;
-    
+
     match result {
         Ok(val) => println!("结果: {}", val),
         Err(_) => println!("超时！"),
     }
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 2. 取消: 使用 CancellationToken
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     use tokio_util::sync::CancellationToken;
-    
+
     let token = CancellationToken::new();
     let token_clone = token.clone();
-    
+
     let task = tokio::spawn(async move {
         select! {
             _ = token_clone.cancelled() => {
@@ -731,11 +731,11 @@ async fn main() {
             }
         }
     });
-    
+
     // 1秒后取消任务
     tokio::time::sleep(Duration::from_secs(1)).await;
     token.cancel();
-    
+
     task.await.unwrap();
 }
 ```
@@ -756,7 +756,7 @@ async fn main() {
     // 创建 channel (缓冲区大小为 32)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let (tx, mut rx) = mpsc::channel(32);
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 生产者任务
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -769,14 +769,14 @@ async fn main() {
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
     });
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 消费者任务
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     while let Some(msg) = rx.recv().await {
         println!("收到消息: {}", msg);
     }
-    
+
     println!("Channel 已关闭");
 }
 ```
@@ -794,7 +794,7 @@ async fn main() {
     let (tx, mut rx1) = broadcast::channel(16);
     let mut rx2 = tx.subscribe();
     let mut rx3 = tx.subscribe();
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 生产者
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -804,7 +804,7 @@ async fn main() {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
     });
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 多个消费者
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -813,19 +813,19 @@ async fn main() {
             println!("接收者1: {}", msg);
         }
     });
-    
+
     tokio::spawn(async move {
         while let Ok(msg) = rx2.recv().await {
             println!("接收者2: {}", msg);
         }
     });
-    
+
     tokio::spawn(async move {
         while let Ok(msg) = rx3.recv().await {
             println!("接收者3: {}", msg);
         }
     });
-    
+
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 }
 ```
@@ -841,7 +841,7 @@ async fn main() {
     // Watch channel: 用于状态同步 (只保留最新值)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let (tx, mut rx) = watch::channel("初始值");
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 订阅者
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -850,16 +850,16 @@ async fn main() {
             println!("值已更新: {}", *rx.borrow());
         }
     });
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 发布者
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     tx.send("新值1").unwrap();
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
+
     tx.send("新值2").unwrap();
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
+
     tx.send("新值3").unwrap();
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 }
@@ -876,12 +876,12 @@ async fn main() {
     // Oneshot channel: 只发送一次消息
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let (tx, rx) = oneshot::channel();
-    
+
     tokio::spawn(async move {
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         tx.send("计算结果").unwrap();
     });
-    
+
     match rx.await {
         Ok(result) => println!("收到结果: {}", result),
         Err(_) => println!("发送者已关闭"),
@@ -906,7 +906,7 @@ async fn main() {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let data = Arc::new(Mutex::new(0));
     let mut tasks = vec![];
-    
+
     for _ in 0..10 {
         let data = Arc::clone(&data);
         let task = tokio::spawn(async move {
@@ -915,25 +915,25 @@ async fn main() {
         });
         tasks.push(task);
     }
-    
+
     for task in tasks {
         task.await.unwrap();
     }
-    
+
     println!("最终值: {}", *data.lock().await);
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 2. RwLock: 读写锁 (多读一写)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let data = Arc::new(RwLock::new(vec![1, 2, 3]));
-    
+
     // 多个读锁可以同时存在
     let read1 = data.read().await;
     let read2 = data.read().await;
     println!("读取: {:?}, {:?}", *read1, *read2);
     drop(read1);
     drop(read2);
-    
+
     // 写锁是排他的
     let mut write = data.write().await;
     write.push(4);
@@ -954,7 +954,7 @@ async fn main() {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let semaphore = Arc::new(Semaphore::new(3)); // 最多 3 个并发
     let mut tasks = vec![];
-    
+
     for i in 0..10 {
         let sem = Arc::clone(&semaphore);
         let task = tokio::spawn(async move {
@@ -965,7 +965,7 @@ async fn main() {
         });
         tasks.push(task);
     }
-    
+
     for task in tasks {
         task.await.unwrap();
     }
@@ -985,21 +985,21 @@ async fn main() {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let barrier = Arc::new(Barrier::new(3)); // 等待 3 个任务
     let mut tasks = vec![];
-    
+
     for i in 0..3 {
         let b = Arc::clone(&barrier);
         let task = tokio::spawn(async move {
             println!("任务 {} 准备中...", i);
             tokio::time::sleep(tokio::time::Duration::from_secs(i)).await;
-            
+
             println!("任务 {} 到达屏障", i);
             b.wait().await;
-            
+
             println!("任务 {} 继续执行", i);
         });
         tasks.push(task);
     }
-    
+
     for task in tasks {
         task.await.unwrap();
     }
@@ -1019,17 +1019,17 @@ async fn main() {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let notify = Arc::new(Notify::new());
     let notify_clone = Arc::clone(&notify);
-    
+
     tokio::spawn(async move {
         println!("等待通知...");
         notify_clone.notified().await;
         println!("收到通知！");
     });
-    
+
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     println!("发送通知");
     notify.notify_one(); // 通知一个等待者
-    
+
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 }
 ```
@@ -1053,21 +1053,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "https://example.com/page3",
         // ... 更多 URL
     ];
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 限制并发数 (避免过载)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let semaphore = Arc::new(Semaphore::new(10)); // 最多 10 个并发请求
     let client = reqwest::Client::new();
     let mut tasks = vec![];
-    
+
     for url in urls {
         let sem = Arc::clone(&semaphore);
         let client = client.clone();
-        
+
         let task = tokio::spawn(async move {
             let _permit = sem.acquire().await.unwrap();
-            
+
             match fetch_page(&client, url).await {
                 Ok(content) => {
                     println!("抓取成功: {} ({} bytes)", url, content.len());
@@ -1077,15 +1077,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         });
-        
+
         tasks.push(task);
     }
-    
+
     // 等待所有任务完成
     for task in tasks {
         task.await?;
     }
-    
+
     Ok(())
 }
 
@@ -1109,15 +1109,15 @@ async fn main() -> std::io::Result<()> {
     // 创建广播 channel (用于消息分发)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let (tx, _rx) = broadcast::channel::<String>(100);
-    
+
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
     println!("聊天服务器启动: 127.0.0.1:8080");
-    
+
     loop {
         let (socket, addr) = listener.accept().await?;
         let tx = tx.clone();
         let rx = tx.subscribe();
-        
+
         tokio::spawn(async move {
             handle_client(socket, addr.to_string(), tx, rx).await;
         });
@@ -1133,19 +1133,19 @@ async fn handle_client(
     let (reader, mut writer) = socket.into_split();
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 发送欢迎消息
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let welcome = format!("欢迎加入聊天室！你的地址: {}\n", addr);
     writer.write_all(welcome.as_bytes()).await.ok();
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 广播加入消息
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let join_msg = format!("{} 加入了聊天室", addr);
     tx.send(join_msg).ok();
-    
+
     loop {
         tokio::select! {
             // 读取客户端消息
@@ -1160,14 +1160,14 @@ async fn handle_client(
                     Err(_) => break,
                 }
             }
-            
+
             // 接收广播消息
             Ok(msg) = rx.recv() => {
                 writer.write_all(format!("{}\n", msg).as_bytes()).await.ok();
             }
         }
     }
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 广播离开消息
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1185,7 +1185,7 @@ use std::time::Duration;
 #[tokio::main]
 async fn main() {
     let (tx, rx) = mpsc::channel(100);
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 生产者: 生成任务
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1195,7 +1195,7 @@ async fn main() {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     });
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 消费者: 批处理任务
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1208,31 +1208,31 @@ async fn batch_processor(
     timeout: Duration,
 ) {
     let mut batch = Vec::new();
-    
+
     loop {
         tokio::select! {
             // 接收新任务
             Some(task) = rx.recv() => {
                 batch.push(task);
-                
+
                 // 达到批量大小时立即处理
                 if batch.len() >= batch_size {
                     process_batch(&batch).await;
                     batch.clear();
                 }
             }
-            
+
             // 超时时处理剩余任务
             _ = tokio::time::sleep(timeout), if !batch.is_empty() => {
                 process_batch(&batch).await;
                 batch.clear();
             }
-            
+
             // Channel 关闭
             else => break,
         }
     }
-    
+
     // 处理最后的批次
     if !batch.is_empty() {
         process_batch(&batch).await;
@@ -1301,10 +1301,10 @@ async fn bad_insert(rx: &mut mpsc::Receiver<String>) {
 // ✅ 正确: 批量写入
 async fn good_insert(rx: &mut mpsc::Receiver<String>) {
     let mut batch = Vec::new();
-    
+
     while let Some(data) = rx.recv().await {
         batch.push(data);
-        
+
         if batch.len() >= 100 {
             database_insert_batch(&batch).await;
             batch.clear();
@@ -1328,13 +1328,13 @@ use tokio::net::TcpStream;
 async fn proxy(mut client: TcpStream, mut server: TcpStream) -> std::io::Result<()> {
     let (mut client_read, mut client_write) = client.split();
     let (mut server_read, mut server_write) = server.split();
-    
+
     // 双向转发 (零拷贝)
     tokio::try_join!(
         tokio::io::copy(&mut client_read, &mut server_write),
         tokio::io::copy(&mut server_read, &mut client_write),
     )?;
-    
+
     Ok(())
 }
 ```
@@ -1358,7 +1358,7 @@ console-subscriber = "0.2"
 fn main() {
     // 启动 tokio-console
     console_subscriber::init();
-    
+
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
         // 你的异步代码
@@ -1385,14 +1385,14 @@ use tracing::{info, warn, error, instrument};
 #[instrument]
 async fn fetch_user(user_id: u64) -> Result<String, &'static str> {
     info!("开始获取用户");
-    
+
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
+
     if user_id == 0 {
         error!("无效的用户 ID");
         return Err("无效的用户 ID");
     }
-    
+
     info!("用户获取成功");
     Ok(format!("User {}", user_id))
 }
@@ -1401,7 +1401,7 @@ async fn fetch_user(user_id: u64) -> Result<String, &'static str> {
 async fn main() {
     // 初始化 tracing
     tracing_subscriber::fmt::init();
-    
+
     fetch_user(123).await.ok();
     fetch_user(0).await.ok();
 }
@@ -1417,23 +1417,23 @@ use std::sync::Arc;
 async fn main() {
     let lock1 = Arc::new(Mutex::new(0));
     let lock2 = Arc::new(Mutex::new(0));
-    
+
     let lock1_clone = Arc::clone(&lock1);
     let lock2_clone = Arc::clone(&lock2);
-    
+
     // ❌ 可能死锁的代码
     tokio::spawn(async move {
         let _g1 = lock1_clone.lock().await;
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         let _g2 = lock2_clone.lock().await;
     });
-    
+
     tokio::spawn(async move {
         let _g2 = lock2.lock().await;
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         let _g1 = lock1.lock().await;
     });
-    
+
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 }
 ```
@@ -1465,7 +1465,7 @@ async fn main() {
    async fn bad() {
        std::thread::sleep(Duration::from_secs(1));
    }
-   
+
    // ✅ 正确: 使用 spawn_blocking
    async fn good() {
        tokio::task::spawn_blocking(|| {
@@ -1496,7 +1496,7 @@ async fn main() {
    struct Guard {
        name: String,
    }
-   
+
    impl Drop for Guard {
        fn drop(&mut self) {
            println!("{} 被清理", self.name);
@@ -1532,16 +1532,16 @@ async fn main() {
             });
         });
     }
-    
+
     // ✅ 正确: 扁平化
     async fn good() {
         let task1 = tokio::spawn(task1());
         let task2 = tokio::spawn(task2());
         let task3 = tokio::spawn(task3());
-        
+
         tokio::try_join!(task1, task2, task3).ok();
     }
-    
+
     async fn task1() {}
     async fn task2() {}
     async fn task3() {}
@@ -1558,12 +1558,12 @@ async fn main() {
    async fn bad() {
        fetch_data(); // 什么也不做
    }
-   
+
    // ✅ 正确
    async fn good() {
        fetch_data().await;
    }
-   
+
    async fn fetch_data() {}
    ```
 
@@ -1574,7 +1574,7 @@ async fn main() {
    async fn bad() {
        std::fs::read_to_string("file.txt").unwrap();
    }
-   
+
    // ✅ 正确: 使用 Tokio 的异步版本
    async fn good() {
        tokio::fs::read_to_string("file.txt").await.unwrap();
@@ -1587,9 +1587,9 @@ async fn main() {
    // ❌ 可能导致性能问题
    use std::sync::Arc;
    use tokio::sync::Mutex;
-   
+
    let data = Arc::new(Mutex::new(vec![]));
-   
+
    // ✅ 考虑使用 channel 代替
    use tokio::sync::mpsc;
    let (tx, rx) = mpsc::channel(100);
@@ -1606,7 +1606,7 @@ async fn main() {
            _ = other(&data) => {}, // Error: value moved
        }
    }
-   
+
    // ✅ 正确: 使用引用
    async fn good() {
        let data = String::from("data");
@@ -1615,7 +1615,7 @@ async fn main() {
            _ = other(&data) => {},
        }
    }
-   
+
    async fn process(_s: &str) {}
    async fn other(_s: &str) {}
    ```
@@ -1630,7 +1630,7 @@ async fn main() {
        });
        // JoinHandle 被丢弃, 任务在后台运行
    }
-   
+
    // ✅ 正确: 保存 JoinHandle 并等待
    async fn good() {
        let handle = tokio::spawn(async {
@@ -1645,17 +1645,17 @@ async fn main() {
    ```rust
    // ❌ 错误: Rc 不是 Send
    use std::rc::Rc;
-   
+
    async fn bad() {
        let data = Rc::new(42);
        tokio::spawn(async move {
            println!("{}", data); // Error: Rc is not Send
        });
    }
-   
+
    // ✅ 正确: 使用 Arc
    use std::sync::Arc;
-   
+
    async fn good() {
        let data = Arc::new(42);
        tokio::spawn(async move {
@@ -1675,11 +1675,11 @@ async fn main() {
            });
        }
    }
-   
+
    // ✅ 正确: 使用 Semaphore 限流
    use tokio::sync::Semaphore;
    use std::sync::Arc;
-   
+
    async fn good() {
        let sem = Arc::new(Semaphore::new(100));
        for i in 0..1000000 {
@@ -1697,23 +1697,23 @@ async fn main() {
    ```rust
    // ❌ 错误: 超时后任务仍在运行
    use tokio::time::{timeout, Duration};
-   
+
    async fn bad() {
        let result = timeout(Duration::from_secs(1), long_task()).await;
        // long_task() 可能仍在后台运行
    }
-   
+
    // ✅ 正确: 使用 CancellationToken
    use tokio_util::sync::CancellationToken;
-   
+
    async fn good() {
        let token = CancellationToken::new();
        let token_clone = token.clone();
-       
+
        let task = tokio::spawn(async move {
            cancellable_task(token_clone).await
        });
-       
+
        tokio::select! {
            _ = task => {},
            _ = tokio::time::sleep(Duration::from_secs(1)) => {
@@ -1721,7 +1721,7 @@ async fn main() {
            }
        }
    }
-   
+
    async fn long_task() {}
    async fn cancellable_task(_token: CancellationToken) {}
    ```

@@ -60,7 +60,7 @@ fn create_jwt(user_id: &str) -> Result<String, jsonwebtoken::errors::Error> {
         sub: user_id.to_string(),
         exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
     };
-    
+
     encode(
         &Header::default(),
         &claims,
@@ -74,7 +74,7 @@ fn verify_jwt(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
         &DecodingKey::from_secret("secret".as_ref()),
         &Validation::default()
     )?;
-    
+
     Ok(token_data.claims)
 }
 ```
@@ -100,7 +100,7 @@ async fn auth_middleware<B>(
         .get("Authorization")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "));
-    
+
     match auth_header {
         Some(token) => {
             match verify_jwt(token) {
@@ -152,7 +152,7 @@ fn create_oauth_client() -> BasicClient {
 
 fn get_auth_url() -> (String, CsrfToken) {
     let client = create_oauth_client();
-    
+
     client
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new("email".to_string()))
@@ -179,7 +179,7 @@ use argon2::{
 fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    
+
     let password_hash = argon2.hash_password(password.as_bytes(), &salt)?;
     Ok(password_hash.to_string())
 }
@@ -187,7 +187,7 @@ fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error>
 fn verify_password(password: &str, hash: &str) -> Result<bool, argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(hash)?;
     let argon2 = Argon2::default();
-    
+
     Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
 }
 ```
@@ -217,16 +217,16 @@ async fn login(Json(req): Json<LoginRequest>) -> Result<Json<LoginResponse>, Sta
     // 从数据库获取用户
     let stored_hash = get_user_hash(&req.username).await
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     // 验证密码
     if !verify_password(&req.password, &stored_hash).unwrap_or(false) {
         return Err(StatusCode::UNAUTHORIZED);
     }
-    
+
     // 生成 JWT
     let token = create_jwt(&req.username)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok(Json(LoginResponse { token }))
 }
 

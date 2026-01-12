@@ -2,8 +2,8 @@
 
 > **深度分析和理论研究**，探索建模与形式方法的前沿
 
-**最后更新**: 2025-10-19  
-**适用版本**: Rust 1.90+  
+**最后更新**: 2025-10-19
+**适用版本**: Rust 1.90+
 **目标读者**: 高级开发者、研究者、架构师
 
 ---
@@ -244,7 +244,7 @@
 trait ModelTransformation<S, T> {
     // 转换函数
     fn transform(&self, source: &S) -> T;
-    
+
     // 验证语义保持
     fn verify_semantic_preservation(&self, source: &S, target: &T) -> bool;
 }
@@ -488,8 +488,8 @@ M || (N + P) = (M || N) + (M || P)  (某些情况下)
 
 ---
 
-**高级主题维护**: 项目维护团队  
-**最后更新**: 2025-10-19  
+**高级主题维护**: 项目维护团队
+**最后更新**: 2025-10-19
 **反馈**: [GitHub Issues](https://github.com/rust-lang/rust-lang/issues)
 
 ---

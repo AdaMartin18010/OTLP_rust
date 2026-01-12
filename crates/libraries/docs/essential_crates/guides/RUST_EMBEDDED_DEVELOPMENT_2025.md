@@ -5,43 +5,42 @@
 ## 📋 目录
 
 - [Rust 嵌入式开发指南 (2025)](#rust-嵌入式开发指南-2025)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
-  - [1. 嵌入式 Rust 概述](#1-嵌入式-rust-概述)
+  - [📋 目录](#-目录)
+  - [📖 嵌入式 Rust 概述](#-嵌入式-rust-概述)
     - [1.1 为什么选择 Rust?](#11-为什么选择-rust)
     - [1.2 核心概念](#12-核心概念)
     - [1.3 开发环境搭建](#13-开发环境搭建)
-  - [2. 裸机编程基础](#2-裸机编程基础)
+  - [📝 裸机编程基础](#-裸机编程基础)
     - [2.1 #!\[no\_std\] 环境](#21-no_std-环境)
     - [2.2 启动流程](#22-启动流程)
     - [2.3 内存布局](#23-内存布局)
-  - [3. HAL 抽象层](#3-hal-抽象层)
+  - [🔍 HAL 抽象层](#-hal-抽象层)
     - [3.1 embedded-hal](#31-embedded-hal)
     - [3.2 GPIO 操作](#32-gpio-操作)
     - [3.3 外设驱动](#33-外设驱动)
-  - [4. RTOS 集成](#4-rtos-集成)
+  - [🔧 RTOS 集成](#-rtos-集成)
     - [4.1 RTIC 实时框架](#41-rtic-实时框架)
     - [4.2 Embassy 异步框架](#42-embassy-异步框架)
     - [4.3 任务调度](#43-任务调度)
-  - [5. 通信协议](#5-通信协议)
+  - [📊 通信协议](#-通信协议)
     - [5.1 UART 串口通信](#51-uart-串口通信)
     - [5.2 I2C 总线](#52-i2c-总线)
     - [5.3 SPI 接口](#53-spi-接口)
-  - [6. 电源管理](#6-电源管理)
+  - [🌟 电源管理](#-电源管理)
     - [6.1 低功耗模式](#61-低功耗模式)
     - [6.2 睡眠唤醒](#62-睡眠唤醒)
     - [6.3 电池优化](#63-电池优化)
-  - [7. 调试与测试](#7-调试与测试)
+  - [🔬 调试与测试](#-调试与测试)
     - [7.1 probe-rs 调试](#71-probe-rs-调试)
     - [7.2 单元测试](#72-单元测试)
     - [7.3 硬件在环测试](#73-硬件在环测试)
-  - [8. 实战案例](#8-实战案例)
+  - [💻 实战案例](#-实战案例)
     - [8.1 案例1: LED 闪烁 (Hello World)](#81-案例1-led-闪烁-hello-world)
     - [8.2 案例2: 温湿度传感器](#82-案例2-温湿度传感器)
     - [8.3 案例3: 物联网设备](#83-案例3-物联网设备)
-  - [9. 最佳实践](#9-最佳实践)
-  - [10. 常见问题](#10-常见问题)
-  - [11. 参考资源](#11-参考资源)
+  - [📚 最佳实践](#-最佳实践)
+  - [✅ 常见问题](#-常见问题)
+  - [🌈 参考资源](#-参考资源)
 
 ## 📖 嵌入式 Rust 概述
 
@@ -176,7 +175,7 @@ use cortex_m_rt::entry;
 #[entry]
 fn main() -> ! {
     // 主程序逻辑
-    
+
     loop {
         // 无限循环 (嵌入式程序不应退出)
     }
@@ -334,14 +333,14 @@ SECTIONS
 // embedded-hal 核心 Trait
 pub trait OutputPin {
     type Error;
-    
+
     fn set_high(&mut self) -> Result<(), Self::Error>;
     fn set_low(&mut self) -> Result<(), Self::Error>;
 }
 
 pub trait InputPin {
     type Error;
-    
+
     fn is_high(&self) -> Result<bool, Self::Error>;
     fn is_low(&self) -> Result<bool, Self::Error>;
 }
@@ -366,18 +365,18 @@ use stm32f4xx_hal::{pac, prelude::*};
 fn main() -> ! {
     // 1. 获取外设句柄
     let dp = pac::Peripherals::take().unwrap();
-    
+
     // 2. 配置时钟
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     // 3. 获取 GPIO 端口
     let gpioa = dp.GPIOA.split();
-    
+
     // 4. 配置 GPIO 引脚
     let mut led = gpioa.pa5.into_push_pull_output();  // 输出模式
     let button = gpioa.pa0.into_pull_up_input();      // 输入模式
-    
+
     // 5. GPIO 操作
     loop {
         if button.is_high() {
@@ -399,21 +398,21 @@ fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     let gpioa = dp.GPIOA.split();
     let led_pin = gpioa.pa5.into_alternate();
-    
+
     // 配置 PWM
     let mut pwm = dp.TIM2.pwm_hz(led_pin, 1.kHz(), &clocks);
     pwm.enable();
-    
+
     let max_duty = pwm.get_max_duty();
     let mut duty = 0u16;
     let mut direction = true;
-    
+
     loop {
         pwm.set_duty(duty);
-        
+
         if direction {
             duty += max_duty / 100;
             if duty >= max_duty {
@@ -425,7 +424,7 @@ fn main() -> ! {
                 direction = true;
             }
         }
-        
+
         cortex_m::asm::delay(100_000);
     }
 }
@@ -443,22 +442,22 @@ fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     let gpioa = dp.GPIOA.split();
     let analog_pin = gpioa.pa0.into_analog();
-    
+
     // 配置 ADC
     let mut adc = Adc::adc1(dp.ADC1, true, Default::default());
-    
+
     loop {
         // 读取 ADC 值 (0-4095)
         let sample: u16 = adc.read(&mut analog_pin).unwrap();
-        
+
         // 转换为电压 (假设参考电压 3.3V)
         let voltage = (sample as f32 / 4095.0) * 3.3;
-        
+
         // 这里可以通过 UART 输出或 LCD 显示
-        
+
         cortex_m::asm::delay(1_000_000);
     }
 }
@@ -539,15 +538,15 @@ mod app {
         let dp = cx.device;
         let rcc = dp.RCC.constrain();
         let _clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-        
+
         let gpioa = dp.GPIOA.split();
         let led = gpioa.pa5.into_push_pull_output();
-        
+
         // 配置定时器中断
         let mut timer = dp.TIM2.counter_hz(&clocks);
         timer.start(1.Hz()).unwrap();
         timer.listen(timer::Event::Update);
-        
+
         (
             Shared { counter: 0 },
             Local { led },
@@ -557,11 +556,11 @@ mod app {
     #[task(binds = TIM2, shared = [counter], local = [led])]
     fn timer_task(mut cx: timer_task::Context) {
         // 每秒触发一次
-        
+
         cx.shared.counter.lock(|counter| {
             *counter += 1;
         });
-        
+
         // 切换 LED 状态
         cx.local.led.toggle();
     }
@@ -599,7 +598,7 @@ async fn main(_spawner: Spawner) {
         info!("LED ON");
         led.set_high();
         Timer::after_secs(1).await;
-        
+
         info!("LED OFF");
         led.set_low();
         Timer::after_secs(1).await;
@@ -633,7 +632,7 @@ async fn sensor_task() {
 async fn main(spawner: Spawner) {
     spawner.spawn(blink_task()).unwrap();
     spawner.spawn(sensor_task()).unwrap();
-    
+
     loop {
         Timer::after_secs(60).await;
     }
@@ -666,7 +665,7 @@ static EXECUTOR_LOW: StaticCell<Executor> = StaticCell::new();
 fn main() -> ! {
     let executor_high = EXECUTOR_HIGH.init(Executor::new());
     let executor_low = EXECUTOR_LOW.init(Executor::new());
-    
+
     executor_high.run(|spawner| {
         spawner.spawn(critical_task()).unwrap();
     });
@@ -689,11 +688,11 @@ fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     let gpioa = dp.GPIOA.split();
     let tx_pin = gpioa.pa2.into_alternate();
     let rx_pin = gpioa.pa3.into_alternate();
-    
+
     // 配置 UART (115200 baud)
     let mut serial = serial::Serial::new(
         dp.USART2,
@@ -704,13 +703,13 @@ fn main() -> ! {
             .parity_none(),
         &clocks,
     ).unwrap();
-    
+
     loop {
         // 发送字符串
         for byte in b"Hello, Embedded Rust!\r\n" {
             nb::block!(serial.write(*byte)).unwrap();
         }
-        
+
         cortex_m::asm::delay(10_000_000);
     }
 }
@@ -724,28 +723,28 @@ use rtic::app;
 #[app(device = stm32f4xx_hal::pac)]
 mod app {
     use super::*;
-    
+
     #[shared]
     struct Shared {
         buffer: heapless::Vec<u8, 64>,
     }
-    
+
     #[local]
     struct Local {
         serial: Serial<USART2>,
     }
-    
+
     #[init]
     fn init(cx: init::Context) -> (Shared, Local) {
         let mut serial = /* 初始化 UART */;
         serial.listen(serial::Event::Rxne);  // 启用接收中断
-        
+
         (
             Shared { buffer: heapless::Vec::new() },
             Local { serial },
         )
     }
-    
+
     #[task(binds = USART2, shared = [buffer], local = [serial])]
     fn uart_rx(mut cx: uart_rx::Context) {
         if let Ok(byte) = cx.local.serial.read() {
@@ -769,11 +768,11 @@ fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     let gpiob = dp.GPIOB.split();
     let scl = gpiob.pb8.into_alternate_open_drain();
     let sda = gpiob.pb9.into_alternate_open_drain();
-    
+
     // 配置 I2C (100 kHz)
     let mut i2c = I2c::new(
         dp.I2C1,
@@ -781,21 +780,21 @@ fn main() -> ! {
         100.kHz(),
         &clocks,
     );
-    
+
     let sensor_addr = 0x76;  // 传感器地址
     let reg_temp = 0xFA;     // 温度寄存器
-    
+
     loop {
         let mut buffer = [0u8; 2];
-        
+
         // 读取温度 (2 字节)
         i2c.write_read(sensor_addr, &[reg_temp], &mut buffer).unwrap();
-        
+
         let temp_raw = u16::from_be_bytes(buffer);
         let temperature = (temp_raw as f32) / 100.0;
-        
+
         // 这里可以通过 UART 输出或显示
-        
+
         cortex_m::asm::delay(10_000_000);
     }
 }
@@ -813,13 +812,13 @@ fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     let gpioa = dp.GPIOA.split();
     let sck = gpioa.pa5.into_alternate();
     let miso = gpioa.pa6.into_alternate();
     let mosi = gpioa.pa7.into_alternate();
     let mut cs = gpioa.pa4.into_push_pull_output();
-    
+
     // 配置 SPI (1 MHz)
     let mut spi = spi::Spi::new(
         dp.SPI1,
@@ -831,18 +830,18 @@ fn main() -> ! {
         1.MHz(),
         &clocks,
     );
-    
+
     loop {
         // 选中从设备
         cs.set_low();
-        
+
         // 发送数据
         let data = [0x01, 0x02, 0x03];
         spi.write(&data).unwrap();
-        
+
         // 取消选中
         cs.set_high();
-        
+
         cortex_m::asm::delay(10_000_000);
     }
 }
@@ -864,17 +863,17 @@ use cortex_m::peripheral::SCB;
 fn main() -> ! {
     let mut dp = pac::Peripherals::take().unwrap();
     let cp = cortex_m::Peripherals::take().unwrap();
-    
+
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     let mut scb = cp.SCB;
     let mut pwr = dp.PWR;
-    
+
     loop {
         // 执行任务
         do_work();
-        
+
         // 进入睡眠模式
         pwr.cr.modify(|_, w| w.lpds().set_bit());  // 低功耗深度睡眠
         scb.set_sleepdeep();
@@ -899,15 +898,15 @@ fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     // 配置 RTC (实时时钟)
     let mut rtc = rtc::Rtc::new(dp.RTC, &mut dp.PWR);
     rtc.set_wakeup_interrupt(rtc::WakeupDuration::Seconds(10));
-    
+
     loop {
         // 工作
         work();
-        
+
         // 睡眠 10 秒 (由 RTC 唤醒)
         sleep();
     }
@@ -979,13 +978,13 @@ use rtt_target::{rprintln, rtt_init_print};
 #[entry]
 fn main() -> ! {
     rtt_init_print!();
-    
+
     rprintln!("系统启动");
-    
+
     loop {
         rprintln!("计数: {}", counter);
         counter += 1;
-        
+
         cortex_m::asm::delay(10_000_000);
     }
 }
@@ -1009,14 +1008,14 @@ cargo embed --release --gdb
 #[defmt_test::tests]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_gpio() {
         let led = /* 初始化 GPIO */;
         led.set_high();
         assert!(led.is_set_high());
     }
-    
+
     #[test]
     fn test_adc() {
         let adc = /* 初始化 ADC */;
@@ -1079,17 +1078,17 @@ use stm32f4xx_hal::{pac, prelude::*};
 #[entry]
 fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
-    
+
     let rcc = dp.RCC.constrain();
     let _clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
-    
+
     let gpioa = dp.GPIOA.split();
     let mut led = gpioa.pa5.into_push_pull_output();
-    
+
     loop {
         led.set_high();
         cortex_m::asm::delay(10_000_000);
-        
+
         led.set_low();
         cortex_m::asm::delay(10_000_000);
     }
@@ -1114,31 +1113,31 @@ where
     fn new(pin: PIN) -> Self {
         Self { pin }
     }
-    
+
     fn read(&mut self) -> Result<(f32, f32), ()> {
         // 1. 发送起始信号 (拉低 18ms)
         let mut output = self.pin.into_push_pull_output();
         output.set_low();
         delay_ms(18);
-        
+
         // 2. 释放总线 (拉高 40us)
         output.set_high();
         delay_us(40);
-        
+
         // 3. 切换为输入模式
         let input = output.into_floating_input();
-        
+
         // 4. 等待 DHT22 响应 (拉低 80us + 拉高 80us)
         wait_for_low(&input, 100)?;
         wait_for_high(&input, 100)?;
-        
+
         // 5. 读取 40 位数据
         let mut data = [0u8; 5];
         for byte in data.iter_mut() {
             for bit in (0..8).rev() {
                 wait_for_low(&input, 100)?;
                 wait_for_high(&input, 100)?;
-                
+
                 // 高电平持续时间决定 0/1
                 delay_us(30);
                 if input.is_high() {
@@ -1146,7 +1145,7 @@ where
                 }
             }
         }
-        
+
         // 6. 验证校验和
         let checksum = data[0].wrapping_add(data[1])
             .wrapping_add(data[2])
@@ -1154,11 +1153,11 @@ where
         if checksum != data[4] {
             return Err(());
         }
-        
+
         // 7. 计算温湿度
         let humidity = ((data[0] as u16) << 8 | data[1] as u16) as f32 / 10.0;
         let temperature = ((data[2] as u16) << 8 | data[3] as u16) as f32 / 10.0;
-        
+
         Ok((temperature, humidity))
     }
 }
@@ -1178,31 +1177,31 @@ use esp_idf_svc::{
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
-    
+
     let peripherals = Peripherals::take().unwrap();
     let sys_loop = EspSystemEventLoop::take()?;
-    
+
     // 1. 连接 WiFi
     let mut wifi = BlockingWifi::wrap(
         EspWifi::new(peripherals.modem, sys_loop.clone(), None)?,
         sys_loop,
     )?;
-    
+
     wifi.set_configuration(&Configuration::Client(ClientConfiguration {
         ssid: "YourSSID".into(),
         password: "YourPassword".into(),
         ..Default::default()
     }))?;
-    
+
     wifi.start()?;
     wifi.connect()?;
     wifi.wait_netif_up()?;
-    
+
     println!("WiFi 已连接");
-    
+
     // 2. 连接 MQTT Broker
     let mqtt_config = MqttClientConfiguration::default();
-    
+
     let mut client = EspMqttClient::new(
         "mqtt://broker.hivemq.com:1883",
         &mqtt_config,
@@ -1210,22 +1209,22 @@ fn main() -> anyhow::Result<()> {
             println!("收到消息: {:?}", message);
         },
     )?;
-    
+
     // 3. 订阅主题
     client.subscribe("sensors/temperature", mqtt::QoS::AtMostOnce)?;
-    
+
     // 4. 发布消息
     loop {
         let temperature = read_sensor();
         let payload = format!("{{\"temp\": {}}}", temperature);
-        
+
         client.publish(
             "sensors/temperature",
             mqtt::QoS::AtMostOnce,
             false,
             payload.as_bytes(),
         )?;
-        
+
         std::thread::sleep(std::time::Duration::from_secs(10));
     }
 }
@@ -1311,7 +1310,7 @@ impl<PIN: OutputPin> LedDriver<PIN> {
     pub fn new(pin: PIN) -> Self {
         Self { pin }
     }
-    
+
     pub fn turn_on(&mut self) {
         self.pin.set_high().ok();
     }

@@ -1,6 +1,6 @@
 # CLI 工具开发
 
-> **核心库**: clap, dialoguer, indicatif, console, colored  
+> **核心库**: clap, dialoguer, indicatif, console, colored
 > **适用场景**: 命令行工具、交互式程序、进度显示、终端美化
 
 ---
@@ -154,15 +154,15 @@ struct Cli {
     /// Input file path
     #[arg(short, long)]
     input: String,
-    
+
     /// Output file path
     #[arg(short, long, default_value = "output.txt")]
     output: String,
-    
+
     /// Verbose mode
     #[arg(short, long)]
     verbose: bool,
-    
+
     /// Number of threads
     #[arg(short = 'j', long, default_value_t = 4)]
     threads: usize,
@@ -170,11 +170,11 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     println!("Input: {}", cli.input);
     println!("Output: {}", cli.output);
     println!("Threads: {}", cli.threads);
-    
+
     if cli.verbose {
         println!("Verbose mode enabled");
     }
@@ -223,19 +223,19 @@ enum Commands {
         /// Item name
         #[arg(short, long)]
         name: String,
-        
+
         /// Item description
         #[arg(short, long)]
         description: Option<String>,
     },
-    
+
     /// List all items
     List {
         /// Filter by tag
         #[arg(short, long)]
         tag: Option<String>,
     },
-    
+
     /// Remove an item
     Remove {
         /// Item ID
@@ -245,7 +245,7 @@ enum Commands {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     match &cli.command {
         Commands::Add { name, description } => {
             println!("Adding: {}", name);
@@ -288,11 +288,11 @@ use clap::Parser;
 
 fn validate_port(s: &str) -> Result<u16, String> {
     let port: u16 = s.parse().map_err(|_| format!("'{}' 不是有效的端口号", s))?;
-    
+
     if port < 1024 {
         return Err("端口号必须 >= 1024".to_string());
     }
-    
+
     Ok(port)
 }
 
@@ -301,7 +301,7 @@ struct Cli {
     /// Server port (must be >= 1024)
     #[arg(short, long, value_parser = validate_port)]
     port: u16,
-    
+
     /// Server host
     #[arg(short = 'H', long, default_value = "localhost")]
     host: String,
@@ -353,13 +353,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_prompt("Your name")
         .default("Guest".to_string())
         .interact_text()?;
-    
+
     // 密码输入（隐藏）
     let password: String = Password::new()
         .with_prompt("Password")
         .with_confirmation("Confirm password", "Passwords do not match")
         .interact()?;
-    
+
     // 单选
     let colors = vec!["Red", "Green", "Blue", "Yellow"];
     let selection = Select::new()
@@ -367,10 +367,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .items(&colors)
         .default(0)
         .interact()?;
-    
+
     println!("Name: {}", name);
     println!("Selected color: {}", colors[selection]);
-    
+
     Ok(())
 }
 ```
@@ -404,12 +404,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "Feature C",
         "Feature D",
     ];
-    
+
     let selections = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Select features to enable")
         .items(&options)
         .interact()?;
-    
+
     if selections.is_empty() {
         println!("No features selected");
     } else {
@@ -418,19 +418,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  - {}", options[i]);
         }
     }
-    
+
     // 确认
     let confirmed = Confirm::new()
         .with_prompt("Do you want to continue?")
         .default(true)
         .interact()?;
-    
+
     if confirmed {
         println!("Continuing...");
     } else {
         println!("Aborted");
     }
-    
+
     Ok(())
 }
 ```
@@ -459,13 +459,13 @@ use dialoguer::{Input, theme::CustomPromptCharacterTheme};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let theme = CustomPromptCharacterTheme::new('🚀');
-    
+
     let name: String = Input::with_theme(&theme)
         .with_prompt("Project name")
         .interact_text()?;
-    
+
     println!("Creating project: {}", name);
-    
+
     Ok(())
 }
 ```
@@ -506,15 +506,15 @@ use std::thread;
 fn main() {
     // 简单进度条
     let pb = ProgressBar::new(100);
-    
+
     for _ in 0..100 {
         pb.inc(1);
         thread::sleep(Duration::from_millis(50));
     }
     pb.finish_with_message("Done!");
-    
+
     println!("\n");
-    
+
     // 自定义样式进度条
     let pb = ProgressBar::new(1024);
     pb.set_style(
@@ -523,7 +523,7 @@ fn main() {
             .unwrap()
             .progress_chars("##-")
     );
-    
+
     for _ in 0..1024 {
         pb.inc(1);
         thread::sleep(Duration::from_millis(5));
@@ -552,19 +552,19 @@ fn main() {
     let style = ProgressStyle::default_bar()
         .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
         .unwrap();
-    
+
     let pb1 = m.add(ProgressBar::new(128));
     pb1.set_style(style.clone());
     pb1.set_message("Task 1");
-    
+
     let pb2 = m.add(ProgressBar::new(256));
     pb2.set_style(style.clone());
     pb2.set_message("Task 2");
-    
+
     let pb3 = m.add(ProgressBar::new(512));
     pb3.set_style(style.clone());
     pb3.set_message("Task 3");
-    
+
     // 模拟并发任务
     let h1 = {
         let pb = pb1.clone();
@@ -576,7 +576,7 @@ fn main() {
             pb.finish_with_message("Task 1 done!");
         })
     };
-    
+
     let h2 = {
         let pb = pb2.clone();
         thread::spawn(move || {
@@ -587,7 +587,7 @@ fn main() {
             pb.finish_with_message("Task 2 done!");
         })
     };
-    
+
     let h3 = {
         let pb = pb3.clone();
         thread::spawn(move || {
@@ -598,7 +598,7 @@ fn main() {
             pb.finish_with_message("Task 3 done!");
         })
     };
-    
+
     h1.join().unwrap();
     h2.join().unwrap();
     h3.join().unwrap();
@@ -628,15 +628,15 @@ fn main() {
             .unwrap()
     );
     pb.set_message("Loading...");
-    
+
     for _ in 0..50 {
         pb.tick();
         std::thread::sleep(Duration::from_millis(100));
     }
     pb.finish_with_message("Loaded!");
-    
+
     println!("\n");
-    
+
     // 下载进度条（显示速率）
     let pb = ProgressBar::new(1024 * 1024); // 1MB
     pb.set_style(
@@ -644,9 +644,9 @@ fn main() {
             .template("[{elapsed_precise}] {bar:40} {bytes}/{total_bytes} ({bytes_per_sec}) {msg}")
             .unwrap()
     );
-    
+
     pb.set_message("Downloading...");
-    
+
     for _ in 0..1024 {
         pb.inc(1024); // 1KB per iteration
         std::thread::sleep(Duration::from_millis(10));
@@ -693,20 +693,20 @@ fn main() {
     println!("{}", style("Red text").red());
     println!("{}", style("Green text").green());
     println!("{}", style("Blue text").blue());
-    
+
     // 背景色
     println!("{}", style("Red background").on_red());
-    
+
     // 组合样式
     println!("{}", style("Bold red").red().bold());
     println!("{}", style("Underline green").green().underlined());
-    
+
     // 自定义颜色
     println!("{}", style("Custom color").color256(208)); // Orange
-    
+
     // 条件样式
     let is_error = true;
-    println!("{}", 
+    println!("{}",
         style("Message")
             .color256(if is_error { 9 } else { 10 })
     );
@@ -720,13 +720,13 @@ use console::{Term, Key};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let term = Term::stdout();
-    
+
     // 清屏
     term.clear_screen()?;
-    
+
     // 写入并刷新
     term.write_line("Press any key...")?;
-    
+
     // 读取按键
     let key = term.read_key()?;
     match key {
@@ -743,7 +743,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             term.write_line(&format!("Key: {:?}", key))?;
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -771,15 +771,15 @@ struct Cli {
     /// Input directory
     #[arg(short, long)]
     input: PathBuf,
-    
+
     /// Output directory
     #[arg(short, long)]
     output: PathBuf,
-    
+
     /// File extension filter
     #[arg(short, long, default_value = "txt")]
     ext: String,
-    
+
     /// Verbose output
     #[arg(short, long)]
     verbose: bool,
@@ -787,16 +787,16 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    
+
     // 检查输入目录
     if !cli.input.exists() {
         eprintln!("Error: Input directory does not exist");
         std::process::exit(1);
     }
-    
+
     // 创建输出目录
     fs::create_dir_all(&cli.output)?;
-    
+
     // 收集文件
     let files: Vec<PathBuf> = fs::read_dir(&cli.input)?
         .filter_map(|entry| entry.ok())
@@ -808,14 +808,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap_or(false)
         })
         .collect();
-    
+
     if files.is_empty() {
         println!("No files found with extension .{}", cli.ext);
         return Ok(());
     }
-    
+
     println!("Found {} files to process", files.len());
-    
+
     // 创建进度条
     let pb = ProgressBar::new(files.len() as u64);
     pb.set_style(
@@ -823,39 +823,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg}")
             .unwrap()
     );
-    
+
     // 处理文件
     for file in &files {
         let file_name = file.file_name().unwrap().to_str().unwrap();
-        
+
         if cli.verbose {
             pb.set_message(format!("Processing: {}", file_name));
         }
-        
+
         // 模拟处理
         process_file(file, &cli.output)?;
-        
+
         pb.inc(1);
         std::thread::sleep(Duration::from_millis(100));
     }
-    
+
     pb.finish_with_message("All files processed!");
-    
+
     println!("\nProcessed {} files", files.len());
     println!("Output directory: {}", cli.output.display());
-    
+
     Ok(())
 }
 
 fn process_file(input: &Path, output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let content = fs::read_to_string(input)?;
-    
+
     // 简单处理：转大写
     let processed = content.to_uppercase();
-    
+
     let output_path = output_dir.join(input.file_name().unwrap());
     fs::write(output_path, processed)?;
-    
+
     Ok(())
 }
 ```
@@ -893,9 +893,9 @@ struct Config {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Interactive Project Configuration\n");
-    
+
     let theme = ColorfulTheme::default();
-    
+
     // 项目名称
     let project_name: String = Input::with_theme(&theme)
         .with_prompt("Project name")
@@ -907,7 +907,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         })
         .interact_text()?;
-    
+
     // 编程语言
     let languages = vec!["Rust", "Python", "JavaScript", "Go"];
     let lang_idx = Select::with_theme(&theme)
@@ -916,7 +916,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .default(0)
         .interact()?;
     let language = languages[lang_idx].to_string();
-    
+
     // 功能选择
     let feature_options = vec![
         "Web API",
@@ -929,12 +929,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_prompt("Select features (space to select, enter to confirm)")
         .items(&feature_options)
         .interact()?;
-    
+
     let features: Vec<String> = feature_selections
         .iter()
         .map(|&i| feature_options[i].to_string())
         .collect();
-    
+
     // 数据库选择（条件性）
     let database = if features.contains(&"Database Integration".to_string()) {
         let db_options = vec!["PostgreSQL", "MySQL", "SQLite", "None"];
@@ -943,7 +943,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .items(&db_options)
             .default(0)
             .interact()?;
-        
+
         if db_options[db_idx] != "None" {
             Some(db_options[db_idx].to_string())
         } else {
@@ -952,13 +952,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
-    
+
     // CI/CD
     let enable_ci = Confirm::with_theme(&theme)
         .with_prompt("Enable CI/CD?")
         .default(true)
         .interact()?;
-    
+
     // 生成配置
     let config = Config {
         project_name: project_name.clone(),
@@ -967,7 +967,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         database,
         enable_ci,
     };
-    
+
     // 显示摘要
     println!("\n📋 Configuration Summary:");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -978,13 +978,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Database: {}", db);
     }
     println!("CI/CD: {}", if config.enable_ci { "✓" } else { "✗" });
-    
+
     // 确认保存
     let save = Confirm::with_theme(&theme)
         .with_prompt("Save configuration?")
         .default(true)
         .interact()?;
-    
+
     if save {
         let config_json = serde_json::to_string_pretty(&config)?;
         let filename = format!("{}_config.json", config.project_name);
@@ -993,7 +993,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!("\n❌ Configuration not saved");
     }
-    
+
     Ok(())
 }
 ```
@@ -1056,7 +1056,7 @@ struct Cli {
     /// URLs to download
     #[arg(short, long, num_args = 1..)]
     urls: Vec<String>,
-    
+
     /// Number of concurrent downloads
     #[arg(short = 'j', long, default_value_t = 3)]
     jobs: usize,
@@ -1064,34 +1064,34 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    
+
     if cli.urls.is_empty() {
         eprintln!("Error: No URLs provided");
         std::process::exit(1);
     }
-    
-    println!("Starting {} downloads with {} concurrent jobs\n", 
+
+    println!("Starting {} downloads with {} concurrent jobs\n",
         cli.urls.len(), cli.jobs);
-    
+
     let m = MultiProgress::new();
     let style = ProgressStyle::default_bar()
         .template("[{elapsed_precise}] {bar:40.cyan/blue} {bytes}/{total_bytes} ({bytes_per_sec}) {msg}")
         .unwrap();
-    
+
     let mut handles = vec![];
-    
+
     for (i, url) in cli.urls.iter().enumerate() {
         let pb = m.add(ProgressBar::new(1024 * 1024)); // 1MB
         pb.set_style(style.clone());
         pb.set_message(format!("File {}", i + 1));
-        
+
         let url = url.clone();
         let handle = thread::spawn(move || {
             download_file(&url, pb);
         });
-        
+
         handles.push(handle);
-        
+
         // 限制并发
         if handles.len() >= cli.jobs {
             for h in handles.drain(..) {
@@ -1099,14 +1099,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     // 等待剩余任务
     for h in handles {
         h.join().unwrap();
     }
-    
+
     println!("\n✅ All downloads completed!");
-    
+
     Ok(())
 }
 
@@ -1114,14 +1114,14 @@ fn download_file(url: &str, pb: ProgressBar) {
     // 模拟下载
     let total_size = 1024 * 1024; // 1MB
     let chunk_size = 1024; // 1KB
-    
+
     pb.set_length(total_size);
-    
+
     for _ in 0..(total_size / chunk_size) {
         pb.inc(chunk_size);
         thread::sleep(Duration::from_millis(10));
     }
-    
+
     pb.finish_with_message(format!("Downloaded: {}", url));
 }
 ```
@@ -1158,7 +1158,7 @@ Starting 2 downloads with 2 concurrent jobs
 )]
 struct Cli {
     /// Input file to process
-    /// 
+    ///
     /// The input file should be in JSON format.
     /// Example: input.json
     #[arg(short, long, value_name = "FILE")]
@@ -1181,10 +1181,10 @@ fn process_file(path: &Path) -> Result<(), String> {
             path.display()
         ));
     }
-    
+
     let content = fs::read_to_string(path)
         .map_err(|e| format!("Failed to read file: {}", e))?;
-    
+
     // 处理内容
     Ok(())
 }
@@ -1220,12 +1220,12 @@ use indicatif::{ProgressBar, ProgressStyle};
 fn process_large_dataset(items: &[String]) {
     let pb = ProgressBar::new(items.len() as u64);
     pb.set_style(ProgressStyle::default_bar());
-    
+
     for item in items {
         // 处理
         pb.inc(1);
     }
-    
+
     pb.finish_with_message("Done!");
 }
 ```
@@ -1239,7 +1239,7 @@ use console::Term;
 
 fn main() {
     let term = Term::stdout();
-    
+
     if term.is_term() {
         // 输出到终端：使用颜色和进度条
         println!("{}", console::style("Colored output").green());
@@ -1280,17 +1280,17 @@ use std::time::Duration;
 fn main() {
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
-    
+
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
         println!("\nShutting down gracefully...");
     }).expect("Error setting Ctrl-C handler");
-    
+
     while running.load(Ordering::SeqCst) {
         // 工作
         std::thread::sleep(Duration::from_secs(1));
     }
-    
+
     println!("Cleanup complete");
 }
 ```
@@ -1409,6 +1409,6 @@ println!("{}", style("Error").red());
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **维护者**: Rust 学习社区

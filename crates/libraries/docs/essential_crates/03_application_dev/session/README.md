@@ -1,7 +1,7 @@
 # Session - 会话管理
 
-> **核心库**: tower-sessions, tower-cookies, redis  
-> **适用场景**: Web 会话管理、用户状态跟踪、分布式会话  
+> **核心库**: tower-sessions, tower-cookies, redis
+> **适用场景**: Web 会话管理、用户状态跟踪、分布式会话
 > **技术栈定位**: 应用开发层 - Web 应用状态管理
 
 ---
@@ -171,7 +171,7 @@ async fn login(session: Session) -> String {
         user_id: 42,
         username: "alice".to_string(),
     };
-    
+
     session.insert("user", user).await.unwrap();
     "登录成功".to_string()
 }
@@ -195,13 +195,13 @@ async fn main() {
         .with_secure(false) // 开发环境
         .with_http_only(true)
         .with_same_site(tower_sessions::cookie::SameSite::Lax);
-    
+
     let app = Router::new()
         .route("/login", get(login))
         .route("/profile", get(profile))
         .route("/logout", get(logout))
         .layer(session_layer);
-    
+
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
@@ -223,18 +223,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = RedisPool::new(config, None, None, None, 6)?;
     pool.connect();
     pool.wait_for_connect().await?;
-    
+
     // 创建 Redis 存储
     let session_store = RedisStore::new(pool);
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(true) // 生产环境必须
         .with_http_only(true)
         .with_same_site(tower_sessions::cookie::SameSite::Strict);
-    
+
     let app = Router::new()
         .route("/", get(handler))
         .layer(session_layer);
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app).await?;
     Ok(())
@@ -260,12 +260,12 @@ let session_layer = SessionManagerLayer::new(store)
     .with_secure(true)           // 仅 HTTPS
     .with_http_only(true)        // 防止 XSS
     .with_same_site(tower_sessions::cookie::SameSite::Strict)  // CSRF 保护
-    
+
     // 过期策略
     .with_expiry(Expiry::OnInactivity(
         Duration::from_secs(3600)  // 1小时不活动后过期
     ))
-    
+
     // Cookie 配置
     .with_name("session_id")     // Cookie 名称
     .with_domain("example.com")  // 域名
@@ -288,21 +288,21 @@ impl SessionStore for CustomStore {
         // 实现创建逻辑
         Ok(())
     }
-    
+
     async fn save(&self, record: &SessionRecord) -> tower_sessions::session_store::Result<()> {
         // 实现保存逻辑
         Ok(())
     }
-    
-    async fn load(&self, session_id: &tower_sessions::session::Id) 
-        -> tower_sessions::session_store::Result<Option<SessionRecord>> 
+
+    async fn load(&self, session_id: &tower_sessions::session::Id)
+        -> tower_sessions::session_store::Result<Option<SessionRecord>>
     {
         // 实现加载逻辑
         Ok(None)
     }
-    
-    async fn delete(&self, session_id: &tower_sessions::session::Id) 
-        -> tower_sessions::session_store::Result<()> 
+
+    async fn delete(&self, session_id: &tower_sessions::session::Id)
+        -> tower_sessions::session_store::Result<()>
     {
         // 实现删除逻辑
         Ok(())
@@ -362,7 +362,7 @@ async fn main() {
         .route("/get", get(get_cookie))
         .route("/remove", get(remove_cookie))
         .layer(CookieManagerLayer::new());
-    
+
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
@@ -383,7 +383,7 @@ async fn signed_cookie(cookies: Cookies) {
     cookie.set_http_only(true);
     cookie.set_secure(true);
     cookie.set_max_age(Some(Duration::hours(24)));
-    
+
     cookies.signed(&key).add(cookie);
 }
 ```
@@ -398,8 +398,8 @@ async fn signed_cookie(cookies: Cookies) {
 
 ```rust
 use axum::{
-    Router, routing::{get, post}, 
-    extract::State, 
+    Router, routing::{get, post},
+    extract::State,
     http::StatusCode,
     Json,
 };
@@ -427,16 +427,16 @@ async fn login(
     if req.password != "secret" {
         return Err(StatusCode::UNAUTHORIZED);
     }
-    
+
     let user = User {
         id: 1,
         username: req.username,
         role: "admin".to_string(),
     };
-    
+
     session.insert("user", user).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok("登录成功".to_string())
 }
 
@@ -444,7 +444,7 @@ async fn protected_route(session: Session) -> Result<String, StatusCode> {
     let user: User = session.get("user").await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     Ok(format!("欢迎，{}！您的角色是: {}", user.username, user.role))
 }
 
@@ -458,13 +458,13 @@ async fn logout(session: Session) -> Result<String, StatusCode> {
 async fn main() {
     let session_store = MemoryStore::default();
     let session_layer = SessionManagerLayer::new(session_store);
-    
+
     let app = Router::new()
         .route("/login", post(login))
         .route("/protected", get(protected_route))
         .route("/logout", post(logout))
         .layer(session_layer);
-    
+
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
@@ -499,12 +499,12 @@ async fn add_to_cart(
     let mut cart: Cart = session.get("cart").await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .unwrap_or_default();
-    
+
     cart.items.push(item);
-    
+
     session.insert("cart", cart).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok("已添加到购物车".to_string())
 }
 
@@ -512,7 +512,7 @@ async fn view_cart(session: Session) -> Result<Json<Cart>, StatusCode> {
     let cart: Cart = session.get("cart").await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .unwrap_or_default();
-    
+
     Ok(Json(cart))
 }
 
@@ -680,6 +680,6 @@ let user = session.get::<User>("user").await?
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 95/100

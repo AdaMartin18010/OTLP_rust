@@ -1,6 +1,6 @@
 # Logging - Rust 日志与可观测性
 
-> **核心库**: log, tracing, env_logger, tracing-subscriber  
+> **核心库**: log, tracing, env_logger, tracing-subscriber
 > **适用场景**: 应用日志、分布式追踪、结构化日志、性能分析
 
 ## 📋 目录
@@ -144,7 +144,7 @@ use log::{error, warn, info, debug, trace};
 fn main() {
     // 需要配置实现（如 env_logger）
     env_logger::init();
-    
+
     error!("发生错误: {}", "数据库连接失败");
     warn!("警告: 磁盘空间不足");
     info!("服务器启动在端口 {}", 8080);
@@ -183,7 +183,7 @@ env_logger = "0.11"
 fn main() {
     // 最简单配置
     env_logger::init();
-    
+
     // 或者使用 Builder 自定义
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Info)
@@ -255,17 +255,17 @@ use tracing::{info, warn, error, debug, trace};
 
 fn main() {
     tracing_subscriber::fmt::init();
-    
+
     // 基础日志
     info!("服务器启动");
-    
+
     // 结构化字段
     info!(
         user_id = 123,
         action = "login",
         "用户登录成功"
     );
-    
+
     // 动态字段
     let user = "alice";
     debug!(user, "处理请求");
@@ -281,9 +281,9 @@ fn process_request(id: u64) {
     // 创建 Span
     let span = span!(Level::INFO, "request", id);
     let _guard = span.enter();
-    
+
     info!("开始处理");
-    
+
     // 嵌套 Span
     let db_span = span!(Level::DEBUG, "database");
     let _db_guard = db_span.enter();
@@ -304,7 +304,7 @@ use tracing::instrument;
 fn create_user(name: String, age: u32) -> Result<User, Error> {
     // 自动创建 Span: create_user{name="alice" age=30}
     info!("创建用户");
-    
+
     // 函数参数自动记录
     db::insert_user(name, age)
 }
@@ -354,7 +354,7 @@ fn main() {
         .with_max_level(tracing::Level::INFO)
         .with_current_span(true)
         .init();
-    
+
     tracing::info!(
         user_id = 123,
         action = "login",
@@ -374,11 +374,11 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
 fn main() {
     let console_layer = fmt::layer()
         .with_writer(std::io::stdout);
-    
+
     let file_layer = fmt::layer()
         .json()
         .with_writer(std::fs::File::create("app.log").unwrap());
-    
+
     tracing_subscriber::registry()
         .with(EnvFilter::from_default_env())
         .with(console_layer)
@@ -411,11 +411,11 @@ async fn main() {
         .with_target(false)
         .compact()
         .init();
-    
+
     let app = Router::new()
         .route("/api/:id", get(handler))
         .layer(TraceLayer::new_for_http());
-    
+
     info!("服务器启动在 0.0.0.0:3000");
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
@@ -449,13 +449,13 @@ async fn main() {
         .with_service_name("my-service")
         .install_simple()
         .unwrap();
-    
+
     tracing_subscriber::registry()
         .with(OpenTelemetryLayer::new(tracer))
         .init();
-    
+
     service_a().await;
-    
+
     global::shutdown_tracer_provider();
 }
 ```
@@ -469,9 +469,9 @@ use tracing::{info_span, instrument};
 fn expensive_operation() {
     let _span = info_span!("phase1").entered();
     // 阶段 1 代码
-    
+
     drop(_span);
-    
+
     let _span = info_span!("phase2").entered();
     // 阶段 2 代码
 }
@@ -533,7 +533,7 @@ use tracing_subscriber::fmt;
 
 fn init_logging() {
     let env = std::env::var("ENVIRONMENT").unwrap_or_default();
-    
+
     if env == "production" {
         // 生产环境：JSON 格式，无颜色
         fmt()
@@ -638,6 +638,6 @@ for (i, item) in large_list.iter().enumerate() {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 96/100

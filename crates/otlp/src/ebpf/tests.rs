@@ -129,4 +129,123 @@ mod tests {
 
         // 验证内存追踪器已创建
     }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_probe_manager_operations() {
+        let mut manager = super::probes::ProbeManager::new();
+
+        // 测试附加探针
+        assert!(manager.attach_kprobe("test_kprobe", "test_func").is_ok());
+        assert!(manager.attach_uprobe("test_uprobe", "/bin/test", "test_symbol").is_ok());
+        assert!(manager.attach_tracepoint("test_tp", "syscalls", "sys_enter_open").is_ok());
+
+        // 测试探针数量
+        assert_eq!(manager.probe_count(), 3);
+
+        // 测试列出探针
+        let probes = manager.list_probes();
+        assert_eq!(probes.len(), 3);
+
+        // 测试分离探针
+        assert!(manager.detach("test_kprobe").is_ok());
+        assert_eq!(manager.probe_count(), 2);
+
+        // 测试分离所有探针
+        assert!(manager.detach_all().is_ok());
+        assert_eq!(manager.probe_count(), 0);
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_event_processor_operations() {
+        let mut processor = super::events::EventProcessor::new(100);
+
+        // 测试处理事件
+        let event1 = EbpfEvent::new(EbpfEventType::CpuSample, 1000, 2000, vec![1, 2, 3]);
+        let event2 = EbpfEvent::new(EbpfEventType::NetworkPacket, 1000, 2000, vec![4, 5, 6]);
+        let event3 = EbpfEvent::new(EbpfEventType::Syscall, 2000, 3000, vec![7, 8, 9]);
+
+        assert!(processor.process_event(event1.clone()).is_ok());
+        assert!(processor.process_event(event2.clone()).is_ok());
+        assert!(processor.process_event(event3.clone()).is_ok());
+
+        // 测试事件数量
+        assert_eq!(processor.event_count(), 3);
+
+        // 测试按类型过滤
+        let cpu_events = processor.filter_by_type(EbpfEventType::CpuSample);
+        assert_eq!(cpu_events.len(), 1);
+
+        // 测试按 PID 过滤
+        let pid_events = processor.filter_by_pid(1000);
+        assert_eq!(pid_events.len(), 2);
+
+        // 测试刷新事件
+        let flushed = processor.flush_events().unwrap();
+        assert_eq!(flushed.len(), 3);
+        assert_eq!(processor.event_count(), 0);
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_maps_manager_operations() {
+        let mut manager = super::maps::MapsManager::new();
+
+        // 测试注册 Map
+        manager.register_map(
+            "test_map".to_string(),
+            super::maps::MapType::Hash,
+            4,
+            8,
+        );
+
+        assert_eq!(manager.map_count(), 1);
+
+        // 测试获取 Map 信息
+        let info = manager.get_map_info("test_map");
+        assert!(info.is_some());
+        assert_eq!(info.unwrap().key_size, 4);
+        assert_eq!(info.unwrap().value_size, 8);
+
+        // 测试列出 Maps
+        let maps = manager.list_maps();
+        assert_eq!(maps.len(), 1);
+
+        // 测试读取和写入（占位实现）
+        assert!(manager.write_map("test_map", &[1, 2, 3, 4], &[5, 6, 7, 8]).is_ok());
+        assert!(manager.read_map("test_map", &[1, 2, 3, 4]).is_ok());
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_loader_validation() {
+        let config = EbpfConfig::default();
+        let loader = super::loader::EbpfLoader::new(config);
+
+        // 测试验证空程序
+        let empty_program = vec![];
+        assert!(loader.validate_program(&empty_program).is_err());
+
+        // 测试验证过短程序
+        let short_program = vec![1, 2, 3];
+        assert!(loader.validate_program(&short_program).is_err());
+
+        // 测试验证有效 ELF 格式
+        let mut elf_program = vec![0x7F, b'E', b'L', b'F'];
+        elf_program.extend(vec![0; 100]);
+        assert!(loader.validate_program(&elf_program).is_ok());
+
+        // 测试检查加载状态
+        assert!(!loader.is_loaded());
+    }
+
+    #[test]
+    fn test_ebpf_overhead_metrics_default() {
+        use crate::ebpf::types::EbpfOverheadMetrics;
+        let metrics = EbpfOverheadMetrics::default();
+        assert_eq!(metrics.cpu_percent, 0.0);
+        assert_eq!(metrics.memory_bytes, 0);
+        assert_eq!(metrics.event_latency_us, 0);
+    }
 }

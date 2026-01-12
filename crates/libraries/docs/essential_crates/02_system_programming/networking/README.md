@@ -1,7 +1,7 @@
 # 网络编程
 
-> **核心库**: mio, socket2, quinn, hyper  
-> **适用场景**: 事件驱动 I/O、底层网络控制、QUIC 协议、HTTP 客户端/服务器  
+> **核心库**: mio, socket2, quinn, hyper
+> **适用场景**: 事件驱动 I/O、底层网络控制、QUIC 协议、HTTP 客户端/服务器
 > **技术栈定位**: 系统编程层 - 高性能网络编程基础
 
 ---
@@ -203,27 +203,27 @@ fn main() -> io::Result<()> {
     // 创建事件循环
     let mut poll = Poll::new()?;
     let mut events = Events::with_capacity(128);
-    
+
     // 绑定 TCP 监听器
     let addr = "127.0.0.1:9000".parse().unwrap();
     let mut server = TcpListener::bind(addr)?;
-    
+
     // 注册到事件循环
     poll.registry().register(
         &mut server,
         SERVER,
         Interest::READABLE,
     )?;
-    
+
     let mut connections: HashMap<Token, TcpStream> = HashMap::new();
     let mut unique_token = Token(SERVER.0 + 1);
-    
+
     println!("Server listening on {}", addr);
-    
+
     loop {
         // 等待事件
         poll.poll(&mut events, None)?;
-        
+
         for event in events.iter() {
             match event.token() {
                 SERVER => {
@@ -232,14 +232,14 @@ fn main() -> io::Result<()> {
                         match server.accept() {
                             Ok((mut connection, address)) => {
                                 println!("Accepted connection from: {}", address);
-                                
+
                                 let token = next(&mut unique_token);
                                 poll.registry().register(
                                     &mut connection,
                                     token,
                                     Interest::READABLE,
                                 )?;
-                                
+
                                 connections.insert(token, connection);
                             }
                             Err(ref err) if would_block(err) => break,
@@ -254,7 +254,7 @@ fn main() -> io::Result<()> {
                     } else {
                         false
                     };
-                    
+
                     if done {
                         connections.remove(&token);
                     }
@@ -282,7 +282,7 @@ fn handle_connection_event(
     if event.is_readable() {
         let mut received_data = vec![0; 4096];
         let mut bytes_read = 0;
-        
+
         // 读取数据
         loop {
             match connection.read(&mut received_data[bytes_read..]) {
@@ -300,13 +300,13 @@ fn handle_connection_event(
                 Err(err) => return Err(err),
             }
         }
-        
+
         if bytes_read != 0 {
             received_data.truncate(bytes_read);
-            
+
             // Echo back
             connection.write_all(&received_data)?;
-            
+
             // 重新注册为可写
             registry.reregister(
                 connection,
@@ -315,7 +315,7 @@ fn handle_connection_event(
             )?;
         }
     }
-    
+
     if event.is_writable() {
         // 写完成后，重新注册为可读
         registry.reregister(
@@ -324,7 +324,7 @@ fn handle_connection_event(
             Interest::READABLE,
         )?;
     }
-    
+
     Ok(false)
 }
 ```
@@ -344,10 +344,10 @@ const WAKER: Token = Token(0);
 fn main() -> io::Result<()> {
     let mut poll = Poll::new()?;
     let mut events = Events::with_capacity(128);
-    
+
     // 创建唤醒器
     let waker = Arc::new(Waker::new(poll.registry(), WAKER)?);
-    
+
     // 在另一个线程中唤醒事件循环
     let waker_clone = Arc::clone(&waker);
     thread::spawn(move || {
@@ -355,17 +355,17 @@ fn main() -> io::Result<()> {
         println!("Waking up the event loop!");
         waker_clone.wake().expect("Failed to wake");
     });
-    
+
     println!("Waiting for events...");
-    
+
     poll.poll(&mut events, None)?;
-    
+
     for event in events.iter() {
         if event.token() == WAKER {
             println!("Woken up!");
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -400,35 +400,35 @@ use std::time::Duration;
 fn main() -> std::io::Result<()> {
     // 创建 TCP socket
     let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
-    
+
     // 设置 SO_REUSEADDR
     socket.set_reuse_address(true)?;
-    
+
     // 设置 TCP_NODELAY (禁用 Nagle 算法)
     socket.set_nodelay(true)?;
-    
+
     // 设置 keepalive
     socket.set_keepalive(true)?;
-    
+
     // 设置发送超时
     socket.set_write_timeout(Some(Duration::from_secs(5)))?;
-    
+
     // 设置接收缓冲区
     socket.set_recv_buffer_size(8192)?;
     socket.set_send_buffer_size(8192)?;
-    
+
     // 绑定地址
     let addr: SocketAddr = "0.0.0.0:8080".parse().unwrap();
     socket.bind(&addr.into())?;
-    
+
     // 开始监听
     socket.listen(128)?;
-    
+
     println!("Socket configured and listening on {}", addr);
-    
+
     // 转换为标准库类型
     let listener: std::net::TcpListener = socket.into();
-    
+
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
@@ -439,7 +439,7 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -455,21 +455,21 @@ use std::net::SocketAddr;
 fn main() -> std::io::Result<()> {
     // 创建 UDP socket
     let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
-    
+
     // 设置广播
     socket.set_broadcast(true)?;
-    
+
     // 绑定到任意地址
     let bind_addr: SocketAddr = "0.0.0.0:0".parse().unwrap();
     socket.bind(&bind_addr.into())?;
-    
+
     // 发送广播
     let broadcast_addr: SocketAddr = "255.255.255.255:9000".parse().unwrap();
     let message = b"Hello, broadcast!";
     socket.send_to(message, &broadcast_addr.into())?;
-    
+
     println!("Broadcast sent to {}", broadcast_addr);
-    
+
     Ok(())
 }
 ```
@@ -510,22 +510,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let cert = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
     let cert_der = cert.serialize_der()?;
     let priv_key = cert.serialize_private_key_der();
-    
+
     let cert_chain = vec![rustls::Certificate(cert_der)];
     let key_der = rustls::PrivateKey(priv_key);
-    
+
     // 配置 TLS
     let mut server_config = ServerConfig::with_single_cert(cert_chain, key_der)?;
-    
+
     // QUIC 传输配置
     let mut transport_config = quinn::TransportConfig::default();
     transport_config.max_concurrent_uni_streams(0_u8.into());
     server_config.transport = Arc::new(transport_config);
-    
+
     // 创建端点
     let endpoint = Endpoint::server(server_config, "127.0.0.1:5000".parse()?)?;
     println!("QUIC server listening on {}", endpoint.local_addr()?);
-    
+
     // 接受连接
     while let Some(conn) = endpoint.accept().await {
         tokio::spawn(async move {
@@ -540,7 +540,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         });
     }
-    
+
     Ok(())
 }
 
@@ -552,7 +552,7 @@ async fn handle_connection(conn: quinn::Connection) {
                     // 读取数据
                     let data = recv.read_to_end(10_000).await.unwrap_or_default();
                     println!("Received {} bytes", data.len());
-                    
+
                     // 回显
                     send.write_all(&data).await.ok();
                     send.finish().await.ok();
@@ -584,29 +584,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .with_custom_certificate_verifier(SkipServerVerification::new())
             .with_no_client_auth()
     );
-    
+
     // 创建端点
     let mut endpoint = Endpoint::client("0.0.0.0:0".parse()?)?;
     endpoint.set_default_client_config(client_config);
-    
+
     // 连接服务器
     let connection = endpoint
         .connect("127.0.0.1:5000".parse()?, "localhost")?
         .await?;
-    
+
     println!("Connected to server");
-    
+
     // 打开双向流
     let (mut send, mut recv) = connection.open_bi().await?;
-    
+
     // 发送数据
     send.write_all(b"Hello, QUIC!").await?;
     send.finish().await?;
-    
+
     // 接收数据
     let response = recv.read_to_end(10_000).await?;
     println!("Response: {}", String::from_utf8_lossy(&response));
-    
+
     Ok(())
 }
 
@@ -695,10 +695,10 @@ async fn handle(
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let listener = TcpListener::bind("127.0.0.1:3000").await?;
     println!("Listening on http://127.0.0.1:3000");
-    
+
     loop {
         let (stream, _) = listener.accept().await?;
-        
+
         tokio::task::spawn(async move {
             if let Err(err) = http1::Builder::new()
                 .serve_connection(stream, service_fn(handle))
@@ -933,6 +933,6 @@ match connection.read(&mut buffer) {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 95/100

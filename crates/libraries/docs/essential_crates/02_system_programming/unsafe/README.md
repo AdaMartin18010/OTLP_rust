@@ -1,7 +1,7 @@
 # Unsafe Rust - 不安全代码与底层操作完全指南
 
-> **核心概念**: 原始指针、未定义行为、内存安全、FFI、内联汇编  
-> **核心模块**: std::ptr, std::mem, std::slice, std::intrinsics  
+> **核心概念**: 原始指针、未定义行为、内存安全、FFI、内联汇编
+> **核心模块**: std::ptr, std::mem, std::slice, std::intrinsics
 > **适用场景**: FFI、性能优化、底层系统编程、硬件交互
 
 ## 📋 目录
@@ -130,15 +130,15 @@ unsafe {
 ```rust
 fn main() {
     let mut num = 5;
-    
+
     // 从引用创建（安全）
     let r1 = &num as *const i32;
     let r2 = &mut num as *mut i32;
-    
+
     // 从地址创建（非常危险！）
     let address = 0x012345usize;
     let r = address as *const i32;  // 可能导致段错误
-    
+
     // 空指针
     let null_ptr: *const i32 = std::ptr::null();
     let null_mut: *mut i32 = std::ptr::null_mut();
@@ -152,11 +152,11 @@ fn main() {
     let mut num = 5;
     let r1 = &num as *const i32;
     let r2 = &mut num as *mut i32;
-    
+
     unsafe {
         // 读取
         println!("r1: {}", *r1);
-        
+
         // 写入
         *r2 = 10;
         println!("r2: {}", *r2);
@@ -170,13 +170,13 @@ fn main() {
 fn main() {
     let arr = [1, 2, 3, 4, 5];
     let ptr = arr.as_ptr();
-    
+
     unsafe {
         // 指针偏移
         println!("第 1 个: {}", *ptr);
         println!("第 2 个: {}", *ptr.offset(1));   // 或 ptr.add(1)
         println!("第 3 个: {}", *ptr.add(2));
-        
+
         // 从后向前
         let end_ptr = ptr.add(arr.len());
         println!("最后: {}", *end_ptr.offset(-1));  // 或 end_ptr.sub(1)
@@ -198,11 +198,11 @@ fn main() {
     println!("i32 大小: {} 字节", mem::size_of::<i32>());
     println!("&i32 大小: {} 字节", mem::size_of::<&i32>());
     println!("String 大小: {} 字节", mem::size_of::<String>());
-    
+
     // 对齐要求
     println!("i32 对齐: {}", mem::align_of::<i32>());
     println!("i64 对齐: {}", mem::align_of::<i64>());
-    
+
     // 值的大小
     let s = String::from("hello");
     println!("s 大小: {}", mem::size_of_val(&s));
@@ -217,15 +217,15 @@ use std::mem;
 fn main() {
     let mut x = 5;
     let mut y = 10;
-    
+
     // 交换两个值
     mem::swap(&mut x, &mut y);
     println!("x: {}, y: {}", x, y);  // x: 10, y: 5
-    
+
     // 替换值并返回旧值
     let old = mem::replace(&mut x, 42);
     println!("old: {}, x: {}", old, x);  // old: 10, x: 42
-    
+
     // 取出值并留下默认值
     let mut s = Some(String::from("hello"));
     let value = mem::take(&mut s);  // s 现在是 None
@@ -240,18 +240,18 @@ use std::mem;
 
 fn main() {
     // ⚠️ 非常危险！只在极少数情况下使用
-    
+
     unsafe {
         // u32 → i32
         let a: u32 = 42;
         let b: i32 = mem::transmute(a);
         println!("b: {}", b);
-        
+
         // 数组 → 整数
         let arr: [u8; 4] = [1, 2, 3, 4];
         let num: u32 = mem::transmute(arr);
         println!("num: {}", num);
-        
+
         // 函数指针转换
         fn foo() -> i32 { 42 }
         let ptr: fn() -> i32 = foo;
@@ -273,16 +273,16 @@ use std::ptr;
 fn main() {
     let mut value = 42;
     let ptr = &mut value as *mut i32;
-    
+
     unsafe {
         // 读取
         let read_value = ptr::read(ptr);
         println!("读取: {}", read_value);
-        
+
         // 写入
         ptr::write(ptr, 100);
         println!("写入后: {}", value);
-        
+
         // 不稳定的读写（volatile）
         let volatile_value = ptr::read_volatile(ptr);
         ptr::write_volatile(ptr, 200);
@@ -298,15 +298,15 @@ use std::ptr;
 fn main() {
     let src = vec![1, 2, 3, 4, 5];
     let mut dst = vec![0; 5];
-    
+
     unsafe {
         // 复制内存（内存可重叠）
         ptr::copy(src.as_ptr(), dst.as_mut_ptr(), src.len());
         println!("{:?}", dst);  // [1, 2, 3, 4, 5]
-        
+
         // 非重叠复制（性能更好）
         ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), src.len());
-        
+
         // 填充内存
         ptr::write_bytes(dst.as_mut_ptr(), 0, dst.len());
         println!("{:?}", dst);  // [0, 0, 0, 0, 0]
@@ -325,7 +325,7 @@ fn process_ptr(ptr: *const i32) {
         println!("空指针！");
         return;
     }
-    
+
     unsafe {
         println!("值: {}", *ptr);
     }
@@ -350,12 +350,12 @@ use std::slice;
 fn main() {
     let arr = [1, 2, 3, 4, 5];
     let ptr = arr.as_ptr();
-    
+
     unsafe {
         // 创建切片
         let slice = slice::from_raw_parts(ptr, arr.len());
         println!("{:?}", slice);  // [1, 2, 3, 4, 5]
-        
+
         // 部分切片
         let partial = slice::from_raw_parts(ptr.add(2), 3);
         println!("{:?}", partial);  // [3, 4, 5]
@@ -371,13 +371,13 @@ use std::slice;
 fn main() {
     let mut arr = [1, 2, 3, 4, 5];
     let ptr = arr.as_mut_ptr();
-    
+
     unsafe {
         let slice = slice::from_raw_parts_mut(ptr, arr.len());
         slice[0] = 10;
         slice[1] = 20;
     }
-    
+
     println!("{:?}", arr);  // [10, 20, 3, 4, 5]
 }
 ```
@@ -398,7 +398,7 @@ extern "C" {
 fn main() {
     unsafe {
         println!("abs(-42) = {}", abs(-42));
-        
+
         let c_str = b"Hello\0";
         let len = strlen(c_str.as_ptr() as *const i8);
         println!("strlen = {}", len);
@@ -565,18 +565,18 @@ impl<T> MyVec<T> {
             cap: 0,
         }
     }
-    
+
     pub fn push(&mut self, value: T) {
         if self.len == self.cap {
             self.grow();
         }
-        
+
         unsafe {
             std::ptr::write(self.ptr.add(self.len), value);
         }
         self.len += 1;
     }
-    
+
     pub fn pop(&mut self) -> Option<T> {
         if self.len == 0 {
             None
@@ -587,15 +587,15 @@ impl<T> MyVec<T> {
             }
         }
     }
-    
+
     fn grow(&mut self) {
         let new_cap = if self.cap == 0 { 1 } else { self.cap * 2 };
         let new_layout = std::alloc::Layout::array::<T>(new_cap).unwrap();
-        
+
         let new_ptr = unsafe {
             std::alloc::alloc(new_layout) as *mut T
         };
-        
+
         if !self.ptr.is_null() && self.cap > 0 {
             unsafe {
                 std::ptr::copy_nonoverlapping(self.ptr, new_ptr, self.len);
@@ -603,7 +603,7 @@ impl<T> MyVec<T> {
                 std::alloc::dealloc(self.ptr as *mut u8, old_layout);
             }
         }
-        
+
         self.ptr = new_ptr;
         self.cap = new_cap;
     }
@@ -617,7 +617,7 @@ impl<T> Drop for MyVec<T> {
                 for i in 0..self.len {
                     std::ptr::drop_in_place(self.ptr.add(i));
                 }
-                
+
                 // 释放内存
                 let layout = std::alloc::Layout::array::<T>(self.cap).unwrap();
                 std::alloc::dealloc(self.ptr as *mut u8, layout);
@@ -666,19 +666,19 @@ use std::arch::x86_64::*;
 #[target_feature(enable = "avx2")]
 unsafe fn sum_simd(data: &[f32]) -> f32 {
     let mut sum = _mm256_setzero_ps();
-    
+
     let chunks = data.chunks_exact(8);
     let remainder = chunks.remainder();
-    
+
     for chunk in chunks {
         let values = _mm256_loadu_ps(chunk.as_ptr());
         sum = _mm256_add_ps(sum, values);
     }
-    
+
     // 水平求和
     let mut result = [0f32; 8];
     _mm256_storeu_ps(result.as_mut_ptr(), sum);
-    
+
     result.iter().sum::<f32>() + remainder.iter().sum::<f32>()
 }
 ```
@@ -723,7 +723,7 @@ impl SafeWrapper {
         let ptr = Box::into_raw(data.into_boxed_slice()) as *mut i32;
         Self { ptr, len }
     }
-    
+
     // 安全的公共接口
     pub fn get(&self, index: usize) -> Option<i32> {
         if index < self.len {
@@ -732,7 +732,7 @@ impl SafeWrapper {
             None
         }
     }
-    
+
     pub fn set(&mut self, index: usize, value: i32) -> bool {
         if index < self.len {
             unsafe { *self.ptr.add(index) = value; }
@@ -783,18 +783,18 @@ pub unsafe fn from_raw<T>(ptr: *const T, len: usize) -> &'static [T] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_safe_wrapper() {
         let mut wrapper = SafeWrapper::new(vec![1, 2, 3]);
-        
+
         assert_eq!(wrapper.get(0), Some(1));
         assert_eq!(wrapper.get(5), None);
-        
+
         assert!(wrapper.set(1, 20));
         assert_eq!(wrapper.get(1), Some(20));
     }
-    
+
     #[test]
     #[should_panic]
     fn test_out_of_bounds() {
@@ -1066,6 +1066,6 @@ Rust 的 Unsafe 代码必须避免以下未定义行为：
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 98/100

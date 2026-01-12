@@ -1,6 +1,6 @@
 # FFI 与互操作 - Rust C/C++ 互操作指南
 
-> **核心库**: libc, bindgen, cc, cbindgen, cxx  
+> **核心库**: libc, bindgen, cc, cbindgen, cxx
 > **适用场景**: C/C++集成、系统调用、遗留代码复用、跨语言库
 
 ---
@@ -214,7 +214,7 @@ fn main() {
         // 打开文件
         let path = CString::new("/tmp/test.txt").unwrap();
         let fd = open(path.as_ptr(), O_RDWR | O_CREAT, 0o644);
-        
+
         if fd < 0 {
             panic!("Failed to open file");
         }
@@ -246,7 +246,7 @@ fn main() {
         // 分配内存
         let size = 1024;
         let ptr = malloc(size) as *mut u8;
-        
+
         if ptr.is_null() {
             panic!("Memory allocation failed");
         }
@@ -290,7 +290,7 @@ fn main() {
     }
 
     println!("Press Ctrl+C to exit...");
-    
+
     while unsafe { RUNNING.load(Ordering::SeqCst) } {
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
@@ -387,9 +387,9 @@ mod tests {
         unsafe {
             let p = create_point(10, 20);
             assert!(!p.is_null());
-            
+
             print_point(p);
-            
+
             free_point(p);
         }
     }
@@ -476,7 +476,7 @@ fn main() {
     cc::Build::new()
         .file("src/helper.c")
         .compile("helper");
-    
+
     println!("cargo:rerun-if-changed=src/helper.c");
 }
 ```
@@ -756,7 +756,7 @@ impl Image {
     pub fn load(path: &str) -> Result<Self, String> {
         let c_path = std::ffi::CString::new(path).unwrap();
         let handle = unsafe { image_load(c_path.as_ptr()) };
-        
+
         if handle.is_null() {
             Err("Failed to load image".to_string())
         } else {
@@ -803,7 +803,7 @@ pub extern "C" fn server_start(config: *const Config) -> bool {
     if config.is_null() {
         return false;
     }
-    
+
     let config = unsafe { &*config };
     // 启动服务器...
     true
@@ -824,11 +824,11 @@ cbindgen --output server.h
 int main() {
     Config config = config_default();
     config.timeout = 60;
-    
+
     if (server_start(&config)) {
         printf("Server started\n");
     }
-    
+
     return 0;
 }
 ```
@@ -844,14 +844,14 @@ int main() {
 mod ffi {
     unsafe extern "C++" {
         include!("logger.h");
-        
+
         type Logger;
-        
+
         fn create_logger(name: &str) -> UniquePtr<Logger>;
         fn log_info(self: &Logger, msg: &str);
         fn log_error(self: &Logger, msg: &str);
     }
-    
+
     extern "Rust" {
         fn process_data(data: Vec<u8>) -> Result<String>;
     }
@@ -923,7 +923,7 @@ pub extern "C" fn process(ptr: *const Data) -> bool {
     if ptr.is_null() {
         return false;
     }
-    
+
     unsafe {
         let data = &*ptr;
         // 处理数据...
@@ -1307,7 +1307,7 @@ pub struct Data {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
-**维护者**: Rust 学习社区  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
+**维护者**: Rust 学习社区
 **文档长度**: 1000+ 行

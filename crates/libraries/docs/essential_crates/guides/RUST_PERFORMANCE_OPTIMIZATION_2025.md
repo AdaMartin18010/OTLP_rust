@@ -1,8 +1,8 @@
 ﻿# Rust 性能优化实战手册 (2025版)
 
-> **主题**: Rust 应用性能调优完全指南  
-> **难度**: 中高级  
-> **预计学习时间**: 10-15 小时  
+> **主题**: Rust 应用性能调优完全指南
+> **难度**: 中高级
+> **预计学习时间**: 10-15 小时
 > **更新日期**: 2025-10-20
 
 ---
@@ -10,8 +10,7 @@
 ## 📋 目录
 
 - [Rust 性能优化实战手册 (2025版)](#rust-性能优化实战手册-2025版)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [📋 目录](#-目录)
   - [概述](#概述)
     - [性能优化的层次](#性能优化的层次)
     - [优化原则](#优化原则)
@@ -171,17 +170,17 @@ fn fibonacci_iterative(n: u64) -> u64 {
 
 fn bench_fibonacci(c: &mut Criterion) {
     let mut group = c.benchmark_group("fibonacci");
-    
+
     for i in [10u64, 15, 20].iter() {
         group.bench_with_input(BenchmarkId::new("recursive", i), i, |b, &i| {
             b.iter(|| fibonacci_recursive(black_box(i)));
         });
-        
+
         group.bench_with_input(BenchmarkId::new("iterative", i), i, |b, &i| {
             b.iter(|| fibonacci_iterative(black_box(i)));
         });
     }
-    
+
     group.finish();
 }
 
@@ -374,11 +373,11 @@ use bumpalo::Bump;
 
 fn allocate_many() {
     let bump = Bump::new();
-    
+
     // 所有分配来自同一内存池
     let vec1 = bump.alloc_slice_fill_copy(100, 0u8);
     let vec2 = bump.alloc_slice_fill_copy(200, 0u8);
-    
+
     // bump 销毁时，所有分配一次性释放
 }
 ```
@@ -496,14 +495,14 @@ use tokio::task::JoinSet;
 
 async fn fetch_all(urls: &[String]) -> Vec<String> {
     let mut set = JoinSet::new();
-    
+
     for url in urls {
         let url = url.clone();
         set.spawn(async move {
             reqwest::get(&url).await.unwrap().text().await.unwrap()
         });
     }
-    
+
     let mut results = Vec::new();
     while let Some(Ok(result)) = set.join_next().await {
         results.push(result);
@@ -621,14 +620,14 @@ fn add_scalar(a: &[f32], b: &[f32]) -> Vec<f32> {
 // SIMD 版本 (快)
 fn add_simd(a: &[f32], b: &[f32]) -> Vec<f32> {
     let mut result = Vec::with_capacity(a.len());
-    
+
     for i in (0..a.len()).step_by(4) {
         let va = f32x4::from_slice(&a[i..]);
         let vb = f32x4::from_slice(&b[i..]);
         let vr = va + vb;
         result.extend_from_slice(&vr.to_array());
     }
-    
+
     result
 }
 ```
@@ -774,9 +773,9 @@ use std::net::SocketAddr;
 #[tokio::main]
 async fn main() {
     let app = Router::new().route("/", get(handler));
-    
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-    
+
     // HTTP/2 自动启用
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -877,12 +876,12 @@ async fn main() {
                 .layer(CompressionLayer::new())
                 .into_inner()
         );
-    
+
     // 多线程 runtime
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 ```
@@ -911,7 +910,7 @@ use csv::ReaderBuilder;
 
 fn process_csv(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file = std::fs::read_to_string(path)?;
-    
+
     let results: Vec<_> = file
         .par_lines()  // 并行处理每一行
         .skip(1)      // 跳过标题
@@ -924,7 +923,7 @@ fn process_csv(path: &str) -> Result<(), Box<dyn std::error::Error>> {
             }
         })
         .collect();
-    
+
     Ok(())
 }
 
@@ -999,8 +998,8 @@ fn process_row(parts: Vec<&str>) -> ProcessedData {
 
 ---
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 1.0.0
+**最后更新**: 2025-10-20
 **贡献者**: Rust 学习社区
 
 **下一步**: [微服务架构](./RUST_MICROSERVICES_ARCHITECTURE_2025.md) | [实战项目](./RUST_FULLSTACK_PROJECT_2025.md)

@@ -1,7 +1,7 @@
 # 文档工具 (Documentation Tools)
 
-**类别**: 第5层 - 工具链  
-**重要程度**: ⭐⭐⭐⭐  
+**类别**: 第5层 - 工具链
+**重要程度**: ⭐⭐⭐⭐
 **更新日期**: 2025-10-20
 
 ---
@@ -49,7 +49,7 @@
 
 ### 1. rustdoc (必备 ⭐⭐⭐⭐⭐)
 
-**安装**: Rust 自带  
+**安装**: Rust 自带
 **用途**: 生成 API 文档
 
 #### 基础用法
@@ -176,7 +176,7 @@ pub fn example() {
 
 ### 2. mdBook (强烈推荐 🌟)
 
-**安装**: `cargo install mdbook`  
+**安装**: `cargo install mdbook`
 **用途**: 创建技术书籍/文档站点
 
 #### 快速开始
@@ -277,7 +277,7 @@ cargo install mdbook-katex
 
 ### 3. docs.rs (推荐)
 
-**网站**: <https://docs.rs>  
+**网站**: <https://docs.rs>
 **用途**: 自动生成和托管 crate 文档
 
 #### 配置 Cargo.toml
@@ -320,7 +320,7 @@ pub fn experimental() {
 
 ### 4. cargo-readme (可选)
 
-**安装**: `cargo install cargo-readme`  
+**安装**: `cargo install cargo-readme`
 **用途**: 从 lib.rs 生成 README.md
 
 ```bash
@@ -351,7 +351,7 @@ cargo readme --template README.tpl > README.md
 
 ### 5. cargo-deadlinks (可选)
 
-**安装**: `cargo install cargo-deadlinks`  
+**安装**: `cargo install cargo-deadlinks`
 **用途**: 检查文档中的失效链接
 
 ```bash

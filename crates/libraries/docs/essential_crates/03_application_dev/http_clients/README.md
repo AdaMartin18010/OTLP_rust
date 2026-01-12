@@ -1,7 +1,7 @@
 # HTTP 客户端
 
-> **核心库**: reqwest, hyper, ureq  
-> **适用场景**: API 调用、HTTP 请求、文件下载、Web 爬虫  
+> **核心库**: reqwest, hyper, ureq
+> **适用场景**: API 调用、HTTP 请求、文件下载、Web 爬虫
 > **技术栈定位**: 应用开发层 - HTTP 通信
 
 ---
@@ -170,7 +170,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?
         .json::<Post>()
         .await?;
-    
+
     println!("Post: {:?}", response);
     Ok(())
 }
@@ -192,33 +192,33 @@ struct CreatePost {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    
+
     // POST JSON
     let new_post = CreatePost {
         title: "Test".to_string(),
         body: "Content".to_string(),
         user_id: 1,
     };
-    
+
     let res = client.post("https://jsonplaceholder.typicode.com/posts")
         .json(&new_post)
         .send()
         .await?;
-    
+
     println!("Status: {}", res.status());
     println!("Body: {}", res.text().await?);
-    
+
     // PUT
     let res = client.put("https://api.example.com/resource/1")
         .json(&new_post)
         .send()
         .await?;
-    
+
     // DELETE
     let res = client.delete("https://api.example.com/resource/1")
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -238,7 +238,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         header::AUTHORIZATION,
         header::HeaderValue::from_static("Bearer token")
     );
-    
+
     let client = Client::builder()
         .timeout(Duration::from_secs(10))
         .connect_timeout(Duration::from_secs(5))
@@ -246,12 +246,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .user_agent("my-app/1.0")
         .default_headers(headers)
         .build()?;
-    
+
     let res = client.get("https://api.example.com/data")
         .header(header::ACCEPT, "application/json")
         .send()
         .await?;
-    
+
     println!("Status: {}", res.status());
     Ok(())
 }
@@ -267,30 +267,30 @@ use tokio::io::AsyncWriteExt;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
-    
+
     // 下载文件（流式）
     let mut response = client.get("https://example.com/large-file.zip")
         .send()
         .await?;
-    
+
     let mut file = File::create("downloaded.zip").await?;
-    
+
     while let Some(chunk) = response.chunk().await? {
         file.write_all(&chunk).await?;
     }
-    
+
     println!("Download complete!");
-    
+
     // 上传文件
     let form = reqwest::multipart::Form::new()
         .text("name", "value")
         .file("file", "path/to/file.txt").await?;
-    
+
     let res = client.post("https://httpbin.org/post")
         .multipart(form)
         .send()
         .await?;
-    
+
     println!("Upload status: {}", res.status());
     Ok(())
 }
@@ -307,24 +307,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::builder()
         .cookie_store(true)
         .build()?;
-    
+
     // 第一个请求设置 cookie
     client.get("https://httpbin.org/cookies/set?name=value")
         .send()
         .await?;
-    
+
     // 第二个请求自动携带 cookie
     let res = client.get("https://httpbin.org/cookies")
         .send()
         .await?;
-    
+
     println!("Cookies: {}", res.text().await?);
-    
+
     // 使用代理
     let client = Client::builder()
         .proxy(Proxy::https("https://proxy.example.com:8080")?)
         .build()?;
-    
+
     Ok(())
 }
 ```
@@ -357,15 +357,15 @@ use hyper::body::Buf;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    
+
     let uri: Uri = "http://httpbin.org/get".parse()?;
     let res = client.get(uri).await?;
-    
+
     println!("Status: {}", res.status());
-    
+
     let body = hyper::body::to_bytes(res.into_body()).await?;
     println!("Body: {:?}", body.chunk());
-    
+
     Ok(())
 }
 ```
@@ -404,15 +404,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let body: Post = ureq::get("https://jsonplaceholder.typicode.com/posts/1")
         .call()?
         .into_json()?;
-    
+
     println!("{:?}", body);
-    
+
     // POST 请求
     let resp = ureq::post("https://httpbin.org/post")
         .send_json(ureq::json!({
             "key": "value"
         }))?;
-    
+
     println!("Status: {}", resp.status());
     Ok(())
 }
@@ -435,10 +435,10 @@ use thiserror::Error;
 enum ApiError {
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
-    
+
     #[error("Not found")]
     NotFound,
-    
+
     #[error("Unauthorized")]
     Unauthorized,
 }
@@ -462,14 +462,14 @@ impl ApiClient {
             })
             .build()
             .unwrap();
-        
+
         Self { client, base_url }
     }
-    
+
     async fn get<T: for<'de> Deserialize<'de>>(&self, path: &str) -> Result<T, ApiError> {
         let url = format!("{}/{}", self.base_url, path);
         let res = self.client.get(&url).send().await?;
-        
+
         match res.status() {
             StatusCode::OK => Ok(res.json().await?),
             StatusCode::NOT_FOUND => Err(ApiError::NotFound),
@@ -477,7 +477,7 @@ impl ApiClient {
             _ => Err(ApiError::Http(res.error_for_status().unwrap_err())),
         }
     }
-    
+
     async fn post<T: Serialize, R: for<'de> Deserialize<'de>>(
         &self,
         path: &str,
@@ -485,7 +485,7 @@ impl ApiClient {
     ) -> Result<R, ApiError> {
         let url = format!("{}/{}", self.base_url, path);
         let res = self.client.post(&url).json(body).send().await?;
-        
+
         match res.status() {
             StatusCode::OK | StatusCode::CREATED => Ok(res.json().await?),
             StatusCode::UNAUTHORIZED => Err(ApiError::Unauthorized),
@@ -507,20 +507,20 @@ use tokio::io::AsyncWriteExt;
 async fn download_file(url: &str, path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
     let mut response = client.get(url).send().await?;
-    
+
     let total_size = response.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
-    
+
     let mut file = File::create(path).await?;
-    
+
     while let Some(chunk) = response.chunk().await? {
         file.write_all(&chunk).await?;
         downloaded += chunk.len() as u64;
-        
+
         let progress = (downloaded as f64 / total_size as f64) * 100.0;
         print!("\rDownload progress: {:.2}%", progress);
     }
-    
+
     println!("\nDownload complete!");
     Ok(())
 }
@@ -540,7 +540,7 @@ async fn fetch_with_retry(
     max_retries: u32,
 ) -> Result<String, reqwest::Error> {
     let mut attempts = 0;
-    
+
     loop {
         match client.get(url).send().await {
             Ok(res) => return res.text().await,
@@ -701,6 +701,6 @@ if res.status().is_success() {  // ✅ 检查状态
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 95/100

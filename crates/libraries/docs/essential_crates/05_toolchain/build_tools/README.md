@@ -1,7 +1,7 @@
 # 构建工具 (Build Tools)
 
-**类别**: 第5层 - 工具链  
-**重要程度**: ⭐⭐⭐⭐⭐ (必备)  
+**类别**: 第5层 - 工具链
+**重要程度**: ⭐⭐⭐⭐⭐ (必备)
 **更新日期**: 2025-10-20
 
 ---
@@ -45,7 +45,7 @@ Rust 的构建工具生态系统以 Cargo 为核心，提供了从项目创建�
 
 ### 1. Cargo (必备 ⭐⭐⭐⭐⭐)
 
-**官网**: <https://doc.rust-lang.org/cargo/>  
+**官网**: <https://doc.rust-lang.org/cargo/>
 **用途**: Rust 官方包管理器和构建工具
 
 #### 核心功能
@@ -132,7 +132,7 @@ debug = true               # 包含调试信息
 
 ### 2. cargo-watch (强烈推荐 🌟)
 
-**安装**: `cargo install cargo-watch`  
+**安装**: `cargo install cargo-watch`
 **用途**: 文件变化时自动重新构建
 
 #### 基础用法
@@ -174,7 +174,7 @@ cargo watch -s "cargo check && cargo test"
 
 ### 3. cargo-make (推荐 💡)
 
-**安装**: `cargo install cargo-make`  
+**安装**: `cargo install cargo-make`
 **用途**: 任务运行器，类似 make
 
 #### Makefile.toml 示例
@@ -229,7 +229,7 @@ cargo make --profile production build
 
 ### 4. cargo-edit (推荐 💡)
 
-**安装**: `cargo install cargo-edit`  
+**安装**: `cargo install cargo-edit`
 **用途**: 命令行编辑 Cargo.toml
 
 #### 功能
@@ -255,7 +255,7 @@ cargo set-version 1.2.3
 
 ### 5. cargo-cache (可选)
 
-**安装**: `cargo install cargo-cache`  
+**安装**: `cargo install cargo-cache`
 **用途**: 管理 Cargo 缓存
 
 ```bash
@@ -319,15 +319,15 @@ use std::env;
 fn main() {
     // 读取环境变量
     let target = env::var("TARGET").unwrap();
-    
+
     // 条件编译
     if target.contains("linux") {
         println!("cargo:rustc-cfg=linux");
     }
-    
+
     // 链接库
     println!("cargo:rustc-link-lib=ssl");
-    
+
     // 重新运行条件
     println!("cargo:rerun-if-changed=build.rs");
 }

@@ -54,7 +54,7 @@ fn hash_example() {
     let mut hasher = Sha256::new();
     hasher.update(b"Hello, Blockchain!");
     let result = hasher.finalize();
-    
+
     println!("SHA256: {:x}", result);
 }
 
@@ -62,7 +62,7 @@ fn sign_example() {
     let secp = Secp256k1::new();
     let secret_key = SecretKey::from_slice(&[0x01; 32]).unwrap();
     let message = Message::from_digest_slice(&[0x02; 32]).unwrap();
-    
+
     let sig = secp.sign_ecdsa(&message, &secret_key);
     println!("签名: {:?}", sig);
 }
@@ -81,16 +81,16 @@ use ethers::prelude::*;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 连接到以太坊节点
     let provider = Provider::<Http>::try_from("https://eth.llamarpc.com")?;
-    
+
     // 获取最新区块号
     let block_number = provider.get_block_number().await?;
     println!("最新区块: {}", block_number);
-    
+
     // 获取余额
     let address = "0x0000000000000000000000000000000000000000".parse::<Address>()?;
     let balance = provider.get_balance(address, None).await?;
     println!("余额: {} ETH", ethers::utils::format_ether(balance));
-    
+
     Ok(())
 }
 ```
@@ -116,12 +116,12 @@ async fn interact_with_contract() -> Result<(), Box<dyn std::error::Error>> {
     let provider = Provider::<Http>::try_from("https://eth.llamarpc.com")?;
     let contract_address = "0x...".parse::<Address>()?;
     let contract = ERC20::new(contract_address, Arc::new(provider));
-    
+
     let balance = contract
         .balance_of("0x...".parse::<Address>()?)
         .call()
         .await?;
-    
+
     println!("余额: {}", balance);
     Ok(())
 }
@@ -156,13 +156,13 @@ decl_event!(
 decl_module! {
     pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         fn deposit_event() = default;
-        
+
         #[weight = 10_000]
         pub fn do_something(origin, something: u32) -> DispatchResult {
             let who = ensure_signed(origin)?;
-            
+
             <Something>::put(something);
-            
+
             Self::deposit_event(RawEvent::SomethingStored(something, who));
             Ok(())
         }
@@ -204,25 +204,25 @@ impl Block {
         block.mine(2); // 难度为2
         block
     }
-    
+
     fn calculate_hash(&self) -> String {
         let content = format!(
             "{}{}{}{}{}",
             self.index, self.timestamp, self.data, self.previous_hash, self.nonce
         );
-        
+
         let mut hasher = Sha256::new();
         hasher.update(content.as_bytes());
         format!("{:x}", hasher.finalize())
     }
-    
+
     fn mine(&mut self, difficulty: usize) {
         let target = "0".repeat(difficulty);
-        
+
         while &self.calculate_hash()[..difficulty] != target {
             self.nonce += 1;
         }
-        
+
         self.hash = self.calculate_hash();
     }
 }
@@ -238,7 +238,7 @@ impl Blockchain {
             chain: vec![genesis],
         }
     }
-    
+
     fn add_block(&mut self, data: String) {
         let previous_block = self.chain.last().unwrap();
         let new_block = Block::new(
@@ -248,16 +248,16 @@ impl Blockchain {
         );
         self.chain.push(new_block);
     }
-    
+
     fn is_valid(&self) -> bool {
         for i in 1..self.chain.len() {
             let current = &self.chain[i];
             let previous = &self.chain[i - 1];
-            
+
             if current.hash != current.calculate_hash() {
                 return false;
             }
-            
+
             if current.previous_hash != previous.hash {
                 return false;
             }
@@ -268,12 +268,12 @@ impl Blockchain {
 
 fn main() {
     let mut blockchain = Blockchain::new();
-    
+
     blockchain.add_block("第1笔交易".to_string());
     blockchain.add_block("第2笔交易".to_string());
-    
+
     println!("区块链有效: {}", blockchain.is_valid());
-    
+
     for block in &blockchain.chain {
         println!("{:#?}", block);
     }

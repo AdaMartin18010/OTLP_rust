@@ -54,7 +54,7 @@ graph TB
         SM[状态管理]
         RM[资源管理]
     end
-    
+
     subgraph "数据平面 (Data Plane)"
         DP[数据平面]
         DC[数据收集]
@@ -62,27 +62,27 @@ graph TB
         DT[数据传输]
         DS[数据存储]
     end
-    
+
     subgraph "管理接口"
         API[REST API]
         CLI[CLI工具]
         UI[Web UI]
         SDK[SDK接口]
     end
-    
+
     subgraph "数据接口"
         OTLP[OTLP协议]
         GRPC[gRPC接口]
         HTTP[HTTP接口]
         MQTT[MQTT接口]
     end
-    
+
     CP --> DP
     API --> CP
     CLI --> CP
     UI --> CP
     SDK --> CP
-    
+
     OTLP --> DP
     GRPC --> DP
     HTTP --> DP
@@ -128,67 +128,67 @@ pub struct ConfigStore {
 
 impl ControlPlaneConfigManager {
     pub async fn create_config(
-        &mut self, 
+        &mut self,
         config: &Config
     ) -> Result<ConfigId, ConfigError> {
         // 验证配置
         self.validation_engine.validate_config(config).await?;
-        
+
         // 生成配置ID
         let config_id = ConfigId::new();
-        
+
         // 存储配置
         self.config_store.store_config(&config_id, config).await?;
-        
+
         // 创建版本
         let version = self.version_manager.create_version(&config_id, config).await?;
-        
+
         // 分发配置
         self.distribution_engine.distribute_config(&config_id, &version).await?;
-        
+
         Ok(config_id)
     }
-    
+
     pub async fn update_config(
-        &mut self, 
-        config_id: &ConfigId, 
+        &mut self,
+        config_id: &ConfigId,
         updates: &ConfigUpdates
     ) -> Result<ConfigVersion, ConfigError> {
         // 获取当前配置
         let current_config = self.config_store.get_config(config_id).await?;
-        
+
         // 应用更新
         let updated_config = self.apply_updates(&current_config, updates)?;
-        
+
         // 验证更新后的配置
         self.validation_engine.validate_config(&updated_config).await?;
-        
+
         // 创建新版本
         let new_version = self.version_manager.create_version(config_id, &updated_config).await?;
-        
+
         // 分发更新
         self.distribution_engine.distribute_config(config_id, &new_version).await?;
-        
+
         Ok(new_version)
     }
-    
+
     pub async fn rollback_config(
-        &mut self, 
-        config_id: &ConfigId, 
+        &mut self,
+        config_id: &ConfigId,
         target_version: &ConfigVersion
     ) -> Result<(), ConfigError> {
         // 获取目标版本配置
         let target_config = self.version_manager.get_version(config_id, target_version).await?;
-        
+
         // 验证回滚配置
         self.validation_engine.validate_config(&target_config).await?;
-        
+
         // 创建回滚版本
         let rollback_version = self.version_manager.create_version(config_id, &target_config).await?;
-        
+
         // 分发回滚配置
         self.distribution_engine.distribute_config(config_id, &rollback_version).await?;
-        
+
         Ok(())
     }
 }
@@ -225,7 +225,7 @@ pub struct PolicyRule {
 
 impl PolicyManager {
     pub async fn create_policy(
-        &mut self, 
+        &mut self,
         policy: &Policy
     ) -> Result<PolicyId, PolicyError> {
         // 检查策略冲突
@@ -233,57 +233,57 @@ impl PolicyManager {
         if !conflicts.is_empty() {
             return Err(PolicyError::ConflictsDetected(conflicts));
         }
-        
+
         // 存储策略
         let policy_id = self.policy_store.store_policy(policy).await?;
-        
+
         // 编译策略规则
         self.policy_engine.compile_policy(policy).await?;
-        
+
         // 记录审计日志
         self.audit_logger.log_policy_creation(&policy_id, policy).await?;
-        
+
         Ok(policy_id)
     }
-    
+
     pub async fn evaluate_policy(
-        &self, 
+        &self,
         context: &PolicyContext
     ) -> Result<PolicyDecision, PolicyError> {
         // 获取适用的策略
         let applicable_policies = self.get_applicable_policies(context).await?;
-        
+
         // 按优先级排序
         let sorted_policies = self.sort_policies_by_priority(applicable_policies);
-        
+
         // 评估策略
         let mut decisions = Vec::new();
         for policy in sorted_policies {
             let decision = self.policy_engine.evaluate_policy(policy, context).await?;
             decisions.push(decision);
-            
+
             // 如果策略明确拒绝，停止评估
             if decision.action == PolicyAction::Deny {
                 break;
             }
         }
-        
+
         // 合并决策
         let final_decision = self.merge_decisions(decisions)?;
-        
+
         // 记录决策日志
         self.audit_logger.log_policy_decision(context, &final_decision).await?;
-        
+
         Ok(final_decision)
     }
-    
+
     async fn detect_policy_conflicts(
-        &self, 
+        &self,
         policy: &Policy
     ) -> Result<Vec<PolicyConflict>, PolicyError> {
         let existing_policies = self.policy_store.get_policies_by_scope(&policy.scope).await?;
         let mut conflicts = Vec::new();
-        
+
         for existing_policy in existing_policies {
             for rule in &policy.rules {
                 for existing_rule in &existing_policy.rules {
@@ -297,7 +297,7 @@ impl PolicyManager {
                 }
             }
         }
-        
+
         Ok(conflicts)
     }
 }
@@ -332,35 +332,35 @@ pub struct ComponentState {
 
 impl StateManager {
     pub async fn update_component_state(
-        &mut self, 
-        component_id: &ComponentId, 
+        &mut self,
+        component_id: &ComponentId,
         state: &ComponentState
     ) -> Result<(), StateError> {
         // 验证状态
         self.validate_component_state(state)?;
-        
+
         // 更新状态存储
         self.state_store.update_component_state(component_id, state).await?;
-        
+
         // 检查一致性
         let consistency_result = self.consistency_checker.check_consistency().await?;
         if !consistency_result.is_consistent {
             self.handle_consistency_violation(&consistency_result).await?;
         }
-        
+
         // 同步状态
         self.state_synchronizer.synchronize_state().await?;
-        
+
         // 通知状态变化
         self.state_notifier.notify_state_change(component_id, state).await?;
-        
+
         Ok(())
     }
-    
+
     pub async fn get_system_state(&self) -> Result<SystemState, StateError> {
         let components = self.state_store.get_all_component_states().await?;
         let global_state = self.compute_global_state(&components).await?;
-        
+
         Ok(SystemState {
             state_id: StateId::new(),
             components,
@@ -369,16 +369,16 @@ impl StateManager {
             version: self.state_store.get_current_version().await?,
         })
     }
-    
+
     async fn compute_global_state(
-        &self, 
+        &self,
         components: &HashMap<ComponentId, ComponentState>
     ) -> Result<GlobalState, StateError> {
         let mut healthy_components = 0;
         let mut total_components = components.len();
         let mut total_cpu_usage = 0.0;
         let mut total_memory_usage = 0.0;
-        
+
         for (_, component) in components {
             if component.status == ComponentStatus::Healthy {
                 healthy_components += 1;
@@ -386,13 +386,13 @@ impl StateManager {
             total_cpu_usage += component.metrics.cpu_usage;
             total_memory_usage += component.metrics.memory_usage;
         }
-        
+
         let health_ratio = if total_components > 0 {
             healthy_components as f64 / total_components as f64
         } else {
             0.0
         };
-        
+
         Ok(GlobalState {
             health_ratio,
             average_cpu_usage: total_cpu_usage / total_components as f64,
@@ -432,17 +432,17 @@ pub struct MetricsCollector {
 impl DataCollector for MetricsCollector {
     async fn collect_data(&mut self) -> Result<Vec<TelemetryData>, CollectionError> {
         let mut collected_data = Vec::new();
-        
+
         for source in &self.metric_sources {
             let metrics = source.collect_metrics().await?;
             for metric in metrics {
                 collected_data.push(TelemetryData::Metric(metric));
             }
         }
-        
+
         Ok(collected_data)
     }
-    
+
     async fn configure(&mut self, config: &CollectorConfig) -> Result<(), ConfigError> {
         if let Some(interval) = config.collection_interval {
             self.collection_interval = interval;
@@ -452,7 +452,7 @@ impl DataCollector for MetricsCollector {
         }
         Ok(())
     }
-    
+
     async fn get_status(&self) -> Result<CollectorStatus, StatusError> {
         Ok(CollectorStatus {
             is_running: true,
@@ -468,20 +468,20 @@ impl DataCollectionEngine {
         for (collector_type, collector) in &mut self.collectors {
             collector.configure(&self.get_collector_config(collector_type)).await?;
         }
-        
+
         // 启动收集任务
         let collection_tasks: Vec<_> = self.collectors.iter_mut().map(|(_, collector)| {
             self.spawn_collection_task(collector)
         }).collect();
-        
+
         // 等待所有收集任务
         futures::future::join_all(collection_tasks).await;
-        
+
         Ok(())
     }
-    
+
     async fn spawn_collection_task(
-        &self, 
+        &self,
         collector: &mut Box<dyn DataCollector>
     ) -> Result<(), CollectionError> {
         loop {
@@ -495,25 +495,25 @@ impl DataCollectionEngine {
                     self.handle_collection_error(e).await?;
                 }
             }
-            
+
             // 等待下次收集
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
-    
+
     async fn process_collected_data(
-        &self, 
+        &self,
         data: Vec<TelemetryData>
     ) -> Result<(), ProcessingError> {
         // 过滤数据
         let filtered_data = self.filter_engine.filter_data(data).await?;
-        
+
         // 压缩数据
         let compressed_data = self.compression_engine.compress_data(&filtered_data).await?;
-        
+
         // 缓冲数据
         self.buffer_manager.add_data(compressed_data).await?;
-        
+
         Ok(())
     }
 }
@@ -550,14 +550,14 @@ impl DataProcessor for TransformationProcessor {
         }
         Ok(())
     }
-    
+
     async fn configure(&mut self, config: &ProcessorConfig) -> Result<(), ConfigError> {
         if let Some(rules) = &config.transformation_rules {
             self.transformation_rules = rules.clone();
         }
         Ok(())
     }
-    
+
     async fn get_metrics(&self) -> Result<ProcessorMetrics, MetricsError> {
         Ok(ProcessorMetrics {
             processed_count: 0, // 实际实现中需要维护计数
@@ -569,11 +569,11 @@ impl DataProcessor for TransformationProcessor {
 
 impl DataProcessingPipeline {
     pub async fn process_data(
-        &mut self, 
+        &mut self,
         mut data: TelemetryData
     ) -> Result<TelemetryData, ProcessingError> {
         let start_time = Instant::now();
-        
+
         for (i, processor) in self.processors.iter_mut().enumerate() {
             match processor.process(&mut data).await {
                 Ok(()) => {
@@ -583,7 +583,7 @@ impl DataProcessingPipeline {
                 Err(e) => {
                     // 处理错误
                     self.error_handler.handle_error(i, &e, &data).await?;
-                    
+
                     // 根据错误处理策略决定是否继续
                     if self.pipeline_config.error_strategy == ErrorStrategy::StopOnError {
                         return Err(e);
@@ -591,20 +591,20 @@ impl DataProcessingPipeline {
                 }
             }
         }
-        
+
         Ok(data)
     }
-    
+
     pub async fn add_processor(
-        &mut self, 
+        &mut self,
         processor: Box<dyn DataProcessor>
     ) -> Result<(), PipelineError> {
         self.processors.push(processor);
         Ok(())
     }
-    
+
     pub async fn remove_processor(
-        &mut self, 
+        &mut self,
         index: usize
     ) -> Result<(), PipelineError> {
         if index < self.processors.len() {
@@ -631,13 +631,13 @@ pub struct DataTransmissionOptimizer {
 
 impl DataTransmissionOptimizer {
     pub async fn transmit_data(
-        &mut self, 
-        data: &[TelemetryData], 
+        &mut self,
+        data: &[TelemetryData],
         destination: &Endpoint
     ) -> Result<TransmissionResult, TransmissionError> {
         // 选择传输策略
         let strategy = self.select_transmission_strategy(data, destination).await?;
-        
+
         match strategy {
             TransmissionStrategy::Direct => {
                 self.direct_transmission(data, destination).await
@@ -653,15 +653,15 @@ impl DataTransmissionOptimizer {
             },
         }
     }
-    
+
     async fn select_transmission_strategy(
-        &self, 
-        data: &[TelemetryData], 
+        &self,
+        data: &[TelemetryData],
         destination: &Endpoint
     ) -> Result<TransmissionStrategy, TransmissionError> {
         let data_size = self.calculate_data_size(data);
         let network_metrics = self.get_network_metrics(destination).await?;
-        
+
         if data_size < 1024 { // 小于1KB
             Ok(TransmissionStrategy::Direct)
         } else if network_metrics.latency > 100 { // 高延迟
@@ -674,18 +674,18 @@ impl DataTransmissionOptimizer {
             Ok(TransmissionStrategy::Direct)
         }
     }
-    
+
     async fn batched_transmission(
-        &self, 
-        data: &[TelemetryData], 
+        &self,
+        data: &[TelemetryData],
         destination: &Endpoint
     ) -> Result<TransmissionResult, TransmissionError> {
         // 创建批次
         let batches = self.batching_engine.create_batches(data, 1000).await?;
-        
+
         let mut total_sent = 0;
         let mut total_errors = 0;
-        
+
         for batch in batches {
             match self.transmit_batch(&batch, destination).await {
                 Ok(result) => {
@@ -698,7 +698,7 @@ impl DataTransmissionOptimizer {
                 }
             }
         }
-        
+
         Ok(TransmissionResult {
             sent_count: total_sent,
             error_count: total_errors,
@@ -746,33 +746,33 @@ pub enum DataPlaneResponse {
 
 impl ControlToDataPlaneProtocol {
     pub async fn send_command(
-        &mut self, 
-        command: ControlPlaneCommand, 
+        &mut self,
+        command: ControlPlaneCommand,
         target: &ComponentId
     ) -> Result<DataPlaneResponse, ProtocolError> {
         // 路由消息
         let endpoint = self.message_router.route_to_component(target).await?;
-        
+
         // 发送命令
         let response = self.send_command_to_endpoint(&command, &endpoint).await?;
-        
+
         // 处理响应
         self.response_handler.handle_response(&response).await?;
-        
+
         Ok(response)
     }
-    
+
     async fn send_command_to_endpoint(
-        &self, 
-        command: &ControlPlaneCommand, 
+        &self,
+        command: &ControlPlaneCommand,
         endpoint: &Endpoint
     ) -> Result<DataPlaneResponse, ProtocolError> {
         let message = self.serialize_command(command)?;
-        
+
         // 使用gRPC发送命令
         let client = self.create_grpc_client(endpoint).await?;
         let response = client.execute_command(message).await?;
-        
+
         self.deserialize_response(&response)
     }
 }
@@ -799,7 +799,7 @@ pub enum DataPlaneEvent {
 
 impl DataToControlPlaneProtocol {
     pub async fn report_event(
-        &mut self, 
+        &mut self,
         event: DataPlaneEvent
     ) -> Result<(), ProtocolError> {
         match event {
@@ -819,12 +819,12 @@ impl DataToControlPlaneProtocol {
                 self.status_reporter.report_status_change(&status_event).await?;
             },
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn report_metrics(
-        &mut self, 
+        &mut self,
         metrics: &ComponentMetrics
     ) -> Result<(), ProtocolError> {
         self.metrics_reporter.report_metrics(metrics).await?;
@@ -848,21 +848,21 @@ pub struct ControlPlaneOptimizer {
 
 impl ControlPlaneOptimizer {
     pub async fn optimize_control_plane(
-        &mut self, 
+        &mut self,
         workload: &ControlPlaneWorkload
     ) -> Result<OptimizationResult, OptimizationError> {
         // 优化缓存策略
         let cache_optimization = self.cache_optimizer.optimize_cache_strategy(workload).await?;
-        
+
         // 优化查询性能
         let query_optimization = self.query_optimizer.optimize_queries(workload).await?;
-        
+
         // 优化负载均衡
         let load_balancing_optimization = self.load_balancer.optimize_distribution(workload).await?;
-        
+
         // 优化资源使用
         let resource_optimization = self.resource_optimizer.optimize_resources(workload).await?;
-        
+
         Ok(OptimizationResult {
             cache_optimization,
             query_optimization,
@@ -892,25 +892,25 @@ pub struct DataPlaneOptimizer {
 
 impl DataPlaneOptimizer {
     pub async fn optimize_data_plane(
-        &mut self, 
+        &mut self,
         performance_requirements: &PerformanceRequirements
     ) -> Result<DataPlaneOptimization, OptimizationError> {
         // 优化吞吐量
         let throughput_optimization = self.throughput_optimizer
             .optimize_throughput(performance_requirements).await?;
-        
+
         // 优化延迟
         let latency_optimization = self.latency_optimizer
             .optimize_latency(performance_requirements).await?;
-        
+
         // 优化内存使用
         let memory_optimization = self.memory_optimizer
             .optimize_memory_usage(performance_requirements).await?;
-        
+
         // 优化CPU使用
         let cpu_optimization = self.cpu_optimizer
             .optimize_cpu_usage(performance_requirements).await?;
-        
+
         Ok(DataPlaneOptimization {
             throughput_optimization,
             latency_optimization,
@@ -944,21 +944,21 @@ impl ControlPlaneMonitor {
     pub async fn monitor_control_plane(&mut self) -> Result<(), MonitorError> {
         // 监控性能指标
         let performance_metrics = self.performance_monitor.collect_metrics().await?;
-        
+
         // 监控健康状态
         let health_status = self.health_monitor.check_health().await?;
-        
+
         // 检查告警条件
         let alerts = self.alert_manager.check_alerts(&performance_metrics, &health_status).await?;
-        
+
         // 处理告警
         for alert in alerts {
             self.alert_manager.handle_alert(&alert).await?;
         }
-        
+
         // 更新仪表板
         self.dashboard_generator.update_dashboard(&performance_metrics, &health_status).await?;
-        
+
         Ok(())
     }
 }
@@ -979,19 +979,19 @@ impl DataPlaneMonitor {
     pub async fn monitor_data_plane(&mut self) -> Result<(), MonitorError> {
         // 监控吞吐量
         let throughput_metrics = self.throughput_monitor.collect_metrics().await?;
-        
+
         // 监控延迟
         let latency_metrics = self.latency_monitor.collect_metrics().await?;
-        
+
         // 监控错误率
         let error_metrics = self.error_monitor.collect_metrics().await?;
-        
+
         // 监控资源使用
         let resource_metrics = self.resource_monitor.collect_metrics().await?;
-        
+
         // 分析性能趋势
         self.analyze_performance_trends(&throughput_metrics, &latency_metrics, &error_metrics).await?;
-        
+
         Ok(())
     }
 }
@@ -1012,35 +1012,35 @@ pub struct MicroserviceArchitecture {
 
 impl MicroserviceArchitecture {
     pub async fn deploy_service(
-        &mut self, 
+        &mut self,
         service: &ServiceDefinition
     ) -> Result<ServiceId, DeploymentError> {
         // 控制平面：配置服务
         let service_config = self.control_plane.configure_service(service).await?;
-        
+
         // 数据平面：部署服务实例
         let service_instances = self.data_plane.deploy_service_instances(&service_config).await?;
-        
+
         // 可观测性平面：配置监控
         self.observability_plane.configure_service_monitoring(service, &service_instances).await?;
-        
+
         Ok(service_config.service_id)
     }
-    
+
     pub async fn update_service_traffic_policy(
-        &mut self, 
-        service_id: &ServiceId, 
+        &mut self,
+        service_id: &ServiceId,
         policy: &TrafficPolicy
     ) -> Result<(), PolicyError> {
         // 控制平面：更新流量策略
         self.control_plane.update_traffic_policy(service_id, policy).await?;
-        
+
         // 数据平面：应用策略到代理
         self.data_plane.apply_traffic_policy(service_id, policy).await?;
-        
+
         // 可观测性平面：监控策略效果
         self.observability_plane.monitor_policy_effectiveness(service_id, policy).await?;
-        
+
         Ok(())
     }
 }
@@ -1059,25 +1059,25 @@ pub struct CloudNativeArchitecture {
 
 impl CloudNativeArchitecture {
     pub async fn deploy_observability_stack(
-        &mut self, 
+        &mut self,
         stack_config: &ObservabilityStackConfig
     ) -> Result<(), DeploymentError> {
         // 控制平面：配置可观测性组件
         let observability_config = self.observability_control_plane
             .configure_observability_stack(stack_config).await?;
-        
+
         // 数据平面：部署可观测性组件
         let deployed_components = self.observability_data_plane
             .deploy_observability_components(&observability_config).await?;
-        
+
         // 配置数据收集
         self.observability_data_plane
             .configure_data_collection(&deployed_components).await?;
-        
+
         // 配置数据处理
         self.observability_data_plane
             .configure_data_processing(&deployed_components).await?;
-        
+
         Ok(())
     }
 }

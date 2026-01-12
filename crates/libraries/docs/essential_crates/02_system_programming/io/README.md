@@ -1,6 +1,6 @@
 # I/O 操作 - Rust 输入输出完全指南
 
-> **核心库**: std::io, tokio::io, async-std::io, memmap2, walkdir  
+> **核心库**: std::io, tokio::io, async-std::io, memmap2, walkdir
 > **适用场景**: 文件操作、异步I/O、内存映射、目录遍历、缓冲策略
 
 ## 📋 目录
@@ -159,10 +159,10 @@ fn write_file(path: &str, data: &str) -> io::Result<()> {
 fn quick_ops() -> io::Result<()> {
     // 一次性读取
     let contents = std::fs::read_to_string("input.txt")?;
-    
+
     // 一次性写入
     std::fs::write("output.txt", b"Hello, World!")?;
-    
+
     Ok(())
 }
 ```
@@ -176,24 +176,24 @@ use std::io::{BufReader, BufRead, BufWriter, Write};
 fn buffered_read(path: &str) -> io::Result<()> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    
+
     // 逐行读取
     for line in reader.lines() {
         let line = line?;
         println!("{}", line);
     }
-    
+
     Ok(())
 }
 
 fn buffered_write(path: &str) -> io::Result<()> {
     let file = File::create(path)?;
     let mut writer = BufWriter::new(file);
-    
+
     for i in 0..10000 {
         writeln!(writer, "Line {}", i)?;
     }
-    
+
     writer.flush()?  // 确保缓冲区刷新
     Ok(())
 }
@@ -224,12 +224,12 @@ async fn main() -> io::Result<()> {
     let mut file = File::open("input.txt").await?;
     let mut contents = String::new();
     file.read_to_string(&mut contents).await?;
-    
+
     // 写入文件
     let mut file = File::create("output.txt").await?;
     file.write_all(b"Hello, Async!").await?;
     file.flush().await?;
-    
+
     Ok(())
 }
 ```
@@ -245,19 +245,19 @@ async fn async_buffered() -> io::Result<()> {
     let file = File::open("large.txt").await?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
-    
+
     while let Some(line) = lines.next_line().await? {
         println!("{}", line);
     }
-    
+
     // 异步缓冲写入
     let file = File::create("output.txt").await?;
     let mut writer = BufWriter::new(file);
-    
+
     for i in 0..1000 {
         writer.write_all(format!("Line {}\n", i).as_bytes()).await?;
     }
-    
+
     writer.flush().await?;
     Ok(())
 }
@@ -271,7 +271,7 @@ use tokio::net::TcpStream;
 
 async fn split_io(stream: TcpStream) -> io::Result<()> {
     let (mut reader, mut writer) = tokio::io::split(stream);
-    
+
     // 并发读写
     tokio::try_join!(
         async {
@@ -284,7 +284,7 @@ async fn split_io(stream: TcpStream) -> io::Result<()> {
             Ok::<_, io::Error>(())
         }
     )?;
-    
+
     Ok(())
 }
 ```
@@ -319,16 +319,16 @@ use std::fs::File;
 fn read_large_file(path: &str) -> std::io::Result<()> {
     let file = File::open(path)?;
     let mmap = unsafe { Mmap::map(&file)? };
-    
+
     // 零拷贝访问文件内容
     let data = &mmap[0..100];
     println!("前 100 字节: {:?}", data);
-    
+
     // 搜索（高效）
     if let Some(pos) = mmap.windows(4).position(|w| w == b"RUST") {
         println!("找到 'RUST' 在位置 {}", pos);
     }
-    
+
     Ok(())
 }
 
@@ -349,14 +349,14 @@ fn write_mmap(path: &str) -> std::io::Result<()> {
         .write(true)
         .create(true)
         .open(path)?;
-    
+
     file.set_len(1024)?;  // 设置文件大小
-    
+
     let mut mmap = unsafe { MmapMut::map_mut(&file)? };
-    
+
     // 直接修改内存（同步到磁盘）
     mmap[0..5].copy_from_slice(b"HELLO");
-    
+
     mmap.flush()?;  // 显式刷新
     Ok(())
 }
@@ -450,10 +450,10 @@ use std::fs::File;
 fn analyze_huge_log(path: &str) -> std::io::Result<usize> {
     let file = File::open(path)?;
     let mmap = unsafe { Mmap::map(&file)? };
-    
+
     // 并行处理（使用 rayon）
     use rayon::prelude::*;
-    
+
     let error_count = mmap
         .par_chunks(1024 * 1024)  // 1MB 块
         .map(|chunk| {
@@ -462,7 +462,7 @@ fn analyze_huge_log(path: &str) -> std::io::Result<usize> {
                 .count()
         })
         .sum();
-    
+
     Ok(error_count)
 }
 ```
@@ -480,17 +480,17 @@ async fn concurrent_file_ops(files: Vec<String>) -> io::Result<()> {
             let mut f = File::open(&file).await?;
             let mut contents = Vec::new();
             f.read_to_end(&mut contents).await?;
-            
+
             // 处理内容
             let processed = contents.to_uppercase();
-            
+
             let mut out = File::create(format!("{}.processed", file)).await?;
             out.write_all(&processed).await?;
-            
+
             Ok::<_, io::Error>(())
         })
     });
-    
+
     join_all(tasks).await;
     Ok(())
 }
@@ -516,9 +516,9 @@ impl RotatingLogger {
             .create(true)
             .append(true)
             .open(path)?;
-        
+
         let current_size = file.metadata()?.len();
-        
+
         Ok(Self {
             writer: BufWriter::new(file),
             path: path.to_string(),
@@ -526,33 +526,33 @@ impl RotatingLogger {
             current_size,
         })
     }
-    
+
     fn log(&mut self, message: &str) -> io::Result<()> {
         let bytes = message.as_bytes();
-        
+
         if self.current_size + bytes.len() as u64 > self.max_size {
             self.rotate()?;
         }
-        
+
         self.writer.write_all(bytes)?;
         self.writer.write_all(b"\n")?;
         self.current_size += bytes.len() as u64 + 1;
-        
+
         Ok(())
     }
-    
+
     fn rotate(&mut self) -> io::Result<()> {
         self.writer.flush()?;
-        
+
         // 重命名旧文件
         let backup = format!("{}.old", self.path);
         std::fs::rename(&self.path, backup)?;
-        
+
         // 创建新文件
         let file = File::create(&self.path)?;
         self.writer = BufWriter::new(file);
         self.current_size = 0;
-        
+
         Ok(())
     }
 }
@@ -622,11 +622,11 @@ process_chunks(&mmap);
 async fn batch_write(items: Vec<String>) -> io::Result<()> {
     let file = File::create("output.txt").await?;
     let mut writer = BufWriter::new(file);
-    
+
     for item in items {
         writer.write_all(item.as_bytes()).await?;
     }
-    
+
     writer.flush().await?;
     Ok(())
 }
@@ -724,6 +724,6 @@ let path = PathBuf::from("dir").join("subdir").join("file.txt");
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 97/100

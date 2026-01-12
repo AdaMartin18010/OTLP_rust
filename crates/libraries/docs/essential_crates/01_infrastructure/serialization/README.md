@@ -1,6 +1,6 @@
 # 序列化与数据格式
 
-> **核心库**: serde 生态系统  
+> **核心库**: serde 生态系统
 > **适用场景**: 配置文件、API 交换、持久化存储、网络传输
 
 ---
@@ -53,17 +53,17 @@
 
 ### 什么是序列化？
 
-**序列化 (Serialization)**: 将数据结构转换为字节流或文本格式的过程。  
+**序列化 (Serialization)**: 将数据结构转换为字节流或文本格式的过程。
 **反序列化 (Deserialization)**: 将字节流或文本格式还原为数据结构的过程。
 
 ```mermaid
 graph LR
     A[Rust 数据结构] -->|序列化| B[文本/二进制]
     B -->|反序列化| A
-    
+
     A1[struct User] --> B1[JSON 字符串]
     B1 --> A1
-    
+
     style A fill:#FFE4B5
     style B fill:#E0FFFF
 ```
@@ -108,12 +108,12 @@ fn main() {
         username: "alice".to_string(),
         email: "alice@example.com".to_string(),
     };
-    
+
     // 序列化为 JSON
     let json = serde_json::to_string(&user).unwrap();
     println!("{}", json);
     // 输出: {"id":1,"username":"alice","email":"alice@example.com"}
-    
+
     // 从 JSON 反序列化
     let user2: User = serde_json::from_str(&json).unwrap();
     println!("{:?}", user2);
@@ -131,15 +131,15 @@ struct Config {
     // 跳过序列化 None 值
     #[serde(skip_serializing_if = "Option::is_none")]
     database_url: Option<String>,
-    
+
     // 使用默认值
     #[serde(default = "default_port")]
     server_port: u16,
-    
+
     // 重命名字段
     #[serde(rename = "maxConnections")]
     max_connections: usize,
-    
+
     // 完全跳过
     #[serde(skip)]
     internal_state: String,
@@ -206,24 +206,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let json_str = serde_json::to_string(&person)?;
     let json_pretty = serde_json::to_string_pretty(&person)?;
-    
+
     // 反序列化
     let person2: Person = serde_json::from_str(&json_str)?;
-    
+
     // 动态 JSON
     let dynamic = json!({
         "name": "Bob",
         "age": 25,
         "active": true,
     });
-    
+
     // 访问动态 JSON
     if let Value::Object(map) = dynamic {
         if let Some(Value::String(name)) = map.get("name") {
             println!("Name: {}", name);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -277,14 +277,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             max_connections: 10,
         },
     };
-    
+
     // 序列化为 TOML
     let toml_str = toml::to_string(&config)?;
     println!("{}", toml_str);
-    
+
     // 反序列化
     let config2: ServerConfig = toml::from_str(&toml_str)?;
-    
+
     Ok(())
 }
 ```
@@ -347,10 +347,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             namespace: "default".to_string(),
         },
     };
-    
+
     let yaml = serde_yaml::to_string(&config)?;
     println!("{}", yaml);
-    
+
     Ok(())
 }
 ```
@@ -393,14 +393,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         score: 1000,
         inventory: vec!["sword".to_string(), "shield".to_string()],
     };
-    
+
     // 序列化
     let bytes = bincode::serialize(&state)?;
     println!("Size: {} bytes", bytes.len());
-    
+
     // 反序列化
     let state2: GameState = bincode::deserialize(&bytes)?;
-    
+
     Ok(())
 }
 ```
@@ -461,11 +461,11 @@ fn main() {
         username: "alice".to_string(),
         email: "alice@example.com".to_string(),
     };
-    
+
     // 序列化
     let mut buf = Vec::new();
     prost::Message::encode(&user, &mut buf).unwrap();
-    
+
     // 反序列化
     let user2 = User::decode(&buf[..]).unwrap();
 }
@@ -507,13 +507,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         id: 1,
         content: "Hello, MessagePack!".to_string(),
     };
-    
+
     // 序列化
     let bytes = rmp_serde::to_vec(&msg)?;
-    
+
     // 反序列化
     let msg2: Message = rmp_serde::from_slice(&bytes)?;
-    
+
     Ok(())
 }
 ```
@@ -556,14 +556,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     wtr.serialize(Record { id: 1, name: "Alice".to_string(), age: 30 })?;
     wtr.serialize(Record { id: 2, name: "Bob".to_string(), age: 25 })?;
     wtr.flush()?;
-    
+
     // 读取 CSV
     let mut rdr = csv::Reader::from_path("output.csv")?;
     for result in rdr.deserialize() {
         let record: Record = result?;
         println!("{:?}", record);
     }
-    
+
     Ok(())
 }
 ```
@@ -605,15 +605,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         author: "The Rust Team".to_string(),
         year: 2024,
     };
-    
+
     // 序列化
     let xml = quick_xml::se::to_string(&book)?;
     println!("{}", xml);
-    
+
     // 反序列化
     let book2: Book = quick_xml::de::from_str(&xml)?;
     println!("{:?}", book2);
-    
+
     Ok(())
 }
 ```
@@ -627,18 +627,18 @@ graph TD
     A{需要选择序列化格式} --> B{可读性重要吗?}
     B -->|是| C{什么场景?}
     B -->|否| D{跨语言吗?}
-    
+
     C -->|配置文件| E[TOML]
     C -->|API/前端| F[JSON]
     C -->|DevOps| G[YAML]
     C -->|表格数据| H[CSV]
-    
+
     D -->|是| I{性能要求?}
     D -->|否| J[bincode]
-    
+
     I -->|高| K[Protobuf]
     I -->|中| L[MessagePack]
-    
+
     style E fill:#FFE4B5
     style F fill:#E0FFFF
     style G fill:#F0E68C
@@ -662,7 +662,7 @@ use thiserror::Error;
 pub enum ConfigError {
     #[error("Failed to read config file: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Failed to parse config: {0}")]
     Parse(#[from] toml::de::Error),
 }
@@ -717,7 +717,7 @@ struct ConfigV2 {
     // 新字段使用 Option + default
     #[serde(default)]
     new_field: Option<String>,
-    
+
     // 旧字段保持不变
     old_field: String,
 }
@@ -731,7 +731,7 @@ struct ConfigV2 {
 #[derive(Serialize, Deserialize)]
 struct User {
     username: String,
-    
+
     // 不要序列化密码！
     #[serde(skip)]
     password_hash: String,
@@ -780,14 +780,14 @@ struct User {
 mod ts_seconds {
     use chrono::{DateTime, Utc, TimeZone};
     use serde::{Serializer, Deserializer};
-    
+
     pub fn serialize<S>(dt: &DateTime<Utc>, s: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         s.serialize_i64(dt.timestamp())
     }
-    
+
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: Deserializer<'de>,
@@ -808,5 +808,5 @@ mod ts_seconds {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

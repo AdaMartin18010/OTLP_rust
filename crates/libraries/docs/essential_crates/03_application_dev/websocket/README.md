@@ -1,7 +1,7 @@
 # WebSocket - 实时双向通信
 
-> **核心库**: tokio-tungstenite, axum (ws feature)  
-> **适用场景**: 实时通知、聊天应用、协作编辑、实时数据推送、游戏服务  
+> **核心库**: tokio-tungstenite, axum (ws feature)
+> **适用场景**: 实时通知、聊天应用、协作编辑、实时数据推送、游戏服务
 > **技术栈定位**: 应用开发层 - 实时通信层
 
 ---
@@ -157,12 +157,12 @@ use futures_util::{StreamExt, SinkExt};
 async fn main() {
     let listener = TcpListener::bind("127.0.0.1:9001").await.unwrap();
     println!("WebSocket 服务器运行在 ws://127.0.0.1:9001");
-    
+
     while let Ok((stream, _)) = listener.accept().await {
         tokio::spawn(async move {
             let ws_stream = accept_async(stream).await.unwrap();
             let (mut write, mut read) = ws_stream.split();
-            
+
             while let Some(Ok(msg)) = read.next().await {
                 if msg.is_text() || msg.is_binary() {
                     write.send(msg).await.unwrap();  // 回显消息
@@ -183,10 +183,10 @@ use futures_util::{StreamExt, SinkExt};
 async fn main() {
     let (ws_stream, _) = connect_async("ws://127.0.0.1:9001").await.unwrap();
     let (mut write, mut read) = ws_stream.split();
-    
+
     // 发送消息
     write.send(Message::Text("Hello".to_string())).await.unwrap();
-    
+
     // 接收消息
     if let Some(Ok(msg)) = read.next().await {
         println!("收到: {:?}", msg);
@@ -252,11 +252,11 @@ async fn handle_socket(mut socket: WebSocket) {
 #[tokio::main]
 async fn main() {
     let app = Router::new().route("/ws", get(ws_handler));
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     println!("WebSocket 服务器运行在 ws://127.0.0.1:3000/ws");
     axum::serve(listener, app).await.unwrap();
 }
@@ -286,9 +286,9 @@ async fn ws_handler(
 
 async fn handle_socket(mut socket: WebSocket, state: AppState) {
     let mut rx = state.tx.subscribe();
-    
+
     let (mut sender, mut receiver) = socket.split();
-    
+
     // 接收客户端消息并广播
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
@@ -297,7 +297,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
             }
         }
     });
-    
+
     // 处理客户端消息
     let tx = state.tx.clone();
     let mut recv_task = tokio::spawn(async move {
@@ -305,7 +305,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
             tx.send(text).ok();
         }
     });
-    
+
     tokio::select! {
         _ = &mut send_task => recv_task.abort(),
         _ = &mut recv_task => send_task.abort(),
@@ -316,11 +316,11 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
 async fn main() {
     let (tx, _) = broadcast::channel(100);
     let app_state = AppState { tx };
-    
+
     let app = Router::new()
         .route("/ws", get(ws_handler))
         .with_state(app_state);
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
@@ -373,13 +373,13 @@ async fn handle_chat(socket: WebSocket, state: ChatState) {
         *id += 1;
         current
     };
-    
+
     let (sender, mut receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel();
-    
+
     // 注册用户
     state.users.write().await.insert(user_id, tx);
-    
+
     // 发送任务
     let mut send_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
@@ -388,7 +388,7 @@ async fn handle_chat(socket: WebSocket, state: ChatState) {
             }
         }
     });
-    
+
     // 接收任务
     let users = state.users.clone();
     let mut recv_task = tokio::spawn(async move {
@@ -397,12 +397,12 @@ async fn handle_chat(socket: WebSocket, state: ChatState) {
             broadcast_message(&users, Message::Text(msg)).await;
         }
     });
-    
+
     tokio::select! {
         _ = &mut send_task => recv_task.abort(),
         _ = &mut recv_task => send_task.abort(),
     };
-    
+
     // 清理用户
     state.users.write().await.remove(&user_id);
 }
@@ -435,7 +435,7 @@ async fn notification_handler(ws: WebSocketUpgrade) -> Response {
 async fn handle_notifications(mut socket: WebSocket) {
     // 定期推送通知
     let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(5));
-    
+
     loop {
         tokio::select! {
             _ = interval.tick() => {
@@ -444,13 +444,13 @@ async fn handle_notifications(mut socket: WebSocket) {
                     message: "定时通知".to_string(),
                     timestamp: chrono::Utc::now().timestamp(),
                 };
-                
+
                 let json = serde_json::to_string(&notification).unwrap();
                 if socket.send(Message::Text(json)).await.is_err() {
                     break;
                 }
             }
-            
+
             msg = socket.recv() => {
                 if msg.is_none() {
                     break;
@@ -474,7 +474,7 @@ use tokio::time::{interval, Duration};
 
 async fn handle_socket_with_heartbeat(mut socket: WebSocket) {
     let mut heartbeat = interval(Duration::from_secs(30));
-    
+
     loop {
         tokio::select! {
             _ = heartbeat.tick() => {
@@ -482,7 +482,7 @@ async fn handle_socket_with_heartbeat(mut socket: WebSocket) {
                     break;
                 }
             }
-            
+
             msg = socket.recv() => {
                 match msg {
                     Some(Ok(Message::Pong(_))) => continue,
@@ -508,11 +508,11 @@ impl ConnectionManager {
     async fn add(&self, id: String, tx: mpsc::UnboundedSender<Message>) {
         self.connections.write().await.insert(id, tx);
     }
-    
+
     async fn remove(&self, id: &str) {
         self.connections.write().await.remove(id);
     }
-    
+
     async fn send_to(&self, id: &str, msg: Message) -> bool {
         if let Some(tx) = self.connections.read().await.get(id) {
             tx.send(msg).is_ok()
@@ -668,6 +668,6 @@ tokio::spawn(async move {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 96/100

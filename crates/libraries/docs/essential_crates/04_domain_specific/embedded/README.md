@@ -1,7 +1,7 @@
 # 嵌入式系统 (Embedded Systems)
 
-**类别**: 领域特定 - 嵌入式  
-**重要程度**: ⭐⭐⭐⭐⭐ (嵌入式开发必备)  
+**类别**: 领域特定 - 嵌入式
+**重要程度**: ⭐⭐⭐⭐⭐ (嵌入式开发必备)
 **更新日期**: 2025-10-20
 
 ---
@@ -48,7 +48,7 @@ Rust 嵌入式生态已经非常成熟，广泛应用于 IoT、机器人、航�
 
 ### 1. embedded-hal (硬件抽象层 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add embedded-hal`  
+**添加依赖**: `cargo add embedded-hal`
 **用途**: 嵌入式硬件抽象层标准
 
 #### 核心特性
@@ -65,7 +65,7 @@ use embedded_hal::digital::v2::{InputPin, OutputPin};
 use embedded_hal::blocking::delay::DelayMs;
 
 // LED 闪烁示例
-pub fn blink_led<P, D>(pin: &mut P, delay: &mut D, duration_ms: u32) 
+pub fn blink_led<P, D>(pin: &mut P, delay: &mut D, duration_ms: u32)
 where
     P: OutputPin,
     D: DelayMs<u32>,
@@ -73,14 +73,14 @@ where
     loop {
         pin.set_high().ok();
         delay.delay_ms(duration_ms);
-        
+
         pin.set_low().ok();
         delay.delay_ms(duration_ms);
     }
 }
 
 // 按钮读取示例
-pub fn read_button<P>(button: &P) -> bool 
+pub fn read_button<P>(button: &P) -> bool
 where
     P: InputPin,
 {
@@ -105,13 +105,13 @@ where
     pub fn new(i2c: I2C, address: u8) -> Self {
         Self { i2c, address }
     }
-    
+
     pub fn read_register(&mut self, register: u8) -> Result<u8, E> {
         let mut buffer = [0u8; 1];
         self.i2c.write_read(self.address, &[register], &mut buffer)?;
         Ok(buffer[0])
     }
-    
+
     pub fn write_register(&mut self, register: u8, value: u8) -> Result<(), E> {
         self.i2c.write(self.address, &[register, value])
     }
@@ -122,7 +122,7 @@ where
 
 ### 2. rtic (实时并发框架 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add rtic`  
+**添加依赖**: `cargo add rtic`
 **用途**: 实时中断驱动并发框架
 
 #### 核心特性2
@@ -143,36 +143,36 @@ use rtic::app;
 #[app(device = stm32f4::stm32f401, peripherals = true)]
 mod app {
     use systick_monotonic::{Systick, fugit::ExtU32};
-    
+
     #[shared]
     struct Shared {
         counter: u32,
     }
-    
+
     #[local]
     struct Local {
         led: LED,
     }
-    
+
     #[init]
     fn init(cx: init::Context) -> (Shared, Local) {
         let led = LED::new(cx.device.GPIOC);
-        
+
         (
             Shared { counter: 0 },
             Local { led },
         )
     }
-    
+
     #[task(shared = [counter], local = [led])]
     fn blink(mut cx: blink::Context) {
         cx.shared.counter.lock(|counter| {
             *counter += 1;
         });
-        
+
         cx.local.led.toggle();
     }
-    
+
     #[task(binds = EXTI0, shared = [counter])]
     fn button_press(mut cx: button_press::Context) {
         cx.shared.counter.lock(|counter| {
@@ -186,7 +186,7 @@ mod app {
 
 ### 3. embassy (异步嵌入式 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add embassy-executor embassy-time`  
+**添加依赖**: `cargo add embassy-executor embassy-time`
 **用途**: 现代化异步嵌入式框架
 
 #### 核心特性3
@@ -210,13 +210,13 @@ use embassy_stm32::gpio::{Level, Output, Speed};
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
-    
+
     let mut led = Output::new(p.PA5, Level::High, Speed::Low);
-    
+
     loop {
         led.set_high();
         Timer::after(Duration::from_millis(500)).await;
-        
+
         led.set_low();
         Timer::after(Duration::from_millis(500)).await;
     }
@@ -249,7 +249,7 @@ async fn uart_task(uart: Uart) {
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
-    
+
     spawner.spawn(blink_task(p.PA5)).unwrap();
     spawner.spawn(uart_task(p.USART1)).unwrap();
 }
@@ -259,7 +259,7 @@ async fn main(spawner: Spawner) {
 
 ### 4. probe-rs (调试工具 ⭐⭐⭐⭐⭐)
 
-**安装**: `cargo install probe-rs`  
+**安装**: `cargo install probe-rs`
 **用途**: 嵌入式调试和烧录工具
 
 #### 核心特性4
@@ -293,9 +293,9 @@ use rtt_target::{rtt_init_print, rprintln};
 #[entry]
 fn main() -> ! {
     rtt_init_print!();
-    
+
     rprintln!("Hello from embedded Rust!");
-    
+
     loop {
         rprintln!("Counter: {}", counter);
         delay.delay_ms(1000);
@@ -396,10 +396,10 @@ where
     pub fn read_temperature(&mut self) -> Result<f32, E> {
         let mut buffer = [0u8; 2];
         self.i2c.write_read(self.address, &[0x00], &mut buffer)?;
-        
+
         let raw = u16::from_be_bytes(buffer);
         let temp = (raw as f32) * 0.0625;  // 根据传感器规格转换
-        
+
         Ok(temp)
     }
 }

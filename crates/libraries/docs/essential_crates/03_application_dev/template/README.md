@@ -1,6 +1,6 @@
 # 模板引擎 - Rust Web 模板解决方案
 
-> **核心库**: tera, askama, handlebars, minijinja  
+> **核心库**: tera, askama, handlebars, minijinja
 > **适用场景**: HTML渲染、邮件模板、代码生成、报告生成
 
 ---
@@ -179,7 +179,7 @@ use tera::{Tera, Context};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. 初始化模板引擎
     let mut tera = Tera::new("templates/**/*")?;
-    
+
     // 或从字符串创建
     tera.add_raw_template("hello.html", "<h1>Hello {{ name }}!</h1>")?;
 
@@ -207,7 +207,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 <body>
     <h1>Hello {{ name }}!</h1>
     <p>You are {{ age }} years old.</p>
-    
+
     {% if age >= 18 %}
         <p>You are an adult.</p>
     {% else %}
@@ -297,8 +297,8 @@ fn main() {
 
 ```html
 {% macro input(name, type="text", placeholder="") %}
-    <input type="{{ type }}" 
-           name="{{ name }}" 
+    <input type="{{ type }}"
+           name="{{ name }}"
            placeholder="{{ placeholder }}"
            class="form-input">
 {% endmacro %}
@@ -374,7 +374,7 @@ fn main() {
 <body>
     <h1>Hello {{ name }}!</h1>
     <p>Age: {{ age }}</p>
-    
+
     {% if age >= 18 %}
         <p>Adult</p>
     {% endif %}
@@ -464,7 +464,7 @@ struct TestTemplate {
 <html>
 <body>
     {% include "header.html" %}
-    
+
     <main>
         {{ content }}
     </main>
@@ -544,7 +544,7 @@ fn main() {
 
     let tmpl = env.get_template("hello").unwrap();
     let result = tmpl.render(context! { name => "Alice" }).unwrap();
-    
+
     println!("{}", result);
 }
 ```
@@ -903,7 +903,7 @@ fn load_translations(lang: &str) -> HashMap<String, String> {
 fn render_i18n(lang: &str) -> String {
     let mut context = Context::new();
     context.insert("translations", &load_translations(lang));
-    
+
     // 模板: {{ translations.welcome }}
     TEMPLATES.render("page.html", &context).unwrap()
 }
@@ -1025,7 +1025,7 @@ async fn handler() -> String {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
-**维护者**: Rust 学习社区  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
+**维护者**: Rust 学习社区
 **文档长度**: 600+ 行

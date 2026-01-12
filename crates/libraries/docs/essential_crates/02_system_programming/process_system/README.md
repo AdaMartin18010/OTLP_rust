@@ -1,6 +1,6 @@
 # 进程与系统接口
 
-> **核心库**: nix, sysinfo, signal-hook, daemonize, libc  
+> **核心库**: nix, sysinfo, signal-hook, daemonize, libc
 > **适用场景**: 进程管理、信号处理、系统信息监控、守护进程、系统调用
 
 ---
@@ -159,24 +159,24 @@ use std::ffi::CString;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     match unsafe { fork()? } {
         ForkResult::Parent { child } => {
-            println!("父进程: PID = {}, 子进程 PID = {}", 
+            println!("父进程: PID = {}, 子进程 PID = {}",
                 std::process::id(), child);
-            
+
             // 等待子进程结束
             let status = waitpid(child, None)?;
             println!("子进程退出状态: {:?}", status);
         }
         ForkResult::Child => {
             println!("子进程: PID = {}", std::process::id());
-            
+
             // 执行新程序
             let prog = CString::new("/bin/ls").unwrap();
-            let args = vec![CString::new("ls").unwrap(), 
+            let args = vec![CString::new("ls").unwrap(),
                            CString::new("-la").unwrap()];
             execv(&prog, &args)?;
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -197,31 +197,31 @@ use std::os::unix::io::RawFd;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建管道 (read_fd, write_fd)
     let (read_fd, write_fd) = pipe()?;
-    
+
     match unsafe { fork()? } {
         ForkResult::Parent { child } => {
             // 父进程关闭写端，读取数据
             close(write_fd)?;
-            
+
             let mut buf = [0u8; 1024];
             let n = read(read_fd, &mut buf)?;
             let msg = String::from_utf8_lossy(&buf[..n]);
-            
+
             println!("父进程收到: {}", msg);
             close(read_fd)?;
         }
         ForkResult::Child => {
             // 子进程关闭读端，写入数据
             close(read_fd)?;
-            
+
             let data = b"Hello from child process!";
             write(write_fd, data)?;
             close(write_fd)?;
-            
+
             std::process::exit(0);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -244,19 +244,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建信号集，添加 SIGINT
     let mut sigset = SigSet::empty();
     sigset.add(Signal::SIGINT);
-    
+
     // 阻塞 SIGINT
     sigprocmask(SigmaskHow::SIG_BLOCK, Some(&sigset), None)?;
-    
+
     println!("SIGINT 已阻塞，按 Ctrl+C 不会退出...");
     std::thread::sleep(Duration::from_secs(5));
-    
+
     // 解除阻塞
     sigprocmask(SigmaskHow::SIG_UNBLOCK, Some(&sigset), None)?;
-    
+
     println!("SIGINT 已解除阻塞");
     std::thread::sleep(Duration::from_secs(5));
-    
+
     Ok(())
 }
 ```
@@ -279,17 +279,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     unsafe {
         signal(Signal::SIGTERM, SigHandler::Handler(handle_sigterm))?;
     }
-    
+
     println!("服务启动，发送 SIGTERM 优雅关闭...");
-    
+
     while !SHUTDOWN.load(Ordering::SeqCst) {
         // 主循环
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
-    
+
     println!("收到 SIGTERM，正在清理资源...");
     // 清理逻辑
-    
+
     Ok(())
 }
 ```
@@ -312,15 +312,15 @@ use std::os::unix::io::AsRawFd;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file = File::create("/tmp/lockfile")?;
     let fd = file.as_raw_fd();
-    
+
     // 尝试获取排他锁（非阻塞）
     match flock(fd, FlockArg::LockExclusiveNonblock) {
         Ok(_) => {
             println!("获取文件锁成功");
-            
+
             // 临界区代码
             std::thread::sleep(std::time::Duration::from_secs(5));
-            
+
             // 释放锁
             flock(fd, FlockArg::Unlock)?;
         }
@@ -328,7 +328,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("文件已被锁定: {}", e);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -345,13 +345,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .create(true)
         .append(true)
         .open("/tmp/output.log")?;
-    
+
     // 将 stdout 重定向到日志文件
     dup2(logfile.as_raw_fd(), 1)?; // 1 = stdout
-    
+
     println!("这条消息会写入 /tmp/output.log");
     eprintln!("stderr 仍然显示在终端");
-    
+
     Ok(())
 }
 ```
@@ -384,31 +384,31 @@ use sysinfo::{System, SystemExt, CpuExt, ProcessExt};
 fn main() {
     let mut sys = System::new_all();
     sys.refresh_all();
-    
+
     // 系统信息
     println!("系统名称: {}", System::name().unwrap_or_default());
     println!("内核版本: {}", System::kernel_version().unwrap_or_default());
     println!("OS 版本: {}", System::os_version().unwrap_or_default());
     println!("主机名: {}", System::host_name().unwrap_or_default());
-    
+
     // CPU 信息
     println!("\nCPU 信息:");
     println!("  物理核心数: {}", sys.physical_core_count().unwrap_or(0));
     println!("  逻辑核心数: {}", sys.cpus().len());
     println!("  全局 CPU 使用率: {:.2}%", sys.global_cpu_info().cpu_usage());
-    
+
     // 内存信息
     println!("\n内存信息:");
     let total_mem = sys.total_memory();
     let used_mem = sys.used_memory();
     let available_mem = sys.available_memory();
-    
+
     println!("  总内存: {} GB", total_mem / 1024 / 1024 / 1024);
-    println!("  已用: {} GB ({:.2}%)", 
+    println!("  已用: {} GB ({:.2}%)",
         used_mem / 1024 / 1024 / 1024,
         (used_mem as f64 / total_mem as f64) * 100.0);
     println!("  可用: {} GB", available_mem / 1024 / 1024 / 1024);
-    
+
     // Swap 信息
     println!("\nSwap:");
     println!("  总量: {} GB", sys.total_swap() / 1024 / 1024 / 1024);
@@ -425,18 +425,18 @@ use std::thread;
 
 fn main() {
     let mut sys = System::new_all();
-    
+
     loop {
         // 刷新特定数据（更高效）
         sys.refresh_cpu();
         sys.refresh_memory();
         sys.refresh_networks();
-        
+
         // 清屏
         print!("\x1B[2J\x1B[1;1H");
-        
+
         println!("=== 系统监控 ===\n");
-        
+
         // CPU 使用率（每个核心）
         println!("CPU 使用率:");
         for (i, cpu) in sys.cpus().iter().enumerate() {
@@ -444,17 +444,17 @@ fn main() {
             print_bar(cpu.cpu_usage(), 100.0);
             println!(" {:.1}%", cpu.cpu_usage());
         }
-        
+
         // 内存使用
         println!("\n内存:");
         let mem_percent = (sys.used_memory() as f64 / sys.total_memory() as f64) * 100.0;
         print!("  ");
         print_bar(mem_percent, 100.0);
-        println!(" {:.1}% ({}/{} GB)", 
+        println!(" {:.1}% ({}/{} GB)",
             mem_percent,
             sys.used_memory() / 1024 / 1024 / 1024,
             sys.total_memory() / 1024 / 1024 / 1024);
-        
+
         // 网络流量
         println!("\n网络:");
         for (name, data) in sys.networks() {
@@ -463,7 +463,7 @@ fn main() {
                 data.received() / 1024,
                 data.transmitted() / 1024);
         }
-        
+
         thread::sleep(Duration::from_secs(2));
     }
 }
@@ -493,7 +493,7 @@ use sysinfo::{System, SystemExt, ProcessExt, Pid};
 fn main() {
     let mut sys = System::new_all();
     sys.refresh_all();
-    
+
     // 当前进程信息
     let current_pid = Pid::from(std::process::id() as usize);
     if let Some(process) = sys.process(current_pid) {
@@ -504,12 +504,12 @@ fn main() {
         println!("  CPU: {:.2}%", process.cpu_usage());
         println!("  启动时间: {} 秒前", process.run_time());
     }
-    
+
     // 所有进程（按内存排序，取前10）
     println!("\n内存占用最高的进程:");
     let mut processes: Vec<_> = sys.processes().values().collect();
     processes.sort_by(|a, b| b.memory().cmp(&a.memory()));
-    
+
     for process in processes.iter().take(10) {
         println!("  {:>6} | {:20} | {:>6} MB | {:>5.1}%",
             process.pid(),
@@ -517,7 +517,7 @@ fn main() {
             process.memory() / 1024,
             process.cpu_usage());
     }
-    
+
     // 查找特定进程
     println!("\n查找 'rust' 相关进程:");
     for (pid, process) in sys.processes() {
@@ -541,13 +541,13 @@ fn main() {
         .nth(1)
         .and_then(|s| s.parse().ok())
         .expect("用法: cargo run -- <PID>");
-    
+
     let pid = Pid::from(target_pid);
     let mut sys = System::new();
-    
+
     loop {
         sys.refresh_process(pid);
-        
+
         if let Some(process) = sys.process(pid) {
             println!("[{}] {} - CPU: {:.2}%, Mem: {} MB",
                 pid,
@@ -558,7 +558,7 @@ fn main() {
             println!("进程 {} 已退出", pid);
             break;
         }
-        
+
         thread::sleep(Duration::from_secs(1));
     }
 }
@@ -596,25 +596,25 @@ use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let term = Arc::new(AtomicBool::new(false));
-    
+
     // 注册多个终止信号 (SIGTERM, SIGINT, SIGQUIT)
     for sig in TERM_SIGNALS {
         flag::register(*sig, Arc::clone(&term))?;
     }
-    
+
     println!("服务运行中... (Ctrl+C 优雅关闭)");
-    
+
     while !term.load(Ordering::Relaxed) {
         // 主业务逻辑
         println!("处理请求...");
         std::thread::sleep(Duration::from_secs(1));
     }
-    
+
     println!("收到关闭信号，开始清理资源...");
-    
+
     // 优雅关闭逻辑
     graceful_shutdown();
-    
+
     println!("清理完成，进程退出");
     Ok(())
 }
@@ -622,13 +622,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn graceful_shutdown() {
     println!("  1. 停止接收新请求");
     std::thread::sleep(Duration::from_millis(500));
-    
+
     println!("  2. 等待现有请求完成");
     std::thread::sleep(Duration::from_millis(500));
-    
+
     println!("  3. 关闭数据库连接");
     std::thread::sleep(Duration::from_millis(500));
-    
+
     println!("  4. 刷新日志缓冲");
 }
 ```
@@ -645,7 +645,7 @@ use tokio::time::{sleep, Duration};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut signals = Signals::new(&[SIGTERM, SIGINT, SIGHUP])?;
     let handle = signals.handle();
-    
+
     // 生成信号处理任务
     let signals_task = tokio::spawn(async move {
         while let Some(signal) = signals.next().await {
@@ -663,7 +663,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         false
     });
-    
+
     // 主业务循环
     let main_task = tokio::spawn(async {
         loop {
@@ -671,18 +671,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             sleep(Duration::from_secs(1)).await;
         }
     });
-    
+
     // 等待信号
     let should_terminate = signals_task.await?;
-    
+
     if should_terminate {
         // 优雅关闭
         println!("停止主任务...");
         main_task.abort();
-        
+
         graceful_shutdown_async().await;
     }
-    
+
     handle.close();
     Ok(())
 }
@@ -695,7 +695,7 @@ async fn reload_config() {
 async fn graceful_shutdown_async() {
     println!("  关闭连接池...");
     sleep(Duration::from_millis(500)).await;
-    
+
     println!("  保存状态到磁盘...");
     sleep(Duration::from_millis(500)).await;
 }
@@ -715,39 +715,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut child = Command::new("sleep")
         .arg("3600")
         .spawn()?;
-    
+
     println!("子进程 PID: {}", child.id());
-    
+
     // 监听信号
     let mut signals = Signals::new(&[SIGTERM, SIGINT])?;
-    
+
     thread::spawn(move || {
         for sig in signals.forever() {
             println!("收到信号 {}, 转发给子进程", sig);
-            
+
             // 转发信号给子进程 (Unix only)
             #[cfg(unix)]
             {
                 use nix::sys::signal::{kill, Signal};
                 use nix::unistd::Pid;
-                
+
                 let signal = match sig {
                     SIGTERM => Signal::SIGTERM,
                     SIGINT => Signal::SIGINT,
                     _ => continue,
                 };
-                
+
                 if let Err(e) = kill(Pid::from_raw(child.id() as i32), signal) {
                     eprintln!("转发信号失败: {}", e);
                 }
             }
         }
     });
-    
+
     // 等待子进程
     let status = child.wait()?;
     println!("子进程退出: {:?}", status);
-    
+
     Ok(())
 }
 ```
@@ -778,35 +778,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for sig in TERM_SIGNALS {
         flag::register(*sig, Arc::clone(&term))?;
     }
-    
+
     let mut sys = System::new_all();
     let mut logfile = OpenOptions::new()
         .create(true)
         .append(true)
         .open("/tmp/system_monitor.log")?;
-    
+
     println!("系统监控服务启动...");
-    
+
     // 主循环：每10秒记录一次
     let mut interval = 0;
     while !term.load(Ordering::Relaxed) {
         sys.refresh_all();
-        
+
         // 收集指标
         let cpu_usage = sys.global_cpu_info().cpu_usage();
         let mem_total = sys.total_memory();
         let mem_used = sys.used_memory();
         let mem_percent = (mem_used as f64 / mem_total as f64) * 100.0;
-        
+
         // 磁盘使用
         let mut disk_info = String::new();
         for disk in sys.disks() {
-            let usage = (disk.total_space() - disk.available_space()) as f64 
+            let usage = (disk.total_space() - disk.available_space()) as f64
                 / disk.total_space() as f64 * 100.0;
-            disk_info.push_str(&format!("{}:{:.1}% ", 
+            disk_info.push_str(&format!("{}:{:.1}% ",
                 disk.mount_point().display(), usage));
         }
-        
+
         // 写入日志
         let log_entry = format!(
             "[{}] CPU: {:.2}%, Mem: {:.2}%, Disks: {}\n",
@@ -815,18 +815,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             mem_percent,
             disk_info
         );
-        
+
         logfile.write_all(log_entry.as_bytes())?;
         logfile.flush()?;
-        
+
         if interval % 6 == 0 {
             print!("{}", log_entry);
         }
-        
+
         interval += 1;
         thread::sleep(Duration::from_secs(10));
     }
-    
+
     println!("监控服务停止");
     Ok(())
 }
@@ -858,24 +858,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建关闭信号 channel
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
     let active_requests = Arc::new(AtomicUsize::new(0));
-    
+
     // 注册信号处理
-    let mut signals = Signals::new(&[signal_hook::consts::SIGTERM, 
+    let mut signals = Signals::new(&[signal_hook::consts::SIGTERM,
                                       signal_hook::consts::SIGINT])?;
     let shutdown_tx_clone = shutdown_tx.clone();
-    
+
     tokio::spawn(async move {
         if let Some(_) = signals.next().await {
             println!("收到关闭信号");
             let _ = shutdown_tx_clone.send(());
         }
     });
-    
+
     // 模拟多个工作任务
     for i in 0..5 {
         let mut shutdown_rx = shutdown_tx.subscribe();
         let active = Arc::clone(&active_requests);
-        
+
         tokio::spawn(async move {
             loop {
                 tokio::select! {
@@ -886,29 +886,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     _ = sleep(Duration::from_secs(2)) => {
                         // 模拟处理请求
                         active.fetch_add(1, Ordering::SeqCst);
-                        println!("Worker {} 处理请求 (活跃: {})", 
+                        println!("Worker {} 处理请求 (活跃: {})",
                             i, active.load(Ordering::SeqCst));
-                        
+
                         sleep(Duration::from_secs(3)).await;
-                        
+
                         active.fetch_sub(1, Ordering::SeqCst);
-                        println!("Worker {} 完成请求 (剩余: {})", 
+                        println!("Worker {} 完成请求 (剩余: {})",
                             i, active.load(Ordering::SeqCst));
                     }
                 }
             }
         });
     }
-    
+
     println!("服务启动，5个 worker 运行中...");
-    
+
     // 等待关闭信号
     let mut shutdown_rx = shutdown_tx.subscribe();
     let _ = shutdown_rx.recv().await;
-    
+
     // 优雅关闭：等待所有请求完成（最多30秒）
     println!("开始优雅关闭...");
-    
+
     let shutdown_timeout = Duration::from_secs(30);
     let result = timeout(shutdown_timeout, async {
         loop {
@@ -920,13 +920,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             sleep(Duration::from_secs(1)).await;
         }
     }).await;
-    
+
     match result {
         Ok(_) => println!("所有请求已完成，干净退出"),
         Err(_) => println!("超时，强制退出（{} 个请求未完成）",
             active_requests.load(Ordering::SeqCst)),
     }
-    
+
     Ok(())
 }
 ```
@@ -955,7 +955,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let running = Arc::new(AtomicBool::new(true));
     let running_clone = Arc::clone(&running);
-    
+
     // 信号处理线程
     thread::spawn(move || {
         let mut signals = Signals::new(&[SIGTERM, SIGINT]).unwrap();
@@ -964,41 +964,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             running_clone.store(false, Ordering::SeqCst);
         }
     });
-    
+
     let mut restart_count = 0;
     let mut last_start = Instant::now();
-    
+
     println!("进程守护器启动");
-    
+
     while running.load(Ordering::SeqCst) {
         println!("启动子进程 (重启次数: {})", restart_count);
-        
+
         let mut child = Command::new("your-program")
             .spawn()
             .expect("启动子进程失败");
-        
+
         let child_pid = child.id();
         println!("子进程 PID: {}", child_pid);
-        
+
         // 等待子进程结束
         match child.wait() {
             Ok(status) => {
                 println!("子进程退出: {:?}", status);
-                
+
                 // 检查是否快速重启（可能是配置错误）
                 let uptime = last_start.elapsed();
                 if uptime < Duration::from_secs(10) {
                     println!("警告：子进程在 {:?} 内退出，可能存在问题", uptime);
-                    
+
                     if restart_count >= 5 {
                         println!("错误：短时间内重启5次，停止守护");
                         break;
                     }
-                    
+
                     println!("等待5秒后重启...");
                     thread::sleep(Duration::from_secs(5));
                 }
-                
+
                 restart_count += 1;
                 last_start = Instant::now();
             }
@@ -1008,7 +1008,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     println!("守护进程退出");
     Ok(())
 }
@@ -1226,7 +1226,7 @@ loop {
     sys.refresh_cpu(); // ✅ 只刷新需要的
     let cpu = sys.global_cpu_info().cpu_usage();
     println!("{}", cpu);
-    
+
     thread::sleep(Duration::from_secs(1)); // ✅ 限制刷新频率
 }
 ```
@@ -1292,6 +1292,6 @@ match unsafe { fork()? } {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **维护者**: Rust 学习社区

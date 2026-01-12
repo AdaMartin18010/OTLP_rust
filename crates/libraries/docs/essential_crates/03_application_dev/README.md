@@ -1,7 +1,7 @@
 # 第3层：应用开发层 (Application Development Layer)
 
-> **定位**: 构建生产级应用所需的 Web、数据库、消息队列等核心组件  
-> **特点**: 完整生态、生产就绪、最佳实践  
+> **定位**: 构建生产级应用所需的 Web、数据库、消息队列等核心组件
+> **特点**: 完整生态、生产就绪、最佳实践
 > **版本**: Rust 1.90 (2025)
 
 ---
@@ -127,7 +127,7 @@ async fn main() {
     let app = Router::new()
         .route("/users/:id", get(get_user))
         .route("/users", post(create_user));
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
@@ -177,9 +177,9 @@ async fn main() -> Result<(), reqwest::Error> {
         .await?
         .json::<ApiResponse>()
         .await?;
-    
+
     println!("Your IP: {}", res.origin);
-    
+
     // POST 请求
     let client = reqwest::Client::new();
     let response = client
@@ -190,9 +190,9 @@ async fn main() -> Result<(), reqwest::Error> {
         }))
         .send()
         .await?;
-    
+
     println!("Status: {}", response.status());
-    
+
     Ok(())
 }
 ```
@@ -231,16 +231,16 @@ async fn main() -> Result<(), sqlx::Error> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect("postgres://user:pass@localhost/mydb").await?;
-    
+
     // 编译期检查的查询（需要 DATABASE_URL 环境变量）
     let users = sqlx::query_as::<_, User>("SELECT id, name, email FROM users")
         .fetch_all(&pool)
         .await?;
-    
+
     for user in users {
         println!("{}: {} ({})", user.id, user.name, user.email);
     }
-    
+
     // 插入数据
     let result = sqlx::query(
         "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id"
@@ -249,9 +249,9 @@ async fn main() -> Result<(), sqlx::Error> {
     .bind("bob@example.com")
     .fetch_one(&pool)
     .await?;
-    
+
     println!("Inserted user with ID: {}", result.get::<i32, _>("id"));
-    
+
     Ok(())
 }
 ```
@@ -422,11 +422,11 @@ async fn health() -> Json<HealthCheck> {
 #[tokio::main]
 async fn main() {
     let app = Router::new().route("/health", get(health));
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     println!("Server running on http://0.0.0.0:3000");
     axum::serve(listener, app).await.unwrap();
 }
@@ -570,7 +570,7 @@ impl IntoResponse for AppError {
                 (StatusCode::UNAUTHORIZED, "Unauthorized".to_string())
             }
         };
-        
+
         (status, Json(json!({ "error": message }))).into_response()
     }
 }
@@ -595,7 +595,7 @@ impl Config {
         let config = config::Config::builder()
             .add_source(config::Environment::default())
             .build()?;
-        
+
         config.try_deserialize()
     }
 }
@@ -624,7 +624,7 @@ async fn main() {
         db: PgPoolOptions::new().connect(&db_url).await.unwrap(),
         redis: redis::Client::open(redis_url).unwrap(),
     };
-    
+
     let app = Router::new()
         .route("/", get(handler))
         .with_state(state);
@@ -641,7 +641,7 @@ use tokio::signal;
 #[tokio::main]
 async fn main() {
     let app = Router::new();
-    
+
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
@@ -652,7 +652,7 @@ async fn shutdown_signal() {
     signal::ctrl_c()
         .await
         .expect("Failed to install CTRL+C signal handler");
-    
+
     println!("Shutting down gracefully...");
 }
 ```
@@ -687,6 +687,6 @@ async fn shutdown_signal() {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **维护者**: Rust 学习社区

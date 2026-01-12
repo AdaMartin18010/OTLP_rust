@@ -119,26 +119,26 @@ use std::time::Duration;
 fn main() {
     // 创建无界通道
     let (tx, rx) = mpsc::channel();
-    
+
     // 克隆发送端（MPSC）
     let tx1 = tx.clone();
     let tx2 = tx.clone();
-    
+
     // 生产者线程1
     thread::spawn(move || {
         tx1.send("消息1").unwrap();
         thread::sleep(Duration::from_millis(100));
         tx1.send("消息2").unwrap();
     });
-    
+
     // 生产者线程2
     thread::spawn(move || {
         tx2.send("消息3").unwrap();
     });
-    
+
     // 释放原始发送端
     drop(tx);
-    
+
     // 消费者
     for received in rx {
         println!("收到: {}", received);
@@ -154,15 +154,15 @@ use std::sync::mpsc;
 fn bounded_channel_example() {
     // 创建容量为3的有界通道
     let (tx, rx) = mpsc::sync_channel(3);
-    
+
     // 发送会在队列满时阻塞
     tx.send(1).unwrap();
     tx.send(2).unwrap();
     tx.send(3).unwrap();
     // tx.send(4).unwrap(); // 会阻塞直到有空间
-    
+
     println!("收到: {}", rx.recv().unwrap());
-    
+
     // 现在有空间了
     tx.send(4).unwrap();
 }
@@ -176,7 +176,7 @@ use std::time::Duration;
 
 fn timeout_example() {
     let (tx, rx) = mpsc::channel();
-    
+
     match rx.recv_timeout(Duration::from_secs(1)) {
         Ok(msg) => println!("收到: {}", msg),
         Err(mpsc::RecvTimeoutError::Timeout) => {
@@ -209,13 +209,13 @@ use std::thread;
 fn crossbeam_basic() {
     // 无界通道
     let (s, r) = unbounded();
-    
+
     s.send("Hello").unwrap();
     assert_eq!(r.recv().unwrap(), "Hello");
-    
+
     // 有界通道
     let (s, r) = bounded(1);
-    
+
     s.send(1).unwrap();
     // s.send(2).unwrap(); // 会阻塞
 }
@@ -231,17 +231,17 @@ use std::time::Duration;
 fn select_example() {
     let (s1, r1) = unbounded();
     let (s2, r2) = unbounded();
-    
+
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(100));
         s1.send("来自通道1").unwrap();
     });
-    
+
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(200));
         s2.send("来自通道2").unwrap();
     });
-    
+
     // 等待第一个就绪的通道
     select! {
         recv(r1) -> msg => println!("r1: {:?}", msg),
@@ -258,7 +258,7 @@ use std::time::Duration;
 
 fn timeout_default() {
     let (s, r) = unbounded();
-    
+
     select! {
         recv(r) -> msg => println!("收到: {:?}", msg),
         recv(after(Duration::from_secs(1))) -> _ => {
@@ -279,7 +279,7 @@ use std::thread;
 
 fn mpmc_pattern() {
     let (s, r) = unbounded();
-    
+
     // 多个生产者
     for i in 0..3 {
         let s = s.clone();
@@ -288,7 +288,7 @@ fn mpmc_pattern() {
         });
     }
     drop(s);
-    
+
     // 多个消费者
     let mut handles = vec![];
     for _ in 0..2 {
@@ -301,7 +301,7 @@ fn mpmc_pattern() {
         handles.push(h);
     }
     drop(r);
-    
+
     for h in handles {
         h.join().unwrap();
     }
@@ -327,16 +327,16 @@ use std::thread;
 fn flume_basic() {
     // 无界通道
     let (tx, rx) = flume::unbounded();
-    
+
     thread::spawn(move || {
         tx.send("Hello from flume").unwrap();
     });
-    
+
     println!("{}", rx.recv().unwrap());
-    
+
     // 有界通道
     let (tx, rx) = flume::bounded(5);
-    
+
     tx.send(42).unwrap();
     assert_eq!(rx.recv().unwrap(), 42);
 }
@@ -349,12 +349,12 @@ use flume;
 
 async fn flume_async() {
     let (tx, rx) = flume::unbounded();
-    
+
     // 异步发送
     tokio::spawn(async move {
         tx.send_async("异步消息").await.unwrap();
     });
-    
+
     // 异步接收
     let msg = rx.recv_async().await.unwrap();
     println!("收到: {}", msg);
@@ -369,17 +369,17 @@ use flume::Selector;
 fn flume_select() {
     let (tx1, rx1) = flume::unbounded();
     let (tx2, rx2) = flume::unbounded();
-    
+
     tx1.send(1).unwrap();
     tx2.send(2).unwrap();
-    
+
     // Select 第一个就绪的
     let msg = Selector::new()
         .recv(&rx1, |msg| msg)
         .recv(&rx2, |msg| msg)
         .wait()
         .unwrap();
-    
+
     println!("收到: {}", msg);
 }
 ```
@@ -392,15 +392,15 @@ use futures::stream::StreamExt;
 
 async fn stream_api() {
     let (tx, rx) = flume::unbounded();
-    
+
     tx.send(1).unwrap();
     tx.send(2).unwrap();
     tx.send(3).unwrap();
     drop(tx);
-    
+
     // 将通道转换为 Stream
     let mut stream = rx.into_stream();
-    
+
     while let Some(val) = stream.next().await {
         println!("流式接收: {}", val);
     }
@@ -421,14 +421,14 @@ use tokio::sync::mpsc;
 async fn tokio_mpsc() {
     // 创建容量为32的通道
     let (tx, mut rx) = mpsc::channel(32);
-    
+
     // 发送
     tokio::spawn(async move {
         for i in 0..10 {
             tx.send(i).await.unwrap();
         }
     });
-    
+
     // 接收
     while let Some(i) = rx.recv().await {
         println!("收到: {}", i);
@@ -443,13 +443,13 @@ use tokio::sync::oneshot;
 
 async fn tokio_oneshot() {
     let (tx, rx) = oneshot::channel();
-    
+
     tokio::spawn(async move {
         // 计算结果
         let result = expensive_computation();
         tx.send(result).unwrap();
     });
-    
+
     // 等待结果
     match rx.await {
         Ok(result) => println!("结果: {}", result),
@@ -470,11 +470,11 @@ use tokio::sync::broadcast;
 async fn tokio_broadcast() {
     let (tx, mut rx1) = broadcast::channel(16);
     let mut rx2 = tx.subscribe();
-    
+
     tokio::spawn(async move {
         tx.send("广播消息").unwrap();
     });
-    
+
     // 所有订阅者都会收到
     println!("rx1: {}", rx1.recv().await.unwrap());
     println!("rx2: {}", rx2.recv().await.unwrap());
@@ -488,14 +488,14 @@ use tokio::sync::watch;
 
 async fn tokio_watch() {
     let (tx, mut rx) = watch::channel("初始值");
-    
+
     tokio::spawn(async move {
         // 监听值的变化
         while rx.changed().await.is_ok() {
             println!("新值: {}", *rx.borrow());
         }
     });
-    
+
     // 更新值
     tx.send("新值1").unwrap();
     tx.send("新值2").unwrap();
@@ -519,7 +519,7 @@ struct Task {
 
 fn task_distribution() {
     let (task_tx, task_rx) = bounded(100);
-    
+
     // 工作线程池
     let mut workers = vec![];
     for i in 0..4 {
@@ -533,7 +533,7 @@ fn task_distribution() {
         workers.push(worker);
     }
     drop(task_rx);
-    
+
     // 主线程分发任务
     for i in 0..20 {
         let task = Task {
@@ -543,7 +543,7 @@ fn task_distribution() {
         task_tx.send(task).unwrap();
     }
     drop(task_tx);
-    
+
     // 等待完成
     for worker in workers {
         worker.join().unwrap();
@@ -560,7 +560,7 @@ use std::time::Duration;
 
 fn producer_consumer() {
     let (tx, rx) = flume::bounded(10);
-    
+
     // 生产者
     let producer = thread::spawn(move || {
         for i in 0..100 {
@@ -568,7 +568,7 @@ fn producer_consumer() {
             thread::sleep(Duration::from_millis(10));
         }
     });
-    
+
     // 消费者
     let consumer = thread::spawn(move || {
         for item in rx {
@@ -576,7 +576,7 @@ fn producer_consumer() {
             thread::sleep(Duration::from_millis(50));
         }
     });
-    
+
     producer.join().unwrap();
     consumer.join().unwrap();
 }
@@ -596,7 +596,7 @@ enum Event {
 
 async fn event_bus() {
     let (tx, _rx) = broadcast::channel(100);
-    
+
     // 订阅者1：日志记录
     let mut logger_rx = tx.subscribe();
     tokio::spawn(async move {
@@ -604,7 +604,7 @@ async fn event_bus() {
             println!("[LOG] {:?}", event);
         }
     });
-    
+
     // 订阅者2：统计
     let mut stats_rx = tx.subscribe();
     tokio::spawn(async move {
@@ -616,7 +616,7 @@ async fn event_bus() {
             }
         }
     });
-    
+
     // 发布事件
     tx.send(Event::UserLogin("Alice".to_string())).unwrap();
     tx.send(Event::DataUpdate(42)).unwrap();
@@ -667,7 +667,7 @@ let (tx, rx) = flume::unbounded(); // 需谨慎使用
 ```rust
 fn proper_shutdown() {
     let (tx, rx) = flume::unbounded();
-    
+
     {
         let tx = tx.clone();
         std::thread::spawn(move || {
@@ -675,10 +675,10 @@ fn proper_shutdown() {
             // tx 在这里自动 drop
         });
     }
-    
+
     // 显式 drop 主发送端
     drop(tx);
-    
+
     // 接收端会在所有发送端关闭后退出
     for msg in rx {
         println!("{}", msg);
@@ -693,7 +693,7 @@ use flume::TrySendError;
 
 fn error_handling() {
     let (tx, rx) = flume::bounded(1);
-    
+
     // 非阻塞发送
     match tx.try_send(1) {
         Ok(_) => println!("发送成功"),
@@ -716,7 +716,7 @@ use std::time::Duration;
 fn select_best_practices() {
     let (tx1, rx1) = unbounded();
     let (tx2, rx2) = unbounded();
-    
+
     loop {
         select! {
             recv(rx1) -> msg => {

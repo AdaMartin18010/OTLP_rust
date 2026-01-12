@@ -1,7 +1,7 @@
 # 调试工具 (Debugging Tools)
 
-**类别**: 第5层 - 工具链  
-**重要程度**: ⭐⭐⭐⭐  
+**类别**: 第5层 - 工具链
+**重要程度**: ⭐⭐⭐⭐
 **更新日期**: 2025-10-20
 
 ---
@@ -54,7 +54,7 @@ Rust 的调试工具生态从简单的打印调试到高级的交互式调试器
 
 ### 1. rust-gdb / rust-lldb (必备 ⭐⭐⭐⭐⭐)
 
-**安装**: Rust 安装时自带  
+**安装**: Rust 安装时自带
 **用途**: Rust 专用的 GDB/LLDB 包装器
 
 #### 基础用法
@@ -132,7 +132,7 @@ fn main() {
 
 ### 2. cargo-expand (宏展开 🌟)
 
-**安装**: `cargo install cargo-expand`  
+**安装**: `cargo install cargo-expand`
 **用途**: 展开宏，查看生成的代码
 
 #### 基础用法2
@@ -195,19 +195,19 @@ impl ::core::clone::Clone for User {
 fn main() {
     let x = 5;
     let y = 10;
-    
+
     // 打印变量
     dbg!(x);  // [src/main.rs:4] x = 5
-    
+
     // 打印表达式
     dbg!(x + y);  // [src/main.rs:7] x + y = 15
-    
+
     // 链式调用中使用
     let result = vec![1, 2, 3]
         .iter()
         .map(|x| dbg!(x * 2))
         .collect::<Vec<_>>();
-    
+
     // 打印多个值
     dbg!(x, y, x + y);
 }
@@ -217,7 +217,7 @@ fn main() {
 
 ### 4. cargo-llvm-lines (代码膨胀分析)
 
-**安装**: `cargo install cargo-llvm-lines`  
+**安装**: `cargo install cargo-llvm-lines`
 **用途**: 分析编译后的代码大小
 
 ```bash
@@ -292,12 +292,12 @@ fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
-    
+
     info!("Application started");
-    
+
     let user_id = 123;
     debug!("Processing user: {}", user_id);
-    
+
     if let Err(e) = process_user(user_id) {
         error!("Failed to process user {}: {}", user_id, e);
     }
@@ -321,10 +321,10 @@ fn main() {
     assert!(x > 0);
     assert_eq!(x, 42);
     assert_ne!(x, 0);
-    
+
     // 带消息
     assert!(x > 0, "x must be positive, got {}", x);
-    
+
     // Debug 专用
     debug_assert!(expensive_check());
     debug_assert_eq!(x, y);

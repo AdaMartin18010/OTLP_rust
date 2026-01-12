@@ -78,12 +78,12 @@ use base64::{Engine as _, engine::general_purpose};
 
 fn base64_basic() {
     let data = b"Hello, World!";
-    
+
     // 编码
     let encoded = general_purpose::STANDARD.encode(data);
     println!("编码: {}", encoded);
     // 输出: SGVsbG8sIFdvcmxkIQ==
-    
+
     // 解码
     let decoded = general_purpose::STANDARD.decode(&encoded).unwrap();
     println!("解码: {}", String::from_utf8(decoded).unwrap());
@@ -98,15 +98,15 @@ use base64::{Engine as _, engine::{self, general_purpose}};
 
 fn base64_variants() {
     let data = b"Hello, World!";
-    
+
     // 标准 Base64
     let standard = general_purpose::STANDARD.encode(data);
     println!("标准: {}", standard);
-    
+
     // URL 安全（使用 - 和 _ 替代 + 和 /）
     let url_safe = general_purpose::URL_SAFE.encode(data);
     println!("URL安全: {}", url_safe);
-    
+
     // 无填充
     let no_pad = general_purpose::STANDARD_NO_PAD.encode(data);
     println!("无填充: {}", no_pad);
@@ -121,16 +121,16 @@ use std::io::Write;
 
 fn base64_streaming() {
     let data = b"Large data that needs streaming...";
-    
+
     // 使用缓冲区
     let mut encoded = String::new();
     let engine = general_purpose::STANDARD;
-    
+
     // 分块编码
     for chunk in data.chunks(1024) {
         encoded.push_str(&engine.encode(chunk));
     }
-    
+
     println!("流式编码: {}", encoded);
 }
 ```
@@ -144,10 +144,10 @@ use std::fs;
 fn image_to_data_url(path: &str) -> Result<String, std::io::Error> {
     // 读取图片
     let image_data = fs::read(path)?;
-    
+
     // Base64 编码
     let encoded = general_purpose::STANDARD.encode(&image_data);
-    
+
     // 构造 Data URL
     let mime_type = match path.rsplit('.').next() {
         Some("png") => "image/png",
@@ -155,7 +155,7 @@ fn image_to_data_url(path: &str) -> Result<String, std::io::Error> {
         Some("gif") => "image/gif",
         _ => "application/octet-stream",
     };
-    
+
     Ok(format!("data:{};base64,{}", mime_type, encoded))
 }
 
@@ -177,12 +177,12 @@ use hex;
 
 fn hex_basic() {
     let data = b"Hello";
-    
+
     // 编码为十六进制字符串
     let encoded = hex::encode(data);
     println!("Hex编码: {}", encoded);
     // 输出: 48656c6c6f
-    
+
     // 解码
     let decoded = hex::decode(&encoded).unwrap();
     println!("解码: {}", String::from_utf8(decoded).unwrap());
@@ -197,12 +197,12 @@ use hex;
 
 fn hex_formats() {
     let data = b"Rust";
-    
+
     // 小写（默认）
     let lowercase = hex::encode(data);
     println!("小写: {}", lowercase);
     // 输出: 52757374
-    
+
     // 大写
     let uppercase = hex::encode_upper(data);
     println!("大写: {}", uppercase);
@@ -220,7 +220,7 @@ fn hash_display(data: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(data);
     let result = hasher.finalize();
-    
+
     // 将哈希值编码为十六进制
     hex::encode(result)
 }
@@ -239,11 +239,11 @@ use hex;
 
 fn hex_to_bytes() {
     let hex_string = "48656c6c6f";
-    
+
     // 方法1: Vec<u8>
     let bytes = hex::decode(hex_string).unwrap();
     println!("{:?}", bytes);
-    
+
     // 方法2: 固定长度数组
     let mut array = [0u8; 5];
     hex::decode_to_slice(hex_string, &mut array).unwrap();
@@ -262,12 +262,12 @@ use percent_encoding::{utf8_percent_encode, percent_decode_str, NON_ALPHANUMERIC
 
 fn url_encoding_percent() {
     let input = "Hello, 世界!";
-    
+
     // 编码
     let encoded = utf8_percent_encode(input, NON_ALPHANUMERIC).to_string();
     println!("编码: {}", encoded);
     // 输出: Hello%2C%20%E4%B8%96%E7%95%8C%21
-    
+
     // 解码
     let decoded = percent_decode_str(&encoded)
         .decode_utf8()
@@ -284,12 +284,12 @@ use urlencoding::{encode, decode};
 
 fn url_encoding_simple() {
     let input = "Hello, World! 你好";
-    
+
     // 编码
     let encoded = encode(input);
     println!("编码: {}", encoded);
     // 输出: Hello%2C%20World%21%20%E4%BD%A0%E5%A5%BD
-    
+
     // 解码
     let decoded = decode(&encoded).unwrap();
     println!("解码: {}", decoded);
@@ -322,7 +322,7 @@ fn main() {
     params.insert("name", "张三");
     params.insert("city", "北京");
     params.insert("email", "user@example.com");
-    
+
     let query = build_query_string(&params);
     println!("查询字符串: {}", query);
     // 输出: name=%E5%BC%A0%E4%B8%89&city=%E5%8C%97%E4%BA%AC&email=user%40example.com
@@ -340,15 +340,15 @@ use encoding_rs::{Encoding, UTF_8, GBK, SHIFT_JIS};
 
 fn character_encoding() {
     let text = "你好，世界！";
-    
+
     // UTF-8 编码（默认）
     let utf8_bytes = text.as_bytes();
     println!("UTF-8: {:?}", utf8_bytes);
-    
+
     // 编码为 GBK
     let (encoded, _, _) = GBK.encode(text);
     println!("GBK: {:?}", encoded);
-    
+
     // 从 GBK 解码
     let (decoded, _, _) = GBK.decode(&encoded);
     println!("解码: {}", decoded);
@@ -369,7 +369,7 @@ fn detect_and_convert(bytes: &[u8]) -> Result<String, Box<dyn std::error::Error>
         encoding_rs::SHIFT_JIS,
         encoding_rs::EUC_KR,
     ];
-    
+
     // 尝试每种编码
     for encoding in &encodings {
         let (decoded, used_encoding, had_errors) = encoding.decode(bytes);
@@ -378,7 +378,7 @@ fn detect_and_convert(bytes: &[u8]) -> Result<String, Box<dyn std::error::Error>
             return Ok(decoded.into_owned());
         }
     }
-    
+
     Err("无法检测编码".into())
 }
 ```
@@ -392,14 +392,14 @@ use std::fs;
 fn read_gbk_file(path: &str) -> Result<String, std::io::Error> {
     // 读取字节
     let bytes = fs::read(path)?;
-    
+
     // GBK 解码
     let (decoded, _, had_errors) = GBK.decode(&bytes);
-    
+
     if had_errors {
         eprintln!("警告：解码时遇到错误");
     }
-    
+
     Ok(decoded.into_owned())
 }
 
@@ -419,21 +419,21 @@ fn main() -> Result<(), std::io::Error> {
 ```rust
 fn endianness_example() {
     let number: u32 = 0x12345678;
-    
+
     // 大端（Big-Endian）
     let be_bytes = number.to_be_bytes();
     println!("大端: {:?}", be_bytes);
     // [0x12, 0x34, 0x56, 0x78]
-    
+
     // 小端（Little-Endian）
     let le_bytes = number.to_le_bytes();
     println!("小端: {:?}", le_bytes);
     // [0x78, 0x56, 0x34, 0x12]
-    
+
     // 从字节恢复
     let be_number = u32::from_be_bytes(be_bytes);
     let le_number = u32::from_le_bytes(le_bytes);
-    
+
     assert_eq!(be_number, number);
     assert_eq!(le_number, number);
 }
@@ -444,44 +444,44 @@ fn endianness_example() {
 ```rust
 fn encode_varint(mut value: u64) -> Vec<u8> {
     let mut bytes = Vec::new();
-    
+
     loop {
         let mut byte = (value & 0x7F) as u8;
         value >>= 7;
-        
+
         if value != 0 {
             byte |= 0x80; // 设置继续位
         }
-        
+
         bytes.push(byte);
-        
+
         if value == 0 {
             break;
         }
     }
-    
+
     bytes
 }
 
 fn decode_varint(bytes: &[u8]) -> Result<(u64, usize), &'static str> {
     let mut value = 0u64;
     let mut shift = 0;
-    
+
     for (i, &byte) in bytes.iter().enumerate() {
         value |= ((byte & 0x7F) as u64) << shift;
         shift += 7;
-        
+
         if byte & 0x80 == 0 {
             return Ok((value, i + 1));
         }
     }
-    
+
     Err("VarInt 不完整")
 }
 
 fn main() {
     let numbers = [0, 127, 128, 16384, 2097151];
-    
+
     for &n in &numbers {
         let encoded = encode_varint(n);
         let (decoded, len) = decode_varint(&encoded).unwrap();
@@ -506,14 +506,14 @@ fn create_jwt_token(payload: serde_json::Value) -> String {
         "alg": "HS256",
         "typ": "JWT"
     });
-    
+
     // 编码头部和载荷
     let header_b64 = general_purpose::URL_SAFE_NO_PAD.encode(header.to_string());
     let payload_b64 = general_purpose::URL_SAFE_NO_PAD.encode(payload.to_string());
-    
+
     // 生成签名（这里简化）
     let signature = "fake_signature";
-    
+
     format!("{}.{}.{}", header_b64, payload_b64, signature)
 }
 
@@ -523,7 +523,7 @@ fn main() {
         "name": "John Doe",
         "iat": 1516239022
     });
-    
+
     let token = create_jwt_token(payload);
     println!("JWT: {}", token);
 }
@@ -544,14 +544,14 @@ struct BinaryData {
 mod base64_serde {
     use base64::{Engine as _, engine::general_purpose};
     use serde::{Serializer, Deserializer, Deserialize};
-    
+
     pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_str(&general_purpose::STANDARD.encode(bytes))
     }
-    
+
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
@@ -567,11 +567,11 @@ fn main() {
     let data = BinaryData {
         content: vec![1, 2, 3, 4, 5],
     };
-    
+
     let json = serde_json::to_string(&data).unwrap();
     println!("JSON: {}", json);
     // {"content":"AQIDBAU="}
-    
+
     let decoded: BinaryData = serde_json::from_str(&json).unwrap();
     println!("解码: {:?}", decoded.content);
 }
@@ -583,11 +583,11 @@ fn main() {
 fn color_hex_to_rgb(hex: &str) -> Result<(u8, u8, u8), hex::FromHexError> {
     let hex = hex.trim_start_matches('#');
     let bytes = hex::decode(hex)?;
-    
+
     if bytes.len() != 3 {
         return Err(hex::FromHexError::InvalidStringLength);
     }
-    
+
     Ok((bytes[0], bytes[1], bytes[2]))
 }
 
@@ -599,7 +599,7 @@ fn main() {
     let hex_color = "#FF5733";
     let (r, g, b) = color_hex_to_rgb(hex_color).unwrap();
     println!("RGB: ({}, {}, {})", r, g, b);
-    
+
     let hex = rgb_to_color_hex(255, 87, 51);
     println!("Hex: {}", hex);
 }
@@ -619,10 +619,10 @@ use thiserror::Error;
 enum EncodingError {
     #[error("Base64 解码失败: {0}")]
     Base64Decode(#[from] base64::DecodeError),
-    
+
     #[error("Hex 解码失败: {0}")]
     HexDecode(#[from] hex::FromHexError),
-    
+
     #[error("UTF-8 解码失败: {0}")]
     Utf8Decode(#[from] std::string::FromUtf8Error),
 }
@@ -643,22 +643,22 @@ use base64::{Engine as _, engine::general_purpose};
 fn encode_many_reuse_buffer(items: &[&[u8]]) -> Vec<String> {
     let mut results = Vec::with_capacity(items.len());
     let engine = general_purpose::STANDARD;
-    
+
     for item in items {
         results.push(engine.encode(item));
     }
-    
+
     results
 }
 
 // ✅ 预分配容量
 fn decode_with_capacity(encoded: &str) -> Result<Vec<u8>, base64::DecodeError> {
     let engine = general_purpose::STANDARD;
-    
+
     // 计算解码后大小
     let estimated_len = (encoded.len() * 3) / 4;
     let mut buffer = Vec::with_capacity(estimated_len);
-    
+
     engine.decode_vec(encoded, &mut buffer)?;
     Ok(buffer)
 }
@@ -674,7 +674,7 @@ fn safe_encode(data: &[u8], max_len: usize) -> Result<String, &'static str> {
     if data.len() > max_len {
         return Err("数据过大");
     }
-    
+
     Ok(general_purpose::STANDARD.encode(data))
 }
 
@@ -683,12 +683,12 @@ fn constant_time_compare(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         return false;
     }
-    
+
     let mut result = 0u8;
     for (&x, &y) in a.iter().zip(b.iter()) {
         result |= x ^ y;
     }
-    
+
     result == 0
 }
 ```

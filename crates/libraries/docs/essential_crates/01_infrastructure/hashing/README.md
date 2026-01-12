@@ -1,6 +1,6 @@
 # 哈希与摘要
 
-> **核心库**: sha2, blake3, md-5, xxhash-rust  
+> **核心库**: sha2, blake3, md-5, xxhash-rust
 > **适用场景**: 密码学哈希、数据完整性、快速哈希、去重
 
 ---
@@ -176,7 +176,7 @@ use std::io::{self, Read};
 fn compute_file_hash(path: &str) -> io::Result<String> {
     let mut file = File::open(path)?;
     let mut hasher = Hasher::new();
-    
+
     let mut buffer = [0u8; 8192];
     loop {
         let bytes_read = file.read(&mut buffer)?;
@@ -185,7 +185,7 @@ fn compute_file_hash(path: &str) -> io::Result<String> {
         }
         hasher.update(&buffer[..bytes_read]);
     }
-    
+
     Ok(hasher.finalize().to_hex().to_string())
 }
 
@@ -216,7 +216,7 @@ impl FileDeduplicator {
             hashes: HashMap::new(),
         }
     }
-    
+
     fn add_file(&mut self, path: &str) -> std::io::Result<()> {
         let hash = compute_file_hash(path)?;
         self.hashes
@@ -225,7 +225,7 @@ impl FileDeduplicator {
             .push(path.to_string());
         Ok(())
     }
-    
+
     fn find_duplicates(&self) -> Vec<&Vec<String>> {
         self.hashes
             .values()
@@ -251,13 +251,13 @@ impl DataWithChecksum {
         let checksum = Self::compute_checksum(&data);
         Self { data, checksum }
     }
-    
+
     fn compute_checksum(data: &[u8]) -> String {
         let mut hasher = Sha256::new();
         hasher.update(data);
         format!("{:x}", hasher.finalize())
     }
-    
+
     fn verify(&self) -> bool {
         Self::compute_checksum(&self.data) == self.checksum
     }
@@ -275,5 +275,5 @@ impl DataWithChecksum {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

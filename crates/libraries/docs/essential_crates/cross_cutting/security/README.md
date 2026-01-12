@@ -1,7 +1,7 @@
 # Security - 安全工具
 
-> **核心库**: ring, rustls, argon2, jsonwebtoken  
-> **适用场景**: 密码学、TLS、密码哈希、JWT、安全审计  
+> **核心库**: ring, rustls, argon2, jsonwebtoken
+> **适用场景**: 密码学、TLS、密码哈希、JWT、安全审计
 > **技术栈定位**: 跨层次关注 - 应用安全基础设施
 
 ---
@@ -191,10 +191,10 @@ fn verify_hmac(key: &[u8], message: &[u8], signature: &[u8]) -> bool {
 fn main() {
     let key = b"secret_key";
     let message = b"important message";
-    
+
     let signature = sign_hmac(key, message);
     println!("Signature: {}", hex::encode(&signature));
-    
+
     let valid = verify_hmac(key, message, &signature);
     println!("Valid: {}", valid);
 }
@@ -229,12 +229,12 @@ use std::sync::Arc;
 
 fn create_tls_config() -> Arc<ClientConfig> {
     let mut root_store = RootCertStore::empty();
-    
+
     // 加载系统证书
     for cert in rustls_native_certs::load_native_certs().unwrap() {
         root_store.add(cert).ok();
     }
-    
+
     Arc::new(
         ClientConfig::builder()
             .with_root_certificates(root_store)
@@ -245,15 +245,15 @@ fn create_tls_config() -> Arc<ClientConfig> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = create_tls_config();
-    
+
     // 使用 reqwest
     let client = reqwest::Client::builder()
         .use_preconfigured_tls(config)
         .build()?;
-    
+
     let response = client.get("https://example.com").send().await?;
     println!("Status: {}", response.status());
-    
+
     Ok(())
 }
 ```
@@ -287,7 +287,7 @@ use rand::rngs::OsRng;
 fn hash_password(password: &str) -> String {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    
+
     argon2.hash_password(password.as_bytes(), &salt)
         .expect("Failed to hash password")
         .to_string()
@@ -296,7 +296,7 @@ fn hash_password(password: &str) -> String {
 fn verify_password(password: &str, hash: &str) -> bool {
     let parsed_hash = PasswordHash::new(hash)
         .expect("Failed to parse hash");
-    
+
     Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok()
@@ -304,15 +304,15 @@ fn verify_password(password: &str, hash: &str) -> bool {
 
 fn main() {
     let password = "super_secret_password";
-    
+
     // 哈希密码
     let hash = hash_password(password);
     println!("Hash: {}", hash);
-    
+
     // 验证密码
     let valid = verify_password(password, &hash);
     println!("Valid: {}", valid);
-    
+
     let invalid = verify_password("wrong_password", &hash);
     println!("Invalid: {}", invalid);
 }
@@ -355,13 +355,13 @@ fn create_token(user_id: &str, secret: &str) -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    
+
     let claims = Claims {
         sub: user_id.to_string(),
         iat: now,
         exp: now + 3600, // 1 hour
     };
-    
+
     encode(
         &Header::default(),
         &claims,
@@ -375,17 +375,17 @@ fn verify_token(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::error
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::default()
     )?;
-    
+
     Ok(token_data.claims)
 }
 
 fn main() {
     let secret = "my_secret_key";
-    
+
     // 创建 token
     let token = create_token("user123", secret);
     println!("Token: {}", token);
-    
+
     // 验证 token
     match verify_token(&token, secret) {
         Ok(claims) => println!("Valid token for user: {}", claims.sub),
@@ -505,7 +505,7 @@ async fn register_user(
     let argon2 = Argon2::default();
     let password_hash = argon2.hash_password(password.as_bytes(), &salt)?
         .to_string();
-    
+
     // 存储用户
     let user_id: (i64,) = sqlx::query_as(
         "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id"
@@ -514,7 +514,7 @@ async fn register_user(
     .bind(&password_hash)
     .fetch_one(pool)
     .await?;
-    
+
     Ok(user_id.0)
 }
 
@@ -531,12 +531,12 @@ async fn login_user(
     )
     .fetch_one(pool)
     .await?;
-    
+
     // 验证密码
     let parsed_hash = PasswordHash::new(&user.password_hash)?;
     Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)?;
-    
+
     Ok(user.id)
 }
 ```
@@ -563,16 +563,16 @@ async fn auth_middleware<B>(
         .get("Authorization")
         .and_then(|h| h.to_str().ok())
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     let token = auth_header.strip_prefix("Bearer ")
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     let token_data = decode::<Claims>(
         token,
         &DecodingKey::from_secret("secret".as_ref()),
         &Validation::default()
     ).map_err(|_| StatusCode::UNAUTHORIZED)?;
-    
+
     req.extensions_mut().insert(token_data.claims);
     Ok(next.run(req).await)
 }
@@ -588,7 +588,7 @@ async fn main() {
     let app = Router::new()
         .route("/protected", get(protected_route))
         .layer(middleware::from_fn(auth_middleware));
-    
+
     // ...
 }
 ```
@@ -744,6 +744,6 @@ let client = reqwest::Client::builder()
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 96/100

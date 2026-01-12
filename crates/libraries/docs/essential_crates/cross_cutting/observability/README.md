@@ -1,7 +1,7 @@
 # 可观测性 (Observability)
 
-**类别**: 横切关注点  
-**重要程度**: ⭐⭐⭐⭐⭐ (生产必备)  
+**类别**: 横切关注点
+**重要程度**: ⭐⭐⭐⭐⭐ (生产必备)
 **更新日期**: 2025-10-20
 
 ---
@@ -69,10 +69,10 @@ use tracing_subscriber;
 #[instrument]
 fn process_order(order_id: u64, user_id: u64) {
     info!("Processing order");
-    
+
     // 自动捕获函数参数
     debug!("Validating order");
-    
+
     // 添加额外字段
     info!(amount = 99.99, "Order validated");
 }
@@ -85,7 +85,7 @@ fn main() {
         .with_thread_ids(true)
         .with_line_number(true)
         .init();
-    
+
     process_order(123, 456);
 }
 ```
@@ -97,13 +97,13 @@ use tracing::{info, span, Level};
 
 fn main() {
     tracing_subscriber::fmt::init();
-    
+
     // 创建 span
     let span = span!(Level::INFO, "my_span", user_id = 123);
     let _enter = span.enter();
-    
+
     info!("Inside span");
-    
+
     // Span 嵌套
     {
         let child_span = span!(Level::DEBUG, "child_span");
@@ -121,12 +121,12 @@ use tracing::{info, instrument};
 #[instrument]
 async fn fetch_user(user_id: u64) -> User {
     info!("Fetching user from database");
-    
+
     // 异步操作
     let user = database::get_user(user_id).await;
-    
+
     info!(username = %user.name, "User fetched");
-    
+
     user
 }
 
@@ -135,7 +135,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .init();
-    
+
     let user = fetch_user(123).await;
 }
 ```
@@ -184,10 +184,10 @@ use metrics::{counter, gauge, histogram};
 fn handle_request() {
     // 计数器：累加值
     counter!("requests_total", "endpoint" => "/api/users").increment(1);
-    
+
     // 仪表盘：当前值
     gauge!("active_connections").set(42.0);
-    
+
     // 直方图：分布统计
     histogram!("request_duration_seconds").record(0.123);
 }
@@ -207,7 +207,7 @@ async fn main() {
         .with_http_listener(addr)
         .install()
         .expect("Failed to install Prometheus exporter");
-    
+
     // 应用逻辑
     loop {
         handle_request();
@@ -227,13 +227,13 @@ fn setup_metrics() {
         Unit::Count,
         "Total HTTP requests"
     );
-    
+
     describe_gauge!(
         "memory_usage_bytes",
         Unit::Bytes,
         "Current memory usage"
     );
-    
+
     describe_histogram!(
         "response_time_seconds",
         Unit::Seconds,
@@ -287,7 +287,7 @@ fn init_tracer() {
         )
         .install_batch(opentelemetry_sdk::runtime::Tokio)
         .unwrap();
-    
+
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(tracing_opentelemetry::layer().with_tracer(tracer))
@@ -297,9 +297,9 @@ fn init_tracer() {
 #[tokio::main]
 async fn main() {
     init_tracer();
-    
+
     // 应用逻辑
-    
+
     // 关闭时刷新
     global::shutdown_tracer_provider();
 }
@@ -314,7 +314,7 @@ use opentelemetry::global;
 #[instrument]
 async fn call_service_a() {
     info!("Calling Service A");
-    
+
     // 自动传播 trace context
     let client = reqwest::Client::new();
     let response = client
@@ -322,7 +322,7 @@ async fn call_service_a() {
         .send()
         .await
         .unwrap();
-    
+
     info!("Service A responded");
 }
 
@@ -337,7 +337,7 @@ async fn call_service_b() {
 
 ### 4. log (传统日志 ⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add log env_logger`  
+**添加依赖**: `cargo add log env_logger`
 **用途**: 经典日志接口（与 tracing 兼容）
 
 ```rust
@@ -345,7 +345,7 @@ use log::{info, warn, error, debug};
 
 fn main() {
     env_logger::init();
-    
+
     info!("Application started");
     warn!("This is a warning");
     error!("This is an error");
@@ -369,7 +369,7 @@ console-subscriber = "0.2"
 ```rust
 fn main() {
     console_subscriber::init();
-    
+
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -393,10 +393,10 @@ use tracing::{info, instrument, Level};
 #[instrument(level = "info")]
 async fn create_order(order: Order) -> Result<OrderId> {
     info!(order_id = %order.id, "Creating order");
-    
+
     // 服务层：详细日志
     let result = order_service.create(order).await?;
-    
+
     info!(order_id = %result, "Order created successfully");
     Ok(result)
 }
@@ -425,10 +425,10 @@ use serde_json::json;
 )]
 async fn handle_api_request(user: User, request_id: String, endpoint: String) {
     info!("Handling API request");
-    
+
     // 动态添加字段
     tracing::Span::current().record("status", &"processing");
-    
+
     match process_request().await {
         Ok(result) => {
             info!(
@@ -494,23 +494,23 @@ async fn main() {
         .with_max_level(tracing::Level::INFO)
         .with_target(false)
         .init();
-    
+
     // 2. 初始化 Metrics (Prometheus)
     let metrics_addr: SocketAddr = "0.0.0.0:9000".parse().unwrap();
     PrometheusBuilder::new()
         .with_http_listener(metrics_addr)
         .install()
         .expect("Failed to install metrics exporter");
-    
+
     info!("Metrics endpoint: http://0.0.0.0:9000/metrics");
-    
+
     // 3. 应用路由
     let app = Router::new()
         .route("/health", get(health_check));
-    
+
     let app_addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
     info!("Starting server on {}", app_addr);
-    
+
     axum_server::bind(app_addr)
         .serve(app.into_make_service())
         .await
@@ -564,21 +564,21 @@ async fn metrics_middleware(req: Request, next: Next) -> Response {
     let start = Instant::now();
     let method = req.method().clone();
     let uri = req.uri().clone();
-    
+
     counter!("http_requests_total",
         "method" => method.to_string(),
         "endpoint" => uri.path().to_string()
     ).increment(1);
-    
+
     let response = next.run(req).await;
-    
+
     let duration = start.elapsed().as_secs_f64();
     histogram!("http_request_duration_seconds",
         "method" => method.to_string(),
         "endpoint" => uri.path().to_string(),
         "status" => response.status().as_u16().to_string()
     ).record(duration);
-    
+
     response
 }
 
@@ -587,7 +587,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
         .layer(middleware::from_fn(metrics_middleware));
-    
+
     // ...
 }
 ```
@@ -601,10 +601,10 @@ use opentelemetry::global;
 #[instrument]
 async fn frontend_handler(request: Request) -> Response {
     info!("Frontend received request");
-    
+
     // 调用后端服务
     let backend_response = call_backend_service(request).await;
-    
+
     info!("Frontend sending response");
     backend_response
 }
@@ -612,10 +612,10 @@ async fn frontend_handler(request: Request) -> Response {
 #[instrument]
 async fn call_backend_service(request: Request) -> Response {
     info!("Backend processing request");
-    
+
     // 调用数据库
     let data = query_database().await;
-    
+
     Response::new(data)
 }
 ```

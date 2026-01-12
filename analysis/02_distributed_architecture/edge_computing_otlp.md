@@ -56,25 +56,25 @@ graph TB
         DB[(数据存储)]
         ML[机器学习模型]
     end
-    
+
     subgraph "边缘数据中心"
         EDC[边缘数据中心]
         EDB[(边缘存储)]
         EML[边缘ML模型]
     end
-    
+
     subgraph "边缘节点"
         EN1[边缘节点1]
         EN2[边缘节点2]
         EN3[边缘节点3]
     end
-    
+
     subgraph "终端设备"
         IoT1[IoT设备1]
         IoT2[IoT设备2]
         IoT3[IoT设备3]
     end
-    
+
     CC --> EDC
     EDC --> EN1
     EDC --> EN2
@@ -164,37 +164,37 @@ pub struct EdgeStreamProcessor {
 impl EdgeStreamProcessor {
     pub async fn process_stream(&mut self) -> Result<(), ProcessingError> {
         let mut stream = self.input_stream.take(1000); // 批量处理
-        
+
         while let Some(batch) = stream.next().await {
             // 并行处理批次数据
             let processed_batch = self.parallel_process_batch(batch).await?;
-            
+
             // 本地缓存重要数据
             self.cache_important_data(&processed_batch).await?;
-            
+
             // 发送到云端
             self.send_to_cloud(&processed_batch).await?;
         }
-        
+
         Ok(())
     }
-    
+
     async fn parallel_process_batch(
-        &self, 
+        &self,
         batch: Vec<TelemetryData>
     ) -> Result<Vec<ProcessedData>, ProcessingError> {
         let chunks = batch.chunks(10); // 分块并行处理
         let futures: Vec<_> = chunks.map(|chunk| {
             self.process_chunk(chunk.to_vec())
         }).collect();
-        
+
         let results = futures::future::join_all(futures).await;
         let mut processed_data = Vec::new();
-        
+
         for result in results {
             processed_data.extend(result?);
         }
-        
+
         Ok(processed_data)
     }
 }
@@ -218,12 +218,12 @@ pub enum CompressionAlgorithm {
 
 impl EdgeCompressionEngine {
     pub fn compress_data(
-        &self, 
-        data: &[u8], 
+        &self,
+        data: &[u8],
         context: CompressionContext
     ) -> Result<CompressedData, CompressionError> {
         let algorithm = self.select_algorithm(&context);
-        
+
         match algorithm {
             CompressionAlgorithm::LZ4 => {
                 let compressed = lz4::compress(data)?;
@@ -236,7 +236,7 @@ impl EdgeCompressionEngine {
             _ => self.custom_compress(data, algorithm),
         }
     }
-    
+
     fn select_algorithm(&self, context: &CompressionContext) -> CompressionAlgorithm {
         match context {
             CompressionContext::RealTime => CompressionAlgorithm::LZ4,
@@ -273,21 +273,21 @@ impl EdgeAIModel {
         if self.should_update_model().await? {
             self.update_model().await?;
         }
-        
+
         // 执行推理
         let output = self.inference_engine.infer(input).await?;
-        
+
         // 缓存结果
         self.cache_result(input, &output).await?;
-        
+
         Ok(output)
     }
-    
+
     async fn should_update_model(&self) -> Result<bool, ModelError> {
         let last_update = self.model_cache.get_last_update_time()?;
         let current_time = SystemTime::now();
         let duration = current_time.duration_since(last_update)?;
-        
+
         // 模型更新策略：每小时检查一次
         Ok(duration.as_secs() > 3600)
     }
@@ -314,24 +314,24 @@ pub struct DecisionRule {
 
 impl EdgeDecisionEngine {
     pub async fn make_decision(
-        &mut self, 
+        &mut self,
         context: &DecisionContext
     ) -> Result<Option<Decision>, DecisionError> {
         // 评估所有规则
         let applicable_rules = self.evaluate_rules(context).await?;
-        
+
         if applicable_rules.is_empty() {
             return Ok(None);
         }
-        
+
         // 选择最高优先级规则
         let selected_rule = self.select_rule(applicable_rules)?;
-        
+
         // 检查冷却时间
         if self.is_rule_in_cooldown(&selected_rule).await? {
             return Ok(None);
         }
-        
+
         // 执行决策
         let decision = Decision {
             rule_id: selected_rule.rule_id.clone(),
@@ -339,28 +339,28 @@ impl EdgeDecisionEngine {
             confidence: self.calculate_confidence(&selected_rule, context),
             timestamp: SystemTime::now(),
         };
-        
+
         // 记录决策历史
         self.record_decision(&decision).await?;
-        
+
         Ok(Some(decision))
     }
-    
+
     async fn evaluate_rules(
-        &self, 
+        &self,
         context: &DecisionContext
     ) -> Result<Vec<&DecisionRule>, DecisionError> {
         let mut applicable_rules = Vec::new();
-        
+
         for rule in &self.decision_rules {
             if self.evaluate_condition(&rule.condition, context).await? {
                 applicable_rules.push(rule);
             }
         }
-        
+
         // 按优先级排序
         applicable_rules.sort_by(|a, b| b.priority.cmp(&a.priority));
-        
+
         Ok(applicable_rules)
     }
 }
@@ -394,21 +394,21 @@ impl EdgeCloudSync {
             SyncStrategy::EventDriven => self.event_driven_sync().await,
         }
     }
-    
+
     async fn bidirectional_sync(&mut self) -> Result<SyncResult, SyncError> {
         // 并行执行推送和拉取
         let (push_result, pull_result) = futures::join!(
             self.push_to_cloud(),
             self.pull_from_cloud()
         );
-        
+
         let push_result = push_result?;
         let pull_result = pull_result?;
-        
+
         // 处理冲突
         let conflicts = self.detect_conflicts(&push_result, &pull_result)?;
         let resolved_conflicts = self.resolve_conflicts(conflicts).await?;
-        
+
         Ok(SyncResult {
             pushed_items: push_result.items,
             pulled_items: pull_result.items,
@@ -431,15 +431,15 @@ pub struct EdgeNetworkOptimizer {
 
 impl EdgeNetworkOptimizer {
     pub async fn optimize_transmission(
-        &mut self, 
+        &mut self,
         data: &[u8]
     ) -> Result<OptimizedTransmission, NetworkError> {
         // 监控网络状况
         let network_metrics = self.bandwidth_monitor.get_current_metrics().await?;
-        
+
         // 选择传输策略
         let strategy = self.select_transmission_strategy(&network_metrics);
-        
+
         match strategy {
             TransmissionStrategy::Direct => {
                 self.direct_transmission(data).await
@@ -455,9 +455,9 @@ impl EdgeNetworkOptimizer {
             },
         }
     }
-    
+
     fn select_transmission_strategy(
-        &self, 
+        &self,
         metrics: &NetworkMetrics
     ) -> TransmissionStrategy {
         if metrics.bandwidth > 100_000_000 { // 100Mbps
@@ -492,7 +492,7 @@ impl EdgeResourceMonitor {
         let memory_usage = self.memory_monitor.get_usage().await?;
         let storage_usage = self.storage_monitor.get_usage().await?;
         let network_usage = self.network_monitor.get_usage().await?;
-        
+
         Ok(ResourceStatus {
             cpu: cpu_usage,
             memory: memory_usage,
@@ -501,28 +501,28 @@ impl EdgeResourceMonitor {
             timestamp: SystemTime::now(),
         })
     }
-    
+
     pub async fn check_resource_constraints(
-        &self, 
+        &self,
         operation: &ResourceOperation
     ) -> Result<bool, MonitorError> {
         let current_status = self.get_resource_status().await?;
-        
+
         // 检查CPU约束
         if current_status.cpu.usage + operation.cpu_requirement > 0.8 {
             return Ok(false);
         }
-        
+
         // 检查内存约束
         if current_status.memory.usage + operation.memory_requirement > 0.9 {
             return Ok(false);
         }
-        
+
         // 检查存储约束
         if current_status.storage.usage + operation.storage_requirement > 0.95 {
             return Ok(false);
         }
-        
+
         Ok(true)
     }
 }
@@ -540,36 +540,36 @@ pub struct EdgeResourceOptimizer {
 
 impl EdgeResourceOptimizer {
     pub async fn optimize_resources(
-        &mut self, 
+        &mut self,
         workload: &Workload
     ) -> Result<OptimizationPlan, OptimizationError> {
         // 预测性能需求
         let performance_requirements = self.performance_predictor
             .predict_requirements(workload).await?;
-        
+
         // 生成优化策略
         let strategies = self.generate_optimization_strategies(
             &performance_requirements
         ).await?;
-        
+
         // 评估策略效果
         let evaluated_strategies = self.evaluate_strategies(strategies).await?;
-        
+
         // 选择最优策略
         let optimal_strategy = self.select_optimal_strategy(evaluated_strategies)?;
-        
+
         // 生成执行计划
         let plan = self.generate_execution_plan(optimal_strategy).await?;
-        
+
         Ok(plan)
     }
-    
+
     async fn generate_optimization_strategies(
-        &self, 
+        &self,
         requirements: &PerformanceRequirements
     ) -> Result<Vec<OptimizationStrategy>, OptimizationError> {
         let mut strategies = Vec::new();
-        
+
         // CPU优化策略
         if requirements.cpu_intensive {
             strategies.push(OptimizationStrategy::CPUOptimization {
@@ -577,7 +577,7 @@ impl EdgeResourceOptimizer {
                 cpu_frequency: requirements.cpu_frequency,
             });
         }
-        
+
         // 内存优化策略
         if requirements.memory_intensive {
             strategies.push(OptimizationStrategy::MemoryOptimization {
@@ -585,7 +585,7 @@ impl EdgeResourceOptimizer {
                 cache_size: requirements.cache_size,
             });
         }
-        
+
         // 存储优化策略
         if requirements.storage_intensive {
             strategies.push(OptimizationStrategy::StorageOptimization {
@@ -593,7 +593,7 @@ impl EdgeResourceOptimizer {
                 compression: requirements.compression_enabled,
             });
         }
-        
+
         Ok(strategies)
     }
 }
@@ -613,19 +613,19 @@ pub struct EdgeDataEncryption {
 
 impl EdgeDataEncryption {
     pub async fn encrypt_sensitive_data(
-        &self, 
-        data: &[u8], 
+        &self,
+        data: &[u8],
         context: &EncryptionContext
     ) -> Result<EncryptedData, EncryptionError> {
         // 选择加密算法
         let algorithm = self.select_encryption_algorithm(context);
-        
+
         // 获取加密密钥
         let key = self.key_manager.get_key(&algorithm).await?;
-        
+
         // 执行加密
         let encrypted = self.encryption_engine.encrypt(data, &key, &algorithm)?;
-        
+
         // 存储加密元数据
         let metadata = EncryptionMetadata {
             algorithm: algorithm.clone(),
@@ -633,15 +633,15 @@ impl EdgeDataEncryption {
             timestamp: SystemTime::now(),
             context: context.clone(),
         };
-        
+
         Ok(EncryptedData {
             data: encrypted,
             metadata,
         })
     }
-    
+
     fn select_encryption_algorithm(
-        &self, 
+        &self,
         context: &EncryptionContext
     ) -> EncryptionAlgorithm {
         match context.sensitivity_level {
@@ -666,8 +666,8 @@ pub struct EdgePrivacyProtection {
 
 impl EdgePrivacyProtection {
     pub async fn protect_privacy(
-        &self, 
-        data: &PersonalData, 
+        &self,
+        data: &PersonalData,
         privacy_level: PrivacyLevel
     ) -> Result<ProtectedData, PrivacyError> {
         match privacy_level {
@@ -685,20 +685,20 @@ impl EdgePrivacyProtection {
             },
         }
     }
-    
+
     async fn differential_privacy_protection(
-        &self, 
+        &self,
         data: &PersonalData
     ) -> Result<ProtectedData, PrivacyError> {
         // 应用差分隐私算法
         let epsilon = 1.0; // 隐私预算
         let protected_data = self.differential_privacy
             .add_noise(data, epsilon).await?;
-        
+
         // 验证隐私保护效果
         let privacy_guarantee = self.differential_privacy
             .verify_privacy_guarantee(&protected_data, epsilon).await?;
-        
+
         Ok(ProtectedData {
             data: protected_data,
             privacy_guarantee,
@@ -722,21 +722,21 @@ pub struct EdgeCacheOptimizer {
 
 impl EdgeCacheOptimizer {
     pub async fn optimize_cache_performance(
-        &mut self, 
+        &mut self,
         access_pattern: &AccessPattern
     ) -> Result<CacheOptimization, CacheError> {
         // 分析访问模式
         let pattern_analysis = self.analyze_access_pattern(access_pattern).await?;
-        
+
         // 优化缓存层次
         let layer_optimization = self.optimize_cache_layers(&pattern_analysis).await?;
-        
+
         // 优化淘汰策略
         let eviction_optimization = self.optimize_eviction_policies(&pattern_analysis).await?;
-        
+
         // 优化预取策略
         let prefetch_optimization = self.optimize_prefetch_strategies(&pattern_analysis).await?;
-        
+
         Ok(CacheOptimization {
             layer_optimization,
             eviction_optimization,
@@ -759,15 +759,15 @@ pub struct EdgeComputeOptimizer {
 
 impl EdgeComputeOptimizer {
     pub async fn optimize_computation(
-        &mut self, 
+        &mut self,
         computation_task: &ComputationTask
     ) -> Result<OptimizedComputation, ComputeError> {
         // 分析计算特征
         let compute_characteristics = self.analyze_compute_characteristics(computation_task)?;
-        
+
         // 选择优化策略
         let optimization_strategy = self.select_optimization_strategy(&compute_characteristics);
-        
+
         match optimization_strategy {
             OptimizationStrategy::Parallel => {
                 self.parallel_optimization(computation_task).await
@@ -801,23 +801,23 @@ pub struct IntelligentTrafficSystem {
 
 impl IntelligentTrafficSystem {
     pub async fn process_traffic_data(
-        &mut self, 
+        &mut self,
         traffic_data: &TrafficData
     ) -> Result<TrafficResponse, TrafficError> {
         // 实时交通监控
         let traffic_metrics = self.traffic_monitor.analyze_traffic(traffic_data).await?;
-        
+
         // 检测交通事件
         let incidents = self.incident_detector.detect_incidents(&traffic_metrics).await?;
-        
+
         // 优化信号控制
         let signal_adjustments = self.signal_controller
             .optimize_signals(&traffic_metrics, &incidents).await?;
-        
+
         // 优化路线规划
         let route_recommendations = self.route_optimizer
             .optimize_routes(&traffic_metrics, &incidents).await?;
-        
+
         Ok(TrafficResponse {
             signal_adjustments,
             route_recommendations,
@@ -841,25 +841,25 @@ pub struct IndustrialIoTSystem {
 
 impl IndustrialIoTSystem {
     pub async fn process_industrial_data(
-        &mut self, 
+        &mut self,
         sensor_data: &SensorData
     ) -> Result<IndustrialResponse, IndustrialError> {
         // 设备状态监控
         let equipment_status = self.equipment_monitor
             .monitor_equipment(sensor_data).await?;
-        
+
         // 预测性维护
         let maintenance_predictions = self.predictive_maintenance
             .predict_maintenance_needs(&equipment_status).await?;
-        
+
         // 质量控制
         let quality_metrics = self.quality_controller
             .control_quality(sensor_data).await?;
-        
+
         // 能源优化
         let energy_optimization = self.energy_optimizer
             .optimize_energy_usage(sensor_data).await?;
-        
+
         Ok(IndustrialResponse {
             equipment_status,
             maintenance_predictions,

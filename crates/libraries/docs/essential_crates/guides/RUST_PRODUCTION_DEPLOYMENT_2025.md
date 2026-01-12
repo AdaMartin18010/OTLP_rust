@@ -5,8 +5,7 @@
 ## 📋 目录
 
 - [Rust 生产部署完全指南 (2025版)](#rust-生产部署完全指南-2025版)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [📋 目录](#-目录)
   - [概述](#概述)
     - [核心目标](#核心目标)
     - [技术栈选择](#技术栈选择)
@@ -434,19 +433,19 @@ spec:
       - name: myapp
         image: myregistry.com/myapp:v1.0.0
         imagePullPolicy: IfNotPresent
-        
+
         ports:
         - name: http
           containerPort: 8080
           protocol: TCP
-        
+
         # 环境变量
         envFrom:
         - configMapRef:
             name: myapp-config
         - secretRef:
             name: myapp-secrets
-        
+
         # 资源限制
         resources:
           requests:
@@ -455,7 +454,7 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-        
+
         # 健康检查
         livenessProbe:
           httpGet:
@@ -465,7 +464,7 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 3
-        
+
         readinessProbe:
           httpGet:
             path: /ready
@@ -474,7 +473,7 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 2
           failureThreshold: 3
-        
+
         # 启动探针 (避免慢启动被杀死)
         startupProbe:
           httpGet:
@@ -484,19 +483,19 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 30
-        
+
         # 卷挂载
         volumeMounts:
         - name: config
           mountPath: /app/config
           readOnly: true
-      
+
       # 卷定义
       volumes:
       - name: config
         configMap:
           name: myapp-config
-      
+
       # Pod 反亲和性 (分散到不同节点)
       affinity:
         podAntiAffinity:
@@ -665,12 +664,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      
+
       - name: Cache
         uses: actions/cache@v3
         with:
@@ -681,13 +680,13 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
+
       - name: Format Check
         run: cargo fmt --all -- --check
-      
+
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
-      
+
       - name: Security Audit
         run: |
           cargo install cargo-audit
@@ -700,7 +699,7 @@ jobs:
     name: Test Suite
     runs-on: ubuntu-latest
     needs: check
-    
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -715,13 +714,13 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      
+
       - name: Cache
         uses: actions/cache@v3
         with:
@@ -732,17 +731,17 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
+
       - name: Run Tests
         run: cargo test --all-features --workspace
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/testdb
-      
+
       - name: Code Coverage
         run: |
           cargo install cargo-llvm-cov
           cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-      
+
       - name: Upload Coverage
         uses: codecov/codecov-action@v3
         with:
@@ -757,20 +756,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Login to Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract Metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -781,7 +780,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
-      
+
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
@@ -800,29 +799,29 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Configure kubectl
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
-      
+
       - name: Deploy to K8s
         run: |
           kubectl set image deployment/myapp \
             myapp=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
             -n myapp-prod
-          
+
           kubectl rollout status deployment/myapp -n myapp-prod
-      
+
       - name: Run Smoke Tests
         run: |
           kubectl run smoke-test --rm -i --restart=Never --image=curlimages/curl:latest \
             -- curl -f https://api.myapp.com/health
-      
+
       - name: Notify Slack
         uses: 8398a7/action-slack@v3
         with:
@@ -931,7 +930,7 @@ impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
         // 1. 获取运行环境
         let env = env::var("APP_ENV").unwrap_or_else(|_| "development".into());
-        
+
         // 2. 构建配置
         let config = Config::builder()
             // 默认配置
@@ -943,7 +942,7 @@ impl Settings {
             // 环境变量覆盖 (APP__SERVER__PORT=8080)
             .add_source(Environment::with_prefix("APP").separator("__"))
             .build()?;
-        
+
         // 3. 反序列化
         config.try_deserialize()
     }
@@ -953,10 +952,10 @@ impl Settings {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let settings = Settings::new()?;
-    
+
     println!("Server: {}:{}", settings.server.host, settings.server.port);
     println!("Database: {}", settings.database.url);
-    
+
     Ok(())
 }
 ```
@@ -1003,7 +1002,7 @@ pub fn init_logging() {
 #[instrument(skip(db), fields(user_id = %user_id))]
 async fn get_user(db: &PgPool, user_id: i64) -> Result<User, Error> {
     info!("Fetching user");
-    
+
     let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", user_id)
         .fetch_one(db)
         .await
@@ -1011,7 +1010,7 @@ async fn get_user(db: &PgPool, user_id: i64) -> Result<User, Error> {
             error!("Failed to fetch user: {:?}", e);
             Error::DatabaseError(e)
         })?;
-    
+
     info!(username = %user.username, "User found");
     Ok(user)
 }
@@ -1067,21 +1066,21 @@ async fn metrics_middleware<B>(
     let start = Instant::now();
     let method = req.method().clone();
     let path = req.uri().path().to_string();
-    
+
     // 请求计数
     counter!("http_requests_total", "method" => method.as_str(), "path" => &path).increment(1);
-    
+
     // 执行请求
     let response = next.run(req).await;
-    
+
     // 记录延迟
     let latency = start.elapsed().as_secs_f64();
     histogram!("http_request_duration_seconds", "method" => method.as_str(), "path" => &path).record(latency);
-    
+
     // 记录状态码
     let status = response.status().as_u16().to_string();
     counter!("http_responses_total", "status" => &status).increment(1);
-    
+
     response
 }
 
@@ -1089,18 +1088,18 @@ async fn metrics_middleware<B>(
 async fn process_order(order: Order) -> Result<(), Error> {
     // 活跃订单数
     gauge!("active_orders").increment(1.0);
-    
+
     // 处理逻辑
     let result = do_process(order).await;
-    
+
     gauge!("active_orders").decrement(1.0);
-    
+
     if result.is_ok() {
         counter!("orders_processed_total", "status" => "success").increment(1);
     } else {
         counter!("orders_processed_total", "status" => "error").increment(1);
     }
-    
+
     result
 }
 
@@ -1112,11 +1111,11 @@ async fn metrics_handler(handle: PrometheusHandle) -> String {
 #[tokio::main]
 async fn main() {
     let prometheus_handle = setup_metrics();
-    
+
     let app = Router::new()
         .route("/metrics", get(move || metrics_handler(prometheus_handle.clone())))
         .layer(axum::middleware::from_fn(metrics_middleware));
-    
+
     // ...
 }
 ```
@@ -1245,20 +1244,20 @@ use axum_server::tls_rustls::RustlsConfig;
 async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }));
-    
+
     // TLS 配置
     let config = RustlsConfig::from_pem_file(
         "cert.pem",
         "key.pem",
     )
     .await?;
-    
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 443));
-    
+
     axum_server::bind_rustls(addr, config)
         .serve(app.into_make_service())
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -1304,11 +1303,11 @@ async fn main() {
             .finish()
             .unwrap(),
     );
-    
+
     let app = Router::new()
         .route("/api/v1/users", get(list_users))
         .layer(Governor::new(&governor_conf));
-    
+
     // ...
 }
 ```
@@ -1574,7 +1573,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
    ```dockerfile
    # ❌ 120MB, 慢
    FROM rust:1.83
-   
+
    # ✅ 8MB, 快
    FROM debian:bookworm-slim
    ```
@@ -1584,7 +1583,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
    ```yaml
    # ❌ 无法检测服务状态
    # (没有 livenessProbe/readinessProbe)
-   
+
    # ✅ 自动重启失败的 Pod
    livenessProbe: { httpGet: { path: /health, port: 8080 } }
    ```
@@ -1594,7 +1593,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
    ```rust
    // ❌ 无法动态修改
    let db_url = "postgres://localhost/myapp";
-   
+
    // ✅ 从环境变量读取
    let db_url = env::var("DATABASE_URL")?;
    ```
@@ -1604,7 +1603,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
    ```rust
    // ❌ 错误被吞掉
    let _ = process().await;
-   
+
    // ✅ 记录错误
    if let Err(e) = process().await {
        error!("Process failed: {:?}", e);
@@ -1616,7 +1615,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
    ```yaml
    # ❌ 可能占满节点资源
    # (没有 resources.limits)
-   
+
    # ✅ 限制资源使用
    resources:
      limits: { cpu: 500m, memory: 512Mi }
@@ -1626,7 +1625,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
 
    ```bash
    # ❌ 数据丢失无法恢复
-   
+
    # ✅ 定期自动备份
    0 2 * * * /scripts/backup.sh
    ```
@@ -1636,7 +1635,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
    ```rust
    // ❌ 明文传输，不安全
    .bind("0.0.0.0:80")
-   
+
    // ✅ HTTPS 加密
    axum_server::bind_rustls(addr, tls_config)
    ```
@@ -1645,7 +1644,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
 
    ```yaml
    # ❌ 故障时无人知晓
-   
+
    # ✅ 设置告警规则
    - alert: HighErrorRate
      expr: rate(http_responses_total{status=~"5.."}[5m]) > 0.05
@@ -1655,7 +1654,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
 
    ```bash
    # ❌ 使用有漏洞的依赖
-   
+
    # ✅ 定期审计
    cargo audit
    cargo deny check advisories
@@ -1666,7 +1665,7 @@ heaptrack_gui heaptrack.myapp.12345.gz
     ```yaml
     # ❌ 停机部署
     type: Recreate
-    
+
     # ✅ 零停机部署
     type: RollingUpdate
     rollingUpdate:

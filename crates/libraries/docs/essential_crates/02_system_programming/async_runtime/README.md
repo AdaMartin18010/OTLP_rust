@@ -1,6 +1,6 @@
 # 异步运行时
 
-> **核心库**: tokio, async-std, smol, futures  
+> **核心库**: tokio, async-std, smol, futures
 > **适用场景**: 异步编程、并发I/O、网络服务、高性能应用
 
 ---
@@ -94,10 +94,10 @@ use tokio;
 #[tokio::main]
 async fn main() {
     println!("Hello");
-    
+
     // 异步睡眠
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-    
+
     println!("World");
 }
 ```
@@ -122,7 +122,7 @@ async fn main() {
     // 并发执行两个任务
     let (result1, result2) = tokio::join!(task1(), task2());
     println!("{}, {}", result1, result2);
-    
+
     // select! 宏 - 等待第一个完成
     tokio::select! {
         r1 = task1() => println!("Task 1 finished first: {}", r1),
@@ -160,7 +160,7 @@ use tokio::sync::mpsc;
 #[tokio::main]
 async fn main() {
     let (tx, mut rx) = mpsc::channel(32);
-    
+
     // 生产者任务
     tokio::spawn(async move {
         for i in 0..10 {
@@ -168,7 +168,7 @@ async fn main() {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
     });
-    
+
     // 消费者
     while let Some(value) = rx.recv().await {
         println!("Received: {}", value);
@@ -191,18 +191,18 @@ async fn main() {
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         "Result"
     });
-    
+
     // 等待任务完成
     let result = handle.await.unwrap();
     println!("{}", result);
-    
+
     // spawn_blocking: CPU密集型任务
     let blocking_result = task::spawn_blocking(|| {
         // 阻塞操作
         std::thread::sleep(std::time::Duration::from_secs(1));
         42
     }).await.unwrap();
-    
+
     println!("Blocking result: {}", blocking_result);
 }
 ```
@@ -217,7 +217,7 @@ use std::sync::Arc;
 async fn main() {
     let counter = Arc::new(Mutex::new(0));
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         let counter = Arc::clone(&counter);
         let handle = tokio::spawn(async move {
@@ -226,11 +226,11 @@ async fn main() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.await.unwrap();
     }
-    
+
     println!("Counter: {}", *counter.lock().await);
 }
 ```
@@ -279,12 +279,12 @@ async fn main() {
         task::sleep(std::time::Duration::from_secs(1)).await;
         "Task 1"
     });
-    
+
     let task2 = task::spawn(async {
         task::sleep(std::time::Duration::from_secs(1)).await;
         "Task 2"
     });
-    
+
     let (r1, r2) = futures::join!(task1, task2);
     println!("{}, {}", r1, r2);
 }
@@ -308,13 +308,13 @@ use smol;
 fn main() {
     smol::block_on(async {
         println!("Hello from smol!");
-        
+
         // 并发执行
         let task1 = smol::spawn(async {
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
             "Task 1"
         });
-        
+
         let result = task1.await;
         println!("{}", result);
     });
@@ -342,7 +342,7 @@ async fn main() {
     });
     let results = join_all(tasks).await;
     println!("{:?}", results);
-    
+
     // Stream 处理
     let mut stream = stream::iter(vec![1, 2, 3, 4, 5]);
     while let Some(value) = stream.next().await {
@@ -394,7 +394,7 @@ use thiserror::Error;
 enum AppError {
     #[error("Network error: {0}")]
     Network(String),
-    
+
     #[error("Timeout")]
     Timeout,
 }
@@ -413,10 +413,10 @@ async fn fetch_with_retry(url: &str) -> Result<String, AppError> {
             }
             Err(_) => return Err(AppError::Timeout),
         }
-        
+
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     }
-    
+
     unreachable!()
 }
 
@@ -502,7 +502,7 @@ async fn main() {
     let state = Arc::new(AppState {
         counter: Mutex::new(0),
     });
-    
+
     // 模拟处理多个请求
     let mut handles = vec![];
     for _ in 0..10 {
@@ -511,7 +511,7 @@ async fn main() {
             handle_request(state).await
         }));
     }
-    
+
     for handle in handles {
         println!("{}", handle.await.unwrap());
     }
@@ -536,13 +536,13 @@ async fn main() {
         "https://api2.example.com",
         "https://api3.example.com",
     ];
-    
+
     let tasks: Vec<_> = urls.iter()
         .map(|url| fetch_url(url))
         .collect();
-    
+
     let results = futures::future::join_all(tasks).await;
-    
+
     for result in results {
         match result {
             Ok(data) => println!("{}", data),
@@ -560,14 +560,14 @@ use futures::StreamExt;
 
 async fn process_stream() {
     let (tx, mut rx) = mpsc::channel(100);
-    
+
     // 生产者
     tokio::spawn(async move {
         for i in 0..100 {
             tx.send(i).await.unwrap();
         }
     });
-    
+
     // 消费者 - 流式处理
     let mut stream = tokio_stream::wrappers::ReceiverStream::new(rx);
     while let Some(value) = stream.next().await {
@@ -588,5 +588,5 @@ async fn process_stream() {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

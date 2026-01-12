@@ -1,7 +1,7 @@
 # REST API - RESTful 接口开发
 
-> **核心库**: axum, actix-web, rocket  
-> **适用场景**: Web API、微服务、后端开发、RESTful 服务  
+> **核心库**: axum, actix-web, rocket
+> **适用场景**: Web API、微服务、后端开发、RESTful 服务
 > **技术栈定位**: 应用开发层 - Web 框架
 
 ---
@@ -210,7 +210,7 @@ async fn update_user(
     Json(user): Json<User>,
 ) -> Result<Json<User>, StatusCode> {
     let mut db = db.lock().await;
-    
+
     if db.contains_key(&id) {
         db.insert(id, user.clone());
         Ok(Json(user))
@@ -234,16 +234,16 @@ async fn delete_user(
 #[tokio::main]
 async fn main() {
     let db: DB = Arc::new(Mutex::new(HashMap::new()));
-    
+
     let app = Router::new()
         .route("/users", get(list_users).post(create_user))
         .route("/users/:id", get(get_user).put(update_user).delete(delete_user))
         .with_state(db);
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     println!("服务器运行在 http://127.0.0.1:3000");
     axum::serve(listener, app).await.unwrap();
 }
@@ -419,7 +419,7 @@ async fn list_users(
         .fetch_all(&pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok(Json(users))
 }
 
@@ -437,7 +437,7 @@ async fn create_user(
     .fetch_one(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok((StatusCode::CREATED, Json(user)))
 }
 
@@ -450,7 +450,7 @@ async fn delete_user(
         .execute(&pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     if result.rows_affected() > 0 {
         Ok(StatusCode::NO_CONTENT)
     } else {
@@ -491,17 +491,17 @@ async fn auth_middleware(
         .get("Authorization")
         .and_then(|h| h.to_str().ok())
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     let token = auth_header.strip_prefix("Bearer ")
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     let claims = decode::<Claims>(
         token,
         &DecodingKey::from_secret("secret".as_ref()),
         &Validation::default()
     )
     .map_err(|_| StatusCode::UNAUTHORIZED)?;
-    
+
     req.extensions_mut().insert(claims.claims);
     Ok(next.run(req).await)
 }
@@ -517,7 +517,7 @@ async fn main() {
     let app = Router::new()
         .route("/protected", get(protected_route))
         .layer(middleware::from_fn(auth_middleware));
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
@@ -549,7 +549,7 @@ impl<T> ApiResponse<T> {
     fn success(data: T) -> Self {
         Self { success: true, data: Some(data), error: None }
     }
-    
+
     fn error(msg: String) -> Self {
         Self { success: false, data: None, error: Some(msg) }
     }
@@ -581,7 +581,7 @@ use validator::Validate;
 struct CreateUserRequest {
     #[validate(length(min = 1, max = 50))]
     name: String,
-    
+
     #[validate(email)]
     email: String,
 }
@@ -598,7 +598,7 @@ use thiserror::Error;
 enum ApiError {
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
-    
+
     #[error("Not found")]
     NotFound,
 }
@@ -722,6 +722,6 @@ let app = Router::new()
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 95/100

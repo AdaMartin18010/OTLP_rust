@@ -1,7 +1,7 @@
 # gRPC - 高性能 RPC 框架
 
-> **核心库**: tonic, prost  
-> **适用场景**: 微服务通信、低延迟 RPC、流式数据传输、跨语言服务  
+> **核心库**: tonic, prost
+> **适用场景**: 微服务通信、低延迟 RPC、流式数据传输、跨语言服务
 > **技术栈定位**: 应用开发层 - RPC 层
 
 ---
@@ -219,25 +219,25 @@ impl UserService for MyUserService {
         request: Request<GetUserRequest>,
     ) -> Result<Response<UserResponse>, Status> {
         let req = request.into_inner();
-        
+
         let user = UserResponse {
             id: req.id,
             name: "Alice".to_string(),
             email: "alice@example.com".to_string(),
         };
-        
+
         Ok(Response::new(user))
     }
-    
+
     // Server Streaming RPC
     type ListUsersStream = tokio_stream::wrappers::ReceiverStream<Result<UserResponse, Status>>;
-    
+
     async fn list_users(
         &self,
         request: Request<ListUsersRequest>,
     ) -> Result<Response<Self::ListUsersStream>, Status> {
         let (tx, rx) = tokio::sync::mpsc::channel(10);
-        
+
         tokio::spawn(async move {
             for i in 1..=5 {
                 let user = UserResponse {
@@ -248,23 +248,23 @@ impl UserService for MyUserService {
                 tx.send(Ok(user)).await.unwrap();
             }
         });
-        
+
         Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
-    
+
     // Unary RPC
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,
     ) -> Result<Response<UserResponse>, Status> {
         let req = request.into_inner();
-        
+
         let user = UserResponse {
             id: 1,
             name: req.name,
             email: req.email,
         };
-        
+
         Ok(Response::new(user))
     }
 }
@@ -273,14 +273,14 @@ impl UserService for MyUserService {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse()?;
     let service = MyUserService::default();
-    
+
     println!("UserService 服务器运行在 {}", addr);
-    
+
     Server::builder()
         .add_service(UserServiceServer::new(service))
         .serve(addr)
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -298,20 +298,20 @@ pub mod user {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = UserServiceClient::connect("http://[::1]:50051").await?;
-    
+
     // 调用 Unary RPC
     let request = tonic::Request::new(GetUserRequest { id: 1 });
     let response = client.get_user(request).await?;
     println!("响应: {:?}", response.into_inner());
-    
+
     // 调用 Server Streaming RPC
     let request = tonic::Request::new(user::ListUsersRequest { page: 1, per_page: 10 });
     let mut stream = client.list_users(request).await?.into_inner();
-    
+
     while let Some(user) = stream.message().await? {
         println!("用户: {:?}", user);
     }
-    
+
     Ok(())
 }
 ```
@@ -328,7 +328,7 @@ fn check_auth(req: Request<()>) -> Result<Request<()>, Status> {
         .metadata()
         .get("authorization")
         .and_then(|v| v.to_str().ok());
-    
+
     match token {
         Some(t) if t == "Bearer secret-token" => Ok(req),
         _ => Err(Status::unauthenticated("无效的 token")),
@@ -419,7 +419,7 @@ impl UserService for UserServiceImpl {
         request: Request<GetUserRequest>,
     ) -> Result<Response<UserResponse>, Status> {
         let req = request.into_inner();
-        
+
         let user = sqlx::query!(
             "SELECT id, name, email FROM users WHERE id = $1",
             req.id as i32
@@ -428,20 +428,20 @@ impl UserService for UserServiceImpl {
         .await
         .map_err(|e| Status::internal(e.to_string()))?
         .ok_or_else(|| Status::not_found("用户不存在"))?;
-        
+
         Ok(Response::new(UserResponse {
             id: user.id as u32,
             name: user.name,
             email: user.email,
         }))
     }
-    
+
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,
     ) -> Result<Response<UserResponse>, Status> {
         let req = request.into_inner();
-        
+
         let user = sqlx::query!(
             "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id, name, email",
             req.name,
@@ -450,7 +450,7 @@ impl UserService for UserServiceImpl {
         .fetch_one(&self.pool)
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
-        
+
         Ok(Response::new(UserResponse {
             id: user.id as u32,
             name: user.name,
@@ -488,7 +488,7 @@ async fn chat(
 ) -> Result<Response<Self::ChatStream>, Status> {
     let mut in_stream = request.into_inner();
     let (tx, rx) = tokio::sync::mpsc::channel(10);
-    
+
     tokio::spawn(async move {
         while let Some(msg) = in_stream.message().await.unwrap() {
             // 广播消息给所有客户端
@@ -498,7 +498,7 @@ async fn chat(
             })).await.unwrap();
         }
     });
-    
+
     Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(rx)))
 }
 ```
@@ -680,6 +680,6 @@ for _ in 0..100 {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 95/100

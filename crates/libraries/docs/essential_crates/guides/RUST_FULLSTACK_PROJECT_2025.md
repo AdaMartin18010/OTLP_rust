@@ -1,9 +1,9 @@
 ﻿# Rust 全栈项目实战：构建现代化 Web 应用 (2025版)
 
-> **项目**: 完整的博客系统 (Blog Platform)  
-> **技术栈**: Axum + PostgreSQL + React  
-> **难度**: 中高级  
-> **预计学习时间**: 20-30 小时  
+> **项目**: 完整的博客系统 (Blog Platform)
+> **技术栈**: Axum + PostgreSQL + React
+> **难度**: 中高级
+> **预计学习时间**: 20-30 小时
 > **更新日期**: 2025-10-20
 
 ---
@@ -11,8 +11,7 @@
 ## 📋 目录
 
 - [Rust 全栈项目实战：构建现代化 Web 应用 (2025版)](#rust-全栈项目实战构建现代化-web-应用-2025版)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [📋 目录](#-目录)
   - [项目概览](#项目概览)
     - [功能特性](#功能特性)
     - [技术架构](#技术架构)
@@ -417,50 +416,50 @@ pub struct AppState {
 async fn main() {
     // 初始化日志
     tracing_subscriber::fmt::init();
-    
+
     // 加载环境变量
     dotenvy::dotenv().ok();
-    
+
     // 数据库连接池
     let database_url = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set");
-    
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
         .await
         .expect("Failed to connect to database");
-    
+
     let state = Arc::new(AppState { db: pool });
-    
+
     // 构建路由
     let app = Router::new()
         // 认证路由
         .route("/api/auth/register", post(handlers::auth::register))
         .route("/api/auth/login", post(handlers::auth::login))
-        
+
         // 文章路由
         .route("/api/posts", get(handlers::posts::list_posts))
         .route("/api/posts", post(handlers::posts::create_post))
         .route("/api/posts/:id", get(handlers::posts::get_post))
         .route("/api/posts/:id", put(handlers::posts::update_post))
         .route("/api/posts/:id", delete(handlers::posts::delete_post))
-        
+
         // 评论路由
         .route("/api/posts/:id/comments", get(handlers::comments::list_comments))
         .route("/api/posts/:id/comments", post(handlers::comments::create_comment))
-        
+
         // 中间件
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
         .with_state(state);
-    
+
     // 启动服务器
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     println!("🚀 Server running on http://0.0.0.0:3000");
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 ```
@@ -485,12 +484,12 @@ pub fn generate_token(user_id: i32) -> Result<String, jsonwebtoken::errors::Erro
         .checked_add_signed(chrono::Duration::days(7))
         .expect("valid timestamp")
         .timestamp() as usize;
-    
+
     let claims = Claims {
         sub: user_id,
         exp: expiration,
     };
-    
+
     encode(
         &Header::default(),
         &claims,
@@ -500,7 +499,7 @@ pub fn generate_token(user_id: i32) -> Result<String, jsonwebtoken::errors::Erro
 
 pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    
+
     decode::<Claims>(
         token,
         &DecodingKey::from_secret(secret.as_ref()),
@@ -526,21 +525,21 @@ pub async fn register(
     if req.username.is_empty() || req.email.is_empty() || req.password.is_empty() {
         return Err((StatusCode::BAD_REQUEST, "All fields are required".to_string()));
     }
-    
+
     // 检查用户是否已存在
     let exists = sqlx::query!("SELECT id FROM users WHERE email = $1", req.email)
         .fetch_optional(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     if exists.is_some() {
         return Err((StatusCode::CONFLICT, "Email already exists".to_string()));
     }
-    
+
     // 哈希密码
     let password_hash = bcrypt::hash(&req.password, bcrypt::DEFAULT_COST)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     // 创建用户
     let user = sqlx::query_as!(
         User,
@@ -552,11 +551,11 @@ pub async fn register(
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     // 生成 JWT
     let token = jwt::generate_token(user.id)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     Ok((StatusCode::CREATED, Json(AuthResponse {
         token,
         user: UserInfo {
@@ -581,19 +580,19 @@ pub async fn login(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
     .ok_or((StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()))?;
-    
+
     // 验证密码
     let valid = bcrypt::verify(&req.password, &user.password_hash)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     if !valid {
         return Err((StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()));
     }
-    
+
     // 生成 JWT
     let token = jwt::generate_token(user.id)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     Ok(Json(AuthResponse {
         token,
         user: UserInfo {
@@ -630,7 +629,7 @@ pub async fn list_posts(
     let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(10);
     let offset = (page - 1) * limit;
-    
+
     let posts = sqlx::query!(
         r#"
         SELECT p.*, u.username as author
@@ -646,7 +645,7 @@ pub async fn list_posts(
     .fetch_all(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     // 转换为 PostWithAuthor
     let posts_with_author = posts.into_iter().map(|row| {
         PostWithAuthor {
@@ -665,7 +664,7 @@ pub async fn list_posts(
             tags: vec![],  // TODO: 加载标签
         }
     }).collect();
-    
+
     Ok(Json(posts_with_author))
 }
 
@@ -676,9 +675,9 @@ pub async fn create_post(
 ) -> Result<(StatusCode, Json<Post>), (StatusCode, String)> {
     // 生成 slug
     let slug = req.title.to_lowercase().replace(" ", "-");
-    
+
     let author_id = 1;  // TODO: 从认证中获取
-    
+
     let post = sqlx::query_as!(
         Post,
         r#"
@@ -696,7 +695,7 @@ pub async fn create_post(
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     Ok((StatusCode::CREATED, Json(post)))
 }
 ```
@@ -786,7 +785,7 @@ export const authApi = {
     const response = await apiClient.post('/auth/register', data);
     return response.data;
   },
-  
+
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     const response = await apiClient.post('/auth/login', data);
     return response.data;
@@ -808,7 +807,7 @@ export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  
+
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
@@ -816,12 +815,12 @@ export const LoginPage: React.FC = () => {
       navigate('/');
     },
   });
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loginMutation.mutate({ email, password });
   };
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
@@ -884,20 +883,20 @@ pub async fn upload_image(
     while let Some(field) = multipart.next_field().await.unwrap() {
         let name = field.name().unwrap().to_string();
         let data = field.bytes().await.unwrap();
-        
+
         // 生成唯一文件名
         let file_name = format!("{}.jpg", Uuid::new_v4());
         let file_path = format!("uploads/{}", file_name);
-        
+
         // 保存文件
         fs::write(&file_path, &data).await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-        
+
         return Ok(Json(serde_json::json!({
             "url": format!("/static/{}", file_name)
         })));
     }
-    
+
     Err((StatusCode::BAD_REQUEST, "No file provided".to_string()))
 }
 ```
@@ -946,7 +945,7 @@ pub async fn create_comment(
     Json(req): Json<CreateCommentRequest>,
 ) -> Result<(StatusCode, Json<Comment>), (StatusCode, String)> {
     let author_id = 1;  // TODO: 从认证获取
-    
+
     let comment = sqlx::query_as!(
         Comment,
         "INSERT INTO comments (post_id, author_id, content) VALUES ($1, $2, $3) RETURNING *",
@@ -957,7 +956,7 @@ pub async fn create_comment(
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     Ok((StatusCode::CREATED, Json(comment)))
 }
 ```
@@ -986,7 +985,7 @@ pub async fn search_posts(
     .fetch_all(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
+
     Ok(Json(posts))
 }
 ```
@@ -1040,12 +1039,12 @@ services:
       JWT_SECRET: your-secret-key
     depends_on:
       - postgres
-  
+
   frontend:
     build: ./frontend
     ports:
       - "80:80"
-  
+
   postgres:
     image: postgres:16
     volumes:
@@ -1107,13 +1106,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Build Docker image
         run: docker build -t blog-backend:${{ github.sha }} ./backend
-      
+
       - name: Push to Registry
         run: docker push blog-backend:${{ github.sha }}
-      
+
       - name: Deploy to Kubernetes
         run: kubectl apply -f k8s/
 ```
@@ -1128,7 +1127,7 @@ jobs:
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_create_user() {
         // 测试逻辑
@@ -1142,20 +1141,20 @@ mod tests {
 #[tokio::test]
 async fn test_login_flow() {
     let pool = setup_test_db().await;
-    
+
     // 注册用户
     let register_req = RegisterRequest {
         username: "test".to_string(),
         email: "test@example.com".to_string(),
         password: "password123".to_string(),
     };
-    
+
     // 登录
     let login_req = LoginRequest {
         email: "test@example.com".to_string(),
         password: "password123".to_string(),
     };
-    
+
     // 断言
     assert!(response.is_ok());
 }
@@ -1174,12 +1173,12 @@ test('user can create a post', async ({ page }) => {
   await page.fill('input[name="email"]', 'test@example.com');
   await page.fill('input[name="password"]', 'password');
   await page.click('button[type="submit"]');
-  
+
   await page.click('text=New Post');
   await page.fill('input[name="title"]', 'Test Post');
   await page.fill('textarea[name="content"]', 'This is a test post');
   await page.click('button:has-text("Publish")');
-  
+
   await expect(page.locator('text=Test Post')).toBeVisible();
 });
 ```
@@ -1324,8 +1323,8 @@ A: 添加索引 + 使用连接池 + 批量操作
 
 **项目完整代码**: `https://github.com/example/blog-platform-rust`
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 1.0.0
+**最后更新**: 2025-10-20
 **贡献者**: Rust 学习社区
 
 **下一步**: [微服务架构](./RUST_MICROSERVICES_ARCHITECTURE_2025.md) | [性能优化](./RUST_PERFORMANCE_OPTIMIZATION_2025.md)

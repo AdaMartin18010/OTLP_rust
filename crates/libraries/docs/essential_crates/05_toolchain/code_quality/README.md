@@ -1,7 +1,7 @@
 # 代码质量工具 (Code Quality Tools)
 
-**类别**: 第5层 - 工具链  
-**重要程度**: ⭐⭐⭐⭐⭐ (必备)  
+**类别**: 第5层 - 工具链
+**重要程度**: ⭐⭐⭐⭐⭐ (必备)
 **更新日期**: 2025-10-20
 
 ---
@@ -47,7 +47,7 @@
 
 ### 1. Clippy (必备 ⭐⭐⭐⭐⭐)
 
-**安装**: `rustup component add clippy`  
+**安装**: `rustup component add clippy`
 **用途**: Rust 官方 linter，提供700+ 代码检查规则
 
 #### 基础用法
@@ -204,7 +204,7 @@ single-char-binding-names-threshold = 4
 
 ### 2. rustfmt (必备 ⭐⭐⭐⭐⭐)
 
-**安装**: `rustup component add rustfmt`  
+**安装**: `rustup component add rustfmt`
 **用途**: 自动代码格式化工具
 
 #### 基础用法2
@@ -289,7 +289,7 @@ let result = vec![1, 2, 3].iter().sum();
 
 ### 3. rust-analyzer (必备 ⭐⭐⭐⭐⭐)
 
-**安装**: `rustup component add rust-analyzer`  
+**安装**: `rustup component add rust-analyzer`
 **用途**: 语言服务器，提供 IDE 功能
 
 #### 核心功能
@@ -326,7 +326,7 @@ let result = vec![1, 2, 3].iter().sum();
 
 ### 4. cargo-dylint (高级 🔧)
 
-**安装**: `cargo install cargo-dylint dylint-link`  
+**安装**: `cargo install cargo-dylint dylint-link`
 **用途**: 自定义 lint 规则
 
 #### 创建自定义 lint
@@ -380,15 +380,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      
+
       - name: Check formatting
         run: cargo fmt -- --check
-      
+
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
 ```

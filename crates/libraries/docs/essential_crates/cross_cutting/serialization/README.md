@@ -1,7 +1,7 @@
 # 序列化 (Serialization)
 
-**类别**: 横切关注点  
-**重要程度**: ⭐⭐⭐⭐⭐ (必备)  
+**类别**: 横切关注点
+**重要程度**: ⭐⭐⭐⭐⭐ (必备)
 **更新日期**: 2025-10-20
 
 ---
@@ -75,11 +75,11 @@ fn main() {
         email: "alice@example.com".to_string(),
         age: Some(30),
     };
-    
+
     // 序列化到 JSON
     let json = serde_json::to_string(&user).unwrap();
     println!("{}", json);
-    
+
     // 反序列化
     let user2: User = serde_json::from_str(&json).unwrap();
     println!("{:?}", user2);
@@ -95,7 +95,7 @@ fn main() {
 struct User {
     #[serde(rename = "userId")]
     user_id: u64,
-    
+
     #[serde(rename = "fullName")]
     full_name: String,
 }
@@ -108,7 +108,7 @@ struct User {
 struct Config {
     #[serde(default = "default_port")]
     port: u16,
-    
+
     #[serde(default)]  // 使用 Default trait
     workers: usize,
 }
@@ -127,7 +127,7 @@ use chrono::{DateTime, Utc};
 #[derive(Serialize)]
 struct Event {
     name: String,
-    
+
     #[serde(serialize_with = "serialize_timestamp")]
     timestamp: DateTime<Utc>,
 }
@@ -170,7 +170,7 @@ if let Some(name) = value["name"].as_str() {
 
 ### 3. bincode (二进制 ⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add bincode`  
+**添加依赖**: `cargo add bincode`
 **用途**: 高效二进制序列化
 
 ```rust
@@ -185,11 +185,11 @@ struct Data {
 
 fn main() {
     let data = Data { x: 42, y: "hello".to_string() };
-    
+
     // 序列化
     let bytes = bincode::serialize(&data).unwrap();
     println!("Bytes: {:?}", bytes);
-    
+
     // 反序列化
     let data2: Data = bincode::deserialize(&bytes).unwrap();
     println!("x: {}, y: {}", data2.x, data2.y);
@@ -200,7 +200,7 @@ fn main() {
 
 ### 4. postcard (嵌入式 💡)
 
-**添加依赖**: `cargo add postcard`  
+**添加依赖**: `cargo add postcard`
 **用途**: 无 std 环境的紧凑序列化
 
 ```rust
@@ -218,10 +218,10 @@ fn main() {
         id: 1,
         payload: [0; 16],
     };
-    
+
     let mut buf = [0u8; 32];
     let bytes = postcard::to_slice(&packet, &mut buf).unwrap();
-    
+
     let packet2: Packet = postcard::from_bytes(bytes).unwrap();
 }
 ```
@@ -230,7 +230,7 @@ fn main() {
 
 ### 5. rmp-serde (MessagePack 💡)
 
-**添加依赖**: `cargo add rmp-serde`  
+**添加依赖**: `cargo add rmp-serde`
 **用途**: MessagePack 格式
 
 ```rust
@@ -245,7 +245,7 @@ struct Data {
 
 fn main() {
     let data = Data { x: 42, y: "hello".to_string() };
-    
+
     let bytes = rmp_serde::to_vec(&data).unwrap();
     let data2: Data = rmp_serde::from_slice(&bytes).unwrap();
 }
@@ -255,7 +255,7 @@ fn main() {
 
 ### 6. ciborium (CBOR 💡)
 
-**添加依赖**: `cargo add ciborium`  
+**添加依赖**: `cargo add ciborium`
 **用途**: CBOR (Concise Binary Object Representation)
 
 ```rust
@@ -270,10 +270,10 @@ struct Data {
 
 fn main() {
     let data = Data { x: 42, y: "hello".to_string() };
-    
+
     let mut bytes = Vec::new();
     ciborium::ser::into_writer(&data, &mut bytes).unwrap();
-    
+
     let data2: Data = ciborium::de::from_reader(&bytes[..]).unwrap();
 }
 ```
@@ -360,7 +360,7 @@ struct Metadata {
 struct User {
     id: u64,
     name: String,
-    
+
     #[serde(flatten)]
     metadata: Metadata,
 }
@@ -429,7 +429,7 @@ impl<T: Serialize> ApiResponse<T> {
             error: None,
         }
     }
-    
+
     fn error(msg: String) -> Self {
         Self {
             success: false,

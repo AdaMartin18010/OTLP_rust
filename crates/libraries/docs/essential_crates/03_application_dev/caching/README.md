@@ -56,15 +56,15 @@ fn moka_basic() {
         .max_capacity(10_000)
         .time_to_live(Duration::from_secs(30))
         .build();
-    
+
     // 插入
     cache.insert("key1".to_string(), "value1".to_string());
-    
+
     // 获取
     if let Some(value) = cache.get(&"key1".to_string()) {
         println!("缓存命中: {}", value);
     }
-    
+
     // 获取或插入
     let value = cache.get_with("key2".to_string(), || {
         // 计算昂贵的值
@@ -84,10 +84,10 @@ async fn moka_async() {
         .max_capacity(10_000)
         .time_to_live(Duration::from_secs(30))
         .build();
-    
+
     // 异步插入
     cache.insert("key1".to_string(), "value1".to_string()).await;
-    
+
     // 异步获取或插入
     let value = cache
         .get_with("key2".to_string(), async {
@@ -96,7 +96,7 @@ async fn moka_async() {
             "async_value".to_string()
         })
         .await;
-    
+
     println!("值: {}", value);
 }
 ```
@@ -133,17 +133,17 @@ async fn redis_cache() -> redis::RedisResult<()> {
     // 连接 Redis
     let client = redis::Client::open("redis://127.0.0.1/")?;
     let mut con = client.get_async_connection().await?;
-    
+
     // 设置值（带过期时间）
     con.set_ex("user:1001", "Alice", 3600).await?;
-    
+
     // 获取值
     let value: String = con.get("user:1001").await?;
     println!("用户: {}", value);
-    
+
     // 检查是否存在
     let exists: bool = con.exists("user:1001").await?;
-    
+
     Ok(())
 }
 ```
@@ -170,7 +170,7 @@ impl TieredCache {
         if let Some(value) = self.local.get(&key.to_string()) {
             return Some(value);
         }
-        
+
         // L2: Redis
         let mut con = self.redis_client.get_async_connection().await.ok()?;
         if let Ok(value) = con.get::<_, String>(key).await {
@@ -178,7 +178,7 @@ impl TieredCache {
             self.local.insert(key.to_string(), value.clone());
             return Some(value);
         }
-        
+
         None
     }
 }
@@ -197,13 +197,13 @@ async fn cache_aside_pattern(
     if let Some(user) = cache.get(&user_id) {
         return Ok(user);
     }
-    
+
     // 2. 缓存未命中，从数据库读取
     let user = fetch_from_database(user_id).await?;
-    
+
     // 3. 写入缓存
     cache.insert(user_id, user.clone());
-    
+
     Ok(user)
 }
 
@@ -238,21 +238,21 @@ async fn cached_handler(
     State(state): State<AppState>,
 ) -> Result<String, StatusCode> {
     let cache_key = "api:result";
-    
+
     // 尝试从缓存获取
     if let Some(cached) = state.cache.get(cache_key).await {
         return Ok(cached);
     }
-    
+
     // 计算结果
     let result = expensive_api_call().await;
-    
+
     // 缓存5分钟
     state.cache.insert(
         cache_key.to_string(),
         result.clone(),
     ).await;
-    
+
     Ok(result)
 }
 
@@ -269,13 +269,13 @@ async fn main() {
             .time_to_live(Duration::from_secs(300))
             .build()
     );
-    
+
     let app_state = AppState { cache };
-    
+
     let app = Router::new()
         .route("/", get(cached_handler))
         .with_state(app_state);
-    
+
     println!("服务器运行在 http://127.0.0.1:3000");
 }
 ```
@@ -291,7 +291,7 @@ fn cache_key_design() {
     // ✅ 好的设计：有命名空间、可读
     let key = format!("user:{}:profile", user_id);
     let key = format!("product:{}:price:USD", product_id);
-    
+
     // ❌ 不好的设计：无结构
     let key = format!("{}{}", user_id, "profile");
 }

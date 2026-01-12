@@ -5,7 +5,7 @@
 ## 📋 目录
 
 - [Rust 安全编程实战指南 (2025版)](#rust-安全编程实战指南-2025版)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [概述](#概述)
     - [安全原则](#安全原则)
     - [核心依赖](#核心依赖)
@@ -132,11 +132,11 @@ pub fn get_argon2() -> Argon2<'static> {
 pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = get_argon2();
-    
+
     let password_hash = argon2
         .hash_password(password.as_bytes(), &salt)?
         .to_string();
-    
+
     Ok(password_hash)
 }
 
@@ -144,7 +144,7 @@ pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Er
 pub fn verify_password(password: &str, password_hash: &str) -> Result<bool, argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(password_hash)?;
     let argon2 = get_argon2();
-    
+
     match argon2.verify_password(password.as_bytes(), &parsed_hash) {
         Ok(_) => Ok(true),
         Err(argon2::password_hash::Error::Password) => Ok(false),
@@ -159,14 +159,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let password = "SuperSecret123!";
     let hash = hash_password(password)?;
     println!("Hash: {}", hash);
-    
+
     // 登录验证
     let is_valid = verify_password(password, &hash)?;
     println!("Valid: {}", is_valid);  // true
-    
+
     let is_invalid = verify_password("WrongPassword", &hash)?;
     println!("Invalid: {}", is_invalid);  // false
-    
+
     Ok(())
 }
 ```
@@ -176,7 +176,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```text
 $argon2id$v=19$m=19456,t=2,p=1$Bph+GhH0qLzE6XzA5jd7Lg$
   XZdZ9+jdZzQgJqQJqQJqQJqQJqQJqQJqQJqQJqQJqQJqQ
-  
+
 参数解释：
 - m=19456: 内存成本 (19MB)
 - t=2: 时间成本 (迭代次数)
@@ -207,10 +207,10 @@ pub fn encrypt(key: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, Unspecified> {
     let unbound_key = UnboundKey::new(&AES_256_GCM, key)?;
     let nonce_sequence = CounterNonceSequence(0);
     let mut sealing_key = SealingKey::new(unbound_key, nonce_sequence);
-    
+
     let mut in_out = plaintext.to_vec();
     sealing_key.seal_in_place_append_tag(Aad::empty(), &mut in_out)?;
-    
+
     Ok(in_out)
 }
 
@@ -219,30 +219,30 @@ pub fn decrypt(key: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>, Unspecified> {
     let unbound_key = UnboundKey::new(&AES_256_GCM, key)?;
     let nonce_sequence = CounterNonceSequence(0);
     let mut opening_key = OpeningKey::new(unbound_key, nonce_sequence);
-    
+
     let mut in_out = ciphertext.to_vec();
     let plaintext = opening_key.open_in_place(Aad::empty(), &mut in_out)?;
-    
+
     Ok(plaintext.to_vec())
 }
 
 // 使用示例
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rng = SystemRandom::new();
-    
+
     // 生成 256-bit 密钥
     let mut key = vec![0u8; 32];
     rng.fill(&mut key)?;
-    
+
     // 加密
     let plaintext = b"Sensitive data";
     let ciphertext = encrypt(&key, plaintext)?;
     println!("Encrypted: {:?}", ciphertext);
-    
+
     // 解密
     let decrypted = decrypt(&key, &ciphertext)?;
     println!("Decrypted: {}", String::from_utf8_lossy(&decrypted));
-    
+
     Ok(())
 }
 ```
@@ -255,17 +255,17 @@ use rand::rngs::OsRng;
 
 fn main() {
     let mut csprng = OsRng;
-    
+
     // 生成密钥对
     let keypair: Keypair = Keypair::generate(&mut csprng);
-    
+
     // 签名
     let message = b"This is a test message";
     let signature: Signature = keypair.sign(message);
-    
+
     // 验证签名
     assert!(keypair.verify(message, &signature).is_ok());
-    
+
     // 验证失败示例
     let bad_message = b"Wrong message";
     assert!(keypair.verify(bad_message, &signature).is_err());
@@ -308,7 +308,7 @@ impl Claims {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         Self {
             sub: user_id,
             exp: now + 3600, // 1 hour
@@ -338,7 +338,7 @@ pub fn verify_token(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::e
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::default(),
     )?;
-    
+
     Ok(token_data.claims)
 }
 
@@ -361,12 +361,12 @@ async fn login(Json(req): Json<LoginRequest>) -> Result<Json<LoginResponse>, Sta
     if req.username != "admin" || req.password != "password" {
         return Err(StatusCode::UNAUTHORIZED);
     }
-    
+
     // 2. 生成 JWT
     let claims = Claims::new("user_123".to_string(), vec!["admin".to_string()]);
     let token = generate_token(&claims, "your-secret-key")
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok(Json(LoginResponse { token }))
 }
 
@@ -384,18 +384,18 @@ async fn jwt_middleware(
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     // 2. 检查 Bearer token
     let token = auth_header
         .strip_prefix("Bearer ")
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     // 3. 验证 token
     let claims = verify_token(token, &secret).map_err(|_| StatusCode::UNAUTHORIZED)?;
-    
+
     // 4. 将 claims 存入 request extensions
     req.extensions_mut().insert(claims);
-    
+
     Ok(next.run(req).await)
 }
 
@@ -404,7 +404,7 @@ async fn jwt_middleware(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async fn protected_route(req: Request) -> impl IntoResponse {
     let claims = req.extensions().get::<Claims>().unwrap();
-    
+
     Json(serde_json::json!({
         "message": "Access granted",
         "user_id": claims.sub,
@@ -418,7 +418,7 @@ async fn protected_route(req: Request) -> impl IntoResponse {
 #[tokio::main]
 async fn main() {
     let secret = "your-secret-key".to_string();
-    
+
     let app = Router::new()
         .route("/login", post(login))
         .route("/protected", get(protected_route))
@@ -427,11 +427,11 @@ async fn main() {
             jwt_middleware,
         ))
         .with_state(secret);
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await
         .unwrap();
-    
+
     println!("Server running on http://0.0.0.0:8080");
     axum::serve(listener, app).await.unwrap();
 }
@@ -473,25 +473,25 @@ async fn oauth2_login() -> Result<String, Box<dyn std::error::Error>> {
         Some(TokenUrl::new("https://github.com/login/oauth/access_token".to_string())?),
     )
     .set_redirect_uri(RedirectUrl::new("http://localhost:8080/auth/callback".to_string())?);
-    
+
     // 2. 生成授权 URL
     let (auth_url, csrf_token) = client
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new("user:email".to_string()))
         .url();
-    
+
     println!("Open this URL: {}", auth_url);
-    
+
     // 3. 用户授权后，GitHub 会重定向到 /auth/callback?code=xxx&state=yyy
     // (这里省略回调处理代码)
-    
+
     // 4. 交换授权码获取 access token
     let code = AuthorizationCode::new("authorization_code_from_callback".to_string());
     let token_result = client.exchange_code(code).request_async(oauth2::reqwest::async_http_client).await?;
-    
+
     let access_token = token_result.access_token().secret();
     println!("Access token: {}", access_token);
-    
+
     Ok(access_token.clone())
 }
 ```
@@ -524,21 +524,21 @@ pub struct RBAC {
 impl RBAC {
     pub fn new() -> Self {
         let mut role_permissions = HashMap::new();
-        
+
         // 定义角色权限
         let mut admin_perms = HashSet::new();
         admin_perms.insert(Permission { resource: "users".to_string(), action: "read".to_string() });
         admin_perms.insert(Permission { resource: "users".to_string(), action: "write".to_string() });
         admin_perms.insert(Permission { resource: "users".to_string(), action: "delete".to_string() });
         role_permissions.insert("admin".to_string(), admin_perms);
-        
+
         let mut user_perms = HashSet::new();
         user_perms.insert(Permission { resource: "users".to_string(), action: "read".to_string() });
         role_permissions.insert("user".to_string(), user_perms);
-        
+
         Self { role_permissions }
     }
-    
+
     pub fn check_permission(&self, user: &User, resource: &str, action: &str) -> bool {
         for role in &user.roles {
             if let Some(perms) = self.role_permissions.get(role) {
@@ -560,7 +560,7 @@ async fn permission_middleware(
     action: String,
 ) -> Result<(), StatusCode> {
     let rbac = RBAC::new();
-    
+
     if rbac.check_permission(&user, &resource, &action) {
         Ok(())
     } else {
@@ -575,17 +575,17 @@ async fn main() {
         id: "1".to_string(),
         roles: vec!["admin".to_string()],
     };
-    
+
     let regular_user = User {
         id: "2".to_string(),
         roles: vec!["user".to_string()],
     };
-    
+
     let rbac = RBAC::new();
-    
+
     // admin 可以删除用户
     assert!(rbac.check_permission(&admin, "users", "delete"));
-    
+
     // regular_user 不能删除用户
     assert!(!rbac.check_permission(&regular_user, "users", "delete"));
 }
@@ -605,13 +605,13 @@ use serde::Deserialize;
 pub struct RegisterRequest {
     #[validate(length(min = 3, max = 20))]
     pub username: String,
-    
+
     #[validate(email)]
     pub email: String,
-    
+
     #[validate(length(min = 8), custom(function = "validate_password_strength"))]
     pub password: String,
-    
+
     #[validate(range(min = 18, max = 120))]
     pub age: u8,
 }
@@ -620,7 +620,7 @@ fn validate_password_strength(password: &str) -> Result<(), ValidationError> {
     let has_uppercase = password.chars().any(|c| c.is_uppercase());
     let has_lowercase = password.chars().any(|c| c.is_lowercase());
     let has_digit = password.chars().any(|c| c.is_numeric());
-    
+
     if has_uppercase && has_lowercase && has_digit {
         Ok(())
     } else {
@@ -634,7 +634,7 @@ async fn register(Json(req): Json<RegisterRequest>) -> Result<StatusCode, (Statu
     req.validate().map_err(|e| {
         (StatusCode::BAD_REQUEST, format!("Validation error: {:?}", e))
     })?;
-    
+
     // 处理注册逻辑...
     Ok(StatusCode::CREATED)
 }
@@ -665,7 +665,7 @@ async fn get_user_by_username(pool: &PgPool, username: &str) -> Result<Option<Us
     )
     .fetch_optional(pool)
     .await?;
-    
+
     Ok(user)
 }
 
@@ -752,7 +752,7 @@ async fn verify_csrf_token(
         .get("csrf_token")
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     match stored_token {
         Some(token) if token == provided_token => Ok(()),
         _ => Err(StatusCode::FORBIDDEN),
@@ -772,10 +772,10 @@ async fn csrf_middleware(
             .get("X-CSRF-Token")
             .and_then(|v| v.to_str().ok())
             .ok_or(StatusCode::FORBIDDEN)?;
-        
+
         verify_csrf_token(session, csrf_token).await?;
     }
-    
+
     Ok(next.run(req).await)
 }
 ```
@@ -793,16 +793,16 @@ use std::net::SocketAddr;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new().route("/", get(|| async { "Hello, HTTPS!" }));
-    
+
     // TLS 配置
     let config = RustlsConfig::from_pem_file("cert.pem", "key.pem").await?;
-    
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 443));
-    
+
     axum_server::bind_rustls(addr, config)
         .serve(app.into_make_service())
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -840,7 +840,7 @@ struct User {
 // 存储前加密
 async fn create_user(pool: &PgPool, username: &str, ssn: &str) -> Result<(), sqlx::Error> {
     let encrypted_ssn = encrypt_sensitive_data(ssn.as_bytes());
-    
+
     sqlx::query!(
         "INSERT INTO users (username, ssn_encrypted) VALUES ($1, $2)",
         username,
@@ -848,7 +848,7 @@ async fn create_user(pool: &PgPool, username: &str, ssn: &str) -> Result<(), sql
     )
     .execute(pool)
     .await?;
-    
+
     Ok(())
 }
 
@@ -861,7 +861,7 @@ async fn get_user_ssn(pool: &PgPool, user_id: i64) -> Result<String, sqlx::Error
     )
     .fetch_one(pool)
     .await?;
-    
+
     let decrypted_ssn = decrypt_sensitive_data(&user.ssn_encrypted);
     Ok(String::from_utf8_lossy(&decrypted_ssn).to_string())
 }
@@ -874,7 +874,7 @@ use zeroize::Zeroize;
 
 fn process_password(mut password: String) {
     // 使用密码...
-    
+
     // 离开作用域前擦除内存
     password.zeroize();
 }
@@ -1105,7 +1105,7 @@ fuzz_target!(|data: &[u8]| {
    ```rust
    // ❌ 不安全！
    let hash = md5::compute(password);
-   
+
    // ✅ 使用 Argon2id
    let hash = argon2::hash_password(password)?;
    ```
@@ -1115,7 +1115,7 @@ fuzz_target!(|data: &[u8]| {
    ```rust
    // ❌ SQL 注入风险！
    let query = format!("SELECT * FROM users WHERE name = '{}'", name);
-   
+
    // ✅ 参数化查询
    query!("SELECT * FROM users WHERE name = $1", name)
    ```
@@ -1125,7 +1125,7 @@ fuzz_target!(|data: &[u8]| {
    ```rust
    // ❌ 直接使用用户输入
    let age = req.age;
-   
+
    // ✅ 先验证
    req.validate()?;
    let age = req.age;
@@ -1136,7 +1136,7 @@ fuzz_target!(|data: &[u8]| {
    ```rust
    // ❌ 明文传输
    .bind("0.0.0.0:80")
-   
+
    // ✅ HTTPS 加密
    .bind_rustls(addr, tls_config)
    ```
@@ -1146,7 +1146,7 @@ fuzz_target!(|data: &[u8]| {
    ```rust
    // ❌ 泄露风险！
    let secret = "hardcoded-secret-key";
-   
+
    // ✅ 环境变量
    let secret = env::var("JWT_SECRET")?;
    ```
@@ -1155,7 +1155,7 @@ fuzz_target!(|data: &[u8]| {
 
    ```bash
    # ❌ 从不运行审计
-   
+
    # ✅ 定期审计
    cargo audit
    ```
@@ -1165,7 +1165,7 @@ fuzz_target!(|data: &[u8]| {
    ```rust
    // ❌ 直接处理 POST 请求
    async fn delete_user(req: Request) { ... }
-   
+
    // ✅ 验证 CSRF token
    verify_csrf_token(session, token).await?;
    ```
@@ -1175,7 +1175,7 @@ fuzz_target!(|data: &[u8]| {
    ```html
    <!-- ❌ XSS 风险！ -->
    <div>{{ user_input | safe }}</div>
-   
+
    <!-- ✅ 自动转义 -->
    <div>{{ user_input }}</div>
    ```
@@ -1185,7 +1185,7 @@ fuzz_target!(|data: &[u8]| {
    ```rust
    // ❌ 所有用户都有管理员权限
    if user.is_authenticated() { ... }
-   
+
    // ✅ 检查具体权限
    if rbac.check_permission(&user, "admin", "delete") { ... }
    ```
@@ -1196,7 +1196,7 @@ fuzz_target!(|data: &[u8]| {
     // ❌ 不安全！
     use rand::random;
     let token = random::<u64>();
-    
+
     // ✅ 密码学安全的随机数
     use ring::rand::{SystemRandom, SecureRandom};
     let rng = SystemRandom::new();

@@ -1,7 +1,7 @@
 # 随机数生成
 
-> **核心库**: rand, fastrand, uuid, getrandom  
-> **适用场景**: 随机数、UUID、密码学安全随机、模拟、测试数据  
+> **核心库**: rand, fastrand, uuid, getrandom
+> **适用场景**: 随机数、UUID、密码学安全随机、模拟、测试数据
 > **技术栈定位**: 基础设施层 - 随机数生成和唯一标识符
 
 ---
@@ -204,19 +204,19 @@ use rand::{Rng, thread_rng};
 
 fn main() {
     let mut rng = thread_rng();
-    
+
     // 生成随机整数
     let n: u32 = rng.gen();
     println!("Random u32: {}", n);
-    
+
     // 生成随机浮点数 [0.0, 1.0)
     let f: f64 = rng.gen();
     println!("Random f64: {}", f);
-    
+
     // 范围随机数 [1, 100]
     let dice = rng.gen_range(1..=100);
     println!("Random in range: {}", dice);
-    
+
     // 生成布尔值
     let coin = rng.gen_bool(0.5); // 50% 概率
     println!("Coin flip: {}", coin);
@@ -232,23 +232,23 @@ use rand::seq::SliceRandom;
 
 fn main() {
     let mut rng = thread_rng();
-    
+
     // 随机字母数字字符串
     let token: String = (0..32)
         .map(|_| rng.sample(Alphanumeric) as char)
         .collect();
     println!("Token: {}", token);
-    
+
     // 从数组中随机选择
     let choices = ["apple", "banana", "cherry", "date"];
     let choice = choices.choose(&mut rng).unwrap();
     println!("Random choice: {}", choice);
-    
+
     // 随机打乱数组
     let mut numbers = vec![1, 2, 3, 4, 5];
     numbers.shuffle(&mut rng);
     println!("Shuffled: {:?}", numbers);
-    
+
     // 随机抽样（不重复）
     let sample: Vec<_> = numbers.choose_multiple(&mut rng, 3).collect();
     println!("Sample: {:?}", sample);
@@ -277,7 +277,7 @@ fn generate_secure_token() -> String {
 fn main() {
     let key = generate_secure_key(32);
     println!("Secure key: {:?}", key);
-    
+
     let token = generate_secure_token();
     println!("Secure token: {}", token);
 }
@@ -291,17 +291,17 @@ use rand_distr::{Normal, Uniform, Distribution};
 
 fn main() {
     let mut rng = thread_rng();
-    
+
     // 正态分布 (均值=100, 标准差=15)
     let normal = Normal::new(100.0, 15.0).unwrap();
     let iq_score = normal.sample(&mut rng);
     println!("IQ score: {:.2}", iq_score);
-    
+
     // 均匀分布
     let uniform = Uniform::new(1.0, 10.0);
     let value = uniform.sample(&mut rng);
     println!("Uniform value: {:.2}", value);
-    
+
     // 生成多个样本
     let samples: Vec<f64> = (0..100)
         .map(|_| normal.sample(&mut rng))
@@ -329,7 +329,7 @@ enum Rarity {
 
 fn main() {
     let mut rng = thread_rng();
-    
+
     // 定义稀有度和权重
     let rarities = [
         Rarity::Common,
@@ -339,17 +339,17 @@ fn main() {
         Rarity::Legendary,
     ];
     let weights = [50, 30, 15, 4, 1]; // 总和=100
-    
+
     // 创建加权分布
     let dist = WeightedIndex::new(&weights).unwrap();
-    
+
     // 模拟 100 次掉落
     let mut counts = [0; 5];
     for _ in 0..100 {
         let index = dist.sample(&mut rng);
         counts[index] += 1;
     }
-    
+
     for (rarity, count) in rarities.iter().zip(counts.iter()) {
         println!("{:?}: {} times", rarity, count);
     }
@@ -383,20 +383,20 @@ fn main() {
     // 生成随机数（自动使用线程本地 RNG）
     let n = fastrand::u32(..);
     println!("Random u32: {}", n);
-    
+
     // 范围随机数
     let dice = fastrand::u8(1..=6);
     println!("Dice: {}", dice);
-    
+
     // 布尔值
     let coin = fastrand::bool();
     println!("Coin: {}", coin);
-    
+
     // 选择元素
     let choices = ["a", "b", "c"];
     let index = fastrand::usize(..choices.len());
     println!("Choice: {}", choices[index]);
-    
+
     // 随机打乱
     let mut numbers = vec![1, 2, 3, 4, 5];
     fastrand::shuffle(&mut numbers);
@@ -449,12 +449,12 @@ fn main() {
     let id = Uuid::new_v4();
     println!("UUID v4: {}", id);
     // 输出: 550e8400-e29b-41d4-a716-446655440000
-    
+
     // UUID v7 (时间排序，最新推荐!)
     let id = Uuid::now_v7();
     println!("UUID v7: {}", id);
     // 特点: 前48位是时间戳，自然排序
-    
+
     // 格式转换
     println!("Hyphenated: {}", id.hyphenated());
     println!("Simple:     {}", id.simple());
@@ -478,7 +478,7 @@ fn main() {
         }
         Err(e) => eprintln!("Invalid UUID: {}", e),
     }
-    
+
     // 验证格式
     if Uuid::parse_str("invalid").is_err() {
         println!("Invalid UUID format");
@@ -554,7 +554,7 @@ fn main() {
     let mut buf = [0u8; 32];
     getrandom(&mut buf).expect("Failed to get random bytes");
     println!("Random bytes: {:?}", buf);
-    
+
     // 用于密钥生成
     let key = generate_encryption_key();
     println!("Encryption key: {}", hex::encode(key));
@@ -607,13 +607,13 @@ impl LootTable {
             Item { name: "Magic Ring", rarity: Rarity::Epic },
             Item { name: "Dragon Blade", rarity: Rarity::Legendary },
         ];
-        
+
         let weights = [50, 50, 30, 15, 5]; // 对应每个物品
         let dist = WeightedIndex::new(&weights).unwrap();
-        
+
         Self { items, dist }
     }
-    
+
     fn drop(&self) -> Item {
         let mut rng = thread_rng();
         let index = self.dist.sample(&mut rng);
@@ -623,7 +623,7 @@ impl LootTable {
 
 fn main() {
     let loot_table = LootTable::new();
-    
+
     println!("Simulating 100 drops:");
     for _ in 0..100 {
         let item = loot_table.drop();
@@ -650,7 +650,7 @@ impl TokenGenerator {
         OsRng.fill_bytes(&mut bytes);
         general_purpose::URL_SAFE_NO_PAD.encode(bytes)
     }
-    
+
     /// 生成带前缀的 token
     fn generate_prefixed_token(prefix: &str) -> String {
         let token = Self::generate_api_token();
@@ -662,11 +662,11 @@ fn main() {
     // 生成 API token
     let api_token = TokenGenerator::generate_api_token();
     println!("API Token: {}", api_token);
-    
+
     // 生成带前缀的 token
     let user_token = TokenGenerator::generate_prefixed_token("usr");
     println!("User Token: {}", user_token);
-    
+
     let admin_token = TokenGenerator::generate_prefixed_token("adm");
     println!("Admin Token: {}", admin_token);
 }
@@ -695,11 +695,11 @@ struct TestDataGenerator;
 impl TestDataGenerator {
     fn generate_user() -> User {
         let mut rng = thread_rng();
-        
+
         let username: String = (0..8)
             .map(|_| rng.sample(Alphanumeric) as char)
             .collect();
-        
+
         User {
             id: Uuid::new_v4(),
             username: username.clone(),
@@ -708,7 +708,7 @@ impl TestDataGenerator {
             score: rng.gen_range(0.0..100.0),
         }
     }
-    
+
     fn generate_batch(count: usize) -> Vec<User> {
         (0..count).map(|_| Self::generate_user()).collect()
     }
@@ -924,6 +924,6 @@ ids.insert(Uuid::new_v4());
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 95/100

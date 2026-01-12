@@ -1,6 +1,6 @@
 # 迭代器增强
 
-> **核心库**: itertools, rayon  
+> **核心库**: itertools, rayon
 > **适用场景**: 迭代器扩展、并行迭代、函数式编程
 
 ---
@@ -62,7 +62,7 @@ fn main() {
         .map(|(key, group)| (key, group.count()))
         .collect::<Vec<_>>();
     println!("{:?}", grouped); // [(1, 1), (2, 2), (3, 3), (4, 1)]
-    
+
     // 排序后分组
     let words = vec!["apple", "banana", "apricot", "blueberry"];
     let by_first_letter = words.into_iter()
@@ -72,7 +72,7 @@ fn main() {
         .map(|(key, group)| (key, group.collect::<Vec<_>>()))
         .collect::<Vec<_>>();
     println!("{:?}", by_first_letter);
-    
+
     // 唯一值
     let numbers = vec![1, 2, 2, 3, 3, 3];
     let unique: Vec<_> = numbers.into_iter().unique().collect();
@@ -93,14 +93,14 @@ fn main() {
         .cartesian_product(b.iter())
         .collect();
     println!("{:?}", product); // [(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]
-    
+
     // 组合
     let items = vec![1, 2, 3, 4];
     let combinations: Vec<_> = items.iter()
         .combinations(2)
         .collect();
     println!("{:?}", combinations); // [[1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]]
-    
+
     // 排列
     let permutations: Vec<_> = (1..=3)
         .permutations(2)
@@ -121,7 +121,7 @@ fn main() {
         .tuple_windows::<(_, _, _)>()
         .collect();
     println!("{:?}", windows); // [(1, 2, 3), (2, 3, 4), (3, 4, 5)]
-    
+
     // 分块
     let chunks: Vec<_> = (1..=10)
         .chunks(3)
@@ -129,7 +129,7 @@ fn main() {
         .map(|chunk| chunk.collect::<Vec<_>>())
         .collect();
     println!("{:?}", chunks); // [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]
-    
+
     // 交错
     let a = vec![1, 2, 3];
     let b = vec![10, 20, 30];
@@ -150,7 +150,7 @@ fn main() {
     let c = vec![100];
     let merged: Vec<_> = itertools::chain!(a, b, c).collect();
     println!("{:?}", merged); // [1, 2, 3, 10, 20, 100]
-    
+
     // 累积和
     let data = vec![1, 2, 3, 4];
     let cumsum: Vec<_> = data.iter()
@@ -160,7 +160,7 @@ fn main() {
         })
         .collect();
     println!("{:?}", cumsum); // [1, 3, 6, 10]
-    
+
     // 成对迭代
     let pairs: Vec<_> = (1..=5)
         .tuple_windows::<(_, _)>()
@@ -191,17 +191,17 @@ fn main() {
     let squared: Vec<_> = data.par_iter()
         .map(|&x| x * x)
         .collect();
-    
+
     // 并行 filter
     let evens: Vec<_> = data.par_iter()
         .filter(|&&x| x % 2 == 0)
         .copied()
         .collect();
-    
+
     // 并行 reduce
     let sum: i32 = data.par_iter()
         .sum();
-    
+
     println!("Sum: {}", sum);
 }
 ```
@@ -213,14 +213,14 @@ use rayon::prelude::*;
 
 fn main() {
     let mut data: Vec<_> = (1..=1000).rev().collect();
-    
+
     // 并行排序
     data.par_sort();
-    
+
     // 并行搜索
     let found = data.par_iter()
         .find_any(|&&x| x == 500);
-    
+
     println!("Found: {:?}", found);
 }
 ```
@@ -315,7 +315,7 @@ use itertools::Itertools;
 
 fn analyze_sales(sales: Vec<(String, i32)>) -> Vec<(String, i32, f64)> {
     let total: i32 = sales.iter().map(|(_, amount)| amount).sum();
-    
+
     sales.into_iter()
         .sorted_by_key(|(_, amount)| -amount)
         .map(|(product, amount)| {
@@ -372,5 +372,5 @@ fn process_files_parallel(paths: Vec<String>) -> Vec<usize> {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

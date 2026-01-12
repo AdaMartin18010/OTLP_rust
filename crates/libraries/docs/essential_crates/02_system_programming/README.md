@@ -1,7 +1,7 @@
 # 第2层：系统编程层 (System Programming Layer)
 
-> **定位**: 系统级编程所需的并发、内存、I/O 等核心能力  
-> **特点**: 高性能、零成本抽象、安全并发  
+> **定位**: 系统级编程所需的并发、内存、I/O 等核心能力
+> **特点**: 高性能、零成本抽象、安全并发
 > **版本**: Rust 1.90 (2025)
 
 ---
@@ -110,13 +110,13 @@ async fn main() {
         println!("Task 1 完成");
         1
     });
-    
+
     let task2 = tokio::spawn(async {
         sleep(Duration::from_secs(2)).await;
         println!("Task 2 完成");
         2
     });
-    
+
     // 等待所有任务
     let (r1, r2) = tokio::join!(task1, task2);
     println!("结果: {} + {} = {}", r1.unwrap(), r2.unwrap(), r1.unwrap() + r2.unwrap());
@@ -351,7 +351,7 @@ buf.put_u32(42);
 async fn main() {
     // 异步处理网络请求
     let data = fetch_data().await;
-    
+
     // 同步处理计算密集任务（使用 spawn_blocking）
     let result = tokio::task::spawn_blocking(move || {
         // 在线程池中执行
@@ -581,6 +581,6 @@ async fn main() {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **维护者**: Rust 学习社区

@@ -1,7 +1,7 @@
 # 安全审计工具 (Security Audit Tools)
 
-**类别**: 第5层 - 工具链  
-**重要程度**: ⭐⭐⭐⭐  
+**类别**: 第5层 - 工具链
+**重要程度**: ⭐⭐⭐⭐
 **更新日期**: 2025-10-20
 
 ---
@@ -48,7 +48,7 @@
 
 ### 1. cargo-audit (必备 ⭐⭐⭐⭐⭐)
 
-**安装**: `cargo install cargo-audit`  
+**安装**: `cargo install cargo-audit`
 **用途**: 检查依赖中的已知安全漏洞
 
 #### 基础用法
@@ -103,10 +103,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install cargo-audit
         run: cargo install cargo-audit
-      
+
       - name: Run audit
         run: cargo audit
 ```
@@ -131,7 +131,7 @@ Solution:  Upgrade to >= 0.2.23
 
 ### 2. cargo-deny (强烈推荐 🌟)
 
-**安装**: `cargo install cargo-deny`  
+**安装**: `cargo install cargo-deny`
 **用途**: 多维度依赖检查（许可证、ban、审计、来源）
 
 #### 基础用法1
@@ -235,7 +235,7 @@ allow-git = [
 
 ### 3. cargo-geiger (可选)
 
-**安装**: `cargo install cargo-geiger`  
+**安装**: `cargo install cargo-geiger`
 **用途**: 检测项目中的 unsafe 代码使用情况
 
 #### 基础用法3
@@ -277,7 +277,7 @@ Functions  Expressions  Impls  Traits  Methods  Dependency
 
 ### 4. cargo-outdated (可选)
 
-**安装**: `cargo install cargo-outdated`  
+**安装**: `cargo install cargo-outdated`
 **用途**: 检查过期的依赖
 
 ```bash
@@ -295,7 +295,7 @@ cargo outdated --format json
 
 ### 5. cargo-license (可选)
 
-**安装**: `cargo install cargo-license`  
+**安装**: `cargo install cargo-license`
 **用途**: 列出所有依赖的许可证
 
 ```bash
@@ -367,28 +367,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      
+
       - name: Cache cargo tools
         uses: actions/cache@v3
         with:
           path: ~/.cargo/bin
           key: ${{ runner.os }}-cargo-tools
-      
+
       - name: Install tools
         run: |
           cargo install cargo-audit || true
           cargo install cargo-deny || true
           cargo install cargo-geiger || true
-      
+
       - name: Security Audit
         run: cargo audit
-      
+
       - name: Dependency Check
         run: cargo deny check
-      
+
       - name: Unsafe Code Check
         run: cargo geiger
 ```

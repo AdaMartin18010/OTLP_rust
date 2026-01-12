@@ -1,7 +1,7 @@
 # Middleware - 请求处理中间件
 
-> **核心库**: tower, tower-http  
-> **适用场景**: 日志记录、认证授权、CORS、限流、压缩、追踪、错误处理  
+> **核心库**: tower, tower-http
+> **适用场景**: 日志记录、认证授权、CORS、限流、压缩、追踪、错误处理
 > **技术栈定位**: 应用开发层 - 中间件层
 
 ---
@@ -161,11 +161,11 @@ impl Service<String> for MyService {
     type Response = String;
     type Error = ();
     type Future = Pin<Box<dyn Future<Output = Result<String, ()>> + Send>>;
-    
+
     fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
-    
+
     fn call(&mut self, req: String) -> Self::Future {
         Box::pin(async move {
             Ok(format!("处理: {}", req))
@@ -284,13 +284,13 @@ async fn log_middleware(
 ) -> Response {
     let method = req.method().clone();
     let uri = req.uri().clone();
-    
+
     println!("请求: {} {}", method, uri);
-    
+
     let response = next.run(req).await;
-    
+
     println!("响应状态: {}", response.status());
-    
+
     response
 }
 
@@ -325,7 +325,7 @@ async fn auth_middleware(
         .headers()
         .get("authorization")
         .and_then(|h| h.to_str().ok());
-    
+
     match auth_header {
         Some(token) if token.starts_with("Bearer ") => {
             Ok(next.run(req).await)
@@ -345,7 +345,7 @@ async fn rate_limit_middleware(
 #[tokio::main]
 async fn main() {
     let x_request_id = axum::http::HeaderName::from_static("x-request-id");
-    
+
     let app = Router::new()
         .route("/api/public", get(public_handler))
         .route("/api/protected", get(protected_handler))
@@ -369,7 +369,7 @@ async fn main() {
                 // 限流
                 .layer(middleware::from_fn(rate_limit_middleware))
         );
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
@@ -412,21 +412,21 @@ async fn jwt_auth_middleware(
         .get("authorization")
         .and_then(|h| h.to_str().ok())
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     let token = auth_header
         .strip_prefix("Bearer ")
         .ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     let claims = decode::<Claims>(
         token,
         &DecodingKey::from_secret("secret".as_ref()),
         &Validation::default(),
     )
     .map_err(|_| StatusCode::UNAUTHORIZED)?;
-    
+
     // 将 claims 添加到请求扩展中
     req.extensions_mut().insert(claims.claims);
-    
+
     Ok(next.run(req).await)
 }
 
@@ -468,12 +468,12 @@ async fn error_handler_middleware(
     next: Next,
 ) -> Response {
     let response = next.run(req).await;
-    
+
     if response.status().is_server_error() {
         // 记录错误
         eprintln!("服务器错误: {}", response.status());
     }
-    
+
     response
 }
 ```
@@ -490,9 +490,9 @@ async fn timing_middleware(
     let start = std::time::Instant::now();
     let response = next.run(req).await;
     let duration = start.elapsed();
-    
+
     println!("请求耗时: {:?}", duration);
-    
+
     response
 }
 ```
@@ -610,6 +610,6 @@ async fn slow_middleware(req: Request, next: Next) -> Response {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 95/100

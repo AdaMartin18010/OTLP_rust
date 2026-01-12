@@ -1,94 +1,94 @@
 ﻿# Rust 数据库开发深入指南 2025
 
-> **最后更新**: 2025-10-20  
-> **Rust 版本**: 1.83+  
+> **最后更新**: 2025-10-20
+> **Rust 版本**: 1.83+
 > **难度**: ⭐⭐⭐⭐ (中高级)
 
 ## 📋 目录
 
 - [Rust 数据库开发深入指南 2025](#rust-数据库开发深入指南-2025)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [📋 目录1](#-目录1)
-  - [1. 数据库生态概览](#1-数据库生态概览)
-  - [2. SQLx 深入](#2-sqlx-深入)
+  - [📖 数据库生态概览](#-数据库生态概览)
+  - [📝 SQLx 深入](#-sqlx-深入)
     - [2.1 基础设置](#21-基础设置)
     - [2.2 编译时查询验证](#22-编译时查询验证)
     - [2.3 批量操作](#23-批量操作)
-  - [3. Diesel ORM](#3-diesel-orm)
+  - [🔍 Diesel ORM](#-diesel-orm)
     - [3.1 设置和迁移](#31-设置和迁移)
     - [3.2 模型定义](#32-模型定义)
     - [3.3 CRUD 操作](#33-crud-操作)
     - [3.4 关联查询](#34-关联查询)
-  - [4. SeaORM 现代化 ORM](#4-seaorm-现代化-orm)
+  - [🔧 SeaORM 现代化 ORM](#-seaorm-现代化-orm)
     - [4.1 实体定义](#41-实体定义)
     - [4.2 CRUD 操作](#42-crud-操作)
     - [4.3 关联查询](#43-关联查询)
-  - [5. 连接池管理](#5-连接池管理)
+  - [📊 连接池管理](#-连接池管理)
     - [5.1 连接池配置](#51-连接池配置)
     - [5.2 连接池监控](#52-连接池监控)
-  - [6. 事务处理](#6-事务处理)
+  - [🌟 事务处理](#-事务处理)
     - [6.1 SQLx 事务](#61-sqlx-事务)
     - [6.2 Diesel 事务](#62-diesel-事务)
     - [6.3 SeaORM 事务](#63-seaorm-事务)
-  - [7. 迁移管理](#7-迁移管理)
+  - [🔬 迁移管理](#-迁移管理)
     - [7.1 SQLx 迁移](#71-sqlx-迁移)
     - [7.2 Diesel 迁移](#72-diesel-迁移)
-  - [8. 查询优化](#8-查询优化)
+  - [💻 查询优化](#-查询优化)
     - [8.1 索引优化](#81-索引优化)
     - [8.2 N+1 查询问题](#82-n1-查询问题)
     - [8.3 批量操作优化](#83-批量操作优化)
-  - [9. NoSQL 数据库](#9-nosql-数据库)
+  - [📚 NoSQL 数据库](#-nosql-数据库)
     - [9.1 MongoDB](#91-mongodb)
     - [9.2 Redis](#92-redis)
-  - [10. 实战案例](#10-实战案例)
+  - [✅ 实战案例](#-实战案例)
     - [10.1 用户认证系统](#101-用户认证系统)
     - [10.2 博客系统](#102-博客系统)
-  - [11. 最佳实践](#11-最佳实践)
-  - [12. 常见陷阱](#12-常见陷阱)
-  - [13. 参考资源](#13-参考资源)
+  - [🌈 最佳实践](#-最佳实践)
+  - [🎓 常见陷阱](#-常见陷阱)
+  - [🔗 参考资源](#-参考资源)
 
 ## 📋 目录1
 
 - [Rust 数据库开发深入指南 2025](#rust-数据库开发深入指南-2025)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [📋 目录1](#-目录1)
-  - [1. 数据库生态概览](#1-数据库生态概览)
-  - [2. SQLx 深入](#2-sqlx-深入)
+  - [📖 数据库生态概览](#-数据库生态概览)
+  - [📝 SQLx 深入](#-sqlx-深入)
     - [2.1 基础设置](#21-基础设置)
     - [2.2 编译时查询验证](#22-编译时查询验证)
     - [2.3 批量操作](#23-批量操作)
-  - [3. Diesel ORM](#3-diesel-orm)
+  - [🔍 Diesel ORM](#-diesel-orm)
     - [3.1 设置和迁移](#31-设置和迁移)
     - [3.2 模型定义](#32-模型定义)
     - [3.3 CRUD 操作](#33-crud-操作)
     - [3.4 关联查询](#34-关联查询)
-  - [4. SeaORM 现代化 ORM](#4-seaorm-现代化-orm)
+  - [🔧 SeaORM 现代化 ORM](#-seaorm-现代化-orm)
     - [4.1 实体定义](#41-实体定义)
     - [4.2 CRUD 操作](#42-crud-操作)
     - [4.3 关联查询](#43-关联查询)
-  - [5. 连接池管理](#5-连接池管理)
+  - [📊 连接池管理](#-连接池管理)
     - [5.1 连接池配置](#51-连接池配置)
     - [5.2 连接池监控](#52-连接池监控)
-  - [6. 事务处理](#6-事务处理)
+  - [🌟 事务处理](#-事务处理)
     - [6.1 SQLx 事务](#61-sqlx-事务)
     - [6.2 Diesel 事务](#62-diesel-事务)
     - [6.3 SeaORM 事务](#63-seaorm-事务)
-  - [7. 迁移管理](#7-迁移管理)
+  - [🔬 迁移管理](#-迁移管理)
     - [7.1 SQLx 迁移](#71-sqlx-迁移)
     - [7.2 Diesel 迁移](#72-diesel-迁移)
-  - [8. 查询优化](#8-查询优化)
+  - [💻 查询优化](#-查询优化)
     - [8.1 索引优化](#81-索引优化)
     - [8.2 N+1 查询问题](#82-n1-查询问题)
     - [8.3 批量操作优化](#83-批量操作优化)
-  - [9. NoSQL 数据库](#9-nosql-数据库)
+  - [📚 NoSQL 数据库](#-nosql-数据库)
     - [9.1 MongoDB](#91-mongodb)
     - [9.2 Redis](#92-redis)
-  - [10. 实战案例](#10-实战案例)
+  - [✅ 实战案例](#-实战案例)
     - [10.1 用户认证系统](#101-用户认证系统)
     - [10.2 博客系统](#102-博客系统)
-  - [11. 最佳实践](#11-最佳实践)
-  - [12. 常见陷阱](#12-常见陷阱)
-  - [13. 参考资源](#13-参考资源)
+  - [🌈 最佳实践](#-最佳实践)
+  - [🎓 常见陷阱](#-常见陷阱)
+  - [🔗 参考资源](#-参考资源)
 
 ---
 
@@ -144,9 +144,9 @@ async fn main() -> Result<(), sqlx::Error> {
         .acquire_timeout(Duration::from_secs(3))
         .connect("postgresql://user:pass@localhost/db")
         .await?;
-    
+
     println!("数据库连接成功！");
-    
+
     Ok(())
 }
 ```
@@ -171,7 +171,7 @@ struct User {
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
     let pool = /* ... */;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // query!: 编译时验证 SQL (需要 DATABASE_URL 环境变量)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -182,9 +182,9 @@ async fn main() -> Result<(), sqlx::Error> {
     )
     .fetch_one(&pool)
     .await?;
-    
+
     println!("用户: {:?}", user);
-    
+
     Ok(())
 }
 ```
@@ -199,17 +199,17 @@ async fn find_users(
     filters: Vec<(&str, &str)>,
 ) -> Result<Vec<User>, sqlx::Error> {
     let mut query = String::from("SELECT id, email, name, created_at FROM users WHERE 1=1");
-    
+
     for (key, _) in &filters {
         query.push_str(&format!(" AND {} = $", key));
     }
-    
+
     let mut query_builder = query_as::<_, User>(&query);
-    
+
     for (_, value) in filters {
         query_builder = query_builder.bind(value);
     }
-    
+
     query_builder.fetch_all(pool).await
 }
 ```
@@ -229,13 +229,13 @@ async fn insert_many_users(
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
         "INSERT INTO users(email, name) "
     );
-    
+
     query_builder.push_values(users, |mut b, user| {
         b.push_bind(&user.0).push_bind(&user.1);
     });
-    
+
     query_builder.build().execute(pool).await?;
-    
+
     Ok(())
 }
 ```
@@ -330,9 +330,9 @@ use diesel::pg::PgConnection;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 fn create_user(conn: &mut PgConnection, email: &str, name: &str) -> QueryResult<User> {
     use crate::schema::users;
-    
+
     let new_user = NewUser { email, name };
-    
+
     diesel::insert_into(users::table)
         .values(&new_user)
         .get_result(conn)
@@ -343,7 +343,7 @@ fn create_user(conn: &mut PgConnection, email: &str, name: &str) -> QueryResult<
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 fn get_user_by_email(conn: &mut PgConnection, email: &str) -> QueryResult<User> {
     use crate::schema::users::dsl::*;
-    
+
     users
         .filter(email.eq(email))
         .first::<User>(conn)
@@ -351,7 +351,7 @@ fn get_user_by_email(conn: &mut PgConnection, email: &str) -> QueryResult<User> 
 
 fn list_users(conn: &mut PgConnection, limit: i64) -> QueryResult<Vec<User>> {
     use crate::schema::users::dsl::*;
-    
+
     users
         .order(created_at.desc())
         .limit(limit)
@@ -363,7 +363,7 @@ fn list_users(conn: &mut PgConnection, limit: i64) -> QueryResult<Vec<User>> {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 fn update_user_name(conn: &mut PgConnection, user_id: Uuid, new_name: &str) -> QueryResult<User> {
     use crate::schema::users::dsl::*;
-    
+
     diesel::update(users.find(user_id))
         .set(name.eq(new_name))
         .get_result(conn)
@@ -374,7 +374,7 @@ fn update_user_name(conn: &mut PgConnection, user_id: Uuid, new_name: &str) -> Q
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 fn delete_user(conn: &mut PgConnection, user_id: Uuid) -> QueryResult<usize> {
     use crate::schema::users::dsl::*;
-    
+
     diesel::delete(users.find(user_id))
         .execute(conn)
 }
@@ -390,14 +390,14 @@ use diesel::prelude::*;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 fn get_user_with_posts(conn: &mut PgConnection, user_id: Uuid) -> QueryResult<(User, Vec<Post>)> {
     use crate::schema::{users, posts};
-    
+
     let user = users::table
         .find(user_id)
         .first::<User>(conn)?;
-    
+
     let user_posts = Post::belonging_to(&user)
         .load::<Post>(conn)?;
-    
+
     Ok((user, user_posts))
 }
 
@@ -406,7 +406,7 @@ fn get_user_with_posts(conn: &mut PgConnection, user_id: Uuid) -> QueryResult<(U
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 fn get_published_posts_with_authors(conn: &mut PgConnection) -> QueryResult<Vec<(Post, User)>> {
     use crate::schema::{posts, users};
-    
+
     posts::table
         .inner_join(users::table)
         .filter(posts::published.eq(true))
@@ -466,7 +466,7 @@ async fn create_user(db: &DatabaseConnection, email: &str, name: &str) -> Result
         name: Set(name.to_owned()),
         created_at: Set(chrono::Utc::now()),
     };
-    
+
     user.insert(db).await
 }
 
@@ -497,10 +497,10 @@ async fn update_user_name(db: &DatabaseConnection, id: Uuid, new_name: &str) -> 
         .await?
         .ok_or(DbErr::RecordNotFound(format!("User {} not found", id)))?
         .into();
-    
+
     let mut user: ActiveModel = user;
     user.name = Set(new_name.to_owned());
-    
+
     user.update(db).await
 }
 
@@ -597,26 +597,26 @@ async fn transfer_money(
     // 开始事务
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let mut tx: Transaction<Postgres> = pool.begin().await?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 扣款
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     sqlx::query!("UPDATE accounts SET balance = balance - $1 WHERE user_id = $2", amount, from_user_id)
         .execute(&mut *tx)
         .await?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 加款
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     sqlx::query!("UPDATE accounts SET balance = balance + $1 WHERE user_id = $2", amount, to_user_id)
         .execute(&mut *tx)
         .await?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 提交事务
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     tx.commit().await?;
-    
+
     Ok(())
 }
 ```
@@ -639,13 +639,13 @@ fn transfer_money_diesel(
             .bind::<diesel::sql_types::Integer, _>(amount)
             .bind::<diesel::sql_types::Integer, _>(from_user_id)
             .execute(conn)?;
-        
+
         // 加款
         diesel::sql_query("UPDATE accounts SET balance = balance + $1 WHERE user_id = $2")
             .bind::<diesel::sql_types::Integer, _>(amount)
             .bind::<diesel::sql_types::Integer, _>(to_user_id)
             .execute(conn)?;
-        
+
         Ok(())
     })
 }
@@ -663,23 +663,23 @@ async fn transfer_money_seaorm(
     amount: i32,
 ) -> Result<(), DbErr> {
     let txn = db.begin().await?;
-    
+
     // 扣款
     account::Entity::update_many()
         .filter(account::Column::UserId.eq(from_user_id))
         .col_expr(account::Column::Balance, Expr::col(account::Column::Balance).sub(amount))
         .exec(&txn)
         .await?;
-    
+
     // 加款
     account::Entity::update_many()
         .filter(account::Column::UserId.eq(to_user_id))
         .col_expr(account::Column::Balance, Expr::col(account::Column::Balance).add(amount))
         .exec(&txn)
         .await?;
-    
+
     txn.commit().await?;
-    
+
     Ok(())
 }
 ```
@@ -723,15 +723,15 @@ use std::path::Path;
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
     let pool = /* ... */;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 运行迁移
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let migrator = Migrator::new(Path::new("./migrations")).await?;
     migrator.run(&pool).await?;
-    
+
     println!("迁移完成！");
-    
+
     Ok(())
 }
 ```
@@ -865,10 +865,10 @@ async fn main() -> mongodb::error::Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
     let client = Client::with_options(client_options)?;
-    
+
     let db = client.database("mydb");
     let collection = db.collection::<User>("users");
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 插入文档
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -877,18 +877,18 @@ async fn main() -> mongodb::error::Result<()> {
         email: "user@example.com".to_string(),
         name: "张三".to_string(),
     };
-    
+
     collection.insert_one(user, None).await?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 查询文档
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let user = collection
         .find_one(doc! { "email": "user@example.com" }, None)
         .await?;
-    
+
     println!("用户: {:?}", user);
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 更新文档
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -899,7 +899,7 @@ async fn main() -> mongodb::error::Result<()> {
             None,
         )
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -916,19 +916,19 @@ async fn main() -> redis::RedisResult<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let client = redis::Client::open("redis://127.0.0.1/")?;
     let mut con = client.get_multiplexed_async_connection().await?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 基本操作
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     con.set("key", "value").await?;
     let value: String = con.get("key").await?;
     println!("值: {}", value);
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 设置过期时间
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     con.set_ex("session:123", "user_data", 3600).await?; // 1小时过期
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 列表操作
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -936,7 +936,7 @@ async fn main() -> redis::RedisResult<()> {
     con.lpush("queue", "task2").await?;
     let task: String = con.rpop("queue", None).await?;
     println!("任务: {}", task);
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 哈希操作
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -944,7 +944,7 @@ async fn main() -> redis::RedisResult<()> {
     con.hset("user:1", "email", "zhangsan@example.com").await?;
     let name: String = con.hget("user:1", "name").await?;
     println!("姓名: {}", name);
-    
+
     Ok(())
 }
 ```
@@ -981,7 +981,7 @@ async fn register_user(
         salt.as_bytes(),
         &argon2::Config::default(),
     )?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 插入数据库
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -994,7 +994,7 @@ async fn register_user(
     )
     .fetch_one(pool)
     .await?;
-    
+
     Ok(user)
 }
 
@@ -1013,13 +1013,13 @@ async fn login_user(
     )
     .fetch_one(pool)
     .await?;
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 验证密码
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let parsed_hash = PasswordHash::new(&user.password_hash)?;
     Argon2::default().verify_password(password.as_bytes(), &parsed_hash)?;
-    
+
     Ok(user)
 }
 ```
@@ -1068,5 +1068,5 @@ async fn login_user(
 
 ---
 
-> **完成！** 🎉  
+> **完成！** 🎉
 > 本指南涵盖了 Rust 数据库开发的核心内容，包括 SQLx、Diesel、SeaORM、连接池、事务、迁移、查询优化、NoSQL 数据库、实战案例、最佳实践和常见陷阱。

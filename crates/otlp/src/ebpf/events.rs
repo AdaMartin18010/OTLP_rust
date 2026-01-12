@@ -73,6 +73,71 @@ impl EventProcessor {
             0
         }
     }
+
+    /// 获取所有事件（不刷新）
+    pub fn get_events(&self) -> Vec<EbpfEvent> {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            self.event_buffer.clone()
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            vec![]
+        }
+    }
+
+    /// 过滤事件
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn filter_events<F>(&self, predicate: F) -> Vec<EbpfEvent>
+    where
+        F: Fn(&EbpfEvent) -> bool,
+    {
+        self.event_buffer
+            .iter()
+            .filter(|e| predicate(e))
+            .cloned()
+            .collect()
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn filter_events<F>(&self, _predicate: F) -> Vec<EbpfEvent>
+    where
+        F: Fn(&EbpfEvent) -> bool,
+    {
+        vec![]
+    }
+
+    /// 按类型过滤事件
+    pub fn filter_by_type(&self, event_type: EbpfEventType) -> Vec<EbpfEvent> {
+        self.filter_events(|e| e.event_type == event_type)
+    }
+
+    /// 按进程 ID 过滤事件
+    pub fn filter_by_pid(&self, pid: u32) -> Vec<EbpfEvent> {
+        self.filter_events(|e| e.pid == pid)
+    }
+
+    /// 清空事件缓冲区
+    pub fn clear(&mut self) {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            self.event_buffer.clear();
+        }
+    }
+
+    /// 检查缓冲区是否已满
+    pub fn is_full(&self) -> bool {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            self.event_buffer.len() >= self.max_buffer_size
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            false
+        }
+    }
 }
 
 impl Default for EventProcessor {

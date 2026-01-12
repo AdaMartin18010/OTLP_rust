@@ -1,6 +1,6 @@
 # 并发与同步原语
 
-> **核心库**: crossbeam, parking_lot, rayon, flume  
+> **核心库**: crossbeam, parking_lot, rayon, flume
 > **适用场景**: 多线程编程、无锁数据结构、并行计算、线程间通信
 
 ---
@@ -65,7 +65,7 @@ use std::thread;
 fn main() {
     // 固定容量无锁队列
     let queue = ArrayQueue::new(10);
-    
+
     // 生产者
     let producer = thread::spawn({
         let queue = queue.clone();
@@ -75,7 +75,7 @@ fn main() {
             }
         }
     });
-    
+
     // 消费者
     let consumer = thread::spawn(move || {
         let mut sum = 0;
@@ -86,11 +86,11 @@ fn main() {
         }
         sum
     });
-    
+
     producer.join().unwrap();
     let result = consumer.join().unwrap();
     println!("Sum: {}", result);
-    
+
     // 无限容量无锁队列
     let seg_queue = SegQueue::new();
     seg_queue.push(1);
@@ -106,12 +106,12 @@ use crossbeam::thread;
 
 fn main() {
     let mut data = vec![1, 2, 3, 4, 5];
-    
+
     // 作用域线程可以借用外部数据
     thread::scope(|s| {
         // 分割数据并并行处理
         let chunks = data.chunks_mut(2);
-        
+
         for chunk in chunks {
             s.spawn(move |_| {
                 for item in chunk {
@@ -120,7 +120,7 @@ fn main() {
             });
         }
     }).unwrap();
-    
+
     println!("{:?}", data); // [2, 4, 6, 8, 10]
 }
 ```
@@ -135,33 +135,33 @@ use std::time::Duration;
 fn main() {
     // 有界通道 (带背压)
     let (tx, rx) = bounded(10);
-    
+
     thread::spawn(move || {
         for i in 0..20 {
             tx.send(i).unwrap(); // 满时阻塞
             println!("Sent: {}", i);
         }
     });
-    
+
     thread::sleep(Duration::from_millis(100));
-    
+
     for value in rx {
         println!("Received: {}", value);
         thread::sleep(Duration::from_millis(10));
     }
-    
+
     // 无界通道
     let (tx2, rx2) = unbounded();
     tx2.send(42).unwrap();
     println!("{}", rx2.recv().unwrap());
-    
+
     // select! 多路复用
     let (tx1, rx1) = bounded(1);
     let (tx2, rx2) = bounded(1);
-    
+
     tx1.send("A").unwrap();
     tx2.send("B").unwrap();
-    
+
     crossbeam::select! {
         recv(rx1) -> msg => println!("rx1: {:?}", msg),
         recv(rx2) -> msg => println!("rx2: {:?}", msg),
@@ -190,7 +190,7 @@ fn main() {
     // Mutex - 比 std::sync::Mutex 更快
     let counter = Mutex::new(0);
     let mut handles = vec![];
-    
+
     for _ in 0..10 {
         handles.push(thread::spawn({
             let counter = &counter;
@@ -201,16 +201,16 @@ fn main() {
             }
         }));
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("Counter: {}", *counter.lock());
-    
+
     // RwLock - 读写锁
     let data = RwLock::new(vec![1, 2, 3]);
-    
+
     // 多个读者
     let reader1 = thread::spawn({
         let data = &data;
@@ -219,7 +219,7 @@ fn main() {
             println!("Reader 1: {:?}", *guard);
         }
     });
-    
+
     let reader2 = thread::spawn({
         let data = &data;
         move || {
@@ -227,16 +227,16 @@ fn main() {
             println!("Reader 2: {:?}", *guard);
         }
     });
-    
+
     reader1.join().unwrap();
     reader2.join().unwrap();
-    
+
     // 写者
     {
         let mut guard = data.write();
         guard.push(4);
     }
-    
+
     println!("After write: {:?}", *data.read());
 }
 ```
@@ -261,7 +261,7 @@ use std::thread;
 fn main() {
     // 无界通道
     let (tx, rx) = flume::unbounded();
-    
+
     // 多生产者
     for i in 0..5 {
         let tx = tx.clone();
@@ -270,21 +270,21 @@ fn main() {
         });
     }
     drop(tx); // 关闭通道
-    
+
     // 消费者
     while let Ok(value) = rx.recv() {
         println!("Received: {}", value);
     }
-    
+
     // 有界通道
     let (tx, rx) = flume::bounded(10);
-    
+
     thread::spawn(move || {
         for i in 0..20 {
             tx.send(i).unwrap();
         }
     });
-    
+
     for value in rx {
         println!("{}", value);
     }
@@ -327,7 +327,7 @@ use std::sync::Arc;
 fn deadlock_example() {
     let lock1 = Arc::new(Mutex::new(1));
     let lock2 = Arc::new(Mutex::new(2));
-    
+
     // 线程1: lock1 -> lock2
     // 线程2: lock2 -> lock1
     // 可能死锁！
@@ -337,7 +337,7 @@ fn deadlock_example() {
 fn correct_example() {
     let lock1 = Arc::new(Mutex::new(1));
     let lock2 = Arc::new(Mutex::new(2));
-    
+
     // 总是按照 lock1 -> lock2 的顺序获取
     let guard1 = lock1.lock();
     let guard2 = lock2.lock();
@@ -363,14 +363,14 @@ use crossbeam::channel;
 // ✅ 减少锁竞争
 fn batch_processing(data: Vec<i32>, batch_size: usize) {
     let result = Mutex::new(Vec::new());
-    
+
     rayon::scope(|s| {
         for chunk in data.chunks(batch_size) {
             s.spawn(|_| {
                 let local_result: Vec<_> = chunk.iter()
                     .map(|&x| expensive_operation(x))
                     .collect();
-                
+
                 // 批量更新，减少锁竞争
                 result.lock().extend(local_result);
             });
@@ -385,10 +385,10 @@ fn expensive_operation(x: i32) -> i32 {
 // ✅ 使用读写锁
 fn cache_example() {
     let cache = RwLock::new(std::collections::HashMap::new());
-    
+
     // 多个读者不互斥
     let value = cache.read().get(&key);
-    
+
     // 写入时独占
     if value.is_none() {
         cache.write().insert(key, compute_value());
@@ -415,7 +415,7 @@ impl ThreadPool {
     fn new(size: usize) -> Self {
         let (sender, receiver) = channel::unbounded();
         let mut workers = Vec::with_capacity(size);
-        
+
         for _ in 0..size {
             let receiver = receiver.clone();
             workers.push(thread::spawn(move || {
@@ -424,10 +424,10 @@ impl ThreadPool {
                 }
             }));
         }
-        
+
         Self { workers, sender }
     }
-    
+
     fn execute<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
@@ -446,7 +446,7 @@ use std::time::Duration;
 
 fn producer_consumer() {
     let (tx, rx) = flume::bounded(10);
-    
+
     // 多个生产者
     for i in 0..3 {
         let tx = tx.clone();
@@ -458,7 +458,7 @@ fn producer_consumer() {
         });
     }
     drop(tx);
-    
+
     // 多个消费者
     let mut handles = vec![];
     for _ in 0..2 {
@@ -469,7 +469,7 @@ fn producer_consumer() {
             }
         }));
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
@@ -485,7 +485,7 @@ use parking_lot::Mutex;
 fn parallel_aggregate(data: Vec<i32>) -> (i32, i32, f64) {
     let sum = Mutex::new(0);
     let max = Mutex::new(i32::MIN);
-    
+
     data.par_iter().for_each(|&x| {
         *sum.lock() += x;
         let mut max_guard = max.lock();
@@ -493,11 +493,11 @@ fn parallel_aggregate(data: Vec<i32>) -> (i32, i32, f64) {
             *max_guard = x;
         }
     });
-    
+
     let sum_val = *sum.lock();
     let max_val = *max.lock();
     let avg = sum_val as f64 / data.len() as f64;
-    
+
     (sum_val, max_val, avg)
 }
 ```
@@ -512,5 +512,5 @@ fn parallel_aggregate(data: Vec<i32>) -> (i32, i32, f64) {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

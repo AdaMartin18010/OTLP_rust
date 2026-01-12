@@ -1,6 +1,6 @@
 # 缓存管理 - Rust 高性能缓存解决方案
 
-> **核心库**: moka, cached, redis, mini-redis  
+> **核心库**: moka, cached, redis, mini-redis
 > **适用场景**: 内存缓存、函数结果缓存、分布式缓存、多级缓存
 
 ---
@@ -189,7 +189,7 @@ async fn main() {
 
     // 插入数据
     cache.insert("user:1".to_string(), "Alice".to_string()).await;
-    
+
     // 获取数据
     if let Some(value) = cache.get(&"user:1".to_string()).await {
         println!("Found: {}", value);
@@ -227,7 +227,7 @@ async fn main() {
         .build();
 
     cache.insert("session:abc".to_string(), "user_data".to_string()).await;
-    
+
     // 5分钟内如果没有访问，会被删除
     // 或者10分钟后无论是否访问都会被删除
 }
@@ -252,7 +252,7 @@ async fn main() {
         .build();
 
     let user_id = "user:123".to_string();
-    
+
     // 使用 get_with 自动加载
     let user = cache.get_with(user_id.clone(), async {
         load_user_from_db(&user_id).await.unwrap()
@@ -322,10 +322,10 @@ fn fibonacci(n: u64) -> u64 {
 fn main() {
     // 第一次调用：计算
     let result1 = fibonacci(40);  // 慢
-    
+
     // 第二次调用：从缓存返回
     let result2 = fibonacci(40);  // 快！
-    
+
     println!("Fibonacci(40) = {}", result2);
 }
 ```
@@ -493,7 +493,7 @@ use redis::AsyncCommands;
 #[tokio::main]
 async fn main() -> redis::RedisResult<()> {
     let client = redis::Client::open("redis://127.0.0.1/")?;
-    
+
     // 发布者
     tokio::spawn(async move {
         let mut con = client.get_async_connection().await.unwrap();
@@ -506,7 +506,7 @@ async fn main() -> redis::RedisResult<()> {
     // 订阅者
     let mut pubsub = client.get_async_connection().await?.into_pubsub();
     pubsub.subscribe("notifications").await?;
-    
+
     let mut pubsub_stream = pubsub.on_message();
     while let Some(msg) = pubsub_stream.next().await {
         let payload: String = msg.get_payload()?;
@@ -694,7 +694,7 @@ impl MultiLevelCache {
     async fn set(&self, key: String, value: String) {
         // 同时写入L1和L2
         self.l1_cache.insert(key.clone(), value.clone()).await;
-        
+
         if let Ok(mut con) = self.redis_client.get_async_connection().await {
             let _: Result<(), _> = con.set_ex(&key, &value, 300).await;
         }
@@ -787,7 +787,7 @@ async fn get_user_cache_aside(cache: &Cache<u32, User>, db: &Database, user_id: 
 }
 ```
 
-**优点**: 简单、灵活  
+**优点**: 简单、灵活
 **缺点**: 需要手动管理
 
 ### 2. Read-Through (读穿透)
@@ -800,7 +800,7 @@ let user = cache.get_with(user_id, async {
 }).await;
 ```
 
-**优点**: 自动加载，代码简洁  
+**优点**: 自动加载，代码简洁
 **缺点**: 需要缓存层支持
 
 ### 3. Write-Through (写穿透)
@@ -811,13 +811,13 @@ let user = cache.get_with(user_id, async {
 async fn update_user(cache: &Cache<u32, User>, db: &Database, user: User) {
     // 1. 写入数据库
     db.update_user(&user).await;
-    
+
     // 2. 更新缓存
     cache.insert(user.id, user).await;
 }
 ```
 
-**优点**: 数据一致性强  
+**优点**: 数据一致性强
 **缺点**: 写入延迟增加
 
 ### 4. Write-Behind (写回)
@@ -832,13 +832,13 @@ async fn update_user_write_behind(
 ) {
     // 1. 快速写入缓存
     cache.insert(user.id, user.clone()).await;
-    
+
     // 2. 异步写入数据库
     db_queue.send(user).await.unwrap();
 }
 ```
 
-**优点**: 写入速度快  
+**优点**: 写入速度快
 **缺点**: 数据可能丢失
 
 ---
@@ -951,7 +951,7 @@ async fn main() {
     for i in 0..1000 {
         let key = format!("key:{}", i);
         let ttl = get_ttl_with_jitter(300);  // 300±60秒
-        
+
         cache.insert(key, format!("value{}", i)).await;
     }
 }
@@ -1073,7 +1073,7 @@ async fn update_user(
 ) {
     // 1. 先更新数据库
     db.update_user(&user).await;
-    
+
     // 2. 删除缓存（推荐）或更新缓存
     cache.invalidate(&user.id).await;  // 删除，下次读取时重新加载
     // 或
@@ -1228,7 +1228,7 @@ impl HotKeyCache {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
-**维护者**: Rust 学习社区  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
+**维护者**: Rust 学习社区
 **文档长度**: 800+ 行

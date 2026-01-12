@@ -5,43 +5,42 @@
 ## 📋 目录
 
 - [Rust 编译器深入指南 (2025)](#rust-编译器深入指南-2025)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
-  - [1. 编译器架构概览](#1-编译器架构概览)
+  - [� 目录](#-目录)
+  - [📖 编译器架构概览](#-编译器架构概览)
     - [1.1 编译流程](#11-编译流程)
     - [1.2 核心组件](#12-核心组件)
     - [1.3 编译器代码结构](#13-编译器代码结构)
-  - [2. 词法分析与语法分析](#2-词法分析与语法分析)
+  - [📝 词法分析与语法分析](#-词法分析与语法分析)
     - [2.1 词法分析器 (Lexer)](#21-词法分析器-lexer)
     - [2.2 语法分析器 (Parser)](#22-语法分析器-parser)
     - [2.3 抽象语法树 (AST)](#23-抽象语法树-ast)
-  - [3. 宏展开与名称解析](#3-宏展开与名称解析)
+  - [🔍 宏展开与名称解析](#-宏展开与名称解析)
     - [3.1 宏展开机制](#31-宏展开机制)
     - [3.2 名称解析](#32-名称解析)
     - [3.3 路径解析](#33-路径解析)
-  - [4. HIR (High-Level IR)](#4-hir-high-level-ir)
+  - [🔧 HIR (High-Level IR)](#-hir-high-level-ir)
     - [4.1 AST 到 HIR 的转换](#41-ast-到-hir-的转换)
     - [4.2 类型检查](#42-类型检查)
     - [4.3 Trait 解析](#43-trait-解析)
-  - [5. MIR (Mid-Level IR)](#5-mir-mid-level-ir)
+  - [📊 MIR (Mid-Level IR)](#-mir-mid-level-ir)
     - [5.1 MIR 结构](#51-mir-结构)
     - [5.2 借用检查器](#52-借用检查器)
     - [5.3 MIR 优化](#53-mir-优化)
-  - [6. LLVM IR 生成与优化](#6-llvm-ir-生成与优化)
+  - [🌟 LLVM IR 生成与优化](#-llvm-ir-生成与优化)
     - [6.1 代码生成](#61-代码生成)
     - [6.2 LLVM 优化 Pass](#62-llvm-优化-pass)
     - [6.3 目标代码生成](#63-目标代码生成)
-  - [7. 编译器插件与工具](#7-编译器插件与工具)
+  - [🔬 编译器插件与工具](#-编译器插件与工具)
     - [7.1 rustc\_driver](#71-rustc_driver)
     - [7.2 Clippy 架构](#72-clippy-架构)
     - [7.3 自定义 Lint](#73-自定义-lint)
-  - [8. 实战案例](#8-实战案例)
+  - [💻 实战案例](#-实战案例)
     - [8.1 案例1: 自定义 Lint 工具](#81-案例1-自定义-lint-工具)
     - [8.2 案例2: MIR 可视化工具](#82-案例2-mir-可视化工具)
     - [8.3 案例3: 编译时性能分析](#83-案例3-编译时性能分析)
-  - [9. 最佳实践](#9-最佳实践)
-  - [10. 常见问题](#10-常见问题)
-  - [11. 参考资源](#11-参考资源)
+  - [📚 最佳实践](#-最佳实践)
+  - [✅ 常见问题](#-常见问题)
+  - [🌈 参考资源](#-参考资源)
 
 ## 📖 编译器架构概览
 
@@ -215,7 +214,7 @@ use rustc_lexer::{tokenize, TokenKind};
 
 fn main() {
     let source = "fn main() { let x = 42; }";
-    
+
     for token in tokenize(source) {
         println!("{:?} {:?}", token.kind, &source[token.len as usize..]);
     }
@@ -228,10 +227,10 @@ fn main() {
 pub enum TokenKind {
     // 字面量
     Literal { kind: LiteralKind, suffix_start: u32 },
-    
+
     // 标识符和关键字
     Ident,
-    
+
     // 符号
     Semi,        // ;
     Comma,       // ,
@@ -240,19 +239,19 @@ pub enum TokenKind {
     CloseParen,  // )
     OpenBrace,   // {
     CloseBrace,  // }
-    
+
     // 运算符
     Plus,        // +
     Minus,       // -
     Star,        // *
     Slash,       // /
     Eq,          // =
-    
+
     // 注释和空白
     LineComment,
     BlockComment { terminated: bool },
     Whitespace,
-    
+
     // 未知字符
     Unknown,
 }
@@ -269,15 +268,15 @@ use rustc_span::FileName;
 
 fn parse_rust_code(source: &str) {
     let sess = /* 创建编译会话 */;
-    
+
     let parser = new_parser_from_source_str(
         &sess,
         FileName::Custom("test.rs".to_string()),
         source.to_string(),
     );
-    
+
     let krate = parser.parse_crate_mod();
-    
+
     match krate {
         Ok(krate) => {
             println!("解析成功: {:?}", krate);
@@ -339,7 +338,7 @@ impl<'ast> Visitor<'ast> for FunctionCallCollector {
             // 记录函数调用
             self.calls.push(format!("{:?}", func));
         }
-        
+
         // 继续遍历子节点
         visit::walk_expr(self, expr);
     }
@@ -347,10 +346,10 @@ impl<'ast> Visitor<'ast> for FunctionCallCollector {
 
 fn main() {
     let mut collector = FunctionCallCollector { calls: Vec::new() };
-    
+
     // 遍历 AST
     // collector.visit_crate(&krate);
-    
+
     println!("函数调用: {:?}", collector.calls);
 }
 ```
@@ -533,12 +532,12 @@ pub fn check_expr<'tcx>(
             // 二元运算类型检查
             let lhs_ty = check_expr(tcx, lhs);
             let rhs_ty = check_expr(tcx, rhs);
-            
+
             // 确保两侧类型一致
             if lhs_ty != rhs_ty {
                 // 报告类型不匹配错误
             }
-            
+
             lhs_ty
         }
         // ...
@@ -643,11 +642,11 @@ MIR 使用控制流图 (CFG) 表示程序逻辑:
 pub enum StatementKind<'tcx> {
     // 赋值: _1 = _2
     Assign(Box<(Place<'tcx>, Rvalue<'tcx>)>),
-    
+
     // 存储标记 (用于借用检查)
     StorageLive(Local),
     StorageDead(Local),
-    
+
     // 不操作 (用于调试信息)
     Nop,
 }
@@ -655,16 +654,16 @@ pub enum StatementKind<'tcx> {
 pub enum TerminatorKind<'tcx> {
     // 返回
     Return,
-    
+
     // 无条件跳转
     Goto { target: BasicBlock },
-    
+
     // 条件跳转
     SwitchInt {
         discr: Operand<'tcx>,
         targets: SwitchTargets,
     },
-    
+
     // 函数调用
     Call {
         func: Operand<'tcx>,
@@ -673,7 +672,7 @@ pub enum TerminatorKind<'tcx> {
         target: Option<BasicBlock>,
         // ...
     },
-    
+
     // Panic
     Abort,
     Unreachable,
@@ -791,24 +790,24 @@ fn codegen_example() {
     let context = Context::create();
     let module = context.create_module("example");
     let builder = context.create_builder();
-    
+
     // 创建函数类型: fn(i32, i32) -> i32
     let i32_type = context.i32_type();
     let fn_type = i32_type.fn_type(&[i32_type.into(), i32_type.into()], false);
-    
+
     // 创建函数
     let function = module.add_function("add", fn_type, None);
     let basic_block = context.append_basic_block(function, "entry");
-    
+
     builder.position_at_end(basic_block);
-    
+
     // 生成加法指令
     let a = function.get_nth_param(0).unwrap().into_int_value();
     let b = function.get_nth_param(1).unwrap().into_int_value();
     let sum = builder.build_int_add(a, b, "sum");
-    
+
     builder.build_return(Some(&sum));
-    
+
     // 验证和打印
     function.verify(true);
     module.print_to_stderr();
@@ -876,16 +875,16 @@ impl Callbacks for MyCallbacks {
         queries.global_ctxt().unwrap().enter(|tcx| {
             println!("编译单元: {:?}", tcx.crate_name(rustc_hir::def_id::LOCAL_CRATE));
         });
-        
+
         rustc_driver::Compilation::Continue
     }
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    
+
     let mut callbacks = MyCallbacks;
-    
+
     rustc_driver::RunCompiler::new(&args[1..], &mut callbacks)
         .run()
         .unwrap();
@@ -988,7 +987,7 @@ impl Callbacks for MyCallbacks {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let mut callbacks = MyCallbacks;
-    
+
     rustc_driver::RunCompiler::new(&args[1..], &mut callbacks)
         .run()
         .unwrap();
@@ -1049,7 +1048,7 @@ impl<'tcx> LateLintPass<'tcx> for PanicChecker {
                     );
                 }
             }
-            
+
             // 检测方法调用: .unwrap(), .expect()
             hir::ExprKind::MethodCall(path, _, _, _) => {
                 let method = path.ident.name.as_str();
@@ -1065,7 +1064,7 @@ impl<'tcx> LateLintPass<'tcx> for PanicChecker {
                     );
                 }
             }
-            
+
             _ => {}
         }
     }
@@ -1083,31 +1082,31 @@ use std::io::Write;
 
 fn visualize_mir(body: &Body<'_>, output: &str) -> std::io::Result<()> {
     let mut file = File::create(output)?;
-    
+
     writeln!(file, "digraph MIR {{")?;
     writeln!(file, "  node [shape=box];")?;
-    
+
     for (bb, data) in body.basic_blocks().iter_enumerated() {
         // 写入基本块节点
         writeln!(file, "  bb{} [label=\"{}\"];", bb.index(), format_bb(bb, data))?;
-        
+
         // 写入边 (跳转关系)
         for successor in data.terminator().successors() {
             writeln!(file, "  bb{} -> bb{};", bb.index(), successor.index())?;
         }
     }
-    
+
     writeln!(file, "}}")?;
     Ok(())
 }
 
 fn format_bb(bb: BasicBlock, data: &rustc_middle::mir::BasicBlockData<'_>) -> String {
     let mut s = format!("bb{}:\\n", bb.index());
-    
+
     for stmt in &data.statements {
         s.push_str(&format!("{:?}\\n", stmt));
     }
-    
+
     s.push_str(&format!("{:?}", data.terminator().kind));
     s
 }
@@ -1157,7 +1156,7 @@ impl CompilerTimer {
     fn new() -> Self {
         Self { stages: Vec::new() }
     }
-    
+
     fn time_stage<F, R>(&mut self, name: &str, f: F) -> R
     where
         F: FnOnce() -> R,
@@ -1165,22 +1164,22 @@ impl CompilerTimer {
         let start = Instant::now();
         let result = f();
         let duration = start.elapsed();
-        
+
         self.stages.push((name.to_string(), duration));
-        
+
         println!("{}: {:.3}s", name, duration.as_secs_f64());
         result
     }
-    
+
     fn print_summary(&self) {
         println!("\n编译时间总结:");
         let total: std::time::Duration = self.stages.iter().map(|(_, d)| *d).sum();
-        
+
         for (name, duration) in &self.stages {
             let percentage = duration.as_secs_f64() / total.as_secs_f64() * 100.0;
             println!("  {}: {:.3}s ({:.1}%)", name, duration.as_secs_f64(), percentage);
         }
-        
+
         println!("  总计: {:.3}s", total.as_secs_f64());
     }
 }

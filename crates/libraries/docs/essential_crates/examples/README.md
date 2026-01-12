@@ -72,7 +72,7 @@ async fn list_users(
         .fetch_all(&state.pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok(Json(users))
 }
 
@@ -89,23 +89,23 @@ async fn create_user(
     .fetch_one(&state.pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok(Json(user))
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = PgPool::connect("postgresql://localhost/mydb").await?;
-    
+
     let state = Arc::new(AppState { pool });
-    
+
     let app = Router::new()
         .route("/users", get(list_users).post(create_user))
         .with_state(state);
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 ```
@@ -134,11 +134,11 @@ use std::fs;
 struct Args {
     /// 搜索模式
     pattern: String,
-    
+
     /// 搜索路径
     #[arg(default_value = ".")]
     path: String,
-    
+
     /// 文件扩展名过滤
     #[arg(short, long)]
     ext: Option<String>,
@@ -147,7 +147,7 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let re = Regex::new(&args.pattern)?;
-    
+
     for entry in WalkDir::new(&args.path).into_iter().filter_map(|e| e.ok()) {
         if entry.file_type().is_file() {
             // 检查扩展名
@@ -160,7 +160,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
             }
-            
+
             // 搜索文件内容
             if let Ok(content) = fs::read_to_string(entry.path()) {
                 for (line_no, line) in content.lines().enumerate() {
@@ -176,7 +176,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -200,10 +200,10 @@ use reqwest;
 async fn download_file(url: &str, path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let response = reqwest::get(url).await?;
     let bytes = response.bytes().await?;
-    
+
     let mut file = File::create(path).await?;
     file.write_all(&bytes).await?;
-    
+
     Ok(())
 }
 
@@ -214,7 +214,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("https://example.com/file2.txt", "file2.txt"),
         ("https://example.com/file3.txt", "file3.txt"),
     ];
-    
+
     let tasks: Vec<_> = urls
         .into_iter()
         .map(|(url, path)| {
@@ -226,11 +226,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             })
         })
         .collect();
-    
+
     for task in tasks {
         task.await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -254,9 +254,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let df = CsvReader::from_path("data.csv")?
         .has_header(true)
         .finish()?;
-    
+
     println!("原始数据:\n{:?}\n", df.head(Some(5)));
-    
+
     // 数据清洗和转换
     let df = df
         .lazy()
@@ -268,9 +268,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ])
         .sort("salary", SortOptions::default())
         .collect()?;
-    
+
     println!("过滤后:\n{:?}\n", df);
-    
+
     // 统计信息
     let stats = df
         .lazy()
@@ -280,9 +280,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             col("salary").max().alias("max_salary"),
         ])
         .collect()?;
-    
+
     println!("统计:\n{:?}", stats);
-    
+
     Ok(())
 }
 ```

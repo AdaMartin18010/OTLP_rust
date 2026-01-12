@@ -1,6 +1,6 @@
 # 消息队列
 
-> **核心库**: rdkafka, lapin, async-nats, pulsar-rs  
+> **核心库**: rdkafka, lapin, async-nats, pulsar-rs
 > **适用场景**: 分布式消息、事件驱动、异步通信、流处理、微服务解耦
 
 ---
@@ -203,12 +203,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set("message.timeout.ms", "5000")
         .set("compression.type", "lz4")  // 启用压缩
         .create()?;
-    
+
     // 发送单条消息
     let topic = "orders";
     let key = "order-123";
     let payload = r#"{"orderId": "123", "amount": 100.0}"#;
-    
+
     let delivery_status = producer
         .send(
             FutureRecord::to(topic)
@@ -217,7 +217,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Timeout::After(std::time::Duration::from_secs(5)),
         )
         .await;
-    
+
     match delivery_status {
         Ok((partition, offset)) => {
             println!("消息已发送: partition={}, offset={}", partition, offset);
@@ -226,7 +226,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("发送失败: {:?}", e);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -252,12 +252,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set("linger.ms", "10")  // 批量延迟10ms
         .set("batch.size", "16384")  // 16KB批次
         .create()?;
-    
+
     // 生成1000条消息
     let messages: Vec<_> = (0..1000)
         .map(|i| format!("message-{}", i))
         .collect();
-    
+
     // 并发发送（限制并发度为100）
     let results = stream::iter(messages)
         .map(|payload| {
@@ -276,10 +276,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .buffer_unordered(100)  // 并发100个请求
         .collect::<Vec<_>>()
         .await;
-    
+
     let success_count = results.iter().filter(|r| r.is_ok()).count();
     println!("发送成功: {}/{}", success_count, results.len());
-    
+
     Ok(())
 }
 ```
@@ -310,21 +310,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set("enable.auto.commit", "true")
         .set("auto.offset.reset", "earliest")  // 从最早的消息开始
         .create()?;
-    
+
     // 订阅主题
     consumer.subscribe(&["orders"])?;
-    
+
     println!("开始消费消息...");
-    
+
     // 消费消息流
     let mut message_stream = consumer.stream();
-    
+
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(msg) => {
                 let payload = msg.payload_view::<str>().unwrap_or(Ok(""))?;
                 let key = msg.key_view::<str>().unwrap_or(Ok(""))?;
-                
+
                 println!(
                     "收到消息: topic={}, partition={}, offset={}, key={}, payload={}",
                     msg.topic(),
@@ -333,7 +333,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     key,
                     payload
                 );
-                
+
                 // 处理消息
                 process_order(payload).await?;
             }
@@ -342,7 +342,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     Ok(())
 }
 
@@ -375,16 +375,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set("group.id", "reliable-processor")
         .set("enable.auto.commit", "false")  // 禁用自动提交
         .create()?;
-    
+
     consumer.subscribe(&["orders"])?;
-    
+
     let mut message_stream = consumer.stream();
-    
+
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(msg) => {
                 let payload = msg.payload_view::<str>().unwrap_or(Ok(""))?;
-                
+
                 // 处理消息
                 match process_order_safely(payload).await {
                     Ok(_) => {
@@ -403,7 +403,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     Ok(())
 }
 
@@ -412,7 +412,7 @@ async fn process_order_safely(payload: &str) -> Result<(), Box<dyn std::error::E
     if payload.contains("invalid") {
         return Err("无效订单".into());
     }
-    
+
     // 写入数据库、调用外部API等
     println!("处理订单: {}", payload);
     Ok(())
@@ -442,14 +442,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set("bootstrap.servers", "localhost:9092")
         .set("group.id", "analytics")
         .create()?;
-    
+
     consumer.subscribe(&["page-views"])?;
-    
+
     // 滑动窗口：每5秒统计一次
     let mut window = HashMap::new();
     let mut tick = interval(Duration::from_secs(5));
     let mut message_stream = consumer.stream();
-    
+
     loop {
         tokio::select! {
             Some(message) = message_stream.next() => {
@@ -507,9 +507,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "amqp://guest:guest@localhost:5672/%2f",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     // 声明队列
     let queue = channel
         .queue_declare(
@@ -521,9 +521,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     println!("队列已声明: {:?}", queue);
-    
+
     // 发送消息
     channel
         .basic_publish(
@@ -535,9 +535,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .with_delivery_mode(2),  // 持久化消息
         )
         .await?;
-    
+
     println!("消息已发送");
-    
+
     Ok(())
 }
 ```
@@ -558,9 +558,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "amqp://guest:guest@localhost:5672/%2f",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     // 声明队列（与生产者相同）
     channel
         .queue_declare(
@@ -572,12 +572,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     // 设置 QoS（预取1条消息）
     channel
         .basic_qos(1, BasicQosOptions::default())
         .await?;
-    
+
     // 开始消费
     let mut consumer = channel
         .basic_consume(
@@ -587,23 +587,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     println!("等待消息...");
-    
+
     while let Some(delivery) = consumer.next().await {
         if let Ok(delivery) = delivery {
             let payload = std::str::from_utf8(&delivery.data)?;
             println!("收到任务: {}", payload);
-            
+
             // 处理任务
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-            
+
             // 手动确认
             delivery.ack(BasicAckOptions::default()).await?;
             println!("任务完成");
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -622,9 +622,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "amqp://localhost:5672",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     // 声明工作队列
     channel
         .queue_declare(
@@ -636,16 +636,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     // 模拟多个工作者
     for worker_id in 1..=3 {
         let channel = channel.clone();
-        
+
         tokio::spawn(async move {
             worker(worker_id, channel).await.unwrap();
         });
     }
-    
+
     // 保持运行
     tokio::signal::ctrl_c().await?;
     Ok(())
@@ -663,23 +663,23 @@ async fn worker(
             FieldTable::default(),
         )
         .await?;
-    
+
     println!("Worker {} 启动", id);
-    
+
     while let Some(delivery) = consumer.next().await {
         if let Ok(delivery) = delivery {
             let payload = std::str::from_utf8(&delivery.data)?;
             println!("Worker {} 处理: {}", id, payload);
-            
+
             // 模拟工作
             let work_time = payload.matches('.').count() as u64;
             tokio::time::sleep(tokio::time::Duration::from_secs(work_time)).await;
-            
+
             delivery.ack(BasicAckOptions::default()).await?;
             println!("Worker {} 完成", id);
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -702,9 +702,9 @@ async fn publisher() -> Result<(), Box<dyn std::error::Error>> {
         "amqp://localhost:5672",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     // 声明 fanout exchange（广播）
     channel
         .exchange_declare(
@@ -714,10 +714,10 @@ async fn publisher() -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     // 发布日志
     let log_messages = vec!["INFO: Server started", "WARN: High memory", "ERROR: Connection lost"];
-    
+
     for msg in log_messages {
         channel
             .basic_publish(
@@ -728,10 +728,10 @@ async fn publisher() -> Result<(), Box<dyn std::error::Error>> {
                 BasicProperties::default(),
             )
             .await?;
-        
+
         println!("发布日志: {}", msg);
     }
-    
+
     Ok(())
 }
 
@@ -741,9 +741,9 @@ async fn subscriber(name: &str) -> Result<(), Box<dyn std::error::Error>> {
         "amqp://localhost:5672",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     // 声明 exchange
     channel
         .exchange_declare(
@@ -753,7 +753,7 @@ async fn subscriber(name: &str) -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     // 声明临时队列（exclusive: 连接断开自动删除）
     let queue = channel
         .queue_declare(
@@ -765,7 +765,7 @@ async fn subscriber(name: &str) -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     // 绑定到 exchange
     channel
         .queue_bind(
@@ -776,7 +776,7 @@ async fn subscriber(name: &str) -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     // 消费消息
     let mut consumer = channel
         .basic_consume(
@@ -786,9 +786,9 @@ async fn subscriber(name: &str) -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     println!("{} 等待日志...", name);
-    
+
     while let Some(delivery) = consumer.next().await {
         if let Ok(delivery) = delivery {
             let log = std::str::from_utf8(&delivery.data)?;
@@ -796,7 +796,7 @@ async fn subscriber(name: &str) -> Result<(), Box<dyn std::error::Error>> {
             delivery.ack(BasicAckOptions::default()).await?;
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -831,16 +831,16 @@ use async_nats;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 连接 NATS
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     // 发布消息
     client.publish("events.user.created", "User ID: 123".into()).await?;
     client.publish("events.user.updated", "User ID: 123".into()).await?;
-    
+
     println!("消息已发布");
-    
+
     // 刷新确保发送
     client.flush().await?;
-    
+
     Ok(())
 }
 ```
@@ -854,18 +854,18 @@ use futures::StreamExt;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     // 订阅主题（支持通配符）
     let mut subscriber = client.subscribe("events.user.*").await?;
-    
+
     println!("订阅 events.user.*");
-    
+
     // 消费消息
     while let Some(message) = subscriber.next().await {
         let payload = String::from_utf8_lossy(&message.payload);
         println!("收到消息: subject={}, payload={}", message.subject, payload);
     }
-    
+
     Ok(())
 }
 ```
@@ -886,42 +886,42 @@ use futures::StreamExt;
 // 服务端（响应者）
 async fn responder() -> Result<(), Box<dyn std::error::Error>> {
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     let mut subscriber = client.subscribe("rpc.add").await?;
-    
+
     println!("RPC 服务启动");
-    
+
     while let Some(message) = subscriber.next().await {
         let payload = String::from_utf8_lossy(&message.payload);
         let numbers: Vec<i32> = payload
             .split(',')
             .filter_map(|s| s.trim().parse().ok())
             .collect();
-        
+
         let sum: i32 = numbers.iter().sum();
         let response = format!("{}", sum);
-        
+
         // 回复请求
         if let Some(reply) = message.reply {
             client.publish(reply, response.into()).await?;
         }
     }
-    
+
     Ok(())
 }
 
 // 客户端（请求者）
 async fn requester() -> Result<(), Box<dyn std::error::Error>> {
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     // 发送请求
     let response = client
         .request("rpc.add", "10, 20, 30".into())
         .await?;
-    
+
     let result = String::from_utf8_lossy(&response.payload);
     println!("RPC 结果: {}", result);
-    
+
     Ok(())
 }
 
@@ -931,13 +931,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(async {
         responder().await.unwrap();
     });
-    
+
     // 等待服务启动
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
+
     // 发送请求
     requester().await?;
-    
+
     Ok(())
 }
 ```
@@ -954,10 +954,10 @@ use futures::StreamExt;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     // 创建 JetStream 上下文
     let jetstream = jetstream::new(client);
-    
+
     // 创建流（Stream）
     let _stream = jetstream
         .create_stream(jetstream::stream::Config {
@@ -967,14 +967,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ..Default::default()
         })
         .await?;
-    
+
     // 发布消息到 JetStream
     let ack = jetstream
         .publish("orders.new", "Order #123".into())
         .await?;
-    
+
     println!("消息已存储: stream={}, sequence={}", ack.stream, ack.sequence);
-    
+
     // 创建持久消费者
     let consumer = jetstream
         .create_consumer_on_stream(
@@ -985,20 +985,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "ORDERS",
         )
         .await?;
-    
+
     // 消费消息
     let mut messages = consumer.messages().await?;
-    
+
     while let Some(message) = messages.next().await {
         let message = message?;
         let payload = String::from_utf8_lossy(&message.payload);
-        
+
         println!("消费消息: {}", payload);
-        
+
         // 确认消息
         message.ack().await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -1037,9 +1037,9 @@ async fn create_order_service(producer: FutureProducer) -> Result<(), Box<dyn st
         amount: 299.99,
         status: "created".to_string(),
     };
-    
+
     let payload = serde_json::to_string(&order)?;
-    
+
     // 使用 user_id 作为 key 确保同一用户的订单顺序
     producer
         .send(
@@ -1050,7 +1050,7 @@ async fn create_order_service(producer: FutureProducer) -> Result<(), Box<dyn st
         )
         .await
         .map_err(|(e, _)| e)?;
-    
+
     println!("订单已创建: {:?}", order);
     Ok(())
 }
@@ -1061,28 +1061,28 @@ async fn inventory_service() -> Result<(), Box<dyn std::error::Error>> {
         .set("bootstrap.servers", "localhost:9092")
         .set("group.id", "inventory-service")
         .create()?;
-    
+
     consumer.subscribe(&["orders"])?;
-    
+
     let mut message_stream = consumer.stream();
-    
+
     while let Some(message) = message_stream.next().await {
         if let Ok(msg) = message {
             let payload = msg.payload_view::<str>().unwrap_or(Ok(""))?;
             let mut order: Order = serde_json::from_str(payload)?;
-            
+
             if order.status == "created" {
                 // 扣库存逻辑
                 println!("扣库存: order_id={}", order.order_id);
                 tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                
+
                 order.status = "inventory_reserved".to_string();
-                
+
                 // 发布到下一阶段
                 let producer: FutureProducer = ClientConfig::new()
                     .set("bootstrap.servers", "localhost:9092")
                     .create()?;
-                
+
                 producer
                     .send(
                         FutureRecord::to("orders")
@@ -1095,7 +1095,7 @@ async fn inventory_service() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -1134,7 +1134,7 @@ async fn log_producer(service_name: &str) -> Result<(), Box<dyn std::error::Erro
     let producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", "localhost:9092")
         .create()?;
-    
+
     // 模拟日志生成
     for i in 0..10 {
         let log = LogEntry {
@@ -1143,7 +1143,7 @@ async fn log_producer(service_name: &str) -> Result<(), Box<dyn std::error::Erro
             level: if i % 5 == 0 { "ERROR" } else { "INFO" }.to_string(),
             message: format!("Log message #{} from {}", i, service_name),
         };
-        
+
         producer
             .send(
                 FutureRecord::to("logs")
@@ -1153,10 +1153,10 @@ async fn log_producer(service_name: &str) -> Result<(), Box<dyn std::error::Erro
             )
             .await
             .map_err(|(e, _)| e)?;
-        
+
         tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
     }
-    
+
     Ok(())
 }
 
@@ -1166,19 +1166,19 @@ async fn log_aggregator() -> Result<(), Box<dyn std::error::Error>> {
         .set("bootstrap.servers", "localhost:9092")
         .set("group.id", "log-aggregator")
         .create()?;
-    
+
     consumer.subscribe(&["logs"])?;
-    
+
     let mut message_stream = consumer.stream();
     let mut batch = Vec::new();
-    
+
     while let Some(message) = message_stream.next().await {
         if let Ok(msg) = message {
             let payload = msg.payload_view::<str>().unwrap_or(Ok(""))?;
             let log: LogEntry = serde_json::from_str(payload)?;
-            
+
             batch.push(log);
-            
+
             // 批量写入（100条或1秒）
             if batch.len() >= 100 {
                 write_to_elasticsearch(&batch).await?;
@@ -1186,7 +1186,7 @@ async fn log_aggregator() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     Ok(())
 }
 
@@ -1219,57 +1219,57 @@ struct UserCreatedEvent {
 // 用户服务：发布事件
 async fn user_service() -> Result<(), Box<dyn std::error::Error>> {
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     let event = UserCreatedEvent {
         user_id: "USR-123".to_string(),
         email: "user@example.com".to_string(),
         timestamp: chrono::Utc::now().timestamp(),
     };
-    
+
     let payload = serde_json::to_string(&event)?;
-    
+
     client.publish("events.user.created", payload.into()).await?;
-    
+
     println!("事件已发布: UserCreated");
-    
+
     Ok(())
 }
 
 // 邮件服务：订阅事件
 async fn email_service() -> Result<(), Box<dyn std::error::Error>> {
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     let mut subscriber = client.subscribe("events.user.created").await?;
-    
+
     println!("邮件服务启动，监听用户创建事件");
-    
+
     while let Some(message) = subscriber.next().await {
         let payload = String::from_utf8_lossy(&message.payload);
         let event: UserCreatedEvent = serde_json::from_str(&payload)?;
-        
+
         println!("发送欢迎邮件: email={}", event.email);
-        
+
         // 发送邮件逻辑
         send_welcome_email(&event.email).await?;
     }
-    
+
     Ok(())
 }
 
 // 通知服务：订阅事件
 async fn notification_service() -> Result<(), Box<dyn std::error::Error>> {
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     let mut subscriber = client.subscribe("events.user.>").await?;  // 订阅所有用户事件
-    
+
     println!("通知服务启动，监听所有用户事件");
-    
+
     while let Some(message) = subscriber.next().await {
         println!("收到事件: subject={}", message.subject);
-        
+
         // 推送通知逻辑
     }
-    
+
     Ok(())
 }
 
@@ -1301,7 +1301,7 @@ impl MessageDeduplicator {
         let ids = self.processed_ids.lock().await;
         ids.contains(msg_id)
     }
-    
+
     async fn mark_processed(&self, msg_id: String) {
         let mut ids = self.processed_ids.lock().await;
         ids.insert(msg_id);
@@ -1314,10 +1314,10 @@ async fn process_message(dedup: &MessageDeduplicator, msg_id: &str) {
         println!("消息已处理，跳过: {}", msg_id);
         return;
     }
-    
+
     // 处理业务逻辑
     // ...
-    
+
     dedup.mark_processed(msg_id.to_string()).await;
 }
 ```
@@ -1335,14 +1335,14 @@ where
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
     let mut attempts = 0;
-    
+
     loop {
         match f().await {
             Ok(_) => return Ok(()),
             Err(e) if attempts < max_retries => {
                 attempts += 1;
                 let wait_time = Duration::from_millis(100 * 2u64.pow(attempts));
-                println!("处理失败，{}ms 后重试 ({}/{}): {:?}", 
+                println!("处理失败，{}ms 后重试 ({}/{}): {:?}",
                     wait_time.as_millis(), attempts, max_retries, e);
                 sleep(wait_time).await;
             }
@@ -1395,18 +1395,18 @@ use tracing::{info, warn, error};
 
 async fn consume_message(msg: &str) -> Result<(), Box<dyn std::error::Error>> {
     let start = std::time::Instant::now();
-    
+
     // 处理消息
     process(msg).await?;
-    
+
     let duration = start.elapsed();
     info!("消息处理完成，耗时: {:?}", duration);
-    
+
     // 记录指标
     if duration.as_millis() > 1000 {
         warn!("消息处理超时: {}ms", duration.as_millis());
     }
-    
+
     Ok(())
 }
 
@@ -1533,15 +1533,15 @@ use sysinfo::{System, SystemExt};
 async fn monitor_lag() {
     // 监控 Kafka lag（使用 rdkafka admin API）
     // 监控 RabbitMQ 队列深度（使用 HTTP API）
-    
+
     loop {
         let lag = get_consumer_lag().await;
-        
+
         if lag > 10000 {
             eprintln!("警告：消息堆积 {} 条", lag);
             // 告警通知
         }
-        
+
         tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
     }
 }
@@ -1585,6 +1585,6 @@ async fn get_consumer_lag() -> u64 {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **维护者**: Rust 学习社区

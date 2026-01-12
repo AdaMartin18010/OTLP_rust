@@ -1,8 +1,8 @@
 ﻿# Rust 微服务架构设计指南 (2025版)
 
-> **主题**: 完整的 Rust 微服务架构设计与实现  
-> **难度**: 中高级  
-> **预计学习时间**: 8-12 小时  
+> **主题**: 完整的 Rust 微服务架构设计与实现
+> **难度**: 中高级
+> **预计学习时间**: 8-12 小时
 > **更新日期**: 2025-10-20
 
 ---
@@ -10,8 +10,7 @@
 ## 📋 目录
 
 - [Rust 微服务架构设计指南 (2025版)](#rust-微服务架构设计指南-2025版)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [📋 目录](#-目录)
   - [概述](#概述)
     - [为什么选择 Rust 构建微服务](#为什么选择-rust-构建微服务)
     - [核心技术栈](#核心技术栈)
@@ -286,11 +285,11 @@ async fn main() {
                 .layer(CompressionLayer::new())
                 .layer(CorsLayer::permissive())
         );
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await
         .unwrap();
-    
+
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -304,9 +303,9 @@ async fn auth_middleware(
         .get("authorization")
         .and_then(|h| h.to_str().ok())
         .ok_or(axum::http::StatusCode::UNAUTHORIZED)?;
-    
+
     // 验证 token...
-    
+
     Ok(next.run(req).await)
 }
 ```
@@ -326,7 +325,7 @@ async fn proxy_to_user_service(
         .send()
         .await
         .unwrap();
-    
+
     (response.status(), response.text().await.unwrap())
 }
 ```
@@ -401,7 +400,7 @@ impl Settings {
             .add_source(File::with_name("config/default"))
             // 环境特定配置
             .add_source(
-                File::with_name(&format!("config/{}", 
+                File::with_name(&format!("config/{}",
                     std::env::var("RUN_ENV").unwrap_or_else(|_| "dev".into())
                 ))
                 .required(false)
@@ -455,16 +454,16 @@ impl EventPublisher {
             .set("message.timeout.ms", "5000")
             .create()
             .expect("Producer creation error");
-        
+
         Self { producer }
     }
-    
+
     pub async fn publish_order_created(
         &self,
         event: OrderCreatedEvent,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let payload = serde_json::to_string(&event)?;
-        
+
         self.producer
             .send(
                 FutureRecord::to("order-events")
@@ -474,7 +473,7 @@ impl EventPublisher {
             )
             .await
             .map_err(|(e, _)| e)?;
-        
+
         Ok(())
     }
 }
@@ -494,24 +493,24 @@ pub async fn consume_order_events() -> Result<(), Box<dyn std::error::Error>> {
         .set("bootstrap.servers", "localhost:9092")
         .set("enable.auto.commit", "true")
         .create()?;
-    
+
     consumer.subscribe(&["order-events"])?;
-    
+
     let mut message_stream = consumer.stream();
-    
+
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(m) => {
                 let payload = m.payload_view::<str>().unwrap().unwrap();
                 let event: OrderCreatedEvent = serde_json::from_str(payload)?;
-                
+
                 // 处理事件
                 handle_order_created(event).await?;
             }
             Err(e) => eprintln!("Kafka error: {}", e),
         }
     }
-    
+
     Ok(())
 }
 
@@ -583,16 +582,16 @@ impl UserRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
-    
+
     pub async fn find_by_id(&self, id: i32) -> Result<Option<User>, sqlx::Error> {
         query_as!(User, "SELECT * FROM users WHERE id = $1", id)
             .fetch_optional(&self.pool)
             .await
     }
-    
+
     pub async fn create(&self, req: CreateUserRequest) -> Result<User, sqlx::Error> {
         let password_hash = hash_password(&req.password);
-        
+
         query_as!(
             User,
             "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING *",
@@ -632,7 +631,7 @@ pub async fn create_user(
     let user = repo.create(req)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok((StatusCode::CREATED, Json(user)))
 }
 
@@ -648,18 +647,18 @@ async fn main() {
         .connect("postgres://user:password@localhost/userdb")
         .await
         .unwrap();
-    
+
     let repo = Arc::new(UserRepository::new(pool));
-    
+
     let app = Router::new()
         .route("/users/:id", get(get_user))
         .route("/users", post(create_user))
         .with_state(repo);
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    
+
     println!("用户服务运行在 :3000");
     axum::serve(listener, app).await.unwrap();
 }
@@ -687,7 +686,7 @@ impl OrderService {
     ) -> Result<Order, Box<dyn std::error::Error>> {
         // 1. 创建订单
         let order = self.repo.create(req).await?;
-        
+
         // 2. 发布事件
         self.event_publisher.publish_order_created(OrderCreatedEvent {
             order_id: order.id.clone(),
@@ -695,7 +694,7 @@ impl OrderService {
             total: order.total,
             timestamp: chrono::Utc::now().timestamp(),
         }).await?;
-        
+
         Ok(order)
     }
 }
@@ -726,7 +725,7 @@ pub fn generate_token(user_id: &str, role: &str) -> String {
         role: role.to_string(),
         exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
     };
-    
+
     encode(
         &Header::default(),
         &claims,
@@ -753,17 +752,17 @@ use tracing_subscriber::layer::SubscriberExt;
 
 pub fn init_tracing() {
     global::set_text_map_propagator(TraceContextPropagator::new());
-    
+
     let tracer = opentelemetry_jaeger::new_agent_pipeline()
         .with_service_name("user-service")
         .install_simple()
         .unwrap();
-    
+
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-    
+
     let subscriber = tracing_subscriber::Registry::default()
         .with(telemetry);
-    
+
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 
@@ -788,7 +787,7 @@ async fn create_order(
     req: CreateOrderRequest,
 ) -> Result<Order, Error> {
     info!(user_id = %req.user_id, "Creating order");
-    
+
     match repo.create(req).await {
         Ok(order) => {
             info!(order_id = %order.id, "Order created successfully");
@@ -823,12 +822,12 @@ async fn health_check(
         Ok(_) => "healthy",
         Err(_) => "unhealthy",
     };
-    
+
     let redis_status = match redis.get_connection() {
         Ok(_) => "healthy",
         Err(_) => "unhealthy",
     };
-    
+
     Json(HealthResponse {
         status: "up".to_string(),
         database: db_status.to_string(),
@@ -861,7 +860,7 @@ pub async fn create_order_saga(
 ) -> Result<Order, SagaError> {
     // 步骤1: 创建订单
     let order = order_service.create_order(&order_req).await?;
-    
+
     // 步骤2: 扣减库存
     match inventory_service.reserve_items(&order.items).await {
         Ok(_) => {},
@@ -871,7 +870,7 @@ pub async fn create_order_saga(
             return Err(e.into());
         }
     }
-    
+
     // 步骤3: 创建支付
     match payment_service.create_payment(&order).await {
         Ok(_) => {},
@@ -883,7 +882,7 @@ pub async fn create_order_saga(
             return Err(e.into());
         }
     }
-    
+
     Ok(order)
 }
 ```
@@ -1009,19 +1008,19 @@ services:
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
-  
+
   redis:
     image: redis:7
     ports:
       - "6379:6379"
-  
+
   kafka:
     image: confluentinc/cp-kafka:latest
     ports:
       - "9092:9092"
     environment:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-  
+
   user-service:
     build: ./user-service
     ports:
@@ -1032,7 +1031,7 @@ services:
     depends_on:
       - postgres
       - redis
-  
+
   order-service:
     build: ./order-service
     ports:
@@ -1062,7 +1061,7 @@ lazy_static! {
         "http_requests_total",
         "Total HTTP requests"
     ).unwrap();
-    
+
     static ref HTTP_DURATION: Histogram = Histogram::new(
         "http_request_duration_seconds",
         "HTTP request duration"
@@ -1082,9 +1081,9 @@ async fn metrics_handler() -> impl IntoResponse {
 async fn handle_request() {
     HTTP_REQUESTS.inc();
     let timer = HTTP_DURATION.start_timer();
-    
+
     // 处理请求...
-    
+
     timer.observe_duration();
 }
 ```
@@ -1102,13 +1101,13 @@ groups:
         for: 5m
         annotations:
           summary: "High error rate detected"
-      
+
       - alert: SlowResponseTime
         expr: http_request_duration_seconds{quantile="0.99"} > 1
         for: 5m
         annotations:
           summary: "Slow response time"
-      
+
       - alert: ServiceDown
         expr: up{job="user-service"} == 0
         for: 1m
@@ -1159,10 +1158,10 @@ DELETE /api/v1/users/:id
 pub enum ServiceError {
     #[error("User not found: {0}")]
     NotFound(String),
-    
+
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
-    
+
     #[error("Invalid input: {0}")]
     Validation(String),
 }
@@ -1177,7 +1176,7 @@ impl IntoResponse for ServiceError {
             ),
             ServiceError::Validation(msg) => (StatusCode::BAD_REQUEST, msg),
         };
-        
+
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }
 }
@@ -1325,8 +1324,8 @@ rust-microservices/
 
 ---
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 1.0.0
+**最后更新**: 2025-10-20
 **贡献者**: Rust 学习社区
 
 **下一步**: [性能优化手册](./RUST_PERFORMANCE_OPTIMIZATION_2025.md) | [部署指南](./RUST_DEPLOYMENT_GUIDE_2025.md)

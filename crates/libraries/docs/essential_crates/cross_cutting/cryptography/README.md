@@ -1,7 +1,7 @@
 # 密码学 (Cryptography)
 
-**类别**: 横切关注点  
-**重要程度**: ⭐⭐⭐⭐⭐ (必备)  
+**类别**: 横切关注点
+**重要程度**: ⭐⭐⭐⭐⭐ (必备)
 **更新日期**: 2025-10-20
 
 ---
@@ -53,7 +53,7 @@ Rust 生态提供了高质量、经过审计的密码学库，涵盖加密、哈
 
 ### 1. ring (通用密码学 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add ring`  
+**添加依赖**: `cargo add ring`
 **用途**: 高性能、安全的密码学原语
 
 #### 核心特性
@@ -87,21 +87,21 @@ use ring::{aead, rand};
 
 fn encrypt_data(data: &[u8], key: &[u8]) -> Vec<u8> {
     let rng = rand::SystemRandom::new();
-    
+
     // 创建加密密钥
     let unbound_key = aead::UnboundKey::new(&aead::AES_256_GCM, key).unwrap();
     let key = aead::LessSafeKey::new(unbound_key);
-    
+
     // 生成 nonce
     let mut nonce_bytes = [0u8; 12];
     rng.fill(&mut nonce_bytes).unwrap();
     let nonce = aead::Nonce::assume_unique_for_key(nonce_bytes);
-    
+
     // 加密
     let mut in_out = data.to_vec();
     key.seal_in_place_append_tag(nonce, aead::Aad::empty(), &mut in_out)
         .unwrap();
-    
+
     // 返回 nonce + ciphertext
     [&nonce_bytes[..], &in_out[..]].concat()
 }
@@ -109,15 +109,15 @@ fn encrypt_data(data: &[u8], key: &[u8]) -> Vec<u8> {
 fn decrypt_data(encrypted: &[u8], key: &[u8]) -> Result<Vec<u8>, aead::Error> {
     // 分离 nonce 和 ciphertext
     let (nonce_bytes, ciphertext) = encrypted.split_at(12);
-    
+
     let unbound_key = aead::UnboundKey::new(&aead::AES_256_GCM, key)?;
     let key = aead::LessSafeKey::new(unbound_key);
-    
+
     let nonce = aead::Nonce::assume_unique_for_key(*array_ref![nonce_bytes, 0, 12]);
-    
+
     let mut in_out = ciphertext.to_vec();
     let plaintext = key.open_in_place(nonce, aead::Aad::empty(), &mut in_out)?;
-    
+
     Ok(plaintext.to_vec())
 }
 ```
@@ -146,7 +146,7 @@ public_key.verify(message, signature.as_ref()).unwrap();
 
 ### 2. rustls (TLS 实现 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add rustls rustls-pemfile`  
+**添加依赖**: `cargo add rustls rustls-pemfile`
 **用途**: 纯 Rust 的 TLS 库，替代 OpenSSL
 
 #### 核心优势
@@ -165,7 +165,7 @@ use std::sync::Arc;
 
 fn create_tls_client() -> Arc<ClientConfig> {
     let mut root_store = RootCertStore::empty();
-    
+
     // 加载系统根证书
     root_store.add_server_trust_anchors(
         webpki_roots::TLS_SERVER_ROOTS
@@ -179,7 +179,7 @@ fn create_tls_client() -> Arc<ClientConfig> {
                 )
             }),
     );
-    
+
     Arc::new(
         ClientConfig::builder()
             .with_safe_defaults()
@@ -209,15 +209,15 @@ use std::net::SocketAddr;
 async fn main() {
     let app = Router::new()
         .route("/", get(|| async { "Hello, HTTPS!" }));
-    
+
     // 配置 TLS
     let config = RustlsConfig::from_pem_file(
         "cert.pem",
         "key.pem"
     ).await.unwrap();
-    
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-    
+
     axum_server::bind_rustls(addr, config)
         .serve(app.into_make_service())
         .await
@@ -229,7 +229,7 @@ async fn main() {
 
 ### 3. argon2 (密码哈希 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add argon2`  
+**添加依赖**: `cargo add argon2`
 **用途**: 安全的密码哈希算法
 
 #### 核心特性3
@@ -254,9 +254,9 @@ use argon2::{
 pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    
+
     let password_hash = argon2.hash_password(password.as_bytes(), &salt)?;
-    
+
     Ok(password_hash.to_string())
 }
 
@@ -264,7 +264,7 @@ pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Er
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(hash)?;
     let argon2 = Argon2::default();
-    
+
     match argon2.verify_password(password.as_bytes(), &parsed_hash) {
         Ok(()) => Ok(true),
         Err(_) => Ok(false),
@@ -276,9 +276,9 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, argon2::passw
 
 ```rust
 use argon2::{
-    Argon2, 
-    Algorithm, 
-    Version, 
+    Argon2,
+    Algorithm,
+    Version,
     Params
 };
 
@@ -301,7 +301,7 @@ let argon2 = Argon2::new(
 
 ### 4. sha2 (哈希函数 ⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add sha2`  
+**添加依赖**: `cargo add sha2`
 **用途**: SHA-2 系列哈希函数
 
 ```rust
@@ -322,7 +322,7 @@ println!("SHA-512: {:x}", result);
 
 ### 5. blake3 (现代哈希 💡)
 
-**添加依赖**: `cargo add blake3`  
+**添加依赖**: `cargo add blake3`
 **用途**: 极快的密码学哈希
 
 ```rust
@@ -344,7 +344,7 @@ let hash = hasher.finalize();
 
 ### 6. jsonwebtoken (JWT ⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add jsonwebtoken serde`  
+**添加依赖**: `cargo add jsonwebtoken serde`
 **用途**: JSON Web Token 实现
 
 #### 生成 JWT
@@ -366,7 +366,7 @@ fn create_token(user_id: &str, secret: &[u8]) -> String {
         exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
         iat: chrono::Utc::now().timestamp() as usize,
     };
-    
+
     encode(
         &Header::default(),
         &claims,
@@ -380,7 +380,7 @@ fn verify_token(token: &str, secret: &[u8]) -> Result<Claims, jsonwebtoken::erro
         &DecodingKey::from_secret(secret),
         &Validation::new(Algorithm::HS256)
     )?;
-    
+
     Ok(token_data.claims)
 }
 ```
@@ -389,7 +389,7 @@ fn verify_token(token: &str, secret: &[u8]) -> Result<Claims, jsonwebtoken::erro
 
 ### 7. oauth2 (OAuth 2.0 💡)
 
-**添加依赖**: `cargo add oauth2`  
+**添加依赖**: `cargo add oauth2`
 **用途**: OAuth 2.0 客户端实现
 
 ```rust
@@ -448,14 +448,14 @@ use aws_sdk_secretsmanager::Client;
 async fn get_secret_from_aws(secret_name: &str) -> String {
     let config = aws_config::load_from_env().await;
     let client = Client::new(&config);
-    
+
     let response = client
         .get_secret_value()
         .secret_id(secret_name)
         .send()
         .await
         .unwrap();
-    
+
     response.secret_string().unwrap().to_string()
 }
 ```
@@ -474,16 +474,16 @@ impl PasswordService {
     pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
-        
+
         let hash = argon2.hash_password(password.as_bytes(), &salt)?;
         Ok(hash.to_string())
     }
-    
+
     // 登录时：验证密码
     pub fn verify_password(password: &str, hash: &str) -> Result<bool, argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(hash)?;
         let argon2 = Argon2::default();
-        
+
         match argon2.verify_password(password.as_bytes(), &parsed_hash) {
             Ok(()) => Ok(true),
             Err(_) => Ok(false),
@@ -515,34 +515,34 @@ impl JwtService {
     pub fn new(secret: Vec<u8>) -> Self {
         Self { secret }
     }
-    
+
     pub fn create_token(&self, user_id: &str, role: &str, ttl_hours: u64) -> String {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         let claims = TokenClaims {
             sub: user_id.to_string(),
             exp: now + (ttl_hours * 3600),
             iat: now,
             role: role.to_string(),
         };
-        
+
         encode(
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(&self.secret)
         ).unwrap()
     }
-    
+
     pub fn verify_token(&self, token: &str) -> Result<TokenClaims, jsonwebtoken::errors::Error> {
         let token_data = decode::<TokenClaims>(
             token,
             &DecodingKey::from_secret(&self.secret),
             &Validation::default()
         )?;
-        
+
         Ok(token_data.claims)
     }
 }

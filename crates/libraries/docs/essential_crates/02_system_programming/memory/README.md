@@ -1,7 +1,7 @@
 # 内存管理 - Rust 内存管理完全指南
 
-> **核心概念**: 智能指针、内部可变性、内存池、零拷贝  
-> **核心库**: Box, Rc, Arc, Cell, RefCell, bytes, bumpalo, slab  
+> **核心概念**: 智能指针、内部可变性、内存池、零拷贝
+> **核心库**: Box, Rc, Arc, Cell, RefCell, bytes, bumpalo, slab
 > **适用场景**: 高性能内存管理、共享所有权、内存池优化
 
 ## 📋 目录
@@ -150,7 +150,7 @@ struct HugeArray {
 fn main() {
     // ❌ 栈上可能溢出
     // let arr = HugeArray { data: [0; 1024 * 1024] };
-    
+
     // ✅ 堆上分配
     let arr = Box::new(HugeArray { data: [0; 1024 * 1024] });
 }
@@ -183,9 +183,9 @@ enum List {
 use List::{Cons, Nil};
 
 fn main() {
-    let list = Cons(1, 
-        Box::new(Cons(2, 
-            Box::new(Cons(3, 
+    let list = Cons(1,
+        Box::new(Cons(2,
+            Box::new(Cons(3,
                 Box::new(Nil))))));
 }
 
@@ -215,15 +215,15 @@ use std::rc::Rc;
 fn main() {
     let a = Rc::new(5);
     println!("引用计数: {}", Rc::strong_count(&a));  // 1
-    
+
     let b = Rc::clone(&a);  // 增加引用计数
     println!("引用计数: {}", Rc::strong_count(&a));  // 2
-    
+
     {
         let c = Rc::clone(&a);
         println!("引用计数: {}", Rc::strong_count(&a));  // 3
     }  // c 离开作用域，引用计数减 1
-    
+
     println!("引用计数: {}", Rc::strong_count(&a));  // 2
 }
 
@@ -250,10 +250,10 @@ struct Node {
 fn main() {
     let a = Rc::new(RefCell::new(Node { value: 5, next: None }));
     let b = Rc::new(RefCell::new(Node { value: 10, next: Some(Rc::clone(&a)) }));
-    
+
     // 创建循环引用 ⚠️ 内存泄漏！
     a.borrow_mut().next = Some(Rc::clone(&b));
-    
+
     // a → b → a 循环，永远不会释放
     println!("a 引用计数: {}", Rc::strong_count(&a));  // 2
     println!("b 引用计数: {}", Rc::strong_count(&b));  // 2
@@ -278,16 +278,16 @@ fn main() {
         parent: RefCell::new(Weak::new()),
         children: RefCell::new(vec![]),
     });
-    
+
     let branch = Rc::new(Node {
         value: 5,
         parent: RefCell::new(Weak::new()),
         children: RefCell::new(vec![Rc::clone(&leaf)]),
     });
-    
+
     // 设置父节点为弱引用
     *leaf.parent.borrow_mut() = Rc::downgrade(&branch);
-    
+
     println!("leaf 强引用计数: {}", Rc::strong_count(&leaf));    // 1
     println!("leaf 弱引用计数: {}", Rc::weak_count(&leaf));      // 0
     println!("branch 强引用计数: {}", Rc::strong_count(&branch)); // 1
@@ -307,9 +307,9 @@ use std::thread;
 
 fn main() {
     let data = Arc::new(vec![1, 2, 3, 4, 5]);
-    
+
     let mut handles = vec![];
-    
+
     for i in 0..3 {
         let data = Arc::clone(&data);  // 线程安全的克隆
         let handle = thread::spawn(move || {
@@ -317,11 +317,11 @@ fn main() {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     println!("主线程引用计数: {}", Arc::strong_count(&data));
 }
 ```
@@ -363,12 +363,12 @@ impl Counter {
     fn new() -> Self {
         Counter { count: Cell::new(0) }
     }
-    
+
     fn increment(&self) {  // 注意：&self 而非 &mut self
         let count = self.count.get();
         self.count.set(count + 1);
     }
-    
+
     fn get(&self) -> i32 {
         self.count.get()
     }
@@ -389,7 +389,7 @@ use std::cell::RefCell;
 
 fn main() {
     let data = RefCell::new(vec![1, 2, 3]);
-    
+
     // 不可变借用
     {
         let r1 = data.borrow();
@@ -397,13 +397,13 @@ fn main() {
         println!("{:?}", *r1);
         println!("{:?}", *r2);
     }  // 借用在此结束
-    
+
     // 可变借用
     {
         let mut r = data.borrow_mut();
         r.push(4);
     }
-    
+
     println!("{:?}", data.borrow());  // [1, 2, 3, 4]
 }
 
@@ -417,7 +417,7 @@ struct Node {
 
 fn main() {
     let node = Rc::new(RefCell::new(Node { value: 5, next: None }));
-    
+
     // 多个所有者都可以修改
     node.borrow_mut().value = 10;
 }
@@ -454,11 +454,11 @@ use bytes::Bytes;
 fn main() {
     // 从静态数据创建
     let bytes = Bytes::from_static(b"hello world");
-    
+
     // 零拷贝切片
     let slice1 = bytes.slice(0..5);   // "hello"
     let slice2 = bytes.slice(6..11);  // "world"
-    
+
     // 引用计数共享，无需复制数据
     println!("{:?}", slice1);  // b"hello"
     println!("{:?}", slice2);  // b"world"
@@ -472,12 +472,12 @@ use bytes::{BytesMut, BufMut};
 
 fn main() {
     let mut buf = BytesMut::with_capacity(1024);
-    
+
     // 写入数据
     buf.put(&b"GET "[..]);
     buf.put(&b"/ "[..]);
     buf.put(&b"HTTP/1.1\r\n"[..]);
-    
+
     // 转为不可变
     let frozen = buf.freeze();
     println!("{:?}", frozen);
@@ -491,13 +491,13 @@ use bytes::Bytes;
 
 fn main() {
     let bytes = Bytes::from(vec![1, 2, 3, 4, 5]);
-    
+
     // 克隆只增加引用计数，不复制数据
     let bytes2 = bytes.clone();
-    
+
     // 切片也是零拷贝
     let slice = bytes.slice(1..3);
-    
+
     // 所有这些操作都指向同一块内存
     println!("原始: {:?}", bytes);
     println!("克隆: {:?}", bytes2);
@@ -528,16 +528,16 @@ use bumpalo::Bump;
 
 fn main() {
     let bump = Bump::new();
-    
+
     // 极快的分配（无需释放）
     let x = bump.alloc(42);
     let y = bump.alloc(String::from("hello"));
     let z = bump.alloc_slice_fill_copy(1000, 0u8);
-    
+
     println!("x: {}", x);
     println!("y: {}", y);
     println!("z len: {}", z.len());
-    
+
     // 作用域结束时批量释放所有内存
 }
 
@@ -551,7 +551,7 @@ fn benchmark() {
         let _ = Box::new(42);
     }
     println!("Box: {:?}", start.elapsed());  // ~50ms
-    
+
     // Bump 分配器
     let bump = Bump::new();
     let start = Instant::now();
@@ -576,10 +576,10 @@ fn build_tree<'a>(bump: &'a Bump, depth: usize) -> &'a Node<'a> {
     if depth == 0 {
         return bump.alloc(Node { value: 0, children: vec![] });
     }
-    
+
     let left = build_tree(bump, depth - 1);
     let right = build_tree(bump, depth - 1);
-    
+
     bump.alloc(Node {
         value: depth as i32,
         children: vec![left, right],
@@ -589,10 +589,10 @@ fn build_tree<'a>(bump: &'a Bump, depth: usize) -> &'a Node<'a> {
 fn main() {
     let bump = Bump::new();
     let tree = build_tree(&bump, 10);  // 2^10 = 1024 个节点
-    
+
     // 使用树...
     println!("树根值: {}", tree.value);
-    
+
     // 离开作用域，所有节点立即释放（无需递归 Drop）
 }
 ```
@@ -618,24 +618,24 @@ struct Connection {
 
 fn main() {
     let mut connections = Slab::new();
-    
+
     // 插入并获取唯一 key
     let key1 = connections.insert(Connection {
         id: 1,
         addr: "192.168.1.1".to_string(),
     });
-    
+
     let key2 = connections.insert(Connection {
         id: 2,
         addr: "192.168.1.2".to_string(),
     });
-    
+
     // 通过 key 访问
     println!("连接 {}: {}", key1, connections[key1].addr);
-    
+
     // 删除（key 可以复用）
     connections.remove(key1);
-    
+
     // 迭代
     for (key, conn) in &connections {
         println!("连接 {}: {}", key, conn.addr);
@@ -659,15 +659,15 @@ impl Server {
             connections: Slab::with_capacity(1024),
         }
     }
-    
+
     fn accept_connection(&mut self, conn: Connection) -> usize {
         self.connections.insert(conn)
     }
-    
+
     fn close_connection(&mut self, token: usize) {
         self.connections.remove(token);
     }
-    
+
     fn get_connection(&self, token: usize) -> Option<&Connection> {
         self.connections.get(token)
     }
@@ -700,7 +700,7 @@ impl TreeNode {
             right: None,
         }))
     }
-    
+
     fn insert(&mut self, value: i32) {
         if value < self.value {
             match self.left {
@@ -732,11 +732,11 @@ impl<K: Eq + std::hash::Hash, V> Cache<K, V> {
     fn new() -> Self {
         Cache { map: HashMap::new() }
     }
-    
+
     fn get(&self, key: &K) -> Option<Rc<RefCell<V>>> {
         self.map.get(key).map(Rc::clone)
     }
-    
+
     fn insert(&mut self, key: K, value: V) {
         self.map.insert(key, Rc::new(RefCell::new(value)));
     }
@@ -758,11 +758,11 @@ impl HttpParser {
             buffer: BytesMut::with_capacity(4096),
         }
     }
-    
+
     fn feed_data(&mut self, data: &[u8]) {
         self.buffer.put(data);
     }
-    
+
     fn parse(&mut self) -> Option<Bytes> {
         // 查找 \r\n\r\n
         if let Some(pos) = self.buffer.windows(4).position(|w| w == b"\r\n\r\n") {
@@ -969,6 +969,6 @@ cell.borrow_mut().push_str(" world");
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **质量评分**: 97/100

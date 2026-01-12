@@ -76,4 +76,61 @@ impl EbpfLoader {
     pub fn config(&self) -> &EbpfConfig {
         &self.config
     }
-}
+
+    /// 验证程序字节码
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn validate_program(&self, program_bytes: &[u8]) -> Result<()> {
+        if program_bytes.is_empty() {
+            return Err(EbpfError::LoadFailed("程序字节码为空".to_string()).into());
+        }
+
+        // TODO: 使用 object crate 验证 eBPF 程序格式
+        // 检查基本的 ELF 格式
+        if program_bytes.len() < 4 {
+            return Err(EbpfError::LoadFailed("程序字节码过短".to_string()).into());
+        }
+
+        // 检查 ELF 魔数 (0x7F 'E' 'L' 'F')
+        if program_bytes[0] == 0x7F
+            && program_bytes[1] == b'E'
+            && program_bytes[2] == b'L'
+            && program_bytes[3] == b'F'
+        {
+            tracing::debug!("检测到有效的 ELF 格式");
+            Ok(())
+        } else {
+            Err(EbpfError::LoadFailed("无效的程序格式".to_string()).into())
+        }
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn validate_program(&self, _program_bytes: &[u8]) -> Result<()> {
+        Err(EbpfError::UnsupportedPlatform.into())
+    }
+
+    /// 检查程序是否已加载
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn is_loaded(&self) -> bool {
+        self.bpf.is_some()
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn is_loaded(&self) -> bool {
+        false
+    }
+
+    /// 卸载程序
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn unload(&mut self) -> Result<()> {
+        // TODO: 卸载 eBPF 程序
+        if self.bpf.is_some() {
+            tracing::info!("卸载 eBPF 程序");
+            self.bpf = None;
+        }
+        Ok(())
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn unload(&mut self) -> Result<()> {
+        Ok(())
+    }

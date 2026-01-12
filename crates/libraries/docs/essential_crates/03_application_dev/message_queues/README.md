@@ -55,7 +55,7 @@ async fn kafka_producer() -> Result<(), Box<dyn std::error::Error>> {
         .set("bootstrap.servers", "localhost:9092")
         .set("message.timeout.ms", "5000")
         .create()?;
-    
+
     let delivery_status = producer
         .send(
             FutureRecord::to("my-topic")
@@ -64,12 +64,12 @@ async fn kafka_producer() -> Result<(), Box<dyn std::error::Error>> {
             Duration::from_secs(0),
         )
         .await;
-    
+
     match delivery_status {
         Ok(delivery) => println!("发送成功: {:?}", delivery),
         Err((e, _)) => eprintln!("发送失败: {}", e),
     }
-    
+
     Ok(())
 }
 ```
@@ -87,9 +87,9 @@ async fn kafka_consumer() -> Result<(), Box<dyn std::error::Error>> {
         .set("bootstrap.servers", "localhost:9092")
         .set("enable.auto.commit", "true")
         .create()?;
-    
+
     consumer.subscribe(&["my-topic"])?;
-    
+
     loop {
         match consumer.recv().await {
             Ok(msg) => {
@@ -124,15 +124,15 @@ async fn rabbitmq_publisher() -> Result<(), Box<dyn std::error::Error>> {
         "amqp://guest:guest@localhost:5672/%2f",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     channel.queue_declare(
         "hello",
         QueueDeclareOptions::default(),
         FieldTable::default(),
     ).await?;
-    
+
     channel.basic_publish(
         "",
         "hello",
@@ -140,7 +140,7 @@ async fn rabbitmq_publisher() -> Result<(), Box<dyn std::error::Error>> {
         b"Hello, RabbitMQ!",
         BasicProperties::default(),
     ).await?;
-    
+
     println!("消息已发送");
     Ok(())
 }
@@ -161,15 +161,15 @@ async fn rabbitmq_consumer() -> Result<(), Box<dyn std::error::Error>> {
         "amqp://guest:guest@localhost:5672/%2f",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     channel.queue_declare(
         "hello",
         QueueDeclareOptions::default(),
         FieldTable::default(),
     ).await?;
-    
+
     let mut consumer = channel
         .basic_consume(
             "hello",
@@ -178,15 +178,15 @@ async fn rabbitmq_consumer() -> Result<(), Box<dyn std::error::Error>> {
             FieldTable::default(),
         )
         .await?;
-    
+
     while let Some(delivery) = consumer.next().await {
         let delivery = delivery?;
         let msg = String::from_utf8_lossy(&delivery.data);
         println!("收到: {}", msg);
-        
+
         delivery.ack(BasicAckOptions::default()).await?;
     }
-    
+
     Ok(())
 }
 ```
@@ -203,19 +203,19 @@ use async_nats;
 async fn nats_pubsub() -> Result<(), Box<dyn std::error::Error>> {
     // 连接 NATS
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     // 订阅
     let mut subscriber = client.subscribe("my.subject").await?;
-    
+
     tokio::spawn(async move {
         while let Some(message) = subscriber.next().await {
             println!("收到: {:?}", message);
         }
     });
-    
+
     // 发布
     client.publish("my.subject", "Hello NATS!".into()).await?;
-    
+
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     Ok(())
 }
@@ -228,7 +228,7 @@ use async_nats;
 
 async fn nats_request_reply() -> Result<(), Box<dyn std::error::Error>> {
     let client = async_nats::connect("localhost:4222").await?;
-    
+
     // 响应者
     let client_clone = client.clone();
     tokio::spawn(async move {
@@ -239,12 +239,12 @@ async fn nats_request_reply() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     });
-    
+
     // 请求者
     let response = client
         .request("request.subject", "Request!".into())
         .await?;
-    
+
     println!("响应: {:?}", response);
     Ok(())
 }
@@ -264,9 +264,9 @@ async fn task_queue() -> Result<(), Box<dyn std::error::Error>> {
         "amqp://localhost",
         ConnectionProperties::default(),
     ).await?;
-    
+
     let channel = conn.create_channel().await?;
-    
+
     // 声明持久化队列
     channel.queue_declare(
         "task_queue",
@@ -276,7 +276,7 @@ async fn task_queue() -> Result<(), Box<dyn std::error::Error>> {
         },
         lapin::types::FieldTable::default(),
     ).await?;
-    
+
     // 发送任务
     for i in 0..10 {
         let task = format!("Task {}", i);
@@ -288,7 +288,7 @@ async fn task_queue() -> Result<(), Box<dyn std::error::Error>> {
             lapin::BasicProperties::default().with_delivery_mode(2), // 持久化
         ).await?;
     }
-    
+
     Ok(())
 }
 ```

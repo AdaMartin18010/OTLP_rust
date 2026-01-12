@@ -1,8 +1,8 @@
 # 横切关注点 (Cross-Cutting Concerns)
 
-**层级定位**: 贯穿所有层级的通用功能  
-**重要程度**: ⭐⭐⭐⭐⭐ (对所有项目必备)  
-**更新日期**: 2025-10-20  
+**层级定位**: 贯穿所有层级的通用功能
+**重要程度**: ⭐⭐⭐⭐⭐ (对所有项目必备)
+**更新日期**: 2025-10-20
 **Rust 版本**: 1.90+
 
 ---
@@ -230,10 +230,10 @@ use anyhow::{Context, Result};
 fn process_file(path: &str) -> Result<String> {
     let content = std::fs::read_to_string(path)
         .context("Failed to read file")?;
-    
+
     let processed = transform(&content)
         .context("Failed to transform content")?;
-    
+
     Ok(processed)
 }
 
@@ -244,7 +244,7 @@ use thiserror::Error;
 pub enum MyError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Parse error at line {line}: {msg}")]
     Parse { line: usize, msg: String },
 }
@@ -272,7 +272,7 @@ fn load_config() -> Result<AppConfig> {
         // 3. 环境变量（优先级最高）
         .add_source(Environment::with_prefix("APP"))
         .build()?;
-    
+
     config.try_deserialize()
 }
 ```
@@ -286,9 +286,9 @@ use tracing_subscriber;
 #[instrument]
 fn process_user(user_id: u64) -> Result<()> {
     info!(user_id, "Processing user");
-    
+
     // 业务逻辑
-    
+
     Ok(())
 }
 
@@ -296,7 +296,7 @@ fn main() {
     tracing_subscriber::fmt()
         .with_max_level(Level::INFO)
         .init();
-    
+
     process_user(123).unwrap();
 }
 ```
@@ -357,15 +357,15 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter("info")
         .init();
-    
+
     // 2. 加载配置
     dotenvy::dotenv().ok();
     let config = load_config()?;
-    
+
     // 3. 启动服务
     info!("Starting server on port {}", config.port);
     start_server(config).await?;
-    
+
     Ok(())
 }
 ```

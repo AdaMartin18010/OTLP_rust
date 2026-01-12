@@ -1,84 +1,84 @@
 ﻿# Rust WebAssembly 开发指南 2025
 
-> **最后更新**: 2025-10-20  
-> **Rust 版本**: 1.83+  
+> **最后更新**: 2025-10-20
+> **Rust 版本**: 1.83+
 > **难度**: ⭐⭐⭐⭐ (中高级)
 
 ## 📋 目录
 
 - [Rust WebAssembly 开发指南 2025](#rust-webassembly-开发指南-2025)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [📋 目录1](#-目录1)
-  - [1. WebAssembly 基础](#1-webassembly-基础)
+  - [📖 WebAssembly 基础](#-webassembly-基础)
     - [1.1 为什么选择 WebAssembly?](#11-为什么选择-webassembly)
     - [1.2 环境设置](#12-环境设置)
     - [1.3 第一个 WASM 项目](#13-第一个-wasm-项目)
-  - [2. wasm-bindgen 深入](#2-wasm-bindgen-深入)
+  - [📝 wasm-bindgen 深入](#-wasm-bindgen-深入)
     - [2.1 类型转换](#21-类型转换)
     - [2.2 与 JavaScript 互操作](#22-与-javascript-互操作)
     - [2.3 异步操作](#23-异步操作)
-  - [3. Yew 框架 (React-like)](#3-yew-框架-react-like)
+  - [🔍 Yew 框架 (React-like)](#-yew-框架-react-like)
     - [3.1 项目设置](#31-项目设置)
     - [3.2 基础组件](#32-基础组件)
     - [3.3 Hooks](#33-hooks)
-  - [4. Leptos 框架 (Next-gen)](#4-leptos-框架-next-gen)
+  - [🔧 Leptos 框架 (Next-gen)](#-leptos-框架-next-gen)
     - [4.1 项目设置](#41-项目设置)
     - [4.2 响应式组件](#42-响应式组件)
-  - [5. Tauri 桌面应用](#5-tauri-桌面应用)
+  - [📊 Tauri 桌面应用](#-tauri-桌面应用)
     - [5.1 项目创建](#51-项目创建)
     - [5.2 Rust 后端](#52-rust-后端)
     - [5.3 前端调用](#53-前端调用)
-  - [6. 与 JavaScript 互操作](#6-与-javascript-互操作)
+  - [🌟 与 JavaScript 互操作](#-与-javascript-互操作)
     - [6.1 传递复杂数据](#61-传递复杂数据)
     - [6.2 回调函数](#62-回调函数)
-  - [7. 性能优化](#7-性能优化)
+  - [🔬 性能优化](#-性能优化)
     - [7.1 减少二进制大小](#71-减少二进制大小)
     - [7.2 懒加载](#72-懒加载)
     - [7.3 Web Workers](#73-web-workers)
-  - [8. 实战案例](#8-实战案例)
+  - [💻 实战案例](#-实战案例)
     - [8.1 图像处理](#81-图像处理)
     - [8.2 数据可视化](#82-数据可视化)
-  - [9. 最佳实践](#9-最佳实践)
-  - [10. 常见陷阱](#10-常见陷阱)
-  - [11. 参考资源](#11-参考资源)
+  - [📚 最佳实践](#-最佳实践)
+  - [✅ 常见陷阱](#-常见陷阱)
+  - [🌈 参考资源](#-参考资源)
 
 ## 📋 目录1
 
 - [Rust WebAssembly 开发指南 2025](#rust-webassembly-开发指南-2025)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [📋 目录1](#-目录1)
-  - [1. WebAssembly 基础](#1-webassembly-基础)
+  - [📖 WebAssembly 基础](#-webassembly-基础)
     - [1.1 为什么选择 WebAssembly?](#11-为什么选择-webassembly)
     - [1.2 环境设置](#12-环境设置)
     - [1.3 第一个 WASM 项目](#13-第一个-wasm-项目)
-  - [2. wasm-bindgen 深入](#2-wasm-bindgen-深入)
+  - [📝 wasm-bindgen 深入](#-wasm-bindgen-深入)
     - [2.1 类型转换](#21-类型转换)
     - [2.2 与 JavaScript 互操作](#22-与-javascript-互操作)
     - [2.3 异步操作](#23-异步操作)
-  - [3. Yew 框架 (React-like)](#3-yew-框架-react-like)
+  - [🔍 Yew 框架 (React-like)](#-yew-框架-react-like)
     - [3.1 项目设置](#31-项目设置)
     - [3.2 基础组件](#32-基础组件)
     - [3.3 Hooks](#33-hooks)
-  - [4. Leptos 框架 (Next-gen)](#4-leptos-框架-next-gen)
+  - [🔧 Leptos 框架 (Next-gen)](#-leptos-框架-next-gen)
     - [4.1 项目设置](#41-项目设置)
     - [4.2 响应式组件](#42-响应式组件)
-  - [5. Tauri 桌面应用](#5-tauri-桌面应用)
+  - [📊 Tauri 桌面应用](#-tauri-桌面应用)
     - [5.1 项目创建](#51-项目创建)
     - [5.2 Rust 后端](#52-rust-后端)
     - [5.3 前端调用](#53-前端调用)
-  - [6. 与 JavaScript 互操作](#6-与-javascript-互操作)
+  - [🌟 与 JavaScript 互操作](#-与-javascript-互操作)
     - [6.1 传递复杂数据](#61-传递复杂数据)
     - [6.2 回调函数](#62-回调函数)
-  - [7. 性能优化](#7-性能优化)
+  - [🔬 性能优化](#-性能优化)
     - [7.1 减少二进制大小](#71-减少二进制大小)
     - [7.2 懒加载](#72-懒加载)
     - [7.3 Web Workers](#73-web-workers)
-  - [8. 实战案例](#8-实战案例)
+  - [💻 实战案例](#-实战案例)
     - [8.1 图像处理](#81-图像处理)
     - [8.2 数据可视化](#82-数据可视化)
-  - [9. 最佳实践](#9-最佳实践)
-  - [10. 常见陷阱](#10-常见陷阱)
-  - [11. 参考资源](#11-参考资源)
+  - [📚 最佳实践](#-最佳实践)
+  - [✅ 常见陷阱](#-常见陷阱)
+  - [🌈 参考资源](#-参考资源)
 
 ---
 
@@ -202,7 +202,7 @@ wasm-pack build --target web
 
         async function run() {
             await init();
-            
+
             console.log(greet("WebAssembly"));  // "Hello, WebAssembly!"
             console.log(add(10, 20));           // 30
             console.log(fibonacci(10));         // 55
@@ -237,7 +237,7 @@ impl Point {
     pub fn new(x: f64, y: f64) -> Point {
         Point { x, y }
     }
-    
+
     pub fn distance(&self) -> f64 {
         (self.x * self.x + self.y * self.y).sqrt()
     }
@@ -283,10 +283,10 @@ use wasm_bindgen::prelude::*;
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
-    
+
     #[wasm_bindgen(js_namespace = Math)]
     fn random() -> f64;
-    
+
     fn alert(s: &str);
 }
 
@@ -310,13 +310,13 @@ use web_sys::{Document, Element, Window};
 pub fn update_dom() -> Result<(), JsValue> {
     let window = web_sys::window().ok_or("没有 window 对象")?;
     let document = window.document().ok_or("没有 document 对象")?;
-    
+
     let body = document.body().ok_or("没有 body 元素")?;
-    
+
     let div = document.create_element("div")?;
     div.set_text_content(Some("Hello from Rust!"));
     body.append_child(&div)?;
-    
+
     Ok(())
 }
 ```
@@ -333,15 +333,15 @@ pub async fn fetch_data(url: String) -> Result<String, JsValue> {
     let mut opts = RequestInit::new();
     opts.method("GET");
     opts.mode(RequestMode::Cors);
-    
+
     let request = Request::new_with_str_and_init(&url, &opts)?;
-    
+
     let window = web_sys::window().unwrap();
     let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
-    
+
     let resp: Response = resp_value.dyn_into()?;
     let text = JsFuture::from(resp.text()?).await?;
-    
+
     Ok(text.as_string().unwrap())
 }
 ```
@@ -388,17 +388,17 @@ fn hello_world() -> Html {
 #[function_component(Counter)]
 fn counter() -> Html {
     let count = use_state(|| 0);
-    
+
     let increment = {
         let count = count.clone();
         Callback::from(move |_| count.set(*count + 1))
     };
-    
+
     let decrement = {
         let count = count.clone();
         Callback::from(move |_| count.set(*count - 1))
     };
-    
+
     html! {
         <div>
             <h2>{ "计数器" }</h2>
@@ -466,7 +466,7 @@ fn user_list() -> Html {
     // use_state: 状态管理
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let users = use_state(|| Vec::<User>::new());
-    
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // use_effect: 副作用
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -481,13 +481,13 @@ fn user_list() -> Html {
                     .json()
                     .await
                     .unwrap();
-                
+
                 users.set(fetched_users);
             });
             || ()
         });
     }
-    
+
     html! {
         <div>
             <h2>{ "用户列表" }</h2>
@@ -525,7 +525,7 @@ use leptos::*;
 #[component]
 fn Counter(cx: Scope) -> impl IntoView {
     let (count, set_count) = create_signal(cx, 0);
-    
+
     view! { cx,
         <div>
             <h2>"计数器"</h2>
@@ -546,10 +546,10 @@ fn Counter(cx: Scope) -> impl IntoView {
 #[component]
 fn DerivedCounter(cx: Scope) -> impl IntoView {
     let (count, set_count) = create_signal(cx, 0);
-    
+
     // 派生信号: 自动更新
     let doubled = move || count() * 2;
-    
+
     view! { cx,
         <div>
             <p>"原始值: " {count}</p>
@@ -683,14 +683,14 @@ pub fn register_click_handler(element_id: &str) -> Result<(), JsValue> {
     let window = web_sys::window().ok_or("No window")?;
     let document = window.document().ok_or("No document")?;
     let element = document.get_element_by_id(element_id).ok_or("Element not found")?;
-    
+
     let closure = Closure::wrap(Box::new(move || {
         web_sys::console::log_1(&"Button clicked!".into());
     }) as Box<dyn FnMut()>);
-    
+
     element.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
     closure.forget(); // 防止被释放
-    
+
     Ok(())
 }
 ```
@@ -735,7 +735,7 @@ pub async fn load_heavy_module() -> Result<(), JsValue> {
     let module = wasm_bindgen_futures::JsFuture::from(
         js_sys::eval("import('./heavy_module.js')")?
     ).await?;
-    
+
     Ok(())
 }
 ```
@@ -749,16 +749,16 @@ use web_sys::{Worker, MessageEvent};
 #[wasm_bindgen]
 pub fn start_worker() -> Result<(), JsValue> {
     let worker = Worker::new("./worker.js")?;
-    
+
     let onmessage = Closure::wrap(Box::new(move |event: MessageEvent| {
         web_sys::console::log_1(&event.data());
     }) as Box<dyn FnMut(MessageEvent)>);
-    
+
     worker.set_onmessage(Some(onmessage.as_ref().unchecked_ref()));
     onmessage.forget();
-    
+
     worker.post_message(&"Start processing".into())?;
-    
+
     Ok(())
 }
 ```
@@ -776,20 +776,20 @@ use web_sys::ImageData;
 #[wasm_bindgen]
 pub fn apply_grayscale(image_data: ImageData) -> Result<ImageData, JsValue> {
     let mut data = image_data.data();
-    
+
     for i in (0..data.len()).step_by(4) {
         let r = data[i] as u32;
         let g = data[i + 1] as u32;
         let b = data[i + 2] as u32;
-        
+
         // 灰度公式
         let gray = ((r * 299 + g * 587 + b * 114) / 1000) as u8;
-        
+
         data[i] = gray;
         data[i + 1] = gray;
         data[i + 2] = gray;
     }
-    
+
     ImageData::new_with_u8_clamped_array_and_sh(
         wasm_bindgen::Clamped(&data),
         image_data.width(),
@@ -810,22 +810,22 @@ pub fn draw_chart(canvas: HtmlCanvasElement, data: Vec<f64>) -> Result<(), JsVal
         .get_context("2d")?
         .ok_or("Failed to get 2d context")?
         .dyn_into::<CanvasRenderingContext2d>()?;
-    
+
     let width = canvas.width() as f64;
     let height = canvas.height() as f64;
     let bar_width = width / data.len() as f64;
-    
+
     ctx.clear_rect(0.0, 0.0, width, height);
-    
+
     for (i, value) in data.iter().enumerate() {
         let bar_height = (*value / 100.0) * height;
         let x = i as f64 * bar_width;
         let y = height - bar_height;
-        
+
         ctx.set_fill_style(&"#3498db".into());
         ctx.fill_rect(x, y, bar_width - 2.0, bar_height);
     }
-    
+
     Ok(())
 }
 ```
@@ -870,5 +870,5 @@ pub fn draw_chart(canvas: HtmlCanvasElement, data: Vec<f64>) -> Result<(), JsVal
 
 ---
 
-> **完成！** 🎉  
+> **完成！** 🎉
 > 本指南涵盖了 Rust WebAssembly 开发的核心内容，包括基础概念、wasm-bindgen、Yew/Leptos 框架、Tauri 桌面应用、JS 互操作、性能优化、实战案例、最佳实践和常见陷阱。

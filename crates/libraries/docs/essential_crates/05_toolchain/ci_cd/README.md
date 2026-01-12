@@ -42,19 +42,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: 安装 Rust
         uses: dtolnay/rust-toolchain@stable
-      
+
       - name: 缓存
         uses: Swatinem/rust-cache@v2
-      
+
       - name: 检查
         run: cargo check
-      
+
       - name: 测试
         run: cargo test --all-features
-      
+
       - name: Clippy
         run: cargo clippy -- -D warnings
 ```
@@ -75,14 +75,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      
+
       - name: 构建
         run: cargo build --release
-      
+
       - name: 上传
         uses: actions/upload-artifact@v3
         with:
@@ -151,13 +151,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      
+
       - name: 安装 cargo-llvm-cov
         run: cargo install cargo-llvm-cov
-      
+
       - name: 生成覆盖率
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
-      
+
       - name: 上传到 Codecov
         uses: codecov/codecov-action@v3
         with:
@@ -180,7 +180,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      
+
       - name: 发布到 crates.io
         run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
 ```

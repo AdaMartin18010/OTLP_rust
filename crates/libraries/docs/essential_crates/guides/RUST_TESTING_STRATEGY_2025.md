@@ -5,8 +5,7 @@
 ## 📋 目录
 
 - [Rust 测试策略完全指南 (2025版)](#rust-测试策略完全指南-2025版)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [📋 目录](#-目录)
   - [概述](#概述)
     - [测试的价值](#测试的价值)
     - [核心依赖](#核心依赖)
@@ -139,27 +138,27 @@ pub fn is_palindrome(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_add() {
         assert_eq!(add(2, 3), 5);
         assert_eq!(add(-1, 1), 0);
         assert_eq!(add(0, 0), 0);
     }
-    
+
     #[test]
     fn test_palindrome() {
         assert!(is_palindrome("radar"));
         assert!(is_palindrome("A man a plan a canal Panama"));
         assert!(!is_palindrome("hello"));
     }
-    
+
     #[test]
     #[should_panic(expected = "divide by zero")]
     fn test_divide_by_zero() {
         let _ = 1 / 0;
     }
-    
+
     #[test]
     #[ignore]  // 使用 `cargo test -- --ignored` 运行
     fn expensive_test() {
@@ -212,21 +211,21 @@ async fn fetch_data() -> Result<String, reqwest::Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_fetch_data() {
         let result = fetch_data().await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "data");
     }
-    
+
     #[tokio::test]
     async fn test_timeout() {
         let result = tokio::time::timeout(
             Duration::from_millis(50),
             fetch_data()
         ).await;
-        
+
         assert!(result.is_err());  // 超时
     }
 }
@@ -272,30 +271,30 @@ impl TestApp {
             .connect("postgres://test:test@localhost/test_db")
             .await
             .expect("Failed to connect to database");
-        
+
         // 2. 运行迁移
         sqlx::migrate!("./migrations")
             .run(&db_pool)
             .await
             .expect("Failed to run migrations");
-        
+
         // 3. 创建应用
         let app = create_app(db_pool.clone());
-        
+
         // 4. 绑定到随机端口
         let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("Failed to bind");
         let address = format!("http://{}", listener.local_addr().unwrap());
-        
+
         // 5. 启动服务器
         tokio::spawn(async move {
             axum::serve(listener, app).await.unwrap();
         });
-        
+
         Self { address, db_pool }
     }
-    
+
     pub async fn cleanup(&self) {
         sqlx::query!("TRUNCATE TABLE users CASCADE")
             .execute(&self.db_pool)
@@ -318,14 +317,14 @@ async fn test_health_check() {
     // Arrange
     let app = common::TestApp::spawn().await;
     let client = reqwest::Client::new();
-    
+
     // Act
     let response = client
         .get(&format!("{}/health", app.address))
         .send()
         .await
         .expect("Failed to execute request");
-    
+
     // Assert
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response.text().await.unwrap(), "OK");
@@ -336,7 +335,7 @@ async fn test_create_user() {
     // Arrange
     let app = common::TestApp::spawn().await;
     let client = reqwest::Client::new();
-    
+
     // Act
     let response = client
         .post(&format!("{}/api/users", app.address))
@@ -348,14 +347,14 @@ async fn test_create_user() {
         .send()
         .await
         .expect("Failed to execute request");
-    
+
     // Assert
     assert_eq!(response.status(), StatusCode::CREATED);
-    
+
     let user: serde_json::Value = response.json().await.unwrap();
     assert_eq!(user["username"], "testuser");
     assert_eq!(user["email"], "test@example.com");
-    
+
     // Cleanup
     app.cleanup().await;
 }
@@ -364,7 +363,7 @@ async fn test_create_user() {
 async fn test_create_user_duplicate_email() {
     let app = common::TestApp::spawn().await;
     let client = reqwest::Client::new();
-    
+
     // 第一次创建成功
     let response1 = client
         .post(&format!("{}/api/users", app.address))
@@ -377,7 +376,7 @@ async fn test_create_user_duplicate_email() {
         .await
         .unwrap();
     assert_eq!(response1.status(), StatusCode::CREATED);
-    
+
     // 第二次创建失败 (邮箱重复)
     let response2 = client
         .post(&format!("{}/api/users", app.address))
@@ -390,7 +389,7 @@ async fn test_create_user_duplicate_email() {
         .await
         .unwrap();
     assert_eq!(response2.status(), StatusCode::CONFLICT);
-    
+
     app.cleanup().await;
 }
 ```
@@ -404,30 +403,30 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 async fn setup_test_db() -> (Container<'_, Postgres>, PgPool) {
     let docker = clients::Cli::default();
     let postgres = docker.run(Postgres::default());
-    
+
     let connection_string = format!(
         "postgres://postgres:postgres@127.0.0.1:{}/postgres",
         postgres.get_host_port_ipv4(5432)
     );
-    
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&connection_string)
         .await
         .expect("Failed to connect to Postgres");
-    
+
     sqlx::migrate!("./migrations")
         .run(&pool)
         .await
         .expect("Failed to run migrations");
-    
+
     (postgres, pool)
 }
 
 #[tokio::test]
 async fn test_user_crud() {
     let (_container, pool) = setup_test_db().await;
-    
+
     // Create
     let user_id = sqlx::query_scalar!(
         "INSERT INTO users (username, email) VALUES ($1, $2) RETURNING id",
@@ -437,26 +436,26 @@ async fn test_user_crud() {
     .fetch_one(&pool)
     .await
     .unwrap();
-    
+
     // Read
     let user = sqlx::query!("SELECT * FROM users WHERE id = $1", user_id)
         .fetch_one(&pool)
         .await
         .unwrap();
     assert_eq!(user.username, "testuser");
-    
+
     // Update
     sqlx::query!("UPDATE users SET email = $1 WHERE id = $2", "new@example.com", user_id)
         .execute(&pool)
         .await
         .unwrap();
-    
+
     // Delete
     sqlx::query!("DELETE FROM users WHERE id = $1", user_id)
         .execute(&pool)
         .await
         .unwrap();
-    
+
     let count = sqlx::query_scalar!("SELECT COUNT(*) FROM users")
         .fetch_one(&pool)
         .await
@@ -499,17 +498,17 @@ fn fibonacci_iterative(n: u64) -> u64 {
 
 fn bench_fibonacci(c: &mut Criterion) {
     let mut group = c.benchmark_group("fibonacci");
-    
+
     for i in [10u64, 15, 20].iter() {
         group.bench_with_input(BenchmarkId::new("Recursive", i), i, |b, i| {
             b.iter(|| fibonacci(black_box(*i)));
         });
-        
+
         group.bench_with_input(BenchmarkId::new("Iterative", i), i, |b, i| {
             b.iter(|| fibonacci_iterative(black_box(*i)));
         });
     }
-    
+
     group.finish();
 }
 
@@ -553,7 +552,7 @@ proptest! {
     fn test_reverse_twice_property(v in prop::collection::vec(any::<i32>(), 0..100)) {
         prop_assert_eq!(reverse_twice(v.clone()), v);
     }
-    
+
     // 属性: 字符串解析后再序列化应该相等
     #[test]
     fn test_parse_display_roundtrip(n in any::<i32>()) {
@@ -561,7 +560,7 @@ proptest! {
         let parsed: i32 = s.parse().unwrap();
         prop_assert_eq!(parsed, n);
     }
-    
+
     // 属性: 排序后的数组应该是有序的
     #[test]
     fn test_sort_is_sorted(mut v in prop::collection::vec(any::<i32>(), 0..100)) {
@@ -611,12 +610,12 @@ pub trait UserRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_user_service() {
         // 创建 mock
         let mut mock_repo = MockUserRepository::new();
-        
+
         // 设置期望
         mock_repo
             .expect_get_user()
@@ -627,7 +626,7 @@ mod tests {
                 username: "testuser".to_string(),
                 email: "test@example.com".to_string(),
             }));
-        
+
         // 调用被测试的代码
         let user = mock_repo.get_user(1).unwrap();
         assert_eq!(user.username, "testuser");
@@ -645,7 +644,7 @@ use wiremock::matchers::{method, path};
 async fn test_external_api() {
     // 启动 mock 服务器
     let mock_server = MockServer::start().await;
-    
+
     // 配置 mock 响应
     Mock::given(method("GET"))
         .and(path("/api/users/1"))
@@ -655,7 +654,7 @@ async fn test_external_api() {
         })))
         .mount(&mock_server)
         .await;
-    
+
     // 调用客户端代码
     let client = reqwest::Client::new();
     let response = client
@@ -663,9 +662,9 @@ async fn test_external_api() {
         .send()
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), 200);
-    
+
     let user: serde_json::Value = response.json().await.unwrap();
     assert_eq!(user["name"], "Test User");
 }
@@ -696,7 +695,7 @@ fn test_user_serialization() {
         email: "test@example.com".to_string(),
         created_at: "2025-10-20T12:00:00Z".to_string(),
     };
-    
+
     // 第一次运行时，会生成快照文件
     // 后续运行会比较当前输出与快照
     assert_yaml_snapshot!(user, @r###"
@@ -711,7 +710,7 @@ fn test_user_serialization() {
 #[test]
 fn test_api_response() {
     let response = create_user_response();
-    
+
     // 使用动态字段 (忽略每次不同的值)
     insta::with_settings!({
         filters => vec![
@@ -750,7 +749,7 @@ use predicates::prelude::*;
 #[test]
 fn test_cli_help() {
     let mut cmd = Command::cargo_bin("myapp").unwrap();
-    
+
     cmd.arg("--help")
         .assert()
         .success()
@@ -760,7 +759,7 @@ fn test_cli_help() {
 #[test]
 fn test_cli_invalid_input() {
     let mut cmd = Command::cargo_bin("myapp").unwrap();
-    
+
     cmd.arg("--invalid")
         .assert()
         .failure()
@@ -770,7 +769,7 @@ fn test_cli_invalid_input() {
 #[test]
 fn test_cli_file_processing() {
     let mut cmd = Command::cargo_bin("myapp").unwrap();
-    
+
     cmd.arg("process")
         .arg("tests/fixtures/input.txt")
         .assert()
@@ -790,11 +789,11 @@ import { test, expect } from '@playwright/test';
 
 test('user can login', async ({ page }) => {
   await page.goto('http://localhost:8080/login');
-  
+
   await page.fill('input[name="username"]', 'testuser');
   await page.fill('input[name="password"]', 'password123');
   await page.click('button[type="submit"]');
-  
+
   await expect(page).toHaveURL('http://localhost:8080/dashboard');
   await expect(page.locator('h1')).toContainText('Welcome, testuser');
 });
@@ -858,7 +857,7 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -873,13 +872,13 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      
+
       - name: Cache
         uses: actions/cache@v3
         with:
@@ -890,20 +889,20 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
+
       - name: Run Tests
         run: cargo test --all-features --workspace
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/testdb
-      
+
       - name: Run Doc Tests
         run: cargo test --doc
-      
+
       - name: Code Coverage
         run: |
           cargo install cargo-llvm-cov
           cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-      
+
       - name: Upload Coverage
         uses: codecov/codecov-action@v3
         with:
@@ -923,15 +922,15 @@ jobs:
 #[ignore]  // 标记为 "smoke test"
 async fn production_health_check() {
     let client = reqwest::Client::new();
-    
+
     let response = client
         .get("https://api.myapp.com/health")
         .send()
         .await
         .expect("Failed to connect to production");
-    
+
     assert_eq!(response.status(), 200);
-    
+
     let health: serde_json::Value = response.json().await.unwrap();
     assert_eq!(health["status"], "healthy");
     assert_eq!(health["database"], "connected");
@@ -975,10 +974,10 @@ jobs:
    fn test_example() {
        // Arrange (准备)
        let input = 5;
-       
+
        // Act (执行)
        let result = add(input, 3);
-       
+
        // Assert (断言)
        assert_eq!(result, 8);
    }
@@ -1002,7 +1001,7 @@ jobs:
    // ❌ 不清晰
    #[test]
    fn test1() { ... }
-   
+
    // ✅ 清晰描述测试内容
    #[test]
    fn should_return_error_when_email_is_invalid() { ... }
@@ -1027,10 +1026,10 @@ jobs:
        fn test_sort_invariants(v in prop::collection::vec(any::<i32>(), 0..100)) {
            let mut sorted = v.clone();
            sorted.sort();
-           
+
            // 不变式: 排序后长度不变
            prop_assert_eq!(sorted.len(), v.len());
-           
+
            // 不变式: 排序后是有序的
            prop_assert!(sorted.windows(2).all(|w| w[0] <= w[1]));
        }
@@ -1077,13 +1076,13 @@ jobs:
    ```rust
    // ❌ 测试相互影响
    static mut COUNTER: i32 = 0;
-   
+
    #[test]
    fn test1() {
        unsafe { COUNTER += 1; }
        assert_eq!(unsafe { COUNTER }, 1);  // 可能失败
    }
-   
+
    // ✅ 每个测试独立
    #[test]
    fn test2() {
@@ -1100,7 +1099,7 @@ jobs:
    fn test_divide() {
        assert_eq!(divide(10, 2), 5);
    }
-   
+
    // ✅ 也测试错误场景
    #[test]
    fn test_divide_by_zero() {
@@ -1115,7 +1114,7 @@ jobs:
    mock_a.expect_foo().returning(|| mock_b);
    mock_b.expect_bar().returning(|| mock_c);
    // ...
-   
+
    // ✅ 只 Mock 外部依赖
    mock_http_client.expect_get().returning(|| Ok(response));
    ```
@@ -1129,7 +1128,7 @@ jobs:
        let obj = MyStruct::new();
        assert_eq!(obj.internal_counter, 0);  // 依赖内部状态
    }
-   
+
    // ✅ 测试公共接口
    #[test]
    fn test_public_behavior() {
@@ -1147,7 +1146,7 @@ jobs:
        let db = setup_real_database().await;  // 耗时 5 秒
        // ...
    }
-   
+
    // ✅ 使用 Testcontainers 或 Mock
    #[tokio::test]
    async fn test_fast() {
@@ -1165,7 +1164,7 @@ jobs:
        create_user(&db, "testuser").await;
        // 没有清理
    }
-   
+
    // ✅ 每次测试后清理
    #[tokio::test]
    async fn test_user() {
@@ -1182,7 +1181,7 @@ jobs:
    #[test]
    #[ignore]
    fn test_sometimes_fails() { ... }
-   
+
    // ✅ 修复测试或删除它
    ```
 
@@ -1191,7 +1190,7 @@ jobs:
    ```bash
    # ❌ 只在本地运行测试
    cargo test
-   
+
    # ✅ 在 CI 中自动运行
    # .github/workflows/test.yml
    ```
@@ -1202,7 +1201,7 @@ jobs:
    # ❌ 只有 30% 覆盖率
    cargo llvm-cov
    # Coverage: 30%
-   
+
    # ✅ 目标 80%+ 覆盖率
    ```
 
@@ -1216,7 +1215,7 @@ jobs:
         assert_eq!(add(5, 5), 10);
         // ...100 行 ...
     }
-    
+
     // ✅ 使用属性测试
     proptest! {
         #[test]

@@ -1,7 +1,7 @@
 # Semantic Interoperability
 
-**Status**: 🧪 Experimental / Research Phase  
-**Created**: 2025-10-09  
+**Status**: 🧪 Experimental / Research Phase
+**Created**: 2025-10-09
 **Last Updated**: 2025-10-27
 
 ---
@@ -34,5 +34,5 @@ This directory explores semantic web technologies and ontologies for achieving t
 
 ---
 
-**Maintainer**: Research Team  
+**Maintainer**: Research Team
 **Category**: Experimental / Research

@@ -7,47 +7,47 @@
 ## 📋 目录
 
 - [Rust CLI 工具开发实战指南 (2025)](#rust-cli-工具开发实战指南-2025)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [📋 目录1](#-目录1)
-  - [1. CLI 开发基础1](#1-cli-开发基础1)
+  - [📖 CLI 开发基础1](#-cli-开发基础1)
     - [1.1 为什么用 Rust 开发 CLI1](#11-为什么用-rust-开发-cli1)
     - [1.2 Hello CLI1](#12-hello-cli1)
     - [1.3 项目结构1](#13-项目结构1)
-  - [2. 命令行参数解析1](#2-命令行参数解析1)
+  - [📝 命令行参数解析1](#-命令行参数解析1)
     - [2.1 Clap 基础1](#21-clap-基础1)
     - [2.2 子命令1](#22-子命令1)
     - [2.3 高级参数处理1](#23-高级参数处理1)
-  - [3. 用户交互1](#3-用户交互1)
+  - [🔍 用户交互1](#-用户交互1)
     - [3.1 输入输出1](#31-输入输出1)
     - [3.2 交互式提示1](#32-交互式提示1)
     - [3.3 进度条1](#33-进度条1)
-  - [4. 配置管理1](#4-配置管理1)
+  - [⚙️ 配置管理1](#️-配置管理1)
     - [4.1 环境变量1](#41-环境变量1)
     - [4.2 配置文件1](#42-配置文件1)
     - [4.3 优先级管理1](#43-优先级管理1)
-  - [5. 错误处理1](#5-错误处理1)
+  - [📊 错误处理1](#-错误处理1)
     - [5.1 Error 类型设计1](#51-error-类型设计1)
     - [5.2 友好的错误消息1](#52-友好的错误消息1)
     - [5.3 退出码1](#53-退出码1)
-  - [6. 日志和调试1](#6-日志和调试1)
+  - [🌟 日志和调试1](#-日志和调试1)
     - [6.1 日志级别1](#61-日志级别1)
     - [6.2 彩色输出1](#62-彩色输出1)
     - [6.3 调试模式1](#63-调试模式1)
-  - [7. 文件和目录操作1](#7-文件和目录操作1)
+  - [🔬 文件和目录操作1](#-文件和目录操作1)
     - [7.1 文件读写1](#71-文件读写1)
     - [7.2 目录遍历1](#72-目录遍历1)
     - [7.3 文件监控1](#73-文件监控1)
-  - [8. 实战案例1](#8-实战案例1)
+  - [💻 实战案例1](#-实战案例1)
     - [8.1 文件搜索工具1](#81-文件搜索工具1)
     - [8.2 JSON 处理工具1](#82-json-处理工具1)
     - [8.3 Git 子命令工具1](#83-git-子命令工具1)
-  - [9. 打包和发布1](#9-打包和发布1)
+  - [📚 打包和发布1](#-打包和发布1)
     - [9.1 跨平台编译1](#91-跨平台编译1)
     - [9.2 安装脚本1](#92-安装脚本1)
     - [9.3 发布到 crates.io1](#93-发布到-cratesio1)
-  - [10. 常见陷阱1](#10-常见陷阱1)
-  - [11. 最佳实践1](#11-最佳实践1)
-  - [12. 参考资源1](#12-参考资源1)
+  - [✅ 常见陷阱1](#-常见陷阱1)
+  - [🌈 最佳实践1](#-最佳实践1)
+  - [🎓 参考资源1](#-参考资源1)
     - [官方文档](#官方文档)
     - [推荐库](#推荐库)
     - [学习资源](#学习资源)
@@ -56,47 +56,47 @@
 ## 📋 目录1
 
 - [Rust CLI 工具开发实战指南 (2025)](#rust-cli-工具开发实战指南-2025)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [📋 目录1](#-目录1)
-  - [1. CLI 开发基础1](#1-cli-开发基础1)
+  - [📖 CLI 开发基础1](#-cli-开发基础1)
     - [1.1 为什么用 Rust 开发 CLI1](#11-为什么用-rust-开发-cli1)
     - [1.2 Hello CLI1](#12-hello-cli1)
     - [1.3 项目结构1](#13-项目结构1)
-  - [2. 命令行参数解析1](#2-命令行参数解析1)
+  - [📝 命令行参数解析1](#-命令行参数解析1)
     - [2.1 Clap 基础1](#21-clap-基础1)
     - [2.2 子命令1](#22-子命令1)
     - [2.3 高级参数处理1](#23-高级参数处理1)
-  - [3. 用户交互1](#3-用户交互1)
+  - [🔍 用户交互1](#-用户交互1)
     - [3.1 输入输出1](#31-输入输出1)
     - [3.2 交互式提示1](#32-交互式提示1)
     - [3.3 进度条1](#33-进度条1)
-  - [4. 配置管理1](#4-配置管理1)
+  - [⚙️ 配置管理1](#️-配置管理1)
     - [4.1 环境变量1](#41-环境变量1)
     - [4.2 配置文件1](#42-配置文件1)
     - [4.3 优先级管理1](#43-优先级管理1)
-  - [5. 错误处理1](#5-错误处理1)
+  - [📊 错误处理1](#-错误处理1)
     - [5.1 Error 类型设计1](#51-error-类型设计1)
     - [5.2 友好的错误消息1](#52-友好的错误消息1)
     - [5.3 退出码1](#53-退出码1)
-  - [6. 日志和调试1](#6-日志和调试1)
+  - [🌟 日志和调试1](#-日志和调试1)
     - [6.1 日志级别1](#61-日志级别1)
     - [6.2 彩色输出1](#62-彩色输出1)
     - [6.3 调试模式1](#63-调试模式1)
-  - [7. 文件和目录操作1](#7-文件和目录操作1)
+  - [🔬 文件和目录操作1](#-文件和目录操作1)
     - [7.1 文件读写1](#71-文件读写1)
     - [7.2 目录遍历1](#72-目录遍历1)
     - [7.3 文件监控1](#73-文件监控1)
-  - [8. 实战案例1](#8-实战案例1)
+  - [💻 实战案例1](#-实战案例1)
     - [8.1 文件搜索工具1](#81-文件搜索工具1)
     - [8.2 JSON 处理工具1](#82-json-处理工具1)
     - [8.3 Git 子命令工具1](#83-git-子命令工具1)
-  - [9. 打包和发布1](#9-打包和发布1)
+  - [📚 打包和发布1](#-打包和发布1)
     - [9.1 跨平台编译1](#91-跨平台编译1)
     - [9.2 安装脚本1](#92-安装脚本1)
     - [9.3 发布到 crates.io1](#93-发布到-cratesio1)
-  - [10. 常见陷阱1](#10-常见陷阱1)
-  - [11. 最佳实践1](#11-最佳实践1)
-  - [12. 参考资源1](#12-参考资源1)
+  - [✅ 常见陷阱1](#-常见陷阱1)
+  - [🌈 最佳实践1](#-最佳实践1)
+  - [🎓 参考资源1](#-参考资源1)
     - [官方文档](#官方文档)
     - [推荐库](#推荐库)
     - [学习资源](#学习资源)
@@ -129,12 +129,12 @@ use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    
+
     if args.len() < 2 {
         eprintln!("用法: {} <name>", args[0]);
         std::process::exit(1);
     }
-    
+
     println!("Hello, {}!", args[1]);
 }
 ```
@@ -185,15 +185,15 @@ struct Cli {
     /// 输入文件路径
     #[arg(short, long)]
     input: String,
-    
+
     /// 输出文件路径
     #[arg(short, long)]
     output: Option<String>,
-    
+
     /// 详细输出
     #[arg(short, long)]
     verbose: bool,
-    
+
     /// 重复次数
     #[arg(short = 'n', long, default_value = "1")]
     count: u32,
@@ -201,7 +201,7 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     println!("Input: {}", cli.input);
     println!("Output: {:?}", cli.output);
     println!("Verbose: {}", cli.verbose);
@@ -241,19 +241,19 @@ enum Commands {
     Add {
         /// Item name
         name: String,
-        
+
         /// Item description
         #[arg(short, long)]
         description: Option<String>,
     },
-    
+
     /// List all items
     List {
         /// Show detailed information
         #[arg(short, long)]
         verbose: bool,
     },
-    
+
     /// Remove an item
     Remove {
         /// Item ID
@@ -263,7 +263,7 @@ enum Commands {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     match cli.command {
         Commands::Add { name, description } => {
             println!("Adding item: {}", name);
@@ -315,15 +315,15 @@ struct Cli {
     /// Output format
     #[arg(short = 'f', long, value_enum, default_value = "json")]
     format: OutputFormat,
-    
+
     /// File paths (multiple values)
     #[arg(short, long, num_args = 1..)]
     files: Vec<String>,
-    
+
     /// Enable all features
     #[arg(long, conflicts_with = "minimal")]
     full: bool,
-    
+
     /// Enable minimal features
     #[arg(long, conflicts_with = "full")]
     minimal: bool,
@@ -331,7 +331,7 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     println!("Format: {:?}", cli.format);
     println!("Files: {:?}", cli.files);
 }
@@ -360,17 +360,17 @@ use std::io::{self, Write};
 fn read_user_input(prompt: &str) -> io::Result<String> {
     print!("{}", prompt);
     io::stdout().flush()?;
-    
+
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
-    
+
     Ok(input.trim().to_string())
 }
 
 fn main() -> io::Result<()> {
     let name = read_user_input("请输入你的名字: ")?;
     println!("你好, {}!", name);
-    
+
     Ok(())
 }
 ```
@@ -390,7 +390,7 @@ fn main() {
         .default("Alice".to_string())
         .interact()
         .unwrap();
-    
+
     // 选择
     let languages = &["Rust", "Go", "Python", "TypeScript"];
     let selection = Select::new()
@@ -399,9 +399,9 @@ fn main() {
         .default(0)
         .interact()
         .unwrap();
-    
+
     println!("你选择了: {}", languages[selection]);
-    
+
     // 确认
     if Confirm::new()
         .with_prompt("是否继续?")
@@ -433,7 +433,7 @@ fn main() {
         thread::sleep(Duration::from_millis(50));
     }
     pb.finish_with_message("完成!");
-    
+
     // 自定义样式
     let pb = ProgressBar::new(100);
     pb.set_style(
@@ -442,7 +442,7 @@ fn main() {
             .unwrap()
             .progress_chars("=>-"),
     );
-    
+
     for i in 0..100 {
         pb.set_message(format!("Processing item {}", i));
         pb.inc(1);
@@ -468,17 +468,17 @@ fn main() {
     // 必需的环境变量
     let api_key = env::var("API_KEY")
         .expect("环境变量 API_KEY 未设置");
-    
+
     // 可选的环境变量
     let log_level = env::var("LOG_LEVEL")
         .unwrap_or_else(|_| "info".to_string());
-    
+
     // 解析为特定类型
     let max_retries: u32 = env::var("MAX_RETRIES")
         .unwrap_or_else(|_| "3".to_string())
         .parse()
         .expect("MAX_RETRIES 必须是数字");
-    
+
     println!("API Key: {}", api_key);
     println!("Log Level: {}", log_level);
     println!("Max Retries: {}", max_retries);
@@ -518,17 +518,17 @@ impl Settings {
             .add_source(File::with_name("config/default"))
             .add_source(File::with_name("config/local").required(false))
             .build()?;
-        
+
         config.try_deserialize()
     }
 }
 
 fn main() -> Result<(), ConfigError> {
     let settings = Settings::new()?;
-    
+
     println!("Server: {}:{}", settings.server.host, settings.server.port);
     println!("Database URL: {}", settings.database.url);
-    
+
     Ok(())
 }
 ```
@@ -563,21 +563,21 @@ struct Cli {
 
 fn get_port() -> u16 {
     let cli = Cli::parse();
-    
+
     // 1. CLI 参数
     if let Some(port) = cli.port {
         return port;
     }
-    
+
     // 2. 环境变量
     if let Ok(port_str) = env::var("APP_PORT") {
         if let Ok(port) = port_str.parse() {
             return port;
         }
     }
-    
+
     // 3. 配置文件 (略)
-    
+
     // 4. 默认值
     8080
 }
@@ -604,13 +604,13 @@ use thiserror::Error;
 pub enum CliError {
     #[error("文件不存在: {path}")]
     FileNotFound { path: String },
-    
+
     #[error("IO 错误: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("解析错误: {0}")]
     Parse(String),
-    
+
     #[error("配置无效: {0}")]
     InvalidConfig(String),
 }
@@ -623,7 +623,7 @@ fn read_config(path: &str) -> Result<String> {
             path: path.to_string(),
         });
     }
-    
+
     std::fs::read_to_string(path).map_err(Into::into)
 }
 
@@ -676,7 +676,7 @@ const EXIT_INVALID_INPUT: i32 = 2;
 
 fn main() {
     let result = run_app();
-    
+
     match result {
         Ok(_) => process::exit(EXIT_SUCCESS),
         Err(e) => {
@@ -707,7 +707,7 @@ use log::{debug, error, info, warn};
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 fn main() {
     env_logger::init();
-    
+
     debug!("调试信息");
     info!("普通信息");
     warn!("警告信息");
@@ -761,17 +761,17 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     let log_level = if cli.debug {
         LevelFilter::Debug
     } else {
         LevelFilter::Info
     };
-    
+
     env_logger::Builder::new()
         .filter_level(log_level)
         .init();
-    
+
     log::debug!("调试模式已启用");
     log::info!("应用启动");
 }
@@ -794,18 +794,18 @@ fn main() -> std::io::Result<()> {
     // 读取文件
     let content = fs::read_to_string("input.txt")?;
     println!("文件内容: {}", content);
-    
+
     // 写入文件
     fs::write("output.txt", "Hello, file!")?;
-    
+
     // 追加到文件
     let mut file = fs::OpenOptions::new()
         .append(true)
         .create(true)
         .open("log.txt")?;
-    
+
     writeln!(file, "New log entry")?;
-    
+
     Ok(())
 }
 ```
@@ -843,13 +843,13 @@ use std::time::Duration;
 fn main() {
     let (tx, rx) = channel();
     let mut watcher = watcher(tx, Duration::from_secs(1)).unwrap();
-    
+
     watcher
         .watch("src", RecursiveMode::Recursive)
         .unwrap();
-    
+
     println!("监控 src 目录...");
-    
+
     loop {
         match rx.recv() {
             Ok(event) => println!("文件变化: {:?}", event),
@@ -880,7 +880,7 @@ use walkdir::WalkDir;
 struct Cli {
     /// Pattern to search for
     pattern: String,
-    
+
     /// Directory to search in
     #[arg(default_value = ".")]
     path: String,
@@ -889,7 +889,7 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
     let regex = Regex::new(&cli.pattern).expect("Invalid regex");
-    
+
     for entry in WalkDir::new(&cli.path)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -927,7 +927,7 @@ use std::fs;
 struct Cli {
     /// Input JSON file
     input: String,
-    
+
     /// Pretty print
     #[arg(short, long)]
     pretty: bool,
@@ -935,18 +935,18 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    
+
     let content = fs::read_to_string(&cli.input)?;
     let value: Value = serde_json::from_str(&content)?;
-    
+
     let output = if cli.pretty {
         serde_json::to_string_pretty(&value)?
     } else {
         serde_json::to_string(&value)?
     };
-    
+
     println!("{}", output);
-    
+
     Ok(())
 }
 ```
@@ -974,14 +974,14 @@ enum Commands {
         /// Commit message
         message: String,
     },
-    
+
     /// Show repository statistics
     Stats,
 }
 
 fn main() {
     let cli = Cli::parse();
-    
+
     match cli.command {
         Commands::Qcommit { message } => {
             // git add -A
@@ -989,13 +989,13 @@ fn main() {
                 .args(&["add", "-A"])
                 .status()
                 .expect("git add failed");
-            
+
             // git commit -m "message"
             Command::new("git")
                 .args(&["commit", "-m", &message])
                 .status()
                 .expect("git commit failed");
-            
+
             println!("快速提交完成!");
         }
         Commands::Stats => {
@@ -1004,11 +1004,11 @@ fn main() {
                 .args(&["log", "--oneline"])
                 .output()
                 .expect("git log failed");
-            
+
             let commit_count = String::from_utf8_lossy(&output.stdout)
                 .lines()
                 .count();
-            
+
             println!("总提交数: {}", commit_count);
         }
     }

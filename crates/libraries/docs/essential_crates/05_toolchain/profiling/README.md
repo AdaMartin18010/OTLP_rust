@@ -1,7 +1,7 @@
 # 性能分析工具 (Profiling Tools)
 
-**类别**: 第5层 - 工具链  
-**重要程度**: ⭐⭐⭐⭐  
+**类别**: 第5层 - 工具链
+**重要程度**: ⭐⭐⭐⭐
 **更新日期**: 2025-10-20
 
 ---
@@ -54,7 +54,7 @@
 
 ### 1. criterion (基准测试 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add --dev criterion`  
+**添加依赖**: `cargo add --dev criterion`
 **用途**: 统计驱动的基准测试框架
 
 #### 基础用法
@@ -110,10 +110,10 @@ use criterion::{BenchmarkId, Criterion, Throughput};
 
 fn bench_with_input(c: &mut Criterion) {
     let mut group = c.benchmark_group("sorting");
-    
+
     for size in [10, 100, 1000, 10000].iter() {
         group.throughput(Throughput::Elements(*size as u64));
-        
+
         group.bench_with_input(
             BenchmarkId::from_parameter(size),
             size,
@@ -123,7 +123,7 @@ fn bench_with_input(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 ```
@@ -132,7 +132,7 @@ fn bench_with_input(c: &mut Criterion) {
 
 ### 2. flamegraph (火焰图 🌟)
 
-**安装**: `cargo install flamegraph`  
+**安装**: `cargo install flamegraph`
 **用途**: 生成性能火焰图
 
 #### Linux 使用
@@ -206,7 +206,7 @@ cargo bench
 
 ### 4. pprof (CPU/内存分析 💡)
 
-**添加依赖**: `cargo add --dev pprof`  
+**添加依赖**: `cargo add --dev pprof`
 **用途**: CPU 和内存性能分析
 
 #### CPU 性能分析
@@ -216,10 +216,10 @@ use pprof::protos::Message;
 
 fn main() {
     let guard = pprof::ProfilerGuard::new(100).unwrap();
-    
+
     // 运行需要分析的代码
     expensive_computation();
-    
+
     // 生成报告
     if let Ok(report) = guard.report().build() {
         let file = std::fs::File::create("profile.pb").unwrap();
@@ -250,7 +250,7 @@ criterion_group! {
 
 ### 5. valgrind/cachegrind (高级)
 
-**安装**: `sudo apt-get install valgrind`  
+**安装**: `sudo apt-get install valgrind`
 **用途**: 内存和缓存性能分析
 
 #### 内存泄漏检测
@@ -289,7 +289,7 @@ kcachegrind callgrind.out.12345
 
 ### 6. heaptrack (堆内存分析)
 
-**安装**: `sudo apt-get install heaptrack`  
+**安装**: `sudo apt-get install heaptrack`
 **用途**: 堆内存使用分析
 
 ```bash
@@ -304,7 +304,7 @@ heaptrack_gui heaptrack.my_app.12345.gz
 
 ### 7. perf (Linux 系统级)
 
-**安装**: `sudo apt-get install linux-tools-common`  
+**安装**: `sudo apt-get install linux-tools-common`
 **用途**: Linux 系统级性能分析
 
 #### 基础用法2
@@ -354,10 +354,10 @@ use criterion::{
 
 fn bench_algorithms(c: &mut Criterion) {
     let mut group = c.benchmark_group("algorithms");
-    
+
     for size in [10, 100, 1000].iter() {
         group.throughput(Throughput::Elements(*size as u64));
-        
+
         // 算法 A
         group.bench_with_input(
             BenchmarkId::new("algo_a", size),
@@ -367,7 +367,7 @@ fn bench_algorithms(c: &mut Criterion) {
                 b.iter(|| algorithm_a(black_box(&data)));
             },
         );
-        
+
         // 算法 B
         group.bench_with_input(
             BenchmarkId::new("algo_b", size),
@@ -378,7 +378,7 @@ fn bench_algorithms(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -449,7 +449,7 @@ use tokio::runtime::Runtime;
 
 fn bench_api_handler(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
-    
+
     c.bench_function("api_handler", |b| {
         b.to_async(&rt).iter(|| async {
             api_handler(black_box(request)).await
@@ -467,21 +467,21 @@ criterion_main!(benches);
 fn bench_sorting(c: &mut Criterion) {
     let mut group = c.benchmark_group("sorting");
     let data: Vec<i32> = (0..10000).collect();
-    
+
     group.bench_function("std::sort", |b| {
         b.iter(|| {
             let mut v = data.clone();
             v.sort();
         });
     });
-    
+
     group.bench_function("rayon::par_sort", |b| {
         b.iter(|| {
             let mut v = data.clone();
             v.par_sort();
         });
     });
-    
+
     group.finish();
 }
 ```

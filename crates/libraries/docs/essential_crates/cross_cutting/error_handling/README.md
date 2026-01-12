@@ -1,7 +1,7 @@
 # 错误处理 (Error Handling)
 
-> **核心库**: anyhow, thiserror, eyre  
-> **适用场景**: 应用错误处理、库错误定义、错误追踪、错误转换  
+> **核心库**: anyhow, thiserror, eyre
+> **适用场景**: 应用错误处理、库错误定义、错误追踪、错误转换
 > **技术栈定位**: 横切关注点 - 错误处理层
 
 ---
@@ -50,7 +50,7 @@ Rust 生态提供了多种工具来简化错误处理，从应用层到库层都
 
 ### 1. anyhow (应用层 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add anyhow`  
+**添加依赖**: `cargo add anyhow`
 **用途**: 简化应用程序的错误处理
 
 #### 核心特性
@@ -69,7 +69,7 @@ use std::fs;
 fn read_config(path: &str) -> Result<String> {
     let content = fs::read_to_string(path)
         .context("Failed to read config file")?;
-    
+
     Ok(content)
 }
 
@@ -81,7 +81,7 @@ fn parse_config(content: &str) -> Result<Config> {
 fn main() -> Result<()> {
     let content = read_config("config.json")?;
     let config = parse_config(&content)?;
-    
+
     println!("Config loaded: {:?}", config);
     Ok(())
 }
@@ -97,10 +97,10 @@ use anyhow::{Context, Result};
 fn process_user(user_id: u64) -> Result<()> {
     let user = fetch_user(user_id)
         .with_context(|| format!("Failed to fetch user {}", user_id))?;
-    
+
     validate_user(&user)
         .context("User validation failed")?;
-    
+
     Ok(())
 }
 ```
@@ -114,7 +114,7 @@ fn validate_age(age: i32) -> Result<()> {
     // 使用 ensure! 宏
     ensure!(age >= 0, "Age cannot be negative");
     ensure!(age <= 150, "Age is unrealistic");
-    
+
     Ok(())
 }
 
@@ -123,7 +123,7 @@ fn process_data(data: &[u8]) -> Result<String> {
         // 使用 bail! 宏提前返回
         bail!("Data is empty");
     }
-    
+
     String::from_utf8(data.to_vec())
         .map_err(|e| anyhow!("Invalid UTF-8: {}", e))
 }
@@ -139,10 +139,10 @@ fn main() -> Result<()> {
     if let Err(e) = optional_operation() {
         eprintln!("Warning: {:#}", e);
     }
-    
+
     // 必须成功的操作
     critical_operation()?;
-    
+
     Ok(())
 }
 ```
@@ -151,7 +151,7 @@ fn main() -> Result<()> {
 
 ### 2. thiserror (库层 ⭐⭐⭐⭐⭐)
 
-**添加依赖**: `cargo add thiserror`  
+**添加依赖**: `cargo add thiserror`
 **用途**: 定义自定义错误类型
 
 #### 基础用法2
@@ -163,16 +163,16 @@ use thiserror::Error;
 pub enum DataStoreError {
     #[error("Data not found: {0}")]
     NotFound(String),
-    
+
     #[error("Invalid input: {msg}")]
     InvalidInput { msg: String },
-    
+
     #[error("IO error")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Parse error")]
     Parse(#[from] serde_json::Error),
-    
+
     #[error("Unknown error")]
     Unknown,
 }
@@ -184,10 +184,10 @@ fn load_data(id: &str) -> Result<Data, DataStoreError> {
             msg: "ID cannot be empty".to_string(),
         });
     }
-    
+
     let content = std::fs::read_to_string(format!("data/{}.json", id))?;
     let data: Data = serde_json::from_str(&content)?;
-    
+
     Ok(data)
 }
 ```
@@ -204,11 +204,11 @@ pub enum MyError {
     // 自动实现 From<std::io::Error>
     #[error("IO error")]
     Io(#[from] std::io::Error),
-    
+
     // 自动实现 From<serde_json::Error>
     #[error("JSON error")]
     Json(#[from] serde_json::Error),
-    
+
     // 透明传播，保留原始错误
     #[error(transparent)]
     Other(#[from] anyhow::Error),
@@ -227,7 +227,7 @@ pub enum ParseError {
         expected: String,
         found: String,
     },
-    
+
     #[error("Invalid field at line {line}")]
     InvalidField {
         line: usize,
@@ -241,7 +241,7 @@ pub enum ParseError {
 
 ### 3. eyre (增强报告 💡)
 
-**添加依赖**: `cargo add eyre`  
+**添加依赖**: `cargo add eyre`
 **用途**: 增强的错误报告，带有更好的诊断信息
 
 #### 基础用法3
@@ -253,7 +253,7 @@ fn main() -> Result<()> {
     let path = "config.toml";
     let config = std::fs::read_to_string(path)
         .wrap_err_with(|| format!("Failed to read config from {}", path))?;
-    
+
     Ok(())
 }
 ```
@@ -265,11 +265,11 @@ use eyre::{eyre, Result};
 
 fn main() -> Result<()> {
     color_eyre::install()?;  // 安装彩色错误报告
-    
+
     if std::env::var("API_KEY").is_err() {
         return Err(eyre!("API_KEY environment variable is not set"));
     }
-    
+
     Ok(())
 }
 ```
@@ -289,9 +289,9 @@ use anyhow::{Context, Result};
 fn main() -> Result<()> {
     let config = load_config()
         .context("Failed to load configuration")?;
-    
+
     run_app(config)?;
-    
+
     Ok(())
 }
 ```
@@ -306,7 +306,7 @@ use thiserror::Error;
 pub enum MyLibError {
     #[error("Configuration error: {0}")]
     Config(String),
-    
+
     #[error("Network error")]
     Network(#[from] std::io::Error),
 }
@@ -325,7 +325,7 @@ pub fn do_something() -> Result<(), MyLibError> {
 pub enum DomainError {
     #[error("User not found: {0}")]
     UserNotFound(String),
-    
+
     #[error("Invalid email: {0}")]
     InvalidEmail(String),
 }
@@ -335,7 +335,7 @@ pub enum DomainError {
 pub enum InfraError {
     #[error("Database error")]
     Database(#[from] sqlx::Error),
-    
+
     #[error("Redis error")]
     Redis(#[from] redis::RedisError),
 }
@@ -345,7 +345,7 @@ pub enum InfraError {
 pub enum AppError {
     #[error("Domain error")]
     Domain(#[from] DomainError),
-    
+
     #[error("Infrastructure error")]
     Infra(#[from] InfraError),
 }
@@ -368,10 +368,10 @@ use serde_json::json;
 pub enum ApiError {
     #[error("Not found: {0}")]
     NotFound(String),
-    
+
     #[error("Bad request: {0}")]
     BadRequest(String),
-    
+
     #[error("Internal error")]
     Internal(#[from] anyhow::Error),
 }
@@ -387,11 +387,11 @@ impl IntoResponse for ApiError {
                 "Internal server error".to_string(),
             ),
         };
-        
+
         let body = Json(json!({
             "error": message,
         }));
-        
+
         (status, body).into_response()
     }
 }
@@ -401,7 +401,7 @@ async fn get_user(user_id: String) -> Result<Json<User>, ApiError> {
     let user = fetch_user(&user_id)
         .await
         .ok_or_else(|| ApiError::NotFound(format!("User {} not found", user_id)))?;
-    
+
     Ok(Json(user))
 }
 ```
@@ -414,15 +414,15 @@ use anyhow::Result;
 fn main() -> Result<()> {
     // 策略1: 重试
     let data = retry(3, || fetch_data())?;
-    
+
     // 策略2: 降级
     let config = load_config().unwrap_or_default();
-    
+
     // 策略3: 缓存回退
     let result = fetch_fresh_data()
         .or_else(|_| load_from_cache())
         .context("Failed to get data from any source")?;
-    
+
     Ok(())
 }
 
@@ -479,23 +479,23 @@ use clap::Parser;
 struct Cli {
     #[arg(short, long)]
     input: String,
-    
+
     #[arg(short, long)]
     output: String,
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    
+
     let content = std::fs::read_to_string(&cli.input)
         .with_context(|| format!("Failed to read input file: {}", cli.input))?;
-    
+
     let processed = process(&content)
         .context("Failed to process content")?;
-    
+
     std::fs::write(&cli.output, processed)
         .with_context(|| format!("Failed to write output file: {}", cli.output))?;
-    
+
     println!("✅ Processing complete");
     Ok(())
 }
@@ -511,13 +511,13 @@ use thiserror::Error;
 pub enum ServiceError {
     #[error("Database error")]
     Database(#[from] sqlx::Error),
-    
+
     #[error("Redis error")]
     Redis(#[from] redis::RedisError),
-    
+
     #[error("HTTP error")]
     Http(#[from] reqwest::Error),
-    
+
     #[error("Business logic error: {0}")]
     Business(String),
 }
@@ -534,16 +534,16 @@ impl UserService {
         if let Ok(user) = self.get_from_cache(id).await {
             return Ok(user);
         }
-        
+
         // 从数据库获取
         let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
             .bind(id)
             .fetch_one(&self.db)
             .await?;
-        
+
         // 更新缓存
         self.set_cache(id, &user).await?;
-        
+
         Ok(user)
     }
 }
@@ -557,18 +557,18 @@ use tokio::task::JoinSet;
 
 async fn process_batch(items: Vec<Item>) -> Result<Vec<Result<Output>>> {
     let mut set = JoinSet::new();
-    
+
     for item in items {
         set.spawn(async move {
             process_item(item).await
         });
     }
-    
+
     let mut results = Vec::new();
     while let Some(result) = set.join_next().await {
         results.push(result?);
     }
-    
+
     Ok(results)
 }
 ```

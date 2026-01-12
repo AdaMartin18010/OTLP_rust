@@ -86,16 +86,85 @@ impl ProbeManager {
         Err(EbpfError::UnsupportedPlatform.into())
     }
 
+    /// 附加 tracepoint
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn attach_tracepoint(&mut self, name: &str, category: &str, event: &str) -> Result<()> {
+        // TODO: 使用 aya 附加 tracepoint
+        tracing::info!("Tracepoint 附加功能待实现: {} -> {}:{}", name, category, event);
+
+        self.probes.push(ProbeInfo {
+            probe_type: ProbeType::TracePoint,
+            name: name.to_string(),
+            target: format!("{}:{}", category, event),
+            attached: false,
+        });
+
+        Ok(())
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn attach_tracepoint(&mut self, _name: &str, _category: &str, _event: &str) -> Result<()> {
+        Err(EbpfError::UnsupportedPlatform.into())
+    }
+
+    /// 分离指定探针
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn detach(&mut self, name: &str) -> Result<()> {
+        // TODO: 分离指定探针
+        let initial_len = self.probes.len();
+        self.probes.retain(|p| p.name != name);
+        
+        if self.probes.len() < initial_len {
+            tracing::info!("分离探针: {}", name);
+            Ok(())
+        } else {
+            Err(EbpfError::AttachFailed(format!("探针不存在: {}", name)).into())
+        }
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn detach(&mut self, _name: &str) -> Result<()> {
+        Err(EbpfError::UnsupportedPlatform.into())
+    }
+
     /// 分离所有探针
     pub fn detach_all(&mut self) -> Result<()> {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
         {
             // TODO: 分离所有探针
-            tracing::info!("分离 {} 个探针", self.probes.len());
+            let count = self.probes.len();
+            tracing::info!("分离 {} 个探针", count);
             self.probes.clear();
         }
 
         Ok(())
+    }
+
+    /// 获取探针列表
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn list_probes(&self) -> Vec<(String, ProbeType, String, bool)> {
+        self.probes
+            .iter()
+            .map(|p| (p.name.clone(), p.probe_type, p.target.clone(), p.attached))
+            .collect()
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn list_probes(&self) -> Vec<(String, ProbeType, String, bool)> {
+        vec![]
+    }
+
+    /// 获取探针数量
+    pub fn probe_count(&self) -> usize {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            self.probes.len()
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            0
+        }
     }
 }
 

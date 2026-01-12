@@ -1,8 +1,8 @@
 # 第5层：工具链 (Toolchain Layer)
 
-**层级定位**: 开发工具与基础设施  
-**重要程度**: ⭐⭐⭐⭐⭐ (对所有开发者必备)  
-**更新日期**: 2025-10-20  
+**层级定位**: 开发工具与基础设施
+**重要程度**: ⭐⭐⭐⭐⭐ (对所有开发者必备)
+**更新日期**: 2025-10-20
 **Rust 版本**: 1.90+
 
 ---
@@ -256,21 +256,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-      
+
       - name: Check formatting
         run: cargo fmt -- --check
-      
+
       - name: Clippy
         run: cargo clippy -- -D warnings
-      
+
       - name: Test
         run: cargo nextest run
-      
+
       - name: Security audit
         run: cargo audit
 ```

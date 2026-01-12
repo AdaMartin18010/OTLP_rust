@@ -1,6 +1,6 @@
 # Web 框架
 
-> **核心库**: axum, actix-web, rocket, warp, poem  
+> **核心库**: axum, actix-web, rocket, warp, poem
 > **适用场景**: RESTful API、微服务、全栈Web应用
 
 ---
@@ -90,7 +90,7 @@ async fn get_user(Path(id): Path<u64>) -> Json<User> {
 async fn list_users(Query(pagination): Query<Pagination>) -> Json<Vec<User>> {
     let page = pagination.page.unwrap_or(1);
     let per_page = pagination.per_page.unwrap_or(10);
-    
+
     Json(vec![
         User { id: 1, name: "Alice".to_string() },
         User { id: 2, name: "Bob".to_string() },
@@ -114,11 +114,11 @@ async fn main() {
         .route("/", get(hello))
         .route("/users", get(list_users).post(create_user))
         .route("/users/:id", get(get_user));
-    
+
     // 启动服务器
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("Listening on {}", addr);
-    
+
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
@@ -149,11 +149,11 @@ async fn main() {
     let state = AppState {
         counter: Arc::new(Mutex::new(0)),
     };
-    
+
     let app = Router::new()
         .route("/increment", get(increment))
         .with_state(state);
-    
+
     // ... 启动服务器
 }
 ```
@@ -176,11 +176,11 @@ async fn auth_middleware<B>(
     let auth_header = req.headers()
         .get("authorization")
         .and_then(|v| v.to_str().ok());
-    
+
     if auth_header != Some("Bearer valid_token") {
         return Err(StatusCode::UNAUTHORIZED);
     }
-    
+
     Ok(next.run(req).await)
 }
 
@@ -330,7 +330,7 @@ impl IntoResponse for AppError {
             AppError::NotFound => (StatusCode::NOT_FOUND, "Not found"),
             AppError::InternalError => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error"),
         };
-        
+
         (status, Json(ErrorResponse {
             error: message.to_string(),
         })).into_response()
@@ -387,5 +387,5 @@ async fn main() {
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

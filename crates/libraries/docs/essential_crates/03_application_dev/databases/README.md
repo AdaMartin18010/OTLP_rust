@@ -1,6 +1,6 @@
 # 数据库访问
 
-> **核心库**: sqlx, diesel, sea-orm, mongodb, redis  
+> **核心库**: sqlx, diesel, sea-orm, mongodb, redis
 > **适用场景**: SQL数据库、NoSQL、ORM、连接池
 
 ---
@@ -34,22 +34,22 @@ struct User {
 async fn main() -> Result<(), sqlx::Error> {
     // 连接池
     let pool = PgPool::connect("postgres://user:pass@localhost/db").await?;
-    
+
     // 查询
     let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
         .bind(1)
         .fetch_one(&pool)
         .await?;
-    
+
     println!("{:?}", user);
-    
+
     // 插入
     sqlx::query("INSERT INTO users (name, email) VALUES ($1, $2)")
         .bind("Alice")
         .bind("alice@example.com")
         .execute(&pool)
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -72,14 +72,14 @@ struct User {
 fn main() {
     let conn = PgConnection::establish("postgres://localhost/db")
         .expect("Error connecting to database");
-    
+
     use schema::users::dsl::*;
-    
+
     let results = users
         .filter(id.eq(1))
         .load::<User>(&conn)
         .expect("Error loading users");
-    
+
     for user in results {
         println!("{}: {}", user.name, user.email);
     }
@@ -110,10 +110,10 @@ impl ActiveModelBehavior for ActiveModel {}
 #[tokio::main]
 async fn main() -> Result<(), DbErr> {
     let db = Database::connect("postgres://localhost/db").await?;
-    
+
     // 查询
     let user = Entity::find_by_id(1).one(&db).await?;
-    
+
     // 插入
     let user = ActiveModel {
         name: Set("Alice".to_owned()),
@@ -121,7 +121,7 @@ async fn main() -> Result<(), DbErr> {
         ..Default::default()
     };
     user.insert(&db).await?;
-    
+
     Ok(())
 }
 ```
@@ -144,23 +144,23 @@ struct User {
 async fn main() -> mongodb::error::Result<()> {
     let client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
     let client = Client::with_options(client_options)?;
-    
+
     let db = client.database("mydb");
     let collection = db.collection::<User>("users");
-    
+
     // 插入
     let user = User {
         name: "Alice".to_string(),
         email: "alice@example.com".to_string(),
     };
     collection.insert_one(user, None).await?;
-    
+
     // 查询
     let mut cursor = collection.find(None, None).await?;
     while let Some(user) = cursor.next().await {
         println!("{:?}", user?);
     }
-    
+
     Ok(())
 }
 ```
@@ -176,23 +176,23 @@ use redis::AsyncCommands;
 async fn main() -> redis::RedisResult<()> {
     let client = redis::Client::open("redis://127.0.0.1/")?;
     let mut con = client.get_async_connection().await?;
-    
+
     // 设置值
     con.set("key", "value").await?;
-    
+
     // 获取值
     let value: String = con.get("key").await?;
     println!("Value: {}", value);
-    
+
     // Hash操作
     con.hset("user:1", "name", "Alice").await?;
     let name: String = con.hget("user:1", "name").await?;
-    
+
     Ok(())
 }
 ```
 
 ---
 
-**文档版本**: 1.0.0  
+**文档版本**: 1.0.0
 **最后更新**: 2025-10-20

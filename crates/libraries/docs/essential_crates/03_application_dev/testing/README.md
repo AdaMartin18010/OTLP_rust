@@ -1,6 +1,6 @@
 # 测试工具
 
-> **核心库**: criterion, proptest, mockall, wiremock, rstest, insta  
+> **核心库**: criterion, proptest, mockall, wiremock, rstest, insta
 > **适用场景**: 单元测试、集成测试、基准测试、属性测试、Mock、快照测试
 
 ---
@@ -349,13 +349,13 @@ mod tests {
     #[test]
     fn test_get_user() {
         let mut mock = MockDatabase::new();
-        
+
         // 设置期望
         mock.expect_get_user()
             .with(eq(1))           // 参数匹配
             .times(1)               // 调用次数
             .returning(|_| Some("Alice".to_string()));
-        
+
         // 调用
         assert_eq!(mock.get_user(1), Some("Alice".to_string()));
     }
@@ -363,12 +363,12 @@ mod tests {
     #[test]
     fn test_save_user() {
         let mut mock = MockDatabase::new();
-        
+
         mock.expect_save_user()
             .with(eq(1), eq("Bob".to_string()))
             .times(1)
             .returning(|_, _| Ok(()));
-        
+
         assert!(mock.save_user(1, "Bob".to_string()).is_ok());
     }
 
@@ -388,18 +388,18 @@ mod tests {
 #[test]
 fn test_retry_logic() {
     let mut mock = MockDatabase::new();
-    
+
     // 第一次失败，第二次成功
     mock.expect_get_user()
         .with(eq(1))
         .times(2)
         .returning(|_| None)
         .returning(|_| Some("Alice".to_string()));
-    
+
     // 模拟重试逻辑
     let result1 = mock.get_user(1);
     assert_eq!(result1, None);
-    
+
     let result2 = mock.get_user(1);
     assert_eq!(result2, Some("Alice".to_string()));
 }
@@ -429,12 +429,12 @@ mod tests {
     #[test]
     fn test_user_service() {
         let mut mock_db = MockDatabase::new();
-        
+
         mock_db.expect_get_user()
             .with(eq(1))
             .times(1)
             .returning(|_| Some("Alice".to_string()));
-        
+
         let service = UserService::new(mock_db);
         assert_eq!(service.get_user_name(1), "Alice");
     }
@@ -442,12 +442,12 @@ mod tests {
     #[test]
     fn test_user_not_found() {
         let mut mock_db = MockDatabase::new();
-        
+
         mock_db.expect_get_user()
             .with(eq(999))
             .times(1)
             .returning(|_| None);
-        
+
         let service = UserService::new(mock_db);
         assert_eq!(service.get_user_name(999), "Unknown");
     }
@@ -552,7 +552,7 @@ proptest! {
     #[test]
     fn test_sort_is_sorted(mut v in prop::collection::vec(any::<i32>(), 0..100)) {
         my_sort(&mut v);
-        
+
         // 验证有序性
         for i in 1..v.len() {
             prop_assert!(v[i - 1] <= v[i]);
@@ -564,7 +564,7 @@ proptest! {
         my_sort(&mut v);
         let sorted = v.clone();
         my_sort(&mut v);
-        
+
         // 排序两次结果相同
         prop_assert_eq!(v, sorted);
     }
@@ -798,13 +798,13 @@ use criterion::{BenchmarkId, Criterion};
 
 fn bench_fibonacci(c: &mut Criterion) {
     let mut group = c.benchmark_group("fibonacci");
-    
+
     for i in [10, 15, 20, 25].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(i), i, |b, &n| {
             b.iter(|| fibonacci(black_box(n)));
         });
     }
-    
+
     group.finish();
 }
 ```
@@ -822,17 +822,17 @@ fn quick_sort(v: &mut [i32]) {
 
 fn bench_sorting(c: &mut Criterion) {
     let mut group = c.benchmark_group("sorting");
-    
+
     for size in [100, 1000, 10000].iter() {
         let data: Vec<i32> = (0..*size).collect();
-        
+
         group.bench_with_input(BenchmarkId::new("merge_sort", size), &data, |b, data| {
             b.iter(|| {
                 let mut v = data.clone();
                 merge_sort(&mut v);
             });
         });
-        
+
         group.bench_with_input(BenchmarkId::new("quick_sort", size), &data, |b, data| {
             b.iter(|| {
                 let mut v = data.clone();
@@ -840,7 +840,7 @@ fn bench_sorting(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 ```
@@ -913,7 +913,7 @@ fn test_user_json() {
         name: "Alice".to_string(),
         email: "alice@example.com".to_string(),
     };
-    
+
     assert_json_snapshot!(user);
 }
 ```
@@ -1040,7 +1040,7 @@ mod tests {
     #[test]
     fn test_get_user_success() {
         let mut mock_repo = MockUserRepository::new();
-        
+
         mock_repo.expect_find_by_id()
             .with(eq(1))
             .times(1)
@@ -1052,7 +1052,7 @@ mod tests {
 
         let service = UserService::new(mock_repo);
         let result = service.get_user(1);
-        
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap().name, "Alice");
     }
@@ -1060,7 +1060,7 @@ mod tests {
     #[test]
     fn test_get_user_not_found() {
         let mut mock_repo = MockUserRepository::new();
-        
+
         mock_repo.expect_find_by_id()
             .with(eq(999))
             .times(1)
@@ -1068,7 +1068,7 @@ mod tests {
 
         let service = UserService::new(mock_repo);
         let result = service.get_user(999);
-        
+
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "用户不存在");
     }
@@ -1088,7 +1088,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Benchmark
 fn hash_string_builtin(s: &str) -> u64 {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     s.hash(&mut hasher);
     hasher.finish()
@@ -1104,19 +1104,19 @@ fn hash_string_custom(s: &str) -> u64 {
 
 fn benchmark_hash(c: &mut Criterion) {
     let mut group = c.benchmark_group("string_hash");
-    
+
     for size in [10, 100, 1000].iter() {
         let s = "a".repeat(*size);
-        
+
         group.bench_with_input(BenchmarkId::new("builtin", size), &s, |b, s| {
             b.iter(|| hash_string_builtin(black_box(s)));
         });
-        
+
         group.bench_with_input(BenchmarkId::new("custom", size), &s, |b, s| {
             b.iter(|| hash_string_custom(black_box(s)));
         });
     }
-    
+
     group.finish();
 }
 
@@ -1173,10 +1173,10 @@ fn test_user_creation() {
     // Arrange（准备）
     let name = "Alice";
     let email = "alice@example.com";
-    
+
     // Act（执行）
     let user = User::new(name, email);
-    
+
     // Assert（断言）
     assert_eq!(user.name, name);
     assert_eq!(user.email, email);
@@ -1316,7 +1316,7 @@ fn test_with_mock() {
         .with(eq(1))
         .times(1)
         .returning(|_| Some("Alice".to_string()));
-    
+
     let result = mock.get_user(1);
     assert_eq!(result, Some("Alice".to_string()));
 }
@@ -1415,6 +1415,6 @@ fn benchmark(c: &mut Criterion) {
 
 ---
 
-**文档版本**: 2.0.0  
-**最后更新**: 2025-10-20  
+**文档版本**: 2.0.0
+**最后更新**: 2025-10-20
 **维护者**: Rust 学习社区

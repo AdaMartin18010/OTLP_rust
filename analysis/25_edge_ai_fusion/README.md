@@ -1,7 +1,7 @@
 # Edge AI Fusion
 
-**Status**: 🧪 Experimental / Research Phase  
-**Created**: 2025-10-09  
+**Status**: 🧪 Experimental / Research Phase
+**Created**: 2025-10-09
 **Last Updated**: 2025-10-27
 
 ---
@@ -34,5 +34,5 @@ This directory explores the integration of edge computing and AI for distributed
 
 ---
 
-**Maintainer**: Research Team  
+**Maintainer**: Research Team
 **Category**: Experimental / Research
