@@ -1,67 +1,102 @@
-//! eBPF Profiling使用示例
+//! # eBPF CPU 性能分析示例
 //!
-//! 演示如何使用eBPF性能分析器进行持续性能分析
+//! 演示如何使用 eBPF 模块进行 CPU 性能分析。
+//!
+//! **注意**: 此示例仅在 Linux 平台运行，且需要 CAP_BPF 权限。
+//! 运行前请确保已安装 `aya` 或 `libbpf-rs` 依赖，并启用 `ebpf` feature。
+//!
+//! ```bash
+//! # 运行此示例 (需要 root 权限或 CAP_BPF)
+//! sudo cargo run --example ebpf_profiling --features ebpf
+//! ```
 
 #[cfg(target_os = "linux")]
-use otlp::{EbpfProfiler, EbpfProfilerConfig};
+use otlp::ebpf::{
+    EbpfConfig, EbpfCpuProfiler, EbpfError,
+    create_recommended_config, validate_config,
+};
+#[cfg(target_os = "linux")]
 use std::time::Duration;
+#[cfg(target_os = "linux")]
+use tracing::info;
 
 #[cfg(target_os = "linux")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. 创建eBPF性能分析器配置
-    let config = EbpfProfilerConfig::new()
-        .with_sample_rate(99) // 99Hz采样频率，符合2025年标准
-        .with_duration(Duration::from_secs(60))
-        .with_kernel_tracking(false); // 仅跟踪用户空间
+    tracing_subscriber::fmt::init();
 
-    // 2. 创建性能分析器
-    let mut profiler = EbpfProfiler::new(config)?;
+    println!("==========================================");
+    println!("  🚀 启动 eBPF CPU 性能分析示例");
+    println!("==========================================");
 
-    // 3. 开始采样
-    println!("启动eBPF性能分析...");
-    profiler.start()?;
+    // 1. 创建推荐的配置（根据环境变量）
+    let env = std::env::var("ENV").unwrap_or_else(|_| "development".to_string());
+    let config = create_recommended_config(&env);
 
-    // 4. 模拟工作负载
-    println!("执行工作负载...");
-    for i in 0..1000 {
-        // 模拟CPU密集型任务
-        let _ = (0..1000).sum::<i32>();
-        if i % 100 == 0 {
-            println!("进度: {}/1000", i);
+    println!("\n📋 eBPF 配置:");
+    println!("  - 环境: {}", env);
+    println!("  - 采样频率: {} Hz", config.sample_rate);
+    println!("  - 持续时间: {:?}", config.duration);
+    println!("  - 最大采样数: {}", config.max_samples);
+
+    // 2. 验证配置
+    if let Err(e) = validate_config(&config) {
+        eprintln!("❌ 配置验证失败: {}", e);
+        return Err(e.into());
+    }
+    println!("✅ 配置验证通过");
+
+    // 3. 检查系统支持
+    println!("\n🔧 检查系统支持...");
+    match EbpfLoader::check_system_support() {
+        Ok(()) => {
+            println!("✅ 系统支持 eBPF");
+        }
+        Err(e) => {
+            eprintln!("❌ 系统不支持 eBPF: {}", e);
+            eprintln!("提示: 需要 Linux 内核 >= 5.8 和 CAP_BPF 权限");
+            return Err(e.into());
         }
     }
 
-    // 5. 停止采样并生成profile
-    println!("停止采样...");
-    let profile = profiler.stop()?;
+    // 4. 创建 eBPF 加载器
+    println!("\n🔧 创建 eBPF 加载器...");
+    let loader = match EbpfLoader::new(config.clone()) {
+        Ok(l) => {
+            println!("✅ eBPF 加载器创建成功");
+            l
+        }
+        Err(e) => {
+            eprintln!("❌ eBPF 加载器创建失败: {}", e);
+            return Err(e.into());
+        }
+    };
 
-    // 6. 获取性能开销
-    let overhead = profiler.get_overhead();
-    println!("\n性能开销:");
-    println!("  CPU开销: {:.2}%", overhead.cpu_percent);
-    println!("  内存开销: {} MB", overhead.memory_bytes / 1024 / 1024);
+    // 5. 执行一些工作负载（模拟性能分析）
+    println!("\n⏳ 执行工作负载（持续 {:?}）...", config.duration);
+    let work_duration = config.duration.min(Duration::from_secs(30)); // 最多30秒
+    let start_time = std::time::Instant::now();
 
-    // 7. 验证性能目标
-    if overhead.cpu_percent < 1.0 {
-        println!("✅ CPU开销 <1%，符合2025年标准");
-    } else {
-        println!("⚠️  CPU开销 >=1%，需要优化");
+    // 模拟CPU密集型工作
+    while start_time.elapsed() < work_duration {
+        let _: u64 = (0..1_000_000).sum(); // CPU 密集型任务
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 
-    if overhead.memory_bytes < 50 * 1024 * 1024 {
-        println!("✅ 内存开销 <50MB，符合2025年标准");
-    } else {
-        println!("⚠️  内存开销 >=50MB，需要优化");
-    }
+    println!("✅ 工作负载执行完成");
+    println!("\n💡 提示: eBPF CPU 性能分析功能正在开发中");
+    println!("   当前版本提供了基础框架和配置验证功能");
+    println!("   完整的性能分析功能将在后续版本中实现");
 
-    // 8. 导出profile (实际应用中)
-    println!("\nProfile已生成，可以导出为pprof格式");
+    println!("\n==========================================");
+    println!("  🎉 eBPF CPU 性能分析示例运行成功！");
+    println!("==========================================");
 
     Ok(())
 }
 
 #[cfg(not(target_os = "linux"))]
 fn main() {
-    println!("eBPF Profiling仅在Linux平台支持");
+    println!("eBPF CPU 性能分析示例仅在 Linux 平台支持。");
+    println!("当前操作系统不是 Linux，跳过示例运行。");
 }

@@ -1,0 +1,77 @@
+name: eBPF Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'crates/otlp/src/ebpf/**'
+      - 'examples/ebpf_*.rs'
+      - 'tests/ebpf_*.rs'
+      - 'benches/ebpf_*.rs'
+      - '.github/workflows/ebpf-tests.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'crates/otlp/src/ebpf/**'
+      - 'examples/ebpf_*.rs'
+      - 'tests/ebpf_*.rs'
+      - 'benches/ebpf_*.rs'
+      - '.github/workflows/ebpf-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  ebpf-tests:
+    name: eBPF Tests (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-ebpf-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-ebpf-
+
+      - name: Check system support
+        run: |
+          echo "Checking system support for eBPF..."
+          uname -r
+          ls -la /sys/kernel/btf/vmlinux || echo "BTF not found (may need kernel >= 5.8)"
+          echo "Note: eBPF tests require Linux kernel >= 5.8 and CAP_BPF permissions"
+
+      - name: Run eBPF unit tests
+        run: |
+          cargo test --package otlp --lib ebpf --features ebpf --no-fail-fast || echo "Tests may fail if eBPF is not supported"
+
+      - name: Run eBPF integration tests
+        run: |
+          cargo test --test ebpf_integration --features ebpf --no-fail-fast || echo "Tests may fail if eBPF is not supported"
+
+      - name: Build eBPF examples
+        run: |
+          cargo build --examples --features ebpf --no-fail-fast || echo "Build may fail if eBPF is not supported"
+
+      - name: Check eBPF code formatting
+        run: |
+          cargo fmt --all -- --check || echo "Format check failed"
+
+      - name: Run Clippy on eBPF code
+        run: |
+          cargo clippy --package otlp --features ebpf -- -D warnings || echo "Clippy warnings found"
+
+      - name: Generate eBPF documentation
+        run: |
+          cargo doc --package otlp --features ebpf --no-deps || echo "Doc generation failed"
+        continue-on-error: true

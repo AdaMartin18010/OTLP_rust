@@ -15,6 +15,7 @@
 ## 🎯 实现目标
 
 ### 核心功能
+
 1. ✅ CPU 性能分析（perf events）
 2. ✅ 网络追踪（TCP/UDP/HTTP/gRPC）
 3. ✅ 系统调用追踪
@@ -22,6 +23,7 @@
 5. ✅ OpenTelemetry 集成
 
 ### 技术栈
+
 - **eBPF 库**: aya (纯 Rust) 或 libbpf-rs（推荐生产环境）
 - **支持平台**: Linux (内核 >= 5.8)
 - **集成**: OpenTelemetry OTLP
@@ -328,23 +330,27 @@ pub use ebpf::{EbpfLoader, EbpfProfiler, EbpfConfig, EbpfEvent};
 ## ✅ Step 5: 实现检查清单
 
 ### 基础设施
+
 - [ ] 添加 aya 或 libbpf-rs 依赖
 - [ ] 创建 eBPF 模块结构
 - [ ] 实现基础类型定义
 - [ ] 实现加载器接口
 
 ### 功能实现
+
 - [ ] CPU 性能分析
 - [ ] 网络追踪
 - [ ] 系统调用追踪
 - [ ] 内存分配追踪
 
 ### 集成
+
 - [ ] OpenTelemetry 集成
 - [ ] OTLP 导出
 - [ ] 配置管理
 
 ### 文档和测试
+
 - [ ] API 文档
 - [ ] 使用示例
 - [ ] 单元测试

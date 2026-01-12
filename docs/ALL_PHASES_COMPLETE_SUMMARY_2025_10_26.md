@@ -243,23 +243,23 @@ Phase 7: 格式标准化计划         ✅ 100% (82840d5, 261b865)
 
 ### 入口文档
 
-7. **[START_HERE.md](START_HERE.md)** - 10分钟快速入门
-8. **[README.md](README.md)** - 项目完整概览
-9. **[CONTRIBUTING.md](CONTRIBUTING.md)** - 贡献指南
+1. **[START_HERE.md](START_HERE.md)** - 10分钟快速入门
+2. **[README.md](README.md)** - 项目完整概览
+3. **[CONTRIBUTING.md](CONTRIBUTING.md)** - 贡献指南
 
 ### 索引和标准
 
-10. **[docs/README.md](docs/README.md)** - 文档主入口
-11. **[docs/00_INDEX/README.md](docs/00_INDEX/README.md)** - 完整索引系统
-12. **[docs/00_INDEX/STANDARDS.md](docs/00_INDEX/STANDARDS.md)** - 文档标准
-13. **[docs/00_INDEX/REVIEW_PROCESS.md](docs/00_INDEX/REVIEW_PROCESS.md)** - 审查流程
+1. **[docs/README.md](docs/README.md)** - 文档主入口
+2. **[docs/00_INDEX/README.md](docs/00_INDEX/README.md)** - 完整索引系统
+3. **[docs/00_INDEX/STANDARDS.md](docs/00_INDEX/STANDARDS.md)** - 文档标准
+4. **[docs/00_INDEX/REVIEW_PROCESS.md](docs/00_INDEX/REVIEW_PROCESS.md)** - 审查流程
 
 ### 工具和脚本
 
-14. **scripts/doc_maintenance/format_scan.sh** - 格式扫描器 (Bash)
-15. **scripts/doc_maintenance/format_standardizer.ps1** - 格式分析器 (PowerShell)
-16. **scripts/doc_maintenance/format_check.sh** - 格式检查器
-17. **scripts/doc_maintenance/link_validator.sh** - 链接验证器
+1. **scripts/doc_maintenance/format_scan.sh** - 格式扫描器 (Bash)
+2. **scripts/doc_maintenance/format_standardizer.ps1** - 格式分析器 (PowerShell)
+3. **scripts/doc_maintenance/format_check.sh** - 格式检查器
+4. **scripts/doc_maintenance/link_validator.sh** - 链接验证器
 
 ---
 

@@ -20,11 +20,13 @@
 ### 1. 版本配置更新（11个文件）
 
 #### 工具链配置（3个文件）
+
 - ✅ `rust-toolchain.toml`: channel = "stable" (Rust 1.92)
 - ✅ `.clippy.toml`: msrv = "1.92.0"
 - ✅ `clippy.toml`: msrv = "1.92.0"
 
 #### Cargo.toml 配置（8个文件）
+
 - ✅ 根目录 `Cargo.toml`: rust-version = "1.92"
 - ✅ `crates/otlp/Cargo.toml`: rust-version = "1.92"
 - ✅ `crates/reliability/Cargo.toml`: rust-version = "1.92"
@@ -36,6 +38,7 @@
 ### 2. 依赖库更新（98个包）
 
 #### 主要依赖更新（97个包）
+
 - ✅ HTTP/网络: reqwest, hyper, axum, tower-http, h2, http
 - ✅ 异步运行时: tokio, tokio-util, tokio-stream, tokio-test
 - ✅ TLS/安全: rustls, rustls-native-certs, rustls-pki-types
@@ -47,9 +50,11 @@
 - ✅ 其他: config, tempfile, libc, mio, uuid, url, bytes, indexmap, log, toml
 
 #### 传递依赖更新（1个包）
+
 - ✅ `zmij`: v1.0.12 → v1.0.13
 
 #### 子项目直接依赖
+
 - ✅ `crates/otlp/Cargo.toml`: async-compression 0.4.32 → 0.4.37
 - ✅ `crates/reliability/Cargo.toml`: hostname 0.4.1 → 0.4.2, oci-spec 0.8.3 → 0.8.4
 
@@ -79,6 +84,7 @@
 ### 6. 版本注释对齐（12处）
 
 #### Cargo.toml 注释（9处）
+
 - ✅ "Rust 1.91 优化" → "Rust 1.92 优化"
 - ✅ "升级到 Rust 1.91.0" → "升级到 Rust 1.92.0"
 - ✅ "支持Rust 1.91新特性" → "支持Rust 1.92新特性"（多处）
@@ -86,10 +92,12 @@
 - ✅ "Rust 1.91特性支持" → "Rust 1.92特性支持"
 
 #### 源代码注释（2处）
+
 - ✅ `crates/otlp/src/performance/optimized_memory_pool.rs`
 - ✅ `crates/otlp/src/performance/optimized_connection_pool.rs`
 
 #### 项目描述（1处）
+
 - ✅ `crates/otlp/Cargo.toml`: "Rust 1.91+ features" → "Rust 1.92+ features"
 
 ### 7. README 文件更新（5个文件）
@@ -103,6 +111,7 @@
 ### 8. Rust 1.92.0 官方特性对齐
 
 #### 基于网络最新信息
+
 - ✅ `!` 类型稳定化: 完全符合
 - ✅ 异步编程改进: 已对齐（异步闭包、标准库异步 trait）
 - ✅ 标准库和工具链增强: 已对齐（元组的 FromIterator 和 Extend 实现、Cargo 工作区发布）
@@ -387,21 +396,21 @@
 
 ### Rust 官方资源
 
-- Rust 官方发布说明: https://blog.rust-lang.org/
-- Rust 官方文档: https://doc.rust-lang.org/
-- Rust GitHub 仓库: https://github.com/rust-lang/rust
+- Rust 官方发布说明: <https://blog.rust-lang.org/>
+- Rust 官方文档: <https://doc.rust-lang.org/>
+- Rust GitHub 仓库: <https://github.com/rust-lang/rust>
 
 ### OTLP 官方资源
 
-- OTLP Specification: https://github.com/open-telemetry/opentelemetry-proto
-- OTLP Protocol Documentation: https://opentelemetry.io/docs/reference/specification/protocol/otlp/
-- Semantic Conventions: https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/
+- OTLP Specification: <https://github.com/open-telemetry/opentelemetry-proto>
+- OTLP Protocol Documentation: <https://opentelemetry.io/docs/reference/specification/protocol/otlp/>
+- Semantic Conventions: <https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/>
 
 ### OpenTelemetry 官方资源
 
-- OpenTelemetry Official: https://opentelemetry.io/
-- OpenTelemetry Rust: https://github.com/open-telemetry/opentelemetry-rust
-- OpenTelemetry Collector: https://github.com/open-telemetry/opentelemetry-collector
+- OpenTelemetry Official: <https://opentelemetry.io/>
+- OpenTelemetry Rust: <https://github.com/open-telemetry/opentelemetry-rust>
+- OpenTelemetry Collector: <https://github.com/open-telemetry/opentelemetry-collector>
 
 ---
 

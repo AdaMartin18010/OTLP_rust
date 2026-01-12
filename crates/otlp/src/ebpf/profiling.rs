@@ -78,4 +78,31 @@ impl EbpfCpuProfiler {
         // 返回空 profile（待实现）
         Ok(PprofProfile::default())
     }
+
+    /// 获取性能开销
+    pub fn get_overhead(&self) -> crate::profiling::ebpf::OverheadMetrics {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            if self.started {
+                // TODO: 实际实现需要测量 CPU 和内存使用
+                crate::profiling::ebpf::OverheadMetrics {
+                    cpu_percent: 0.5,  // 示例值
+                    memory_bytes: 10 * 1024 * 1024,  // 示例值：10MB
+                }
+            } else {
+                crate::profiling::ebpf::OverheadMetrics {
+                    cpu_percent: 0.0,
+                    memory_bytes: 0,
+                }
+            }
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            crate::profiling::ebpf::OverheadMetrics {
+                cpu_percent: 0.0,
+                memory_bytes: 0,
+            }
+        }
+    }
 }

@@ -54,6 +54,16 @@ let profile = profiler.stop()?;
 - [完整使用指南](../../../docs/EBPF_USAGE_GUIDE_2025.md)
 - [快速开始指南](../../../docs/QUICK_START_EBPF_2025.md)
 - [集成指南](../../../docs/EBPF_INTEGRATION_GUIDE_2025.md)
+- [最佳实践指南](../../../docs/EBPF_BEST_PRACTICES_2025.md)
+- [故障排查指南](../../../docs/EBPF_TROUBLESHOOTING_2025.md)
+- [性能优化指南](../../../docs/EBPF_PERFORMANCE_GUIDE_2025.md)
+- [示例指南](../../../docs/EBPF_EXAMPLES_GUIDE_2025.md)
+- [架构设计文档](../../../docs/EBPF_ARCHITECTURE_2025.md)
+- [API 参考](../../../docs/EBPF_API_REFERENCE_2025.md)
+- [更新日志](../../../docs/EBPF_CHANGELOG_2025.md)
+- [部署指南](../../../docs/EBPF_DEPLOYMENT_GUIDE_2025.md)
+- [安全指南](../../../docs/EBPF_SECURITY_GUIDE_2025.md)
+- [迁移指南](../../../docs/EBPF_MIGRATION_GUIDE_2025.md)
 - [实施计划](../../../EBPF_IMPLEMENTATION_PLAN_2025.md)
 
 ---
@@ -69,7 +79,9 @@ let profile = profiler.stop()?;
 ## 📝 示例
 
 - `examples/ebpf_complete_example.rs` - 完整功能示例
-- `examples/ebpf_profiling_example.rs` - 性能分析示例
+- `examples/ebpf_profiling_example.rs` - CPU 性能分析示例
+- `examples/ebpf_network_tracing_example.rs` - 网络追踪示例
+- `examples/ebpf_syscall_tracing_example.rs` - 系统调用追踪示例
 
 ---
 

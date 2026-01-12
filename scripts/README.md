@@ -34,6 +34,16 @@
 .\scripts\test_with_coverage.ps1
 ```
 
+#### eBPF 测试
+
+```bash
+# Linux/macOS (仅 Linux 支持)
+./scripts/run_ebpf_tests.sh
+
+# Windows PowerShell (仅 Linux 支持)
+.\scripts\run_ebpf_tests.ps1
+```
+
 ---
 
 ## 📁 脚本分类
@@ -53,6 +63,12 @@
   - 运行所有测试
   - 生成覆盖率报告 (LCOV 和 HTML)
   - 需要 cargo-llvm-cov 工具
+
+- `run_ebpf_tests.sh` / `run_ebpf_tests.ps1` - eBPF 测试
+  - 运行 eBPF 单元测试
+  - 运行 eBPF 集成测试
+  - 运行 eBPF 示例
+  - 需要 Linux 环境和 eBPF feature
 
 ### 其他脚本
 

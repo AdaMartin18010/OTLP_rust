@@ -40,16 +40,16 @@
 
 ### 🛠️ 开发文档目录
 
-9. ✅ `docs/09_CRATES/` (5/5) - Crate指南
-10. ✅ `docs/10_DEVELOPMENT/` (8/8) - 开发维护
-11. ✅ `docs/11_EXAMPLES/` (4/4) - 示例代码
-12. ✅ `docs/12_GUIDES/` (14/14) - 用户指南
-13. ✅ `docs/13_PLANNING/` (3/3) - 规划路线
-14. ✅ `docs/14_TECHNICAL/` (11/11) - 技术文档
+1. ✅ `docs/09_CRATES/` (5/5) - Crate指南
+2. ✅ `docs/10_DEVELOPMENT/` (8/8) - 开发维护
+3. ✅ `docs/11_EXAMPLES/` (4/4) - 示例代码
+4. ✅ `docs/12_GUIDES/` (14/14) - 用户指南
+5. ✅ `docs/13_PLANNING/` (3/3) - 规划路线
+6. ✅ `docs/14_TECHNICAL/` (11/11) - 技术文档
 
 ### 🔬 理论框架目录
 
-15. ✅ `docs/02_THEORETICAL_FRAMEWORK/` (19/22) - 86%完成
+1. ✅ `docs/02_THEORETICAL_FRAMEWORK/` (19/22) - 86%完成
     - 主文件 (13/13): 100% ✅
     - unified_framework/ (6/6): 100% ✅
     - archives/ (0/3): 待处理

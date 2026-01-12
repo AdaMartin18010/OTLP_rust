@@ -26,6 +26,7 @@
 ### eBPF 功能实现
 
 #### Phase 1: 基础设施 ✅ (完成)
+
 - ✅ 添加 aya 依赖到 workspace Cargo.toml
 - ✅ 添加 ebpf feature 到 crates/otlp/Cargo.toml
 - ✅ 创建 `crates/otlp/src/ebpf/` 目录结构
@@ -57,6 +58,7 @@
 ### eBPF 功能实现
 
 #### Phase 2: 基础实现 (1周)
+
 - [ ] 实现 `loader.rs` 实际加载逻辑
 - [ ] 实现 `probes.rs` 探针附加逻辑
 - [ ] 实现 `events.rs` 事件处理逻辑
@@ -64,12 +66,14 @@
 - [ ] 添加单元测试
 
 #### Phase 3: 核心功能 (2-3周)
+
 - [ ] 实现 CPU 性能分析完整功能
 - [ ] 实现网络追踪完整功能
 - [ ] 实现系统调用追踪完整功能
 - [ ] 实现内存追踪完整功能
 
 #### Phase 4: 集成和测试 (1-2周)
+
 - [ ] OpenTelemetry 集成
 - [ ] OTLP 导出
 - [ ] 完整测试套件
@@ -116,14 +120,17 @@
 ## 📅 时间表
 
 ### 本周 (Week 1)
+
 - ✅ eBPF Phase 1 - 完成
 - 📋 项目结构重组 - 待开始
 
 ### 下周 (Week 2)
+
 - 📋 eBPF Phase 2 - 待开始
 - 📋 测试覆盖率 - 待开始
 
 ### 本月 (Week 3-4)
+
 - 📋 eBPF Phase 3 - 待开始
 - 📋 文档完善 - 待开始
 

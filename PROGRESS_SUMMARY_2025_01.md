@@ -17,12 +17,14 @@
 ### eBPF 功能实现
 
 #### Phase 1: 基础设施 ✅
+
 - ✅ 添加 aya 和 object 依赖
 - ✅ 创建完整的模块结构（11个文件）
 - ✅ 实现基础类型和接口
 - ✅ 编译验证通过
 
 #### Phase 2: 基础实现 🚀 (进行中)
+
 - ✅ 添加单元测试框架
 - ✅ 测试基础类型和接口
 - 🔄 继续实现实际功能逻辑
@@ -53,15 +55,18 @@
 ## 🚀 进行中工作
 
 ### eBPF Phase 2
+
 - 🚀 继续实现基础功能
 - 🔄 添加更多测试
 - 🔄 实现加载器和探针管理
 
 ### 项目结构重组
+
 - 🔄 文档整合（20%完成）
 - 📋 等待进一步重组
 
 ### 测试覆盖率
+
 - 🔄 工具准备中
 - 📋 等待配置覆盖率工具
 
@@ -87,6 +92,7 @@
 ## 📝 创建的文档清单
 
 ### 路线图和计划 (6个)
+
 1. ✅ MASTER_IMPLEMENTATION_ROADMAP_2025.md
 2. ✅ IMPLEMENTATION_PROGRESS_TRACKER_2025.md
 3. ✅ EBPF_IMPLEMENTATION_PLAN_2025.md
@@ -95,6 +101,7 @@
 6. ✅ CONTINUOUS_IMPROVEMENT_PROGRESS_2025.md
 
 ### eBPF 相关 (6个)
+
 1. ✅ EBPF_IMPLEMENTATION_PLAN_2025.md
 2. ✅ EBPF_COMPLETE_IMPLEMENTATION_GUIDE_2025.md
 3. ✅ EBPF_STATUS_AND_NEXT_STEPS_2025.md
@@ -103,6 +110,7 @@
 6. ✅ FINAL_EBPF_ANALYSIS_AND_PLAN_2025.md
 
 ### 文档和脚本 (5个)
+
 1. ✅ docs/INDEX.md
 2. ✅ docs/README_CONSOLIDATION_2025.md
 3. ✅ scripts/test_with_coverage.sh/.ps1
@@ -110,6 +118,7 @@
 5. ✅ scripts/README.md
 
 ### 代码文件 (12个)
+
 1. ✅ crates/otlp/src/ebpf/mod.rs
 2. ✅ crates/otlp/src/ebpf/types.rs
 3. ✅ crates/otlp/src/ebpf/error.rs
@@ -128,12 +137,14 @@
 ## 🎯 关键指标
 
 ### 代码指标
+
 - **eBPF 模块**: 11 个模块文件
 - **测试文件**: 1 个 (tests.rs)
 - **代码行数**: 约 2000+ 行 (eBPF 模块)
 - **测试用例**: 10+ 个
 
 ### 文档指标
+
 - **计划文档**: 12+ 个
 - **脚本文件**: 4 个 (跨平台)
 - **文档索引**: 1 个完整索引
@@ -144,6 +155,7 @@
 ## 📅 时间表
 
 ### 本周 (Week 1)
+
 - ✅ eBPF Phase 1 - 完成
 - ✅ 计划制定 - 完成
 - ✅ 文档整合 - 完成
@@ -151,6 +163,7 @@
 - 🚀 eBPF Phase 2 - 进行中
 
 ### 下周 (Week 2)
+
 - 🔄 eBPF Phase 2 - 继续
 - 📋 项目结构重组 - 开始
 - 📋 测试覆盖率配置 - 开始
@@ -161,6 +174,7 @@
 ## ✅ 成功标准
 
 ### 技术标准
+
 - ✅ eBPF 模块结构完整
 - ✅ 编译通过
 - ✅ 基础测试通过
@@ -168,6 +182,7 @@
 - ✅ 脚本功能完整
 
 ### 流程标准
+
 - ✅ 计划制定完成
 - ✅ 路线图清晰
 - ✅ 进度可追踪
@@ -178,17 +193,20 @@
 ## 🎯 下一步行动
 
 ### 立即行动
+
 1. 🔄 继续 eBPF Phase 2 - 实现基础功能
 2. 📋 开始项目结构重组 Phase 1
 3. 📋 配置测试覆盖率工具
 4. 📋 继续文档完善
 
 ### 短期目标 (本周)
+
 1. 完成 eBPF Phase 2
 2. 开始结构重组
 3. 配置覆盖率工具
 
 ### 中期目标 (本月)
+
 1. 完成 eBPF Phase 3
 2. 完成结构重组
 3. 提升测试覆盖率到 60%+

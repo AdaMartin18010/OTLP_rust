@@ -170,4 +170,16 @@ path = "examples/k8s_complete_deployment_demo.rs"
 [[example]]
 name = "ebpf_complete"
 path = "../../examples/ebpf_complete_example.rs"
+
+[[example]]
+name = "ebpf_profiling"
+path = "../../examples/ebpf_profiling_example.rs"
+
+[[example]]
+name = "ebpf_network_tracing"
+path = "../../examples/ebpf_network_tracing_example.rs"
+
+[[example]]
+name = "ebpf_syscall_tracing"
+path = "../../examples/ebpf_syscall_tracing_example.rs"
 required-features = ["ebpf"]
