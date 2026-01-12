@@ -72,4 +72,61 @@ impl EbpfMemoryTracer {
 
         Ok(vec![])
     }
+
+    /// 检查是否正在运行
+    pub fn is_running(&self) -> bool {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            self.started
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            false
+        }
+    }
+
+    /// 获取配置
+    pub fn config(&self) -> &EbpfConfig {
+        &self.config
+    }
+
+    /// 获取内存统计信息
+    pub fn get_stats(&self) -> MemoryStats {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            if self.started {
+                // TODO: 实际实现需要从 eBPF Maps 读取统计信息
+                MemoryStats {
+                    allocations: 0,
+                    frees: 0,
+                    total_allocated: 0,
+                    total_freed: 0,
+                    active_allocations: 0,
+                }
+            } else {
+                MemoryStats::default()
+            }
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            MemoryStats::default()
+        }
+    }
+}
+
+/// 内存统计信息
+#[derive(Debug, Clone, Default)]
+pub struct MemoryStats {
+    /// 分配次数
+    pub allocations: u64,
+    /// 释放次数
+    pub frees: u64,
+    /// 总分配字节数
+    pub total_allocated: u64,
+    /// 总释放字节数
+    pub total_freed: u64,
+    /// 当前活跃分配数
+    pub active_allocations: u64,
 }

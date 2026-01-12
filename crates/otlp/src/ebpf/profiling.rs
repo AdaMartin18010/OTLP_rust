@@ -80,29 +80,88 @@ impl EbpfCpuProfiler {
     }
 
     /// 获取性能开销
-    pub fn get_overhead(&self) -> crate::profiling::ebpf::OverheadMetrics {
+    pub fn get_overhead(&self) -> crate::ebpf::types::EbpfOverheadMetrics {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
         {
             if self.started {
                 // TODO: 实际实现需要测量 CPU 和内存使用
-                crate::profiling::ebpf::OverheadMetrics {
+                crate::ebpf::types::EbpfOverheadMetrics {
                     cpu_percent: 0.5,  // 示例值
                     memory_bytes: 10 * 1024 * 1024,  // 示例值：10MB
+                    event_latency_us: 10,  // 示例值：10微秒
                 }
             } else {
-                crate::profiling::ebpf::OverheadMetrics {
-                    cpu_percent: 0.0,
-                    memory_bytes: 0,
-                }
+                crate::ebpf::types::EbpfOverheadMetrics::default()
             }
         }
 
         #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
         {
-            crate::profiling::ebpf::OverheadMetrics {
-                cpu_percent: 0.0,
-                memory_bytes: 0,
+            crate::ebpf::types::EbpfOverheadMetrics::default()
+        }
+    }
+
+    /// 检查是否正在运行
+    pub fn is_running(&self) -> bool {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            self.started
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            false
+        }
+    }
+
+    /// 获取配置
+    pub fn config(&self) -> &EbpfConfig {
+        &self.config
+    }
+
+    /// 暂停性能分析（保持状态）
+    pub fn pause(&mut self) -> Result<()> {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            if !self.started {
+                return Err(crate::error::OtlpError::Processing(
+                    crate::error::ProcessingError::InvalidState {
+                        message: "性能分析器未启动".to_string(),
+                    },
+                ));
             }
+
+            tracing::info!("暂停 eBPF CPU 性能分析");
+            // TODO: 实际实现需要暂停采样
+            Ok(())
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            Ok(())
+        }
+    }
+
+    /// 恢复性能分析
+    pub fn resume(&mut self) -> Result<()> {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            if !self.started {
+                return Err(crate::error::OtlpError::Processing(
+                    crate::error::ProcessingError::InvalidState {
+                        message: "性能分析器未启动".to_string(),
+                    },
+                ));
+            }
+
+            tracing::info!("恢复 eBPF CPU 性能分析");
+            // TODO: 实际实现需要恢复采样
+            Ok(())
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            Ok(())
         }
     }
 }

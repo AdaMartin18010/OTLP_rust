@@ -248,4 +248,114 @@ mod tests {
         assert_eq!(metrics.memory_bytes, 0);
         assert_eq!(metrics.event_latency_us, 0);
     }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_cpu_profiler_lifecycle() {
+        let config = EbpfConfig::default();
+        let mut profiler = super::profiling::EbpfCpuProfiler::new(config.clone());
+
+        // 测试初始状态
+        assert!(!profiler.is_running());
+        assert_eq!(profiler.config().sample_rate, config.sample_rate);
+
+        // 测试启动
+        assert!(profiler.start().is_ok());
+        assert!(profiler.is_running());
+
+        // 测试暂停和恢复
+        assert!(profiler.pause().is_ok());
+        assert!(profiler.resume().is_ok());
+
+        // 测试停止
+        let profile = profiler.stop();
+        assert!(profile.is_ok());
+        assert!(!profiler.is_running());
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_network_tracer_lifecycle() {
+        let config = EbpfConfig::default();
+        let mut tracer = super::networking::EbpfNetworkTracer::new(config.clone());
+
+        // 测试初始状态
+        assert!(!tracer.is_running());
+        assert_eq!(tracer.config().sample_rate, config.sample_rate);
+
+        // 测试启动
+        assert!(tracer.start().is_ok());
+        assert!(tracer.is_running());
+
+        // 测试获取统计信息
+        let stats = tracer.get_stats();
+        assert_eq!(stats.packets_captured, 0);
+
+        // 测试停止
+        let events = tracer.stop();
+        assert!(events.is_ok());
+        assert!(!tracer.is_running());
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_syscall_tracer_lifecycle() {
+        let config = EbpfConfig::default();
+        let mut tracer = super::syscalls::EbpfSyscallTracer::new(config.clone());
+
+        // 测试初始状态
+        assert!(!tracer.is_running());
+
+        // 测试启动
+        assert!(tracer.start().is_ok());
+        assert!(tracer.is_running());
+
+        // 测试过滤系统调用
+        assert!(tracer.filter_syscall("open", true).is_ok());
+        assert!(tracer.filter_syscall("read", false).is_ok());
+
+        // 测试获取统计信息
+        let stats = tracer.get_stats();
+        assert_eq!(stats.syscalls_traced, 0);
+
+        // 测试停止
+        let events = tracer.stop();
+        assert!(events.is_ok());
+        assert!(!tracer.is_running());
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_memory_tracer_lifecycle() {
+        let config = EbpfConfig::default();
+        let mut tracer = super::memory::EbpfMemoryTracer::new(config.clone());
+
+        // 测试初始状态
+        assert!(!tracer.is_running());
+
+        // 测试启动
+        assert!(tracer.start().is_ok());
+        assert!(tracer.is_running());
+
+        // 测试获取统计信息
+        let stats = tracer.get_stats();
+        assert_eq!(stats.allocations, 0);
+        assert_eq!(stats.frees, 0);
+
+        // 测试停止
+        let events = tracer.stop();
+        assert!(events.is_ok());
+        assert!(!tracer.is_running());
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_profiler_stop_before_start() {
+        let config = EbpfConfig::default();
+        let mut profiler = super::profiling::EbpfCpuProfiler::new(config);
+
+        // 测试未启动时停止应该失败
+        let result = profiler.stop();
+        assert!(result.is_err());
+    }
 }

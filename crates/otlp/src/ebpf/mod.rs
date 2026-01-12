@@ -65,11 +65,11 @@ pub use events::*;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 pub use profiling::*;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use networking::*;
+pub use networking::{EbpfNetworkTracer, NetworkStats};
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use syscalls::*;
+pub use syscalls::{EbpfSyscallTracer, SyscallStats};
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use memory::*;
+pub use memory::{EbpfMemoryTracer, MemoryStats};
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 pub use integration::*;
 

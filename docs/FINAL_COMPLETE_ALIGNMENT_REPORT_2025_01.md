@@ -261,21 +261,21 @@
 
 ### Rust 官方资源
 
-- Rust 官方发布说明: https://blog.rust-lang.org/
-- Rust 官方文档: https://doc.rust-lang.org/
-- Rust GitHub 仓库: https://github.com/rust-lang/rust
+- Rust 官方发布说明: <https://blog.rust-lang.org/>
+- Rust 官方文档: <https://doc.rust-lang.org/>
+- Rust GitHub 仓库: <https://github.com/rust-lang/rust>
 
 ### OTLP 官方资源
 
-- OTLP Specification: https://github.com/open-telemetry/opentelemetry-proto
-- OTLP Protocol Documentation: https://opentelemetry.io/docs/reference/specification/protocol/otlp/
-- Semantic Conventions: https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/
+- OTLP Specification: <https://github.com/open-telemetry/opentelemetry-proto>
+- OTLP Protocol Documentation: <https://opentelemetry.io/docs/reference/specification/protocol/otlp/>
+- Semantic Conventions: <https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/>
 
 ### OpenTelemetry 官方资源
 
-- OpenTelemetry Official: https://opentelemetry.io/
-- OpenTelemetry Rust: https://github.com/open-telemetry/opentelemetry-rust
-- OpenTelemetry Collector: https://github.com/open-telemetry/opentelemetry-collector
+- OpenTelemetry Official: <https://opentelemetry.io/>
+- OpenTelemetry Rust: <https://github.com/open-telemetry/opentelemetry-rust>
+- OpenTelemetry Collector: <https://github.com/open-telemetry/opentelemetry-collector>
 
 ---
 

@@ -56,12 +56,52 @@ fn bench_ebpf_loader_new(c: &mut Criterion) {
     });
 }
 
+fn bench_ebpf_loader_validate_program(c: &mut Criterion) {
+    let config = EbpfConfig::default();
+    let loader = EbpfLoader::new(config);
+    let mut elf_program = vec![0x7F, b'E', b'L', b'F'];
+    elf_program.extend(vec![0; 100]);
+
+    c.bench_function("ebpf_loader_validate_program", |b| {
+        b.iter(|| {
+            black_box(loader.validate_program(black_box(&elf_program))).unwrap();
+        });
+    });
+}
+
+fn bench_recommended_duration(c: &mut Criterion) {
+    use otlp::ebpf::recommended_duration;
+    let envs = ["production", "staging", "development", "debug"];
+    c.bench_function("recommended_duration", |b| {
+        b.iter(|| {
+            for env in &envs {
+                black_box(recommended_duration(black_box(env)));
+            }
+        });
+    });
+}
+
+fn bench_create_recommended_config(c: &mut Criterion) {
+    use otlp::ebpf::create_recommended_config;
+    let envs = ["production", "staging", "development", "debug"];
+    c.bench_function("create_recommended_config", |b| {
+        b.iter(|| {
+            for env in &envs {
+                black_box(create_recommended_config(black_box(env)));
+            }
+        });
+    });
+}
+
 criterion_group!(
     benches,
     bench_ebpf_config_creation,
     bench_ebpf_config_validation,
     bench_ebpf_config_builder,
     bench_recommended_sample_rate,
-    bench_ebpf_loader_new
+    bench_recommended_duration,
+    bench_create_recommended_config,
+    bench_ebpf_loader_new,
+    bench_ebpf_loader_validate_program
 );
 criterion_main!(benches);

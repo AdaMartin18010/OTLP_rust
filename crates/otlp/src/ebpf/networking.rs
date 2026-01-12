@@ -72,4 +72,58 @@ impl EbpfNetworkTracer {
 
         Ok(vec![])
     }
+
+    /// 检查是否正在运行
+    pub fn is_running(&self) -> bool {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            self.started
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            false
+        }
+    }
+
+    /// 获取配置
+    pub fn config(&self) -> &EbpfConfig {
+        &self.config
+    }
+
+    /// 获取网络统计信息
+    pub fn get_stats(&self) -> NetworkStats {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            if self.started {
+                // TODO: 实际实现需要从 eBPF Maps 读取统计信息
+                NetworkStats {
+                    packets_captured: 0,
+                    bytes_captured: 0,
+                    tcp_connections: 0,
+                    udp_sessions: 0,
+                }
+            } else {
+                NetworkStats::default()
+            }
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            NetworkStats::default()
+        }
+    }
+}
+
+/// 网络统计信息
+#[derive(Debug, Clone, Default)]
+pub struct NetworkStats {
+    /// 捕获的数据包数量
+    pub packets_captured: u64,
+    /// 捕获的字节数
+    pub bytes_captured: u64,
+    /// TCP 连接数
+    pub tcp_connections: u64,
+    /// UDP 会话数
+    pub udp_sessions: u64,
 }

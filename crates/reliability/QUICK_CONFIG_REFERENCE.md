@@ -1,8 +1,8 @@
-﻿# c13_reliability - 快速配置参考
+﻿# reliability - 快速配置参考
 
 ## 📋 目录
 
-- [c13\_reliability - 快速配置参考](#c13_reliability---快速配置参考)
+- [reliability - 快速配置参考](#reliability---快速配置参考)
   - [📋 目录](#-目录)
   - [🚀 常见配置场景](#-常见配置场景)
     - [1️⃣ 最小配置（仅核心功能）](#1️⃣-最小配置仅核心功能)
@@ -41,7 +41,7 @@
 
 ```toml
 [dependencies]
-c13_reliability = {
+reliability = {
     version = "0.1.1",
     default-features = false,
     features = ["std"]
@@ -52,7 +52,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = {
+reliability = {
     version = "0.1.1",
     features = ["async", "monitoring", "fault-tolerance", "otlp", "logging"]
 }
@@ -62,7 +62,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = {
+reliability = {
     version = "0.1.1",
     features = [
         "async",
@@ -79,7 +79,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = {
+reliability = {
     version = "0.1.1",
     features = [
         "async",
@@ -100,13 +100,13 @@ codegen-units = 1
 
 ```toml
 [dependencies]
-c13_reliability = {
+reliability = {
     version = "0.1.1",
     features = ["async", "logging", "verification"]
 }
 
 [dev-dependencies]
-c13_reliability = {
+reliability = {
     version = "0.1.1",
     features = ["chaos-engineering"]
 }
@@ -116,7 +116,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = {
+reliability = {
     version = "0.1.1",
     default-features = false,
     features = ["embedded-environment"]
@@ -249,15 +249,15 @@ features = ["fault-tolerance", "monitoring", "jemalloc"]
 
 ```toml
 [dependencies]
-c13_reliability = { path = "../c13_reliability", features = [...] }
+reliability = { path = "../reliability", features = [...] }
 ```
 
 ### 方式 2: Git 仓库
 
 ```toml
 [dependencies]
-c13_reliability = {
-    git = "https://github.com/rust-lang/c13_reliability",
+reliability = {
+    git = "https://github.com/rust-lang/reliability",
     branch = "main",
     features = [...]
 }
@@ -267,8 +267,8 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = {
-    git = "https://github.com/rust-lang/c13_reliability",
+reliability = {
+    git = "https://github.com/rust-lang/reliability",
     tag = "v0.1.1",
     features = [...]
 }
@@ -278,7 +278,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = { version = "0.1.1", features = [...] }
+reliability = { version = "0.1.1", features = [...] }
 ```
 
 ## 📊 特性组合建议
@@ -308,7 +308,7 @@ features = ["os-environment"]  # 或 "embedded-environment"
 
 ## 🏷️ 版本兼容性
 
-| c13_reliability | Rust 版本 | Edition | 状态 |
+| reliability | Rust 版本 | Edition | 状态 |
 |-----------------|-----------|---------|------|
 | 0.1.1 | 1.90+ | 2024 | 当前 |
 | 0.1.0 | 1.90+ | 2024 | 已过期 |
@@ -326,9 +326,9 @@ rust-version = "1.92"
 
 [dependencies]
 # 可靠性框架
-c13_reliability = {
+reliability = {
     version = "0.1.1",
-    path = "../c13_reliability",
+    path = "../reliability",
     features = [
         "async",
         "monitoring",
@@ -357,9 +357,9 @@ serde_json = "1.0"
 config = "0.15"
 
 [dev-dependencies]
-c13_reliability = {
+reliability = {
     version = "0.1.1",
-    path = "../c13_reliability",
+    path = "../reliability",
     features = ["chaos-engineering"]
 }
 tokio-test = "0.4"

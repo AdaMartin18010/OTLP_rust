@@ -8,14 +8,33 @@
 
 ## 📋 目录
 
-- [概述](#概述)
-- [核心类型](#核心类型)
-- [配置 API](#配置-api)
-- [加载器 API](#加载器-api)
-- [性能分析器 API](#性能分析器-api)
-- [追踪器 API](#追踪器-api)
-- [工具函数 API](#工具函数-api)
-- [错误处理](#错误处理)
+- [eBPF API 参考 2025](#ebpf-api-参考-2025)
+  - [📋 目录](#-目录)
+  - [概述](#概述)
+  - [核心类型](#核心类型)
+    - [EbpfConfig](#ebpfconfig)
+    - [EbpfEvent](#ebpfevent)
+    - [EbpfEventType](#ebpfeventtype)
+    - [EbpfOverheadMetrics](#ebpfoverheadmetrics)
+  - [配置 API](#配置-api)
+    - [创建配置](#创建配置)
+    - [配置验证](#配置验证)
+  - [加载器 API](#加载器-api)
+    - [EbpfLoader](#ebpfloader)
+  - [性能分析器 API](#性能分析器-api)
+    - [EbpfCpuProfiler](#ebpfcpuprofiler)
+  - [追踪器 API](#追踪器-api)
+    - [EbpfNetworkTracer](#ebpfnetworktracer)
+    - [EbpfSyscallTracer](#ebpfsyscalltracer)
+    - [EbpfMemoryTracer](#ebpfmemorytracer)
+  - [工具函数 API](#工具函数-api)
+    - [推荐配置](#推荐配置)
+    - [推荐采样频率](#推荐采样频率)
+    - [推荐持续时间](#推荐持续时间)
+    - [配置验证](#配置验证-1)
+  - [错误处理](#错误处理)
+    - [EbpfError](#ebpferror)
+  - [参考资源](#参考资源)
 
 ---
 
@@ -75,14 +94,23 @@ eBPF 事件类型枚举。
 
 ```rust
 pub enum EbpfEventType {
-    Unknown,
-    CpuSample,
-    NetworkConnect,
-    NetworkDisconnect,
-    NetworkPacket,
-    Syscall,
-    MemoryAlloc,
-    MemoryFree,
+    CpuSample,        // CPU 采样事件
+    NetworkPacket,    // 网络包事件
+    Syscall,          // 系统调用事件
+    MemoryAlloc,      // 内存分配事件
+    MemoryFree,       // 内存释放事件
+}
+```
+
+### EbpfOverheadMetrics
+
+eBPF 性能开销指标。
+
+```rust
+pub struct EbpfOverheadMetrics {
+    pub cpu_percent: f64,        // CPU 开销百分比
+    pub memory_bytes: usize,     // 内存开销 (字节)
+    pub event_latency_us: u64,   // 事件处理延迟 (微秒)
 }
 ```
 
@@ -123,20 +151,35 @@ eBPF 程序加载器。
 use otlp::ebpf::{EbpfLoader, EbpfConfig};
 
 // 创建加载器
-let loader = EbpfLoader::new(config);
+let mut loader = EbpfLoader::new(config);
 
 // 检查系统支持
 EbpfLoader::check_system_support()?;
 
+// 验证程序字节码
+loader.validate_program(program_bytes)?;
+
 // 加载程序
 loader.load(program_bytes)?;
+
+// 检查加载状态
+let is_loaded = loader.is_loaded();
+
+// 获取配置
+let config = loader.config();
+
+// 卸载程序
+loader.unload()?;
 ```
 
 **方法**:
 
 - `new(config: EbpfConfig) -> Self` - 创建新加载器
 - `load(&mut self, program_bytes: &[u8]) -> Result<()>` - 加载 eBPF 程序
+- `validate_program(&self, program_bytes: &[u8]) -> Result<()>` - 验证程序字节码
 - `check_system_support() -> Result<()>` - 检查系统支持
+- `is_loaded(&self) -> bool` - 检查程序是否已加载
+- `unload(&mut self) -> Result<()>` - 卸载程序
 - `config(&self) -> &EbpfConfig` - 获取配置
 
 ---
@@ -156,11 +199,23 @@ let mut profiler = EbpfCpuProfiler::new(config);
 // 启动性能分析
 profiler.start()?;
 
+// 暂停性能分析
+profiler.pause()?;
+
+// 恢复性能分析
+profiler.resume()?;
+
 // 停止性能分析
 let profile = profiler.stop()?;
 
 // 获取性能开销
 let overhead = profiler.get_overhead();
+
+// 检查运行状态
+let is_running = profiler.is_running();
+
+// 获取配置
+let config = profiler.config();
 ```
 
 **方法**:
@@ -168,7 +223,11 @@ let overhead = profiler.get_overhead();
 - `new(config: EbpfConfig) -> Self` - 创建新分析器
 - `start(&mut self) -> Result<()>` - 启动性能分析
 - `stop(&mut self) -> Result<PprofProfile>` - 停止性能分析
-- `get_overhead(&self) -> OverheadMetrics` - 获取性能开销
+- `pause(&mut self) -> Result<()>` - 暂停性能分析
+- `resume(&mut self) -> Result<()>` - 恢复性能分析
+- `get_overhead(&self) -> EbpfOverheadMetrics` - 获取性能开销
+- `is_running(&self) -> bool` - 检查是否正在运行
+- `config(&self) -> &EbpfConfig` - 获取配置
 
 ---
 
@@ -187,8 +246,38 @@ let mut tracer = EbpfNetworkTracer::new(config);
 // 启动追踪
 tracer.start()?;
 
+// 获取统计信息
+let stats = tracer.get_stats();
+println!("Packets: {}, Bytes: {}", stats.packets_captured, stats.bytes_captured);
+
+// 检查运行状态
+let is_running = tracer.is_running();
+
+// 获取配置
+let config = tracer.config();
+
 // 停止追踪
 let events = tracer.stop()?;
+```
+
+**方法**:
+
+- `new(config: EbpfConfig) -> Self` - 创建新追踪器
+- `start(&mut self) -> Result<()>` - 启动网络追踪
+- `stop(&mut self) -> Result<Vec<EbpfEvent>>` - 停止网络追踪
+- `is_running(&self) -> bool` - 检查是否正在运行
+- `config(&self) -> &EbpfConfig` - 获取配置
+- `get_stats(&self) -> NetworkStats` - 获取网络统计信息
+
+**NetworkStats 结构**:
+
+```rust
+pub struct NetworkStats {
+    pub packets_captured: u64,
+    pub bytes_captured: u64,
+    pub tcp_connections: u64,
+    pub udp_sessions: u64,
+}
 ```
 
 ### EbpfSyscallTracer
@@ -204,8 +293,42 @@ let mut tracer = EbpfSyscallTracer::new(config);
 // 启动追踪
 tracer.start()?;
 
+// 过滤特定系统调用
+tracer.filter_syscall("open", true)?;
+tracer.filter_syscall("read", false)?;
+
+// 获取统计信息
+let stats = tracer.get_stats();
+println!("Syscalls traced: {}", stats.syscalls_traced);
+
+// 检查运行状态
+let is_running = tracer.is_running();
+
+// 获取配置
+let config = tracer.config();
+
 // 停止追踪
 let events = tracer.stop()?;
+```
+
+**方法**:
+
+- `new(config: EbpfConfig) -> Self` - 创建新追踪器
+- `start(&mut self) -> Result<()>` - 启动系统调用追踪
+- `stop(&mut self) -> Result<Vec<EbpfEvent>>` - 停止系统调用追踪
+- `is_running(&self) -> bool` - 检查是否正在运行
+- `config(&self) -> &EbpfConfig` - 获取配置
+- `get_stats(&self) -> SyscallStats` - 获取系统调用统计信息
+- `filter_syscall(&mut self, syscall_name: &str, enabled: bool) -> Result<()>` - 过滤特定系统调用
+
+**SyscallStats 结构**:
+
+```rust
+pub struct SyscallStats {
+    pub syscalls_traced: u64,
+    pub unique_syscalls: u64,
+    pub errors: u64,
+}
 ```
 
 ### EbpfMemoryTracer
@@ -221,8 +344,40 @@ let mut tracer = EbpfMemoryTracer::new(config);
 // 启动追踪
 tracer.start()?;
 
+// 获取统计信息
+let stats = tracer.get_stats();
+println!("Allocations: {}, Frees: {}", stats.allocations, stats.frees);
+println!("Total allocated: {} bytes", stats.total_allocated);
+
+// 检查运行状态
+let is_running = tracer.is_running();
+
+// 获取配置
+let config = tracer.config();
+
 // 停止追踪
 let events = tracer.stop()?;
+```
+
+**方法**:
+
+- `new(config: EbpfConfig) -> Self` - 创建新追踪器
+- `start(&mut self) -> Result<()>` - 启动内存追踪
+- `stop(&mut self) -> Result<Vec<EbpfEvent>>` - 停止内存追踪
+- `is_running(&self) -> bool` - 检查是否正在运行
+- `config(&self) -> &EbpfConfig` - 获取配置
+- `get_stats(&self) -> MemoryStats` - 获取内存统计信息
+
+**MemoryStats 结构**:
+
+```rust
+pub struct MemoryStats {
+    pub allocations: u64,
+    pub frees: u64,
+    pub total_allocated: u64,
+    pub total_freed: u64,
+    pub active_allocations: u64,
+}
 ```
 
 ---
@@ -235,9 +390,10 @@ let events = tracer.stop()?;
 use otlp::ebpf::create_recommended_config;
 
 // 根据环境创建推荐配置
-let config = create_recommended_config("production");
-let config = create_recommended_config("development");
-let config = create_recommended_config("debug");
+let config = create_recommended_config("production");   // 低采样率，长持续时间
+let config = create_recommended_config("staging");      // 中等采样率
+let config = create_recommended_config("development");  // 默认采样率
+let config = create_recommended_config("debug");        // 高采样率，短持续时间
 ```
 
 ### 推荐采样频率
@@ -245,17 +401,31 @@ let config = create_recommended_config("debug");
 ```rust
 use otlp::ebpf::recommended_sample_rate;
 
-let rate = recommended_sample_rate("production");  // 19
-let rate = recommended_sample_rate("development");  // 99
+let rate = recommended_sample_rate("production");   // 19 Hz
+let rate = recommended_sample_rate("staging");      // 49 Hz
+let rate = recommended_sample_rate("development");  // 99 Hz
+let rate = recommended_sample_rate("debug");       // 199 Hz
 ```
 
 ### 推荐持续时间
 
 ```rust
 use otlp::ebpf::recommended_duration;
+use std::time::Duration;
 
-let duration = recommended_duration("production");  // 5分钟
-let duration = recommended_duration("development"); // 1分钟
+let duration = recommended_duration("production");   // 300秒 (5分钟)
+let duration = recommended_duration("staging");      // 120秒 (2分钟)
+let duration = recommended_duration("development");  // 60秒 (1分钟)
+let duration = recommended_duration("debug");        // 30秒
+```
+
+### 配置验证
+
+```rust
+use otlp::ebpf::{EbpfConfig, validate_config};
+
+let config = EbpfConfig::default();
+validate_config(&config)?;
 ```
 
 ---

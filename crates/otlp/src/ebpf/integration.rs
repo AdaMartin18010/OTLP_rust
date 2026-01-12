@@ -92,6 +92,27 @@ impl EbpfOtlpConverter {
         tracing::info!("转换 profile 到 OTLP (待实现)");
         Ok(())
     }
+
+    /// 批量转换事件到 OpenTelemetry
+    pub fn convert_events_batch(&self, events: &[EbpfEvent]) -> Result<(Vec<Span>, u64)> {
+        let mut spans = Vec::new();
+        let mut metric_count = 0u64;
+
+        for event in events {
+            if let Some(span) = self.convert_event_to_span(event)? {
+                spans.push(span);
+            }
+            self.convert_event_to_metric(event)?;
+            metric_count += 1;
+        }
+
+        Ok((spans, metric_count))
+    }
+
+    /// 检查转换器是否已配置
+    pub fn is_configured(&self) -> bool {
+        self.tracer.is_some() || self.meter.is_some()
+    }
 }
 
 impl Default for EbpfOtlpConverter {
