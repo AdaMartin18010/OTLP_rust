@@ -21,9 +21,9 @@ keywords = [
 ]
 categories = ["science", "algorithms", "mathematics", "simulation"]
 readme = "README.md"
-rust-version = "1.91"
+rust-version = "1.92"
 
-# Rust 1.91 新特性配置
+# Rust 1.92 新特性配置
 # Profile configurations are managed at workspace root level
 
 [dependencies]
@@ -64,7 +64,7 @@ statrs = "0.18.0"
 nalgebra = { version = "0.33.2", optional = true }
 approx = { version = "0.5.1", optional = true }
 
-# 数学函数 - 利用 Rust 1.90 的 libm 优化
+# 数学函数 - 利用 Rust 1.92 的 libm 优化
 libm = "0.2.15"
 
 # 新增：现代机器学习库集成
@@ -123,7 +123,7 @@ default = ["std", "enhanced-math", "advanced-algorithms", "tokio-adapter"]
 std = []
 no-std = []
 
-# Rust 1.91 增强特性
+# Rust 1.92 增强特性
 enhanced-math = ["nalgebra", "num-complex", "num-bigint"]
 advanced-algorithms = ["petgraph"]
 parallel-computing = []

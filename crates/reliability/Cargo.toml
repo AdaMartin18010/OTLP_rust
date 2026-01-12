@@ -4,12 +4,18 @@ version = "0.1.1"
 edition = "2024"
 
 resolver = "3"
-rust-version = "1.91"
+rust-version = "1.92"
 authors = ["Rust Reliability Team"]
 description = "统一可靠性框架：错误处理、容错机制、运行时监控和自愈"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/rust-lang/reliability"
-keywords = ["reliability", "error-handling", "fault-tolerance", "monitoring", "resilience"]
+keywords = [
+  "reliability",
+  "error-handling",
+  "fault-tolerance",
+  "monitoring",
+  "resilience",
+]
 categories = ["error-handling", "development-tools::testing"]
 
 [lints.rust]
@@ -78,8 +84,8 @@ proptest = { workspace = true, optional = true }
 # 系统信息 - 2025年9月27日最新版本
 sysinfo = { version = "0.37.2", optional = true }
 
-# 主机名获取 - 2025年9月27日最新版本
-hostname = { version = "0.4.1", optional = true }
+# 主机名获取 - 2025年1月最新版本
+hostname = { version = "0.4.2", optional = true }
 
 # 内存管理 - 2025年9月27日最新版本
 jemallocator = { version = "0.5.4", optional = true }
@@ -91,21 +97,34 @@ uuid = { workspace = true }
 time = { workspace = true }
 
 # OCI 规范（可选）
-oci-spec = { version = "0.8", optional = true }
+oci-spec = { version = "0.8.4", optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["async"] }
 tokio-test = { workspace = true }
 
 [features]
-default = ["std", "async", "monitoring", "fault-tolerance", "otlp", "logging", "os-environment"]
+default = [
+  "std",
+  "async",
+  "monitoring",
+  "fault-tolerance",
+  "otlp",
+  "logging",
+  "os-environment",
+]
 std = []
 async = ["tokio", "futures", "async-trait"]
 monitoring = ["metrics", "metrics-exporter-prometheus", "sysinfo", "prometheus"]
 fault-tolerance = ["parking_lot", "dashmap", "crossbeam"]
 chaos-engineering = ["proptest"]
 jemalloc = ["jemallocator"]
-otlp = ["opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp", "tracing-opentelemetry"]
+otlp = [
+  "opentelemetry",
+  "opentelemetry_sdk",
+  "opentelemetry-otlp",
+  "tracing-opentelemetry",
+]
 otlp-stdout = ["opentelemetry-stdout"]
 otlp-proto = ["opentelemetry-proto"]
 logging = ["env_logger"]

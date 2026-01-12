@@ -61,7 +61,7 @@ impl ResourcePredictor {
             model: PredictionModel::MovingAverage,
         }
     }
-    
+
     /// 添加历史数据
     pub fn add_observation(&mut self, forecast: ResourceForecast) {
         if self.history.len() >= self.window_size {
@@ -69,17 +69,17 @@ impl ResourcePredictor {
         }
         self.history.push_back(forecast);
     }
-    
+
     /// 预测未来资源使用
     pub fn predict(&self, steps_ahead: usize) -> Vec<ResourceForecast> {
         let mut predictions = Vec::with_capacity(steps_ahead);
-        
+
         // 简化版：使用移动平均
-        let avg_cpu = self.history.iter().map(|f| f.cpu_usage).sum::<f64>() 
+        let avg_cpu = self.history.iter().map(|f| f.cpu_usage).sum::<f64>()
             / self.history.len().max(1) as f64;
-        let avg_memory = self.history.iter().map(|f| f.memory_usage).sum::<f64>() 
+        let avg_memory = self.history.iter().map(|f| f.memory_usage).sum::<f64>()
             / self.history.len().max(1) as f64;
-        
+
         for i in 0..steps_ahead {
             predictions.push(ResourceForecast {
                 timestamp: 0,
@@ -89,10 +89,10 @@ impl ResourcePredictor {
                 confidence: 0.8,
             });
         }
-        
+
         predictions
     }
-    
+
     /// 计算预测准确度
     pub fn calculate_accuracy(&self) -> PredictionAccuracy {
         PredictionAccuracy {
@@ -101,7 +101,7 @@ impl ResourcePredictor {
             r2_score: 1.0,
         }
     }
-    
+
     /// 设置预测模型
     pub fn set_model(&mut self, model: PredictionModel) {
         self.model = model;
@@ -119,12 +119,12 @@ impl TimeSeriesPredictor {
             _window_size: window_size,
         }
     }
-    
+
     /// 训练模型
     pub fn train(&mut self, _data: &[f64]) {
         // 实际实现会训练时间序列模型
     }
-    
+
     /// 预测
     pub fn predict(&self, _steps: usize) -> Vec<f64> {
         Vec::new()
@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn test_resource_predictor() {
         let mut predictor = ResourcePredictor::new(10);
-        
+
         predictor.add_observation(ResourceForecast {
             timestamp: 0,
             cpu_usage: 50.0,
@@ -146,9 +146,8 @@ mod tests {
             network_bandwidth: 100.0,
             confidence: 0.9,
         });
-        
+
         let predictions = predictor.predict(5);
         assert_eq!(predictions.len(), 5);
     }
 }
-

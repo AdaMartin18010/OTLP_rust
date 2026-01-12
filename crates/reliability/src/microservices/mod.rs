@@ -38,37 +38,34 @@
 //!                └────────────────────┘
 //! ```
 
-pub mod service_discovery;
 pub mod api_gateway;
 pub mod config_center;
 pub mod distributed_tracing;
+pub mod service_discovery;
 pub mod service_mesh;
 
 // Re-export commonly used types
 pub use service_discovery::{
-    ServiceDiscovery, ServiceRegistry, ServiceInstance, ServiceMetadata,
-    HealthCheck, HealthStatus, LoadBalancer, LoadBalancingStrategy,
+    HealthCheck, HealthStatus, LoadBalancer, LoadBalancingStrategy, ServiceDiscovery,
+    ServiceInstance, ServiceMetadata, ServiceRegistry,
 };
 
 pub use api_gateway::{
-    ApiGateway, Route, RouteConfig, GatewayMiddleware,
-    AuthenticationProvider, RateLimitPolicy,
+    ApiGateway, AuthenticationProvider, GatewayMiddleware, RateLimitPolicy, Route, RouteConfig,
 };
 
 pub use config_center::{
-    ConfigCenter, ConfigRepository, ConfigItem, ConfigVersion,
-    ConfigWatcher, ConfigChangeEvent,
+    ConfigCenter, ConfigChangeEvent, ConfigItem, ConfigRepository, ConfigVersion, ConfigWatcher,
 };
 
 pub use distributed_tracing::{
-    Span, SpanContext, TraceId, SpanId, SpanKind, SpanStatus,
-    Tracer, TracingProvider, TracingConfig,
-    Sampler, AlwaysOnSampler, AlwaysOffSampler, RatioSampler,
+    AlwaysOffSampler, AlwaysOnSampler, RatioSampler, Sampler, Span, SpanContext, SpanId, SpanKind,
+    SpanStatus, TraceId, Tracer, TracingConfig, TracingProvider,
 };
 
 pub use service_mesh::{
-    ServiceMesh, Sidecar, TrafficPolicy, CircuitBreakerPolicy as MeshCircuitBreakerPolicy,
-    RetryPolicy as MeshRetryPolicy,
+    CircuitBreakerPolicy as MeshCircuitBreakerPolicy, RetryPolicy as MeshRetryPolicy, ServiceMesh,
+    Sidecar, TrafficPolicy,
 };
 
 /// 微服务配置
@@ -116,4 +113,3 @@ mod tests {
         assert!(!config.instance_id.is_empty());
     }
 }
-

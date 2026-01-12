@@ -43,10 +43,10 @@
 
 use crate::error_handling::prelude::*;
 use dashmap::DashMap;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
 
 /// 服务实例
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,10 +123,7 @@ impl HttpHealthCheck {
     pub fn new(timeout: Duration) -> Self {
         Self {
             timeout,
-            client: reqwest::Client::builder()
-                .timeout(timeout)
-                .build()
-                .unwrap(),
+            client: reqwest::Client::builder().timeout(timeout).build().unwrap(),
         }
     }
 }
@@ -136,7 +133,7 @@ impl HealthCheck for HttpHealthCheck {
     #[allow(dead_code)]
     async fn check(&self, instance: &ServiceInstance) -> HealthCheckResult {
         let start = Instant::now();
-        
+
         let status = if let Some(url) = &instance.health_check_url {
             match self.client.get(url).send().await {
                 Ok(response) => {
@@ -151,9 +148,9 @@ impl HealthCheck for HttpHealthCheck {
         } else {
             HealthStatus::Unknown
         };
-        
+
         let response_time = start.elapsed().as_millis() as u64;
-        
+
         HealthCheckResult {
             instance_id: instance.instance_id.clone(),
             status,
@@ -193,13 +190,13 @@ impl LoadBalancer {
             round_robin_counter: Arc::new(RwLock::new(0)),
         }
     }
-    
+
     /// 选择一个实例
     pub async fn select(&self, instances: &[ServiceInstance]) -> Option<ServiceInstance> {
         if instances.is_empty() {
             return None;
         }
-        
+
         match self.strategy {
             LoadBalancingStrategy::RoundRobin => {
                 let mut counter = self.round_robin_counter.write().await;
@@ -219,18 +216,18 @@ impl LoadBalancer {
                 if total_weight == 0 {
                     return Some(instances[0].clone());
                 }
-                
+
                 use rand::Rng;
                 let mut rng = rand::rng();
                 let mut random_weight = rng.random_range(0..total_weight);
-                
+
                 for instance in instances {
                     if random_weight < instance.metadata.weight {
                         return Some(instance.clone());
                     }
                     random_weight -= instance.metadata.weight;
                 }
-                
+
                 Some(instances[0].clone())
             }
             LoadBalancingStrategy::LeastConnections => {
@@ -300,7 +297,7 @@ impl ServiceRegistry {
     pub fn new(config: DiscoveryConfig) -> Self {
         let health_checker = Arc::new(HttpHealthCheck::new(config.health_check_timeout));
         let load_balancer = Arc::new(LoadBalancer::new(config.load_balancing_strategy));
-        
+
         Self {
             config,
             instances: Arc::new(DashMap::new()),
@@ -309,11 +306,11 @@ impl ServiceRegistry {
             health_check_task: Arc::new(RwLock::new(None)),
         }
     }
-    
+
     /// 注册服务实例
     pub async fn register(&self, instance: ServiceInstance) -> Result<()> {
         let service_name = instance.service_name.clone();
-        
+
         let health = InstanceHealth {
             instance: instance.clone(),
             status: HealthStatus::Healthy,
@@ -321,42 +318,43 @@ impl ServiceRegistry {
             consecutive_successes: 0,
             last_check: None,
         };
-        
+
         self.instances
             .entry(service_name.clone())
             .or_insert_with(Vec::new)
             .push(health);
-        
+
         tracing::info!(
             service_name = %service_name,
             instance_id = %instance.instance_id,
             "Service instance registered"
         );
-        
+
         // 启动健康检查（如果还没启动）
         self.start_health_check().await;
-        
+
         Ok(())
     }
-    
+
     /// 注销服务实例
     pub async fn deregister(&self, service_name: &str, instance_id: &str) -> Result<()> {
         if let Some(mut instances) = self.instances.get_mut(service_name) {
             instances.retain(|h| h.instance.instance_id != instance_id);
-            
+
             tracing::info!(
                 service_name = %service_name,
                 instance_id = %instance_id,
                 "Service instance deregistered"
             );
         }
-        
+
         Ok(())
     }
-    
+
     /// 发现服务实例
     pub async fn discover(&self, service_name: &str) -> Result<Vec<ServiceInstance>> {
-        let instances = self.instances
+        let instances = self
+            .instances
             .get(service_name)
             .map(|entry| {
                 entry
@@ -366,46 +364,46 @@ impl ServiceRegistry {
                     .collect()
             })
             .unwrap_or_default();
-        
+
         Ok(instances)
     }
-    
+
     /// 使用负载均衡选择一个实例
     pub async fn select_instance(&self, service_name: &str) -> Result<Option<ServiceInstance>> {
         let instances = self.discover(service_name).await?;
         Ok(self.load_balancer.select(&instances).await)
     }
-    
+
     /// 启动健康检查任务
     async fn start_health_check(&self) {
         let mut task = self.health_check_task.write().await;
-        
+
         if task.is_none() {
             let instances = Arc::clone(&self.instances);
             let health_checker = Arc::clone(&self.health_checker);
             let interval = self.config.health_check_interval;
             let unhealthy_threshold = self.config.unhealthy_threshold;
             let healthy_threshold = self.config.healthy_threshold;
-            
+
             let handle = tokio::spawn(async move {
                 let mut interval_timer = tokio::time::interval(interval);
-                
+
                 loop {
                     interval_timer.tick().await;
-                    
+
                     // 对所有实例执行健康检查
                     for mut entry in instances.iter_mut() {
                         let service_name = entry.key().clone();
                         let instances_health = entry.value_mut();
-                        
+
                         for health in instances_health.iter_mut() {
                             let result = health_checker.check(&health.instance).await;
-                            
+
                             match result.status {
                                 HealthStatus::Healthy => {
                                     health.consecutive_successes += 1;
                                     health.consecutive_failures = 0;
-                                    
+
                                     if health.consecutive_successes >= healthy_threshold {
                                         health.status = HealthStatus::Healthy;
                                     }
@@ -413,7 +411,7 @@ impl ServiceRegistry {
                                 HealthStatus::Unhealthy => {
                                     health.consecutive_failures += 1;
                                     health.consecutive_successes = 0;
-                                    
+
                                     if health.consecutive_failures >= unhealthy_threshold {
                                         health.status = HealthStatus::Unhealthy;
                                         tracing::warn!(
@@ -427,29 +425,38 @@ impl ServiceRegistry {
                                     health.status = HealthStatus::Unknown;
                                 }
                             }
-                            
+
                             health.last_check = Some(result.checked_at);
                         }
                     }
                 }
             });
-            
+
             *task = Some(handle);
         }
     }
-    
+
     /// 获取所有服务名称
     pub fn list_services(&self) -> Vec<String> {
-        self.instances.iter().map(|entry| entry.key().clone()).collect()
+        self.instances
+            .iter()
+            .map(|entry| entry.key().clone())
+            .collect()
     }
-    
+
     /// 获取服务统计信息
     pub fn get_service_stats(&self, service_name: &str) -> Option<ServiceStats> {
         self.instances.get(service_name).map(|entry| {
             let total = entry.len();
-            let healthy = entry.iter().filter(|h| h.status == HealthStatus::Healthy).count();
-            let unhealthy = entry.iter().filter(|h| h.status == HealthStatus::Unhealthy).count();
-            
+            let healthy = entry
+                .iter()
+                .filter(|h| h.status == HealthStatus::Healthy)
+                .count();
+            let unhealthy = entry
+                .iter()
+                .filter(|h| h.status == HealthStatus::Unhealthy)
+                .count();
+
             ServiceStats {
                 service_name: service_name.to_string(),
                 total_instances: total,
@@ -474,13 +481,13 @@ pub struct ServiceStats {
 pub trait ServiceDiscovery: Send + Sync {
     /// 注册服务
     async fn register(&self, instance: ServiceInstance) -> Result<()>;
-    
+
     /// 注销服务
     async fn deregister(&self, service_name: &str, instance_id: &str) -> Result<()>;
-    
+
     /// 发现服务
     async fn discover(&self, service_name: &str) -> Result<Vec<ServiceInstance>>;
-    
+
     /// 选择实例
     async fn select_instance(&self, service_name: &str) -> Result<Option<ServiceInstance>>;
 }
@@ -490,15 +497,15 @@ impl ServiceDiscovery for ServiceRegistry {
     async fn register(&self, instance: ServiceInstance) -> Result<()> {
         self.register(instance).await
     }
-    
+
     async fn deregister(&self, service_name: &str, instance_id: &str) -> Result<()> {
         self.deregister(service_name, instance_id).await
     }
-    
+
     async fn discover(&self, service_name: &str) -> Result<Vec<ServiceInstance>> {
         self.discover(service_name).await
     }
-    
+
     async fn select_instance(&self, service_name: &str) -> Result<Option<ServiceInstance>> {
         self.select_instance(service_name).await
     }
@@ -511,7 +518,7 @@ mod tests {
     #[tokio::test]
     async fn test_service_registration() {
         let registry = ServiceRegistry::new(DiscoveryConfig::default());
-        
+
         let instance = ServiceInstance {
             service_name: "test-service".to_string(),
             instance_id: "test-1".to_string(),
@@ -520,17 +527,17 @@ mod tests {
             metadata: ServiceMetadata::default(),
             health_check_url: None,
         };
-        
+
         registry.register(instance).await.unwrap();
-        
+
         let services = registry.list_services();
         assert!(services.contains(&"test-service".to_string()));
     }
-    
+
     #[tokio::test]
     async fn test_service_discovery() {
         let registry = ServiceRegistry::new(DiscoveryConfig::default());
-        
+
         let instance = ServiceInstance {
             service_name: "test-service".to_string(),
             instance_id: "test-1".to_string(),
@@ -544,18 +551,18 @@ mod tests {
             },
             health_check_url: None,
         };
-        
+
         registry.register(instance.clone()).await.unwrap();
-        
+
         let instances = registry.discover("test-service").await.unwrap();
         assert_eq!(instances.len(), 1);
         assert_eq!(instances[0].instance_id, "test-1");
     }
-    
+
     #[tokio::test]
     async fn test_load_balancer_round_robin() {
         let lb = LoadBalancer::new(LoadBalancingStrategy::RoundRobin);
-        
+
         let instances = vec![
             ServiceInstance {
                 service_name: "test".to_string(),
@@ -574,11 +581,10 @@ mod tests {
                 health_check_url: None,
             },
         ];
-        
+
         let selected1 = lb.select(&instances).await.unwrap();
         let selected2 = lb.select(&instances).await.unwrap();
-        
+
         assert_ne!(selected1.instance_id, selected2.instance_id);
     }
 }
-

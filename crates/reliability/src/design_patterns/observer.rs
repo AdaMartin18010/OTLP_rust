@@ -8,22 +8,21 @@
 /// - 事件驱动架构
 /// - 实时监控和告警
 /// - 日志聚合和分发
-
 use crate::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
 /// 观察者 trait
 #[async_trait::async_trait]
 pub trait Observer: Send + Sync {
     /// 接收事件通知
     async fn on_event(&self, event: &Event) -> Result<()>;
-    
+
     /// 观察者ID
     fn id(&self) -> &str;
-    
+
     /// 观察者优先级（数字越小优先级越高）
     fn priority(&self) -> u32 {
         100
@@ -35,10 +34,10 @@ pub trait Observer: Send + Sync {
 pub trait Subject: Send + Sync {
     /// 添加观察者
     async fn attach(&self, observer: Arc<dyn Observer>) -> Result<()>;
-    
+
     /// 移除观察者
     async fn detach(&self, observer_id: &str) -> Result<()>;
-    
+
     /// 通知所有观察者
     async fn notify(&self, event: &Event) -> Result<()>;
 }
@@ -100,11 +99,7 @@ pub enum EventSeverity {
 
 impl Event {
     /// 创建新事件
-    pub fn new(
-        event_type: EventType,
-        source: impl Into<String>,
-        data: serde_json::Value,
-    ) -> Self {
+    pub fn new(event_type: EventType, source: impl Into<String>, data: serde_json::Value) -> Self {
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             event_type,
@@ -117,7 +112,7 @@ impl Event {
             severity: EventSeverity::Info,
         }
     }
-    
+
     /// 设置严重性
     pub fn with_severity(mut self, severity: EventSeverity) -> Self {
         self.severity = severity;
@@ -147,13 +142,13 @@ impl EventBus {
             max_history: 1000,
         }
     }
-    
+
     /// 设置最大历史记录数
     pub fn with_max_history(mut self, max: usize) -> Self {
         self.max_history = max;
         self
     }
-    
+
     /// 订阅特定事件类型
     pub async fn subscribe(
         &self,
@@ -161,13 +156,13 @@ impl EventBus {
         event_types: Vec<EventType>,
     ) -> Result<()> {
         let observer_id = observer.id().to_string();
-        
+
         // 添加观察者
         {
             let mut observers = self.observers.write().await;
             observers.insert(observer_id.clone(), observer);
         }
-        
+
         // 添加订阅
         {
             let mut subs = self.subscriptions.write().await;
@@ -177,10 +172,10 @@ impl EventBus {
                     .push(observer_id.clone());
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 取消订阅
     pub async fn unsubscribe(&self, observer_id: &str) -> Result<()> {
         // 移除观察者
@@ -188,7 +183,7 @@ impl EventBus {
             let mut observers = self.observers.write().await;
             observers.remove(observer_id);
         }
-        
+
         // 移除订阅
         {
             let mut subs = self.subscriptions.write().await;
@@ -196,10 +191,10 @@ impl EventBus {
                 subscribers.retain(|id| id != observer_id);
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 发布事件
     pub async fn publish(&self, event: Event) -> Result<()> {
         // 保存到历史
@@ -210,16 +205,16 @@ impl EventBus {
                 history.remove(0);
             }
         }
-        
+
         // 通知订阅者
         self.notify(&event).await
     }
-    
+
     /// 获取事件历史
     pub async fn get_history(&self) -> Vec<Event> {
         self.history.read().await.clone()
     }
-    
+
     /// 清空历史
     pub async fn clear_history(&self) {
         self.history.write().await.clear();
@@ -240,11 +235,11 @@ impl Subject for EventBus {
         observers.insert(observer_id, observer);
         Ok(())
     }
-    
+
     async fn detach(&self, observer_id: &str) -> Result<()> {
         self.unsubscribe(observer_id).await
     }
-    
+
     async fn notify(&self, event: &Event) -> Result<()> {
         // 获取订阅了此事件类型的观察者
         let subscriber_ids = {
@@ -253,7 +248,7 @@ impl Subject for EventBus {
                 .map(|ids| ids.clone())
                 .unwrap_or_default()
         };
-        
+
         // 获取观察者并按优先级排序
         let mut observers_with_priority = Vec::new();
         {
@@ -265,7 +260,7 @@ impl Subject for EventBus {
             }
         }
         observers_with_priority.sort_by_key(|(priority, _)| *priority);
-        
+
         // 通知观察者
         for (_, observer) in observers_with_priority {
             if let Err(e) = observer.on_event(event).await {
@@ -273,7 +268,7 @@ impl Subject for EventBus {
                 eprintln!("Observer {} failed to handle event: {}", observer.id(), e);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -291,7 +286,7 @@ impl LogObserver {
             priority: 100,
         }
     }
-    
+
     pub fn with_priority(mut self, priority: u32) -> Self {
         self.priority = priority;
         self
@@ -303,18 +298,18 @@ impl Observer for LogObserver {
     async fn on_event(&self, event: &Event) -> Result<()> {
         println!(
             "[{}] {} event from {}: {:?}",
-            self.id, 
+            self.id,
             format!("{:?}", event.event_type),
             event.source,
             event.data
         );
         Ok(())
     }
-    
+
     fn id(&self) -> &str {
         &self.id
     }
-    
+
     fn priority(&self) -> u32 {
         self.priority
     }
@@ -323,43 +318,44 @@ impl Observer for LogObserver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_event_bus() {
         let bus = EventBus::new();
         let observer = Arc::new(LogObserver::new("test-observer"));
-        
-        bus.subscribe(observer, vec![EventType::StateChange]).await.unwrap();
-        
+
+        bus.subscribe(observer, vec![EventType::StateChange])
+            .await
+            .unwrap();
+
         let event = Event::new(
             EventType::StateChange,
             "test-service",
             serde_json::json!({"state": "running"}),
         );
-        
+
         bus.publish(event).await.unwrap();
-        
+
         let history = bus.get_history().await;
         assert_eq!(history.len(), 1);
     }
-    
+
     #[tokio::test]
     async fn test_observer_priority() {
         let bus = EventBus::new();
-        
+
         let high_priority = Arc::new(LogObserver::new("high").with_priority(1));
         let low_priority = Arc::new(LogObserver::new("low").with_priority(100));
-        
-        bus.subscribe(low_priority, vec![EventType::Metric]).await.unwrap();
-        bus.subscribe(high_priority, vec![EventType::Metric]).await.unwrap();
-        
-        let event = Event::new(
-            EventType::Metric,
-            "test",
-            serde_json::json!({"value": 42}),
-        );
-        
+
+        bus.subscribe(low_priority, vec![EventType::Metric])
+            .await
+            .unwrap();
+        bus.subscribe(high_priority, vec![EventType::Metric])
+            .await
+            .unwrap();
+
+        let event = Event::new(EventType::Metric, "test", serde_json::json!({"value": 42}));
+
         bus.publish(event).await.unwrap();
     }
 }
-

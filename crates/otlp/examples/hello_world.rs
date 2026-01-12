@@ -13,8 +13,11 @@
 //! 无需 Docker 或其他服务，这个示例会尝试连接到 localhost:4317，
 //! 但即使连接失败也会正常运行并展示 API 的使用方式。
 
+use opentelemetry::{
+    KeyValue,
+    trace::{Span, Tracer},
+};
 use otlp::core::EnhancedOtlpClient;
-use opentelemetry::{trace::{Tracer, Span}, KeyValue};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -93,4 +96,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 🎉 Hello World 示例完成！
 
 */
-

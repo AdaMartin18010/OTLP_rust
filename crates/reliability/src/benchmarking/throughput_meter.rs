@@ -1,7 +1,6 @@
 /// 吞吐量测量器
 ///
 /// 用于测量系统吞吐量和处理能力
-
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
@@ -242,4 +241,3 @@ mod tests {
         assert_eq!(metrics.total_bytes, 0);
     }
 }
-

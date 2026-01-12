@@ -2,15 +2,16 @@
 //!
 //! 提供各种错误恢复策略，包括重试、降级、忽略等。
 
-use std::time::Duration;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use std::time::Duration;
 use tracing::{
-    debug, warn, 
+    debug,
+    warn,
     //error,
 };
 
-use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
+use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
 
 /// 重试策略配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,18 +117,12 @@ impl ErrorRecovery {
         Fut: std::future::Future<Output = Result<T, UnifiedError>>,
     {
         match &self.strategy {
-            RecoveryStrategy::Retry(config) => {
-                self.recover_with_retry(operation, config).await
-            }
+            RecoveryStrategy::Retry(config) => self.recover_with_retry(operation, config).await,
             RecoveryStrategy::Fallback(config) => {
                 self.recover_with_fallback(operation, config).await
             }
-            RecoveryStrategy::Ignore => {
-                self.recover_with_ignore(operation).await
-            }
-            RecoveryStrategy::Propagate => {
-                operation().await
-            }
+            RecoveryStrategy::Ignore => self.recover_with_ignore(operation).await,
+            RecoveryStrategy::Propagate => operation().await,
             RecoveryStrategy::Custom { name, parameters } => {
                 self.recover_with_custom(operation, name, parameters).await
             }
@@ -149,33 +144,38 @@ impl ErrorRecovery {
         for attempt in 1..=config.max_attempts {
             match operation().await {
                 Ok(result) => {
-                    self.success_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    self.success_count
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     *self.last_recovery.lock().unwrap() = Some(std::time::Instant::now());
                     return Ok(result);
                 }
                 Err(error) => {
                     last_error = Some(error);
-                    
-                    if attempt < config.max_attempts {
-                        let actual_delay = if config.use_jitter {
-                            self.add_jitter(delay, config.jitter_range)
-                        } else {
-                            delay
-                        };
-                        
-                        debug!("重试第 {} 次，延迟 {:?}", attempt, actual_delay);
-                        tokio::time::sleep(actual_delay).await;
-                        
-                        // 计算下次延迟时间
-                        delay = Duration::from_millis(
-                            (delay.as_millis() as f64 * config.backoff_multiplier) as u64
-                        ).min(config.max_delay);
+
+                    if attempt >= config.max_attempts {
+                        break;
                     }
+
+                    let actual_delay = if config.use_jitter {
+                        self.add_jitter(delay, config.jitter_range)
+                    } else {
+                        delay
+                    };
+
+                    debug!("重试第 {} 次，延迟 {:?}", attempt, actual_delay);
+                    tokio::time::sleep(actual_delay).await;
+
+                    // 计算下次延迟时间
+                    delay = Duration::from_millis(
+                        (delay.as_millis() as f64 * config.backoff_multiplier) as u64,
+                    )
+                    .min(config.max_delay);
                 }
             }
         }
 
-        self.recovery_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.recovery_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         *self.last_recovery.lock().unwrap() = Some(std::time::Instant::now());
 
         Err(last_error.unwrap_or_else(|| {
@@ -183,7 +183,14 @@ impl ErrorRecovery {
                 "重试次数耗尽",
                 ErrorSeverity::High,
                 "retry_exhausted",
-                ErrorContext::new("error_recovery", "recover_with_retry", file!(), line!(), ErrorSeverity::High, "retry")
+                ErrorContext::new(
+                    "error_recovery",
+                    "recover_with_retry",
+                    file!(),
+                    line!(),
+                    ErrorSeverity::High,
+                    "retry",
+                ),
             )
         }))
     }
@@ -200,7 +207,8 @@ impl ErrorRecovery {
         match operation().await {
             Ok(result) => Ok(result),
             Err(error) => {
-                self.recovery_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                self.recovery_count
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 *self.last_recovery.lock().unwrap() = Some(std::time::Instant::now());
 
                 if config.notify {
@@ -213,18 +221,28 @@ impl ErrorRecovery {
                     &format!("降级处理: {}", error),
                     ErrorSeverity::Medium,
                     "fallback_used",
-                    ErrorContext::new("error_recovery", "recover_with_fallback", file!(), line!(), ErrorSeverity::Medium, "fallback")
-                        .with_metadata("fallback_value", config.fallback_value.as_deref().unwrap_or("none"))
-                        .with_metadata("fallback_reason", config.reason.as_deref().unwrap_or("unknown"))
+                    ErrorContext::new(
+                        "error_recovery",
+                        "recover_with_fallback",
+                        file!(),
+                        line!(),
+                        ErrorSeverity::Medium,
+                        "fallback",
+                    )
+                    .with_metadata(
+                        "fallback_value",
+                        config.fallback_value.as_deref().unwrap_or("none"),
+                    )
+                    .with_metadata(
+                        "fallback_reason",
+                        config.reason.as_deref().unwrap_or("unknown"),
+                    ),
                 ))
             }
         }
     }
 
-    async fn recover_with_ignore<T, F, Fut>(
-        &self,
-        operation: F,
-    ) -> Result<T, UnifiedError>
+    async fn recover_with_ignore<T, F, Fut>(&self, operation: F) -> Result<T, UnifiedError>
     where
         F: Fn() -> Fut,
         Fut: std::future::Future<Output = Result<T, UnifiedError>>,
@@ -232,18 +250,26 @@ impl ErrorRecovery {
         match operation().await {
             Ok(result) => Ok(result),
             Err(error) => {
-                self.recovery_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                self.recovery_count
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 *self.last_recovery.lock().unwrap() = Some(std::time::Instant::now());
-                
+
                 debug!("忽略错误: {}", error);
-                
+
                 // 返回一个表示忽略的错误
                 Err(UnifiedError::new(
                     "错误被忽略",
                     ErrorSeverity::Low,
                     "error_ignored",
-                    ErrorContext::new("error_recovery", "recover_with_ignore", file!(), line!(), ErrorSeverity::Low, "ignore")
-                        .with_metadata("original_error", error.to_string())
+                    ErrorContext::new(
+                        "error_recovery",
+                        "recover_with_ignore",
+                        file!(),
+                        line!(),
+                        ErrorSeverity::Low,
+                        "ignore",
+                    )
+                    .with_metadata("original_error", error.to_string()),
                 ))
             }
         }
@@ -261,8 +287,11 @@ impl ErrorRecovery {
     {
         // 自定义恢复策略的实现
         // 这里可以根据策略名称和参数实现不同的恢复逻辑
-        warn!("使用自定义恢复策略: {}，参数: {:?}", strategy_name, parameters);
-        
+        warn!(
+            "使用自定义恢复策略: {}，参数: {:?}",
+            strategy_name, parameters
+        );
+
         // 默认使用传播策略
         operation().await
     }
@@ -278,12 +307,14 @@ impl ErrorRecovery {
 
     /// 获取恢复次数
     pub fn recovery_count(&self) -> u64 {
-        self.recovery_count.load(std::sync::atomic::Ordering::Relaxed)
+        self.recovery_count
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// 获取成功次数
     pub fn success_count(&self) -> u64 {
-        self.success_count.load(std::sync::atomic::Ordering::Relaxed)
+        self.success_count
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// 获取上次恢复时间
@@ -303,8 +334,10 @@ impl ErrorRecovery {
 
     /// 重置统计
     pub fn reset_stats(&self) {
-        self.recovery_count.store(0, std::sync::atomic::Ordering::Relaxed);
-        self.success_count.store(0, std::sync::atomic::Ordering::Relaxed);
+        self.recovery_count
+            .store(0, std::sync::atomic::Ordering::Relaxed);
+        self.success_count
+            .store(0, std::sync::atomic::Ordering::Relaxed);
         *self.last_recovery.lock().unwrap() = None;
     }
 }
@@ -380,9 +413,7 @@ mod tests {
 
         let recovery = ErrorRecovery::new(RecoveryStrategy::Retry(config));
 
-        let result = recovery.recover(|| async {
-            Ok("成功".to_string())
-        }).await;
+        let result = recovery.recover(|| async { Ok("成功".to_string()) }).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "成功");
@@ -400,14 +431,23 @@ mod tests {
 
         let recovery = ErrorRecovery::new(RecoveryStrategy::Fallback(config));
 
-        let result: Result<String, _> = recovery.recover(|| async {
-            Err(UnifiedError::new(
-                "原始错误",
-                ErrorSeverity::Medium,
-                "original_error",
-                ErrorContext::new("test", "test_fallback", file!(), line!(), ErrorSeverity::Medium, "test")
-            ))
-        }).await;
+        let result: Result<String, _> = recovery
+            .recover(|| async {
+                Err(UnifiedError::new(
+                    "原始错误",
+                    ErrorSeverity::Medium,
+                    "original_error",
+                    ErrorContext::new(
+                        "test",
+                        "test_fallback",
+                        file!(),
+                        line!(),
+                        ErrorSeverity::Medium,
+                        "test",
+                    ),
+                ))
+            })
+            .await;
 
         assert!(result.is_err());
         let error = result.unwrap_err();
@@ -419,14 +459,23 @@ mod tests {
     async fn test_ignore_recovery() {
         let recovery = ErrorRecovery::new(RecoveryStrategy::Ignore);
 
-        let result: Result<String, _> = recovery.recover(|| async {
-            Err(UnifiedError::new(
-                "被忽略的错误",
-                ErrorSeverity::Low,
-                "ignored_error",
-                ErrorContext::new("test", "test_ignore", file!(), line!(), ErrorSeverity::Low, "test")
-            ))
-        }).await;
+        let result: Result<String, _> = recovery
+            .recover(|| async {
+                Err(UnifiedError::new(
+                    "被忽略的错误",
+                    ErrorSeverity::Low,
+                    "ignored_error",
+                    ErrorContext::new(
+                        "test",
+                        "test_ignore",
+                        file!(),
+                        line!(),
+                        ErrorSeverity::Low,
+                        "test",
+                    ),
+                ))
+            })
+            .await;
 
         assert!(result.is_err());
         let error = result.unwrap_err();
@@ -437,9 +486,7 @@ mod tests {
     #[test]
     fn test_recovery_builder() {
         let config = RetryConfig::default();
-        let recovery = ErrorRecoveryBuilder::new()
-            .with_retry(config)
-            .build();
+        let recovery = ErrorRecoveryBuilder::new().with_retry(config).build();
 
         assert_eq!(recovery.recovery_count(), 0);
         assert_eq!(recovery.success_count(), 0);

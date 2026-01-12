@@ -635,10 +635,7 @@ mod tests {
             .unwrap();
 
         let map = attrs.to_attributes();
-        assert_eq!(
-            map.get("messaging.mqtt.qos"),
-            Some(&AttributeValue::Int(1))
-        );
+        assert_eq!(map.get("messaging.mqtt.qos"), Some(&AttributeValue::Int(1)));
         assert_eq!(
             map.get("messaging.mqtt.retained"),
             Some(&AttributeValue::Bool(true))
@@ -693,4 +690,3 @@ mod tests {
         );
     }
 }
-

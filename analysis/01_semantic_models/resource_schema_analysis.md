@@ -143,13 +143,13 @@ impl ServiceResource {
         if self.name.is_empty() {
             return Err(ValidationError::RequiredFieldMissing("service.name"));
         }
-        
+
         if let Some(ref version) = self.version {
             if !is_valid_semantic_version(version) {
                 return Err(ValidationError::InvalidFormat("service.version"));
             }
         }
-        
+
         Ok(())
     }
 }
@@ -187,30 +187,30 @@ Kubernetes 资源模式:
     // 集群信息
     "k8s.cluster.name": string,
     "k8s.cluster.uid": string,
-    
+
     // 命名空间信息
     "k8s.namespace.name": string,
     "k8s.namespace.uid": string,
-    
+
     // Pod 信息
     "k8s.pod.name": string,
     "k8s.pod.uid": string,
     "k8s.pod.start_time": string,
-    
+
     // 容器信息
     "k8s.container.name": string,
     "k8s.container.image": string,
     "k8s.container.image_tag": string,
     "k8s.container.image_id": string,
-    
+
     // 节点信息
     "k8s.node.name": string,
     "k8s.node.uid": string,
-    
+
     // 副本集信息
     "k8s.replicaset.name": string,
     "k8s.replicaset.uid": string,
-    
+
     // 部署信息
     "k8s.deployment.name": string,
     "k8s.deployment.uid": string
@@ -308,21 +308,21 @@ pub struct KubernetesResourceDiscoverer {
 impl ResourceDiscoverer for KubernetesResourceDiscoverer {
     async fn discover(&self) -> Result<Vec<Resource>, DiscoveryError> {
         let mut resources = Vec::new();
-        
+
         // 发现 Pod 资源
         let pods = self.client.list_pods(&self.namespace).await?;
         for pod in pods {
             let resource = self.pod_to_resource(&pod)?;
             resources.push(resource);
         }
-        
+
         // 发现 Service 资源
         let services = self.client.list_services(&self.namespace).await?;
         for service in services {
             let resource = self.service_to_resource(&service)?;
             resources.push(resource);
         }
-        
+
         Ok(resources)
     }
 }
@@ -345,20 +345,20 @@ impl ResourceRegistry {
     pub async fn register(&mut self, resource: Resource) -> Result<(), RegistryError> {
         // 验证资源
         resource.validate()?;
-        
+
         // 检查冲突
         if let Some(existing) = self.resources.get(&resource.id()) {
             if !self.is_compatible(existing, &resource) {
                 return Err(RegistryError::ResourceConflict);
             }
         }
-        
+
         // 注册资源
         self.resources.insert(resource.id(), resource.clone());
-        
+
         // 通知观察者
         self.notify_watchers(ResourceEvent::Registered(resource)).await;
-        
+
         Ok(())
     }
 }
@@ -377,9 +377,9 @@ impl ResourceValidator {
     pub fn validate(&self, resource: &Resource) -> ValidationResult {
         let schema = self.schemas.get(&resource.schema_url())
             .ok_or(ValidationError::SchemaNotFound)?;
-            
+
         let mut errors = Vec::new();
-        
+
         // 验证必需属性
         for attr_def in &schema.required_attributes {
             if !resource.has_attribute(&attr_def.name) {
@@ -388,7 +388,7 @@ impl ResourceValidator {
                 ));
             }
         }
-        
+
         // 验证属性类型
         for (key, value) in resource.attributes() {
             if let Some(attr_def) = schema.get_attribute_definition(key) {
@@ -400,7 +400,7 @@ impl ResourceValidator {
                 }
             }
         }
-        
+
         if errors.is_empty() {
             Ok(())
         } else {
@@ -439,7 +439,7 @@ pub struct CachedResource {
 impl ResourceCache {
     pub fn get(&self, id: &str) -> Option<Resource> {
         let mut cache = self.cache.lock().unwrap();
-        
+
         if let Some(cached) = cache.get(id) {
             if cached.created_at.elapsed() < self.ttl {
                 cached.access_count.fetch_add(1, Ordering::Relaxed);
@@ -448,7 +448,7 @@ impl ResourceCache {
                 cache.remove(id);
             }
         }
-        
+
         None
     }
 }
@@ -500,22 +500,22 @@ pub struct ResourceMonitor {
 impl ResourceMonitor {
     pub fn check_health(&self, resource: &Resource) -> HealthStatus {
         let mut issues = Vec::new();
-        
+
         // 检查资源可用性
         if !self.is_resource_available(resource) {
             issues.push(HealthIssue::Unavailable);
         }
-        
+
         // 检查属性完整性
         if !self.has_required_attributes(resource) {
             issues.push(HealthIssue::IncompleteAttributes);
         }
-        
+
         // 检查资源关系
         if !self.has_valid_relationships(resource) {
             issues.push(HealthIssue::InvalidRelationships);
         }
-        
+
         if issues.is_empty() {
             HealthStatus::Healthy
         } else {
@@ -601,16 +601,16 @@ impl ResourceSerializer {
     pub fn serialize(&self, resource: &Resource) -> Result<Vec<u8>, SerializationError> {
         // 1. 序列化为 Protocol Buffers
         let protobuf_data = self.protobuf_serializer.serialize(resource)?;
-        
+
         // 2. 压缩数据
         let compressed_data = self.compression.compress(&protobuf_data)?;
-        
+
         Ok(compressed_data)
     }
-    
+
     pub fn serialize_incremental(
-        &self, 
-        resource: &Resource, 
+        &self,
+        resource: &Resource,
         base_resource: &Resource
     ) -> Result<Vec<u8>, SerializationError> {
         // 只序列化变化的部分
@@ -638,17 +638,17 @@ impl ResourceQueryEngine {
         if let Some(cached_result) = self.query_cache.get(query) {
             return Ok(cached_result);
         }
-        
+
         // 2. 使用索引优化查询
         let candidate_resources = self.use_indexes(query).await?;
-        
+
         // 3. 并行执行过滤
         let filtered_resources = self.parallel_executor
             .filter_parallel(candidate_resources, &query.filter).await?;
-        
+
         // 4. 缓存结果
         self.query_cache.put(query.clone(), filtered_resources.clone());
-        
+
         Ok(filtered_resources)
     }
 }
@@ -669,23 +669,23 @@ pub struct MultiLevelValidator {
 impl MultiLevelValidator {
     pub async fn validate(&self, resource: &Resource) -> ValidationResult {
         let mut result = ValidationResult::new();
-        
+
         // 1. 结构验证
         let structural_result = self.structural_validator.validate(resource).await?;
         result.merge(structural_result);
-        
+
         // 2. 语义验证
         let semantic_result = self.semantic_validator.validate(resource).await?;
         result.merge(semantic_result);
-        
+
         // 3. 业务验证
         let business_result = self.business_validator.validate(resource).await?;
         result.merge(business_result);
-        
+
         // 4. 性能验证
         let performance_result = self.performance_validator.validate(resource).await?;
         result.merge(performance_result);
-        
+
         Ok(result)
     }
 }
@@ -707,20 +707,20 @@ impl RealTimeValidator {
         if !quick_result.is_valid() {
             return quick_result;
         }
-        
+
         // 2. 深度验证（异步）
         let deep_result = self.async_validator.validate_async(resource).await;
-        
+
         // 3. 合并结果
         quick_result.merge(deep_result)
     }
-    
+
     fn quick_validate(&self, resource: &Resource) -> ValidationResult {
         // 检查缓存
         if let Some(cached) = self.validation_cache.get(resource) {
             return cached;
         }
-        
+
         // 执行快速验证规则
         let mut result = ValidationResult::new();
         for rule in &self.validation_rules {
@@ -729,7 +729,7 @@ impl RealTimeValidator {
                 result.merge(rule_result);
             }
         }
-        
+
         // 缓存结果
         self.validation_cache.put(resource, result.clone());
         result
@@ -754,16 +754,16 @@ impl DynamicSchemaLoader {
         if let Some(cached_schema) = self.schema_registry.get(schema_url) {
             return Ok(cached_schema);
         }
-        
+
         // 2. 从远程加载
         let schema_data = self.schema_loader.load(schema_url).await?;
-        
+
         // 3. 验证模式
         let schema = self.schema_validator.validate_schema(&schema_data)?;
-        
+
         // 4. 注册模式
         self.schema_registry.register(schema_url, schema.clone());
-        
+
         Ok(schema)
     }
 }
@@ -780,29 +780,29 @@ pub struct SchemaVersionManager {
 
 impl SchemaVersionManager {
     pub fn register_schema_version(
-        &mut self, 
-        schema_name: &str, 
+        &mut self,
+        schema_name: &str,
         version: SchemaVersion
     ) -> Result<(), VersionError> {
         let versions = self.version_registry
             .entry(schema_name.to_string())
             .or_insert_with(Vec::new);
-        
+
         // 检查版本兼容性
         if let Some(latest_version) = versions.last() {
             if !self.compatibility_checker.is_compatible(latest_version, &version) {
                 return Err(VersionError::IncompatibleVersion);
             }
         }
-        
+
         versions.push(version);
         Ok(())
     }
-    
+
     pub fn migrate_resource(
-        &self, 
-        resource: &Resource, 
-        from_version: &str, 
+        &self,
+        resource: &Resource,
+        from_version: &str,
         to_version: &str
     ) -> Result<Resource, MigrationError> {
         self.migration_engine.migrate(resource, from_version, to_version)
@@ -846,18 +846,18 @@ impl PerformanceOptimizer {
     pub async fn analyze_and_optimize(&self, resource: &Resource) -> OptimizationResult {
         // 1. 收集性能指标
         let metrics = self.metrics_collector.collect_metrics(resource).await;
-        
+
         // 2. 分析性能瓶颈
         let bottlenecks = self.optimization_engine.analyze_bottlenecks(&metrics);
-        
+
         // 3. 生成优化建议
         let recommendations = self.recommendation_engine
             .generate_recommendations(&bottlenecks);
-        
+
         // 4. 应用优化
         let optimized_resource = self.optimization_engine
             .apply_optimizations(resource, &recommendations);
-        
+
         OptimizationResult {
             original_metrics: metrics,
             bottlenecks,

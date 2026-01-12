@@ -28,18 +28,23 @@
 //! Based on OpenTelemetry Semantic Conventions v1.29.0:
 //! - https://opentelemetry.io/docs/specs/semconv/
 
-pub mod http;
 pub mod common;
 pub mod database;
-pub mod messaging;
+pub mod http;
 pub mod k8s;
+pub mod messaging;
 
 // Re-export commonly used types
-pub use http::{HttpAttributes, HttpAttributesBuilder, HttpMethod, HttpScheme};
 pub use common::{AttributeKey, AttributeValue, SemanticConventionError};
-pub use database::{DatabaseAttributes, DatabaseAttributesBuilder, DatabaseSystem, DatabaseOperation};
-pub use messaging::{MessagingAttributes, MessagingAttributesBuilder, MessagingSystem, MessagingOperation, DestinationKind};
+pub use database::{
+    DatabaseAttributes, DatabaseAttributesBuilder, DatabaseOperation, DatabaseSystem,
+};
+pub use http::{HttpAttributes, HttpAttributesBuilder, HttpMethod, HttpScheme};
 pub use k8s::{K8sAttributes, K8sAttributesBuilder, K8sResourceType};
+pub use messaging::{
+    DestinationKind, MessagingAttributes, MessagingAttributesBuilder, MessagingOperation,
+    MessagingSystem,
+};
 
 /// Version of the OpenTelemetry Semantic Conventions implemented
 pub const SEMCONV_VERSION: &str = "1.29.0";
@@ -49,11 +54,10 @@ pub const SEMCONV_VERSION: &str = "1.29.0";
 pub enum ConventionStatus {
     /// Stable convention, safe for production use
     Stable,
-    
+
     /// Experimental convention, may change
     Experimental,
-    
+
     /// Deprecated convention, avoid use
     Deprecated,
 }
-

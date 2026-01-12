@@ -8,14 +8,13 @@
 /// - 重试策略配置
 /// - 序列化/反序列化策略
 /// - 缓存淘汰策略
-
 use crate::prelude::*;
 //use crate::error_handling::{ErrorContext, ErrorSeverity};
-use std::sync::Arc;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use std::sync::Arc;
 
-// Helper function to create validation errors  
+// Helper function to create validation errors
 fn validation_error(msg: impl Into<String>) -> anyhow::Error {
     anyhow::anyhow!(msg.into())
 }
@@ -25,10 +24,10 @@ fn validation_error(msg: impl Into<String>) -> anyhow::Error {
 pub trait Strategy<Input, Output>: Send + Sync {
     /// 执行策略
     async fn execute(&self, input: Input) -> Result<Output>;
-    
+
     /// 策略名称
     fn name(&self) -> &str;
-    
+
     /// 策略描述
     fn description(&self) -> &str {
         "No description"
@@ -53,38 +52,40 @@ where
         let name = strategy.name().to_string();
         let mut strategies = HashMap::new();
         strategies.insert(name, strategy.clone());
-        
+
         Self {
             strategy,
             strategies,
         }
     }
-    
+
     /// 注册新策略
     pub fn register_strategy(&mut self, strategy: Arc<dyn Strategy<Input, Output>>) {
         let name = strategy.name().to_string();
         self.strategies.insert(name, strategy);
     }
-    
+
     /// 切换策略
     pub fn set_strategy(&mut self, name: &str) -> Result<()> {
-        let strategy = self.strategies.get(name)
+        let strategy = self
+            .strategies
+            .get(name)
             .ok_or_else(|| UnifiedError::not_found(format!("Strategy not found: {}", name)))?
             .clone();
         self.strategy = strategy;
         Ok(())
     }
-    
+
     /// 获取当前策略名称
     pub fn current_strategy(&self) -> &str {
         self.strategy.name()
     }
-    
+
     /// 列出所有可用策略
     pub fn list_strategies(&self) -> Vec<String> {
         self.strategies.keys().cloned().collect()
     }
-    
+
     /// 执行当前策略
     pub async fn execute(&self, input: Input) -> Result<Output> {
         self.strategy.execute(input).await
@@ -136,11 +137,11 @@ impl Strategy<RetryInput, RetryDecision> for FixedDelayRetry {
             wait_ms: self.delay_ms,
         })
     }
-    
+
     fn name(&self) -> &str {
         "fixed_delay"
     }
-    
+
     fn description(&self) -> &str {
         "Fixed delay between retries"
     }
@@ -172,20 +173,20 @@ impl Strategy<RetryInput, RetryDecision> for ExponentialBackoffRetry {
                 wait_ms: 0,
             });
         }
-        
+
         let delay = self.base_delay_ms * 2u64.pow(input.attempt);
         let delay = delay.min(self.max_delay_ms);
-        
+
         Ok(RetryDecision {
             should_retry: true,
             wait_ms: delay,
         })
     }
-    
+
     fn name(&self) -> &str {
         "exponential_backoff"
     }
-    
+
     fn description(&self) -> &str {
         "Exponential backoff with maximum delay"
     }
@@ -200,10 +201,10 @@ impl Strategy<RetryInput, RetryDecision> for ExponentialBackoffRetry {
 pub trait SerializationStrategy: Send + Sync {
     /// 序列化
     async fn serialize<T: Serialize + Send + Sync>(&self, value: &T) -> Result<Vec<u8>>;
-    
+
     /// 反序列化
     async fn deserialize<T: for<'de> Deserialize<'de> + Send>(&self, data: &[u8]) -> Result<T>;
-    
+
     /// 策略名称
     fn name(&self) -> &str;
 }
@@ -214,15 +215,13 @@ pub struct JsonSerialization;
 #[async_trait::async_trait]
 impl SerializationStrategy for JsonSerialization {
     async fn serialize<T: Serialize + Send + Sync>(&self, value: &T) -> Result<Vec<u8>> {
-        serde_json::to_vec(value)
-            .map_err(|e| validation_error(e.to_string()))
+        serde_json::to_vec(value).map_err(|e| validation_error(e.to_string()))
     }
-    
+
     async fn deserialize<T: for<'de> Deserialize<'de> + Send>(&self, data: &[u8]) -> Result<T> {
-        serde_json::from_slice(data)
-            .map_err(|e| validation_error(e.to_string()))
+        serde_json::from_slice(data).map_err(|e| validation_error(e.to_string()))
     }
-    
+
     fn name(&self) -> &str {
         "json"
     }
@@ -272,7 +271,9 @@ impl Default for RoundRobinSelection {
 }
 
 #[async_trait::async_trait]
-impl<T: Clone + Send + Sync + 'static> Strategy<SelectionInput<T>, SelectionOutput<T>> for RoundRobinSelection {
+impl<T: Clone + Send + Sync + 'static> Strategy<SelectionInput<T>, SelectionOutput<T>>
+    for RoundRobinSelection
+{
     async fn execute(&self, input: SelectionInput<T>) -> Result<SelectionOutput<T>> {
         if input.options.is_empty() {
             return Ok(SelectionOutput {
@@ -280,20 +281,22 @@ impl<T: Clone + Send + Sync + 'static> Strategy<SelectionInput<T>, SelectionOutp
                 index: None,
             });
         }
-        
-        let index = self.counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed) 
+
+        let index = self
+            .counter
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             % input.options.len();
-        
+
         Ok(SelectionOutput {
             selected: Some(input.options[index].clone()),
             index: Some(index),
         })
     }
-    
+
     fn name(&self) -> &str {
         "round_robin"
     }
-    
+
     fn description(&self) -> &str {
         "Round-robin selection"
     }
@@ -303,7 +306,9 @@ impl<T: Clone + Send + Sync + 'static> Strategy<SelectionInput<T>, SelectionOutp
 pub struct RandomSelection;
 
 #[async_trait::async_trait]
-impl<T: Clone + Send + Sync + 'static> Strategy<SelectionInput<T>, SelectionOutput<T>> for RandomSelection {
+impl<T: Clone + Send + Sync + 'static> Strategy<SelectionInput<T>, SelectionOutput<T>>
+    for RandomSelection
+{
     async fn execute(&self, input: SelectionInput<T>) -> Result<SelectionOutput<T>> {
         if input.options.is_empty() {
             return Ok(SelectionOutput {
@@ -311,21 +316,21 @@ impl<T: Clone + Send + Sync + 'static> Strategy<SelectionInput<T>, SelectionOutp
                 index: None,
             });
         }
-        
+
         use rand::Rng;
         let mut rng = rand::rng();
         let index = rng.random_range(0..input.options.len());
-        
+
         Ok(SelectionOutput {
             selected: Some(input.options[index].clone()),
             index: Some(index),
         })
     }
-    
+
     fn name(&self) -> &str {
         "random"
     }
-    
+
     fn description(&self) -> &str {
         "Random selection"
     }
@@ -334,43 +339,50 @@ impl<T: Clone + Send + Sync + 'static> Strategy<SelectionInput<T>, SelectionOutp
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_retry_strategy() {
         let fixed = Arc::new(FixedDelayRetry::new(3, 1000));
         let exponential = Arc::new(ExponentialBackoffRetry::new(5, 100, 10000));
-        
+
         let mut ctx = Context::new(fixed);
         ctx.register_strategy(exponential);
-        
+
         // Test fixed delay
-        let decision = ctx.execute(RetryInput {
-            attempt: 0,
-            last_error: None,
-        }).await.unwrap();
+        let decision = ctx
+            .execute(RetryInput {
+                attempt: 0,
+                last_error: None,
+            })
+            .await
+            .unwrap();
         assert!(decision.should_retry);
         assert_eq!(decision.wait_ms, 1000);
-        
+
         // Switch to exponential
         ctx.set_strategy("exponential_backoff").unwrap();
-        let decision = ctx.execute(RetryInput {
-            attempt: 2,
-            last_error: None,
-        }).await.unwrap();
+        let decision = ctx
+            .execute(RetryInput {
+                attempt: 2,
+                last_error: None,
+            })
+            .await
+            .unwrap();
         assert!(decision.should_retry);
         assert_eq!(decision.wait_ms, 400); // 100 * 2^2
     }
-    
+
     #[tokio::test]
     async fn test_selection_strategy() {
         let options = vec!["a", "b", "c"];
-        let input = SelectionInput { options: options.clone() };
-        
+        let input = SelectionInput {
+            options: options.clone(),
+        };
+
         let rr = RoundRobinSelection::new();
         let output1 = rr.execute(input.clone()).await.unwrap();
         let output2 = rr.execute(input.clone()).await.unwrap();
-        
+
         assert_ne!(output1.index, output2.index);
     }
 }
-

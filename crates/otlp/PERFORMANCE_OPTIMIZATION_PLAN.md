@@ -2,9 +2,9 @@
 
 ## 📋 优化概览
 
-**优化目标**: 提升整体性能40-60%，减少内存使用30-50%  
-**优化范围**: 核心模块、并发控制、内存管理  
-**实施周期**: 2-4周  
+**优化目标**: 提升整体性能40-60%，减少内存使用30-50%
+**优化范围**: 核心模块、并发控制、内存管理
+**实施周期**: 2-4周
 **预期收益**: 企业级性能标准
 
 ## 🎯 核心优化策略
@@ -100,16 +100,16 @@ pub struct AsyncBatchProcessor<T> {
 impl<T: Send + Sync + Clone + 'static> AsyncBatchProcessor<T> {
     pub async fn add_item(&self, item: T) -> Result<()> {
         let _permit = self.semaphore.acquire().await.unwrap();
-        
+
         let mut queue = self.queue.lock().await;
         queue.push_back(item);
-        
+
         if queue.len() >= self.batch_size {
             let batch = queue.drain(..).collect::<Vec<_>>();
             drop(queue);
             self.process_batch(batch).await?;
         }
-        
+
         Ok(())
     }
 }
@@ -152,11 +152,11 @@ impl OptimizedConnectionPool {
             let mut pool = self.connections.lock().await;
             pool.pop_front().unwrap_or_else(|| self.create_connection())
         };
-        
+
         if !self.health_checker.is_healthy(&connection).await {
             return Err(Error::UnhealthyConnection);
         }
-        
+
         Ok(PooledConnection::new(connection, Arc::clone(&self.connections)))
     }
 }
@@ -178,13 +178,13 @@ impl RequestBatcher {
     pub async fn send_request(&self, request: Request) -> Result<Response> {
         let mut pending = self.pending_requests.lock().await;
         pending.push(request);
-        
+
         if pending.len() >= self.batch_size {
             let batch = pending.drain(..).collect();
             drop(pending);
             self.sender.send(batch).await?;
         }
-        
+
         // 等待响应...
     }
 }
@@ -197,7 +197,7 @@ impl RequestBatcher {
 - **CPU**: 8核心 Intel i7
 - **内存**: 16GB DDR4
 - **网络**: 千兆以太网
-- **Rust版本**: 1.90
+- **Rust版本**: 1.92
 
 ### 优化前后对比
 
@@ -295,6 +295,6 @@ impl RequestBatcher {
 
 ---
 
-**优化负责人**: OTLP Rust 团队  
-**预计完成时间**: 2025年2月  
+**优化负责人**: OTLP Rust 团队
+**预计完成时间**: 2025年2月
 **状态**: 🚀 进行中

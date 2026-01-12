@@ -88,17 +88,17 @@ pub struct K8sAttributes {
     // Cluster attributes
     /// Kubernetes cluster name
     pub cluster_name: Option<String>,
-    
+
     // Node attributes
     /// Node name
     pub node_name: Option<String>,
     /// Node UID
     pub node_uid: Option<String>,
-    
+
     // Namespace attributes
     /// Namespace name
     pub namespace_name: Option<String>,
-    
+
     // Pod attributes
     /// Pod name
     pub pod_name: Option<String>,
@@ -106,7 +106,7 @@ pub struct K8sAttributes {
     pub pod_uid: Option<String>,
     /// Pod labels
     pub pod_labels: Option<HashMap<String, String>>,
-    
+
     // Container attributes
     /// Container name
     pub container_name: Option<String>,
@@ -118,37 +118,37 @@ pub struct K8sAttributes {
     pub container_image_tag: Option<String>,
     /// Container restart count
     pub container_restart_count: Option<i32>,
-    
+
     // Deployment attributes
     /// Deployment name
     pub deployment_name: Option<String>,
     /// Deployment UID
     pub deployment_uid: Option<String>,
-    
+
     // ReplicaSet attributes
     /// ReplicaSet name
     pub replicaset_name: Option<String>,
     /// ReplicaSet UID
     pub replicaset_uid: Option<String>,
-    
+
     // StatefulSet attributes
     /// StatefulSet name
     pub statefulset_name: Option<String>,
     /// StatefulSet UID
     pub statefulset_uid: Option<String>,
-    
+
     // DaemonSet attributes
     /// DaemonSet name
     pub daemonset_name: Option<String>,
     /// DaemonSet UID
     pub daemonset_uid: Option<String>,
-    
+
     // Job attributes
     /// Job name
     pub job_name: Option<String>,
     /// Job UID
     pub job_uid: Option<String>,
-    
+
     // CronJob attributes
     /// CronJob name
     pub cronjob_name: Option<String>,
@@ -733,4 +733,3 @@ mod tests {
         );
     }
 }
-

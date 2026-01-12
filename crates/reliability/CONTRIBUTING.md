@@ -180,9 +180,9 @@ pub struct CircuitBreaker {
 
 impl CircuitBreaker {
     /// 创建新的熔断器
-    /// 
+    ///
     /// # 示例
-    /// 
+    ///
     /// ```
     /// let cb = CircuitBreaker::new(config);
     /// ```

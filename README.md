@@ -1,6 +1,6 @@
 # OTLP Rust 项目概览
 
-[![Rust 1.90+](https://img.shields.io/badge/rust-1.90%2B-orange.svg)](https://www.rust-lang.org/)
+[![Rust 1.92+](https://img.shields.io/badge/rust-1.92%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-Perfect-brightgreen.svg)](MILESTONE_100_PERCENT_COMPLETE_2025_10_28.md)
 [![Docs](https://img.shields.io/badge/docs-100%25-brightgreen.svg)](DOCUMENTATION_ULTIMATE_ACHIEVEMENT_2025_10_28.md)
@@ -144,7 +144,7 @@
 
 ## 项目简介
 
-OTLP Rust 是一个基于 Rust 1.90+ 的 OpenTelemetry Protocol (OTLP) 完整实现，提供高性能、类型安全的遥测数据收集、处理和传输功能。项目采用现代化的架构设计，集成了统一的可靠性框架，支持企业级应用的可观测性需求。
+OTLP Rust 是一个基于 Rust 1.92+ 的 OpenTelemetry Protocol (OTLP) 完整实现，提供高性能、类型安全的遥测数据收集、处理和传输功能。项目采用现代化的架构设计，集成了统一的可靠性框架，支持企业级应用的可观测性需求。
 
 **当前版本**: v0.5.0-rc1 (2025-10-23) | **状态**: ✅ 准备就绪
 
@@ -309,11 +309,11 @@ OTLP_rust/
 
 ### 1. 环境准备
 
-确保使用 Rust 1.90+ 版本：
+确保使用 Rust 1.92+ 版本：
 
 ```bash
-rustup update
-rustup default 1.90
+rustup update stable
+rustc --version  # 应显示 1.92.0 或更高版本
 ```
 
 ### 2. 克隆项目
@@ -596,7 +596,7 @@ data_compression = "high"
 
 ### 核心依赖
 
-- **Rust 1.90+**: 最新语言特性支持
+- **Rust 1.92+**: 最新语言特性支持（`!` 类型稳定化、异步闭包、展开表默认启用等）
 - **Tokio**: 异步运行时和工具
 - **OpenTelemetry 0.31**: 可观测性标准
 - **Tonic**: gRPC 客户端/服务器
@@ -635,7 +635,7 @@ We welcome community contributions! Please check:
 ### 开发环境设置
 
 1. 克隆项目
-2. 安装 Rust 1.90+
+2. 安装 Rust 1.92+
 3. 运行 `cargo build --workspace` 构建项目
 4. 运行 `cargo test --workspace` 运行测试
 5. 运行 `cargo clippy --all-targets --all-features` 检查代码质量

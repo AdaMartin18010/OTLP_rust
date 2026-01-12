@@ -166,7 +166,9 @@ impl DataValidator {
             }
 
             if self.strict_mode && value.len() > 16384 {
-                return Err(OtlpError::ValidationError("属性值长度超过 16384 字符".to_string()));
+                return Err(OtlpError::ValidationError(
+                    "属性值长度超过 16384 字符".to_string(),
+                ));
             }
         }
 

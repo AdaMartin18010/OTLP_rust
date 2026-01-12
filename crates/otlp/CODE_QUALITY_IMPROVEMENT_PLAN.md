@@ -2,9 +2,9 @@
 
 ## 📋 改进概览
 
-**改进目标**: 提升代码可读性、可维护性和健壮性  
-**改进范围**: 架构设计、代码规范、错误处理、文档完善  
-**实施周期**: 3-6周  
+**改进目标**: 提升代码可读性、可维护性和健壮性
+**改进范围**: 架构设计、代码规范、错误处理、文档完善
+**实施周期**: 3-6周
 **预期收益**: 企业级代码质量标准
 
 ## 🎯 核心改进策略
@@ -42,7 +42,7 @@ impl ServiceContainer {
             transport: Arc::new(GrpcTransport::new()),
         }
     }
-    
+
     pub fn with_exporter<T: Exporter + 'static>(mut self, exporter: T) -> Self {
         self.exporter = Arc::new(exporter);
         self
@@ -78,7 +78,7 @@ impl PluginManager {
         self.plugins.insert(name, plugin);
         Ok(())
     }
-    
+
     pub fn process_data(&self, data: &mut TelemetryData) -> Result<()> {
         for plugin in self.plugins.values() {
             plugin.process(data)?;
@@ -139,13 +139,13 @@ pub enum OtlpError {
 pub enum OtlpError {
     #[error("网络错误: {context}")]
     Network { context: String, source: Box<dyn std::error::Error + Send + Sync> },
-    
+
     #[error("配置错误: {field} = {value}")]
     Configuration { field: String, value: String },
-    
+
     #[error("处理错误: {operation}")]
     Processing { operation: String, source: Box<dyn std::error::Error + Send + Sync> },
-    
+
     #[error("内部错误: {message}")]
     Internal { message: String },
 }
@@ -157,7 +157,7 @@ impl OtlpError {
             source: Box::new(source),
         }
     }
-    
+
     pub fn configuration(field: impl Into<String>, value: impl Into<String>) -> Self {
         Self::Configuration {
             field: field.into(),
@@ -190,7 +190,7 @@ impl Endpoint {
             .map_err(|e| OtlpError::configuration("endpoint", format!("Invalid URL: {}", e)))?;
         Ok(Self(url))
     }
-    
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -206,7 +206,7 @@ impl BatchSize {
         }
         Ok(Self(size))
     }
-    
+
     pub fn value(&self) -> usize {
         self.0
     }
@@ -244,16 +244,16 @@ pub struct ClosedState {
 
 impl CircuitBreakerState for ClosedState {
     fn name(&self) -> &'static str { "Closed" }
-    
+
     fn can_execute(&self) -> bool { true }
-    
+
     fn on_success(self: Box<Self>) -> Box<dyn CircuitBreakerState> {
         Box::new(ClosedState {
             failure_count: 0,
             failure_threshold: self.failure_threshold,
         })
     }
-    
+
     fn on_failure(self: Box<Self>) -> Box<dyn CircuitBreakerState> {
         if self.failure_count + 1 >= self.failure_threshold {
             Box::new(OpenState::new())
@@ -291,16 +291,16 @@ impl CircuitBreakerState for ClosedState {
 ///     let config = OtlpConfig::default()
 ///         .with_endpoint("http://localhost:4317")
 ///         .with_batch_size(100);
-///     
+///
 ///     let client = OtlpClient::new(config).await?;
 ///     client.initialize().await?;
-///     
+///
 ///     // 发送追踪数据
 ///     let trace = client.send_trace("user-operation").await?;
 ///     trace.with_attribute("user_id", "12345")
 ///          .with_duration(150)
 ///          .finish().await?;
-///     
+///
 ///     Ok(())
 /// }
 /// ```
@@ -370,17 +370,17 @@ mod tests {
     use super::*;
     use mockall::mock;
     use tokio_test;
-    
+
     // 模拟依赖
     mock! {
         pub Exporter {}
-        
+
         #[async_trait]
         impl Exporter for Exporter {
             async fn export(&self, data: Vec<TelemetryData>) -> Result<ExportResult>;
         }
     }
-    
+
     #[tokio::test]
     async fn test_client_send_success() {
         let mut mock_exporter = MockExporter::new();
@@ -388,15 +388,15 @@ mod tests {
             .expect_export()
             .times(1)
             .returning(|_| Ok(ExportResult::success(1, Duration::from_millis(10))));
-        
+
         let client = OtlpClient::with_exporter(Arc::new(mock_exporter));
         let data = TelemetryData::trace("test");
-        
+
         let result = client.send(data).await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap().success_count, 1);
     }
-    
+
     #[tokio::test]
     async fn test_client_send_network_error() {
         let mut mock_exporter = MockExporter::new();
@@ -404,10 +404,10 @@ mod tests {
             .expect_export()
             .times(1)
             .returning(|_| Err(OtlpError::network("Connection failed", std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "Connection refused"))));
-        
+
         let client = OtlpClient::with_exporter(Arc::new(mock_exporter));
         let data = TelemetryData::trace("test");
-        
+
         let result = client.send(data).await;
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -428,19 +428,19 @@ mod integration_tests {
     use super::*;
     use testcontainers::*;
     use testcontainers::images::generic::GenericImage;
-    
+
     #[tokio::test]
     async fn test_end_to_end_grpc_export() {
         let docker = clients::Cli::default();
         let jaeger = docker.run(GenericImage::new("jaegertracing/all-in-one", "latest"));
-        
+
         let config = OtlpConfig::default()
             .with_endpoint(&format!("http://localhost:{}", jaeger.get_host_port_ipv4(14268)))
             .with_protocol(TransportProtocol::Grpc);
-        
+
         let client = OtlpClient::new(config).await.unwrap();
         client.initialize().await.unwrap();
-        
+
         // 发送测试数据
         let trace = client.send_trace("integration-test").await.unwrap();
         let result = trace
@@ -449,7 +449,7 @@ mod integration_tests {
             .finish()
             .await
             .unwrap();
-        
+
         assert!(result.is_success());
         assert_eq!(result.success_count, 1);
     }
@@ -540,6 +540,6 @@ mod integration_tests {
 
 ---
 
-**改进负责人**: OTLP Rust 团队  
-**预计完成时间**: 2025年3月  
+**改进负责人**: OTLP Rust 团队
+**预计完成时间**: 2025年3月
 **状态**: 🚀 进行中

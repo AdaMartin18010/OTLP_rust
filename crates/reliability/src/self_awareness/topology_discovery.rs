@@ -2,8 +2,8 @@
 //!
 //! 自动发现和分析系统运行时拓扑结构。
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// 服务节点
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,17 +40,17 @@ impl TopologyGraph {
             edges: Vec::new(),
         }
     }
-    
+
     /// 添加节点
     pub fn add_node(&mut self, node: ServiceNode) {
         self.nodes.insert(node.id.clone(), node);
     }
-    
+
     /// 添加边
     pub fn add_edge(&mut self, edge: ServiceEdge) {
         self.edges.push(edge);
     }
-    
+
     /// 获取关键路径
     pub fn get_critical_path(&self) -> Vec<String> {
         self.nodes.keys().cloned().collect()
@@ -83,18 +83,18 @@ impl TopologyDiscovery {
             current_topology: TopologyGraph::new(),
         }
     }
-    
+
     /// 发现拓扑
     pub async fn discover(&mut self) -> TopologyGraph {
         // 实际实现会扫描网络、注册中心等
         self.current_topology.clone()
     }
-    
+
     /// 获取当前拓扑
     pub fn get_current_topology(&self) -> &TopologyGraph {
         &self.current_topology
     }
-    
+
     /// 生成快照
     pub fn take_snapshot(&self) -> TopologySnapshot {
         TopologySnapshot {
@@ -123,7 +123,7 @@ impl TopologyAnalyzer {
     pub fn analyze_health(_graph: &TopologyGraph) -> f64 {
         100.0
     }
-    
+
     /// 识别瓶颈
     pub fn identify_bottlenecks(_graph: &TopologyGraph) -> Vec<String> {
         Vec::new()
@@ -139,9 +139,8 @@ mod tests {
         let mut discovery = TopologyDiscovery::new();
         let topology = discovery.discover().await;
         assert_eq!(topology.nodes.len(), 0);
-        
+
         let snapshot = discovery.take_snapshot();
         assert_eq!(snapshot.node_count, 0);
     }
 }
-

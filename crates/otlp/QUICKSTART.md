@@ -127,17 +127,17 @@ use std::time::Duration;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 OTLP快速开始示例\n");
-    
+
     // 1. 创建配置
     let config = OtlpConfig::default()
         .with_endpoint("http://localhost:4317")  // Jaeger OTLP endpoint
         .with_service("my-app", "1.0.0")
         .with_timeout(Duration::from_secs(10));
-    
+
     // 2. 创建客户端
     let client = OtlpClient::new(config).await?;
     println!("✅ OTLP客户端已初始化");
-    
+
     // 3. 发送追踪数据
     println!("\n📊 发送追踪数据...");
     let trace_result = client.send_trace("user_login").await?
@@ -147,11 +147,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_status(StatusCode::Ok, Some("登录成功".to_string()))
         .finish()
         .await?;
-    
+
     println!("   成功发送 {} 条追踪数据", trace_result.success_count);
     println!("   Trace ID: {}", trace_result.trace_id);
     println!("   Span ID: {}", trace_result.span_id);
-    
+
     // 4. 发送指标数据
     println!("\n📈 发送指标数据...");
     let metric_result = client.send_metric("login_count", 1.0).await?
@@ -161,9 +161,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_unit("count")
         .send()
         .await?;
-    
+
     println!("   成功发送 {} 条指标数据", metric_result.success_count);
-    
+
     // 5. 发送日志数据
     println!("\n📝 发送日志数据...");
     let log_result = client.send_log("用户登录成功", LogSeverity::Info).await?
@@ -172,21 +172,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_trace_context(&trace_result.trace_id, &trace_result.span_id)
         .send()
         .await?;
-    
+
     println!("   成功发送 {} 条日志数据", log_result.success_count);
-    
+
     // 6. 刷新缓冲区
     println!("\n🔄 刷新缓冲区...");
     client.flush().await?;
     println!("   ✅ 所有数据已发送");
-    
+
     // 7. 关闭客户端
     println!("\n👋 关闭客户端...");
     client.shutdown().await?;
-    
+
     println!("\n🎉 示例完成！");
     println!("   访问 http://localhost:16686 查看追踪数据");
-    
+
     Ok(())
 }
 ```
@@ -288,15 +288,15 @@ let config = OtlpConfig::default()
     .with_endpoint("http://localhost:4317")
     .with_service("my-service", "1.0.0")
     .with_protocol(TransportProtocol::Grpc)
-    
+
     // 超时配置
     .with_timeout(Duration::from_secs(10))
     .with_connect_timeout(Duration::from_secs(5))
-    
+
     // 批处理配置
     .with_batch_size(100)
     .with_batch_timeout(Duration::from_secs(5))
-    
+
     // 资源属性
     .with_resource_attribute("environment", "production")
     .with_resource_attribute("region", "us-east-1");
@@ -341,10 +341,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_endpoint("http://localhost:4317")
             .with_service("api-server", "1.0.0")
     ).await?);
-    
+
     // 模拟HTTP请求处理
     handle_request(&client, "GET", "/api/users").await?;
-    
+
     Ok(())
 }
 
@@ -358,18 +358,18 @@ async fn handle_request(
         .with_attribute("http.method", method)
         .with_attribute("http.path", path)
         .with_attribute("http.status_code", "200");
-    
+
     // 模拟数据库查询
     let db_trace = client.send_trace("database_query").await?
         .with_attribute("db.system", "postgresql")
         .with_attribute("db.statement", "SELECT * FROM users");
-    
+
     // 模拟处理
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-    
+
     db_trace.finish().await?;
     trace.finish().await?;
-    
+
     // 记录指标
     client.send_metric("http_requests_total", 1.0).await?
         .with_label("method", method)
@@ -377,7 +377,7 @@ async fn handle_request(
         .with_label("status", "200")
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -396,39 +396,39 @@ async fn process_job(
     let trace = client.send_trace("background_job").await?
         .with_attribute("job.id", job_id)
         .with_attribute("job.type", "data_processing");
-    
+
     client.send_log(&format!("开始处理任务: {}", job_id), LogSeverity::Info).await?
         .with_attribute("job.id", job_id)
         .send()
         .await?;
-    
+
     // 处理逻辑
     let start = std::time::Instant::now();
-    
+
     // 模拟处理
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-    
+
     let duration = start.elapsed();
-    
+
     // 记录完成
     trace.with_numeric_attribute("duration_ms", duration.as_millis() as f64)
         .with_attribute("status", "completed")
         .finish()
         .await?;
-    
+
     client.send_log(&format!("任务完成: {}", job_id), LogSeverity::Info).await?
         .with_attribute("job.id", job_id)
         .with_numeric_attribute("duration_ms", duration.as_millis() as f64)
         .send()
         .await?;
-    
+
     // 记录处理时长指标
     client.send_metric("job_duration_seconds", duration.as_secs_f64()).await?
         .with_label("job_type", "data_processing")
         .with_label("status", "completed")
         .send()
         .await?;
-    
+
     Ok(())
 }
 ```
@@ -445,16 +445,16 @@ async fn user_service_handler(
 ) -> Result<(String, String), Box<dyn std::error::Error>> {
     let trace = client.send_trace("user_service.get_user").await?
         .with_attribute("service", "user-service");
-    
+
     // 返回trace_id和span_id用于传递
     let trace_id = trace.trace_id.clone();
     let span_id = trace.span_id.clone();
-    
+
     // 处理
     tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-    
+
     trace.finish().await?;
-    
+
     Ok((trace_id, span_id))
 }
 
@@ -468,12 +468,12 @@ async fn order_service_handler(
         .with_attribute("service", "order-service")
         .with_attribute("parent_trace_id", parent_trace_id)
         .with_attribute("parent_span_id", parent_span_id);
-    
+
     // 处理
     tokio::time::sleep(tokio::time::Duration::from_millis(20)).await;
-    
+
     trace.finish().await?;
-    
+
     Ok(())
 }
 
@@ -484,13 +484,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_endpoint("http://localhost:4317")
             .with_service("microservices-demo", "1.0.0")
     ).await?);
-    
+
     // 调用服务A
     let (trace_id, span_id) = user_service_handler(&client).await?;
-    
+
     // 传递上下文到服务B
     order_service_handler(&client, &trace_id, &span_id).await?;
-    
+
     client.shutdown().await?;
     Ok(())
 }
@@ -577,20 +577,20 @@ let config = OtlpConfig::default()
 let config = OtlpConfig::default()
     .with_endpoint("https://otlp-collector.example.com:4317")
     .with_service("production-service", "1.0.0")
-    
+
     // 启用TLS
     .with_tls(true)
-    
+
     // 配置超时
     .with_timeout(Duration::from_secs(10))
-    
+
     // 批处理优化
     .with_batch_size(1000)
     .with_batch_timeout(Duration::from_secs(5))
-    
+
     // 启用压缩
     .with_compression(true)
-    
+
     // 资源标签
     .with_resource_attribute("environment", "production")
     .with_resource_attribute("region", "us-east-1")
@@ -641,5 +641,5 @@ let config = OtlpConfig::default()
 
 ---
 
-*最后更新: 2025年10月8日*  
-*版本: 1.0.0*
+_最后更新: 2025年10月8日_
+_版本: 1.0.0_

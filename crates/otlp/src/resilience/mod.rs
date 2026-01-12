@@ -224,15 +224,13 @@ pub struct TimeoutStatus {
 }
 
 /// 弹性配置
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct ResilienceConfig {
     pub circuit_breaker: CircuitBreakerConfig,
     pub retry: RetryConfig,
     pub bulkhead: BulkheadConfig,
     pub timeout: TimeoutConfig,
 }
-
 
 /// 弹性构建器
 pub struct ResilienceBuilder {

@@ -59,17 +59,17 @@ impl DecisionEngine {
             strategy: OptimizationStrategy::Balanced,
         }
     }
-    
+
     /// 添加决策规则
     pub fn add_rule(&mut self, rule: DecisionRule) {
         self.rules.push(rule);
     }
-    
+
     /// 设置优化策略
     pub fn set_strategy(&mut self, strategy: OptimizationStrategy) {
         self.strategy = strategy;
     }
-    
+
     /// 做出决策
     pub fn make_decision(&self, _context: &DecisionContext) -> DecisionOutcome {
         DecisionOutcome {
@@ -80,7 +80,7 @@ impl DecisionEngine {
             confidence: 0.8,
         }
     }
-    
+
     /// 评估决策效果
     pub fn evaluate_decision(&self, _decision_id: &str, _actual_impact: f64) -> f64 {
         // 返回评估得分
@@ -102,16 +102,15 @@ mod tests {
     fn test_decision_engine() {
         let mut engine = DecisionEngine::new();
         engine.set_strategy(OptimizationStrategy::MinimizeLatency);
-        
+
         let context = DecisionContext {
             current_load: 50.0,
             resource_usage: HashMap::new(),
             recent_errors: Vec::new(),
             performance_metrics: HashMap::new(),
         };
-        
+
         let outcome = engine.make_decision(&context);
         assert!(!outcome.decision_id.is_empty());
     }
 }
-

@@ -1,12 +1,12 @@
 //! # Complete Kubernetes Deployment for OTLP
-//! 
+//!
 //! 完整的Kubernetes部署示例，展示如何在K8s环境中部署OTLP Collector和应用
-//! 
+//!
 //! ## 部署架构
 //! - **DaemonSet模式**: 每个节点运行一个Collector
 //! - **Sidecar模式**: 每个Pod运行一个Collector
 //! - **Gateway模式**: 集中式Collector集群
-//! 
+//!
 //! ## 功能特性
 //! - 服务发现
 //! - 健康检查
@@ -16,7 +16,7 @@
 //! - Secret管理
 //! - RBAC权限
 //! - 持久化存储
-//! 
+//!
 //! ## 集成组件
 //! - Prometheus (指标)
 //! - Jaeger (追踪)
@@ -24,16 +24,16 @@
 //! - AlertManager (告警)
 
 use k8s_openapi::api::{
-    core::v1::{
-        ConfigMap, Container, ContainerPort, EnvVar,
-        PodSpec, Service, ServiceAccount, ServicePort, ServiceSpec, Volume, VolumeMount,
-    },
     apps::v1::{DaemonSet, DaemonSetSpec, Deployment, DeploymentSpec},
+    core::v1::{
+        ConfigMap, Container, ContainerPort, EnvVar, PodSpec, Service, ServiceAccount, ServicePort,
+        ServiceSpec, Volume, VolumeMount,
+    },
     rbac::v1::{ClusterRole, ClusterRoleBinding},
 };
 use kube::{
-    api::{Api, PostParams},
     Client,
+    api::{Api, PostParams},
 };
 use std::collections::BTreeMap;
 use tracing::{info, instrument};
@@ -304,7 +304,10 @@ pub fn create_daemonset() -> DaemonSet {
                     annotations: Some({
                         let mut annotations = BTreeMap::new();
                         annotations.insert("prometheus.io/scrape".to_string(), "true".to_string());
-                        annotations.insert("prometheus.io/port".to_string(), PROMETHEUS_PORT.to_string());
+                        annotations.insert(
+                            "prometheus.io/port".to_string(),
+                            PROMETHEUS_PORT.to_string(),
+                        );
                         annotations
                     }),
                     ..Default::default()
@@ -325,7 +328,10 @@ pub fn create_gateway_deployment() -> Deployment {
     use k8s_openapi::apimachinery::pkg::apis::meta::v1::LabelSelector;
 
     let mut labels = BTreeMap::new();
-    labels.insert("app".to_string(), format!("{}-gateway", OTLP_COLLECTOR_NAME));
+    labels.insert(
+        "app".to_string(),
+        format!("{}-gateway", OTLP_COLLECTOR_NAME),
+    );
     labels.insert("component".to_string(), "gateway".to_string());
 
     Deployment {
@@ -359,9 +365,7 @@ pub fn create_gateway_deployment() -> Deployment {
 // ============================================================================
 
 fn create_collector_pod_spec(is_daemonset: bool) -> PodSpec {
-    use k8s_openapi::api::core::v1::{
-        EnvVarSource, ObjectFieldSelector, ResourceRequirements,
-    };
+    use k8s_openapi::api::core::v1::{EnvVarSource, ObjectFieldSelector, ResourceRequirements};
     use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
 
     let env = vec![
@@ -452,13 +456,11 @@ fn create_collector_pod_spec(is_daemonset: bool) -> PodSpec {
                 },
             ]),
             env: Some(env),
-            volume_mounts: Some(vec![
-                VolumeMount {
-                    name: "config".to_string(),
-                    mount_path: "/etc/otel".to_string(),
-                    ..Default::default()
-                },
-            ]),
+            volume_mounts: Some(vec![VolumeMount {
+                name: "config".to_string(),
+                mount_path: "/etc/otel".to_string(),
+                ..Default::default()
+            }]),
             resources: Some(ResourceRequirements {
                 requests: Some(resources),
                 limits: Some(limit_resources),
@@ -467,7 +469,9 @@ fn create_collector_pod_spec(is_daemonset: bool) -> PodSpec {
             liveness_probe: Some(k8s_openapi::api::core::v1::Probe {
                 http_get: Some(k8s_openapi::api::core::v1::HTTPGetAction {
                     path: Some("/".to_string()),
-                    port: k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(HEALTH_CHECK_PORT),
+                    port: k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                        HEALTH_CHECK_PORT,
+                    ),
                     ..Default::default()
                 }),
                 initial_delay_seconds: Some(10),
@@ -477,7 +481,9 @@ fn create_collector_pod_spec(is_daemonset: bool) -> PodSpec {
             readiness_probe: Some(k8s_openapi::api::core::v1::Probe {
                 http_get: Some(k8s_openapi::api::core::v1::HTTPGetAction {
                     path: Some("/".to_string()),
-                    port: k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(HEALTH_CHECK_PORT),
+                    port: k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                        HEALTH_CHECK_PORT,
+                    ),
                     ..Default::default()
                 }),
                 initial_delay_seconds: Some(5),
@@ -519,21 +525,33 @@ pub fn create_service() -> Service {
                 ServicePort {
                     name: Some("otlp-grpc".to_string()),
                     port: OTLP_GRPC_PORT,
-                    target_port: Some(k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(OTLP_GRPC_PORT)),
+                    target_port: Some(
+                        k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                            OTLP_GRPC_PORT,
+                        ),
+                    ),
                     protocol: Some("TCP".to_string()),
                     ..Default::default()
                 },
                 ServicePort {
                     name: Some("otlp-http".to_string()),
                     port: OTLP_HTTP_PORT,
-                    target_port: Some(k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(OTLP_HTTP_PORT)),
+                    target_port: Some(
+                        k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                            OTLP_HTTP_PORT,
+                        ),
+                    ),
                     protocol: Some("TCP".to_string()),
                     ..Default::default()
                 },
                 ServicePort {
                     name: Some("prometheus".to_string()),
                     port: PROMETHEUS_PORT,
-                    target_port: Some(k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(PROMETHEUS_PORT)),
+                    target_port: Some(
+                        k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                            PROMETHEUS_PORT,
+                        ),
+                    ),
                     protocol: Some("TCP".to_string()),
                     ..Default::default()
                 },
@@ -583,9 +601,9 @@ pub async fn deploy_full_stack(client: Client) -> Result<(), Box<dyn std::error:
 
 async fn create_namespace(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     use k8s_openapi::api::core::v1::Namespace;
-    
+
     let namespaces: Api<Namespace> = Api::all(client.clone());
-    
+
     let ns = Namespace {
         metadata: kube::core::ObjectMeta {
             name: Some(NAMESPACE.to_string()),
@@ -608,17 +626,23 @@ async fn create_namespace(client: &Client) -> Result<(), Box<dyn std::error::Err
 async fn deploy_rbac(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     // ServiceAccount
     let sa_api: Api<ServiceAccount> = Api::namespaced(client.clone(), NAMESPACE);
-    sa_api.create(&PostParams::default(), &create_service_account()).await?;
+    sa_api
+        .create(&PostParams::default(), &create_service_account())
+        .await?;
     info!("ServiceAccount created");
 
     // ClusterRole
     let cr_api: Api<ClusterRole> = Api::all(client.clone());
-    cr_api.create(&PostParams::default(), &create_cluster_role()).await?;
+    cr_api
+        .create(&PostParams::default(), &create_cluster_role())
+        .await?;
     info!("ClusterRole created");
 
     // ClusterRoleBinding
     let crb_api: Api<ClusterRoleBinding> = Api::all(client.clone());
-    crb_api.create(&PostParams::default(), &create_cluster_role_binding()).await?;
+    crb_api
+        .create(&PostParams::default(), &create_cluster_role_binding())
+        .await?;
     info!("ClusterRoleBinding created");
 
     Ok(())
@@ -626,7 +650,9 @@ async fn deploy_rbac(client: &Client) -> Result<(), Box<dyn std::error::Error>> 
 
 async fn deploy_config(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     let cm_api: Api<ConfigMap> = Api::namespaced(client.clone(), NAMESPACE);
-    cm_api.create(&PostParams::default(), &create_collector_config()).await?;
+    cm_api
+        .create(&PostParams::default(), &create_collector_config())
+        .await?;
     info!("ConfigMap created");
 
     Ok(())
@@ -634,7 +660,9 @@ async fn deploy_config(client: &Client) -> Result<(), Box<dyn std::error::Error>
 
 async fn deploy_services(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     let svc_api: Api<Service> = Api::namespaced(client.clone(), NAMESPACE);
-    svc_api.create(&PostParams::default(), &create_service()).await?;
+    svc_api
+        .create(&PostParams::default(), &create_service())
+        .await?;
     info!("Service created");
 
     Ok(())
@@ -642,7 +670,9 @@ async fn deploy_services(client: &Client) -> Result<(), Box<dyn std::error::Erro
 
 async fn deploy_daemonset(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     let ds_api: Api<DaemonSet> = Api::namespaced(client.clone(), NAMESPACE);
-    ds_api.create(&PostParams::default(), &create_daemonset()).await?;
+    ds_api
+        .create(&PostParams::default(), &create_daemonset())
+        .await?;
     info!("DaemonSet created");
 
     Ok(())
@@ -650,7 +680,9 @@ async fn deploy_daemonset(client: &Client) -> Result<(), Box<dyn std::error::Err
 
 async fn deploy_gateway(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     let deploy_api: Api<Deployment> = Api::namespaced(client.clone(), NAMESPACE);
-    deploy_api.create(&PostParams::default(), &create_gateway_deployment()).await?;
+    deploy_api
+        .create(&PostParams::default(), &create_gateway_deployment())
+        .await?;
     info!("Gateway Deployment created");
 
     Ok(())
@@ -666,22 +698,28 @@ pub async fn check_deployment_status(client: Client) -> Result<(), Box<dyn std::
 
     // Check DaemonSet
     let ds_api: Api<DaemonSet> = Api::namespaced(client.clone(), NAMESPACE);
-    let ds = ds_api.get(&format!("{}-daemonset", OTLP_COLLECTOR_NAME)).await?;
-    
+    let ds = ds_api
+        .get(&format!("{}-daemonset", OTLP_COLLECTOR_NAME))
+        .await?;
+
     if let Some(status) = ds.status {
-        info!("DaemonSet status: desired={:?}, ready={:?}", 
-              status.desired_number_scheduled, 
-              status.number_ready);
+        info!(
+            "DaemonSet status: desired={:?}, ready={:?}",
+            status.desired_number_scheduled, status.number_ready
+        );
     }
 
     // Check Deployment
     let deploy_api: Api<Deployment> = Api::namespaced(client.clone(), NAMESPACE);
-    let deploy = deploy_api.get(&format!("{}-gateway", OTLP_COLLECTOR_NAME)).await?;
-    
+    let deploy = deploy_api
+        .get(&format!("{}-gateway", OTLP_COLLECTOR_NAME))
+        .await?;
+
     if let Some(status) = deploy.status {
-        info!("Deployment status: replicas={:?}, ready={:?}", 
-              status.replicas, 
-              status.ready_replicas);
+        info!(
+            "Deployment status: replicas={:?}, ready={:?}",
+            status.replicas, status.ready_replicas
+        );
     }
 
     info!("✅ Deployment status check completed");
@@ -719,8 +757,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("📝 You can now configure your applications to send telemetry to:");
     info!("   - gRPC: otlp-collector.observability.svc.cluster.local:4317");
     info!("   - HTTP: otlp-collector.observability.svc.cluster.local:4318");
-    info!("   - Prometheus metrics: http://otlp-collector.observability.svc.cluster.local:8888/metrics");
+    info!(
+        "   - Prometheus metrics: http://otlp-collector.observability.svc.cluster.local:8888/metrics"
+    );
 
     Ok(())
 }
-

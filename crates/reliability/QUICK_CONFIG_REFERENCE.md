@@ -3,7 +3,7 @@
 ## 📋 目录
 
 - [c13\_reliability - 快速配置参考](#c13_reliability---快速配置参考)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [🚀 常见配置场景](#-常见配置场景)
     - [1️⃣ 最小配置（仅核心功能）](#1️⃣-最小配置仅核心功能)
     - [2️⃣ Web 应用标准配置](#2️⃣-web-应用标准配置)
@@ -41,10 +41,10 @@
 
 ```toml
 [dependencies]
-c13_reliability = { 
-    version = "0.1.1", 
-    default-features = false, 
-    features = ["std"] 
+c13_reliability = {
+    version = "0.1.1",
+    default-features = false,
+    features = ["std"]
 }
 ```
 
@@ -52,7 +52,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = { 
+c13_reliability = {
     version = "0.1.1",
     features = ["async", "monitoring", "fault-tolerance", "otlp", "logging"]
 }
@@ -62,12 +62,12 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = { 
+c13_reliability = {
     version = "0.1.1",
     features = [
-        "async", 
-        "monitoring", 
-        "fault-tolerance", 
+        "async",
+        "monitoring",
+        "fault-tolerance",
         "otlp",
         "containers",
         "kubernetes"
@@ -79,7 +79,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = { 
+c13_reliability = {
     version = "0.1.1",
     features = [
         "async",
@@ -100,13 +100,13 @@ codegen-units = 1
 
 ```toml
 [dependencies]
-c13_reliability = { 
+c13_reliability = {
     version = "0.1.1",
     features = ["async", "logging", "verification"]
 }
 
 [dev-dependencies]
-c13_reliability = { 
+c13_reliability = {
     version = "0.1.1",
     features = ["chaos-engineering"]
 }
@@ -116,7 +116,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = { 
+c13_reliability = {
     version = "0.1.1",
     default-features = false,
     features = ["embedded-environment"]
@@ -186,7 +186,7 @@ features = ["async", "monitoring", "fault-tolerance", "otlp", "logging"]
 ```toml
 features = [
     "async",
-    "monitoring", 
+    "monitoring",
     "fault-tolerance",
     "otlp",
     "containers",
@@ -256,7 +256,7 @@ c13_reliability = { path = "../c13_reliability", features = [...] }
 
 ```toml
 [dependencies]
-c13_reliability = { 
+c13_reliability = {
     git = "https://github.com/rust-lang/c13_reliability",
     branch = "main",
     features = [...]
@@ -267,7 +267,7 @@ c13_reliability = {
 
 ```toml
 [dependencies]
-c13_reliability = { 
+c13_reliability = {
     git = "https://github.com/rust-lang/c13_reliability",
     tag = "v0.1.1",
     features = [...]
@@ -289,7 +289,7 @@ c13_reliability = { version = "0.1.1", features = [...] }
 # 标准 Web 服务
 features = ["async", "monitoring", "fault-tolerance", "otlp"]
 
-# 云原生应用  
+# 云原生应用
 features = ["async", "monitoring", "otlp", "containers", "kubernetes"]
 
 # 高性能服务
@@ -322,11 +322,11 @@ features = ["os-environment"]  # 或 "embedded-environment"
 name = "my-web-service"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.90"
+rust-version = "1.92"
 
 [dependencies]
 # 可靠性框架
-c13_reliability = { 
+c13_reliability = {
     version = "0.1.1",
     path = "../c13_reliability",
     features = [
@@ -357,7 +357,7 @@ serde_json = "1.0"
 config = "0.15"
 
 [dev-dependencies]
-c13_reliability = { 
+c13_reliability = {
     version = "0.1.1",
     path = "../c13_reliability",
     features = ["chaos-engineering"]
@@ -411,6 +411,5 @@ cargo tree --features "async,monitoring" --depth 1
 
 ---
 
-**版本**: 0.1.1  
+**版本**: 0.1.1
 **更新**: 2025-10-20
-

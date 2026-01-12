@@ -34,12 +34,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         KeyValue::new("service.version", "1.0.0"),
         KeyValue::new("deployment.environment", "dev"),
     ]);
-    
+
     println!("✅ 创建了语义模型资源：");
     println!("   服务名: demo-service");
     println!("   版本: 1.0.0");
     println!("   环境: dev");
-    
+
     Ok(())
 }
 ```
@@ -182,7 +182,7 @@ pub struct OTLPExample {
         container_id: Some("container-123".to_string()),
         k8s_namespace: Some("production".to_string()),
     },
-    
+
     // 遥测数据：具体的监控数据
     pub telemetry: TelemetryData::Metrics(MetricData {
         name: "http_request_duration".to_string(),
@@ -190,7 +190,7 @@ pub struct OTLPExample {
         unit: "ms".to_string(),
         timestamp: SystemTime::now(),
     }),
-    
+
     // 属性：数据的上下文信息
     pub attributes: vec![
         Attribute {
@@ -221,22 +221,22 @@ pub struct OTLPExample {
 pub struct HttpSemanticConventions {
     // HTTP方法
     pub method: String,           // GET, POST, PUT, DELETE等
-    
+
     // HTTP状态码
     pub status_code: u16,         // 200, 404, 500等
-    
+
     // HTTP路由
     pub route: String,            // /api/users, /health等
-    
+
     // HTTP URL
     pub url: String,              // 完整的URL
-    
+
     // HTTP用户代理
     pub user_agent: Option<String>, // 客户端信息
-    
+
     // HTTP请求大小
     pub request_size: Option<u64>,  // 请求体大小（字节）
-    
+
     // HTTP响应大小
     pub response_size: Option<u64>, // 响应体大小（字节）
 }
@@ -276,22 +276,22 @@ impl HttpSemanticConventions {
 pub struct DatabaseSemanticConventions {
     // 数据库系统类型
     pub system: String,           // mysql, postgresql, mongodb等
-    
+
     // 数据库连接字符串
     pub connection_string: String, // 连接信息
-    
+
     // 数据库名称
     pub name: String,             // 数据库名
-    
+
     // 操作类型
     pub operation: String,        // SELECT, INSERT, UPDATE, DELETE等
-    
+
     // SQL语句
     pub statement: Option<String>, // 具体的SQL语句
-    
+
     // 表名
     pub table: Option<String>,    // 操作的表名
-    
+
     // 行数
     pub rows_affected: Option<u64>, // 影响的行数
 }
@@ -337,7 +337,7 @@ pub struct MicroserviceApplicationModel {
         version: "v1.0.0".to_string(),
         namespace: "e-commerce".to_string(),
     },
-    
+
     // 服务依赖
     pub dependencies: vec![
         ServiceDependency {
@@ -351,7 +351,7 @@ pub struct MicroserviceApplicationModel {
             endpoint: "redis://localhost:6379".to_string(),
         },
     ],
-    
+
     // API端点
     pub endpoints: vec![
         ApiEndpoint {
@@ -447,7 +447,7 @@ pub struct ECommerceSystem {
             "user.profile.update".to_string(),
         ],
     },
-    
+
     // 商品服务
     pub product_service: ServiceModel {
         name: "product-service".to_string(),
@@ -457,7 +457,7 @@ pub struct ECommerceSystem {
             "product.inventory.check".to_string(),
         ],
     },
-    
+
     // 订单服务
     pub order_service: ServiceModel {
         name: "order-service".to_string(),
@@ -473,7 +473,7 @@ pub struct ECommerceSystem {
 impl ECommerceSystem {
     pub fn trace_user_purchase(&self, user_id: &str, product_id: &str) -> Trace {
         let mut trace = Trace::new();
-        
+
         // 1. 用户登录
         trace.add_span(Span {
             name: "user.login".to_string(),
@@ -482,7 +482,7 @@ impl ECommerceSystem {
                 ("service.name", "user-service".to_string()),
             ],
         });
-        
+
         // 2. 商品查询
         trace.add_span(Span {
             name: "product.search".to_string(),
@@ -491,7 +491,7 @@ impl ECommerceSystem {
                 ("service.name", "product-service".to_string()),
             ],
         });
-        
+
         // 3. 创建订单
         trace.add_span(Span {
             name: "order.create".to_string(),
@@ -501,7 +501,7 @@ impl ECommerceSystem {
                 ("service.name", "order-service".to_string()),
             ],
         });
-        
+
         trace
     }
 }

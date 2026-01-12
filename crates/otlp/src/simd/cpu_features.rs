@@ -71,7 +71,7 @@ impl CpuFeatures {
     /// Gets a human-readable description of available features
     pub fn description(&self) -> String {
         let mut features = Vec::new();
-        
+
         if self.sse2 {
             features.push("SSE2");
         }
@@ -122,7 +122,7 @@ mod tests {
     #[test]
     fn test_cpu_feature_detection() {
         let features = CpuFeatures::detect();
-        
+
         // At least one of these should be true on modern CPUs
         #[cfg(target_arch = "x86_64")]
         {
@@ -139,7 +139,7 @@ mod tests {
     fn test_global_features() {
         let features1 = CpuFeatures::global();
         let features2 = CpuFeatures::global();
-        
+
         // Should return the same cached instance
         assert!(std::ptr::eq(features1, features2));
     }
@@ -147,11 +147,14 @@ mod tests {
     #[test]
     fn test_has_simd() {
         let features = CpuFeatures::detect();
-        
+
         // On modern architectures, SIMD should be available
         #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
         {
-            assert!(features.has_simd(), "SIMD should be available on modern CPUs");
+            assert!(
+                features.has_simd(),
+                "SIMD should be available on modern CPUs"
+            );
         }
     }
 
@@ -159,7 +162,7 @@ mod tests {
     fn test_description() {
         let features = CpuFeatures::detect();
         let desc = features.description();
-        
+
         assert!(!desc.is_empty());
         println!("Available SIMD features: {}", desc);
     }
@@ -168,10 +171,9 @@ mod tests {
     fn test_optimal_vector_size() {
         let features = CpuFeatures::detect();
         let size = features.optimal_vector_size();
-        
+
         assert!(size >= 8);
         assert!(size <= 64);
         assert!(size.is_power_of_two());
     }
 }
-

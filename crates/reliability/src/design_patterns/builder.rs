@@ -8,12 +8,11 @@
 /// - 可选参数众多的对象创建
 /// - 需要step-by-step构建的对象
 /// - 不可变对象的构建
-
 use crate::prelude::*;
 //use crate::error_handling::{ErrorContext, ErrorSeverity};
 use std::time::Duration;
 //use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 // Helper function to create validation errors
 fn validation_error(msg: impl Into<String>) -> anyhow::Error {
@@ -23,10 +22,10 @@ fn validation_error(msg: impl Into<String>) -> anyhow::Error {
 /// 建造者 trait
 pub trait Builder {
     type Product;
-    
+
     /// 构建产品
     fn build(self) -> Result<Self::Product>;
-    
+
     /// 验证构建参数
     fn validate(&self) -> Result<()> {
         Ok(())
@@ -70,32 +69,32 @@ impl RetryConfigBuilder {
             retryable_errors: Vec::new(),
         }
     }
-    
+
     pub fn max_attempts(mut self, attempts: u32) -> Self {
         self.max_attempts = Some(attempts);
         self
     }
-    
+
     pub fn initial_delay(mut self, delay: Duration) -> Self {
         self.initial_delay = Some(delay);
         self
     }
-    
+
     pub fn max_delay(mut self, delay: Duration) -> Self {
         self.max_delay = Some(delay);
         self
     }
-    
+
     pub fn backoff_multiplier(mut self, multiplier: f64) -> Self {
         self.backoff_multiplier = Some(multiplier);
         self
     }
-    
+
     pub fn with_jitter(mut self) -> Self {
         self.jitter = Some(true);
         self
     }
-    
+
     pub fn retryable_error(mut self, error: impl Into<String>) -> Self {
         self.retryable_errors.push(error.into());
         self
@@ -110,26 +109,26 @@ impl Default for RetryConfigBuilder {
 
 impl Builder for RetryConfigBuilder {
     type Product = RetryConfig;
-    
+
     fn validate(&self) -> Result<()> {
         if let Some(max_attempts) = self.max_attempts {
             if max_attempts == 0 {
                 return Err(validation_error("max_attempts must be > 0"));
             }
         }
-        
+
         if let Some(multiplier) = self.backoff_multiplier {
             if multiplier <= 0.0 {
                 return Err(validation_error("backoff_multiplier must be > 0"));
             }
         }
-        
+
         Ok(())
     }
-    
+
     fn build(self) -> Result<RetryConfig> {
         self.validate()?;
-        
+
         Ok(RetryConfig {
             max_attempts: self.max_attempts.unwrap_or(3),
             initial_delay: self.initial_delay.unwrap_or(Duration::from_millis(100)),
@@ -178,32 +177,32 @@ impl CircuitBreakerConfigBuilder {
             min_calls: None,
         }
     }
-    
+
     pub fn failure_threshold(mut self, threshold: u32) -> Self {
         self.failure_threshold = Some(threshold);
         self
     }
-    
+
     pub fn success_threshold(mut self, threshold: u32) -> Self {
         self.success_threshold = Some(threshold);
         self
     }
-    
+
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
-    
+
     pub fn half_open_max_calls(mut self, max_calls: u32) -> Self {
         self.half_open_max_calls = Some(max_calls);
         self
     }
-    
+
     pub fn error_rate_threshold(mut self, threshold: f64) -> Self {
         self.error_rate_threshold = Some(threshold);
         self
     }
-    
+
     pub fn min_calls(mut self, min: u32) -> Self {
         self.min_calls = Some(min);
         self
@@ -218,20 +217,22 @@ impl Default for CircuitBreakerConfigBuilder {
 
 impl Builder for CircuitBreakerConfigBuilder {
     type Product = CircuitBreakerConfig;
-    
+
     fn validate(&self) -> Result<()> {
         if let Some(rate) = self.error_rate_threshold {
             if !(0.0..=1.0).contains(&rate) {
-                return Err(validation_error("error_rate_threshold must be between 0 and 1"));
+                return Err(validation_error(
+                    "error_rate_threshold must be between 0 and 1",
+                ));
             }
         }
-        
+
         Ok(())
     }
-    
+
     fn build(self) -> Result<CircuitBreakerConfig> {
         self.validate()?;
-        
+
         Ok(CircuitBreakerConfig {
             failure_threshold: self.failure_threshold.unwrap_or(5),
             success_threshold: self.success_threshold.unwrap_or(2),
@@ -289,47 +290,47 @@ impl ServiceConfigBuilder {
             metadata: std::collections::HashMap::new(),
         }
     }
-    
+
     pub fn name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
     }
-    
+
     pub fn host(mut self, host: impl Into<String>) -> Self {
         self.host = Some(host.into());
         self
     }
-    
+
     pub fn port(mut self, port: u16) -> Self {
         self.port = Some(port);
         self
     }
-    
+
     pub fn protocol(mut self, protocol: impl Into<String>) -> Self {
         self.protocol = Some(protocol.into());
         self
     }
-    
+
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
-    
+
     pub fn max_connections(mut self, max: u32) -> Self {
         self.max_connections = Some(max);
         self
     }
-    
+
     pub fn retry_config(mut self, config: RetryConfig) -> Self {
         self.retry_config = Some(config);
         self
     }
-    
+
     pub fn circuit_breaker_config(mut self, config: CircuitBreakerConfig) -> Self {
         self.circuit_breaker_config = Some(config);
         self
     }
-    
+
     pub fn metadata(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.metadata.insert(key.into(), value.into());
         self
@@ -344,22 +345,22 @@ impl Default for ServiceConfigBuilder {
 
 impl Builder for ServiceConfigBuilder {
     type Product = ServiceConfig;
-    
+
     fn validate(&self) -> Result<()> {
         if self.name.is_none() {
             return Err(validation_error("Service name is required"));
         }
-        
+
         if self.host.is_none() {
             return Err(validation_error("Service host is required"));
         }
-        
+
         Ok(())
     }
-    
+
     fn build(self) -> Result<ServiceConfig> {
         self.validate()?;
-        
+
         Ok(ServiceConfig {
             name: self.name.unwrap(),
             host: self.host.unwrap(),
@@ -377,7 +378,7 @@ impl Builder for ServiceConfigBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_retry_config_builder() {
         let config = RetryConfigBuilder::new()
@@ -389,12 +390,12 @@ mod tests {
             .retryable_error("timeout")
             .build()
             .unwrap();
-        
+
         assert_eq!(config.max_attempts, 5);
         assert!(config.jitter);
         assert_eq!(config.retryable_errors.len(), 1);
     }
-    
+
     #[test]
     fn test_circuit_breaker_config_builder() {
         let config = CircuitBreakerConfigBuilder::new()
@@ -404,11 +405,11 @@ mod tests {
             .error_rate_threshold(0.6)
             .build()
             .unwrap();
-        
+
         assert_eq!(config.failure_threshold, 10);
         assert_eq!(config.error_rate_threshold, 0.6);
     }
-    
+
     #[test]
     fn test_service_config_builder() {
         let config = ServiceConfigBuilder::new()
@@ -420,19 +421,16 @@ mod tests {
             .metadata("version", "1.0")
             .build()
             .unwrap();
-        
+
         assert_eq!(config.name, "my-service");
         assert_eq!(config.port, 8080);
         assert_eq!(config.metadata.get("version"), Some(&"1.0".to_string()));
     }
-    
+
     #[test]
     fn test_validation_error() {
-        let result = RetryConfigBuilder::new()
-            .max_attempts(0)
-            .build();
-        
+        let result = RetryConfigBuilder::new().max_attempts(0).build();
+
         assert!(result.is_err());
     }
 }
-

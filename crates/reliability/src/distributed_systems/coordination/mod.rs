@@ -19,19 +19,21 @@ pub use vector_clock::{
     CausalityTracker, ClockOrdering, NodeId, VectorClock, VectorClockBuilder, VectorClockSnapshot,
 };
 
-pub use hybrid_logical_clock::{
-    HLCBuilder, HLCTimestamp, HybridLogicalClock, utils as hlc_utils,
-};
+pub use hybrid_logical_clock::{HLCBuilder, HLCTimestamp, HybridLogicalClock, utils as hlc_utils};
 
 /// Coordination protocol trait
 ///
 /// Defines a common interface for distributed coordination mechanisms
 pub trait CoordinationProtocol: Send + Sync {
     /// Start the coordination protocol
-    fn start(&self) -> impl std::future::Future<Output = crate::error_handling::prelude::Result<()>> + Send;
+    fn start(
+        &self,
+    ) -> impl std::future::Future<Output = crate::error_handling::prelude::Result<()>> + Send;
 
     /// Stop the coordination protocol
-    fn stop(&self) -> impl std::future::Future<Output = crate::error_handling::prelude::Result<()>> + Send;
+    fn stop(
+        &self,
+    ) -> impl std::future::Future<Output = crate::error_handling::prelude::Result<()>> + Send;
 
     /// Check if the protocol is running
     fn is_running(&self) -> impl std::future::Future<Output = bool> + Send;

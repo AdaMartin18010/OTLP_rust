@@ -3,8 +3,7 @@
 ## 📋 目录
 
 - [c13\_reliability 架构设计](#c13_reliability-架构设计)
-  - [📊 目录](#-目录)
-  - [📋 目录](#-目录-1)
+  - [� 目录](#-目录)
   - [概述](#概述)
   - [架构层次](#架构层次)
   - [核心模块](#核心模块)
@@ -419,11 +418,11 @@ fn detect_current_environment() -> RuntimeEnvironment {
     if std::path::Path::new("/.dockerenv").exists() {
         return RuntimeEnvironment::Container;
     }
-    
+
     if std::env::var("EMBEDDED_ENVIRONMENT").is_ok() {
         return RuntimeEnvironment::EmbeddedBareMetal;
     }
-    
+
     RuntimeEnvironment::OperatingSystem
 }
 ```
@@ -479,17 +478,17 @@ match environment {
 ```rust
 async fn adjust_reliability_strategy(capabilities: &EnvironmentCapabilities) -> Result<(), UnifiedError> {
     let mut config = FaultToleranceConfig::default();
-    
+
     if capabilities.supports_multiprocessing {
         config.circuit_breaker.failure_threshold = 10;
     } else {
         config.circuit_breaker.failure_threshold = 5;
     }
-    
+
     if !capabilities.supports_network {
         config.retry.max_attempts = 1;
     }
-    
+
     Ok(())
 }
 ```
@@ -566,4 +565,3 @@ async fn adjust_reliability_strategy(capabilities: &EnvironmentCapabilities) -> 
 ## 总结
 
 c13_reliability框架通过分层架构和环境适配器模式，提供了统一的可靠性解决方案，同时支持多种运行时环境。这种设计既保证了框架的通用性，又满足了不同环境的特定需求。
-

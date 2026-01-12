@@ -94,18 +94,11 @@ pub enum CircuitBreakerPolicy {
 #[derive(Debug, Clone)]
 pub enum CallResult {
     /// 成功
-    Success {
-        duration: Duration,
-    },
+    Success { duration: Duration },
     /// 失败
-    Failure {
-        duration: Duration,
-        error: String,
-    },
+    Failure { duration: Duration, error: String },
     /// 超时
-    Timeout {
-        duration: Duration,
-    },
+    Timeout { duration: Duration },
     /// 被拒绝（熔断器打开）
     Rejected,
 }
@@ -212,11 +205,13 @@ impl SlidingWindow {
         if self.window.is_empty() {
             return 0.0;
         }
-        
-        let failures = self.window.iter()
+
+        let failures = self
+            .window
+            .iter()
             .filter(|r| matches!(r, CallResult::Failure { .. } | CallResult::Timeout { .. }))
             .count();
-        
+
         failures as f64 / self.window.len() as f64
     }
 
@@ -224,14 +219,16 @@ impl SlidingWindow {
         if self.window.is_empty() {
             return 0.0;
         }
-        
-        let slow_calls = self.window.iter()
+
+        let slow_calls = self
+            .window
+            .iter()
             .filter(|r| match r {
                 CallResult::Success { duration } => *duration >= slow_duration,
                 _ => false,
             })
             .count();
-        
+
         slow_calls as f64 / self.window.len() as f64
     }
 
@@ -239,8 +236,10 @@ impl SlidingWindow {
         if self.window.is_empty() {
             return Duration::ZERO;
         }
-        
-        let total: Duration = self.window.iter()
+
+        let total: Duration = self
+            .window
+            .iter()
             .filter_map(|r| match r {
                 CallResult::Success { duration } => Some(*duration),
                 CallResult::Failure { duration, .. } => Some(*duration),
@@ -248,7 +247,7 @@ impl SlidingWindow {
                 _ => None,
             })
             .sum();
-        
+
         total / self.window.len() as u32
     }
 }
@@ -306,14 +305,14 @@ impl EnhancedCircuitBreaker {
                     // 拒绝请求
                     self.record_rejection().await;
                     return Err(UnifiedError::resource_unavailable(
-                        "Circuit breaker is open"
+                        "Circuit breaker is open",
                     ));
                 }
             }
             CircuitState::ForcedOpen => {
                 self.record_rejection().await;
                 return Err(UnifiedError::resource_unavailable(
-                    "Circuit breaker is forced open"
+                    "Circuit breaker is forced open",
                 ));
             }
             CircuitState::HalfOpen => {
@@ -323,7 +322,7 @@ impl EnhancedCircuitBreaker {
                     drop(calls);
                     self.record_rejection().await;
                     return Err(UnifiedError::resource_unavailable(
-                        "Circuit breaker half-open limit reached"
+                        "Circuit breaker half-open limit reached",
                     ));
                 }
                 *calls += 1;
@@ -356,15 +355,15 @@ impl EnhancedCircuitBreaker {
     async fn record_success(&self, duration: Duration) {
         let mut window = self.window.lock().await;
         window.add(CallResult::Success { duration });
-        
+
         let mut stats = self.stats.write().await;
         stats.total_calls += 1;
         stats.successful_calls += 1;
-        
+
         if duration >= self.config.slow_call_duration {
             stats.slow_calls += 1;
         }
-        
+
         self.update_stats_metrics(&mut stats, &window).await;
     }
 
@@ -375,11 +374,11 @@ impl EnhancedCircuitBreaker {
             duration,
             error: "Operation failed".to_string(),
         });
-        
+
         let mut stats = self.stats.write().await;
         stats.total_calls += 1;
         stats.failed_calls += 1;
-        
+
         self.update_stats_metrics(&mut stats, &window).await;
     }
 
@@ -390,11 +389,7 @@ impl EnhancedCircuitBreaker {
     }
 
     /// 更新统计指标
-    async fn update_stats_metrics(
-        &self,
-        stats: &mut CircuitBreakerStats,
-        window: &SlidingWindow,
-    ) {
+    async fn update_stats_metrics(&self, stats: &mut CircuitBreakerStats, window: &SlidingWindow) {
         stats.failure_rate = window.failure_rate();
         stats.slow_call_rate = window.slow_call_rate(self.config.slow_call_duration);
         stats.avg_response_time_ms = window.avg_response_time().as_millis() as f64;
@@ -408,7 +403,7 @@ impl EnhancedCircuitBreaker {
         };
 
         let window = self.window.lock().await;
-        
+
         // 检查是否有足够的调用次数
         if window.len() < self.config.minimum_calls {
             return;
@@ -420,8 +415,9 @@ impl EnhancedCircuitBreaker {
         match current_state {
             CircuitState::Closed => {
                 // 检查是否应该打开
-                if failure_rate >= self.config.failure_threshold 
-                    || slow_call_rate >= self.config.slow_call_threshold {
+                if failure_rate >= self.config.failure_threshold
+                    || slow_call_rate >= self.config.slow_call_threshold
+                {
                     drop(window);
                     self.transition_to(CircuitState::Open).await;
                 }
@@ -454,7 +450,7 @@ impl EnhancedCircuitBreaker {
     async fn transition_to(&self, new_state: CircuitState) {
         let mut state = self.state.write().await;
         let old_state = *state;
-        
+
         if old_state == new_state {
             return;
         }
@@ -469,7 +465,7 @@ impl EnhancedCircuitBreaker {
         } else if new_state == CircuitState::Closed {
             let mut open_since = self.open_since.write().await;
             *open_since = None;
-            
+
             // 重置半开调用计数
             let mut half_open_calls = self.half_open_calls.lock().await;
             *half_open_calls = 0;
@@ -515,10 +511,10 @@ impl EnhancedCircuitBreaker {
     pub async fn reset(&self) {
         let mut window = self.window.lock().await;
         *window = SlidingWindow::new(self.config.sliding_window_size);
-        
+
         let mut stats = self.stats.write().await;
         *stats = CircuitBreakerStats::default();
-        
+
         self.transition_to(CircuitState::Closed).await;
     }
 }
@@ -603,12 +599,12 @@ mod tests {
             .minimum_calls(3)
             .failure_threshold(0.5)
             .build();
-        
+
         for _ in 0..5 {
             let result = breaker.call(async { Ok::<_, UnifiedError>(42) }).await;
             assert!(result.is_ok());
         }
-        
+
         let state = breaker.get_state().await;
         assert_eq!(state, CircuitState::Closed);
     }
@@ -619,39 +615,37 @@ mod tests {
             .minimum_calls(3)
             .failure_threshold(0.5)
             .build();
-        
+
         // 触发失败
         for _ in 0..5 {
-            let _ = breaker.call(async {
-                Err::<i32, _>(UnifiedError::state_error("test error"))
-            }).await;
+            let _ = breaker
+                .call(async { Err::<i32, _>(UnifiedError::state_error("test error")) })
+                .await;
         }
-        
+
         let state = breaker.get_state().await;
         assert_eq!(state, CircuitState::Open);
     }
 
     #[tokio::test]
     async fn test_circuit_breaker_stats() {
-        let breaker = EnhancedCircuitBreaker::builder()
-            .build();
-        
+        let breaker = EnhancedCircuitBreaker::builder().build();
+
         // 成功调用
         for _ in 0..3 {
             let _ = breaker.call(async { Ok::<_, UnifiedError>(()) }).await;
         }
-        
+
         // 失败调用
         for _ in 0..2 {
-            let _ = breaker.call(async {
-                Err::<(), _>(UnifiedError::state_error("error"))
-            }).await;
+            let _ = breaker
+                .call(async { Err::<(), _>(UnifiedError::state_error("error")) })
+                .await;
         }
-        
+
         let stats = breaker.get_stats().await;
         assert_eq!(stats.total_calls, 5);
         assert_eq!(stats.successful_calls, 3);
         assert_eq!(stats.failed_calls, 2);
     }
 }
-

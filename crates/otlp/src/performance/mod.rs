@@ -53,8 +53,7 @@ pub use memory_pool::{
 };
 
 /// 性能优化配置
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct PerformanceConfig {
     /// 熔断器配置
     pub circuit_breaker: CircuitBreakerConfig,
@@ -95,7 +94,6 @@ impl Default for ZeroCopyConfig {
         }
     }
 }
-
 
 /// 性能优化管理器
 ///

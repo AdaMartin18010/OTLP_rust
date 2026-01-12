@@ -307,11 +307,7 @@ impl CausalityTracker {
     /// Record a message send from sender to receiver
     #[allow(dead_code)]
     #[allow(unused_variables)]
-    pub fn record_send(
-        &mut self,
-        sender: &str,
-        receiver: &str,
-    ) -> Result<VectorClockSnapshot> {
+    pub fn record_send(&mut self, sender: &str, receiver: &str) -> Result<VectorClockSnapshot> {
         // Increment sender's clock
         self.record_event(sender)?;
 

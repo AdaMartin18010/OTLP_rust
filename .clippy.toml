@@ -1,5 +1,5 @@
-# Clippy 配置文件 - Rust 1.90 优化设置
-# 2025年最新配置，支持Rust 1.90新特性和代码质量优化
+# Clippy 配置文件 - Rust 1.92 优化设置
+# 2025年最新配置，支持Rust 1.92新特性和代码质量优化
 
 # 函数参数数量阈值
 too-many-arguments-threshold = 7
@@ -29,7 +29,7 @@ disallowed-methods = ["std::env::var", "std::env::var_os"]
 allowed-scripts = ["Latin", "Cyrillic"]
 
 # MSRV (最低支持的Rust版本)
-msrv = "1.90.0"
+msrv = "1.92.0"
 
 # 避免破坏导出的API
 avoid-breaking-exported-api = true

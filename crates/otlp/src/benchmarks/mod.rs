@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock};
-use tracing::{error, info};
+use tracing::info;
 
 /// 基准测试配置
 #[derive(Debug, Clone, Serialize, Deserialize)]

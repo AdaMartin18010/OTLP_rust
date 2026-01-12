@@ -6,7 +6,7 @@ members = ["crates/otlp", "crates/reliability"]
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.91" # 使用最新稳定版本 (Rust 1.91.0)
+rust-version = "1.92" # 使用最新稳定版本 (Rust 1.92.0)
 
 [profile.release]
 
@@ -81,10 +81,58 @@ codegen-units = 1
 [profile.bench.build-override]
 opt-level = 2
 
-# 工作区级别的依赖版本统一 - 2025年10月最新稳定版本 (Rust 1.91 优化)
+# 工作区级别的依赖版本统一 - 2025年1月最新稳定版本 (Rust 1.92 优化)
 # 所有依赖库版本已与系统时间同步，确保使用最新的成熟稳定版本
-# 最后更新: 2025年10月29日 - 升级到 Rust 1.91.0
+# 最后更新: 2025年1月 (最新更新) - 升级到 Rust 1.92.0
 # OpenTelemetry: v0.31.0 (当前最新稳定版本)
+# 2025-01更新 (cargo update - 主要依赖更新):
+#   最新更新 (cargo update):
+#   - zmij: v1.0.12 -> v1.0.13 (传递依赖更新)
+# 2025-01更新 (cargo update - 主要依赖更新):
+#   - reqwest: v0.12.24 -> v0.12.28 (HTTP客户端)
+#   - hyper: v1.7.0 -> v1.8.1 (HTTP库)
+#   - hyper-util: v0.1.18 -> v0.1.19 (Hyper工具)
+#   - axum: v0.8.7 -> v0.8.8 (Web框架)
+#   - axum-core: v0.5.5 -> v0.5.6 (Axum核心)
+#   - tower-http: v0.6.7 -> v0.6.8 (HTTP中间件)
+#   - clap: v4.5.51 -> v4.5.54 (命令行解析)
+#   - clap_builder: v4.5.51 -> v4.5.54 (Clap构建器)
+#   - tokio: v1.48.0 -> v1.49.0 (异步运行时)
+#   - tokio-util: v0.7.17 -> v0.7.18 (Tokio工具)
+#   - tokio-stream: v0.1.17 -> v0.1.18 (异步流)
+#   - tokio-test: v0.4.4 -> v0.4.5 (测试工具)
+#   - prost: v0.14.1 -> v0.14.3 (Protobuf)
+#   - prost-types: v0.14.1 -> v0.14.3 (Protobuf类型)
+#   - rustls: v0.23.35 -> v0.23.36 (TLS实现)
+#   - rustls-native-certs: v0.8.2 -> v0.8.3 (原生证书)
+#   - rustls-pki-types: v1.13.0 -> v1.13.2 (PKI类型)
+#   - tracing: v0.1.41 -> v0.1.44 (追踪库)
+#   - tracing-subscriber: v0.3.20 -> v0.3.22 (追踪订阅者)
+#   - tracing-attributes: v0.1.30 -> v0.1.31 (追踪属性)
+#   - metrics: v0.24.2 -> v0.24.3 (指标库)
+#   - serde_json: v1.0.145 -> v1.0.149 (JSON序列化)
+#   - config: v0.15.18 -> v0.15.19 (配置管理)
+#   - tempfile: v3.23.0 -> v3.24.0 (临时文件)
+#   - libc: v0.2.177 -> v0.2.180 (系统调用)
+#   - uuid: v1.18.1 -> v1.19.0 (UUID生成)
+#   - url: v2.5.7 -> v2.5.8 (URL解析)
+#   - bytes: v1.10.1 -> v1.11.0 (字节操作)
+#   - indexmap: v2.12.0 -> v2.13.0 (有序哈希映射)
+#   - proc-macro2: v1.0.103 -> v1.0.105 (过程宏)
+#   - syn: v2.0.109 -> v2.0.114 (语法解析)
+#   - quote: v1.0.41 -> v1.0.43 (代码生成)
+#   - mio: v1.1.0 -> v1.1.1 (I/O多路复用)
+#   - h2: v0.4.12 -> v0.4.13 (HTTP/2)
+#   - http: v1.3.1 -> v1.4.0 (HTTP类型)
+#   - log: v0.4.28 -> v0.4.29 (日志库)
+#   - toml: v0.9.8 -> v0.9.11 (TOML解析)
+#   - icu_properties: v2.1.1 -> v2.1.2 (ICU属性)
+#   - icu_properties_data: v2.1.1 -> v2.1.2 (ICU属性数据)
+#   - wasm-bindgen: v0.2.105 -> v0.2.106 (WASM绑定)
+#   - js-sys: v0.3.82 -> v0.3.83 (JS绑定)
+#   - web-sys: v0.3.82 -> v0.3.83 (Web API绑定)
+#   - 移除传递依赖: base64 v0.21.7, bindgen, cexpr, clang-sys, glob, libloading, minimal-lexical, nom, prettyplease
+#   - 新增传递依赖: foldhash v0.2.0, openssl-probe v0.2.0, zmij v1.0.13
 # 2025-10-29更新 (cargo update):
 #   - aho-corasick: v1.1.3 -> v1.1.4 (正则表达式自动机)
 #   - cc: v1.2.43 -> v1.2.44 (C编译器绑定)
@@ -139,9 +187,9 @@ opt-level = 2
 [workspace.dependencies]
 
 # ========== 网络和 HTTP 相关依赖 ==========
-# 2025年10月28日最新稳定版本，支持Rust 1.91新特性
+# 2025年1月最新稳定版本，支持Rust 1.92新特性
 # reqwest: 高级HTTP客户端库，支持异步操作、TLS、压缩等特性
-reqwest = { version = "0.12.24", features = [
+reqwest = { version = "0.12.28", features = [
   "json",
   "rustls-tls",
   "stream",
@@ -150,16 +198,16 @@ reqwest = { version = "0.12.24", features = [
   "deflate",
 ] }
 # hyper: 底层HTTP库，提供高性能的HTTP/1.1和HTTP/2支持
-hyper = { version = "1.7.0", features = ["full", "http2"] }
+hyper = { version = "1.8.1", features = ["full", "http2"] }
 # hyper生态系统组件 - 最新稳定版本
-hyper-util = "0.1.18"   # Hyper工具库，提供实用功能
+hyper-util = "0.1.19"   # Hyper工具库，提供实用功能
 hyper-rustls = "0.28.2" # Hyper的RustLS TLS后端
 hyper-tls = "0.6.1"     # Hyper的TLS支持
 hyper-timeout = "0.6.2" # Hyper超时支持
 hyper-proxy = "0.11.2"  # Hyper代理支持
 # HTTP/2协议支持
-h2 = "0.5.2"             # HTTP/2协议实现
-http = "1.3.2"           # HTTP类型和工具
+h2 = "0.4.13"            # HTTP/2协议实现
+http = "1.4.0"           # HTTP类型和工具
 http-body = "1.0.1"      # HTTP body trait
 http-body-util = "0.1.4" # HTTP body工具
 
@@ -170,13 +218,13 @@ http-body-util = "0.1.4" # HTTP body工具
 # distributed-tracing = "0.4.0"  # 分布式追踪增强（可选）
 
 # ========== Web 框架 ==========
-# 2025年10月最新稳定版本，支持Rust 1.91性能优化
+# 2025年1月最新稳定版本，支持Rust 1.92性能优化
 # Axum: 基于Tokio的现代Web框架
-axum = { version = "0.8.7", features = ["macros", "multipart", "tracing"] }
-axum-core = "0.6.2"                                                         # Axum核心组件
+axum = { version = "0.8.8", features = ["macros", "multipart", "tracing"] }
+axum-core = "0.5.6"                                                         # Axum核心组件
 # Tower: 服务抽象层，提供中间件支持
 tower = "0.5.3" # 服务抽象和中间件框架
-tower-http = { version = "0.6.7", features = [
+tower-http = { version = "0.6.8", features = [
   "cors",
   "trace",
   "timeout",
@@ -192,7 +240,7 @@ actix-rt = "2.11.1"  # Actix运行时
 crossterm = "0.29.1" # 跨平台终端库，支持Windows、Linux、macOS
 
 # ========== 现代前端框架 ==========
-# 2025年10月最新前端框架 - 跨平台UI (Rust 1.91优化)
+# 2025年1月最新前端框架 - 跨平台UI (Rust 1.92优化)
 # Dioxus: React-like的Rust前端框架
 dioxus = "0.6.4"         # 核心框架
 dioxus-web = "0.6.4"     # Web平台支持
@@ -204,7 +252,7 @@ leptos_meta = "0.6.16"   # 元数据管理
 leptos_router = "0.6.16" # 路由系统
 
 # ========== 桌面应用框架 ==========
-# 2025年10月最新桌面应用框架 (Tauri 2.0 + Rust 1.91)
+# 2025年1月最新桌面应用框架 (Tauri 2.0 + Rust 1.92)
 # Tauri: 使用Web技术构建原生桌面应用
 tauri = "2.8.6"              # 核心框架
 tauri-build = "2.4.2"        # 构建工具
@@ -212,22 +260,22 @@ tauri-plugin-store = "2.4.1" # 数据存储插件
 tauri-plugin-log = "2.7.1"   # 日志插件
 
 # ========== 异步生态核心依赖 ==========
-# 其他异步生态常用依赖（统一版本，支持Rust 1.91）
+# 其他异步生态常用依赖（统一版本，支持Rust 1.92）
 async-trait = "0.1.89" # 异步trait支持
 async-stream = "0.3.7" # 异步流处理
 # async-std 已移除，使用 tokio 替代 (async-std 已弃用)
 tokio-console = "0.1.14" # Tokio控制台工具
-tokio-test = "0.4.4"     # Tokio测试工具
-mio = "1.1.0"            # 底层I/O多路复用 (更新: 2025-10-17)
+tokio-test = "0.4.5"     # Tokio测试工具
+mio = "1.1.1"            # 底层I/O多路复用 (更新: 2025-01)
 tungstenite = "0.28"     # WebSocket实现
 rcgen = "0.14.6"         # 证书生成器
 
 # ========== 基础工具依赖 ==========
 # 基础依赖统一，提供常用功能支持
 dotenvy = "0.15.8"  # 环境变量管理
-tempfile = "3.23.0" # 临时文件处理
+tempfile = "3.24.0" # 临时文件处理
 # 系统调用和底层接口
-libc = "0.2.177"  # 系统调用接口
+libc = "0.2.180"  # 系统调用接口
 socket2 = "0.6.1" # 套接字抽象
 
 # ========== gRPC 生态系统 ==========
@@ -240,10 +288,10 @@ tonic = { version = "0.14.2", features = [
 ] } # gRPC客户端/服务器
 tonic-build = "0.14.2" # gRPC构建工具
 # Prost: Protocol Buffers实现
-prost = "0.14.1"        # 核心库
+prost = "0.14.3"        # 核心库
 prost-build = "0.14.1"  # 构建工具
 prost-derive = "0.15.2" # 派生宏
-prost-types = "0.14.1"  # 类型定义
+prost-types = "0.14.3"  # 类型定义
 
 # ========== 安全更新 ==========
 # 安全更新 - 修复protobuf安全漏洞 (RUSTSEC-2024-0437)
@@ -253,13 +301,14 @@ protobuf = "3.7.3" # 修复递归崩溃漏洞，确保系统安全
 # ========== TLS 和加密 ==========
 # TLS 和加密 - 2025年10月17日最新稳定版本，确保通信安全
 # RustLS: 纯Rust实现的TLS库
-rustls = { version = "0.23.35", features = [
+rustls = { version = "0.23.36", features = [
   "ring",
-] } # TLS实现 (更新: 0.23.33 -> 0.23.35)
+] } # TLS实现 (更新: 0.23.35 -> 0.23.36)
 rustls-webpki = "0.104.2" # Web PKI支持
 rustls-pemfile = "2.2.1" # PEM文件解析
 tokio-rustls = "0.26.5" # Tokio集成
-rustls-native-certs = "0.8.2" # 原生证书支持
+rustls-native-certs = "0.8.3" # 原生证书支持
+rustls-pki-types = "1.13.2" # PKI类型支持
 # 加密库
 ring = "0.17.15"       # 加密原语库
 webpki-roots = "1.1.2" # Web PKI根证书
@@ -272,16 +321,16 @@ anyhow = "1.0.100"   # 通用错误处理
 # ========== 序列化框架 ==========
 # 序列化 - 2025年10月最新稳定版本，支持多种数据格式
 serde = { version = "1.0.228", features = ["derive"] } # 序列化框架
-serde_json = "1.0.145"                                 # JSON支持
+serde_json = "1.0.149"                                 # JSON支持
 serde_yaml = "0.9.34"                                  # YAML支持
 bincode = "2.0.1"                                      # 二进制序列化
 
 # ========== 异步运行时 ==========
 # 异步运行时 - 2025年10月16日最新稳定版本，高性能异步编程
 # Tokio: 异步运行时和工具
-tokio = { version = "1.48.0", features = ["full"] } # 异步运行时
-tokio-util = "0.7.17"                               # 工具库 (更新: 0.7.16 -> 0.7.17)
-tokio-stream = "0.1.17"                             # 异步流
+tokio = { version = "1.49.0", features = ["full"] } # 异步运行时
+tokio-util = "0.7.18"                               # 工具库 (更新: 0.7.17 -> 0.7.18)
+tokio-stream = "0.1.18"                             # 异步流
 # Futures: 异步编程基础
 tokio-tungstenite = "0.27.0" # WebSocket支持
 futures = "0.3.31"           # 异步原语
@@ -290,12 +339,14 @@ futures-util = "0.3.31"      # 实用工具
 # ========== 日志和追踪 ==========
 # 日志和追踪 - 2025年10月最新稳定版本，可观测性核心组件
 # Tracing: 结构化日志和追踪
-tracing = "0.1.41" # 核心追踪库
-tracing-subscriber = { version = "0.3.20", features = [
+tracing = "0.1.44" # 核心追踪库
+tracing-subscriber = { version = "0.3.22", features = [
   "env-filter",
   "json",
 ] } # 订阅者
-log = "0.4.28" # 标准日志库
+tracing-attributes = "0.1.31" # 追踪属性宏
+tracing-core = "0.1.36" # 追踪核心库
+log = "0.4.29" # 标准日志库
 env_logger = "0.11.8" # 环境变量日志配置
 # OpenTelemetry: 可观测性标准（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
 tracing-opentelemetry = "0.32"                                         # 追踪集成 (更新到0.32以匹配opentelemetry 0.31)
@@ -308,7 +359,8 @@ opentelemetry-http = "0.31.0"                                          # HTTP支
 
 # ========== 指标监控 ==========
 # 指标 - 2025年10月最新稳定版本，系统监控和指标收集
-metrics = "0.24.2"                     # 指标收集库
+metrics = "0.24.3"                     # 指标收集库
+metrics-util = "0.20.1"                # 指标工具库
 metrics-exporter-prometheus = "0.17.2" # Prometheus导出器
 
 # ========== 时间处理 ==========
@@ -317,16 +369,16 @@ chrono = { version = "0.4.42", features = ["serde"] } # 日期时间库
 time = { version = "0.3.44", features = [
   "serde",
   "macros",
-] } # 现代时间库，支持Rust 1.91
+] } # 现代时间库，支持Rust 1.92
 
 # ========== 常用工具库 ==========
 # 其他常用库 - 2025年10月20日最新稳定版本，提供基础功能支持
 # 标识符和URL
-uuid = { version = "1.18.1", features = ["v4", "serde"] } # UUID生成
-url = "2.5.7"                                             # URL解析
+uuid = { version = "1.19.0", features = ["v4", "serde"] } # UUID生成
+url = "2.5.8"                                             # URL解析
 # 数据处理
-bytes = "1.10.1"    # 字节操作
-indexmap = "2.12.0" # 有序哈希映射
+bytes = "1.11.0"    # 字节操作
+indexmap = "2.13.0" # 有序哈希映射
 base64 = "0.22.1"   # Base64编码（统一版本）
 # 系统信息
 once_cell = "1.21.3" # 单次初始化单元格
@@ -350,8 +402,8 @@ icu_collections = "2.1.1"     # ICU集合库
 icu_locale_core = "2.1.1"     # ICU本地化核心
 icu_normalizer = "2.1.1"      # ICU Unicode规范化器
 icu_normalizer_data = "2.1.1" # ICU规范化器数据
-icu_properties = "2.1.1"      # ICU Unicode属性
-icu_properties_data = "2.1.1" # ICU属性数据
+icu_properties = "2.1.2"      # ICU Unicode属性
+icu_properties_data = "2.1.2" # ICU属性数据
 icu_provider = "2.1.1"        # ICU数据提供程序
 # ICU相关工具库
 litemap = "0.8.1"         # 轻量级映射表（ICU依赖）
@@ -388,8 +440,8 @@ criterion = "0.7.0" # 基准测试框架
 
 # ========== 配置管理 ==========
 # 配置管理 - 2025年10月16日最新稳定版本
-config = "0.15.18" # 配置管理库
-toml = "0.9.8"     # TOML格式支持
+config = "0.15.19" # 配置管理库
+toml = "0.9.11"    # TOML格式支持
 # 环境变量和配置
 getrandom = "0.3.4" # 随机数生成
 
@@ -429,7 +481,7 @@ iced = "0.13.2" # 响应式GUI框架
 # burn-tch 暂时禁用，与现有tch版本冲突
 
 # ========== 高性能异步运行时 ==========
-# 2025年10月最新高性能异步运行时 (Rust 1.91优化)
+# 2025年1月最新高性能异步运行时 (Rust 1.92优化)
 glommio = "0.8.0"           # 线程每核心异步运行时
 tokio-console-api = "0.2.0" # Tokio控制台API
 tokio-metrics = "0.3.1"     # Tokio指标收集
@@ -445,10 +497,14 @@ tokio-uring = "0.10.0"      # io_uring支持
 # 安全漏洞修复 - 2025年10月
 # 替换未维护和有安全漏洞的依赖
 ahash = "0.8.12"            # 替代 fxhash (未维护) - 高性能哈希
-quote = "1.0.41"            # 替代 paste (未维护) - 代码生成
+quote = "1.0.43"            # 替代 paste (未维护) - 代码生成
 proc-macro-error2 = "2.0.1" # 替代 proc-macro-error (未维护) - 宏错误处理
 is-terminal = "0.2.0"       # 替代 atty (有安全漏洞) - 终端检测
-wasm-bindgen = "0.2.105"    # 最新稳定版本，支持WebAssembly 2.0
+wasm-bindgen = "0.2.106"    # 最新稳定版本，支持WebAssembly 2.0
+proc-macro2 = "1.0.105"     # 过程宏支持
+syn = "2.0.114"             # 语法解析
+js-sys = "0.3.83"           # JS绑定
+web-sys = "0.3.83"          # Web API绑定
 nix = "0.28.0"              # 系统调用安全封装
 # pingora 已移除，存在安全漏洞 (RUSTSEC-2025-0037, RUSTSEC-2025-0070)
 
@@ -493,6 +549,6 @@ jwt = "0.16.0"   # JWT令牌（实际可用）
 # 注: Cargo 可以处理同一crate的多个版本，虽不理想但可工作
 # [patch.crates-io] 不能用于替换同源包版本
 
-# ========== Rust 1.91特性支持 ==========
-# 2025年最新Rust 1.91特性支持依赖 (已在上面定义，避免重复)
+# ========== Rust 1.92特性支持 ==========
+# 2025年最新Rust 1.92特性支持依赖 (已在上面定义，避免重复)
 # 所有云原生和微服务依赖已移至 [workspace.dependencies] 部分

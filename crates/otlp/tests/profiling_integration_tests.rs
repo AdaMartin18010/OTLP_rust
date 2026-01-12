@@ -1,7 +1,7 @@
 //! Integration tests for the profiling module
 
-use otlp::profiling::*;
 use otlp::profiling::pprof::StackFrame;
+use otlp::profiling::*;
 use std::time::Duration;
 
 #[tokio::test]
@@ -75,7 +75,10 @@ async fn test_cpu_profiler_generate_profile() {
 
     let profile = profile.unwrap();
     assert!(!profile.sample.is_empty(), "Profile should have samples");
-    assert!(!profile.string_table.is_empty(), "String table should not be empty");
+    assert!(
+        !profile.string_table.is_empty(),
+        "String table should not be empty"
+    );
     assert!(!profile.sample_type.is_empty(), "Should have sample types");
 }
 
@@ -144,9 +147,15 @@ async fn test_profile_builder() {
     let pprof = PprofProfile::new();
 
     let profile = ProfileBuilder::new(profile_id.clone())
-        .attribute("service.name", AttributeValue::String("test-service".to_string()))
+        .attribute(
+            "service.name",
+            AttributeValue::String("test-service".to_string()),
+        )
         .attribute("environment", AttributeValue::String("test".to_string()))
-        .link_to_span(vec![1, 2, 3, 4, 5, 6, 7, 8], vec![9, 10, 11, 12, 13, 14, 15, 16])
+        .link_to_span(
+            vec![1, 2, 3, 4, 5, 6, 7, 8],
+            vec![9, 10, 11, 12, 13, 14, 15, 16],
+        )
         .build(pprof);
 
     assert_eq!(profile.profile_id, profile_id);
@@ -337,10 +346,16 @@ async fn test_memory_profiler_stats_calculations() {
 
     // Check calculations
     assert_eq!(stats.allocation_count, 10);
-    assert_eq!(stats.total_allocated, (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10) * 1024);
+    assert_eq!(
+        stats.total_allocated,
+        (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10) * 1024
+    );
 
     let avg_size = stats.average_allocation_size();
-    assert!((avg_size - 5632.0).abs() < 1.0, "Average should be ~5632 bytes");
+    assert!(
+        (avg_size - 5632.0).abs() < 1.0,
+        "Average should be ~5632 bytes"
+    );
 
     let rate = stats.allocation_rate();
     assert!(rate > 0.0, "Allocation rate should be positive");
@@ -386,4 +401,3 @@ async fn test_concurrent_profilers() {
     assert!(cpu_stats.sample_count > 0);
     assert_eq!(mem_stats.allocation_count, 1);
 }
-

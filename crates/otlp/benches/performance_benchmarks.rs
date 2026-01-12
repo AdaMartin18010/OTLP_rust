@@ -4,7 +4,7 @@
 //
 // 注意: 需要在 Cargo.toml 中启用 bench 功能
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 use std::time::Duration;
 use tokio::runtime::Runtime;
@@ -15,17 +15,17 @@ use otlp::core::{PerformanceOptimizer, ReliabilityManager};
 /// 对象池性能基准测试
 pub fn bench_object_pool(c: &mut Criterion) {
     let mut group = c.benchmark_group("object_pool");
-    
+
     // 创建运行时用于异步操作
     let rt = Runtime::new().unwrap();
-    
+
     for size in [10, 50, 100].iter() {
         group.bench_with_input(
             BenchmarkId::new("acquire_release", size),
             size,
             |b, &_size| {
                 let optimizer = PerformanceOptimizer::new();
-                
+
                 b.iter(|| {
                     rt.block_on(async {
                         // 模拟对象池的获取和释放操作
@@ -36,22 +36,22 @@ pub fn bench_object_pool(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
 /// 压缩性能基准测试
 pub fn bench_compression(c: &mut Criterion) {
     let mut group = c.benchmark_group("compression");
-    
+
     // 创建运行时
     let rt = Runtime::new().unwrap();
     let optimizer = PerformanceOptimizer::new();
-    
+
     // 测试不同数据大小的压缩性能
     for data_size in [1024, 4096, 16384, 65536].iter() {
         let data = vec![0u8; *data_size];
-        
+
         group.bench_with_input(
             BenchmarkId::new("compression", data_size),
             &data,
@@ -66,16 +66,16 @@ pub fn bench_compression(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
 /// 批处理性能基准测试
 pub fn bench_batching(c: &mut Criterion) {
     let mut group = c.benchmark_group("batching");
-    
+
     let optimizer = PerformanceOptimizer::new();
-    
+
     for batch_size in [10, 50, 100, 500].iter() {
         group.bench_with_input(
             BenchmarkId::new("should_batch", batch_size),
@@ -89,7 +89,7 @@ pub fn bench_batching(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -97,87 +97,88 @@ pub fn bench_batching(c: &mut Criterion) {
 pub fn bench_retry(c: &mut Criterion) {
     let mut group = c.benchmark_group("retry");
     group.measurement_time(Duration::from_secs(10));
-    
+
     let rt = Runtime::new().unwrap();
-    
+
     group.bench_function("retry_success", |b| {
         let manager = ReliabilityManager::new();
-        
+
         b.iter(|| {
             rt.block_on(async {
                 // 测试成功场景的重试开销
-                let result = manager.retry(|| async {
-                    Ok::<_, String>("success")
-                }).await.ok();
+                let result = manager
+                    .retry(|| async { Ok::<_, String>("success") })
+                    .await
+                    .ok();
                 black_box(result);
             });
         });
     });
-    
+
     group.bench_function("retry_with_timeout", |b| {
         let manager = ReliabilityManager::new();
-        
+
         b.iter(|| {
             rt.block_on(async {
                 // 测试带超时的重试
-                let result = manager.retry_with_timeout(
-                    || async { Ok::<_, String>("success") },
-                    Duration::from_secs(5),
-                ).await.ok();
+                let result = manager
+                    .retry_with_timeout(
+                        || async { Ok::<_, String>("success") },
+                        Duration::from_secs(5),
+                    )
+                    .await
+                    .ok();
                 black_box(result);
             });
         });
     });
-    
+
     group.finish();
 }
 
 /// 熔断器性能基准测试
 pub fn bench_circuit_breaker(c: &mut Criterion) {
     let mut group = c.benchmark_group("circuit_breaker");
-    
+
     let rt = Runtime::new().unwrap();
-    
+
     group.bench_function("record_success", |b| {
         let manager = ReliabilityManager::new();
-        
+
         b.iter(|| {
             rt.block_on(async {
                 // 测试记录成功的性能开销
-                let _result = manager.retry(|| async {
-                    Ok::<_, String>("success")
-                }).await;
+                let _result = manager.retry(|| async { Ok::<_, String>("success") }).await;
             });
         });
     });
-    
+
     group.bench_function("fallback", |b| {
         let manager = ReliabilityManager::new();
-        
+
         b.iter(|| {
             rt.block_on(async {
                 // 测试 fallback 机制的性能
-                let result = manager.with_fallback(
-                    || async { Some("primary") },
-                    || async { "fallback" },
-                ).await;
+                let result = manager
+                    .with_fallback(|| async { Some("primary") }, || async { "fallback" })
+                    .await;
                 black_box(result);
             });
         });
     });
-    
+
     group.finish();
 }
 
 /// 统计信息访问性能基准测试
 pub fn bench_stats_access(c: &mut Criterion) {
     let mut group = c.benchmark_group("stats_access");
-    
+
     let rt = Runtime::new().unwrap();
-    
+
     group.bench_function("get_performance_stats", |b| {
         let optimizer = PerformanceOptimizer::new();
-        
+
         b.iter(|| {
             rt.block_on(async {
                 let stats = optimizer.stats().await;
@@ -185,10 +186,10 @@ pub fn bench_stats_access(c: &mut Criterion) {
             });
         });
     });
-    
+
     group.bench_function("get_reliability_stats", |b| {
         let manager = ReliabilityManager::new();
-        
+
         b.iter(|| {
             rt.block_on(async {
                 let stats = manager.stats().await;
@@ -196,28 +197,28 @@ pub fn bench_stats_access(c: &mut Criterion) {
             });
         });
     });
-    
+
     group.finish();
 }
 
 /// 配置操作性能基准测试
 pub fn bench_config_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("config_operations");
-    
+
     group.bench_function("create_performance_optimizer", |b| {
         b.iter(|| {
             let optimizer = PerformanceOptimizer::new();
             black_box(optimizer);
         });
     });
-    
+
     group.bench_function("create_reliability_manager", |b| {
         b.iter(|| {
             let manager = ReliabilityManager::new();
             black_box(manager);
         });
     });
-    
+
     group.bench_function("access_performance_config", |b| {
         let optimizer = PerformanceOptimizer::new();
         b.iter(|| {
@@ -226,7 +227,7 @@ pub fn bench_config_operations(c: &mut Criterion) {
             black_box(config);
         });
     });
-    
+
     group.finish();
 }
 

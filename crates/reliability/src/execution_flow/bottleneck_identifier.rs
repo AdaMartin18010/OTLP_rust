@@ -52,17 +52,17 @@ impl BottleneckIdentifier {
             _bottlenecks: Vec::new(),
         }
     }
-    
+
     /// 识别瓶颈
     pub fn identify_bottlenecks(&mut self) -> Vec<Bottleneck> {
         Vec::new()
     }
-    
+
     /// 分析慢查询
     pub fn analyze_slow_queries(&self) -> Vec<String> {
         Vec::new()
     }
-    
+
     /// 识别热点代码
     pub fn identify_hot_spots(&self) -> Vec<String> {
         Vec::new()
@@ -74,4 +74,3 @@ impl Default for BottleneckIdentifier {
         Self::new()
     }
 }
-

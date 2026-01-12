@@ -3,11 +3,11 @@
 //! 提供便捷的宏来简化错误处理代码。
 
 /// 创建统一错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = ErrorContext::new("module", "function", "file.rs", 42, ErrorSeverity::Medium, "category");
 /// let error = unified_error!("操作失败", ErrorSeverity::High, "operation", context);
 /// ```
@@ -19,11 +19,11 @@ macro_rules! unified_error {
 }
 
 /// 创建带代码的统一错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = ErrorContext::new("module", "function", "file.rs", 42, ErrorSeverity::Medium, "category");
 /// let error = unified_error_with_code!("操作失败", ErrorSeverity::High, "operation", "OP_001", $context);
 /// ```
@@ -36,11 +36,11 @@ macro_rules! unified_error_with_code {
 }
 
 /// 创建带建议的统一错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = ErrorContext::new("module", "function", "file.rs", 42, ErrorSeverity::Medium, "category");
 /// let error = unified_error_with_suggestion!("操作失败", ErrorSeverity::High, "operation", "请检查输入参数", $context);
 /// ```
@@ -53,11 +53,11 @@ macro_rules! unified_error_with_suggestion {
 }
 
 /// 创建完整的统一错误（包含代码和建议）
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = ErrorContext::new("module", "function", "file.rs", 42, ErrorSeverity::Medium, "category");
 /// let error = unified_error_full!("操作失败", ErrorSeverity::High, "operation", "OP_001", "请检查输入参数", $context);
 /// ```
@@ -71,11 +71,11 @@ macro_rules! unified_error_full {
 }
 
 /// 创建错误上下文
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = error_context!(ErrorSeverity::Medium, "category");
 /// ```
 #[macro_export]
@@ -87,17 +87,17 @@ macro_rules! error_context {
             file!(),
             line!(),
             $severity,
-            $category
+            $category,
         )
     };
 }
 
 /// 创建带标签的错误上下文
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = error_context_with_tags!(ErrorSeverity::Medium, "category", "tag1", "tag2");
 /// ```
 #[macro_export]
@@ -119,11 +119,11 @@ macro_rules! error_context_with_tags {
 }
 
 /// 创建带元数据的错误上下文
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = error_context_with_metadata!(ErrorSeverity::Medium, "category", ("key1", "value1"), ("key2", "value2"));
 /// ```
 #[macro_export]
@@ -145,11 +145,11 @@ macro_rules! error_context_with_metadata {
 }
 
 /// 记录错误到全局监控器
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = error_context!(ErrorSeverity::Medium, "category");
 /// let error = unified_error!("操作失败", ErrorSeverity::High, "operation", context);
 /// log_error!(error);
@@ -162,11 +162,11 @@ macro_rules! log_error {
 }
 
 /// 安全执行操作并记录错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let result = safe_execute!(|| {
 ///     // 可能失败的操作
 ///     Ok::<String, String>("成功".to_string())
@@ -174,35 +174,34 @@ macro_rules! log_error {
 /// ```
 #[macro_export]
 macro_rules! safe_execute {
-    ($operation:expr, $severity:expr, $category:expr) => {
-        {
-            let context = $crate::error_handling::ErrorContext::new(
-                module_path!(),
-                function_name!(),
-                file!(),
-                line!(),
-                $severity,
-                $category
-            );
-            
-            match $operation {
-                Ok(result) => Ok(result),
-                Err(error) => {
-                    let unified_error = $crate::error_handling::UnifiedError::from_std_error(error, context);
-                    $crate::error_handling::GlobalErrorMonitor::record_error(unified_error.clone());
-                    Err(unified_error)
-                }
+    ($operation:expr, $severity:expr, $category:expr) => {{
+        let context = $crate::error_handling::ErrorContext::new(
+            module_path!(),
+            function_name!(),
+            file!(),
+            line!(),
+            $severity,
+            $category,
+        );
+
+        match $operation {
+            Ok(result) => Ok(result),
+            Err(error) => {
+                let unified_error =
+                    $crate::error_handling::UnifiedError::from_std_error(error, context);
+                $crate::error_handling::GlobalErrorMonitor::record_error(unified_error.clone());
+                Err(unified_error)
             }
         }
-    };
+    }};
 }
 
 /// 带重试的安全执行
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let result = safe_execute_with_retry!(|| async {
 ///     // 可能失败的操作
 ///     Ok::<String, String>("成功".to_string())
@@ -210,41 +209,39 @@ macro_rules! safe_execute {
 /// ```
 #[macro_export]
 macro_rules! safe_execute_with_retry {
-    ($operation:expr, $max_attempts:expr, $delay:expr, $severity:expr, $category:expr) => {
-        {
-            let context = $crate::error_handling::ErrorContext::new(
-                module_path!(),
-                function_name!(),
-                file!(),
-                line!(),
-                $severity,
-                $category
-            );
-            
-            let retry_config = $crate::error_handling::RetryConfig {
-                max_attempts: $max_attempts,
-                initial_delay: $delay,
-                backoff_multiplier: 2.0,
-                max_delay: std::time::Duration::from_secs(30),
-                use_jitter: true,
-                jitter_range: 0.1,
-            };
-            
-            let recovery = $crate::error_handling::ErrorRecovery::new(
-                $crate::error_handling::RecoveryStrategy::Retry(retry_config)
-            );
-            
-            recovery.recover(|| $operation).await
-        }
-    };
+    ($operation:expr, $max_attempts:expr, $delay:expr, $severity:expr, $category:expr) => {{
+        let context = $crate::error_handling::ErrorContext::new(
+            module_path!(),
+            function_name!(),
+            file!(),
+            line!(),
+            $severity,
+            $category,
+        );
+
+        let retry_config = $crate::error_handling::RetryConfig {
+            max_attempts: $max_attempts,
+            initial_delay: $delay,
+            backoff_multiplier: 2.0,
+            max_delay: std::time::Duration::from_secs(30),
+            use_jitter: true,
+            jitter_range: 0.1,
+        };
+
+        let recovery = $crate::error_handling::ErrorRecovery::new(
+            $crate::error_handling::RecoveryStrategy::Retry(retry_config),
+        );
+
+        recovery.recover(|| $operation).await
+    }};
 }
 
 /// 验证条件并返回错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let value = 42;
 /// ensure!(value > 0, "值必须大于0", ErrorSeverity::Medium, "validation");
 /// ```
@@ -258,19 +255,21 @@ macro_rules! ensure {
                 file!(),
                 line!(),
                 $severity,
-                $category
+                $category,
             );
-            return Err($crate::error_handling::UnifiedError::new($message, $severity, $category, context));
+            return Err($crate::error_handling::UnifiedError::new(
+                $message, $severity, $category, context,
+            ));
         }
     };
 }
 
 /// 验证条件并返回带代码的错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let value = 42;
 /// ensure_with_code!(value > 0, "值必须大于0", "VAL_001", ErrorSeverity::Medium, "validation");
 /// ```
@@ -284,20 +283,22 @@ macro_rules! ensure_with_code {
                 file!(),
                 line!(),
                 $severity,
-                $category
+                $category,
             );
-            return Err($crate::error_handling::UnifiedError::new($message, $severity, $category, context)
-                .with_code($code));
+            return Err($crate::error_handling::UnifiedError::new(
+                $message, $severity, $category, context,
+            )
+            .with_code($code));
         }
     };
 }
 
 /// 验证Option并返回错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let value: Option<String> = Some("test".to_string());
 /// let result = require!(value, "值不能为空", ErrorSeverity::Medium, "validation");
 /// ```
@@ -313,20 +314,22 @@ macro_rules! require {
                     file!(),
                     line!(),
                     $severity,
-                    $category
+                    $category,
                 );
-                return Err($crate::error_handling::UnifiedError::new($message, $severity, $category, context));
+                return Err($crate::error_handling::UnifiedError::new(
+                    $message, $severity, $category, context,
+                ));
             }
         }
     };
 }
 
 /// 验证Result并返回统一错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let result: Result<String, std::io::Error> = Ok("test".to_string());
 /// let value = require_result!(result, ErrorSeverity::Medium, "io");
 /// ```
@@ -342,20 +345,22 @@ macro_rules! require_result {
                     file!(),
                     line!(),
                     $severity,
-                    $category
+                    $category,
                 );
-                return Err($crate::error_handling::UnifiedError::from_std_error(error, context));
+                return Err($crate::error_handling::UnifiedError::from_std_error(
+                    error, context,
+                ));
             }
         }
     };
 }
 
 /// 创建预定义错误
-/// 
+///
 /// # 示例
 /// ```rust
 /// use c00_reliability::error_handling::*;
-/// 
+///
 /// let context = error_context!(ErrorSeverity::High, "network");
 /// let error = network_error!("连接失败", context);
 /// ```
@@ -445,13 +450,20 @@ macro_rules! function_name {
 #[cfg(test)]
 mod tests {
     //use super::*;
-    use crate::error_handling::{ErrorSeverity, ErrorContext, UnifiedError};
+    use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
 
     #[test]
     fn test_unified_error_macro() {
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
         let error = unified_error!("测试错误", ErrorSeverity::High, "test", context);
-        
+
         assert_eq!(error.message(), "测试错误");
         assert_eq!(error.severity(), ErrorSeverity::High);
         assert_eq!(error.category(), "test");
@@ -459,9 +471,17 @@ mod tests {
 
     #[test]
     fn test_unified_error_with_code_macro() {
-        let context = ErrorContext::new("test", "test_fn", "test.rs", 42, ErrorSeverity::Medium, "test");
-        let error = unified_error_with_code!("测试错误", ErrorSeverity::High, "test", "TEST_001", context);
-        
+        let context = ErrorContext::new(
+            "test",
+            "test_fn",
+            "test.rs",
+            42,
+            ErrorSeverity::Medium,
+            "test",
+        );
+        let error =
+            unified_error_with_code!("测试错误", ErrorSeverity::High, "test", "TEST_001", context);
+
         assert_eq!(error.message(), "测试错误");
         assert_eq!(error.code(), Some("TEST_001"));
     }
@@ -469,7 +489,7 @@ mod tests {
     #[test]
     fn test_error_context_macro() {
         let context = error_context!(ErrorSeverity::Medium, "test");
-        
+
         assert_eq!(context.severity, ErrorSeverity::Medium);
         assert_eq!(context.category, "test");
         assert!(!context.module.is_empty());
@@ -479,7 +499,7 @@ mod tests {
     #[test]
     fn test_error_context_with_tags_macro() {
         let context = error_context_with_tags!(ErrorSeverity::Medium, "test", "tag1", "tag2");
-        
+
         assert_eq!(context.severity, ErrorSeverity::Medium);
         assert_eq!(context.category, "test");
         assert!(context.tags.contains(&"tag1".to_string()));
@@ -488,8 +508,13 @@ mod tests {
 
     #[test]
     fn test_error_context_with_metadata_macro() {
-        let context = error_context_with_metadata!(ErrorSeverity::Medium, "test", ("key1", "value1"), ("key2", "value2"));
-        
+        let context = error_context_with_metadata!(
+            ErrorSeverity::Medium,
+            "test",
+            ("key1", "value1"),
+            ("key2", "value2")
+        );
+
         assert_eq!(context.severity, ErrorSeverity::Medium);
         assert_eq!(context.category, "test");
         assert_eq!(context.metadata.get("key1"), Some(&"value1".to_string()));
@@ -500,18 +525,28 @@ mod tests {
     fn test_ensure_macro() {
         let result = (|| -> Result<(), UnifiedError> {
             let value = 42;
-            ensure!(value > 0, "值必须大于0", ErrorSeverity::Medium, "validation");
+            ensure!(
+                value > 0,
+                "值必须大于0",
+                ErrorSeverity::Medium,
+                "validation"
+            );
             Ok(())
         })();
-        
+
         assert!(result.is_ok());
-        
+
         let result = (|| -> Result<(), UnifiedError> {
             let value = -1;
-            ensure!(value > 0, "值必须大于0", ErrorSeverity::Medium, "validation");
+            ensure!(
+                value > 0,
+                "值必须大于0",
+                ErrorSeverity::Medium,
+                "validation"
+            );
             Ok(())
         })();
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert!(error.message().contains("值必须大于0"));
@@ -524,16 +559,16 @@ mod tests {
             let result = require!(value, "值不能为空", ErrorSeverity::Medium, "validation");
             Ok(result)
         })();
-        
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "test");
-        
+
         let result = (|| -> Result<String, UnifiedError> {
             let value: Option<String> = None;
             let result = require!(value, "值不能为空", ErrorSeverity::Medium, "validation");
             Ok(result)
         })();
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert!(error.message().contains("值不能为空"));
@@ -543,7 +578,7 @@ mod tests {
     fn test_predefined_error_macros() {
         let context = error_context!(ErrorSeverity::High, "network");
         let error = network_error!("连接失败", context);
-        
+
         assert_eq!(error.category(), "network");
         assert_eq!(error.code(), Some("NET_001"));
         assert!(error.suggestion().unwrap().contains("网络连接"));

@@ -135,7 +135,7 @@ impl Default for GossipConfig {
             gossip_interval_ms: 1000,
             fanout: 3,
             anti_entropy_interval_ms: 10000,
-            max_message_size: 1024 * 1024, // 1MB
+            max_message_size: 1024 * 1024,       // 1MB
             data_ttl: Duration::from_secs(3600), // 1 hour
         }
     }

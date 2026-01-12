@@ -18,11 +18,11 @@
 //!
 //! async fn parallel_sum() {
 //!     let pool = ForkJoinPool::new(4);
-//!     
+//!
 //!     // 并行计算数组和
 //!     let data = vec![1, 2, 3, 4, 5, 6, 7, 8];
 //!     let task = SumTask::new(data);
-//!     
+//!
 //!     let result = pool.invoke(task).await;2
 //!     println!("Sum: {}", result);
 //! }
@@ -30,10 +30,10 @@
 
 use async_trait::async_trait;
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
-use tokio::sync::{Mutex, Notify};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
+use tokio::sync::{Mutex, Notify};
 
 use crate::error_handling::prelude::*;
 
@@ -204,7 +204,7 @@ impl Worker {
         if other.id == self.id {
             return None;
         }
-        
+
         other.local_queue.steal().await
     }
 
@@ -305,10 +305,8 @@ impl ForkJoinPool {
     /// 使用配置创建线程池
     #[allow(dead_code)]
     pub fn with_config(config: ForkJoinPoolConfig) -> Arc<Self> {
-        let workers: Vec<Worker> = (0..config.parallelism)
-            .map(|id| Worker::new(id))
-            .collect();
-        
+        let workers: Vec<Worker> = (0..config.parallelism).map(|id| Worker::new(id)).collect();
+
         Arc::new(Self {
             config,
             workers: Arc::new(workers),
@@ -347,30 +345,32 @@ impl ForkJoinPool {
         }
 
         let task_id = self.next_task_id.fetch_add(1, Ordering::SeqCst);
-        
+
         // 选择负载最小的工作线程
         let worker = self.select_worker().await;
         worker.submit_local(task_id).await;
-        
+
         self.active_tasks.fetch_add(1, Ordering::SeqCst);
-        
+
         let mut stats = self.stats.lock().await;
         stats.total_submitted += 1;
-        
+
         Ok(task_id)
     }
 
     /// 等待任务完成
     async fn await_task<T: Send + Sync>(&self, _task_id: TaskId) -> Result<T> {
         // 简化实现：实际应该等待任务完成并返回结果
-        Err(UnifiedError::state_error("Task result retrieval not fully implemented"))
+        Err(UnifiedError::state_error(
+            "Task result retrieval not fully implemented",
+        ))
     }
 
     /// 选择工作线程（负载均衡）
     async fn select_worker(&self) -> &Worker {
         let mut min_load = usize::MAX;
         let mut selected = 0;
-        
+
         for (idx, worker) in self.workers.iter().enumerate() {
             let load = worker.local_queue.len().await;
             if load < min_load {
@@ -378,7 +378,7 @@ impl ForkJoinPool {
                 selected = idx;
             }
         }
-        
+
         &self.workers[selected]
     }
 
@@ -404,7 +404,7 @@ impl ForkJoinPool {
     /// 关闭线程池
     pub async fn shutdown(&self) {
         self.shutdown.store(true, Ordering::SeqCst);
-        
+
         // 等待所有任务完成
         while self.active_tasks.load(Ordering::SeqCst) > 0 {
             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -459,12 +459,12 @@ impl ForkJoinTask for RecursiveSumTask {
         if self.should_fork() {
             let subtasks = self.fork()?;
             let mut results = Vec::new();
-            
+
             for subtask in subtasks {
                 let result = subtask.compute().await?;
                 results.push(result);
             }
-            
+
             self.join(results)
         } else {
             // 直接计算
@@ -480,7 +480,7 @@ impl ForkJoinTask for RecursiveSumTask {
         let mid = self.data.len() / 2;
         let left = self.data[..mid].to_vec();
         let right = self.data[mid..].to_vec();
-        
+
         Ok(vec![
             Box::new(RecursiveSumTask {
                 data: left,
@@ -535,16 +535,21 @@ where
         if self.should_fork() {
             let subtasks = self.fork()?;
             let mut all_results = Vec::new();
-            
+
             for subtask in subtasks {
                 let result = subtask.compute().await?;
                 all_results.extend(result);
             }
-            
+
             Ok(all_results)
         } else {
             // 直接映射
-            Ok(self.data.iter().cloned().map(|x| (self.map_fn)(x)).collect())
+            Ok(self
+                .data
+                .iter()
+                .cloned()
+                .map(|x| (self.map_fn)(x))
+                .collect())
         }
     }
 
@@ -556,7 +561,7 @@ where
         let mid = self.data.len() / 2;
         let left = self.data[..mid].to_vec();
         let right = self.data[mid..].to_vec();
-        
+
         Ok(vec![
             Box::new(ParallelMapTask {
                 data: left,
@@ -591,20 +596,20 @@ mod tests {
     async fn test_recursive_sum_task() {
         let data: Vec<i64> = (1..=1000).collect();
         let expected: i64 = data.iter().sum();
-        
+
         let task = RecursiveSumTask::new(data);
         let result = task.compute().await.unwrap();
-        
+
         assert_eq!(result, expected);
     }
 
     #[tokio::test]
     async fn test_parallel_map_task() {
         let data: Vec<i32> = (1..=100).collect();
-        
+
         let task = ParallelMapTask::new(data.clone(), |x| x * 2);
         let result = task.compute().await.unwrap();
-        
+
         let expected: Vec<i32> = data.iter().map(|x| x * 2).collect();
         assert_eq!(result, expected);
     }
@@ -612,11 +617,11 @@ mod tests {
     #[tokio::test]
     async fn test_work_stealing_deque() {
         let deque = WorkStealingDeque::new();
-        
+
         deque.push_front(1).await;
         deque.push_front(2).await;
         deque.push_front(3).await;
-        
+
         assert_eq!(deque.pop_front().await, Some(3));
         assert_eq!(deque.steal().await, Some(1));
         assert_eq!(deque.pop_front().await, Some(2));
@@ -627,9 +632,8 @@ mod tests {
     async fn test_pool_stats() {
         let pool = ForkJoinPool::new(2);
         let stats = pool.get_stats().await;
-        
+
         assert_eq!(stats.total_submitted, 0);
         assert_eq!(stats.total_completed, 0);
     }
 }
-

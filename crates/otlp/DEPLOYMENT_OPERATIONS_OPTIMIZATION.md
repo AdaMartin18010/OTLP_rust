@@ -2,9 +2,9 @@
 
 ## 📋 优化概览
 
-**优化目标**: 实现云原生部署、自动化运维、高可用性和可观测性  
-**优化范围**: 容器化、Kubernetes、监控告警、CI/CD、安全加固  
-**实施周期**: 4-6周  
+**优化目标**: 实现云原生部署、自动化运维、高可用性和可观测性
+**优化范围**: 容器化、Kubernetes、监控告警、CI/CD、安全加固
+**实施周期**: 4-6周
 **预期收益**: 企业级生产环境部署标准
 
 ## 🎯 云原生部署架构
@@ -183,16 +183,16 @@ data:
     protocol = "grpc"
     batch_size = 100
     timeout = "5s"
-    
+
     [resilience]
     max_retries = 3
     retry_delay = "100ms"
     circuit_breaker_threshold = 5
-    
+
     [monitoring]
     metrics_enabled = true
     health_check_interval = "30s"
-    
+
   logging.yaml: |
     version: 1
     disable_existing_loggers: false
@@ -431,10 +431,10 @@ data:
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
-    
+
     rule_files:
       - "otlp_rules.yml"
-    
+
     scrape_configs:
     - job_name: 'otlp-client'
       kubernetes_sd_configs:
@@ -463,7 +463,7 @@ data:
       - source_labels: [__meta_kubernetes_service_name]
         action: replace
         target_label: kubernetes_name
-    
+
     alerting:
       alertmanagers:
       - static_configs:
@@ -486,7 +486,7 @@ groups:
     annotations:
       summary: "OTLP Client is down"
       description: "OTLP Client has been down for more than 1 minute."
-  
+
   - alert: OTLPClientHighErrorRate
     expr: rate(otlp_requests_failed_total[5m]) / rate(otlp_requests_total[5m]) > 0.1
     for: 2m
@@ -495,7 +495,7 @@ groups:
     annotations:
       summary: "OTLP Client high error rate"
       description: "OTLP Client error rate is {{ $value | humanizePercentage }} for more than 2 minutes."
-  
+
   - alert: OTLPClientHighLatency
     expr: histogram_quantile(0.95, rate(otlp_request_duration_seconds_bucket[5m])) > 1
     for: 3m
@@ -504,7 +504,7 @@ groups:
     annotations:
       summary: "OTLP Client high latency"
       description: "OTLP Client 95th percentile latency is {{ $value }}s for more than 3 minutes."
-  
+
   - alert: OTLPClientCircuitBreakerOpen
     expr: otlp_circuit_breaker_state == 1
     for: 30s
@@ -594,13 +594,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.90
         components: rustfmt, clippy
-    
+
     - name: Cache dependencies
       uses: actions/cache@v3
       with:
@@ -609,24 +609,24 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    
+
     - name: Run tests
       run: |
         cargo test --lib
         cargo test --test integration_tests
         cargo test --test e2e_tests
-    
+
     - name: Run clippy
       run: cargo clippy -- -D warnings
-    
+
     - name: Run fmt check
       run: cargo fmt -- --check
-    
+
     - name: Generate coverage
       run: |
         cargo install cargo-tarpaulin
         cargo tarpaulin --out Html --output-dir coverage
-    
+
     - name: Upload coverage
       uses: codecov/codecov-action@v3
       with:
@@ -636,19 +636,19 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
-    
+
     - name: Login to Docker Hub
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-    
+
     - name: Build and push
       uses: docker/build-push-action@v4
       with:
@@ -663,21 +663,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Configure kubectl
       uses: azure/k8s-set-context@v3
       with:
         method: kubeconfig
         kubeconfig: ${{ secrets.KUBE_CONFIG }}
-    
+
     - name: Deploy to Kubernetes
       run: |
         kubectl set image deployment/otlp-client otlp-client=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n otlp-system
         kubectl rollout status deployment/otlp-client -n otlp-system
-    
+
     - name: Run smoke tests
       run: |
         kubectl run smoke-test --image=curlimages/curl --rm -i --restart=Never -- \
@@ -1011,6 +1011,6 @@ kubectl get events -n $NAMESPACE --sort-by='.lastTimestamp' | grep otlp-client
 
 ---
 
-**部署负责人**: OTLP Rust 团队  
-**预计完成时间**: 2025年4月  
+**部署负责人**: OTLP Rust 团队
+**预计完成时间**: 2025年4月
 **状态**: 🚀 进行中

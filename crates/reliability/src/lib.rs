@@ -28,13 +28,13 @@
 //! async fn main() -> Result<(), UnifiedError> {
 //!     // 初始化监控
 //!     let health_checker = HealthChecker::new();
-//!     
+//!
 //!     // 创建断路器
 //!     let circuit_breaker = CircuitBreaker::new(5, Duration::from_secs(60));
-//!     
+//!
 //!     // 创建重试策略
 //!     let retry_policy = RetryPolicy::exponential_backoff(3, Duration::from_millis(100));
-//!     
+//!
 //!     // 执行带容错的操作
 //!     let result = circuit_breaker
 //!         .with_retry(retry_policy)
@@ -43,7 +43,7 @@
 //!             Ok::<String, UnifiedError>("success".to_string())
 //!         })
 //!         .await?;
-//!     
+//!
 //!     println!("操作结果: {}", result);
 //!     Ok(())
 //! }
@@ -58,15 +58,15 @@
 //! async fn main() -> Result<(), UnifiedError> {
 //!     // 演示Rust 1.90新特性
 //!     let demo = Rust190FeatureDemo::new();
-//!     
+//!
 //!     // 异步闭包示例
 //!     let results = demo.demonstrate_async_closures().await?;
 //!     println!("异步闭包结果: {:?}", results);
-//!     
+//!
 //!     // 泛型关联类型示例
 //!     let operation_result = demo.demonstrate_generic_associated_types();
 //!     println!("泛型关联类型结果: {:?}", operation_result);
-//!     
+//!
 //!     // 高级异步组合器
 //!     let combinator = AdvancedAsyncCombinator;
 //!     let chain_result = combinator.create_operation_chain(
@@ -77,18 +77,18 @@
 //!         ]
 //!     ).await?;
 //!     println!("操作链结果: {}", chain_result);
-//!     
+//!
 //!     Ok(())
 //! }
 //! ```
 
 // 核心模块
-pub mod error_handling;
-pub mod fault_tolerance;
-pub mod runtime_monitoring;
 pub mod chaos_engineering;
 pub mod config;
+pub mod error_handling;
+pub mod fault_tolerance;
 pub mod metrics;
+pub mod runtime_monitoring;
 pub mod utils;
 
 // 运行时环境支持
@@ -123,39 +123,39 @@ pub mod benchmarking;
 
 // 重新导出常用类型和函数
 pub mod prelude {
-    pub use crate::error_handling::{
-        UnifiedError, ErrorContext, ErrorSeverity, ResultExt, 
-        ErrorRecovery, ErrorMonitor, GlobalErrorMonitor
-    };
-    pub use crate::fault_tolerance::{
-        CircuitBreaker, RetryPolicy, Bulkhead, Timeout, Fallback,
-        FaultToleranceConfig, ResilienceBuilder
-    };
-    pub use crate::runtime_monitoring::{
-        HealthChecker, ResourceMonitor, PerformanceMonitor, 
-        AnomalyDetector, AutoRecovery, MonitoringDashboard, MonitoringConfig
-    };
     pub use crate::chaos_engineering::{
-        FaultInjector, ChaosScenarios, ResilienceTester, RecoveryTester
+        ChaosScenarios, FaultInjector, RecoveryTester, ResilienceTester,
     };
     pub use crate::config::ReliabilityConfig;
+    pub use crate::error_handling::{
+        ErrorContext, ErrorMonitor, ErrorRecovery, ErrorSeverity, GlobalErrorMonitor, ResultExt,
+        UnifiedError,
+    };
+    pub use crate::fault_tolerance::{
+        Bulkhead, CircuitBreaker, Fallback, FaultToleranceConfig, ResilienceBuilder, RetryPolicy,
+        Timeout,
+    };
     pub use crate::metrics::ReliabilityMetrics;
-    pub use crate::utils::{DurationExt, ResultExt as UtilsResultExt};
     pub use crate::runtime_environments::{
-        RuntimeEnvironment, RuntimeEnvironmentManager, RuntimeEnvironmentAdapter,
-        EnvironmentCapabilities, SystemInfo, ResourceUsage, HealthStatus, HealthLevel,
-        RecoveryType, OSEnvironmentAdapter, EmbeddedEnvironmentAdapter, ContainerEnvironmentAdapter
+        ContainerEnvironmentAdapter, EmbeddedEnvironmentAdapter, EnvironmentCapabilities,
+        HealthLevel, HealthStatus, OSEnvironmentAdapter, RecoveryType, ResourceUsage,
+        RuntimeEnvironment, RuntimeEnvironmentAdapter, RuntimeEnvironmentManager, SystemInfo,
+    };
+    pub use crate::runtime_monitoring::{
+        AnomalyDetector, AutoRecovery, HealthChecker, MonitoringConfig, MonitoringDashboard,
+        PerformanceMonitor, ResourceMonitor,
     };
     pub use crate::rust_190_features::{
-        Rust190FeatureDemo, AsyncClosureExample, GenericAssociatedTypeExample,
-        AdvancedAsyncCombinator, ReliabilityService, OperationResult, OperationMetadata
+        AdvancedAsyncCombinator, AsyncClosureExample, GenericAssociatedTypeExample,
+        OperationMetadata, OperationResult, ReliabilityService, Rust190FeatureDemo,
     };
-    
+    pub use crate::utils::{DurationExt, ResultExt as UtilsResultExt};
+
     // 常用标准库类型
-    pub use std::time::Duration;
-    pub use std::sync::Arc;
     pub use anyhow::Result;
-    pub use tracing::{info, warn, error, debug, trace};
+    pub use std::sync::Arc;
+    pub use std::time::Duration;
+    pub use tracing::{debug, error, info, trace, warn};
 }
 
 // 版本信息
@@ -173,37 +173,37 @@ pub fn name() -> &'static str {
 }
 
 /// 初始化可靠性框架
-/// 
+///
 /// 这个函数会初始化全局错误监控、指标收集和健康检查系统
 pub async fn init() -> Result<(), crate::error_handling::UnifiedError> {
     // 初始化全局错误监控
     crate::error_handling::GlobalErrorMonitor::init().await?;
-    
+
     // 初始化指标收集
     // crate::metrics::ReliabilityMetrics::init().await?;
-    
+
     // 初始化健康检查
     crate::runtime_monitoring::GlobalHealthChecker::init_global().await?;
-    
+
     tracing::info!("可靠性框架初始化完成");
     Ok(())
 }
 
 /// 优雅关闭可靠性框架
-/// 
+///
 /// 这个函数会清理资源、保存指标数据并关闭监控系统
 pub async fn shutdown() -> Result<(), crate::error_handling::UnifiedError> {
     tracing::info!("开始关闭可靠性框架");
-    
+
     // 保存指标数据
     // crate::metrics::ReliabilityMetrics::shutdown().await?;
-    
+
     // 关闭健康检查
     crate::runtime_monitoring::GlobalHealthChecker::shutdown_global().await?;
-    
+
     // 关闭全局错误监控
     crate::error_handling::GlobalErrorMonitor::shutdown().await?;
-    
+
     tracing::info!("可靠性框架关闭完成");
     Ok(())
 }

@@ -1,7 +1,7 @@
 //! # Complete Istio Integration for OTLP
-//! 
+//!
 //! 完整的Istio服务网格集成示例，展示OTLP在Istio环境中的深度集成
-//! 
+//!
 //! ## 集成功能
 //! - **EnvoyFilter**: 自定义Envoy配置
 //! - **Telemetry v2**: Istio新版遥测
@@ -9,13 +9,13 @@
 //! - **Metrics收集**: RED指标
 //! - **访问日志**: 结构化日志
 //! - **故障注入**: 测试弹性
-//! 
+//!
 //! ## Istio组件
 //! - Envoy Proxy (Sidecar)
 //! - Pilot (控制平面)
 //! - Mixer (遥测收集)
 //! - Galley (配置管理)
-//! 
+//!
 //! ## 使用场景
 //! - 微服务可观测性
 //! - 服务网格监控
@@ -218,32 +218,30 @@ pub fn create_otlp_tracing_envoyfilter() -> EnvoyFilter {
         },
         spec: EnvoyFilterSpec {
             workload_selector: WorkloadSelector { labels },
-            config_patches: vec![
-                ConfigPatch {
-                    apply_to: "HTTP_FILTER".to_string(),
-                    match_config: MatchConfig {
-                        context: "SIDECAR_INBOUND".to_string(),
-                        listener: Some(ListenerMatch {
-                            filter_chain: FilterChainMatch {
-                                filter: FilterMatch {
-                                    name: "envoy.filters.network.http_connection_manager".to_string(),
-                                },
+            config_patches: vec![ConfigPatch {
+                apply_to: "HTTP_FILTER".to_string(),
+                match_config: MatchConfig {
+                    context: "SIDECAR_INBOUND".to_string(),
+                    listener: Some(ListenerMatch {
+                        filter_chain: FilterChainMatch {
+                            filter: FilterMatch {
+                                name: "envoy.filters.network.http_connection_manager".to_string(),
                             },
-                        }),
-                    },
-                    patch: Patch {
-                        operation: "INSERT_BEFORE".to_string(),
-                        value: json!({
-                            "name": "envoy.filters.http.grpc_stats",
-                            "typed_config": {
-                                "@type": "type.googleapis.com/envoy.extensions.filters.http.grpc_stats.v3.FilterConfig",
-                                "emit_filter_state": true,
-                                "stats_for_all_methods": true
-                            }
-                        }),
-                    },
+                        },
+                    }),
                 },
-            ],
+                patch: Patch {
+                    operation: "INSERT_BEFORE".to_string(),
+                    value: json!({
+                        "name": "envoy.filters.http.grpc_stats",
+                        "typed_config": {
+                            "@type": "type.googleapis.com/envoy.extensions.filters.http.grpc_stats.v3.FilterConfig",
+                            "emit_filter_state": true,
+                            "stats_for_all_methods": true
+                        }
+                    }),
+                },
+            }],
         },
     }
 }
@@ -606,10 +604,22 @@ pub fn create_destination_rule_with_circuit_breaker() -> DestinationRule {
 
 pub fn generate_complete_istio_otlp_config() -> String {
     let configs = vec![
-        ("EnvoyFilter", serde_yaml::to_string(&create_otlp_tracing_envoyfilter()).unwrap()),
-        ("Telemetry", serde_yaml::to_string(&create_otlp_telemetry()).unwrap()),
-        ("VirtualService", serde_yaml::to_string(&create_canary_virtual_service()).unwrap()),
-        ("DestinationRule", serde_yaml::to_string(&create_destination_rule_with_circuit_breaker()).unwrap()),
+        (
+            "EnvoyFilter",
+            serde_yaml::to_string(&create_otlp_tracing_envoyfilter()).unwrap(),
+        ),
+        (
+            "Telemetry",
+            serde_yaml::to_string(&create_otlp_telemetry()).unwrap(),
+        ),
+        (
+            "VirtualService",
+            serde_yaml::to_string(&create_canary_virtual_service()).unwrap(),
+        ),
+        (
+            "DestinationRule",
+            serde_yaml::to_string(&create_destination_rule_with_circuit_breaker()).unwrap(),
+        ),
     ];
 
     configs
@@ -629,27 +639,42 @@ fn main() {
     // 1. EnvoyFilter for OTLP Tracing
     println!("📝 1. EnvoyFilter for OTLP Tracing:");
     println!("---");
-    println!("{}", serde_yaml::to_string(&create_otlp_tracing_envoyfilter()).unwrap());
+    println!(
+        "{}",
+        serde_yaml::to_string(&create_otlp_tracing_envoyfilter()).unwrap()
+    );
 
     // 2. Telemetry v2 Configuration
     println!("\n📝 2. Telemetry v2 Configuration:");
     println!("---");
-    println!("{}", serde_yaml::to_string(&create_otlp_telemetry()).unwrap());
+    println!(
+        "{}",
+        serde_yaml::to_string(&create_otlp_telemetry()).unwrap()
+    );
 
     // 3. MeshConfig Extension Provider
     println!("\n📝 3. MeshConfig OTLP Extension Provider:");
     println!("---");
-    println!("{}", serde_yaml::to_string(&create_otlp_extension_provider_config()).unwrap());
+    println!(
+        "{}",
+        serde_yaml::to_string(&create_otlp_extension_provider_config()).unwrap()
+    );
 
     // 4. Canary Deployment Virtual Service
     println!("\n📝 4. Canary Deployment Virtual Service:");
     println!("---");
-    println!("{}", serde_yaml::to_string(&create_canary_virtual_service()).unwrap());
+    println!(
+        "{}",
+        serde_yaml::to_string(&create_canary_virtual_service()).unwrap()
+    );
 
     // 5. Destination Rule with Circuit Breaker
     println!("\n📝 5. Destination Rule with Circuit Breaker:");
     println!("---");
-    println!("{}", serde_yaml::to_string(&create_destination_rule_with_circuit_breaker()).unwrap());
+    println!(
+        "{}",
+        serde_yaml::to_string(&create_destination_rule_with_circuit_breaker()).unwrap()
+    );
 
     // Complete Configuration
     println!("\n📦 Complete Configuration File:");
@@ -664,4 +689,3 @@ fn main() {
     println!("   kubectl get envoyfilter -A");
     println!("   kubectl get virtualservice");
 }
-

@@ -1,7 +1,7 @@
 // ! # 共识算法类型定义
 
+use super::{LogEntry, NodeId};
 use serde::{Deserialize, Serialize};
-use super::{NodeId, LogEntry};
 
 /// RequestVote RPC 请求
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,4 +95,3 @@ pub enum RaftMessage {
     /// 安装快照响应
     InstallSnapshotResponse(InstallSnapshotResponse),
 }
-

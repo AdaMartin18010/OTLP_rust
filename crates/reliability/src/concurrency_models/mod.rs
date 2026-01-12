@@ -8,8 +8,8 @@
 
 pub mod actor;
 pub mod csp;
-pub mod stm;
 pub mod fork_join;
+pub mod stm;
 
 // Re-export commonly used types
 pub use actor::{
@@ -22,13 +22,10 @@ pub use csp::{
     fan_in, fan_out,
 };
 
-pub use stm::{
-    TVar, Transaction, STMRuntime, STMStats, atomically, atomic,
-};
+pub use stm::{STMRuntime, STMStats, TVar, Transaction, atomic, atomically};
 
 pub use fork_join::{
-    ForkJoinPool, ForkJoinTask, ForkJoinPoolConfig, PoolStats,
-    RecursiveSumTask, ParallelMapTask,
+    ForkJoinPool, ForkJoinPoolConfig, ForkJoinTask, ParallelMapTask, PoolStats, RecursiveSumTask,
 };
 
 /// Concurrency pattern trait
@@ -66,7 +63,7 @@ impl Default for ConcurrencyConfig {
 /// Utility functions for concurrency
 pub mod utils {
     use std::future::Future;
-    use tokio::time::{timeout, Duration};
+    use tokio::time::{Duration, timeout};
 
     /// Run a future with timeout
     pub async fn with_timeout<F, T>(
@@ -109,4 +106,3 @@ mod tests {
         assert!(utils::num_physical_cores() > 0);
     }
 }
-

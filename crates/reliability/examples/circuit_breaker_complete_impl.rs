@@ -1,19 +1,19 @@
 //! # Complete Circuit Breaker Implementation
-//! 
+//!
 //! 完整的熔断器模式实现，包含多种熔断策略和真实场景应用
-//! 
+//!
 //! ## 熔断器状态
 //! - **Closed**: 正常状态，请求正常通过
 //! - **Open**: 熔断状态，快速失败
 //! - **HalfOpen**: 半开状态，尝试恢复
-//! 
+//!
 //! ## 熔断策略
 //! - 基于错误率
 //! - 基于错误数量
 //! - 基于慢调用率
 //! - 基于超时
 //! - 组合策略
-//! 
+//!
 //! ## 高级特性
 //! - 滑动窗口统计
 //! - 指数退避
@@ -21,12 +21,15 @@
 //! - 监控和告警
 //! - 分布式熔断
 
-use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 use std::time::{Duration, Instant};
+use thiserror::Error;
 use tokio::sync::{RwLock, Semaphore};
 use tokio::time::{sleep, timeout};
-use tracing::{info, warn, error, instrument};
-use thiserror::Error;
+use tracing::{error, info, instrument, warn};
 
 // ============================================================================
 // Part 1: Core Circuit Breaker Types
@@ -53,13 +56,13 @@ impl std::fmt::Display for CircuitState {
 pub enum CircuitError {
     #[error("Circuit is open")]
     CircuitOpen,
-    
+
     #[error("Operation timeout")]
     Timeout,
-    
+
     #[error("Operation failed: {0}")]
     OperationFailed(String),
-    
+
     #[error("Max retries exceeded")]
     MaxRetriesExceeded,
 }
@@ -72,25 +75,25 @@ pub enum CircuitError {
 pub struct CircuitBreakerConfig {
     /// 失败阈值（百分比，0-100）
     pub failure_threshold_percentage: f64,
-    
+
     /// 最小请求数（达到此数量后才开始计算阈值）
     pub minimum_request_threshold: u64,
-    
+
     /// 滑动窗口大小（秒）
     pub sliding_window_size: Duration,
-    
+
     /// 熔断后等待时间
     pub wait_duration_in_open_state: Duration,
-    
+
     /// 半开状态允许的请求数
     pub permitted_requests_in_half_open: u32,
-    
+
     /// 操作超时时间
     pub timeout_duration: Duration,
-    
+
     /// 慢调用阈值（毫秒）
     pub slow_call_duration_threshold: Duration,
-    
+
     /// 慢调用率阈值（百分比）
     pub slow_call_rate_threshold: f64,
 }
@@ -139,19 +142,22 @@ impl SlidingWindow {
     async fn record_success(&self, duration: Duration) {
         self.check_and_reset().await;
         self.success_count.fetch_add(1, Ordering::Relaxed);
-        self.total_duration_ms.fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
+        self.total_duration_ms
+            .fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
     }
 
     async fn record_failure(&self, duration: Duration) {
         self.check_and_reset().await;
         self.failure_count.fetch_add(1, Ordering::Relaxed);
-        self.total_duration_ms.fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
+        self.total_duration_ms
+            .fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
     }
 
     async fn record_slow_call(&self, duration: Duration) {
         self.check_and_reset().await;
         self.slow_call_count.fetch_add(1, Ordering::Relaxed);
-        self.total_duration_ms.fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
+        self.total_duration_ms
+            .fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
     }
 
     async fn check_and_reset(&self) {
@@ -166,8 +172,7 @@ impl SlidingWindow {
     }
 
     fn total_count(&self) -> u64 {
-        self.success_count.load(Ordering::Relaxed) + 
-        self.failure_count.load(Ordering::Relaxed)
+        self.success_count.load(Ordering::Relaxed) + self.failure_count.load(Ordering::Relaxed)
     }
 
     fn failure_rate(&self) -> f64 {
@@ -215,7 +220,7 @@ impl CircuitBreaker {
     pub fn new(config: CircuitBreakerConfig) -> Self {
         let sliding_window_size = config.sliding_window_size;
         let permitted_requests = config.permitted_requests_in_half_open as usize;
-        
+
         Self {
             half_open_semaphore: Arc::new(Semaphore::new(permitted_requests)),
             sliding_window: Arc::new(SlidingWindow::new(sliding_window_size)),
@@ -263,7 +268,7 @@ impl CircuitBreaker {
 
         match state {
             CircuitState::Closed => Ok(()),
-            
+
             CircuitState::Open => {
                 // Check if we should transition to half-open
                 let state_changed_at = *self.state_changed_at.read().await;
@@ -274,7 +279,7 @@ impl CircuitBreaker {
                     Err(CircuitError::CircuitOpen)
                 }
             }
-            
+
             CircuitState::HalfOpen => {
                 // Try to acquire a permit
                 match self.half_open_semaphore.try_acquire() {
@@ -299,7 +304,9 @@ impl CircuitBreaker {
         match state {
             CircuitState::HalfOpen => {
                 // Check if we've had enough successful requests
-                if self.sliding_window.total_count() >= self.config.permitted_requests_in_half_open as u64 {
+                if self.sliding_window.total_count()
+                    >= self.config.permitted_requests_in_half_open as u64
+                {
                     let failure_rate = self.sliding_window.failure_rate();
                     if failure_rate < self.config.failure_threshold_percentage {
                         self.transition_to_closed().await;
@@ -322,7 +329,7 @@ impl CircuitBreaker {
 
     async fn check_and_trip(&self) {
         let total_count = self.sliding_window.total_count();
-        
+
         // Only check if we've met the minimum request threshold
         if total_count < self.config.minimum_request_threshold {
             return;
@@ -403,12 +410,20 @@ impl CircuitBreaker {
         let mut state = self.state.write().await;
         *state = CircuitState::Closed;
         *self.state_changed_at.write().await = Instant::now();
-        
-        self.sliding_window.success_count.store(0, Ordering::Relaxed);
-        self.sliding_window.failure_count.store(0, Ordering::Relaxed);
-        self.sliding_window.slow_call_count.store(0, Ordering::Relaxed);
-        self.sliding_window.total_duration_ms.store(0, Ordering::Relaxed);
-        
+
+        self.sliding_window
+            .success_count
+            .store(0, Ordering::Relaxed);
+        self.sliding_window
+            .failure_count
+            .store(0, Ordering::Relaxed);
+        self.sliding_window
+            .slow_call_count
+            .store(0, Ordering::Relaxed);
+        self.sliding_window
+            .total_duration_ms
+            .store(0, Ordering::Relaxed);
+
         info!("Circuit breaker reset");
     }
 }
@@ -489,7 +504,7 @@ where
 /// Simulate an unreliable external service
 async fn unreliable_service(fail_rate: u32) -> Result<String, &'static str> {
     let random = rand::random::<u32>() % 100;
-    
+
     if random < fail_rate {
         sleep(Duration::from_millis(50)).await;
         Err("Service failed")
@@ -528,7 +543,7 @@ pub async fn demo_basic_usage() {
                 Err(e) => warn!("Request {} failed: {}", i, e),
             }
         });
-        
+
         sleep(Duration::from_millis(50)).await;
     }
 
@@ -544,10 +559,7 @@ pub async fn demo_with_fallback() {
     info!("=== Demo: Circuit Breaker with Fallback ===");
 
     let config = CircuitBreakerConfig::default();
-    let cb = CircuitBreakerWithFallback::new(
-        config,
-        || "Fallback response".to_string(),
-    );
+    let cb = CircuitBreakerWithFallback::new(config, || "Fallback response".to_string());
 
     for i in 0..20 {
         let result = cb.call_with_fallback(unreliable_service(70)).await;
@@ -574,7 +586,7 @@ pub async fn demo_slow_call_detection() {
     for i in 0..30 {
         let cb = cb.clone();
         let delay = if i % 3 == 0 { 800 } else { 200 };
-        
+
         tokio::spawn(async move {
             let result = cb.call(slow_service(delay)).await;
             match result {
@@ -582,7 +594,7 @@ pub async fn demo_slow_call_detection() {
                 Err(e) => warn!("Request {} failed: {}", i, e),
             }
         });
-        
+
         sleep(Duration::from_millis(100)).await;
     }
 
@@ -620,4 +632,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

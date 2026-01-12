@@ -21,7 +21,7 @@ pub struct OtlpClient {
 **方法**:
 
 - `traces() -> TraceBuilder`: 获取追踪数据构建器
-- `metrics() -> MetricBuilder`: 获取指标数据构建器  
+- `metrics() -> MetricBuilder`: 获取指标数据构建器
 - `logs() -> LogBuilder`: 获取日志数据构建器
 
 **示例**:
@@ -496,28 +496,28 @@ impl Default for ProfilingConfig {
 pub enum OtlpError {
     #[error("传输错误: {0}")]
     Transport(#[from] TransportError),
-    
+
     #[error("序列化错误: {0}")]
     Serialization(String),
-    
+
     #[error("配置错误: {0}")]
     Configuration(String),
-    
+
     #[error("处理错误: {0}")]
     Processing(String),
-    
+
     #[error("导出错误: {0}")]
     Export(String),
-    
+
     #[error("数据验证错误: {0}")]
     ValidationError(String),
-    
+
     #[error("性能分析器已在运行")]
     ProfilerAlreadyRunning,
-    
+
     #[error("性能分析器未运行")]
     ProfilerNotRunning,
-    
+
     // ... 其他错误类型
 }
 ```
@@ -531,13 +531,13 @@ pub enum OtlpError {
 pub enum TransportError {
     #[error("连接错误: {endpoint} - {reason}")]
     Connection { endpoint: String, reason: String },
-    
+
     #[error("网络错误: {0}")]
     NetworkError(String),
-    
+
     #[error("超时错误: {operation}")]
     Timeout { operation: String },
-    
+
     #[error("空数据错误")]
     EmptyData,
 }
@@ -696,7 +696,7 @@ impl CustomValidator {
     fn validate_custom(&self, data: &TelemetryData) -> Result<()> {
         // 自定义验证逻辑
         self.validator.validate_telemetry_data(data)?;
-        
+
         // 额外的验证...
         Ok(())
     }
@@ -707,7 +707,7 @@ impl CustomValidator {
 
 ### Rust 版本要求
 
-- **最低版本**: Rust 1.90
+- **最低版本**: Rust 1.92
 - **推荐版本**: Rust 1.95+
 
 ### 依赖版本
@@ -726,5 +726,5 @@ impl CustomValidator {
 
 ---
 
-**最后更新**: 2025年1月  
+**最后更新**: 2025年1月
 **版本**: 0.1.0

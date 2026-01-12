@@ -55,9 +55,9 @@
 
 ## 🎯 2025-10-22 文档标准化完成 ✨
 
-> **文档状态**: ✅ **100% 标准化完成**  
-> **框架结构**: ✅ **4-Tier 架构**  
-> **文档总数**: **46+ 篇**  
+> **文档状态**: ✅ **100% 标准化完成**
+> **框架结构**: ✅ **4-Tier 架构**
+> **文档总数**: **46+ 篇**
 > **质量评分**: **95/100**
 
 ### 📖 新版文档导航
@@ -153,14 +153,14 @@ async fn main() -> anyhow::Result<()> {
         sliding_window_size: Duration::from_secs(60),
         minimum_requests: 10,
     };
-    
+
     let cb = Arc::new(CircuitBreaker::new(config));
-    
+
     let result = cb.call(|| async {
         // 你的业务逻辑
         Ok::<_, anyhow::Error>("成功")
     }).await?;
-    
+
     Ok(())
 }
 ```
@@ -176,7 +176,7 @@ use std::time::Duration;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let limiter = TokenBucket::new(100, Duration::from_secs(1));
-    
+
     if limiter.try_acquire().await {
         // 处理请求
         println!("请求已通过");
@@ -184,7 +184,7 @@ async fn main() -> anyhow::Result<()> {
         // 限流
         println!("请求被限流");
     }
-    
+
     Ok(())
 }
 ```
@@ -198,19 +198,19 @@ use std::time::Duration;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let aggregator = MetricsAggregator::new();
-    
+
     // 记录指标
     aggregator.record_counter("requests", 1.0).await;
     aggregator.record_histogram("latency_ms", 42.0).await;
     aggregator.record_gauge("cpu_usage", 65.5).await;
-    
+
     // 获取统计
     let stats = aggregator
         .get_histogram_stats("latency_ms", Duration::from_secs(60))
         .await?;
-    
+
     println!("P95 延迟: {:.2}ms", stats.p95);
-    
+
     Ok(())
 }
 ```
@@ -223,7 +223,7 @@ use reliability::design_patterns::observer::{EventBus, Event};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let event_bus = EventBus::new();
-    
+
     let event = Event {
         id: uuid::Uuid::new_v4().to_string(),
         event_type: "user.login".to_string(),
@@ -231,9 +231,9 @@ async fn main() -> anyhow::Result<()> {
         timestamp: chrono::Utc::now().timestamp(),
         priority: 1,
     };
-    
+
     event_bus.publish(event).await?;
-    
+
     Ok(())
 }
 ```

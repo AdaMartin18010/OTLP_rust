@@ -12,8 +12,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt;
-use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Hybrid Logical Clock timestamp
@@ -194,21 +194,20 @@ impl HybridLogicalClock {
                 // For now, we'll proceed but in production you might want to handle this
             }
 
-            let (new_physical, new_logical) = if physical_now > last_physical
-                && physical_now > observed.physical
-            {
-                // Local physical time has advanced beyond both last and observed
-                (physical_now, 0)
-            } else if last_physical > observed.physical {
-                // Last timestamp is ahead of observed
-                (last_physical, last_logical + 1)
-            } else if observed.physical > last_physical {
-                // Observed is ahead of last
-                (observed.physical, observed.logical + 1)
-            } else {
-                // All physical times are equal, take max logical + 1
-                (last_physical, last_logical.max(observed.logical) + 1)
-            };
+            let (new_physical, new_logical) =
+                if physical_now > last_physical && physical_now > observed.physical {
+                    // Local physical time has advanced beyond both last and observed
+                    (physical_now, 0)
+                } else if last_physical > observed.physical {
+                    // Last timestamp is ahead of observed
+                    (last_physical, last_logical + 1)
+                } else if observed.physical > last_physical {
+                    // Observed is ahead of last
+                    (observed.physical, observed.logical + 1)
+                } else {
+                    // All physical times are equal, take max logical + 1
+                    (last_physical, last_logical.max(observed.logical) + 1)
+                };
 
             let new_packed = Self::pack_timestamp(new_physical, new_logical);
 
@@ -436,7 +435,11 @@ mod tests {
             assert!(
                 timestamps[i] >= timestamps[i - 1],
                 "Iteration {}: Timestamps must be monotonically non-decreasing: ts[{}]={:?}, ts[{}]={:?}",
-                i, i, timestamps[i], i-1, timestamps[i - 1]
+                i,
+                i,
+                timestamps[i],
+                i - 1,
+                timestamps[i - 1]
             );
         }
 
@@ -533,7 +536,10 @@ mod tests {
             assert!(
                 all_timestamps[i] >= all_timestamps[i - 1],
                 "Timestamps must be monotonically non-decreasing: ts[{}]={:?}, ts[{}]={:?}",
-                i, all_timestamps[i], i-1, all_timestamps[i - 1]
+                i,
+                all_timestamps[i],
+                i - 1,
+                all_timestamps[i - 1]
             );
         }
 
@@ -618,40 +624,43 @@ mod tests {
         // Test divergence by forcing clock ahead
         // Capture current state before observing future
         let physical_now = HLCTimestamp::current_physical_time();
-        
+
         // Create a future timestamp (10ms ahead)
         let future_physical = physical_now + 10_000; // 10ms = 10,000 microseconds
         let future = HLCTimestamp::new(future_physical, 0);
-        
+
         // Observe the future timestamp - this should advance the clock
         let observed_ts = clock.observe(future);
-        
+
         // Check divergence immediately with a small threshold (1ms)
         // The clock should now be ahead of physical time by ~10ms
         let divergence = clock.check_divergence(1000); // 1ms threshold
-        
+
         // Note: On very fast systems, physical_now might advance during observe(),
         // so we check if there's substantial divergence OR if the clock is synchronized
         let clock_ts = clock.get_time();
         let current_physical = HLCTimestamp::current_physical_time();
-        
+
         if clock_ts.physical > current_physical {
             // Clock is ahead - we should detect divergence
             assert!(
                 divergence.is_some() || (clock_ts.physical - current_physical) < 1000,
                 "Expected divergence when clock is ahead. Clock: {:?}, Current: {}, Divergence: {:?}",
-                clock_ts, current_physical, divergence
+                clock_ts,
+                current_physical,
+                divergence
             );
         } else {
             // On very fast systems, physical time might have caught up
             // This is acceptable - HLC correctly tracks physical time
         }
-        
+
         // The main assertion: observed timestamp should at least match the future we sent
         assert!(
             observed_ts.physical >= future_physical,
             "Observed timestamp should be at least the future value: observed={:?}, future={}",
-            observed_ts, future_physical
+            observed_ts,
+            future_physical
         );
     }
 }

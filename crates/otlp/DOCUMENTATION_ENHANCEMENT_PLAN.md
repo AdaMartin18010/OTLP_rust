@@ -2,9 +2,9 @@
 
 ## 📋 文档概览
 
-**完善目标**: 建立完整、清晰、易用的文档体系  
-**文档范围**: 用户指南、API文档、开发文档、运维文档  
-**实施周期**: 3-4周  
+**完善目标**: 建立完整、清晰、易用的文档体系
+**文档范围**: 用户指南、API文档、开发文档、运维文档
+**实施周期**: 3-4周
 **预期收益**: 提升用户体验和开发效率
 
 ## 🎯 文档架构设计
@@ -76,16 +76,16 @@ docs/
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // 创建简单的OTLP客户端
         let client = SimpleOtlpClient::new("http://localhost:4317").await?;
-        
+
         // 发送追踪数据
         client.trace("user-login", 150, true, None::<String>).await?;
-        
+
         // 发送指标数据
         client.metric("login_count", 1.0, Some("count")).await?;
-        
+
         // 发送日志数据
         client.log("User logged in successfully", LogLevel::Info, Some("auth")).await?;
-        
+
         Ok(())
     }
     ```
@@ -104,11 +104,11 @@ docs/
             .with_protocol(TransportProtocol::Grpc)
             .with_batch_size(100)
             .with_timeout(Duration::from_secs(5));
-        
+
         // 创建客户端
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         // 使用构建器模式发送数据
         let trace = client.send_trace("database-query").await?;
         trace
@@ -117,7 +117,7 @@ docs/
             .with_duration(250)
             .finish()
             .await?;
-        
+
         Ok(())
     }
     ```
@@ -369,10 +369,10 @@ docs/
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let config = OtlpConfig::from_file("config.toml")?;
-        
+
         // 验证配置
         config.validate()?;
-        
+
         println!("配置验证通过: {:?}", config);
         Ok(())
     }
@@ -465,13 +465,13 @@ docs/
     ```rust
     impl SimpleOtlpClient {
         /// 创建新的简单客户端
-        /// 
+        ///
         /// # 参数
-        /// 
+        ///
         /// * `endpoint` - OTLP 端点地址
-        /// 
+        ///
         /// # 示例
-        /// 
+        ///
         /// ```rust
         /// let client = SimpleOtlpClient::new("http://localhost:4317").await?;
         /// ```
@@ -487,16 +487,16 @@ docs/
 
     ```rust
     /// 发送追踪数据
-    /// 
+    ///
     /// # 参数
-    /// 
+    ///
     /// * `name` - 操作名称
     /// * `duration_ms` - 持续时间（毫秒）
     /// * `success` - 是否成功
     /// * `error` - 错误信息（可选）
-    /// 
+    ///
     /// # 示例
-    /// 
+    ///
     /// ```rust
     /// client.trace("database-query", 150, true, None::<String>).await?;
     /// client.trace("api-call", 200, false, Some("timeout".to_string())).await?;
@@ -516,15 +516,15 @@ docs/
 
     ```rust
     /// 发送指标数据
-    /// 
+    ///
     /// # 参数
-    /// 
+    ///
     /// * `name` - 指标名称
     /// * `value` - 指标值
     /// * `unit` - 单位（可选）
-    /// 
+    ///
     /// # 示例
-    /// 
+    ///
     /// ```rust
     /// client.metric("request_count", 1.0, Some("count")).await?;
     /// client.metric("response_time", 150.0, Some("ms")).await?;
@@ -543,15 +543,15 @@ docs/
 
     ```rust
     /// 发送日志数据
-    /// 
+    ///
     /// # 参数
-    /// 
+    ///
     /// * `message` - 日志消息
     /// * `level` - 日志级别
     /// * `source` - 日志来源（可选）
-    /// 
+    ///
     /// # 示例
-    /// 
+    ///
     /// ```rust
     /// client.log("User logged in", LogLevel::Info, Some("auth")).await?;
     /// client.log("Database error", LogLevel::Error, Some("db")).await?;
@@ -573,13 +573,13 @@ docs/
     ```rust
     impl OtlpClient {
         /// 创建新的 OTLP 客户端
-        /// 
+        ///
         /// # 参数
-        /// 
+        ///
         /// * `config` - 客户端配置
-        /// 
+        ///
         /// # 示例
-        /// 
+        ///
         /// ```rust
         /// let config = OtlpConfig::default()
         ///     .with_endpoint("http://localhost:4317")
@@ -588,13 +588,13 @@ docs/
         /// client.initialize().await?;
         /// ```
         pub async fn new(config: OtlpConfig) -> Result<Self>;
-        
+
         /// 初始化客户端
-        /// 
+        ///
         /// 必须在发送数据前调用此方法。
-        /// 
+        ///
         /// # 示例
-        /// 
+        ///
         /// ```rust
         /// client.initialize().await?;
         /// ```
@@ -610,17 +610,17 @@ docs/
 
     ```rust
     /// 创建追踪构建器
-    /// 
+    ///
     /// # 参数
-    /// 
+    ///
     /// * `name` - 操作名称
-    /// 
+    ///
     /// # 返回值
-    /// 
+    ///
     /// 返回 `TraceBuilder` 实例，支持链式调用。
-    /// 
+    ///
     /// # 示例
-    /// 
+    ///
     /// ```rust
     /// let trace = client.send_trace("database-query").await?;
     /// trace
@@ -640,18 +640,18 @@ docs/
 
     ```rust
     /// 创建指标构建器
-    /// 
+    ///
     /// # 参数
-    /// 
+    ///
     /// * `name` - 指标名称
     /// * `value` - 指标值
-    /// 
+    ///
     /// # 返回值
-    /// 
+    ///
     /// 返回 `MetricBuilder` 实例，支持链式调用。
-    /// 
+    ///
     /// # 示例
-    /// 
+    ///
     /// ```rust
     /// let metric = client.send_metric("request_count", 1.0).await?;
     /// metric
@@ -671,18 +671,18 @@ docs/
 
     ```rust
     /// 创建日志构建器
-    /// 
+    ///
     /// # 参数
-    /// 
+    ///
     /// * `message` - 日志消息
     /// * `severity` - 日志严重程度
-    /// 
+    ///
     /// # 返回值
-    /// 
+    ///
     /// 返回 `LogBuilder` 实例，支持链式调用。
-    /// 
+    ///
     /// # 示例
-    /// 
+    ///
     /// ```rust
     /// let log = client.send_log("User action", LogSeverity::Info).await?;
     /// log
@@ -710,13 +710,13 @@ docs/
     pub enum OtlpError {
         #[error("网络错误: {context}")]
         Network { context: String, source: Box<dyn std::error::Error + Send + Sync> },
-        
+
         #[error("配置错误: {field} = {value}")]
         Configuration { field: String, value: String },
-        
+
         #[error("处理错误: {operation}")]
         Processing { operation: String, source: Box<dyn std::error::Error + Send + Sync> },
-        
+
         #[error("内部错误: {message}")]
         Internal { message: String },
     }
@@ -730,7 +730,7 @@ docs/
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let client = OtlpClient::new(config).await?;
-        
+
         match client.initialize().await {
             Ok(_) => println!("客户端初始化成功"),
             Err(OtlpError::Configuration { field, value }) => {
@@ -743,7 +743,7 @@ docs/
                 eprintln!("其他错误: {}", e);
             }
         }
-        
+
         Ok(())
     }
     ```
@@ -995,13 +995,13 @@ docs/
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let client = SimpleOtlpClient::new("http://localhost:4317").await?;
-        
+
         // 发送成功的操作
         client.trace("user-login", 150, true, None::<String>).await?;
-        
+
         // 发送失败的操作
         client.trace("database-query", 200, false, Some("timeout".to_string())).await?;
-        
+
         Ok(())
     }
     ```
@@ -1014,16 +1014,16 @@ docs/
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let client = SimpleOtlpClient::new("http://localhost:4317").await?;
-        
+
         // 发送计数器指标
         client.metric("request_count", 1.0, Some("count")).await?;
-        
+
         // 发送响应时间指标
         client.metric("response_time", 150.0, Some("ms")).await?;
-        
+
         // 发送内存使用指标
         client.metric("memory_usage", 512.0, Some("MB")).await?;
-        
+
         Ok(())
     }
     ```
@@ -1036,16 +1036,16 @@ docs/
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let client = SimpleOtlpClient::new("http://localhost:4317").await?;
-        
+
         // 发送信息日志
         client.log("User logged in successfully", LogLevel::Info, Some("auth")).await?;
-        
+
         // 发送警告日志
         client.log("High memory usage detected", LogLevel::Warn, Some("monitor")).await?;
-        
+
         // 发送错误日志
         client.log("Database connection failed", LogLevel::Error, Some("db")).await?;
-        
+
         Ok(())
     }
     ```
@@ -1065,10 +1065,10 @@ docs/
             .with_protocol(TransportProtocol::Grpc)
             .with_batch_size(100)
             .with_timeout(Duration::from_secs(5));
-        
+
         let client = OtlpClient::new(config).await?;
         client.initialize().await?;
-        
+
         // 创建详细的追踪数据
         let trace = client.send_trace("database-query").await?;
         trace
@@ -1079,7 +1079,7 @@ docs/
             .with_status(StatusCode::Ok, None)
             .finish()
             .await?;
-        
+
         // 创建详细的指标数据
         let metric = client.send_metric("query_duration", 250.0).await?;
         metric
@@ -1089,7 +1089,7 @@ docs/
             .with_unit("ms")
             .send()
             .await?;
-        
+
         Ok(())
     }
     ```
@@ -1102,7 +1102,7 @@ docs/
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let client = SimpleOtlpClient::new("http://localhost:4317").await?;
-        
+
         let operations = vec![
             SimpleOperation::Trace {
                 name: "user-login".to_string(),
@@ -1121,10 +1121,10 @@ docs/
                 source: Some("auth".to_string()),
             },
         ];
-        
+
         let result = client.batch_send(operations).await?;
         println!("批量发送结果: {:?}", result);
-        
+
         Ok(())
     }
     ```
@@ -1185,25 +1185,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.90
-    
+
     - name: Generate API docs
       run: cargo doc --no-deps --document-private-items
-    
+
     - name: Build mdbook
       run: |
         cargo install mdbook
         mdbook build docs/
-    
+
     - name: Check links
       run: |
         cargo install cargo-deadlinks
         cargo deadlinks
-    
+
     - name: Deploy docs
       uses: peaceiris/actions-gh-pages@v3
       with:
@@ -1213,6 +1213,6 @@ jobs:
 
 ---
 
-**文档负责人**: OTLP Rust 团队  
-**预计完成时间**: 2025年3月  
+**文档负责人**: OTLP Rust 团队
+**预计完成时间**: 2025年3月
 **状态**: 🚀 进行中

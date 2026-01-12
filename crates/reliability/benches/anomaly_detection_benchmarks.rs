@@ -2,57 +2,55 @@
 //!
 //! 测试各种异常检测器的性能表现。
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use reliability::runtime_monitoring::anomaly_detection::*;
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use reliability::runtime_monitoring::MonitoringState;
-use std::time::Duration;
+use reliability::runtime_monitoring::anomaly_detection::*;
 use std::hint::black_box;
+use std::time::Duration;
 
 /// 基准测试：配置创建性能
 fn bench_config_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("config_creation");
-    
+
     group.bench_function("default_config", |b| {
         b.iter(|| AnomalyDetectionConfig::default())
     });
-    
+
     group.bench_function("custom_config", |b| {
-        b.iter(|| {
-            AnomalyDetectionConfig {
-                detection_interval: Duration::from_secs(30),
-                enabled: true,
-                detectors: vec![
-                    AnomalyDetectorItem {
-                        name: "statistical".to_string(),
-                        detector_type: AnomalyDetectorType::Statistical,
-                        enabled: true,
-                    },
-                    AnomalyDetectorItem {
-                        name: "threshold".to_string(),
-                        detector_type: AnomalyDetectorType::Threshold,
-                        enabled: true,
-                    },
-                ],
-                alert_thresholds: AnomalyAlertThresholds {
-                    statistical_threshold: 2.5,
-                    threshold_anomaly_threshold: 0.8,
-                    ml_anomaly_threshold: 0.7,
-                    time_series_threshold: 0.75,
-                    pattern_matching_threshold: 0.6,
-                    network_traffic_threshold: 0.85,
-                    resource_usage_threshold: 0.9,
+        b.iter(|| AnomalyDetectionConfig {
+            detection_interval: Duration::from_secs(30),
+            enabled: true,
+            detectors: vec![
+                AnomalyDetectorItem {
+                    name: "statistical".to_string(),
+                    detector_type: AnomalyDetectorType::Statistical,
+                    enabled: true,
                 },
-            }
+                AnomalyDetectorItem {
+                    name: "threshold".to_string(),
+                    detector_type: AnomalyDetectorType::Threshold,
+                    enabled: true,
+                },
+            ],
+            alert_thresholds: AnomalyAlertThresholds {
+                statistical_threshold: 2.5,
+                threshold_anomaly_threshold: 0.8,
+                ml_anomaly_threshold: 0.7,
+                time_series_threshold: 0.75,
+                pattern_matching_threshold: 0.6,
+                network_traffic_threshold: 0.85,
+                resource_usage_threshold: 0.9,
+            },
         })
     });
-    
+
     group.finish();
 }
 
 /// 基准测试：检测器创建性能
 fn bench_detector_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("detector_creation");
-    
+
     for detector_count in [1, 3, 6, 10, 20].iter() {
         group.bench_with_input(
             BenchmarkId::new("detectors", detector_count),
@@ -78,20 +76,20 @@ fn bench_detector_creation(c: &mut Criterion) {
                             .collect(),
                         alert_thresholds: AnomalyAlertThresholds::default(),
                     };
-                    
+
                     AnomalyDetector::new(config)
                 })
             },
         );
     }
-    
+
     group.finish();
 }
 
 /// 基准测试：序列化性能
 fn bench_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialization");
-    
+
     let result = AnomalyDetectionResult {
         timestamp: chrono::Utc::now(),
         state: MonitoringState::Warning,
@@ -123,16 +121,16 @@ fn bench_serialization(c: &mut Criterion) {
         anomaly_detectors: 1,
         anomalies_detected: 1,
     };
-    
+
     group.bench_function("serialize_json", |b| {
         b.iter(|| serde_json::to_string(black_box(&result)))
     });
-    
+
     group.bench_function("deserialize_json", |b| {
         let json = serde_json::to_string(&result).unwrap();
         b.iter(|| serde_json::from_str::<AnomalyDetectionResult>(black_box(&json)))
     });
-    
+
     group.finish();
 }
 

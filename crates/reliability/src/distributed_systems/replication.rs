@@ -52,8 +52,8 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tokio::sync::{Mutex, RwLock};
 
-use crate::error_handling::prelude::*;
 use crate::distributed_systems::coordination::vector_clock::VectorClock;
+use crate::error_handling::prelude::*;
 
 // ================================================================================================
 // 核心类型定义
@@ -318,24 +318,19 @@ impl ReplicationCoordinator {
     }
 
     /// 添加节点
-    pub async fn add_node(
-        &self,
-        node_id: &str,
-        address: &str,
-        is_primary: bool,
-    ) -> Result<()> {
+    pub async fn add_node(&self, node_id: &str, address: &str, is_primary: bool) -> Result<()> {
         let mut nodes = self.nodes.write().await;
-        
+
         // 检查复制模式和主节点限制
         if is_primary && self.config.mode == ReplicationMode::PrimarySecondary {
             let has_primary = nodes.values().any(|n| n.is_primary);
             if has_primary {
                 return Err(UnifiedError::state_error(
-                    "Primary-Secondary mode allows only one primary node"
+                    "Primary-Secondary mode allows only one primary node",
                 ));
             }
         }
-        
+
         let node_info = NodeInfo {
             node_id: node_id.to_string(),
             address: address.to_string(),
@@ -345,15 +340,15 @@ impl ReplicationCoordinator {
             replication_lag_ms: 0,
             operations_processed: 0,
         };
-        
+
         nodes.insert(node_id.to_string(), node_info);
-        
+
         // 更新主节点
         if is_primary {
             let mut primary = self.primary_node.write().await;
             *primary = Some(node_id.to_string());
         }
-        
+
         tracing::info!("Node added: {} (primary: {})", node_id, is_primary);
         Ok(())
     }
@@ -361,7 +356,7 @@ impl ReplicationCoordinator {
     /// 移除节点
     pub async fn remove_node(&self, node_id: &str) -> Result<()> {
         let mut nodes = self.nodes.write().await;
-        
+
         if let Some(node) = nodes.remove(node_id) {
             if node.is_primary && self.config.auto_failover {
                 drop(nodes);
@@ -370,7 +365,10 @@ impl ReplicationCoordinator {
             tracing::info!("Node removed: {}", node_id);
             Ok(())
         } else {
-            Err(UnifiedError::not_found(format!("Node not found: {}", node_id)))
+            Err(UnifiedError::not_found(format!(
+                "Node not found: {}",
+                node_id
+            )))
         }
     }
 
@@ -382,18 +380,23 @@ impl ReplicationCoordinator {
         options: Option<WriteOptions>,
     ) -> Result<Version> {
         let options = options.unwrap_or_default();
-        let consistency = options.consistency_level.unwrap_or(self.config.consistency_level);
-        
+        let consistency = options
+            .consistency_level
+            .unwrap_or(self.config.consistency_level);
+
         // 根据复制模式选择写入策略
         match self.config.mode {
             ReplicationMode::PrimarySecondary => {
-                self.write_primary_secondary(key, value, consistency, options).await
+                self.write_primary_secondary(key, value, consistency, options)
+                    .await
             }
             ReplicationMode::MultiPrimary => {
-                self.write_multi_primary(key, value, consistency, options).await
+                self.write_multi_primary(key, value, consistency, options)
+                    .await
             }
             ReplicationMode::Leaderless => {
-                self.write_leaderless(key, value, consistency, options).await
+                self.write_leaderless(key, value, consistency, options)
+                    .await
             }
         }
     }
@@ -407,32 +410,38 @@ impl ReplicationCoordinator {
         options: WriteOptions,
     ) -> Result<Version> {
         let primary = self.primary_node.read().await;
-        let primary_id = primary.as_ref().ok_or_else(|| {
-            UnifiedError::state_error("No primary node available")
-        })?;
-        
+        let primary_id = primary
+            .as_ref()
+            .ok_or_else(|| UnifiedError::state_error("No primary node available"))?;
+
         // 在主节点上写入
-        let version = self.write_to_node(primary_id, key, value, options.vector_clock.clone()).await?;
-        
+        let version = self
+            .write_to_node(primary_id, key, value, options.vector_clock.clone())
+            .await?;
+
         // 根据一致性级别决定是否等待从节点
         if consistency >= ConsistencyLevel::Quorum {
-            self.replicate_to_secondaries(key, value, version, consistency).await?;
+            self.replicate_to_secondaries(key, value, version, consistency)
+                .await?;
         } else {
             // 异步复制到从节点
             let key = key.to_string();
             let value = value.to_vec();
             let coordinator = self.clone_coordinator();
             tokio::spawn(async move {
-                if let Err(e) = coordinator.replicate_to_secondaries(&key, &value, version, consistency).await {
+                if let Err(e) = coordinator
+                    .replicate_to_secondaries(&key, &value, version, consistency)
+                    .await
+                {
                     tracing::warn!("Async replication failed: {}", e);
                 }
             });
         }
-        
+
         // 更新统计
         let mut stats = self.stats.lock().await;
         stats.total_writes += 1;
-        
+
         Ok(version)
     }
 
@@ -445,23 +454,30 @@ impl ReplicationCoordinator {
         options: WriteOptions,
     ) -> Result<Version> {
         let nodes = self.nodes.read().await;
-        let primary_nodes: Vec<_> = nodes.values()
+        let primary_nodes: Vec<_> = nodes
+            .values()
             .filter(|n| n.is_primary && n.status == NodeStatus::Healthy)
             .collect();
-        
+
         if primary_nodes.is_empty() {
-            return Err(UnifiedError::state_error("No healthy primary nodes available"));
+            return Err(UnifiedError::state_error(
+                "No healthy primary nodes available",
+            ));
         }
-        
+
         // 选择一个主节点写入（简单轮询）
         let primary = &primary_nodes[0];
-        let version = self.write_to_node(&primary.node_id, key, value, options.vector_clock.clone()).await?;
-        
+        let version = self
+            .write_to_node(&primary.node_id, key, value, options.vector_clock.clone())
+            .await?;
+
         // 复制到其他主节点
         for node in &primary_nodes[1..] {
-            let _ = self.write_to_node(&node.node_id, key, value, options.vector_clock.clone()).await;
+            let _ = self
+                .write_to_node(&node.node_id, key, value, options.vector_clock.clone())
+                .await;
         }
-        
+
         Ok(version)
     }
 
@@ -474,82 +490,82 @@ impl ReplicationCoordinator {
         options: WriteOptions,
     ) -> Result<Version> {
         let nodes = self.nodes.read().await;
-        let healthy_nodes: Vec<_> = nodes.values()
+        let healthy_nodes: Vec<_> = nodes
+            .values()
             .filter(|n| n.status == NodeStatus::Healthy)
             .collect();
-        
+
         if healthy_nodes.is_empty() {
             return Err(UnifiedError::state_error("No healthy nodes available"));
         }
-        
+
         let write_quorum = self.calculate_write_quorum(healthy_nodes.len(), consistency);
         let mut successful_writes = 0;
         let mut latest_version = 0;
-        
+
         // 并行写入到多个节点
         for node in &healthy_nodes {
-            if let Ok(version) = self.write_to_node(&node.node_id, key, value, options.vector_clock.clone()).await {
+            if let Ok(version) = self
+                .write_to_node(&node.node_id, key, value, options.vector_clock.clone())
+                .await
+            {
                 successful_writes += 1;
                 latest_version = latest_version.max(version);
-                
+
                 if successful_writes >= write_quorum {
                     break;
                 }
             }
         }
-        
+
         if successful_writes >= write_quorum {
             Ok(latest_version)
         } else {
-            Err(UnifiedError::state_error(
-                format!("Failed to achieve write quorum: {}/{}", successful_writes, write_quorum)
-            ))
+            Err(UnifiedError::state_error(format!(
+                "Failed to achieve write quorum: {}/{}",
+                successful_writes, write_quorum
+            )))
         }
     }
 
     /// 读取数据
-    pub async fn read(
-        &self,
-        key: &str,
-        options: Option<ReadOptions>,
-    ) -> Result<DataValue> {
+    pub async fn read(&self, key: &str, options: Option<ReadOptions>) -> Result<DataValue> {
         let options = options.unwrap_or_default();
-        let consistency = options.consistency_level.unwrap_or(self.config.consistency_level);
-        
+        let consistency = options
+            .consistency_level
+            .unwrap_or(self.config.consistency_level);
+
         match consistency {
             ConsistencyLevel::Strong | ConsistencyLevel::Quorum => {
                 self.read_quorum(key, options).await
             }
-            ConsistencyLevel::Eventual | ConsistencyLevel::One => {
-                self.read_one(key).await
-            }
-            ConsistencyLevel::Causal => {
-                self.read_causal(key, options).await
-            }
+            ConsistencyLevel::Eventual | ConsistencyLevel::One => self.read_one(key).await,
+            ConsistencyLevel::Causal => self.read_causal(key, options).await,
         }
     }
 
     /// Quorum读取
     async fn read_quorum(&self, key: &str, _options: ReadOptions) -> Result<DataValue> {
         let nodes = self.nodes.read().await;
-        let healthy_nodes: Vec<_> = nodes.values()
+        let healthy_nodes: Vec<_> = nodes
+            .values()
             .filter(|n| n.status == NodeStatus::Healthy)
             .collect();
-        
+
         let read_quorum = self.calculate_read_quorum(healthy_nodes.len());
         let mut versions: HashMap<Version, (DataValue, usize)> = HashMap::new();
-        
+
         // 从多个节点读取
         for node in healthy_nodes.iter().take(read_quorum) {
             if let Ok(entry) = self.read_from_node(&node.node_id, key).await {
-                let counter = versions.entry(entry.version)
-                    .or_insert((entry.value, 0));
+                let counter = versions.entry(entry.version).or_insert((entry.value, 0));
                 counter.1 += 1;
             }
         }
-        
+
         // 选择出现次数最多的版本
-        versions.into_iter()
+        versions
+            .into_iter()
             .max_by_key(|(_, (_, count))| *count)
             .map(|(_, (value, _))| value)
             .ok_or_else(|| UnifiedError::not_found(format!("Key not found: {}", key)))
@@ -558,7 +574,8 @@ impl ReplicationCoordinator {
     /// 单节点读取
     async fn read_one(&self, key: &str) -> Result<DataValue> {
         let data_store = self.data_store.read().await;
-        data_store.get(key)
+        data_store
+            .get(key)
             .map(|entry| entry.value.clone())
             .ok_or_else(|| UnifiedError::not_found(format!("Key not found: {}", key)))
     }
@@ -578,11 +595,9 @@ impl ReplicationCoordinator {
         vector_clock: Option<VectorClock>,
     ) -> Result<Version> {
         let mut data_store = self.data_store.write().await;
-        
-        let new_version = data_store.get(key)
-            .map(|e| e.version + 1)
-            .unwrap_or(1);
-        
+
+        let new_version = data_store.get(key).map(|e| e.version + 1).unwrap_or(1);
+
         let entry = DataEntry {
             key: key.to_string(),
             value: value.to_vec(),
@@ -592,16 +607,17 @@ impl ReplicationCoordinator {
             updated_at: SystemTime::now(),
             created_by: node_id.to_string(),
         };
-        
+
         data_store.insert(key.to_string(), entry);
-        
+
         Ok(new_version)
     }
 
     /// 从指定节点读取数据
     async fn read_from_node(&self, _node_id: &str, key: &str) -> Result<DataEntry> {
         let data_store = self.data_store.read().await;
-        data_store.get(key)
+        data_store
+            .get(key)
             .cloned()
             .ok_or_else(|| UnifiedError::not_found(format!("Key not found: {}", key)))
     }
@@ -615,58 +631,66 @@ impl ReplicationCoordinator {
         consistency: ConsistencyLevel,
     ) -> Result<()> {
         let nodes = self.nodes.read().await;
-        let secondary_nodes: Vec<_> = nodes.values()
+        let secondary_nodes: Vec<_> = nodes
+            .values()
             .filter(|n| !n.is_primary && n.status == NodeStatus::Healthy)
             .collect();
-        
+
         let required_replicas = match consistency {
             ConsistencyLevel::Strong => secondary_nodes.len(),
             ConsistencyLevel::Quorum => (secondary_nodes.len() / 2) + 1,
             _ => 1,
         };
-        
+
         let mut successful_replicas = 0;
-        
+
         for node in &secondary_nodes {
-            if self.write_to_node(&node.node_id, key, value, None).await.is_ok() {
+            if self
+                .write_to_node(&node.node_id, key, value, None)
+                .await
+                .is_ok()
+            {
                 successful_replicas += 1;
                 if successful_replicas >= required_replicas {
                     break;
                 }
             }
         }
-        
+
         if successful_replicas >= required_replicas {
             Ok(())
         } else {
-            Err(UnifiedError::state_error(
-                format!("Failed to replicate to required number of secondaries: {}/{}", 
-                    successful_replicas, required_replicas)
-            ))
+            Err(UnifiedError::state_error(format!(
+                "Failed to replicate to required number of secondaries: {}/{}",
+                successful_replicas, required_replicas
+            )))
         }
     }
 
     /// 选举新主节点
     async fn elect_new_primary(&self) -> Result<()> {
         let mut nodes = self.nodes.write().await;
-        
+
         // 选择健康的从节点作为新主节点
-        let new_primary = nodes.values_mut()
+        let new_primary = nodes
+            .values_mut()
             .filter(|n| !n.is_primary && n.status == NodeStatus::Healthy)
             .min_by_key(|n| n.replication_lag_ms);
-        
+
         if let Some(node) = new_primary {
             node.is_primary = true;
             let new_primary_id = node.node_id.clone();
             drop(nodes);
-            
+
             let mut primary = self.primary_node.write().await;
             *primary = Some(new_primary_id.clone());
-            
+
             tracing::info!("New primary elected: {}", new_primary_id);
             Ok(())
         } else {
-            Err(UnifiedError::state_error("No suitable node found for primary election"))
+            Err(UnifiedError::state_error(
+                "No suitable node found for primary election",
+            ))
         }
     }
 
@@ -690,12 +714,13 @@ impl ReplicationCoordinator {
     pub async fn get_stats(&self) -> ReplicationStats {
         let stats = self.stats.lock().await;
         let nodes = self.nodes.read().await;
-        
+
         let mut result = stats.clone();
-        result.active_nodes = nodes.values()
+        result.active_nodes = nodes
+            .values()
             .filter(|n| n.status == NodeStatus::Healthy)
             .count();
-        
+
         result
     }
 
@@ -734,16 +759,28 @@ mod tests {
             consistency_level: ConsistencyLevel::Eventual,
             ..Default::default()
         };
-        
+
         let coordinator = ReplicationCoordinator::new(config);
-        
-        coordinator.add_node("primary", "http://primary:8080", true).await.unwrap();
-        coordinator.add_node("secondary-1", "http://secondary1:8080", false).await.unwrap();
-        coordinator.add_node("secondary-2", "http://secondary2:8080", false).await.unwrap();
-        
-        let version = coordinator.write("test-key", b"test-value", None).await.unwrap();
+
+        coordinator
+            .add_node("primary", "http://primary:8080", true)
+            .await
+            .unwrap();
+        coordinator
+            .add_node("secondary-1", "http://secondary1:8080", false)
+            .await
+            .unwrap();
+        coordinator
+            .add_node("secondary-2", "http://secondary2:8080", false)
+            .await
+            .unwrap();
+
+        let version = coordinator
+            .write("test-key", b"test-value", None)
+            .await
+            .unwrap();
         assert_eq!(version, 1);
-        
+
         let value = coordinator.read("test-key", None).await.unwrap();
         assert_eq!(value, b"test-value");
     }
@@ -756,13 +793,22 @@ mod tests {
             replication_factor: 3,
             ..Default::default()
         };
-        
+
         let coordinator = ReplicationCoordinator::new(config);
-        
-        coordinator.add_node("node-1", "http://node1:8080", false).await.unwrap();
-        coordinator.add_node("node-2", "http://node2:8080", false).await.unwrap();
-        coordinator.add_node("node-3", "http://node3:8080", false).await.unwrap();
-        
+
+        coordinator
+            .add_node("node-1", "http://node1:8080", false)
+            .await
+            .unwrap();
+        coordinator
+            .add_node("node-2", "http://node2:8080", false)
+            .await
+            .unwrap();
+        coordinator
+            .add_node("node-3", "http://node3:8080", false)
+            .await
+            .unwrap();
+
         let version = coordinator.write("key1", b"value1", None).await.unwrap();
         assert!(version > 0);
     }
@@ -774,15 +820,21 @@ mod tests {
             auto_failover: true,
             ..Default::default()
         };
-        
+
         let coordinator = ReplicationCoordinator::new(config);
-        
-        coordinator.add_node("primary", "http://primary:8080", true).await.unwrap();
-        coordinator.add_node("secondary", "http://secondary:8080", false).await.unwrap();
-        
+
+        coordinator
+            .add_node("primary", "http://primary:8080", true)
+            .await
+            .unwrap();
+        coordinator
+            .add_node("secondary", "http://secondary:8080", false)
+            .await
+            .unwrap();
+
         // 移除主节点触发故障转移
         coordinator.remove_node("primary").await.unwrap();
-        
+
         let nodes = coordinator.get_nodes().await;
         let has_primary = nodes.iter().any(|n| n.is_primary);
         assert!(has_primary, "Should have elected a new primary");

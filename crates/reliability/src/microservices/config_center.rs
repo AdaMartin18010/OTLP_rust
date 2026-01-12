@@ -4,8 +4,8 @@
 
 use crate::error_handling::prelude::*;
 use dashmap::DashMap;
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 /// 配置项
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,11 +47,11 @@ impl ConfigRepository {
             configs: Arc::new(DashMap::new()),
         }
     }
-    
+
     pub fn get(&self, key: &str) -> Option<ConfigItem> {
         self.configs.get(key).map(|entry| entry.value().clone())
     }
-    
+
     pub fn set(&self, item: ConfigItem) {
         self.configs.insert(item.key.clone(), item);
     }
@@ -76,11 +76,11 @@ impl ConfigCenter {
             repository: ConfigRepository::new(),
         }
     }
-    
+
     pub async fn get_config(&self, key: &str) -> Result<Option<String>> {
         Ok(self.repository.get(key).map(|item| item.value))
     }
-    
+
     pub async fn set_config(&self, key: String, value: String) -> Result<()> {
         let item = ConfigItem {
             key: key.clone(),
@@ -91,4 +91,3 @@ impl ConfigCenter {
         Ok(())
     }
 }
-

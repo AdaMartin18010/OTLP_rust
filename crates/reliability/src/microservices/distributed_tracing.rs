@@ -284,11 +284,7 @@ impl Tracer {
             service_name,
             ..Default::default()
         };
-        Self::new(
-            config,
-            Arc::new(AlwaysOnSampler),
-            Arc::new(ConsoleExporter),
-        )
+        Self::new(config, Arc::new(AlwaysOnSampler), Arc::new(ConsoleExporter))
     }
 
     /// 导出已完成的spans
@@ -348,7 +344,11 @@ impl TracingProvider for Tracer {
             trace_state: parent.trace_state.clone(),
         };
 
-        let mut span = Span::new(operation_name.to_string(), context.clone(), SpanKind::Internal);
+        let mut span = Span::new(
+            operation_name.to_string(),
+            context.clone(),
+            SpanKind::Internal,
+        );
         span.set_attribute("service.name".to_string(), self.config.service_name.clone());
 
         self.active_spans
@@ -406,9 +406,7 @@ mod tests {
     async fn test_tracer() {
         let tracer = Tracer::default_tracer("test-service".to_string());
 
-        let span = tracer
-            .start_span("test-operation", SpanKind::Server)
-            .await;
+        let span = tracer.start_span("test-operation", SpanKind::Server).await;
         assert_eq!(tracer.active_span_count().await, 1);
 
         tracer.finish_span(span).await;
@@ -421,9 +419,7 @@ mod tests {
         let tracer = Tracer::default_tracer("test-service".to_string());
 
         let parent = tracer.start_span("parent", SpanKind::Server).await;
-        let child = tracer
-            .start_child_span("child", &parent.context)
-            .await;
+        let child = tracer.start_child_span("child", &parent.context).await;
 
         assert_eq!(child.context.trace_id, parent.context.trace_id);
         assert_eq!(

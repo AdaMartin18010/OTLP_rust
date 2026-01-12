@@ -2,11 +2,14 @@
 //!
 //! 提供服务降级功能，在服务不可用时提供备用方案。
 
-use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 use tracing::{debug, error, info};
 
-use crate::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
+use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
 
 /// 降级配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,18 +136,18 @@ impl Fallback {
             Err(error) => {
                 if self.should_fallback(&error) {
                     self.fallback_used.fetch_add(1, Ordering::Relaxed);
-                    
+
                     match self.execute_fallback().await {
                         Ok(result) => {
                             self.fallback_successes.fetch_add(1, Ordering::Relaxed);
                             self.update_stats();
-                            
+
                             info!("降级策略 {} 执行成功", self.config.name);
                             Ok(result)
                         }
                         Err(fallback_error) => {
                             self.update_stats();
-                            
+
                             error!("降级策略 {} 执行失败: {}", self.config.name, fallback_error);
                             Err(fallback_error)
                         }
@@ -162,18 +165,10 @@ impl Fallback {
         self.config.conditions.iter().any(|condition| {
             match condition {
                 FallbackCondition::AnyError => true,
-                FallbackCondition::ErrorType(error_type) => {
-                    error.category().contains(error_type)
-                }
-                FallbackCondition::ErrorSeverity(severity) => {
-                    error.severity() == *severity
-                }
-                FallbackCondition::TimeoutError => {
-                    error.category() == "timeout"
-                }
-                FallbackCondition::NetworkError => {
-                    error.category() == "network"
-                }
+                FallbackCondition::ErrorType(error_type) => error.category().contains(error_type),
+                FallbackCondition::ErrorSeverity(severity) => error.severity() == *severity,
+                FallbackCondition::TimeoutError => error.category() == "timeout",
+                FallbackCondition::NetworkError => error.category() == "network",
                 FallbackCondition::Custom { name, parameters } => {
                     debug!("检查自定义降级条件: {}, 参数: {:?}", name, parameters);
                     // 这里可以根据具体需求实现自定义条件检查
@@ -228,15 +223,16 @@ impl Fallback {
             file!(),
             line!(),
             ErrorSeverity::High,
-            "fallback"
+            "fallback",
         );
 
         UnifiedError::new(
             &format!("降级策略 {} 失败: {}", self.config.name, message),
             ErrorSeverity::High,
             "fallback_failed",
-            context
-        ).with_code("FB_001")
+            context,
+        )
+        .with_code("FB_001")
         .with_suggestion("检查降级策略配置或备用服务状态")
     }
 
@@ -245,13 +241,14 @@ impl Fallback {
         let mut stats = self.stats.lock().unwrap();
         stats.total_requests = self.total_requests.load(Ordering::Relaxed);
         stats.fallback_used = self.fallback_used.load(Ordering::Relaxed);
-        
+
         if stats.fallback_used > 0 {
-            stats.fallback_success_rate = self.fallback_successes.load(Ordering::Relaxed) as f64 / stats.fallback_used as f64;
+            stats.fallback_success_rate =
+                self.fallback_successes.load(Ordering::Relaxed) as f64 / stats.fallback_used as f64;
         } else {
             stats.fallback_success_rate = 0.0;
         }
-        
+
         stats.last_updated = chrono::Utc::now();
     }
 
@@ -261,7 +258,7 @@ impl Fallback {
         let total = self.total_requests.load(Ordering::Relaxed);
         let used = self.fallback_used.load(Ordering::Relaxed);
         let successes = self.fallback_successes.load(Ordering::Relaxed);
-        
+
         FallbackStats {
             total_requests: total,
             fallback_used: used,
@@ -279,7 +276,7 @@ impl Fallback {
         self.total_requests.store(0, Ordering::Relaxed);
         self.fallback_used.store(0, Ordering::Relaxed);
         self.fallback_successes.store(0, Ordering::Relaxed);
-        
+
         let mut stats = self.stats.lock().unwrap();
         *stats = FallbackStats::default();
     }
@@ -384,7 +381,7 @@ impl FallbackMonitor {
     /// 获取全局统计信息
     pub fn get_global_stats(&self) -> FallbackStats {
         let mut global_stats = self.global_stats.lock().unwrap().clone();
-        
+
         // 聚合所有降级处理器的统计信息
         let fallbacks = self.fallbacks.lock().unwrap();
         for fallback in fallbacks.values() {
@@ -392,15 +389,17 @@ impl FallbackMonitor {
             global_stats.total_requests += stats.total_requests;
             global_stats.fallback_used += stats.fallback_used;
         }
-        
+
         // 重新计算降级成功率
         if global_stats.fallback_used > 0 {
-            let total_successes = fallbacks.values()
+            let total_successes = fallbacks
+                .values()
                 .map(|f| f.get_stats().fallback_used as f64 * f.get_stats().fallback_success_rate)
                 .sum::<f64>();
-            global_stats.fallback_success_rate = total_successes / global_stats.fallback_used as f64;
+            global_stats.fallback_success_rate =
+                total_successes / global_stats.fallback_used as f64;
         }
-        
+
         global_stats
     }
 
@@ -412,14 +411,18 @@ impl FallbackMonitor {
         report.push_str("=== 降级监控报告 ===\n\n");
         report.push_str(&format!("总请求数: {}\n", stats.total_requests));
         report.push_str(&format!("使用降级数: {}\n", stats.fallback_used));
-        report.push_str(&format!("降级率: {:.2}%\n", 
+        report.push_str(&format!(
+            "降级率: {:.2}%\n",
             if stats.total_requests > 0 {
                 stats.fallback_used as f64 / stats.total_requests as f64 * 100.0
             } else {
                 0.0
             }
         ));
-        report.push_str(&format!("降级成功率: {:.2}%\n", stats.fallback_success_rate * 100.0));
+        report.push_str(&format!(
+            "降级成功率: {:.2}%\n",
+            stats.fallback_success_rate * 100.0
+        ));
 
         report
     }
@@ -464,14 +467,14 @@ mod tests {
     #[tokio::test]
     async fn test_fallback_success() {
         let fallback = Fallback::new(FallbackConfig::default());
-        
-        let result: Result<String, UnifiedError> = fallback.execute(|| async {
-            Ok::<String, UnifiedError>("成功".to_string())
-        }).await;
+
+        let result: Result<String, UnifiedError> = fallback
+            .execute(|| async { Ok::<String, UnifiedError>("成功".to_string()) })
+            .await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "成功");
-        
+
         let stats = fallback.get_stats();
         assert_eq!(stats.total_requests, 1);
         assert_eq!(stats.fallback_used, 0);
@@ -485,19 +488,21 @@ mod tests {
             ..Default::default()
         };
         let fallback = Fallback::new(config);
-        
-        let result: Result<String, UnifiedError> = fallback.execute(|| async {
-            Err(UnifiedError::new(
-                "测试错误",
-                ErrorSeverity::Medium,
-                "test",
-                ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::Medium, "test")
-            ))
-        }).await;
+
+        let result: Result<String, UnifiedError> = fallback
+            .execute(|| async {
+                Err(UnifiedError::new(
+                    "测试错误",
+                    ErrorSeverity::Medium,
+                    "test",
+                    ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::Medium, "test"),
+                ))
+            })
+            .await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), ""); // 默认值
-        
+
         let stats = fallback.get_stats();
         assert_eq!(stats.total_requests, 1);
         assert_eq!(stats.fallback_used, 1);
@@ -511,21 +516,26 @@ mod tests {
             ..Default::default()
         };
         let fallback = Fallback::new(config);
-        
-        let result: Result<String, UnifiedError> = fallback.execute(|| async {
-            Err(UnifiedError::new(
-                "测试错误",
-                ErrorSeverity::Medium,
-                "test",
-                ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::Medium, "test")
-            ))
-        }).await;
+
+        let result: Result<String, UnifiedError> = fallback
+            .execute(|| async {
+                Err(UnifiedError::new(
+                    "测试错误",
+                    ErrorSeverity::Medium,
+                    "test",
+                    ErrorContext::new("test", "test", "test.rs", 1, ErrorSeverity::Medium, "test"),
+                ))
+            })
+            .await;
 
         assert!(result.is_err());
-        
+
         // When fallback is disabled, execute() returns early without updating stats
         let stats = fallback.get_stats();
-        assert_eq!(stats.total_requests, 0, "Disabled fallback should not count requests");
+        assert_eq!(
+            stats.total_requests, 0,
+            "Disabled fallback should not count requests"
+        );
         assert_eq!(stats.fallback_used, 0);
     }
 
@@ -533,7 +543,7 @@ mod tests {
     fn test_fallback_stats() {
         let fallback = Fallback::new(FallbackConfig::default());
         let stats = fallback.get_stats();
-        
+
         assert_eq!(stats.total_requests, 0);
         assert_eq!(stats.fallback_used, 0);
         assert_eq!(stats.fallback_success_rate, 0.0);
@@ -542,10 +552,10 @@ mod tests {
     #[test]
     fn test_fallback_reset() {
         let fallback = Fallback::new(FallbackConfig::default());
-        
+
         // 重置统计
         fallback.reset_stats();
-        
+
         let stats = fallback.get_stats();
         assert_eq!(stats.total_requests, 0);
         assert_eq!(stats.fallback_used, 0);
@@ -555,7 +565,7 @@ mod tests {
     fn test_fallback_monitor() {
         let monitor = FallbackMonitor::new();
         let stats = monitor.get_global_stats();
-        
+
         assert_eq!(stats.total_requests, 0);
         assert_eq!(stats.fallback_used, 0);
         assert_eq!(stats.fallback_success_rate, 0.0);
@@ -571,7 +581,7 @@ mod tests {
             ..Default::default()
         };
         let fallback = Fallback::new(config);
-        
+
         let config = fallback.get_config();
         assert_eq!(config.conditions.len(), 2);
     }
@@ -580,7 +590,7 @@ mod tests {
     fn test_fallback_set_enabled() {
         let mut fallback = Fallback::new(FallbackConfig::default());
         fallback.set_enabled(false);
-        
+
         assert!(!fallback.is_enabled());
     }
 }

@@ -15,7 +15,7 @@ impl StringOps {
         }
 
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && a.len() >= 16 {
             Self::equals_simd(a.as_bytes(), b.as_bytes())
         } else {
@@ -53,12 +53,9 @@ impl StringOps {
         }
 
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && needle.len() >= 16 {
-            Self::equals_simd(
-                &haystack.as_bytes()[..needle.len()],
-                needle.as_bytes()
-            )
+            Self::equals_simd(&haystack.as_bytes()[..needle.len()], needle.as_bytes())
         } else {
             haystack.starts_with(needle)
         }
@@ -71,14 +68,11 @@ impl StringOps {
         }
 
         let start = haystack.len() - needle.len();
-        
+
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && needle.len() >= 16 {
-            Self::equals_simd(
-                &haystack.as_bytes()[start..],
-                needle.as_bytes()
-            )
+            Self::equals_simd(&haystack.as_bytes()[start..], needle.as_bytes())
         } else {
             haystack.ends_with(needle)
         }
@@ -109,9 +103,9 @@ impl StringOps {
         use std::cmp::Ordering;
 
         let min_len = a.len().min(b.len());
-        
+
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && min_len >= 16 {
             // Process 16-byte chunks
             let chunks_a = a[..min_len].chunks_exact(16);
@@ -138,7 +132,7 @@ impl StringOps {
     /// Counts occurrences of a byte in a string
     pub fn count_byte(haystack: &[u8], needle: u8) -> usize {
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && haystack.len() >= 16 {
             Self::count_byte_simd(haystack, needle)
         } else {
@@ -273,7 +267,7 @@ mod tests {
         // Ensure SIMD and standard implementations give same results
         let long_a = "a".repeat(100);
         let long_b = "a".repeat(100);
-        
+
         let test_strings = vec![
             ("hello", "hello"),
             ("hello world", "hello world"),
@@ -288,4 +282,3 @@ mod tests {
         }
     }
 }
-

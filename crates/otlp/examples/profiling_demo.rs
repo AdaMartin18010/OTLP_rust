@@ -5,9 +5,8 @@
 //! Run with: `cargo run --example profiling_demo --features=async`
 
 use otlp::profiling::{
-    CpuProfiler, CpuProfilerConfig, MemoryProfiler, MemoryProfilerConfig,
-    ProfileBuilder, ProfileExporter, ProfileExporterConfig, ProfileType,
-    generate_profile_id, AttributeValue,
+    AttributeValue, CpuProfiler, CpuProfilerConfig, MemoryProfiler, MemoryProfilerConfig,
+    ProfileBuilder, ProfileExporter, ProfileExporterConfig, ProfileType, generate_profile_id,
 };
 use std::collections::HashMap;
 use std::time::Duration;
@@ -67,7 +66,10 @@ async fn demo_cpu_profiling() -> Result<(), Box<dyn std::error::Error>> {
     println!("     - Samples collected: {}", stats.sample_count);
     println!("     - Duration: {:.2}s", stats.duration.as_secs_f64());
     println!("     - Sampling frequency: {} Hz", stats.sampling_frequency);
-    println!("     - Actual sampling rate: {:.2} samples/sec", stats.actual_sampling_rate());
+    println!(
+        "     - Actual sampling rate: {:.2} samples/sec",
+        stats.actual_sampling_rate()
+    );
 
     // Generate profile
     if stats.sample_count > 0 {
@@ -115,11 +117,20 @@ async fn demo_memory_profiling() -> Result<(), Box<dyn std::error::Error>> {
     println!("  📈 Profile Statistics:");
     println!("     - Samples collected: {}", stats.sample_count);
     println!("     - Total allocated: {} bytes", stats.total_allocated);
-    println!("     - Total deallocated: {} bytes", stats.total_deallocated);
+    println!(
+        "     - Total deallocated: {} bytes",
+        stats.total_deallocated
+    );
     println!("     - Current usage: {} bytes", stats.current_usage);
     println!("     - Allocation count: {}", stats.allocation_count);
-    println!("     - Allocation rate: {:.2} bytes/sec", stats.allocation_rate());
-    println!("     - Average allocation: {:.2} bytes", stats.average_allocation_size());
+    println!(
+        "     - Allocation rate: {:.2} bytes/sec",
+        stats.allocation_rate()
+    );
+    println!(
+        "     - Average allocation: {:.2} bytes",
+        stats.average_allocation_size()
+    );
 
     // Generate profile
     if stats.sample_count > 0 {
@@ -140,16 +151,16 @@ async fn demo_profile_export() -> Result<(), Box<dyn std::error::Error>> {
     // Create a simple profile
     let mut config = CpuProfilerConfig::default();
     config.max_duration = Duration::from_millis(500);
-    
+
     let mut profiler = CpuProfiler::new(config);
-    
+
     println!("  🔄 Collecting profile data...");
     profiler.start().await?;
     simulate_cpu_work().await;
     profiler.stop().await?;
-    
+
     tokio::time::sleep(Duration::from_millis(100)).await;
-    
+
     let pprof_profile = profiler.generate_profile().await?;
 
     // Build a complete OTLP profile
@@ -167,9 +178,15 @@ async fn demo_profile_export() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let profile = ProfileBuilder::new(profile_id.clone())
-        .attribute("service.name", AttributeValue::String("profiling-demo".to_string()))
+        .attribute(
+            "service.name",
+            AttributeValue::String("profiling-demo".to_string()),
+        )
         .attribute("profile.type", AttributeValue::String("cpu".to_string()))
-        .attribute("environment", AttributeValue::String("development".to_string()))
+        .attribute(
+            "environment",
+            AttributeValue::String("development".to_string()),
+        )
         .build(pprof_profile);
 
     println!("  ✅ Built OTLP profile:");
@@ -204,12 +221,11 @@ async fn simulate_cpu_work() {
         for i in 0..1_000_000 {
             sum = sum.wrapping_add(i);
         }
-        
+
         // Small async delay
         tokio::time::sleep(Duration::from_millis(10)).await;
-        
+
         // Prevent optimization
         std::hint::black_box(sum);
     }
 }
-

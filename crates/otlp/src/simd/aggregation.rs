@@ -15,7 +15,7 @@ impl Aggregator {
         }
 
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && values.len() >= 4 {
             Self::sum_i64_simd(values)
         } else {
@@ -60,7 +60,7 @@ impl Aggregator {
         }
 
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && values.len() >= 4 {
             Self::sum_f64_simd(values)
         } else {
@@ -102,7 +102,7 @@ impl Aggregator {
         }
 
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && values.len() >= 4 {
             Self::min_i64_simd(values)
         } else {
@@ -143,7 +143,7 @@ impl Aggregator {
         }
 
         let features = CpuFeatures::global();
-        
+
         if features.has_simd() && values.len() >= 4 {
             Self::max_i64_simd(values)
         } else {
@@ -191,12 +191,14 @@ impl Aggregator {
         let max = values.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
         // Variance calculation
-        let variance = values.iter()
+        let variance = values
+            .iter()
             .map(|&x| {
                 let diff = x - mean;
                 diff * diff
             })
-            .sum::<f64>() / count as f64;
+            .sum::<f64>()
+            / count as f64;
 
         AggregateStats {
             count,
@@ -309,11 +311,10 @@ mod tests {
     fn test_simd_vs_scalar() {
         // Test that SIMD and scalar produce same results
         let values: Vec<i64> = (1..=1000).collect();
-        
+
         let sum_simd = Aggregator::sum_i64(&values);
         let sum_scalar = Aggregator::sum_i64_scalar(&values);
-        
+
         assert_eq!(sum_simd, sum_scalar);
     }
 }
-

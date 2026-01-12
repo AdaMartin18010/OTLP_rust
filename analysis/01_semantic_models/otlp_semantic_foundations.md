@@ -20,7 +20,7 @@ fn main() {
         KeyValue::new("service.version", "1.0.0"),
         KeyValue::new("deployment.environment", "production"),
     ];
-    
+
     println!("OTLP语义属性: {:?}", attributes);
 }
 ```
@@ -201,7 +201,7 @@ OTLP 采用语义三元组模型来表示可观测性数据：
 
 示例:
 <服务A, 调用, 服务B> → Trace
-<CPU, 使用率, 85%> → Metric  
+<CPU, 使用率, 85%> → Metric
 <应用, 记录, "用户登录"> → Log
 ```
 
@@ -231,7 +231,7 @@ T_OTLP = {(s, p, o) | s ∈ S, p ∈ P, o ∈ O}
 1. 设 e 为OTLP中的可观测性事件
 2. 根据OTLP规范，每个事件都有：
    - 产生者（主体）：s ∈ S
-   - 操作类型（谓词）：p ∈ P  
+   - 操作类型（谓词）：p ∈ P
    - 操作对象（对象）：o ∈ O
 3. 因此存在映射 f: E → T_OTLP，使得 f(e) = (s, p, o)
 4. 由于 f 是满射，所以 T_OTLP 是完备的
@@ -277,7 +277,7 @@ T_OTLP = {(s, p, o) | s ∈ S, p ∈ P, o ∈ O}
 OTLP的三个支柱（Trace、Metric、Log）都可以通过语义三元组统一表示：
 
 1. **Trace表示**：T_trace = (span_id, operation, target_service)
-2. **Metric表示**：T_metric = (resource, measurement, value)  
+2. **Metric表示**：T_metric = (resource, measurement, value)
 3. **Log表示**：T_log = (source, event_type, message)
 
 **证明**：
@@ -328,7 +328,7 @@ R = (A, V, f: A → V, S)
 其中：
 
 - A = {a₁, a₂, ..., aₙ} 是属性集合
-- V = {v₁, v₂, ..., vₘ} 是值集合  
+- V = {v₁, v₂, ..., vₘ} 是值集合
 - f: A → V 是属性到值的映射函数
 - S 是语义模式约束集合
 
@@ -816,7 +816,7 @@ interface SemanticPlugin {
     name: string
     version: string
     semantic_domain: string
-    
+
     validate(signal: Signal): ValidationResult
     transform(signal: Signal): Signal
     aggregate(signals: Signal[]): Signal

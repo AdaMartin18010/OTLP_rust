@@ -12,17 +12,17 @@ OTLP Rust 项目是一个基于 Rust 1.90 语言特性的 OpenTelemetry Protocol
   - 使用原子操作和无锁数据结构
   - 支持滑动窗口和半开状态
   - 性能提升 60-80%
-  
+
 - **优化的内存池** (`otlp/src/performance/optimized_memory_pool.rs`)
   - 零拷贝对象管理
   - 智能对象回收机制
   - 自动过期清理
-  
+
 - **优化的批处理器** (`otlp/src/performance/optimized_batch_processor.rs`)
   - 智能批处理策略
   - 支持优先级和压缩
   - 内存限制和流量控制
-  
+
 - **优化的连接池** (`otlp/src/performance/optimized_connection_pool.rs`)
   - 高效连接复用
   - 健康检查机制
@@ -34,7 +34,7 @@ OTLP Rust 项目是一个基于 Rust 1.90 语言特性的 OpenTelemetry Protocol
   - 统一的性能组件管理
   - 清晰的接口定义
   - 完整的错误处理
-  
+
 - **Rust 1.90 特性应用**
   - 零拷贝优化 (`Cow`)
   - 异步闭包
@@ -49,7 +49,7 @@ OTLP Rust 项目是一个基于 Rust 1.90 语言特性的 OpenTelemetry Protocol
   - 批处理器性能测试
   - 连接池性能测试
   - 综合性能测试
-  
+
 - **测试配置和报告**
   - 可配置的测试参数
   - 详细的性能报告生成
@@ -61,17 +61,17 @@ OTLP Rust 项目是一个基于 Rust 1.90 语言特性的 OpenTelemetry Protocol
   - `otlp/k8s/otlp-deployment.yaml` - 完整的 K8s 部署配置
   - `otlp/k8s/otlp-hpa.yaml` - 自动扩缩容配置
   - `otlp/k8s/otlp-ingress.yaml` - 网络入口配置
-  
+
 - **Docker 容器化**
   - `otlp/Dockerfile` - 多阶段构建优化
   - 安全扫描和镜像优化
   - 非 root 用户运行
-  
+
 - **CI/CD 流水线**
   - `otlp/.github/workflows/ci-cd.yml` - 完整的 CI/CD 配置
   - 自动化测试、构建、部署
   - 安全扫描和代码质量检查
-  
+
 - **Helm 图表**
   - `otlp/helm/otlp-server/Chart.yaml` - Helm 图表定义
   - `otlp/helm/otlp-server/values.yaml` - 可配置的部署参数
@@ -82,7 +82,7 @@ OTLP Rust 项目是一个基于 Rust 1.90 语言特性的 OpenTelemetry Protocol
   - `otlp/docs/README.md` - 项目文档导航
   - `otlp/docs/getting-started/quick-start.md` - 快速入门指南
   - `otlp/docs/architecture/overview.md` - 系统架构概览
-  
+
 - **文档内容**
   - 详细的安装和配置指南
   - 完整的 API 参考
@@ -95,12 +95,12 @@ OTLP Rust 项目是一个基于 Rust 1.90 语言特性的 OpenTelemetry Protocol
   - 高性能指标收集和聚合
   - 支持多种指标类型（Counter、Gauge、Histogram、Summary）
   - 自动清理和统计功能
-  
+
 - **Prometheus 导出器** (`otlp/src/monitoring/prometheus_exporter.rs`)
   - 标准 Prometheus 格式导出
   - 可配置的导出策略
   - 完整的统计信息
-  
+
 - **监控系统** (`otlp/src/monitoring/mod.rs`)
   - 统一的监控组件管理
   - 可配置的监控策略

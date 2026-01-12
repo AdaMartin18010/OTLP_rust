@@ -42,12 +42,12 @@ impl AnomalyClassifier {
             patterns: HashMap::new(),
         }
     }
-    
+
     /// 分类异常
     pub fn classify(&self, _features: &[f64]) -> Option<String> {
         None
     }
-    
+
     /// 添加已知模式
     pub fn add_pattern(&mut self, pattern: AnomalyPattern) {
         self.patterns.insert(pattern.pattern_id.clone(), pattern);
@@ -79,25 +79,24 @@ impl AnomalyLearner {
             classifier: AnomalyClassifier::new(LearningModel::IsolationForest),
         }
     }
-    
+
     /// 学习新模式
     pub fn learn(&mut self, pattern: AnomalyPattern) {
         self.classifier.add_pattern(pattern);
     }
-    
+
     /// 检测异常
     pub fn detect_anomaly(&self, features: &[f64]) -> bool {
         self.classifier.classify(features).is_some()
     }
-    
+
     /// 获取学习率
     pub fn learning_rate(&self) -> f64 {
         self.learning_rate
     }
-    
+
     /// 获取已知模式数量
     pub fn pattern_count(&self) -> usize {
         self.classifier.patterns.len()
     }
 }
-

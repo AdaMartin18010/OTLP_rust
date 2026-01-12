@@ -128,7 +128,7 @@ impl AdvancedSimdOptimizer {
                     SimdOperation::Sin => {
                         // 简化的正弦计算，实际应用中可能需要更复杂的实现
                         let pi = _mm256_set1_pd(std::f64::consts::PI);
-                        
+
                         _mm256_sub_pd(
                             data_vec,
                             _mm256_mul_pd(pi, _mm256_floor_pd(_mm256_div_pd(data_vec, pi))),
@@ -138,7 +138,7 @@ impl AdvancedSimdOptimizer {
                         // 简化的余弦计算
                         let pi = _mm256_set1_pd(std::f64::consts::PI);
                         let half_pi = _mm256_set1_pd(std::f64::consts::PI / 2.0);
-                        
+
                         _mm256_sub_pd(
                             _mm256_add_pd(data_vec, half_pi),
                             _mm256_mul_pd(

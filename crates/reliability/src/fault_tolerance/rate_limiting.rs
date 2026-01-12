@@ -8,10 +8,10 @@
 // - Sliding Window Log: Most accurate but more memory intensive
 
 use crate::error_handling::prelude::*;
+use parking_lot::RwLock;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use parking_lot::RwLock;
 
 /// Rate limiter trait
 #[async_trait::async_trait]
@@ -421,7 +421,7 @@ impl RateLimiter for SlidingWindow {
         self.roll_window_if_needed().await;
 
         let weighted = self.weighted_count().await;
-        
+
         {
             let mut stats = self.stats.write();
             stats.total_requests += 1;
@@ -499,9 +499,7 @@ impl SlidingWindowLog {
         let mut log = self.log.lock().await;
 
         // Remove entries older than window
-        log.retain(|&timestamp| {
-            now.duration_since(timestamp) < self.window_size
-        });
+        log.retain(|&timestamp| now.duration_since(timestamp) < self.window_size);
 
         let mut stats = self.stats.write();
         stats.current_tokens = (self.max_requests - log.len() as u64) as f64;
@@ -514,7 +512,7 @@ impl RateLimiter for SlidingWindowLog {
         self.clean_old_entries().await;
 
         let mut log = self.log.lock().await;
-        
+
         {
             let mut stats = self.stats.write();
             stats.total_requests += 1;
@@ -524,7 +522,7 @@ impl RateLimiter for SlidingWindowLog {
             log.push(Instant::now());
             let log_len = log.len();
             drop(log); // 提前释放 Mutex
-            
+
             {
                 let mut stats = self.stats.write();
                 stats.allowed_requests += 1;
@@ -533,7 +531,7 @@ impl RateLimiter for SlidingWindowLog {
             true
         } else {
             drop(log); // 提前释放 Mutex
-            
+
             {
                 let mut stats = self.stats.write();
                 stats.rejected_requests += 1;
@@ -609,15 +607,9 @@ impl RateLimiterBuilder {
 
     pub fn build(self) -> Arc<dyn RateLimiter> {
         match self.algorithm {
-            RateLimiterAlgorithm::TokenBucket => {
-                Arc::new(TokenBucket::new(self.rate, self.period))
-            }
-            RateLimiterAlgorithm::LeakyBucket => {
-                Arc::new(LeakyBucket::new(self.rate, self.period))
-            }
-            RateLimiterAlgorithm::FixedWindow => {
-                Arc::new(FixedWindow::new(self.rate, self.period))
-            }
+            RateLimiterAlgorithm::TokenBucket => Arc::new(TokenBucket::new(self.rate, self.period)),
+            RateLimiterAlgorithm::LeakyBucket => Arc::new(LeakyBucket::new(self.rate, self.period)),
+            RateLimiterAlgorithm::FixedWindow => Arc::new(FixedWindow::new(self.rate, self.period)),
             RateLimiterAlgorithm::SlidingWindow => {
                 Arc::new(SlidingWindow::new(self.rate, self.period))
             }
@@ -758,4 +750,3 @@ mod tests {
         assert!(elapsed >= Duration::from_millis(40));
     }
 }
-

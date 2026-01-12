@@ -7,7 +7,7 @@ use crate::error_handling::prelude::*;
 use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tokio::time::timeout;
 
 /// Channel for sending messages between processes
@@ -38,7 +38,10 @@ impl<T> Channel<T> {
     /// Create a new unbounded channel
     pub fn unbounded() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
         let (tx, rx) = mpsc::unbounded_channel();
-        (UnboundedSender { sender: tx }, UnboundedReceiver { receiver: rx })
+        (
+            UnboundedSender { sender: tx },
+            UnboundedReceiver { receiver: rx },
+        )
     }
 
     /// Send a value through the channel
@@ -48,7 +51,14 @@ impl<T> Channel<T> {
                 "Failed to send: channel closed",
                 ErrorSeverity::Medium,
                 "csp",
-                ErrorContext::new("csp", "send", file!(), line!(), ErrorSeverity::Medium, "csp"),
+                ErrorContext::new(
+                    "csp",
+                    "send",
+                    file!(),
+                    line!(),
+                    ErrorSeverity::Medium,
+                    "csp",
+                ),
             )
         })
     }
@@ -64,7 +74,14 @@ impl<T> Channel<T> {
                 msg,
                 ErrorSeverity::Low,
                 "csp",
-                ErrorContext::new("csp", "try_send", file!(), line!(), ErrorSeverity::Low, "csp"),
+                ErrorContext::new(
+                    "csp",
+                    "try_send",
+                    file!(),
+                    line!(),
+                    ErrorSeverity::Low,
+                    "csp",
+                ),
             )
         })
     }
@@ -87,7 +104,14 @@ impl<T> Channel<T> {
                 msg,
                 ErrorSeverity::Low,
                 "csp",
-                ErrorContext::new("csp", "try_recv", file!(), line!(), ErrorSeverity::Low, "csp"),
+                ErrorContext::new(
+                    "csp",
+                    "try_recv",
+                    file!(),
+                    line!(),
+                    ErrorSeverity::Low,
+                    "csp",
+                ),
             )
         })
     }
@@ -149,7 +173,14 @@ impl<T> UnboundedSender<T> {
                 "Failed to send: channel closed",
                 ErrorSeverity::Medium,
                 "csp",
-                ErrorContext::new("csp", "send", file!(), line!(), ErrorSeverity::Medium, "csp"),
+                ErrorContext::new(
+                    "csp",
+                    "send",
+                    file!(),
+                    line!(),
+                    ErrorSeverity::Medium,
+                    "csp",
+                ),
             )
         })
     }
@@ -183,7 +214,14 @@ impl<T> UnboundedReceiver<T> {
                 msg,
                 ErrorSeverity::Low,
                 "csp",
-                ErrorContext::new("csp", "try_recv", file!(), line!(), ErrorSeverity::Low, "csp"),
+                ErrorContext::new(
+                    "csp",
+                    "try_recv",
+                    file!(),
+                    line!(),
+                    ErrorSeverity::Low,
+                    "csp",
+                ),
             )
         })
     }
@@ -303,9 +341,7 @@ impl Process {
 
 impl fmt::Debug for Process {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Process")
-            .field("name", &self.name)
-            .finish()
+        f.debug_struct("Process").field("name", &self.name).finish()
     }
 }
 
@@ -359,11 +395,7 @@ impl<T: Send + 'static> Pipeline<T> {
         value
     }
 
-    pub async fn process_async<I>(
-        &self,
-        input: Channel<T>,
-        output: Channel<T>,
-    ) -> Result<()>
+    pub async fn process_async<I>(&self, input: Channel<T>, output: Channel<T>) -> Result<()>
     where
         T: Clone,
     {
@@ -382,10 +414,7 @@ impl<T: Send + 'static> Default for Pipeline<T> {
 }
 
 /// Fan-out pattern: send to multiple channels
-pub async fn fan_out<T: Clone>(
-    input: &Channel<T>,
-    outputs: Vec<&Channel<T>>,
-) -> Result<()> {
+pub async fn fan_out<T: Clone>(input: &Channel<T>, outputs: Vec<&Channel<T>>) -> Result<()> {
     while let Some(value) = input.recv().await {
         for output in &outputs {
             output.send(value.clone()).await?;
@@ -395,10 +424,7 @@ pub async fn fan_out<T: Clone>(
 }
 
 /// Fan-in pattern: receive from multiple channels
-pub async fn fan_in<T: Send + 'static>(
-    inputs: Vec<Channel<T>>,
-    output: Channel<T>,
-) -> Result<()> {
+pub async fn fan_in<T: Send + 'static>(inputs: Vec<Channel<T>>, output: Channel<T>) -> Result<()> {
     let mut handles = Vec::new();
 
     for input in inputs {
@@ -504,11 +530,13 @@ mod tests {
         let out2_clone = out2.clone();
 
         tokio::spawn(async move {
-            fan_out(&input_clone, vec![&out1_clone, &out2_clone]).await.ok();
+            fan_out(&input_clone, vec![&out1_clone, &out2_clone])
+                .await
+                .ok();
         });
 
         input.send(42).await.unwrap();
-        
+
         // Give time for fan_out to process
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 
@@ -516,4 +544,3 @@ mod tests {
         assert_eq!(out2.recv().await, Some(42));
     }
 }
-

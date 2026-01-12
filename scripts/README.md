@@ -1,237 +1,112 @@
-# 项目实用脚本
+# 脚本目录说明
 
-本目录包含用于项目改进和维护的实用脚本。
+**最后更新**: 2025年1月
 
-## 📋 脚本列表
+---
 
-### 1. 🏥 项目健康度检查 (`check_project_health.sh`)
+## 📋 目录
 
-**用途**: 快速检查项目的整体健康状况
+本目录包含项目构建、测试、部署和维护相关的脚本。
 
-**使用方法**:
+---
+
+## 🚀 快速使用
+
+### 构建和测试
+
+#### 完整构建检查
+
 ```bash
-./scripts/check_project_health.sh
+# Linux/macOS
+./scripts/build_all.sh
+
+# Windows PowerShell
+.\scripts\build_all.ps1
 ```
 
-**检查项目**:
-- ✅ Rust工具链版本
-- ✅ 项目结构完整性
-- ✅ 测试文件覆盖
-- ✅ 文档完整性
-- ✅ CI/CD配置
-- ✅ 安全审计状态
-- ✅ 依赖版本冲突
+#### 测试覆盖率
 
-**输出示例**:
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🏥 OTLP_rust 项目健康度检查
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```bash
+# Linux/macOS
+./scripts/test_with_coverage.sh
 
-✅ PASS - Rust版本: 1.90.0
-✅ PASS - Cargo版本: 1.90.0
-✅ PASS - Cargo.toml存在
-✅ PASS - crates目录存在 (4个crate)
-...
-
-📈 健康度总结
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-通过: 15 | 警告: 3 | 失败: 0
-
-✨ 健康度: 优秀 (83%)
+# Windows PowerShell
+.\scripts\test_with_coverage.ps1
 ```
 
 ---
 
-### 2. 🔧 OpenTelemetry版本冲突修复 (`fix_opentelemetry_conflict.sh`)
+## 📁 脚本分类
 
-**用途**: 自动检测并修复OpenTelemetry版本冲突
+### 构建脚本
 
-**使用方法**:
-```bash
-./scripts/fix_opentelemetry_conflict.sh
-```
+- `build_all.sh` / `build_all.ps1` - 完整构建和检查
+  - 代码格式化检查
+  - Clippy 检查
+  - 编译检查
+  - 测试运行
+  - 文档检查
 
-**执行步骤**:
-1. 检测当前OpenTelemetry版本
-2. 识别版本冲突
-3. 备份Cargo.toml
-4. 添加版本patch统一版本
-5. 更新依赖
-6. 验证编译
+### 测试脚本
 
-**安全特性**:
-- ✅ 自动备份Cargo.toml
-- ✅ 用户确认才执行
-- ✅ 编译验证
-- ✅ 失败自动回滚提示
+- `test_with_coverage.sh` / `test_with_coverage.ps1` - 测试覆盖率
+  - 运行所有测试
+  - 生成覆盖率报告 (LCOV 和 HTML)
+  - 需要 cargo-llvm-cov 工具
 
-**输出示例**:
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔧 OpenTelemetry 版本冲突修复工具
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+### 其他脚本
 
-⚠️  检测到版本冲突: 存在 2 个不同版本
-  - 0.30.0
-  - 0.31.0
-
-🎯 目标统一版本: 0.31.0
-
-是否要将所有OpenTelemetry依赖统一到 v0.31.0? (y/N)
-```
+- 查看 `scripts/` 目录获取更多脚本
 
 ---
 
-### 3. 📊 测试覆盖率设置 (`setup_coverage.sh`)
+## 🔧 工具要求
 
-**用途**: 安装工具并生成测试覆盖率报告
+### 必需工具
 
-**使用方法**:
-```bash
-./scripts/setup_coverage.sh
-```
+- `cargo` - Rust 包管理器
+- `rustc` - Rust 编译器
 
-**执行步骤**:
-1. 检查并安装cargo-tarpaulin
-2. 创建覆盖率输出目录
-3. 运行测试覆盖率分析
-4. 生成多种格式报告(HTML/Lcov/JSON)
-5. 创建基准文档
+### 可选工具
 
-**生成文件**:
-```
-coverage/
-├── index.html                  # HTML报告 (可浏览器打开)
-├── cobertura.xml              # Lcov格式
-├── tarpaulin-report.json      # JSON数据
-├── tarpaulin.log              # 详细日志
-└── COVERAGE_BASELINE_YYYY_MM_DD.md  # 基准报告
-```
+- `cargo-llvm-cov` - 覆盖率报告 (用于覆盖率脚本)
 
-**输出示例**:
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 测试覆盖率设置和报告生成
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ cargo-tarpaulin 已安装
-✅ 创建目录: coverage/
-✅ 覆盖率分析完成 (耗时: 120秒)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 覆盖率结果
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ 总体覆盖率: 75% (良好)
-```
+  ```bash
+  cargo install cargo-llvm-cov
+  ```
 
 ---
 
-## 🚀 快速开始
+## 📝 使用说明
 
-### 首次使用推荐流程
-
-```bash
-# 1. 检查项目健康度
-./scripts/check_project_health.sh
-
-# 2. 如果检测到OpenTelemetry版本冲突，修复它
-./scripts/fix_opentelemetry_conflict.sh
-
-# 3. 生成测试覆盖率报告
-./scripts/setup_coverage.sh
-
-# 4. 查看覆盖率报告
-open coverage/index.html  # macOS
-# 或
-xdg-open coverage/index.html  # Linux
-# 或
-start coverage/index.html  # Windows
-```
-
----
-
-## 📝 使用建议
-
-### 定期维护
-
-**每周**:
-```bash
-# 检查项目健康度
-./scripts/check_project_health.sh
-```
-
-**每月**:
-```bash
-# 更新覆盖率报告
-./scripts/setup_coverage.sh
-
-# 查看进度
-cat coverage/COVERAGE_BASELINE_*.md
-```
-
-**发现问题时**:
-```bash
-# 修复版本冲突
-./scripts/fix_opentelemetry_conflict.sh
-```
-
----
-
-## 🔍 故障排查
-
-### 脚本权限问题
+### Linux/macOS
 
 ```bash
-# 如果脚本无法执行，添加执行权限
+# 给脚本添加执行权限
 chmod +x scripts/*.sh
+
+# 运行脚本
+./scripts/build_all.sh
 ```
 
-### Rust版本问题
+### Windows PowerShell
 
-```bash
-# 更新到Rust 1.90.0
-rustup update
-rustup default 1.90
-```
+```powershell
+# 直接运行 PowerShell 脚本
+.\scripts\build_all.ps1
 
-### 工具安装失败
-
-```bash
-# 手动安装工具
-cargo install cargo-tarpaulin
-cargo install cargo-audit
-cargo install cargo-nextest
+# 如果遇到执行策略问题，运行:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ---
 
-## 📚 相关文档
+## 🎯 最佳实践
 
-- [执行摘要](../analysis/EXECUTIVE_SUMMARY_2025_10_29.md)
-- [完整评估报告](../analysis/CRITICAL_EVALUATION_REPORT_2025_10_29.md)
-- [改进行动计划](../analysis/IMPROVEMENT_ACTION_PLAN_2025_10_29.md)
-
----
-
-## 💡 贡献
-
-如果您有改进脚本的建议，请:
-1. Fork项目
-2. 创建特性分支
-3. 提交Pull Request
+1. **提交前检查**: 运行 `build_all.sh` 确保所有检查通过
+2. **覆盖率检查**: 定期运行覆盖率脚本，确保测试覆盖率达标
+3. **CI/CD 集成**: 这些脚本可用于 CI/CD 流水线
 
 ---
 
-## 📞 支持
-
-遇到问题？
-- 查看脚本输出的错误信息
-- 参考改进行动计划文档
-- 提交Issue到GitHub
-
----
-
-*脚本由改进行动计划自动生成，版本: 2025-10-29*
-
+**状态**: 📊 持续更新

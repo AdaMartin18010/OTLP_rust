@@ -64,17 +64,17 @@ impl AdaptiveTuner {
             },
         }
     }
-    
+
     /// 设置调优策略
     pub fn set_policy(&mut self, policy: TuningPolicy) {
         self.policy = policy;
     }
-    
+
     /// 设置性能目标
     pub fn set_target(&mut self, target: PerformanceTarget) {
         self.target = target;
     }
-    
+
     /// 执行调优
     pub async fn tune(&self) -> TuningResult {
         TuningResult {
@@ -84,7 +84,7 @@ impl AdaptiveTuner {
             message: "No tuning needed".to_string(),
         }
     }
-    
+
     /// 分析当前性能
     pub fn analyze_performance(&self, _current_latency: f64, _current_throughput: f64) -> bool {
         // 实际实现会比较当前性能和目标
@@ -97,4 +97,3 @@ impl Default for AdaptiveTuner {
         Self::new()
     }
 }
-

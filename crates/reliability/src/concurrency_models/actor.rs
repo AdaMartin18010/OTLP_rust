@@ -15,8 +15,8 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
+use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use uuid::Uuid;
 
 /// Unique identifier for an actor
@@ -61,23 +61,21 @@ impl ActorRef {
 
     /// Send a message to the actor
     pub fn send<M: ActorMessage>(&self, message: M) -> Result<()> {
-        self.sender
-            .send(Box::new(message))
-            .map_err(|_| {
-                UnifiedError::new(
-                    format!("Failed to send message to actor {}", self.id),
+        self.sender.send(Box::new(message)).map_err(|_| {
+            UnifiedError::new(
+                format!("Failed to send message to actor {}", self.id),
+                ErrorSeverity::Medium,
+                "actor",
+                ErrorContext::new(
+                    "actor",
+                    "send",
+                    file!(),
+                    line!(),
                     ErrorSeverity::Medium,
                     "actor",
-                    ErrorContext::new(
-                        "actor",
-                        "send",
-                        file!(),
-                        line!(),
-                        ErrorSeverity::Medium,
-                        "actor",
-                    ),
-                )
-            })
+                ),
+            )
+        })
     }
 
     /// Send a message and wait for response
@@ -509,4 +507,3 @@ mod tests {
         assert_eq!(system.list_actors().await.len(), 0);
     }
 }
-

@@ -1,7 +1,7 @@
 # OTLP Collector 告警与仪表板基线指南
 
-> **版本**: 2.0  
-> **日期**: 2025年10月17日  
+> **版本**: 2.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -47,7 +47,7 @@ groups:
     rules:
       - alert: OTLPCollectorHighExportFailureRate
         expr: |
-          rate(otelcol_exporter_send_failed_spans[5m]) > 0 
+          rate(otelcol_exporter_send_failed_spans[5m]) > 0
           or
           rate(otelcol_exporter_send_failed_metric_points[5m]) > 0
         for: 5m
@@ -160,7 +160,7 @@ groups:
 ```yaml
       - alert: OTLPCollectorExportLatency
         expr: |
-          histogram_quantile(0.95, 
+          histogram_quantile(0.95,
             rate(otelcol_exporter_send_latency_bucket[5m])
           ) > 100
         for: 15m
@@ -397,8 +397,8 @@ graph TD
 
 ```promql
 # 异常检测：当前值超过过去7天平均值的2倍
-rate(otelcol_exporter_send_failed_spans[5m]) 
-> 
+rate(otelcol_exporter_send_failed_spans[5m])
+>
 2 * avg_over_time(rate(otelcol_exporter_send_failed_spans[5m])[7d:5m])
 ```
 

@@ -33,31 +33,25 @@
 //!                  └────────────────┘
 //! ```
 
-pub mod call_chain;
-pub mod execution_graph;
-pub mod dependency_detector;
-pub mod performance_analyzer;
 pub mod bottleneck_identifier;
+pub mod call_chain;
+pub mod dependency_detector;
+pub mod execution_graph;
+pub mod performance_analyzer;
 
 // Re-export commonly used types
-pub use call_chain::{
-    CallChainTracker, CallEntry, CallChain, CallChainStats,
-};
+pub use call_chain::{CallChain, CallChainStats, CallChainTracker, CallEntry};
 
-pub use execution_graph::{
-    ExecutionGraph, ExecutionNode, ExecutionEdge, GraphAnalyzer,
-};
+pub use execution_graph::{ExecutionEdge, ExecutionGraph, ExecutionNode, GraphAnalyzer};
 
 pub use dependency_detector::{
-    DependencyDetector, ServiceDependency, DependencyGraph, DependencyType,
+    DependencyDetector, DependencyGraph, DependencyType, ServiceDependency,
 };
 
-pub use performance_analyzer::{
-    PerformanceAnalyzer, PerformanceMetrics, PerformanceReport,
-};
+pub use performance_analyzer::{PerformanceAnalyzer, PerformanceMetrics, PerformanceReport};
 
 pub use bottleneck_identifier::{
-    BottleneckIdentifier, Bottleneck, BottleneckType, BottleneckSeverity,
+    Bottleneck, BottleneckIdentifier, BottleneckSeverity, BottleneckType,
 };
 
 /// 执行流配置
@@ -113,7 +107,7 @@ impl ExecutionFlowTracker {
             bottleneck_identifier: BottleneckIdentifier::new(),
         }
     }
-    
+
     /// 开始追踪执行
     pub fn start_tracking(&self, operation: &str) -> TrackingContext {
         TrackingContext {
@@ -121,32 +115,32 @@ impl ExecutionFlowTracker {
             start_time: std::time::Instant::now(),
         }
     }
-    
+
     /// 结束追踪
     pub fn end_tracking(&self, _context: TrackingContext) {
         // 实际实现会记录执行信息
     }
-    
+
     /// 获取调用链追踪器
     pub fn call_chain_tracker(&self) -> &CallChainTracker {
         &self.call_chain_tracker
     }
-    
+
     /// 获取执行图
     pub fn execution_graph(&self) -> &ExecutionGraph {
         &self.execution_graph
     }
-    
+
     /// 获取依赖检测器
     pub fn dependency_detector(&self) -> &DependencyDetector {
         &self.dependency_detector
     }
-    
+
     /// 获取性能分析器
     pub fn performance_analyzer(&self) -> &PerformanceAnalyzer {
         &self.performance_analyzer
     }
-    
+
     /// 获取瓶颈识别器
     pub fn bottleneck_identifier(&self) -> &BottleneckIdentifier {
         &self.bottleneck_identifier
@@ -172,4 +166,3 @@ mod tests {
         tracker.end_tracking(ctx);
     }
 }
-

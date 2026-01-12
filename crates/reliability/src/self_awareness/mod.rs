@@ -33,36 +33,31 @@
 //!                     └──────────────┘
 //! ```
 
-pub mod topology_discovery;
-pub mod resource_prediction;
-pub mod anomaly_learning;
 pub mod adaptive_tuning;
+pub mod anomaly_learning;
 pub mod decision_engine;
+pub mod resource_prediction;
+pub mod topology_discovery;
 
 // Re-export commonly used types
 pub use topology_discovery::{
-    TopologyDiscovery, TopologyGraph, ServiceNode, ServiceEdge,
-    TopologySnapshot, TopologyAnalyzer,
+    ServiceEdge, ServiceNode, TopologyAnalyzer, TopologyDiscovery, TopologyGraph, TopologySnapshot,
 };
 
 pub use resource_prediction::{
-    ResourcePredictor, PredictionModel, ResourceForecast,
-    PredictionAccuracy, TimeSeriesPredictor,
+    PredictionAccuracy, PredictionModel, ResourceForecast, ResourcePredictor, TimeSeriesPredictor,
 };
 
 pub use anomaly_learning::{
-    AnomalyLearner, AnomalyPattern, LearningModel,
-    AnomalyClassifier, PatternMatcher,
+    AnomalyClassifier, AnomalyLearner, AnomalyPattern, LearningModel, PatternMatcher,
 };
 
 pub use adaptive_tuning::{
-    AdaptiveTuner, TuningPolicy, TuningAction,
-    PerformanceTarget, TuningResult,
+    AdaptiveTuner, PerformanceTarget, TuningAction, TuningPolicy, TuningResult,
 };
 
 pub use decision_engine::{
-    DecisionEngine, DecisionContext, DecisionRule,
-    OptimizationStrategy, DecisionOutcome,
+    DecisionContext, DecisionEngine, DecisionOutcome, DecisionRule, OptimizationStrategy,
 };
 
 /// 自我感知配置
@@ -120,58 +115,58 @@ impl SelfAwarenessSystem {
             decision_engine: DecisionEngine::new(),
         }
     }
-    
+
     /// 启动自我感知系统
     pub async fn start(&self) {
         tracing::info!("Starting self-awareness system");
-        
+
         if self.config.enable_topology_discovery {
             // 启动拓扑发现
         }
-        
+
         if self.config.enable_resource_prediction {
             // 启动资源预测
         }
-        
+
         if self.config.enable_anomaly_learning {
             // 启动异常学习
         }
-        
+
         if self.config.enable_adaptive_tuning {
             // 启动自适应调优
         }
     }
-    
+
     /// 停止自我感知系统
     pub async fn stop(&self) {
         tracing::info!("Stopping self-awareness system");
     }
-    
+
     /// 获取拓扑发现器
     pub fn topology_discovery(&self) -> &TopologyDiscovery {
         &self.topology_discovery
     }
-    
+
     /// 获取资源预测器
     pub fn resource_predictor(&self) -> &ResourcePredictor {
         &self.resource_predictor
     }
-    
+
     /// 获取异常学习器
     pub fn anomaly_learner(&self) -> &AnomalyLearner {
         &self.anomaly_learner
     }
-    
+
     /// 获取自适应调优器
     pub fn adaptive_tuner(&self) -> &AdaptiveTuner {
         &self.adaptive_tuner
     }
-    
+
     /// 获取决策引擎
     pub fn decision_engine(&self) -> &DecisionEngine {
         &self.decision_engine
     }
-    
+
     /// 生成系统洞察报告
     pub async fn generate_insights(&self) -> SystemInsights {
         SystemInsights {
@@ -204,11 +199,10 @@ mod tests {
     async fn test_self_awareness_system() {
         let system = SelfAwarenessSystem::new(SelfAwarenessConfig::default());
         system.start().await;
-        
+
         let insights = system.generate_insights().await;
         assert!(insights.topology_health >= 0.0);
-        
+
         system.stop().await;
     }
 }
-

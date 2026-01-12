@@ -6,16 +6,16 @@
 //! - Cancel: 取消执行，释放资源
 
 use async_trait::async_trait;
-use std::collections::HashMap;
-use std::sync::Arc;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use crate::error_handling::UnifiedError;
 use super::{
-    DistributedTransaction, TransactionId, TransactionState,
-    TransactionParticipant, TransactionMetrics,
+    DistributedTransaction, TransactionId, TransactionMetrics, TransactionParticipant,
+    TransactionState,
 };
+use crate::error_handling::UnifiedError;
 
 /// TCC 配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,11 +53,11 @@ impl TccCoordinator {
             metrics: Arc::new(RwLock::new(TransactionMetrics::default())),
         }
     }
-    
+
     pub fn add_participant(&mut self, participant: Arc<RwLock<dyn TransactionParticipant>>) {
         self.participants.push(participant);
     }
-    
+
     pub fn metrics(&self) -> TransactionMetrics {
         self.metrics.read().clone()
     }
@@ -67,32 +67,37 @@ impl TccCoordinator {
 impl DistributedTransaction for TccCoordinator {
     async fn begin(&mut self) -> Result<TransactionId, UnifiedError> {
         let tx_id = TransactionId::new();
-        self.active_transactions.write().insert(tx_id.clone(), TransactionState::Initialized);
-        
+        self.active_transactions
+            .write()
+            .insert(tx_id.clone(), TransactionState::Initialized);
+
         let mut metrics = self.metrics.write();
         metrics.total_transactions += 1;
         metrics.active_transactions += 1;
-        
+
         Ok(tx_id)
     }
-    
+
     async fn commit(&mut self, _tx_id: &TransactionId) -> Result<(), UnifiedError> {
         // TODO: 完整实现TCC提交逻辑（需要处理parking_lot锁的Send trait问题）
         // 临时返回未实现错误
-        Err(UnifiedError::not_found("TCC commit not fully implemented yet"))
+        Err(UnifiedError::not_found(
+            "TCC commit not fully implemented yet",
+        ))
     }
-    
+
     async fn rollback(&mut self, _tx_id: &TransactionId) -> Result<(), UnifiedError> {
         // TODO: 完整实现TCC回滚逻辑
-        Err(UnifiedError::not_found("TCC rollback not fully implemented yet"))
+        Err(UnifiedError::not_found(
+            "TCC rollback not fully implemented yet",
+        ))
     }
-    
+
     fn get_state(&self, tx_id: &TransactionId) -> Option<TransactionState> {
         self.active_transactions.read().get(tx_id).cloned()
     }
-    
+
     fn list_transactions(&self) -> Vec<TransactionId> {
         self.active_transactions.read().keys().cloned().collect()
     }
 }
-

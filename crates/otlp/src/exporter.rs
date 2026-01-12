@@ -315,10 +315,8 @@ impl OtlpExporter {
     }
 
     /// 带重试的导出
-    #[allow(unused_variables)]
     async fn export_with_retry(&self, data: Vec<TelemetryData>) -> Result<ExportResult> {
         let mut last_error = None;
-        let mut total_retries = 0;
 
         for attempt in 0..=self.config.retry_config.max_retries {
             match self.export_batch_direct(data.clone()).await {
@@ -353,7 +351,6 @@ impl OtlpExporter {
                     );
 
                     sleep(delay).await;
-                    total_retries += 1;
                 }
             }
         }
@@ -379,7 +376,7 @@ impl OtlpExporter {
         data: Vec<TelemetryData>,
     ) -> Result<ExportResult> {
         // 简化实现：模拟发送成功并返回计时
-        let (_unit_ignored, duration) = PerformanceUtils::measure_time(async {  }).await;
+        let (_unit_ignored, duration) = PerformanceUtils::measure_time(async {}).await;
         Ok(ExportResult::success(data.len(), duration))
     }
 

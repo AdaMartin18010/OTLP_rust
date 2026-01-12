@@ -5,8 +5,8 @@
 
 use super::pprof::{PprofBuilder, StackFrame, StackTraceCollector};
 use super::types::{PprofProfile, ProfileType};
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::Mutex;
 
@@ -15,13 +15,13 @@ use tokio::sync::Mutex;
 pub struct MemoryProfilerConfig {
     /// Sampling rate (1 in N allocations)
     pub sampling_rate: usize,
-    
+
     /// Track allocations larger than this size
     pub min_allocation_size: usize,
-    
+
     /// Maximum duration to profile
     pub max_duration: Duration,
-    
+
     /// Track deallocations
     pub track_deallocations: bool,
 }
@@ -82,66 +82,66 @@ impl MemoryProfiler {
             start_time: None,
         }
     }
-    
+
     /// Start profiling
     pub async fn start(&mut self) -> Result<(), String> {
         if self.is_running.load(Ordering::SeqCst) {
             return Err("Profiler is already running".to_string());
         }
-        
+
         self.is_running.store(true, Ordering::SeqCst);
         self.start_time = Some(Instant::now());
-        
+
         // Clear previous data
         self.samples.lock().await.clear();
         self.total_allocated.store(0, Ordering::SeqCst);
         self.total_deallocated.store(0, Ordering::SeqCst);
         self.allocation_count.store(0, Ordering::SeqCst);
-        
+
         Ok(())
     }
-    
+
     /// Stop profiling
     pub async fn stop(&mut self) -> Result<(), String> {
         if !self.is_running.load(Ordering::SeqCst) {
             return Err("Profiler is not running".to_string());
         }
-        
+
         self.is_running.store(false, Ordering::SeqCst);
-        
+
         Ok(())
     }
-    
+
     /// Check if profiler is running
     pub fn is_running(&self) -> bool {
         self.is_running.load(Ordering::SeqCst)
     }
-    
+
     /// Record an allocation
-    /// 
+    ///
     /// This should be called from a global allocator hook
     pub async fn record_allocation(&self, size: usize) {
         if !self.is_running() {
             return;
         }
-        
+
         // Check if we should sample this allocation
         if size < self.config.min_allocation_size {
             return;
         }
-        
+
         self.total_allocated.fetch_add(size, Ordering::SeqCst);
         let count = self.allocation_count.fetch_add(1, Ordering::SeqCst);
-        
+
         // Sample based on sampling rate
         if count % self.config.sampling_rate as u64 != 0 {
             return;
         }
-        
+
         // Collect stack trace
         let stack_trace = StackTraceCollector::collect();
         let thread_id = Self::get_thread_id();
-        
+
         let sample = MemorySample {
             stack_trace,
             size,
@@ -149,105 +149,110 @@ impl MemoryProfiler {
             thread_id,
             allocation_type: AllocationType::Allocation,
         };
-        
+
         // Store sample
         self.samples.lock().await.push(sample);
     }
-    
+
     /// Record a deallocation
     pub async fn record_deallocation(&self, size: usize) {
         if !self.is_running() || !self.config.track_deallocations {
             return;
         }
-        
+
         self.total_deallocated.fetch_add(size, Ordering::SeqCst);
-        
+
         // Optionally sample deallocations
         // For now, we don't record deallocation stack traces to reduce overhead
     }
-    
+
     /// Get current thread ID
     fn get_thread_id() -> u64 {
         // Use a hash of thread ID since as_u64() is unstable
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let thread_id = std::thread::current().id();
         let mut hasher = DefaultHasher::new();
         thread_id.hash(&mut hasher);
         hasher.finish()
     }
-    
+
     /// Generate a pprof profile from collected samples
     pub async fn generate_profile(&self) -> Result<PprofProfile, String> {
         if self.is_running() {
-            return Err("Cannot generate profile while profiler is running. Stop it first.".to_string());
+            return Err(
+                "Cannot generate profile while profiler is running. Stop it first.".to_string(),
+            );
         }
-        
+
         let samples = self.samples.lock().await;
-        
+
         if samples.is_empty() {
             return Err("No samples collected".to_string());
         }
-        
+
         let mut builder = PprofBuilder::new(ProfileType::Heap);
-        
+
         // Add comment with profiler info
         let total_allocated = self.total_allocated.load(Ordering::SeqCst);
         let allocation_count = self.allocation_count.load(Ordering::SeqCst);
-        
+
         builder.add_comment(&format!(
             "Heap Profile: {} samples, {} allocations, {} bytes allocated",
             samples.len(),
             allocation_count,
             total_allocated
         ));
-        
+
         // Calculate duration
-        let duration = self.start_time
+        let duration = self
+            .start_time
             .map(|start| start.elapsed())
             .unwrap_or_default();
         builder.set_duration(duration.as_nanos() as i64);
-        
+
         // Process samples
         // Group identical stack traces and sum their sizes
-        let mut stack_sizes: std::collections::HashMap<String, (Vec<StackFrame>, i64)> = 
+        let mut stack_sizes: std::collections::HashMap<String, (Vec<StackFrame>, i64)> =
             std::collections::HashMap::new();
-        
+
         for sample in samples.iter() {
             // Create a key from the stack trace
-            let key = sample.stack_trace
+            let key = sample
+                .stack_trace
                 .iter()
                 .map(|f| format!("{}:{}:{}", f.function_name, f.file_name, f.line_number))
                 .collect::<Vec<_>>()
                 .join("|");
-            
+
             stack_sizes
                 .entry(key)
                 .and_modify(|(_, size)| *size += sample.size as i64)
                 .or_insert_with(|| (sample.stack_trace.clone(), sample.size as i64));
         }
-        
+
         // Add samples to profile
         for (_key, (stack_trace, total_size)) in stack_sizes {
             let pprof_sample = builder.create_sample_from_stack(&stack_trace, total_size);
             builder.add_sample(pprof_sample);
         }
-        
+
         Ok(builder.build())
     }
-    
+
     /// Get profiler statistics
     pub async fn get_stats(&self) -> MemoryProfilerStats {
         let samples = self.samples.lock().await;
-        let duration = self.start_time
+        let duration = self
+            .start_time
             .map(|start| start.elapsed())
             .unwrap_or_default();
-        
+
         let total_allocated = self.total_allocated.load(Ordering::SeqCst);
         let total_deallocated = self.total_deallocated.load(Ordering::SeqCst);
         let allocation_count = self.allocation_count.load(Ordering::SeqCst);
-        
+
         MemoryProfilerStats {
             is_running: self.is_running(),
             sample_count: samples.len() as u64,
@@ -259,7 +264,7 @@ impl MemoryProfiler {
             sampling_rate: self.config.sampling_rate,
         }
     }
-    
+
     /// Get current memory usage (approximation based on tracked allocations)
     pub fn current_memory_usage(&self) -> usize {
         let allocated = self.total_allocated.load(Ordering::SeqCst);
@@ -273,25 +278,25 @@ impl MemoryProfiler {
 pub struct MemoryProfilerStats {
     /// Whether the profiler is currently running
     pub is_running: bool,
-    
+
     /// Number of samples collected
     pub sample_count: u64,
-    
+
     /// Total bytes allocated
     pub total_allocated: usize,
-    
+
     /// Total bytes deallocated
     pub total_deallocated: usize,
-    
+
     /// Current memory usage (allocated - deallocated)
     pub current_usage: usize,
-    
+
     /// Total number of allocations tracked
     pub allocation_count: u64,
-    
+
     /// Duration of profiling
     pub duration: Duration,
-    
+
     /// Sampling rate
     pub sampling_rate: usize,
 }
@@ -305,7 +310,7 @@ impl MemoryProfilerStats {
             0.0
         }
     }
-    
+
     /// Get average allocation size
     pub fn average_allocation_size(&self) -> f64 {
         if self.allocation_count > 0 {
@@ -320,12 +325,12 @@ impl MemoryProfilerStats {
 pub fn get_system_memory_info() -> Result<SystemMemoryInfo, String> {
     // This would use platform-specific APIs in a real implementation
     // For now, return a placeholder
-    
+
     #[cfg(target_os = "linux")]
     {
         get_linux_memory_info()
     }
-    
+
     #[cfg(not(target_os = "linux"))]
     {
         // Fallback for non-Linux systems
@@ -357,16 +362,16 @@ fn get_linux_memory_info() -> Result<SystemMemoryInfo, String> {
 pub struct SystemMemoryInfo {
     /// Total physical memory in bytes
     pub total_memory: usize,
-    
+
     /// Available memory in bytes
     pub available_memory: usize,
-    
+
     /// Used memory in bytes
     pub used_memory: usize,
-    
+
     /// Total swap space in bytes
     pub swap_total: usize,
-    
+
     /// Used swap space in bytes
     pub swap_used: usize,
 }
@@ -379,12 +384,12 @@ mod tests {
     async fn test_memory_profiler_start_stop() {
         let config = MemoryProfilerConfig::default();
         let mut profiler = MemoryProfiler::new(config);
-        
+
         assert!(!profiler.is_running());
-        
+
         profiler.start().await.unwrap();
         assert!(profiler.is_running());
-        
+
         profiler.stop().await.unwrap();
         assert!(!profiler.is_running());
     }
@@ -397,17 +402,17 @@ mod tests {
             max_duration: Duration::from_secs(1),
             track_deallocations: true,
         };
-        
+
         let mut profiler = MemoryProfiler::new(config);
         profiler.start().await.unwrap();
-        
+
         // Record some allocations
         profiler.record_allocation(1024).await;
         profiler.record_allocation(2048).await;
         profiler.record_deallocation(512).await;
-        
+
         profiler.stop().await.unwrap();
-        
+
         let stats = profiler.get_stats().await;
         assert_eq!(stats.total_allocated, 3072);
         assert_eq!(stats.total_deallocated, 512);
@@ -422,16 +427,16 @@ mod tests {
             max_duration: Duration::from_secs(1),
             track_deallocations: false,
         };
-        
+
         let mut profiler = MemoryProfiler::new(config);
         profiler.start().await.unwrap();
-        
+
         // Record some allocations
         profiler.record_allocation(1024).await;
         profiler.record_allocation(2048).await;
-        
+
         profiler.stop().await.unwrap();
-        
+
         let profile = profiler.generate_profile().await.unwrap();
         assert!(!profile.sample.is_empty(), "Profile should contain samples");
     }
@@ -448,9 +453,8 @@ mod tests {
             duration: Duration::from_secs(10),
             sampling_rate: 524_288,
         };
-        
+
         assert_eq!(stats.allocation_rate(), 100_000.0);
         assert_eq!(stats.average_allocation_size(), 1000.0);
     }
 }
-

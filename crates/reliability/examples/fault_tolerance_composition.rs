@@ -11,11 +11,12 @@
 //! cargo run --example fault_tolerance_composition
 //! ```
 
+use reliability::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
+use reliability::fault_tolerance::rate_limiting::{RateLimiter, TokenBucket};
 use reliability::fault_tolerance::{
-    CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState, RetryStrategy, RetryPolicy, RetryConfig,
+    CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState, RetryConfig, RetryPolicy,
+    RetryStrategy,
 };
-use reliability::fault_tolerance::rate_limiting::{TokenBucket, RateLimiter};
-use reliability::error_handling::{UnifiedError, ErrorSeverity, ErrorContext};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
@@ -48,8 +49,8 @@ async fn demo_1_circuit_breaker() -> Result<(), UnifiedError> {
 
     // 配置熔断器
     let cb_config = CircuitBreakerConfig {
-        failure_threshold: 3,           // 3次失败后熔断
-        success_threshold: 2,            // 2次成功后关闭
+        failure_threshold: 3, // 3次失败后熔断
+        success_threshold: 2, // 2次成功后关闭
         recovery_timeout: Duration::from_secs(5),
         half_open_max_requests: 2,
         sliding_window_size: Duration::from_secs(60),
@@ -76,7 +77,7 @@ async fn demo_1_circuit_breaker() -> Result<(), UnifiedError> {
             CircuitBreakerState::Open => {
                 println!("  ⚡ 熔断器打开，快速失败");
                 println!("  状态: {:?}\n", circuit_breaker.state());
-                
+
                 // 等待恢复超时
                 if i == 7 {
                     println!("  ⏰ 等待恢复超时...");
@@ -149,14 +150,14 @@ async fn demo_2_retry_policy() -> Result<(), UnifiedError> {
     // 使用共享计数器
     let attempt = Arc::new(std::sync::atomic::AtomicU32::new(0));
     let attempt_clone = attempt.clone();
-    
+
     let result = retry_policy
         .execute(move || {
             let attempt = attempt_clone.clone();
             async move {
                 let current = attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
                 println!("  尝试 #{}", current);
-                
+
                 // 前2次失败，第3次成功
                 if current < 3 {
                     Err(UnifiedError::new(

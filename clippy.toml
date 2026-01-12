@@ -1,0 +1,17 @@
+# Clippy 配置文件 - Rust 1.92 稳定版设置
+# 2025年最新配置
+
+# 最低支持的 Rust 版本
+msrv = "1.92.0"
+
+# 允许的 lints
+# 这些是信息性的警告，不影响编译
+allow = [
+    "excessive-nesting",  # 在某些情况下，嵌套是必要的（如错误处理）
+]
+
+# 禁止的 lints
+# deny = []
+
+# 警告的 lints
+# warn = []

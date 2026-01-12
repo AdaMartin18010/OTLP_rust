@@ -38,7 +38,7 @@ fn safe_div(a: i32, b: i32) -> Option<i32> {
     if b == 0 {
         None
     } else if a == i32::MIN && b == -1 {
-        None  // 防止溢出：i32::MIN / -1 会溢出
+        None // 防止溢出：i32::MIN / -1 会溢出
     } else {
         Some(a / b)
     }
@@ -50,7 +50,7 @@ fn safe_div(a: i32, b: i32) -> Option<i32> {
 fn verify_safe_div() {
     let a: i32 = kani::any();
     let b: i32 = kani::any();
-    
+
     match safe_div(a, b) {
         Some(result) => {
             // 验证结果在有效范围内
@@ -81,11 +81,11 @@ fn find_element(arr: &[i32], target: i32) -> Option<usize> {
 /// Kani 验证：数组查找的正确性
 #[cfg(kani)]
 #[kani::proof]
-#[kani::unwind(10)]  // 设置循环展开次数
+#[kani::unwind(10)] // 设置循环展开次数
 fn verify_find_element() {
     let arr: [i32; 5] = kani::any();
     let target: i32 = kani::any();
-    
+
     match find_element(&arr, target) {
         Some(index) => {
             // 如果找到，索引必须有效且元素匹配
@@ -112,7 +112,7 @@ fn checked_add_u32(a: u32, b: u32) -> Option<u32> {
 fn verify_checked_add() {
     let a: u32 = kani::any();
     let b: u32 = kani::any();
-    
+
     match checked_add_u32(a, b) {
         Some(result) => {
             // 结果必须大于等于两个操作数
@@ -139,8 +139,8 @@ fn reverse_string(s: &str) -> String {
 #[kani::unwind(20)]
 fn verify_reverse_idempotent() {
     let len: usize = kani::any();
-    kani::assume(len <= 10);  // 限制长度以提高性能
-    
+    kani::assume(len <= 10); // 限制长度以提高性能
+
     let mut chars = Vec::new();
     for _ in 0..len {
         let c: char = kani::any();
@@ -148,11 +148,11 @@ fn verify_reverse_idempotent() {
         kani::assume(c.is_ascii());
         chars.push(c);
     }
-    
+
     let s: String = chars.into_iter().collect();
     let reversed = reverse_string(&s);
     let double_reversed = reverse_string(&reversed);
-    
+
     // 验证：两次反转应该得到原字符串
     assert_eq!(s, double_reversed);
     // 验证：反转后长度不变
@@ -175,7 +175,7 @@ fn safe_array_access(arr: &[i32], index: usize) -> Option<i32> {
 fn verify_safe_array_access() {
     let arr: [i32; 3] = kani::any();
     let index: usize = kani::any();
-    
+
     match safe_array_access(&arr, index) {
         Some(value) => {
             // 索引必须在有效范围内
@@ -192,11 +192,7 @@ fn verify_safe_array_access() {
 
 /// 计算两个数的最大值
 fn max_i32(a: i32, b: i32) -> i32 {
-    if a >= b {
-        a
-    } else {
-        b
-    }
+    if a >= b { a } else { b }
 }
 
 /// Kani 验证：最大值函数的性质
@@ -205,9 +201,9 @@ fn max_i32(a: i32, b: i32) -> i32 {
 fn verify_max_properties() {
     let a: i32 = kani::any();
     let b: i32 = kani::any();
-    
+
     let result = max_i32(a, b);
-    
+
     // 结果必须大于等于两个输入
     assert!(result >= a);
     assert!(result >= b);
@@ -226,9 +222,9 @@ fn saturating_sub(a: u32, b: u32) -> u32 {
 fn verify_saturating_sub() {
     let a: u32 = kani::any();
     let b: u32 = kani::any();
-    
+
     let result = saturating_sub(a, b);
-    
+
     // 结果不会超过 a
     assert!(result <= a);
     // 如果 a >= b，结果应该是 a - b
@@ -242,7 +238,7 @@ fn verify_saturating_sub() {
 
 fn main() {
     println!("=== Kani 有界模型检查示例 ===\n");
-    
+
     // 安全除法示例
     println!("➗ 安全除法:");
     let div_tests = [(10, 2), (10, 0), (i32::MIN, -1), (7, 3)];
@@ -252,7 +248,7 @@ fn main() {
             None => println!("  {} / {} = None (除零或溢出)", a, b),
         }
     }
-    
+
     // 数组查找示例
     println!("\n🔍 数组查找:");
     let arr = [1, 2, 3, 4, 5];
@@ -262,7 +258,7 @@ fn main() {
             None => println!("  在 {:?} 中未找到 {}", arr, target),
         }
     }
-    
+
     // 无符号加法示例
     println!("\n➕ 带检查的加法:");
     let add_tests = [(100, 200), (u32::MAX, 1), (u32::MAX - 10, 5)];
@@ -272,17 +268,20 @@ fn main() {
             None => println!("  {} + {} = None (溢出)", a, b),
         }
     }
-    
+
     // 字符串反转示例
     println!("\n🔄 字符串反转:");
     let strings = ["Hello", "Rust", "世界", ""];
     for s in strings {
         let reversed = reverse_string(s);
         let double_reversed = reverse_string(&reversed);
-        println!("  原始: '{}' → 反转: '{}' → 双重反转: '{}'", s, reversed, double_reversed);
+        println!(
+            "  原始: '{}' → 反转: '{}' → 双重反转: '{}'",
+            s, reversed, double_reversed
+        );
         println!("    幂等性验证: {}", s == double_reversed);
     }
-    
+
     // 安全数组访问示例
     println!("\n🎯 安全数组访问:");
     let arr = [10, 20, 30];
@@ -292,21 +291,21 @@ fn main() {
             None => println!("  arr[{}] = None (越界)", index),
         }
     }
-    
+
     // 最大值示例
     println!("\n⬆️  最大值计算:");
     let max_tests = [(5, 10), (-5, -10), (0, 0), (i32::MIN, i32::MAX)];
     for (a, b) in max_tests {
         println!("  max({}, {}) = {}", a, b, max_i32(a, b));
     }
-    
+
     // 饱和减法示例
     println!("\n⬇️  饱和减法:");
     let sub_tests = [(10, 5), (5, 10), (0, 1), (u32::MAX, 1)];
     for (a, b) in sub_tests {
         println!("  {} - {} = {} (饱和)", a, b, saturating_sub(a, b));
     }
-    
+
     println!("\n{}", "=".repeat(50));
     println!("💡 提示:");
     println!("  - 当前以普通模式运行");
@@ -326,7 +325,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_safe_div() {
         assert_eq!(safe_div(10, 2), Some(5));
@@ -334,7 +333,7 @@ mod tests {
         assert_eq!(safe_div(i32::MIN, -1), None);
         assert_eq!(safe_div(7, 3), Some(2));
     }
-    
+
     #[test]
     fn test_find_element() {
         let arr = [1, 2, 3, 4, 5];
@@ -342,27 +341,27 @@ mod tests {
         assert_eq!(find_element(&arr, 10), None);
         assert_eq!(find_element(&arr, 1), Some(0));
     }
-    
+
     #[test]
     fn test_checked_add_u32() {
         assert_eq!(checked_add_u32(100, 200), Some(300));
         assert_eq!(checked_add_u32(u32::MAX, 1), None);
         assert_eq!(checked_add_u32(0, 0), Some(0));
     }
-    
+
     #[test]
     fn test_reverse_string() {
         assert_eq!(reverse_string("hello"), "olleh");
         assert_eq!(reverse_string(""), "");
         assert_eq!(reverse_string("a"), "a");
-        
+
         // 测试幂等性
         let s = "Rust";
         let reversed = reverse_string(s);
         let double_reversed = reverse_string(&reversed);
         assert_eq!(s, double_reversed);
     }
-    
+
     #[test]
     fn test_safe_array_access() {
         let arr = [10, 20, 30];
@@ -370,7 +369,7 @@ mod tests {
         assert_eq!(safe_array_access(&arr, 2), Some(30));
         assert_eq!(safe_array_access(&arr, 5), None);
     }
-    
+
     #[test]
     fn test_max_i32() {
         assert_eq!(max_i32(5, 10), 10);
@@ -378,7 +377,7 @@ mod tests {
         assert_eq!(max_i32(5, 5), 5);
         assert_eq!(max_i32(i32::MIN, i32::MAX), i32::MAX);
     }
-    
+
     #[test]
     fn test_saturating_sub() {
         assert_eq!(saturating_sub(10, 5), 5);

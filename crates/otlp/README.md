@@ -1,18 +1,18 @@
-# OpenTelemetry Protocol (OTLP) Implementation for Rust 1.90
+# OpenTelemetry Protocol (OTLP) Implementation for Rust 1.92
 
-[![Rust](https://img.shields.io/badge/rust-1.90+-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.92+-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/otlp.svg)](https://crates.io/crates/otlp)
 
-一个基于Rust 1.90语言特性的OpenTelemetry协议(OTLP)完整实现，支持同步和异步结合的遥测数据收集、处理和传输。
+一个基于Rust 1.92语言特性的OpenTelemetry协议(OTLP)完整实现，支持同步和异步结合的遥测数据收集、处理和传输。
 
 ## 🚀 核心特性
 
-- **异步优先设计**: 利用Rust 1.90的async/await特性实现高性能异步处理
+- **异步优先设计**: 利用Rust 1.92的async/await特性实现高性能异步处理
 - **同步兼容**: 提供同步API接口，支持传统同步代码集成
 - **多传输协议**: 支持gRPC和HTTP/JSON两种OTLP传输方式
 - **类型安全**: 利用Rust类型系统确保编译时安全性
-- **零拷贝优化**: 使用Rust 1.90的内存管理特性优化性能
+- **零拷贝优化**: 使用Rust 1.92的内存管理特性优化性能
 - **并发安全**: 基于Rust的所有权系统实现无锁并发
 - **智能错误处理**: 提供详细的错误分类、严重程度评估和恢复建议
 - **机器学习预测**: 基于ML的错误预测和智能分类系统
@@ -25,7 +25,7 @@
 
 ## 📋 系统要求
 
-- Rust 1.90+
+- Rust 1.92+
 - 支持异步运行时的操作系统
 - 网络连接（用于数据传输）
 
@@ -57,11 +57,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_protocol(TransportProtocol::Grpc)
         .with_service("my-service", "1.0.0")
         .with_timeout(Duration::from_secs(10));
-    
+
     // 创建并初始化客户端
     let client = OtlpClient::new(config).await?;
     client.initialize().await?;
-    
+
     // 发送追踪数据
     let result = client.send_trace("example-operation").await?
         .with_attribute("service.name", "my-service")
@@ -70,9 +70,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_status(StatusCode::Ok, Some("操作成功".to_string()))
         .finish()
         .await?;
-    
+
     println!("追踪数据发送结果: 成功 {} 条", result.success_count);
-    
+
     // 发送指标数据
     let result = client.send_metric("request_count", 1.0).await?
         .with_label("method", "GET")
@@ -81,9 +81,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_unit("count")
         .send()
         .await?;
-    
+
     println!("指标数据发送结果: 成功 {} 条", result.success_count);
-    
+
     // 发送日志数据
     let result = client.send_log("用户登录成功", LogSeverity::Info).await?
         .with_attribute("user_id", "12345")
@@ -91,12 +91,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_trace_context("trace-123", "span-456")
         .send()
         .await?;
-    
+
     println!("日志数据发送结果: 成功 {} 条", result.success_count);
-    
+
     // 关闭客户端
     client.shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -222,7 +222,7 @@ for i in 0..100 {
     let trace_data = TelemetryData::trace(format!("operation-{}", i))
         .with_attribute("batch_id", "batch-001")
         .with_attribute("operation_index", i.to_string());
-    
+
     batch_data.push(trace_data);
 }
 

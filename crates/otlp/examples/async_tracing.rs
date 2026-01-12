@@ -8,8 +8,11 @@
 //! cargo run --example async_tracing
 //! ```
 
+use opentelemetry::{
+    KeyValue,
+    trace::{Span, Tracer},
+};
 use otlp::core::EnhancedOtlpClient;
-use opentelemetry::{trace::{Tracer, Span}, KeyValue};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -134,11 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut span = tracer.start("scenario-3-timeout");
         span.set_attribute(KeyValue::new("timeout.seconds", 5));
 
-        match tokio::time::timeout(
-            Duration::from_secs(5),
-            handle_user_request(&tracer, 301),
-        )
-        .await
+        match tokio::time::timeout(Duration::from_secs(5), handle_user_request(&tracer, 301)).await
         {
             Ok(result) => {
                 println!("   ✅ 结果: {}", result);
@@ -199,4 +198,3 @@ scenario-3-timeout
 
 在 Jaeger UI 中可以看到并发请求的时间线和依赖关系。
 */
-

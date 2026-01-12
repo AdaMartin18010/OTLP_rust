@@ -15,18 +15,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = CompressorConfig::default();
     let mut compressor = TraceCompressor::new(config);
 
-    let result = compressor.compress_span(
-        "GET /api/users",
-        1000000000,
-        (123456789, 987654321),
-        1,
-    )?;
+    let result =
+        compressor.compress_span("GET /api/users", 1000000000, (123456789, 987654321), 1)?;
 
     if let Some(compressed) = result {
         println!("  ✅ Compressed span:");
         println!("     - Name index: {}", compressed.name_idx);
         println!("     - Timestamp delta: {}", compressed.timestamp_delta);
-        println!("     - Trace ID delta: ({}, {})", compressed.trace_id_delta.0, compressed.trace_id_delta.1);
+        println!(
+            "     - Trace ID delta: ({}, {})",
+            compressed.trace_id_delta.0, compressed.trace_id_delta.1
+        );
         println!("     - Span ID delta: {}", compressed.span_id_delta);
     }
 
@@ -35,7 +34,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("     - Spans processed: {}", stats.span_count);
     println!("     - Original size: {} bytes", stats.original_size);
     println!("     - Compressed size: {} bytes", stats.compressed_size);
-    println!("     - Compression ratio: {:.2}%", stats.compression_percentage());
+    println!(
+        "     - Compression ratio: {:.2}%",
+        stats.compression_percentage()
+    );
     println!("\n============================================================\n");
 
     // Demo 2: Delta Encoding Efficiency
@@ -53,7 +55,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (name, timestamp, trace_id, span_id) in &timestamps {
         let result = compressor.compress_span(name, *timestamp, *trace_id, *span_id)?;
         if let Some(compressed) = result {
-            println!("  {} - Timestamp delta: {} (very small!)", name, compressed.timestamp_delta);
+            println!(
+                "  {} - Timestamp delta: {} (very small!)",
+                name, compressed.timestamp_delta
+            );
         }
     }
     println!("  ✅ Delta encoding reduces timestamp size significantly!");
@@ -84,7 +89,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("     - Total spans: {}", duplicate_spans.len());
     println!("     - Unique spans: {}", unique_count);
     println!("     - Duplicates removed: {}", stats.deduplicated_spans);
-    println!("     - Savings: {:.0}%", (stats.deduplicated_spans as f64 / duplicate_spans.len() as f64) * 100.0);
+    println!(
+        "     - Savings: {:.0}%",
+        (stats.deduplicated_spans as f64 / duplicate_spans.len() as f64) * 100.0
+    );
     println!("\n============================================================\n");
 
     // Demo 4: String Table Optimization
@@ -108,7 +116,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  ✅ String table results:");
     println!("     - Total spans: {}", repeated_names.len());
     println!("     - Unique strings: {}", stats.string_table_size);
-    println!("     - String reuse: {:.0}%", ((repeated_names.len() - stats.string_table_size) as f64 / repeated_names.len() as f64) * 100.0);
+    println!(
+        "     - String reuse: {:.0}%",
+        ((repeated_names.len() - stats.string_table_size) as f64 / repeated_names.len() as f64)
+            * 100.0
+    );
     println!("\n============================================================\n");
 
     // Demo 5: Batch Compression
@@ -129,16 +141,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let compressed_trace = batch_compressor.compress_batch(batch_spans)?;
 
     println!("  ✅ Batch compression results:");
-    println!("     - Original span count: {}", compressed_trace.metadata.original_span_count);
-    println!("     - Compressed span count: {}", compressed_trace.metadata.compressed_span_count);
-    println!("     - String table size: {}", compressed_trace.string_table.len());
+    println!(
+        "     - Original span count: {}",
+        compressed_trace.metadata.original_span_count
+    );
+    println!(
+        "     - Compressed span count: {}",
+        compressed_trace.metadata.compressed_span_count
+    );
+    println!(
+        "     - String table size: {}",
+        compressed_trace.string_table.len()
+    );
     println!("     - Format version: {}", compressed_trace.version);
 
     let stats = batch_compressor.stats();
     println!("  📈 Overall statistics:");
     println!("     - Original size: {} bytes", stats.original_size);
     println!("     - Compressed size: {} bytes", stats.compressed_size);
-    println!("     - Compression ratio: {:.2}%", stats.compression_percentage());
+    println!(
+        "     - Compression ratio: {:.2}%",
+        stats.compression_percentage()
+    );
     println!("     - Deduplicated spans: {}", stats.deduplicated_spans);
     println!("     - Compression time: {} μs", stats.compression_time_us);
     println!("\n============================================================\n");
@@ -165,7 +189,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stats_no_dedup = no_dedup_compressor.stats();
     println!("  ⚙️  Without deduplication:");
     println!("     - Spans processed: {}", stats_no_dedup.span_count);
-    println!("     - Duplicates removed: {}", stats_no_dedup.deduplicated_spans);
+    println!(
+        "     - Duplicates removed: {}",
+        stats_no_dedup.deduplicated_spans
+    );
 
     // With full optimization
     let full_config = CompressorConfig::default();
@@ -178,7 +205,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stats_full = full_compressor.stats();
     println!("  ⚙️  With full optimization:");
     println!("     - Spans processed: {}", stats_full.span_count);
-    println!("     - Duplicates removed: {}", stats_full.deduplicated_spans);
+    println!(
+        "     - Duplicates removed: {}",
+        stats_full.deduplicated_spans
+    );
     println!("\n============================================================\n");
 
     println!("✅ All Tracezip compression demos completed successfully!\n");
@@ -192,4 +222,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

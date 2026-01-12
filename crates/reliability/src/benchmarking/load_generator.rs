@@ -1,7 +1,6 @@
 /// 负载生成器
 ///
 /// 用于生成各种负载模式，用于性能测试和压力测试
-
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Semaphore;
@@ -156,8 +155,7 @@ impl LoadGenerator {
             }
             LoadPattern::Step => {
                 let step = (progress * 10.0).floor() / 10.0;
-                self.config.initial_rate
-                    + (self.config.max_rate - self.config.initial_rate) * step
+                self.config.initial_rate + (self.config.max_rate - self.config.initial_rate) * step
             }
             LoadPattern::Spike => {
                 if progress > 0.4 && progress < 0.6 {
@@ -273,4 +271,3 @@ mod tests {
         assert!(results.success_rate() > 0.9);
     }
 }
-

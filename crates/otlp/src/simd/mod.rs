@@ -33,13 +33,12 @@
 //! let sum = Aggregator::sum_i64(&values);
 //! ```
 
+pub mod aggregation;
 pub mod cpu_features;
 pub mod serialization;
-pub mod aggregation;
 pub mod string_ops;
 
+pub use aggregation::{AggregateStats, Aggregator};
 pub use cpu_features::CpuFeatures;
 pub use serialization::{BatchSerializer, SerializationStats};
-pub use aggregation::{Aggregator, AggregateStats};
 pub use string_ops::StringOps;
-

@@ -8,8 +8,11 @@
 //! cargo run --example nested_spans
 //! ```
 
+use opentelemetry::{
+    KeyValue,
+    trace::{Span, Tracer},
+};
 use otlp::core::EnhancedOtlpClient;
-use opentelemetry::{trace::{Tracer, Span}, KeyValue};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -104,7 +107,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 显示统计信息
     println!("\n📊 统计信息:");
     let stats = client.stats().await;
-    println!("   ├─ 导出 spans: {} (1 root + 6 children)", stats.spans_exported);
+    println!(
+        "   ├─ 导出 spans: {} (1 root + 6 children)",
+        stats.spans_exported
+    );
     println!("   ├─ 错误: {}", stats.export_errors);
     println!("   └─ 平均导出时间: {:.2}ms", stats.avg_export_time_ms);
 
@@ -128,4 +134,3 @@ process-order (root)
 
 在 Jaeger UI 中，你将看到这个完整的追踪树。
 */
-

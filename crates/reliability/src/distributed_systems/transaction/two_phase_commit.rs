@@ -5,16 +5,16 @@
 //! - 提交阶段 (Commit): 协调者通知所有参与者提交或中止
 
 use async_trait::async_trait;
-use std::collections::HashMap;
-use std::sync::Arc;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use crate::error_handling::UnifiedError;
 use super::{
-    DistributedTransaction, TransactionId, TransactionState,
-    TransactionParticipant, TransactionMetrics,
+    DistributedTransaction, TransactionId, TransactionMetrics, TransactionParticipant,
+    TransactionState,
 };
+use crate::error_handling::UnifiedError;
 
 /// 2PC 配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,12 +53,12 @@ impl TwoPhaseCommitCoordinator {
             metrics: Arc::new(RwLock::new(TransactionMetrics::default())),
         }
     }
-    
+
     #[allow(dead_code)]
     pub fn add_participant(&mut self, participant: Arc<RwLock<dyn TransactionParticipant>>) {
         self.participants.push(participant);
     }
-    
+
     #[allow(dead_code)]
     pub fn metrics(&self) -> TransactionMetrics {
         self.metrics.read().clone()
@@ -70,31 +70,36 @@ impl DistributedTransaction for TwoPhaseCommitCoordinator {
     #[allow(dead_code)]
     async fn begin(&mut self) -> Result<TransactionId, UnifiedError> {
         let tx_id = TransactionId::new();
-        self.active_transactions.write().insert(tx_id.clone(), TransactionState::Initialized);
-        
+        self.active_transactions
+            .write()
+            .insert(tx_id.clone(), TransactionState::Initialized);
+
         let mut metrics = self.metrics.write();
         metrics.total_transactions += 1;
         metrics.active_transactions += 1;
-        
+
         Ok(tx_id)
     }
-    
+
     async fn commit(&mut self, _tx_id: &TransactionId) -> Result<(), UnifiedError> {
         // TODO: 完整实现2PC提交逻辑
-        Err(UnifiedError::not_found("2PC commit not fully implemented yet"))
+        Err(UnifiedError::not_found(
+            "2PC commit not fully implemented yet",
+        ))
     }
-    
+
     async fn rollback(&mut self, _tx_id: &TransactionId) -> Result<(), UnifiedError> {
-        // TODO: 完整实现2PC回滚逻辑  
-        Err(UnifiedError::not_found("2PC rollback not fully implemented yet"))
+        // TODO: 完整实现2PC回滚逻辑
+        Err(UnifiedError::not_found(
+            "2PC rollback not fully implemented yet",
+        ))
     }
-    
+
     fn get_state(&self, tx_id: &TransactionId) -> Option<TransactionState> {
         self.active_transactions.read().get(tx_id).cloned()
     }
-    
+
     fn list_transactions(&self) -> Vec<TransactionId> {
         self.active_transactions.read().keys().cloned().collect()
     }
 }
-

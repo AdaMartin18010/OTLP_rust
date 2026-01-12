@@ -1,7 +1,7 @@
 # OTLP Rust 生产环境部署指南
 
-**版本**: 1.0.0  
-**日期**: 2025年1月10日  
+**版本**: 1.0.0
+**日期**: 2025年1月10日
 **状态**: ✅ **生产就绪**
 
 ---
@@ -726,15 +726,15 @@ use otlp::OtlpClient;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = OtlpClient::new(OtlpConfig::default()).await?;
-    
+
     // 健康检查
     let health = client.health_check().await?;
     println!("Health Status: {:?}", health);
-    
+
     // 性能测试
     let metrics = client.get_metrics().await;
     println!("Metrics: {:?}", metrics);
-    
+
     Ok(())
 }
 ```
@@ -967,8 +967,8 @@ curl http://localhost:8080/health
 
 ---
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025年1月10日  
+**文档版本**: 1.0.0
+**最后更新**: 2025年1月10日
 **维护团队**: OTLP Rust开发团队
 
 **下次更新**: 2025年2月10日

@@ -34,16 +34,14 @@ pub struct PerformanceAnalyzer {
 
 impl PerformanceAnalyzer {
     pub fn new() -> Self {
-        Self {
-            _data: Vec::new(),
-        }
+        Self { _data: Vec::new() }
     }
-    
+
     /// 记录性能数据
     pub fn record_metrics(&mut self, _metrics: PerformanceMetrics) {
         // 实际实现会存储指标
     }
-    
+
     /// 生成报告
     pub fn generate_report(&self) -> PerformanceReport {
         PerformanceReport {
@@ -52,7 +50,7 @@ impl PerformanceAnalyzer {
             summary: "Performance report".to_string(),
         }
     }
-    
+
     /// 识别性能衰退
     pub fn detect_regression(&self) -> Vec<String> {
         Vec::new()
@@ -64,4 +62,3 @@ impl Default for PerformanceAnalyzer {
         Self::new()
     }
 }
-

@@ -33,9 +33,9 @@
 //! ```
 
 use crate::error_handling::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 
 /// 路由配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,7 +72,7 @@ impl Route {
     pub fn new(config: RouteConfig) -> Self {
         Self { config }
     }
-    
+
     pub fn matches(&self, path: &str, _method: &str) -> bool {
         // 简化版：精确匹配
         self.config.path == path
@@ -157,19 +157,19 @@ impl ApiGateway {
             middlewares: Vec::new(),
         }
     }
-    
+
     /// 添加路由
     #[allow(dead_code)]
     pub fn add_route(&mut self, route: Route) {
         Arc::get_mut(&mut self.routes).unwrap().push(route);
     }
-    
+
     /// 添加中间件
     #[allow(dead_code)]
     pub fn add_middleware(&mut self, middleware: Arc<dyn GatewayMiddleware>) {
         self.middlewares.push(middleware);
     }
-    
+
     /// 处理请求
     #[allow(dead_code)]
     pub async fn handle_request(&self, mut request: GatewayRequest) -> Result<GatewayResponse> {
@@ -177,13 +177,14 @@ impl ApiGateway {
         for middleware in &self.middlewares {
             request = middleware.handle(request).await?;
         }
-        
+
         // 2. 查找路由
-        let route = self.routes
+        let route = self
+            .routes
             .iter()
             .find(|r| r.matches(&request.path, &request.method))
             .ok_or_else(|| UnifiedError::not_found("Route not found"))?;
-        
+
         // 3. 转发到后端服务（简化版）
         Ok(GatewayResponse {
             status_code: 200,
@@ -207,9 +208,8 @@ mod tests {
             rate_limit: None,
             timeout_ms: 5000,
         });
-        
+
         assert!(route.matches("/api/users", "GET"));
         assert!(!route.matches("/api/products", "GET"));
     }
 }
-

@@ -5,8 +5,8 @@
 
 use super::pprof::{PprofBuilder, StackFrame, StackTraceCollector};
 use super::types::{PprofProfile, ProfileType};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::Mutex;
 use tokio::time::interval;
@@ -16,10 +16,10 @@ use tokio::time::interval;
 pub struct CpuProfilerConfig {
     /// Sampling frequency in Hz (samples per second)
     pub sampling_frequency: u32,
-    
+
     /// Maximum duration to profile
     pub max_duration: Duration,
-    
+
     /// Whether to include system calls
     pub include_system_calls: bool,
 }
@@ -64,47 +64,47 @@ impl CpuProfiler {
             start_time: None,
         }
     }
-    
+
     /// Start profiling
     pub async fn start(&mut self) -> Result<(), String> {
         if self.is_running.load(Ordering::SeqCst) {
             return Err("Profiler is already running".to_string());
         }
-        
+
         self.is_running.store(true, Ordering::SeqCst);
         self.start_time = Some(Instant::now());
-        
+
         // Clear previous samples
         self.samples.lock().await.clear();
         self.sample_count.store(0, Ordering::SeqCst);
-        
+
         // Spawn sampling task
         self.spawn_sampling_task().await;
-        
+
         Ok(())
     }
-    
+
     /// Stop profiling
     pub async fn stop(&mut self) -> Result<(), String> {
         if !self.is_running.load(Ordering::SeqCst) {
             return Err("Profiler is not running".to_string());
         }
-        
+
         self.is_running.store(false, Ordering::SeqCst);
-        
+
         Ok(())
     }
-    
+
     /// Check if profiler is running
     pub fn is_running(&self) -> bool {
         self.is_running.load(Ordering::SeqCst)
     }
-    
+
     /// Get the number of samples collected
     pub fn sample_count(&self) -> u64 {
         self.sample_count.load(Ordering::SeqCst)
     }
-    
+
     /// Spawn the sampling task
     async fn spawn_sampling_task(&self) {
         let is_running = Arc::clone(&self.is_running);
@@ -113,116 +113,121 @@ impl CpuProfiler {
         let frequency = self.config.sampling_frequency;
         let max_duration = self.config.max_duration;
         let start_time = Instant::now();
-        
+
         tokio::spawn(async move {
             let sample_interval = Duration::from_micros(1_000_000 / frequency as u64);
             let mut ticker = interval(sample_interval);
-            
+
             while is_running.load(Ordering::SeqCst) {
                 ticker.tick().await;
-                
+
                 // Check if max duration exceeded
                 if start_time.elapsed() >= max_duration {
                     is_running.store(false, Ordering::SeqCst);
                     break;
                 }
-                
+
                 // Collect stack trace
                 let stack_trace = StackTraceCollector::collect();
                 let thread_id = Self::get_thread_id();
-                
+
                 let sample = CpuSample {
                     stack_trace,
                     timestamp: SystemTime::now(),
                     thread_id,
                 };
-                
+
                 // Store sample
                 samples.lock().await.push(sample);
                 sample_count.fetch_add(1, Ordering::SeqCst);
             }
         });
     }
-    
+
     /// Get current thread ID
     fn get_thread_id() -> u64 {
         // Use a hash of thread ID since as_u64() is unstable
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let thread_id = std::thread::current().id();
         let mut hasher = DefaultHasher::new();
         thread_id.hash(&mut hasher);
         hasher.finish()
     }
-    
+
     /// Generate a pprof profile from collected samples
     pub async fn generate_profile(&self) -> Result<PprofProfile, String> {
         if self.is_running() {
-            return Err("Cannot generate profile while profiler is running. Stop it first.".to_string());
+            return Err(
+                "Cannot generate profile while profiler is running. Stop it first.".to_string(),
+            );
         }
-        
+
         let samples = self.samples.lock().await;
-        
+
         if samples.is_empty() {
             return Err("No samples collected".to_string());
         }
-        
+
         let mut builder = PprofBuilder::new(ProfileType::Cpu);
-        
+
         // Add comment with profiler info
         builder.add_comment(&format!(
             "CPU Profile: {} samples @ {} Hz",
             samples.len(),
             self.config.sampling_frequency
         ));
-        
+
         // Calculate duration
-        let duration = self.start_time
+        let duration = self
+            .start_time
             .map(|start| start.elapsed())
             .unwrap_or_default();
         builder.set_duration(duration.as_nanos() as i64);
-        
+
         // Process samples
         // Group identical stack traces to reduce profile size
-        let mut stack_counts: std::collections::HashMap<String, (Vec<StackFrame>, i64)> = 
+        let mut stack_counts: std::collections::HashMap<String, (Vec<StackFrame>, i64)> =
             std::collections::HashMap::new();
-        
+
         for sample in samples.iter() {
             // Create a key from the stack trace
-            let key = sample.stack_trace
+            let key = sample
+                .stack_trace
                 .iter()
                 .map(|f| format!("{}:{}:{}", f.function_name, f.file_name, f.line_number))
                 .collect::<Vec<_>>()
                 .join("|");
-            
+
             stack_counts
                 .entry(key)
                 .and_modify(|(_, count)| *count += 1)
                 .or_insert_with(|| (sample.stack_trace.clone(), 1));
         }
-        
+
         // Add samples to profile
         for (_key, (stack_trace, count)) in stack_counts {
             // Convert count to CPU time in nanoseconds
             // Each sample represents approximately 1/frequency seconds
             let sample_duration_ns = 1_000_000_000 / self.config.sampling_frequency as i64;
             let total_ns = count * sample_duration_ns;
-            
+
             let pprof_sample = builder.create_sample_from_stack(&stack_trace, total_ns);
             builder.add_sample(pprof_sample);
         }
-        
+
         Ok(builder.build())
     }
-    
+
     /// Get profiler statistics
     pub async fn get_stats(&self) -> CpuProfilerStats {
         let samples = self.samples.lock().await;
-        let duration = self.start_time
+        let duration = self
+            .start_time
             .map(|start| start.elapsed())
             .unwrap_or_default();
-        
+
         CpuProfilerStats {
             is_running: self.is_running(),
             sample_count: samples.len() as u64,
@@ -237,13 +242,13 @@ impl CpuProfiler {
 pub struct CpuProfilerStats {
     /// Whether the profiler is currently running
     pub is_running: bool,
-    
+
     /// Number of samples collected
     pub sample_count: u64,
-    
+
     /// Duration of profiling
     pub duration: Duration,
-    
+
     /// Sampling frequency in Hz
     pub sampling_frequency: u32,
 }
@@ -268,18 +273,18 @@ where
     F: std::future::Future<Output = T>,
 {
     let mut profiler = CpuProfiler::new(config);
-    
+
     profiler.start().await?;
-    
+
     let result = f.await;
-    
+
     profiler.stop().await?;
-    
+
     // Wait a moment for any pending samples to be collected
     tokio::time::sleep(Duration::from_millis(10)).await;
-    
+
     let profile = profiler.generate_profile().await?;
-    
+
     Ok((result, profile))
 }
 
@@ -294,14 +299,14 @@ mod tests {
             max_duration: Duration::from_secs(1),
             include_system_calls: false,
         };
-        
+
         let mut profiler = CpuProfiler::new(config);
-        
+
         assert!(!profiler.is_running());
-        
+
         profiler.start().await.unwrap();
         assert!(profiler.is_running());
-        
+
         profiler.stop().await.unwrap();
         assert!(!profiler.is_running());
     }
@@ -313,15 +318,15 @@ mod tests {
             max_duration: Duration::from_secs(1),
             include_system_calls: false,
         };
-        
+
         let mut profiler = CpuProfiler::new(config);
         profiler.start().await.unwrap();
-        
+
         // Wait for some samples to be collected
         tokio::time::sleep(Duration::from_millis(100)).await;
-        
+
         profiler.stop().await.unwrap();
-        
+
         let stats = profiler.get_stats().await;
         assert!(stats.sample_count > 0, "Should have collected some samples");
     }
@@ -333,21 +338,24 @@ mod tests {
             max_duration: Duration::from_secs(1),
             include_system_calls: false,
         };
-        
+
         let mut profiler = CpuProfiler::new(config);
         profiler.start().await.unwrap();
-        
+
         // Simulate some work
         tokio::time::sleep(Duration::from_millis(100)).await;
-        
+
         profiler.stop().await.unwrap();
-        
+
         // Wait for samples to be processed
         tokio::time::sleep(Duration::from_millis(50)).await;
-        
+
         let profile = profiler.generate_profile().await.unwrap();
         assert!(!profile.sample.is_empty(), "Profile should contain samples");
-        assert!(!profile.string_table.is_empty(), "String table should not be empty");
+        assert!(
+            !profile.string_table.is_empty(),
+            "String table should not be empty"
+        );
     }
 
     #[tokio::test]
@@ -357,7 +365,7 @@ mod tests {
             max_duration: Duration::from_secs(1),
             include_system_calls: false,
         };
-        
+
         let (result, profile) = profile_async(
             async {
                 tokio::time::sleep(Duration::from_millis(50)).await;
@@ -367,9 +375,8 @@ mod tests {
         )
         .await
         .unwrap();
-        
+
         assert_eq!(result, 42);
         assert!(!profile.sample.is_empty());
     }
 }
-

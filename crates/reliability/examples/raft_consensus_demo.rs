@@ -149,8 +149,14 @@ async fn demo_3_log_replication() -> Result<(), UnifiedError> {
         println!("   提案 ID: {:?}", proposal_id);
 
         println!("\n3️⃣ Leader 向 Followers 发送 AppendEntries RPC");
-        println!("   → node2: AppendEntries(term={}, entries=[...])", node.current_term());
-        println!("   → node3: AppendEntries(term={}, entries=[...])", node.current_term());
+        println!(
+            "   → node2: AppendEntries(term={}, entries=[...])",
+            node.current_term()
+        );
+        println!(
+            "   → node3: AppendEntries(term={}, entries=[...])",
+            node.current_term()
+        );
 
         println!("\n4️⃣ 等待多数节点确认");
         println!("   ← node2: Success");
@@ -217,10 +223,7 @@ async fn demo_4_proposal_workflow() -> Result<(), UnifiedError> {
             // 等待提交完成
             match node.wait_committed(proposal_id).await {
                 Ok(committed_data) => {
-                    println!(
-                        "   ✅ 已提交: {}",
-                        String::from_utf8_lossy(&committed_data)
-                    );
+                    println!("   ✅ 已提交: {}", String::from_utf8_lossy(&committed_data));
                 }
                 Err(e) => {
                     println!("   ❌ 提交失败: {}", e);

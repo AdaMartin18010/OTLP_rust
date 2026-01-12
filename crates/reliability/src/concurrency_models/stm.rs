@@ -19,26 +19,26 @@
 //!
 //! async fn bank_transfer() {
 //!     let runtime = STMRuntime::new();
-//!     
+//!
 //!     // 创建事务变量
 //!     let account_a = TVar::new(1000);
 //!     let account_b = TVar::new(500);
-//!     
+//!
 //!     // 执行转账事务
 //!     let result = atomically(&runtime, |tx| {
 //!         // 读取余额
 //!         let balance_a = tx.read(&account_a)?;
 //!         let balance_b = tx.read(&account_b)?;
-//!         
+//!
 //!         // 检查余额是否足够
 //!         if balance_a < 100 {
 //!             return tx.retry(); // 余额不足，重试
 //!         }
-//!         
+//!
 //!         // 执行转账
 //!         tx.write(&account_a, balance_a - 100)?;
 //!         tx.write(&account_b, balance_b + 100)?;
-//!         
+//!
 //!         Ok(())
 //!     }).await;
 //! }
@@ -46,10 +46,10 @@
 
 use std::any::Any;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
 use std::fmt;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use tokio::sync::{Mutex, RwLock};
 
 use crate::error_handling::prelude::*;
 
@@ -101,7 +101,7 @@ impl<T: Clone + Send + Sync + 'static> TVar<T> {
     pub fn new(initial_value: T) -> Self {
         static NEXT_ID: AtomicU64 = AtomicU64::new(0);
         let id = NEXT_ID.fetch_add(1, Ordering::SeqCst);
-        
+
         Self {
             id,
             storage: Arc::new(RwLock::new(TxVarStorage {
@@ -134,9 +134,7 @@ impl<T: Clone + Send + Sync + 'static> Clone for TVar<T> {
 
 impl<T: Clone + Send + Sync + fmt::Debug + 'static> fmt::Debug for TVar<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("TVar")
-            .field("id", &self.id)
-            .finish()
+        f.debug_struct("TVar").field("id", &self.id).finish()
     }
 }
 
@@ -186,19 +184,25 @@ impl TransactionLog {
     }
 
     #[allow(dead_code)]
-    fn record_read(&mut self, var_id: TxVarId, version: Version, value: Arc<dyn Any + Send + Sync>) {
-        self.read_set.insert(var_id, ReadLogEntry {
+    fn record_read(
+        &mut self,
+        var_id: TxVarId,
+        version: Version,
+        value: Arc<dyn Any + Send + Sync>,
+    ) {
+        self.read_set.insert(
             var_id,
-            version,
-            value,
-        });
+            ReadLogEntry {
+                var_id,
+                version,
+                value,
+            },
+        );
     }
 
     fn record_write(&mut self, var_id: TxVarId, value: Arc<dyn Any + Send + Sync>) {
-        self.write_set.insert(var_id, WriteLogEntry {
-            var_id,
-            value,
-        });
+        self.write_set
+            .insert(var_id, WriteLogEntry { var_id, value });
     }
 
     fn is_read(&self, var_id: TxVarId) -> bool {
@@ -232,40 +236,44 @@ impl Transaction {
     /// 在事务中读取TVar
     pub async fn read<T: Clone + Send + Sync + 'static>(&self, tvar: &TVar<T>) -> Result<T> {
         let mut log = self.log.lock().await;
-        
+
         // 检查是否已在写入集合中
         if let Some(entry) = log.write_set.get(&tvar.id) {
             if let Some(value) = entry.value.downcast_ref::<T>() {
                 return Ok(value.clone());
             }
         }
-        
+
         // 检查是否已在读取集合中
         if let Some(entry) = log.read_set.get(&tvar.id) {
             if let Some(value) = entry.value.downcast_ref::<T>() {
                 return Ok(value.clone());
             }
         }
-        
+
         // 从存储中读取
         let storage = tvar.storage.read().await;
         let value = storage.value.clone();
         let version = storage.version;
         drop(storage);
-        
+
         // 记录读取
         log.record_read(tvar.id, version, Arc::new(value.clone()));
-        
+
         Ok(value)
     }
 
     /// 在事务中写入TVar
-    pub async fn write<T: Clone + Send + Sync + 'static>(&self, tvar: &TVar<T>, value: T) -> Result<()> {
+    pub async fn write<T: Clone + Send + Sync + 'static>(
+        &self,
+        tvar: &TVar<T>,
+        value: T,
+    ) -> Result<()> {
         let mut log = self.log.lock().await;
-        
+
         // 记录写入
         log.record_write(tvar.id, Arc::new(value));
-        
+
         Ok(())
     }
 
@@ -283,37 +291,43 @@ impl Transaction {
     /// 验证事务（检查读取的版本是否仍然有效）
     async fn validate(&self) -> Result<bool> {
         let log = self.log.lock().await;
-        
+
         for (var_id, read_entry) in &log.read_set {
             // 如果这个变量也被写入了，跳过验证（会在提交时更新）
             if log.write_set.contains_key(var_id) {
                 continue;
             }
-            
+
             // 从运行时获取当前版本并验证
-            if !self.runtime.validate_read(*var_id, read_entry.version).await {
+            if !self
+                .runtime
+                .validate_read(*var_id, read_entry.version)
+                .await
+            {
                 return Ok(false);
             }
         }
-        
+
         Ok(true)
     }
 
     /// 提交事务
     async fn commit(&self) -> Result<()> {
         let mut log = self.log.lock().await;
-        
+
         if log.write_set.is_empty() {
             // 只读事务，直接提交
             log.status = TransactionStatus::Committed;
             return Ok(());
         }
-        
+
         // 提交写入
         for (var_id, write_entry) in &log.write_set {
-            self.runtime.commit_write(*var_id, Arc::clone(&write_entry.value)).await?;
+            self.runtime
+                .commit_write(*var_id, Arc::clone(&write_entry.value))
+                .await?;
         }
-        
+
         log.status = TransactionStatus::Committed;
         Ok(())
     }
@@ -371,7 +385,11 @@ impl STMRuntime {
     }
 
     /// 提交写入
-    async fn commit_write(&self, _var_id: TxVarId, _value: Arc<dyn Any + Send + Sync>) -> Result<()> {
+    async fn commit_write(
+        &self,
+        _var_id: TxVarId,
+        _value: Arc<dyn Any + Send + Sync>,
+    ) -> Result<()> {
         // 简化实现
         // 在完整实现中，应该更新变量的值和版本号
         Ok(())
@@ -393,18 +411,19 @@ impl STMRuntime {
     async fn update_stats(&self, committed: bool, retries: u64) {
         let mut stats = self.stats.lock().await;
         stats.total_transactions += 1;
-        
+
         if committed {
             stats.committed_transactions += 1;
         } else {
             stats.aborted_transactions += 1;
         }
-        
+
         stats.retried_transactions += retries;
-        
+
         // 更新平均重试次数
         if stats.total_transactions > 0 {
-            stats.avg_retry_count = stats.retried_transactions as f64 / stats.total_transactions as f64;
+            stats.avg_retry_count =
+                stats.retried_transactions as f64 / stats.total_transactions as f64;
         }
     }
 }
@@ -425,19 +444,21 @@ impl Default for STMRuntime {
 /// 原子性地执行事务
 pub async fn atomically<F, T>(runtime: &Arc<STMRuntime>, transaction_fn: F) -> Result<T>
 where
-    F: Fn(&Transaction) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + '_>>,
+    F: Fn(
+        &Transaction,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + '_>>,
     T: Send + 'static,
 {
     const MAX_RETRIES: u64 = 100;
     let mut retry_count = 0;
-    
+
     loop {
         // 创建新的事务上下文
         let tx = Transaction::new(Arc::clone(runtime));
-        
+
         // 执行事务
         let result = transaction_fn(&tx).await;
-        
+
         match result {
             Ok(value) => {
                 // 验证事务
@@ -451,9 +472,10 @@ where
                     retry_count += 1;
                     if retry_count >= MAX_RETRIES {
                         runtime.update_stats(false, retry_count).await;
-                        return Err(UnifiedError::state_error(
-                            format!("Transaction failed after {} retries", MAX_RETRIES)
-                        ));
+                        return Err(UnifiedError::state_error(format!(
+                            "Transaction failed after {} retries",
+                            MAX_RETRIES
+                        )));
                     }
                     tx.abort().await;
                     tokio::task::yield_now().await;
@@ -466,9 +488,10 @@ where
                     retry_count += 1;
                     if retry_count >= MAX_RETRIES {
                         runtime.update_stats(false, retry_count).await;
-                        return Err(UnifiedError::state_error(
-                            format!("Transaction failed after {} retries", MAX_RETRIES)
-                        ));
+                        return Err(UnifiedError::state_error(format!(
+                            "Transaction failed after {} retries",
+                            MAX_RETRIES
+                        )));
                     }
                     tx.abort().await;
                     tokio::task::yield_now().await;
@@ -487,7 +510,9 @@ where
 /// 执行事务的简化版本（自动创建运行时）
 pub async fn atomic<F, T>(transaction_fn: F) -> Result<T>
 where
-    F: Fn(&Transaction) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + '_>>,
+    F: Fn(
+        &Transaction,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + '_>>,
     T: Send + 'static,
 {
     let runtime = STMRuntime::new();
@@ -499,18 +524,18 @@ where
 // ================================================================================================
 
 /// 组合多个事务（or-else语义）
-pub async fn or_else<F1, F2, T>(
-    runtime: &Arc<STMRuntime>,
-    first: F1,
-    second: F2,
-) -> Result<T>
+pub async fn or_else<F1, F2, T>(runtime: &Arc<STMRuntime>, first: F1, second: F2) -> Result<T>
 where
-    F1: Fn(&Transaction) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + '_>>,
-    F2: Fn(&Transaction) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + '_>>,
+    F1: Fn(
+        &Transaction,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + '_>>,
+    F2: Fn(
+        &Transaction,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + '_>>,
     T: Send + 'static,
 {
     let result = atomically(runtime, &first).await;
-    
+
     match result {
         Ok(value) => Ok(value),
         Err(_) => atomically(runtime, &second).await,
@@ -545,13 +570,15 @@ pub async fn write_many<T: Clone + Send + Sync + 'static>(
     values: Vec<T>,
 ) -> Result<()> {
     if tvars.len() != values.len() {
-        return Err(UnifiedError::state_error("TVar count mismatch with value count"));
+        return Err(UnifiedError::state_error(
+            "TVar count mismatch with value count",
+        ));
     }
-    
+
     for (tvar, value) in tvars.iter().zip(values.into_iter()) {
         tx.write(tvar, value).await?;
     }
-    
+
     Ok(())
 }
 
@@ -567,7 +594,7 @@ mod tests {
     async fn test_basic_transaction() {
         let runtime = STMRuntime::new();
         let tvar = TVar::new(42);
-        
+
         let tvar_clone = tvar.clone();
         let result = atomically(&runtime, |tx| {
             let tvar = tvar_clone.clone();
@@ -576,8 +603,10 @@ mod tests {
                 tx.write(&tvar, value + 1).await?;
                 Ok(value + 1)
             })
-        }).await.unwrap();
-        
+        })
+        .await
+        .unwrap();
+
         assert_eq!(result, 43);
     }
 
@@ -586,28 +615,29 @@ mod tests {
         let runtime = STMRuntime::new();
         let account_a = TVar::new(1000);
         let account_b = TVar::new(500);
-        
+
         let account_a_clone = account_a.clone();
         let account_b_clone = account_b.clone();
-        
+
         let result = atomically(&runtime, |tx| {
             let account_a = account_a_clone.clone();
             let account_b = account_b_clone.clone();
             Box::pin(async move {
                 let balance_a = tx.read(&account_a).await?;
                 let balance_b = tx.read(&account_b).await?;
-                
+
                 if balance_a < 100 {
                     return tx.retry();
                 }
-                
+
                 tx.write(&account_a, balance_a - 100).await?;
                 tx.write(&account_b, balance_b + 100).await?;
-                
+
                 Ok(())
             })
-        }).await;
-        
+        })
+        .await;
+
         assert!(result.is_ok());
     }
 
@@ -615,13 +645,13 @@ mod tests {
     async fn test_concurrent_transactions() {
         let runtime = Arc::new(STMRuntime::new());
         let counter = Arc::new(TVar::new(0));
-        
+
         let mut handles = vec![];
-        
+
         for _ in 0..10 {
             let runtime = Arc::clone(&runtime);
             let counter = Arc::clone(&counter);
-            
+
             let handle = tokio::spawn(async move {
                 for _ in 0..10 {
                     let _ = atomically(&runtime, |tx| {
@@ -631,17 +661,18 @@ mod tests {
                             tx.write(&counter, value + 1).await?;
                             Ok(())
                         })
-                    }).await;
+                    })
+                    .await;
                 }
             });
-            
+
             handles.push(handle);
         }
-        
+
         for handle in handles {
             handle.await.unwrap();
         }
-        
+
         // 验证最终计数（简化验证）
         let stats = runtime.get_stats().await;
         assert!(stats.total_transactions > 0);
@@ -651,7 +682,7 @@ mod tests {
     async fn test_read_write_many() {
         let runtime = STMRuntime::new();
         let tvars = new_tvars(vec![1, 2, 3, 4, 5]);
-        
+
         let result = atomically(&runtime, |tx| {
             let tvars = tvars.clone();
             Box::pin(async move {
@@ -660,9 +691,9 @@ mod tests {
                 write_many(tx, &tvars, new_values).await?;
                 Ok(())
             })
-        }).await;
-        
+        })
+        .await;
+
         assert!(result.is_ok());
     }
 }
-

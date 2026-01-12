@@ -79,7 +79,7 @@ impl CompressionStats {
     /// Updates compression ratio
     pub fn update_ratio(&mut self) {
         if self.original_size > 0 {
-            self.compression_ratio = 
+            self.compression_ratio =
                 (self.original_size - self.compressed_size) as f64 / self.original_size as f64;
         }
     }
@@ -128,7 +128,9 @@ impl std::fmt::Display for DecompressionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             DecompressionError::InvalidData(msg) => write!(f, "Invalid data: {}", msg),
-            DecompressionError::DecompressionFailed(msg) => write!(f, "Decompression failed: {}", msg),
+            DecompressionError::DecompressionFailed(msg) => {
+                write!(f, "Decompression failed: {}", msg)
+            }
             DecompressionError::VersionMismatch(msg) => write!(f, "Version mismatch: {}", msg),
         }
     }
@@ -286,7 +288,7 @@ impl SpanDeduplicator {
     fn hash_span(&self, span_name: &str, trace_id: (u64, u64), span_id: u64) -> u64 {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         span_name.hash(&mut hasher);
         trace_id.0.hash(&mut hasher);
@@ -298,7 +300,7 @@ impl SpanDeduplicator {
     /// Checks if a span has been seen (is duplicate)
     fn is_duplicate(&mut self, span_name: &str, trace_id: (u64, u64), span_id: u64) -> bool {
         let hash = self.hash_span(span_name, trace_id, span_id);
-        
+
         if self.seen_hashes.contains_key(&hash) {
             true
         } else {
@@ -376,7 +378,7 @@ impl TraceCompressor {
     /// Creates a new compressor with the given configuration
     pub fn new(config: CompressorConfig) -> Self {
         let string_table = StringTable::new(config.max_string_table_size);
-        
+
         Self {
             config,
             string_table,
@@ -409,7 +411,9 @@ impl TraceCompressor {
         span_id: u64,
     ) -> Result<Option<CompressedSpan>, CompressionError> {
         if !self.config.enabled {
-            return Err(CompressionError::InvalidConfig("Compression disabled".to_string()));
+            return Err(CompressionError::InvalidConfig(
+                "Compression disabled".to_string(),
+            ));
         }
 
         // Check for duplicate
@@ -422,8 +426,9 @@ impl TraceCompressor {
 
         // Add span name to string table
         let name_idx = if self.config.enable_string_table {
-            self.string_table.add_string(span_name)
-                .ok_or_else(|| CompressionError::SizeLimitExceeded("String table full".to_string()))?
+            self.string_table.add_string(span_name).ok_or_else(|| {
+                CompressionError::SizeLimitExceeded("String table full".to_string())
+            })?
         } else {
             0 // Fallback
         };
@@ -505,11 +510,11 @@ mod tests {
     #[test]
     fn test_string_table() {
         let mut table = StringTable::new(1024);
-        
+
         let idx1 = table.add_string("span1").unwrap();
         let idx2 = table.add_string("span2").unwrap();
         let idx3 = table.add_string("span1").unwrap(); // Duplicate
-        
+
         assert_eq!(idx1, idx3);
         assert_ne!(idx1, idx2);
         assert_eq!(table.get_string(idx1).unwrap(), "span1");
@@ -519,11 +524,11 @@ mod tests {
     #[test]
     fn test_delta_encoder() {
         let mut encoder = DeltaEncoder::new();
-        
+
         let delta1 = encoder.encode_timestamp(1000);
         let delta2 = encoder.encode_timestamp(1010);
         let delta3 = encoder.encode_timestamp(1015);
-        
+
         assert_eq!(delta1, 1000);
         assert_eq!(delta2, 10);
         assert_eq!(delta3, 5);
@@ -532,11 +537,11 @@ mod tests {
     #[test]
     fn test_span_deduplicator() {
         let mut dedup = SpanDeduplicator::new();
-        
+
         let is_dup1 = dedup.is_duplicate("span1", (100, 200), 1);
         let is_dup2 = dedup.is_duplicate("span1", (100, 200), 1); // Duplicate
         let is_dup3 = dedup.is_duplicate("span2", (100, 200), 2); // Different span
-        
+
         assert_eq!(is_dup1, false);
         assert_eq!(is_dup2, true);
         assert_eq!(is_dup3, false);
@@ -547,11 +552,11 @@ mod tests {
     fn test_compressor_basic() {
         let config = CompressorConfig::default();
         let mut compressor = TraceCompressor::new(config);
-        
+
         let result = compressor.compress_span("my_span", 1000, (100, 200), 1);
         assert!(result.is_ok());
         assert!(result.unwrap().is_some());
-        
+
         let stats = compressor.stats();
         assert_eq!(stats.span_count, 1);
     }
@@ -560,13 +565,13 @@ mod tests {
     fn test_compressor_deduplication() {
         let config = CompressorConfig::default();
         let mut compressor = TraceCompressor::new(config);
-        
+
         let result1 = compressor.compress_span("span1", 1000, (100, 200), 1);
         let result2 = compressor.compress_span("span1", 1000, (100, 200), 1); // Duplicate
-        
+
         assert!(result1.unwrap().is_some());
         assert!(result2.unwrap().is_none()); // Dedup'd
-        
+
         let stats = compressor.stats();
         assert_eq!(stats.deduplicated_spans, 1);
     }
@@ -575,17 +580,17 @@ mod tests {
     fn test_compress_batch() {
         let config = CompressorConfig::default();
         let mut compressor = TraceCompressor::new(config);
-        
+
         let spans = vec![
             ("span1", 1000, (100, 200), 1),
             ("span2", 1010, (100, 200), 2),
             ("span1", 1000, (100, 200), 1), // Duplicate
             ("span3", 1020, (100, 200), 3),
         ];
-        
+
         let result = compressor.compress_batch(spans);
         assert!(result.is_ok());
-        
+
         let compressed = result.unwrap();
         assert_eq!(compressed.metadata.original_span_count, 4);
         assert_eq!(compressed.metadata.compressed_span_count, 3); // One dedup'd
@@ -596,18 +601,17 @@ mod tests {
     fn test_compression_ratio() {
         let config = CompressorConfig::default();
         let mut compressor = TraceCompressor::new(config);
-        
+
         let spans = vec![
             ("span1", 1000, (100, 200), 1),
             ("span2", 1010, (100, 200), 2),
             ("span3", 1020, (100, 200), 3),
         ];
-        
+
         let _result = compressor.compress_batch(spans);
         let stats = compressor.stats();
-        
+
         assert!(stats.compression_ratio > 0.0);
         assert!(stats.compression_ratio < 1.0);
     }
 }
-

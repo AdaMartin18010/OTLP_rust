@@ -161,7 +161,7 @@ services:
     depends_on:
       - collector
     restart: unless-stopped
-    
+
   collector:
     image: otel/opentelemetry-collector-contrib:latest
     ports:

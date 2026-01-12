@@ -69,11 +69,11 @@
 use reliability::prelude::*;
 //use reliability::fault_tolerance::{CircuitBreaker, RetryPolicy};
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time::sleep;
-use std::collections::HashMap;
 
 // ============================================================================
 // 数据模型 | Data Models
@@ -96,11 +96,11 @@ struct Order {
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 enum OrderStatus {
-    Created,      // 已创建
-    Paid,         // 已支付
-    Completed,    // 已完成
-    Failed,       // 失败
-    Cancelled,    // 已取消
+    Created,   // 已创建
+    Paid,      // 已支付
+    Completed, // 已完成
+    Failed,    // 失败
+    Cancelled, // 已取消
 }
 
 /// 服务响应 | Service Response
@@ -147,8 +147,8 @@ struct SimpleCircuitBreaker {
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 enum BreakerState {
-    Closed,  // 正常
-    Open,    // 打开 (拒绝请求)
+    Closed,   // 正常
+    Open,     // 打开 (拒绝请求)
     HalfOpen, // 半开 (尝试恢复)
 }
 
@@ -274,7 +274,10 @@ impl OrderService {
         }
 
         let latency = start.elapsed().as_millis() as u64;
-        info!("  [订单服务] ✅ 创建订单成功: {} (耗时: {}ms)", order_id, latency);
+        info!(
+            "  [订单服务] ✅ 创建订单成功: {} (耗时: {}ms)",
+            order_id, latency
+        );
         ServiceResponse::success(order_id, latency)
     }
 
@@ -292,9 +295,11 @@ impl OrderService {
     /// 取消订单
     async fn cancel_order(&self, order_id: &str) -> ServiceResponse<()> {
         let start = Instant::now();
-        let success = self.update_order_status(order_id, OrderStatus::Cancelled).await;
+        let success = self
+            .update_order_status(order_id, OrderStatus::Cancelled)
+            .await;
         let latency = start.elapsed().as_millis() as u64;
-        
+
         if success {
             warn!("  [订单服务] ⚠️  取消订单: {} (补偿事务)", order_id);
             ServiceResponse::success((), latency)
@@ -371,13 +376,15 @@ impl InventoryService {
     async fn deduct_inventory(&self, product_id: &str, quantity: u32) -> ServiceResponse<()> {
         let start = Instant::now();
         let mut inventory = self.inventory.write().await;
-        
+
         if let Some(stock) = inventory.get_mut(product_id) {
             if *stock >= quantity {
                 *stock -= quantity;
                 let latency = start.elapsed().as_millis() as u64;
-                info!("  [库存服务] ✅ 扣减库存成功: {} (数量: {}, 剩余: {})", 
-                    product_id, quantity, *stock);
+                info!(
+                    "  [库存服务] ✅ 扣减库存成功: {} (数量: {}, 剩余: {})",
+                    product_id, quantity, *stock
+                );
                 return ServiceResponse::success((), latency);
             }
         }
@@ -393,8 +400,10 @@ impl InventoryService {
         *stock += quantity;
 
         let latency = start.elapsed().as_millis() as u64;
-        warn!("  [库存服务] ⚠️  恢复库存: {} (数量: {}, 当前: {})", 
-            product_id, quantity, *stock);
+        warn!(
+            "  [库存服务] ⚠️  恢复库存: {} (数量: {}, 当前: {})",
+            product_id, quantity, *stock
+        );
 
         ServiceResponse::success((), latency)
     }
@@ -460,8 +469,10 @@ impl PaymentService {
         }
 
         let latency = start.elapsed().as_millis() as u64;
-        info!("  [支付服务] ✅ 支付成功: {} (金额: ¥{}, 耗时: {}ms)", 
-            payment_id, amount, latency);
+        info!(
+            "  [支付服务] ✅ 支付成功: {} (金额: ¥{}, 耗时: {}ms)",
+            payment_id, amount, latency
+        );
 
         ServiceResponse::success(payment_id, latency)
     }
@@ -470,12 +481,14 @@ impl PaymentService {
     async fn refund(&self, payment_id: &str) -> ServiceResponse<()> {
         let start = Instant::now();
         let mut payments = self.payments.write().await;
-        
+
         if let Some(payment) = payments.get_mut(payment_id) {
             payment.status = PaymentStatus::Refunded;
             let latency = start.elapsed().as_millis() as u64;
-            warn!("  [支付服务] ⚠️  退款成功: {} (金额: ¥{})", 
-                payment_id, payment.amount);
+            warn!(
+                "  [支付服务] ⚠️  退款成功: {} (金额: ¥{})",
+                payment_id, payment.amount
+            );
             return ServiceResponse::success((), latency);
         }
 
@@ -518,7 +531,8 @@ impl BusinessOrchestrator {
         let start = Instant::now();
 
         // Step 1: 创建订单
-        let order_response = self.order_service
+        let order_response = self
+            .order_service
             .create_order(user_id, product_id.clone(), quantity, amount)
             .await;
 
@@ -529,7 +543,8 @@ impl BusinessOrchestrator {
         let order_id = order_response.data.unwrap();
 
         // Step 2: 检查库存
-        let check_response = self.inventory_service
+        let check_response = self
+            .inventory_service
             .check_inventory(&product_id, quantity)
             .await;
 
@@ -539,7 +554,8 @@ impl BusinessOrchestrator {
         }
 
         // Step 3: 扣减库存
-        let deduct_response = self.inventory_service
+        let deduct_response = self
+            .inventory_service
             .deduct_inventory(&product_id, quantity)
             .await;
 
@@ -549,21 +565,29 @@ impl BusinessOrchestrator {
         }
 
         // Step 4: 处理支付
-        let payment_response = self.payment_service
+        let payment_response = self
+            .payment_service
             .process_payment(&order_id, amount)
             .await;
 
         if !payment_response.success {
-            self.inventory_service.restore_inventory(&product_id, quantity).await;
+            self.inventory_service
+                .restore_inventory(&product_id, quantity)
+                .await;
             self.order_service.cancel_order(&order_id).await;
             return Err("支付失败".to_string());
         }
 
         // Step 5: 更新订单状态
-        self.order_service.update_order_status(&order_id, OrderStatus::Completed).await;
+        self.order_service
+            .update_order_status(&order_id, OrderStatus::Completed)
+            .await;
 
         let total_latency = start.elapsed().as_millis();
-        info!("✅ 下单流程完成！订单号: {} (总耗时: {}ms)", order_id, total_latency);
+        info!(
+            "✅ 下单流程完成！订单号: {} (总耗时: {}ms)",
+            order_id, total_latency
+        );
 
         Ok(order_id)
     }
@@ -578,12 +602,9 @@ async fn scenario_1_happy_path(orchestrator: &BusinessOrchestrator) {
     println!("📋 [场景1] 正常订单流程");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    let result = orchestrator.place_order(
-        "USER-001".to_string(),
-        "PROD-001".to_string(),
-        2,
-        199.99,
-    ).await;
+    let result = orchestrator
+        .place_order("USER-001".to_string(), "PROD-001".to_string(), 2, 199.99)
+        .await;
 
     match result {
         Ok(order_id) => println!("✅ 场景1 通过: 订单 {} 创建成功\n", order_id),
@@ -602,12 +623,9 @@ async fn scenario_2_circuit_breaker(
     inventory_service.set_simulated_delay(600).await;
     warn!("⚠️  设置库存服务延迟: 600ms (模拟故障)");
 
-    let result = orchestrator.place_order(
-        "USER-002".to_string(),
-        "PROD-002".to_string(),
-        1,
-        99.99,
-    ).await;
+    let result = orchestrator
+        .place_order("USER-002".to_string(), "PROD-002".to_string(), 1, 99.99)
+        .await;
 
     inventory_service.set_simulated_delay(0).await;
 
@@ -630,12 +648,8 @@ async fn scenario_3_rate_limiting(orchestrator: Arc<BusinessOrchestrator>) {
     for i in 0..150 {
         let orch = Arc::clone(&orchestrator);
         let task = tokio::spawn(async move {
-            orch.place_order(
-                format!("USER-{:03}", i),
-                "PROD-003".to_string(),
-                1,
-                49.99,
-            ).await
+            orch.place_order(format!("USER-{:03}", i), "PROD-003".to_string(), 1, 49.99)
+                .await
         });
         tasks.push(task);
     }
@@ -667,12 +681,14 @@ async fn scenario_4_compensation(orchestrator: &BusinessOrchestrator) {
     println!("📋 [场景4] 库存不足 (补偿事务测试)");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    let result = orchestrator.place_order(
-        "USER-003".to_string(),
-        "PROD-001".to_string(),
-        1000,
-        9999.99,
-    ).await;
+    let result = orchestrator
+        .place_order(
+            "USER-003".to_string(),
+            "PROD-001".to_string(),
+            1000,
+            9999.99,
+        )
+        .await;
 
     match result {
         Ok(_) => println!("❌ 场景4 失败: 不应该成功\n"),

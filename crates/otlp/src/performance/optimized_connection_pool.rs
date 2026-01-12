@@ -1,6 +1,6 @@
 //! 优化的连接池实现
 //!
-//! 使用Rust 1.90的新特性进行性能优化，包括零拷贝、智能连接管理和高效资源复用。
+//! 使用Rust 1.92的新特性进行性能优化，包括零拷贝、智能连接管理和高效资源复用。
 
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;

@@ -296,7 +296,6 @@ impl DatabaseAttributes {
 
         map
     }
-
 }
 
 /// Builder for DatabaseAttributes
@@ -413,9 +412,7 @@ impl DatabaseAttributesBuilder {
         let system = self
             .system
             .ok_or_else(|| "db.system is required".to_string())?;
-        let name = self
-            .name
-            .ok_or_else(|| "db.name is required".to_string())?;
+        let name = self.name.ok_or_else(|| "db.name is required".to_string())?;
 
         Ok(DatabaseAttributes {
             system,
@@ -540,4 +537,3 @@ mod tests {
         assert_eq!(result.unwrap_err(), "db.name is required");
     }
 }
-

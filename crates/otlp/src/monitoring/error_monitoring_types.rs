@@ -935,7 +935,6 @@ pub struct DashboardMetrics {
     pub recent_errors: VecDeque<ErrorEvent>,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AlertRule {
     pub id: String,

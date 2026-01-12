@@ -28,7 +28,5 @@
 pub mod tracezip;
 
 pub use tracezip::{
-    CompressorConfig, CompressionStats, TraceCompressor,
-    DecompressionError, CompressionError,
+    CompressionError, CompressionStats, CompressorConfig, DecompressionError, TraceCompressor,
 };
-

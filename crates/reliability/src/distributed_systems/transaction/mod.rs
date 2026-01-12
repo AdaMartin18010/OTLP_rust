@@ -4,18 +4,18 @@
 
 pub mod saga;
 pub mod tcc;
-pub mod two_phase_commit;
 pub mod three_phase_commit;
+pub mod two_phase_commit;
 
 pub use saga::*;
 pub use tcc::*;
-pub use two_phase_commit::*;
 pub use three_phase_commit::*;
+pub use two_phase_commit::*;
 
+use crate::error_handling::UnifiedError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::error_handling::UnifiedError;
 
 /// 事务 ID
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -25,7 +25,7 @@ impl TransactionId {
     pub fn new() -> Self {
         Self(uuid::Uuid::new_v4().to_string())
     }
-    
+
     pub fn from_string(id: String) -> Self {
         Self(id)
     }
@@ -61,16 +61,16 @@ pub enum TransactionState {
 pub trait DistributedTransaction: Send + Sync {
     /// 开始事务
     async fn begin(&mut self) -> Result<TransactionId, UnifiedError>;
-    
+
     /// 提交事务
     async fn commit(&mut self, tx_id: &TransactionId) -> Result<(), UnifiedError>;
-    
+
     /// 回滚事务
     async fn rollback(&mut self, tx_id: &TransactionId) -> Result<(), UnifiedError>;
-    
+
     /// 获取事务状态
     fn get_state(&self, tx_id: &TransactionId) -> Option<TransactionState>;
-    
+
     /// 获取所有事务
     fn list_transactions(&self) -> Vec<TransactionId>;
 }
@@ -80,10 +80,10 @@ pub trait DistributedTransaction: Send + Sync {
 pub trait TransactionParticipant: Send + Sync {
     /// 准备阶段
     async fn prepare(&mut self, tx_id: &TransactionId) -> Result<bool, UnifiedError>;
-    
+
     /// 提交阶段
     async fn commit(&mut self, tx_id: &TransactionId) -> Result<(), UnifiedError>;
-    
+
     /// 中止阶段
     async fn abort(&mut self, tx_id: &TransactionId) -> Result<(), UnifiedError>;
 }
@@ -93,10 +93,10 @@ pub trait TransactionParticipant: Send + Sync {
 pub trait TransactionStep: Send + Sync {
     /// 执行步骤
     async fn execute(&mut self, context: &TransactionContext) -> Result<StepResult, UnifiedError>;
-    
+
     /// 补偿步骤 (仅 Saga)
     async fn compensate(&mut self, context: &TransactionContext) -> Result<(), UnifiedError>;
-    
+
     /// 步骤名称
     fn name(&self) -> &str;
 }
@@ -133,10 +133,7 @@ pub enum StepResult {
         data: HashMap<String, serde_json::Value>,
     },
     /// 失败
-    Failure {
-        error: String,
-        retryable: bool,
-    },
+    Failure { error: String, retryable: bool },
 }
 
 /// 事务指标
@@ -153,4 +150,3 @@ pub struct TransactionMetrics {
     /// 活动事务数
     pub active_transactions: u64,
 }
-

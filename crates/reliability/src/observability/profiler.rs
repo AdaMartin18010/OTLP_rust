@@ -219,9 +219,7 @@ impl Profiler {
     /// 生成剖析报告
     pub async fn generate_report(&self) -> Result<ProfileReport> {
         let start_time = self.start_time.read().await;
-        let duration = start_time
-            .map(|t| t.elapsed())
-            .unwrap_or(Duration::ZERO);
+        let duration = start_time.map(|t| t.elapsed()).unwrap_or(Duration::ZERO);
 
         let sample_count = match self.profile_type {
             ProfileType::Cpu => self.cpu_samples.read().await.len(),
@@ -324,9 +322,8 @@ impl Profiler {
         let total_freed: usize = memory_samples.iter().map(|s| s.freed_bytes).sum();
 
         if total_allocated > total_freed * 2 {
-            recommendations.push(
-                "检测到较高的内存分配率，考虑使用对象池或减少临时对象创建".to_string(),
-            );
+            recommendations
+                .push("检测到较高的内存分配率，考虑使用对象池或减少临时对象创建".to_string());
         }
 
         if recommendations.is_empty() {
@@ -464,4 +461,3 @@ mod tests {
         assert!(!report.recommendations.is_empty());
     }
 }
-

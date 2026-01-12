@@ -1,9 +1,14 @@
 #[cfg(all(feature = "containers"))]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    use c13_reliability::runtime_environments::orchestrator::{Orchestrator, LocalContainerOrchestrator, WorkloadStatus};
-    use c13_reliability::runtime_environments::container_runtime::{ImageReference, ContainerRunConfig, RestartPolicy};
-    #[cfg(feature = "docker-runtime")] use c13_reliability::runtime_environments::container_runtime::docker_local::DockerRuntime;
+    #[cfg(feature = "docker-runtime")]
+    use c13_reliability::runtime_environments::container_runtime::docker_local::DockerRuntime;
+    use c13_reliability::runtime_environments::container_runtime::{
+        ContainerRunConfig, ImageReference, RestartPolicy,
+    };
+    use c13_reliability::runtime_environments::orchestrator::{
+        LocalContainerOrchestrator, Orchestrator, WorkloadStatus,
+    };
 
     let img: ImageReference = "docker.io/library/nginx:latest".parse().unwrap();
     let cfg = ContainerRunConfig {
@@ -12,7 +17,10 @@ async fn main() -> anyhow::Result<()> {
         env: vec![],
         cpu_limit_millis: Some(500),
         memory_limit_bytes: Some(256 * 1024 * 1024),
-        restart_policy: Some(RestartPolicy::OnFailure { max_retries: 3, backoff_secs: 5 }),
+        restart_policy: Some(RestartPolicy::OnFailure {
+            max_retries: 3,
+            backoff_secs: 5,
+        }),
         health_probe: None,
     };
 
@@ -31,12 +39,18 @@ async fn main() -> anyhow::Result<()> {
         let st = orch.status("nginx").await?;
         println!("status: {:?}", st);
         orch.terminate("nginx").await?;
-        if matches!(st, WorkloadStatus::Running | WorkloadStatus::Pending | WorkloadStatus::Succeeded | WorkloadStatus::Failed(_)) {}
+        if matches!(
+            st,
+            WorkloadStatus::Running
+                | WorkloadStatus::Pending
+                | WorkloadStatus::Succeeded
+                | WorkloadStatus::Failed(_)
+        ) {}
         Ok(())
     }
 }
 
 #[cfg(not(all(feature = "containers")))]
-fn main() { println!("Enable --features containers to run this example."); }
-
-
+fn main() {
+    println!("Enable --features containers to run this example.");
+}

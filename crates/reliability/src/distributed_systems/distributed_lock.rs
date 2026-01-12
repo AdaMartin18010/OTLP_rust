@@ -187,7 +187,7 @@ impl Drop for LockGuard {
         let lock_id = self.lock_id.clone();
         let holder_id = self.holder_id.clone();
         let releaser = Arc::clone(&self.releaser);
-        
+
         tokio::spawn(async move {
             if let Err(e) = releaser.release(&lock_id, &holder_id).await {
                 tracing::warn!("Failed to release lock {}: {}", lock_id, e);
@@ -287,7 +287,7 @@ impl RedlockLock {
         // 验证配置
         if config.redis_urls.len() < 3 {
             return Err(UnifiedError::configuration_error(
-                "Redlock requires at least 3 Redis instances"
+                "Redlock requires at least 3 Redis instances",
             ));
         }
 
@@ -298,39 +298,27 @@ impl RedlockLock {
     }
 
     /// 在单个Redis实例上获取锁
-    async fn lock_instance(
-        &self,
-        resource: &str,
-        value: &str,
-        ttl: Duration,
-    ) -> Result<bool> {
+    async fn lock_instance(&self, resource: &str, value: &str, ttl: Duration) -> Result<bool> {
         let mut storage = self.simulated_storage.lock().await;
         let now = SystemTime::now();
-        
+
         // 检查是否已存在且未过期
         if let Some((_, expires_at)) = storage.get(resource) {
             if *expires_at > now {
                 return Ok(false); // 锁已被持有
             }
         }
-        
+
         // 设置锁
-        storage.insert(
-            resource.to_string(),
-            (value.to_string(), now + ttl),
-        );
-        
+        storage.insert(resource.to_string(), (value.to_string(), now + ttl));
+
         Ok(true)
     }
 
     /// 在单个Redis实例上释放锁
-    async fn unlock_instance(
-        &self,
-        resource: &str,
-        value: &str,
-    ) -> Result<bool> {
+    async fn unlock_instance(&self, resource: &str, value: &str) -> Result<bool> {
         let mut storage = self.simulated_storage.lock().await;
-        
+
         // 只有持有者才能释放锁
         if let Some((holder, _)) = storage.get(resource) {
             if holder == value {
@@ -338,16 +326,16 @@ impl RedlockLock {
                 return Ok(true);
             }
         }
-        
+
         Ok(false)
     }
 
     /// 计算有效时长（考虑时钟漂移）
     fn validity_time(&self, ttl: Duration, elapsed: Duration) -> Duration {
-        let drift = Duration::from_millis(
-            (ttl.as_millis() as f64 * self.config.clock_drift_factor) as u64
-        ) + Duration::from_millis(2);
-        
+        let drift =
+            Duration::from_millis((ttl.as_millis() as f64 * self.config.clock_drift_factor) as u64)
+                + Duration::from_millis(2);
+
         ttl.saturating_sub(elapsed).saturating_sub(drift)
     }
 }
@@ -357,29 +345,34 @@ impl DistributedLock for RedlockLock {
     async fn acquire(&self, resource: &str, options: LockOptions) -> Result<LockGuard> {
         let start_time = Instant::now();
         let holder_id = Uuid::new_v4().to_string();
-        
+
         for attempt in 0..=options.retry_count {
             let lock_start = Instant::now();
             let mut locked_count = 0;
             let quorum = (self.config.redis_urls.len() / 2) + 1;
-            
+
             // 尝试在多个实例上获取锁
             for _ in &self.config.redis_urls {
-                if self.lock_instance(resource, &holder_id, options.ttl).await? {
+                if self
+                    .lock_instance(resource, &holder_id, options.ttl)
+                    .await?
+                {
                     locked_count += 1;
                 }
             }
-            
+
             let elapsed = lock_start.elapsed();
             let validity = self.validity_time(options.ttl, elapsed);
-            
+
             // 检查是否获得了多数锁，且在有效时间内
             if locked_count >= quorum && validity > Duration::ZERO {
                 tracing::info!(
                     "Redlock acquired: resource={}, holder={}, validity={:?}",
-                    resource, holder_id, validity
+                    resource,
+                    holder_id,
+                    validity
                 );
-                
+
                 return Ok(LockGuard {
                     lock_id: resource.to_string(),
                     holder_id,
@@ -388,28 +381,30 @@ impl DistributedLock for RedlockLock {
                     }),
                 });
             }
-            
+
             // 未能获取锁，释放已获取的锁
             for _ in &self.config.redis_urls {
                 let _ = self.unlock_instance(resource, &holder_id).await;
             }
-            
+
             // 检查是否超时
             if start_time.elapsed() >= options.acquire_timeout {
-                return Err(UnifiedError::resource_unavailable(
-                    format!("Failed to acquire lock within timeout: {}", resource)
-                ));
+                return Err(UnifiedError::resource_unavailable(format!(
+                    "Failed to acquire lock within timeout: {}",
+                    resource
+                )));
             }
-            
+
             // 重试前等待
             if attempt < options.retry_count {
                 tokio::time::sleep(options.retry_delay).await;
             }
         }
-        
-        Err(UnifiedError::resource_unavailable(
-            format!("Failed to acquire lock after {} attempts: {}", options.retry_count, resource)
-        ))
+
+        Err(UnifiedError::resource_unavailable(format!(
+            "Failed to acquire lock after {} attempts: {}",
+            options.retry_count, resource
+        )))
     }
 
     async fn try_acquire(&self, resource: &str, options: LockOptions) -> Result<Option<LockGuard>> {
@@ -421,43 +416,52 @@ impl DistributedLock for RedlockLock {
 
     async fn release(&self, resource: &str, holder_id: &str) -> Result<()> {
         let mut success_count = 0;
-        
+
         // 在所有实例上释放锁
         for _ in &self.config.redis_urls {
             if self.unlock_instance(resource, holder_id).await? {
                 success_count += 1;
             }
         }
-        
+
         if success_count > 0 {
-            tracing::info!("Redlock released: resource={}, holder={}", resource, holder_id);
+            tracing::info!(
+                "Redlock released: resource={}, holder={}",
+                resource,
+                holder_id
+            );
             Ok(())
         } else {
-            Err(UnifiedError::state_error(
-                format!("Failed to release lock: {} (holder: {})", resource, holder_id)
-            ))
+            Err(UnifiedError::state_error(format!(
+                "Failed to release lock: {} (holder: {})",
+                resource, holder_id
+            )))
         }
     }
 
     async fn renew(&self, resource: &str, holder_id: &str, ttl: Duration) -> Result<()> {
         let storage = self.simulated_storage.lock().await;
-        
+
         if let Some((current_holder, _)) = storage.get(resource) {
             if current_holder == holder_id {
                 drop(storage);
                 // 重新获取锁以更新TTL
-                return self.lock_instance(resource, holder_id, ttl).await.map(|_| ());
+                return self
+                    .lock_instance(resource, holder_id, ttl)
+                    .await
+                    .map(|_| ());
             }
         }
-        
-        Err(UnifiedError::state_error(
-            format!("Cannot renew lock not held by this holder: {}", resource)
-        ))
+
+        Err(UnifiedError::state_error(format!(
+            "Cannot renew lock not held by this holder: {}",
+            resource
+        )))
     }
 
     async fn get_lock_info(&self, resource: &str) -> Result<Option<LockInfo>> {
         let storage = self.simulated_storage.lock().await;
-        
+
         if let Some((holder, expires_at)) = storage.get(resource) {
             Ok(Some(LockInfo {
                 lock_id: resource.to_string(),
@@ -489,17 +493,18 @@ impl LockReleaser for RedlockReleaser {
     async fn release(&self, lock_id: &str, holder_id: &str) -> Result<()> {
         let storage_arc = self.lock.lock().await;
         let mut storage = storage_arc.lock().await;
-        
+
         if let Some((current_holder, _)) = storage.get(lock_id) {
             if current_holder == holder_id {
                 storage.remove(lock_id);
                 return Ok(());
             }
         }
-        
-        Err(UnifiedError::state_error(
-            format!("Cannot release lock not held by this holder: {}", lock_id)
-        ))
+
+        Err(UnifiedError::state_error(format!(
+            "Cannot release lock not held by this holder: {}",
+            lock_id
+        )))
     }
 }
 
@@ -537,7 +542,7 @@ impl LocalDistributedLock {
     ) -> Result<bool> {
         let mut locks = self.locks.write().await;
         let now = SystemTime::now();
-        
+
         // 检查现有锁
         if let Some(state) = locks.get_mut(resource) {
             // 检查是否过期
@@ -552,7 +557,7 @@ impl LocalDistributedLock {
                 return Ok(false);
             }
         }
-        
+
         // 获取新锁
         locks.insert(
             resource.to_string(),
@@ -563,7 +568,7 @@ impl LocalDistributedLock {
                 is_reentrant: options.reentrant,
             },
         );
-        
+
         Ok(true)
     }
 }
@@ -579,15 +584,16 @@ impl DistributedLock for LocalDistributedLock {
     async fn acquire(&self, resource: &str, options: LockOptions) -> Result<LockGuard> {
         let holder_id = Uuid::new_v4().to_string();
         let start_time = Instant::now();
-        
+
         // 如果是公平锁，加入等待队列
         if options.fair {
             let mut queues = self.fair_queues.lock().await;
-            queues.entry(resource.to_string())
+            queues
+                .entry(resource.to_string())
                 .or_insert_with(VecDeque::new)
                 .push_back(holder_id.clone());
         }
-        
+
         loop {
             // 如果是公平锁，检查是否轮到当前持有者
             if options.fair {
@@ -600,9 +606,12 @@ impl DistributedLock for LocalDistributedLock {
                     }
                 }
             }
-            
+
             // 尝试获取锁
-            if self.try_lock_internal(resource, &holder_id, &options).await? {
+            if self
+                .try_lock_internal(resource, &holder_id, &options)
+                .await?
+            {
                 // 如果是公平锁，从队列中移除
                 if options.fair {
                     let mut queues = self.fair_queues.lock().await;
@@ -610,7 +619,7 @@ impl DistributedLock for LocalDistributedLock {
                         queue.pop_front();
                     }
                 }
-                
+
                 return Ok(LockGuard {
                     lock_id: resource.to_string(),
                     holder_id,
@@ -619,22 +628,26 @@ impl DistributedLock for LocalDistributedLock {
                     }),
                 });
             }
-            
+
             // 检查超时
             if start_time.elapsed() >= options.acquire_timeout {
-                return Err(UnifiedError::resource_unavailable(
-                    format!("Failed to acquire lock within timeout: {}", resource)
-                ));
+                return Err(UnifiedError::resource_unavailable(format!(
+                    "Failed to acquire lock within timeout: {}",
+                    resource
+                )));
             }
-            
+
             tokio::time::sleep(options.retry_delay).await;
         }
     }
 
     async fn try_acquire(&self, resource: &str, options: LockOptions) -> Result<Option<LockGuard>> {
         let holder_id = Uuid::new_v4().to_string();
-        
-        if self.try_lock_internal(resource, &holder_id, &options).await? {
+
+        if self
+            .try_lock_internal(resource, &holder_id, &options)
+            .await?
+        {
             Ok(Some(LockGuard {
                 lock_id: resource.to_string(),
                 holder_id,
@@ -649,7 +662,7 @@ impl DistributedLock for LocalDistributedLock {
 
     async fn release(&self, resource: &str, holder_id: &str) -> Result<()> {
         let mut locks = self.locks.write().await;
-        
+
         if let Some(state) = locks.get_mut(resource) {
             if state.holder_id == holder_id {
                 if state.reentrant_count > 1 {
@@ -660,34 +673,36 @@ impl DistributedLock for LocalDistributedLock {
                 return Ok(());
             }
         }
-        
-        Err(UnifiedError::state_error(
-            format!("Cannot release lock not held by this holder: {}", resource)
-        ))
+
+        Err(UnifiedError::state_error(format!(
+            "Cannot release lock not held by this holder: {}",
+            resource
+        )))
     }
 
     async fn renew(&self, resource: &str, holder_id: &str, ttl: Duration) -> Result<()> {
         let mut locks = self.locks.write().await;
-        
+
         if let Some(state) = locks.get_mut(resource) {
             if state.holder_id == holder_id {
                 state.expires_at = SystemTime::now() + ttl;
                 return Ok(());
             }
         }
-        
-        Err(UnifiedError::state_error(
-            format!("Cannot renew lock not held by this holder: {}", resource)
-        ))
+
+        Err(UnifiedError::state_error(format!(
+            "Cannot renew lock not held by this holder: {}",
+            resource
+        )))
     }
 
     async fn get_lock_info(&self, resource: &str) -> Result<Option<LockInfo>> {
         let locks = self.locks.read().await;
         let queues = self.fair_queues.lock().await;
-        
+
         if let Some(state) = locks.get(resource) {
             let waiting_count = queues.get(resource).map(|q| q.len()).unwrap_or(0);
-            
+
             Ok(Some(LockInfo {
                 lock_id: resource.to_string(),
                 state: LockState::Locked(state.holder_id.clone()),
@@ -716,7 +731,7 @@ struct LocalLockReleaser {
 impl LockReleaser for LocalLockReleaser {
     async fn release(&self, lock_id: &str, holder_id: &str) -> Result<()> {
         let mut locks = self.locks.write().await;
-        
+
         if let Some(state) = locks.get_mut(lock_id) {
             if state.holder_id == holder_id {
                 if state.reentrant_count > 1 {
@@ -727,7 +742,7 @@ impl LockReleaser for LocalLockReleaser {
                 return Ok(());
             }
         }
-        
+
         Ok(())
     }
 }
@@ -744,29 +759,40 @@ mod tests {
     async fn test_local_lock_basic() {
         let lock = LocalDistributedLock::new();
         let options = LockOptions::default();
-        
+
         let guard = lock.acquire("test-resource", options).await.unwrap();
-        
+
         // 验证无法再次获取
         let options2 = LockOptions::default().with_acquire_timeout(Duration::from_millis(100));
         assert!(lock.acquire("test-resource", options2).await.is_err());
-        
+
         drop(guard);
-        
+
         // 释放后可以再次获取
-        let _guard2 = lock.acquire("test-resource", LockOptions::default()).await.unwrap();
+        let _guard2 = lock
+            .acquire("test-resource", LockOptions::default())
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
     async fn test_local_lock_reentrant() {
         let lock = LocalDistributedLock::new();
         let options = LockOptions::default().with_reentrant(true);
-        
+
         // 直接测试内部方法
         let holder_id = "test-holder";
-        assert!(lock.try_lock_internal("resource", holder_id, &options).await.unwrap());
-        assert!(lock.try_lock_internal("resource", holder_id, &options).await.unwrap());
-        
+        assert!(
+            lock.try_lock_internal("resource", holder_id, &options)
+                .await
+                .unwrap()
+        );
+        assert!(
+            lock.try_lock_internal("resource", holder_id, &options)
+                .await
+                .unwrap()
+        );
+
         let info = lock.get_lock_info("resource").await.unwrap().unwrap();
         assert_eq!(info.reentrant_count, 2);
     }
@@ -779,15 +805,15 @@ mod tests {
             "redis://127.0.0.1:6380".to_string(),
             "redis://127.0.0.1:6381".to_string(),
         ]);
-        
+
         let lock = RedlockLock::new(config).await.unwrap();
         let options = LockOptions::default();
-        
+
         let guard = lock.acquire("test-resource", options).await.unwrap();
-        
+
         let info = lock.get_lock_info("test-resource").await.unwrap().unwrap();
         assert!(matches!(info.state, LockState::Locked(_)));
-        
+
         drop(guard);
     }
 }

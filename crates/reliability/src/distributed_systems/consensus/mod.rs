@@ -8,26 +8,26 @@ pub mod types;
 pub use raft::*;
 pub use types::*;
 
+use crate::error_handling::UnifiedError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::error_handling::UnifiedError;
 
 /// 共识算法接口
 #[async_trait]
 pub trait ConsensusAlgorithm: Send + Sync {
     /// 提交提案
     async fn propose(&mut self, value: Vec<u8>) -> Result<ProposalId, UnifiedError>;
-    
+
     /// 等待提案被提交
     async fn wait_committed(&self, proposal_id: ProposalId) -> Result<Vec<u8>, UnifiedError>;
-    
+
     /// 获取当前状态
     fn get_state(&self) -> ConsensusState;
-    
+
     /// 是否为 Leader
     fn is_leader(&self) -> bool;
-    
+
     /// 获取当前任期
     fn current_term(&self) -> u64;
 }
@@ -97,4 +97,3 @@ pub struct ConsensusMetrics {
     /// 自定义指标
     pub custom_metrics: HashMap<String, f64>,
 }
-

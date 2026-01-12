@@ -3,9 +3,9 @@ name = "otlp"
 version = "0.1.0"
 edition = "2024"
 resolver = "3"
-rust-version = "1.91"
+rust-version = "1.92"
 authors = ["Rust OTLP Team"]
-description = "OpenTelemetry Protocol (OTLP) implementation with Rust 1.91+ features"
+description = "OpenTelemetry Protocol (OTLP) implementation with Rust 1.92+ features"
 license = "MIT OR Apache-2.0"
 keywords = [
   "opentelemetry",
@@ -85,7 +85,7 @@ uuid = { workspace = true }
 url = { workspace = true }
 bytes = { workspace = true }
 hex = { workspace = true } # 使用工作区版本
-async-compression = { version = "0.4.32", features = [
+async-compression = { version = "0.4.37", features = [
   "tokio",
   "zstd",
   "gzip",
@@ -94,6 +94,11 @@ async-compression = { version = "0.4.32", features = [
 
 # Profiling依赖
 backtrace = { version = "0.3", optional = true }
+
+# eBPF支持（可选特性，需要Linux内核 >= 5.8）
+# 注意: 直接定义依赖，因为 workspace dependencies 不能是 optional
+aya = { version = "0.13", optional = true }
+object = { version = "0.38", optional = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
@@ -119,6 +124,8 @@ harness = false
 [features]
 default = ["async", "grpc", "http"]
 full = ["async", "grpc", "http", "monitoring", "backtrace"]
+# eBPF支持（需要Linux内核 >= 5.8，CAP_BPF权限）
+ebpf = ["dep:aya", "dep:object"]
 
 # 核心功能特性
 async = ["tokio/full", "async-trait"]
@@ -158,3 +165,9 @@ path = "examples/k8s_complete_deployment_demo.rs"
 # 2025年技术趋势对齐示例
 # 注意: 示例文件位于项目根目录的examples/目录
 # 如需运行，请使用: cargo run --example <name> --manifest-path Cargo.toml
+
+# eBPF 示例
+[[example]]
+name = "ebpf_complete"
+path = "../../examples/ebpf_complete_example.rs"
+required-features = ["ebpf"]

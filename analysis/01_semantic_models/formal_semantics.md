@@ -158,7 +158,7 @@ AttributeDefinition = {
 validResource: Resource × ResourceSchema → 𝔹
 
 validResource((A, S), Schema) ⟺
-  ∀ attr ∈ Schema.attributes: 
+  ∀ attr ∈ Schema.attributes:
     (attr.required ⟹ ∃ (k,v) ∈ A: k = attr.name) ∧
     (∃ (k,v) ∈ A: k = attr.name ⟹ isValidType(v, attr.type))
 ```
@@ -169,7 +169,7 @@ validResource((A, S), Schema) ⟺
 
 ```text
 Span 形式化定义:
-Span = (SpanId, ParentSpanId, Name, StartTime, EndTime, 
+Span = (SpanId, ParentSpanId, Name, StartTime, EndTime,
         Attributes, Events, Links, Status)
 
 其中:
@@ -269,7 +269,7 @@ validDataPoint(dp, unit) ⟺
   case dp of
   | GaugePoint(ts, val, attrs) → validTimestamp(ts) ∧ validNumericValue(val, unit)
   | SumPoint(ts, val, attrs, mono) → validTimestamp(ts) ∧ validNumericValue(val, unit)
-  | HistogramPoint(ts, count, sum, buckets, attrs) → 
+  | HistogramPoint(ts, count, sum, buckets, attrs) →
       validTimestamp(ts) ∧ count ≥ 0 ∧ validBuckets(buckets)
   | ExponentialHistogramPoint(ts, count, sum, pos, neg, zero, attrs) →
       validTimestamp(ts) ∧ count ≥ 0 ∧ zero ≥ 0
@@ -330,10 +330,10 @@ Signal = Trace ∪ Metric ∪ Log
 
 信号类型函数:
 signalType: Signal → SignalType
-signalType(s) = 
+signalType(s) =
   case s of
   | Trace(_) → TraceType
-  | Metric(_) → MetricType  
+  | Metric(_) → MetricType
   | Log(_) → LogType
 
 信号时间函数:
@@ -371,15 +371,15 @@ validSignalRelation(rel) ⟺
 GlobalConsistency: Signal* → 𝔹
 
 GlobalConsistency(signals) ⟺
-  ∀ s₁, s₂ ∈ signals: 
+  ∀ s₁, s₂ ∈ signals:
     (signalType(s₁) = signalType(s₂) ⟹ typeConsistent(s₁, s₂)) ∧
     (resourceOverlap(s₁, s₂) ⟹ resourceConsistent(s₁, s₂)) ∧
     (timeOverlap(s₁, s₂) ⟹ temporalConsistent(s₁, s₂))
 
 类型一致性:
 typeConsistent: Signal × Signal → 𝔹
-typeConsistent(s₁, s₂) ⟺ 
-  ∀ attr ∈ commonAttributes(s₁, s₂): 
+typeConsistent(s₁, s₂) ⟺
+  ∀ attr ∈ commonAttributes(s₁, s₂):
     getAttributeValue(s₁, attr) = getAttributeValue(s₂, attr)
 ```
 
@@ -392,7 +392,7 @@ CausalConsistency: Trace* → 𝔹
 CausalConsistency(traces) ⟺
   ∀ t₁, t₂ ∈ traces:
     ∀ span₁ ∈ t₁.Spans, span₂ ∈ t₂.Spans:
-      (causallyRelated(span₁, span₂) ⟹ 
+      (causallyRelated(span₁, span₂) ⟹
        span₁.EndTime ≤ span₂.StartTime)
 
 因果关系定义:
@@ -466,8 +466,8 @@ Liveness: 系统最终会达到期望状态
 Safe(system) ⟺ ∀ state ∈ reachableStates(system): ¬errorState(state)
 
 活性属性:
-Live(system, property) ⟺ 
-  ∀ execution ∈ executions(system): 
+Live(system, property) ⟺
+  ∀ execution ∈ executions(system):
     ∃ suffix ∈ execution: property(suffix)
 ```
 
@@ -481,7 +481,7 @@ Invariant: SystemState → 𝔹
 1. 资源唯一性: ∀ r₁, r₂ ∈ Resources: r₁ ≠ r₂ ⟹ r₁.ID ≠ r₂.ID
 2. 时间单调性: ∀ s₁, s₂ ∈ Signals: s₁.Time ≤ s₂.Time ⟹ ¬causallyRelated(s₂, s₁)
 3. 类型一致性: ∀ s ∈ Signals: validSignal(s)
-4. 因果关系传递性: ∀ s₁, s₂, s₃ ∈ Signals: 
+4. 因果关系传递性: ∀ s₁, s₂, s₃ ∈ Signals:
      causallyRelated(s₁, s₂) ∧ causallyRelated(s₂, s₃) ⟹ causallyRelated(s₁, s₃)
 ```
 
@@ -494,7 +494,7 @@ Invariant: SystemState → 𝔹
 pub trait Signal {
     type TimeType: Timestamp;
     type AttributesType: AttributeMap;
-    
+
     fn signal_type(&self) -> SignalType;
     fn timestamp(&self) -> Self::TimeType;
     fn attributes(&self) -> &Self::AttributesType;
@@ -509,18 +509,18 @@ pub struct Trace {
 impl Signal for Trace {
     type TimeType = Timestamp;
     type AttributesType = AttributeMap;
-    
+
     fn signal_type(&self) -> SignalType {
         SignalType::Trace
     }
-    
+
     fn timestamp(&self) -> Self::TimeType {
         self.spans.iter()
             .map(|s| s.start_time)
             .min()
             .unwrap_or(Timestamp::ZERO)
     }
-    
+
     fn validate(&self) -> Result<(), ValidationError> {
         // 实现形式化约束验证
         self.validate_trace_id()?;
@@ -542,14 +542,14 @@ pub struct FormalValidator {
 impl FormalValidator {
     pub fn validate_system(&self, system: &System) -> ValidationResult {
         let mut errors = Vec::new();
-        
+
         // 验证所有信号
         for signal in &system.signals {
             if let Err(e) = signal.validate() {
                 errors.push(e);
             }
         }
-        
+
         // 验证系统不变式
         for invariant in &self.invariants {
             if !invariant.check(system) {
@@ -558,7 +558,7 @@ impl FormalValidator {
                 ));
             }
         }
-        
+
         if errors.is_empty() {
             Ok(())
         } else {
@@ -590,7 +590,7 @@ impl FormalValidator {
 
 ```text
 定理 2 (因果关系传递性):
-对于任意三个 Span s₁, s₂, s₃，如果 causallyRelated(s₁, s₂) 
+对于任意三个 Span s₁, s₂, s₃，如果 causallyRelated(s₁, s₂)
 且 causallyRelated(s₂, s₃)，则 causallyRelated(s₁, s₃)。
 
 证明:

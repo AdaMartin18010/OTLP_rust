@@ -12,7 +12,7 @@
 //    ```toml
 //    [dependencies]
 //    prusti-contracts = { version = "0.2", optional = true }
-//    
+//
 //    [features]
 //    prusti = ["prusti-contracts"]
 //    ```
@@ -62,14 +62,14 @@ fn find_max(v: &[i32]) -> Option<i32> {
     if v.is_empty() {
         return None;
     }
-    
+
     let mut max = v[0];
     for &item in v.iter().skip(1) {
         if item > max {
             max = item;
         }
     }
-    
+
     Some(max)
 }
 
@@ -79,14 +79,14 @@ fn find_min(v: &[i32]) -> Option<i32> {
     if v.is_empty() {
         return None;
     }
-    
+
     let mut min = v[0];
     for &item in v.iter().skip(1) {
         if item < min {
             min = item;
         }
     }
-    
+
     Some(min)
 }
 
@@ -106,7 +106,7 @@ fn safe_div(a: i32, b: i32) -> Option<i32> {
     if b == 0 {
         None
     } else if a == i32::MIN && b == -1 {
-        None  // 防止溢出
+        None // 防止溢出
     } else {
         Some(a / b)
     }
@@ -137,19 +137,19 @@ fn remove_first(v: &mut Vec<i32>, elem: i32) -> bool {
 
 fn main() {
     println!("=== Prusti 形式化验证示例 ===\n");
-    
+
     // 保持非空示例
     println!("📦 保持向量非空:");
     let mut v1 = vec![1, 2, 3];
     println!("  原始: {:?}", v1);
     keep_non_empty(&mut v1);
     println!("  处理后: {:?} (长度: {})", v1, v1.len());
-    
+
     let mut v2: Vec<i32> = vec![];
     println!("  空向量: {:?}", v2);
     keep_non_empty(&mut v2);
     println!("  处理后: {:?} (长度: {})", v2, v2.len());
-    
+
     // 安全访问示例
     println!("\n🔍 安全数组访问:");
     let v = vec![10, 20, 30, 40, 50];
@@ -159,7 +159,7 @@ fn main() {
             None => println!("  v[{}] = 越界", i),
         }
     }
-    
+
     // 安全追加示例
     println!("\n➕ 安全追加元素:");
     let mut v = vec![1, 2, 3];
@@ -168,7 +168,7 @@ fn main() {
         Ok(_) => println!("  追加 4 成功: {:?}", v),
         Err(e) => println!("  追加失败: {}", e),
     }
-    
+
     // 查找最大值示例
     println!("\n⬆️  查找最大值:");
     let test_cases = [
@@ -183,7 +183,7 @@ fn main() {
             None => println!("  {:?} 为空，无最大值", v),
         }
     }
-    
+
     // 查找最小值示例
     println!("\n⬇️  查找最小值:");
     for v in &test_cases {
@@ -192,7 +192,7 @@ fn main() {
             None => println!("  {:?} 为空，无最小值", v),
         }
     }
-    
+
     // 安全切片示例
     println!("\n✂️  安全切片:");
     let v = vec![1, 2, 3, 4, 5];
@@ -203,7 +203,7 @@ fn main() {
             None => println!("  v[{}..{}] = 无效范围", start, end),
         }
     }
-    
+
     // 安全除法示例
     println!("\n➗ 安全除法:");
     let div_tests = [(10, 2), (10, 0), (i32::MIN, -1), (15, 3)];
@@ -213,25 +213,25 @@ fn main() {
             None => println!("  {} / {} = 错误 (除零或溢出)", a, b),
         }
     }
-    
+
     // 安全求和示例
     println!("\n🧮 安全求和:");
     let sum_tests = [
         vec![1, 2, 3, 4, 5],
-        vec![i32::MAX, 1],  // 会溢出
+        vec![i32::MAX, 1], // 会溢出
         vec![-10, -20, 30],
     ];
     for v in &sum_tests {
         println!("  sum({:?}) = {}", v, safe_sum(v));
     }
-    
+
     // 包含检查示例
     println!("\n🔎 元素包含检查:");
     let v = vec![1, 2, 3, 4, 5];
     for elem in [3, 10] {
         println!("  {:?} 包含 {}? {}", v, elem, contains(&v, elem));
     }
-    
+
     // 移除元素示例
     println!("\n🗑️  移除元素:");
     let mut v = vec![1, 2, 3, 2, 4];
@@ -242,7 +242,7 @@ fn main() {
     if !remove_first(&mut v, 10) {
         println!("  移除 10 失败 (不存在)");
     }
-    
+
     println!("\n{}", "=".repeat(50));
     println!("💡 提示:");
     println!("  - 当前以普通模式运行");
@@ -257,50 +257,50 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_keep_non_empty() {
         let mut v = vec![1];
         keep_non_empty(&mut v);
         assert!(!v.is_empty());
-        
+
         let mut empty: Vec<i32> = vec![];
         keep_non_empty(&mut empty);
         assert!(!empty.is_empty());
     }
-    
+
     #[test]
     fn test_safe_get() {
         let v = vec![10, 20, 30];
         assert_eq!(safe_get(&v, 1), Some(20));
         assert_eq!(safe_get(&v, 5), None);
     }
-    
+
     #[test]
     fn test_safe_push() {
         let mut v = vec![1, 2, 3];
         assert!(safe_push(&mut v, 4).is_ok());
         assert_eq!(v, vec![1, 2, 3, 4]);
     }
-    
+
     #[test]
     fn test_find_max() {
         let v = vec![3, 1, 4, 1, 5, 9, 2, 6];
         assert_eq!(find_max(&v), Some(9));
-        
+
         let empty: Vec<i32> = vec![];
         assert_eq!(find_max(&empty), None);
     }
-    
+
     #[test]
     fn test_find_min() {
         let v = vec![3, 1, 4, 1, 5, 9, 2, 6];
         assert_eq!(find_min(&v), Some(1));
-        
+
         let empty: Vec<i32> = vec![];
         assert_eq!(find_min(&empty), None);
     }
-    
+
     #[test]
     fn test_safe_slice() {
         let v = vec![1, 2, 3, 4, 5];
@@ -309,27 +309,27 @@ mod tests {
         assert_eq!(safe_slice(&v, 3, 10), None);
         assert_eq!(safe_slice(&v, 5, 3), None);
     }
-    
+
     #[test]
     fn test_safe_div() {
         assert_eq!(safe_div(10, 2), Some(5));
         assert_eq!(safe_div(10, 0), None);
         assert_eq!(safe_div(i32::MIN, -1), None);
     }
-    
+
     #[test]
     fn test_safe_sum() {
         assert_eq!(safe_sum(&[1, 2, 3, 4, 5]), 15);
-        assert_eq!(safe_sum(&[i32::MAX, 1]), i32::MAX);  // 饱和加法
+        assert_eq!(safe_sum(&[i32::MAX, 1]), i32::MAX); // 饱和加法
     }
-    
+
     #[test]
     fn test_contains() {
         let v = vec![1, 2, 3, 4, 5];
         assert!(contains(&v, 3));
         assert!(!contains(&v, 10));
     }
-    
+
     #[test]
     fn test_remove_first() {
         let mut v = vec![1, 2, 3, 2, 4];

@@ -8,12 +8,11 @@
 /// - 第三方库集成
 /// - 遗留系统集成
 /// - 协议转换
-
 use crate::prelude::*;
 //use crate::error_handling::{ErrorContext, ErrorSeverity};
 use std::sync::Arc;
 //use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 // Helper function to create validation errors
 fn validation_error(msg: impl Into<String>) -> anyhow::Error {
@@ -25,7 +24,7 @@ fn validation_error(msg: impl Into<String>) -> anyhow::Error {
 pub trait Adapter<Source, Target>: Send + Sync {
     /// 适配转换
     async fn adapt(&self, source: Source) -> Result<Target>;
-    
+
     /// 适配器名称
     fn name(&self) -> &str;
 }
@@ -105,11 +104,11 @@ impl InMemoryMetricsCollector {
             histograms: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
         }
     }
-    
+
     pub async fn get_counter(&self, name: &str) -> Option<u64> {
         self.counters.read().await.get(name).copied()
     }
-    
+
     pub async fn get_gauge(&self, name: &str) -> Option<f64> {
         self.gauges.read().await.get(name).copied()
     }
@@ -128,16 +127,17 @@ impl MetricsCollector for InMemoryMetricsCollector {
         *counters.entry(name.to_string()).or_insert(0) += value;
         Ok(())
     }
-    
+
     async fn record_gauge(&self, name: &str, value: f64) -> Result<()> {
         let mut gauges = self.gauges.write().await;
         gauges.insert(name.to_string(), value);
         Ok(())
     }
-    
+
     async fn record_histogram(&self, name: &str, value: f64) -> Result<()> {
         let mut histograms = self.histograms.write().await;
-        histograms.entry(name.to_string())
+        histograms
+            .entry(name.to_string())
             .or_insert_with(Vec::new)
             .push(value);
         Ok(())
@@ -197,17 +197,17 @@ where
     async fn get(&self, key: &K) -> Result<Option<V>> {
         Ok(self.cache.read().await.get(key).cloned())
     }
-    
+
     async fn set(&self, key: K, value: V) -> Result<()> {
         self.cache.write().await.insert(key, value);
         Ok(())
     }
-    
+
     async fn delete(&self, key: &K) -> Result<()> {
         self.cache.write().await.remove(key);
         Ok(())
     }
-    
+
     async fn exists(&self, key: &K) -> Result<bool> {
         Ok(self.cache.read().await.contains_key(key))
     }
@@ -246,9 +246,14 @@ impl HttpToGrpcAdapter {
             service_mapping: std::collections::HashMap::new(),
         }
     }
-    
-    pub fn with_mapping(mut self, http_path: impl Into<String>, grpc_service: impl Into<String>) -> Self {
-        self.service_mapping.insert(http_path.into(), grpc_service.into());
+
+    pub fn with_mapping(
+        mut self,
+        http_path: impl Into<String>,
+        grpc_service: impl Into<String>,
+    ) -> Self {
+        self.service_mapping
+            .insert(http_path.into(), grpc_service.into());
         self
     }
 }
@@ -267,16 +272,15 @@ impl Adapter<HttpRequest, GrpcRequest> for HttpToGrpcAdapter {
         if parts.len() < 2 {
             return Err(validation_error("Invalid HTTP path for gRPC conversion"));
         }
-        
-        let service = self.service_mapping
+
+        let service = self
+            .service_mapping
             .get(&source.path)
             .cloned()
             .unwrap_or_else(|| parts[0].to_string());
-        
-        let method = parts.get(1)
-            .map(|s| s.to_string())
-            .unwrap_or_default();
-        
+
+        let method = parts.get(1).map(|s| s.to_string()).unwrap_or_default();
+
         // 转换headers到metadata
         let mut metadata = std::collections::HashMap::new();
         for (k, v) in source.headers {
@@ -284,7 +288,7 @@ impl Adapter<HttpRequest, GrpcRequest> for HttpToGrpcAdapter {
                 metadata.insert(k, v);
             }
         }
-        
+
         Ok(GrpcRequest {
             service,
             method,
@@ -292,7 +296,7 @@ impl Adapter<HttpRequest, GrpcRequest> for HttpToGrpcAdapter {
             payload: source.body,
         })
     }
-    
+
     fn name(&self) -> &str {
         "http_to_grpc"
     }
@@ -312,7 +316,7 @@ impl Adapter<HttpRequest, GrpcRequest> for HttpToGrpcAdapter {
 //         rmp_serde::to_vec(&source)
 //             .map_err(|e| validation_error(e.to_string()))
 //     }
-//     
+//
 //     fn name(&self) -> &str {
 //         "json_to_messagepack"
 //     }
@@ -327,7 +331,7 @@ impl Adapter<HttpRequest, GrpcRequest> for HttpToGrpcAdapter {
 //         rmp_serde::from_slice(&source)
 //             .map_err(|e| validation_error(e.to_string()))
 //     }
-//     
+//
 //     fn name(&self) -> &str {
 //         "messagepack_to_json"
 //     }
@@ -336,46 +340,48 @@ impl Adapter<HttpRequest, GrpcRequest> for HttpToGrpcAdapter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_logger_adapter() {
         let logger = StdoutAdapter;
         logger.log(LogLevel::Info, "Test message").await.unwrap();
     }
-    
+
     #[tokio::test]
     async fn test_metrics_collector() {
         let metrics = InMemoryMetricsCollector::new();
-        
+
         metrics.increment_counter("requests", 1).await.unwrap();
         metrics.increment_counter("requests", 2).await.unwrap();
-        
+
         assert_eq!(metrics.get_counter("requests").await, Some(3));
-        
+
         metrics.record_gauge("cpu_usage", 0.75).await.unwrap();
         assert_eq!(metrics.get_gauge("cpu_usage").await, Some(0.75));
     }
-    
+
     #[tokio::test]
     async fn test_cache_adapter() {
         let cache: MemoryCacheAdapter<String, String> = MemoryCacheAdapter::new();
-        
-        cache.set("key1".to_string(), "value1".to_string()).await.unwrap();
-        
+
+        cache
+            .set("key1".to_string(), "value1".to_string())
+            .await
+            .unwrap();
+
         let value = cache.get(&"key1".to_string()).await.unwrap();
         assert_eq!(value, Some("value1".to_string()));
-        
+
         assert!(cache.exists(&"key1".to_string()).await.unwrap());
-        
+
         cache.delete(&"key1".to_string()).await.unwrap();
         assert!(!cache.exists(&"key1".to_string()).await.unwrap());
     }
-    
+
     #[tokio::test]
     async fn test_http_to_grpc_adapter() {
-        let adapter = HttpToGrpcAdapter::new()
-            .with_mapping("/api/user/get", "UserService");
-        
+        let adapter = HttpToGrpcAdapter::new().with_mapping("/api/user/get", "UserService");
+
         let http_req = HttpRequest {
             method: "POST".to_string(),
             path: "/api/user/get".to_string(),
@@ -385,23 +391,25 @@ mod tests {
                 .collect(),
             body: vec![1, 2, 3],
         };
-        
+
         let grpc_req = adapter.adapt(http_req).await.unwrap();
         assert_eq!(grpc_req.service, "UserService");
-        assert_eq!(grpc_req.metadata.get("x-request-id"), Some(&"123".to_string()));
+        assert_eq!(
+            grpc_req.metadata.get("x-request-id"),
+            Some(&"123".to_string())
+        );
     }
-    
+
     // #[tokio::test]
     // async fn test_json_to_messagepack() {
     //     let adapter = JsonToMessagePackAdapter;
     //     let json = serde_json::json!({"name": "test", "value": 42});
-    //     
+    //
     //     let msgpack = adapter.adapt(json.clone()).await.unwrap();
     //     assert!(!msgpack.is_empty());
-    //     
+    //
     //     let back_adapter = MessagePackToJsonAdapter;
     //     let back_json = back_adapter.adapt(msgpack).await.unwrap();
     //     assert_eq!(json, back_json);
     // }
 }
-

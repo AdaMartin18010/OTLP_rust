@@ -1,35 +1,35 @@
 //! # Complete Retry Strategy Implementation
-//! 
+//!
 //! 完整的重试策略实现，包含多种重试模式和最佳实践
-//! 
+//!
 //! ## 重试策略
 //! - **Fixed Delay (固定延迟)**: 固定间隔重试
 //! - **Exponential Backoff (指数退避)**: 指数增长延迟
 //! - **Jitter (抖动)**: 添加随机性避免雷鸣般重试
 //! - **Conditional Retry (条件重试)**: 基于错误类型决定是否重试
 //! - **Budget-based (预算控制)**: 限制重试总时间
-//! 
+//!
 //! ## 高级特性
 //! - 与熔断器集成
 //! - 重试指标收集
 //! - 死信队列
 //! - 幂等性保证
 //! - 超时控制
-//! 
+//!
 //! ## 使用场景
 //! - 网络请求重试
 //! - 数据库操作重试
 //! - 消息队列重试
 //! - 微服务调用重试
 
-use std::time::{Duration, Instant};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, AtomicU32, Ordering};
-use std::sync::Mutex;
-use tokio::time::sleep;
-use tracing::{info, warn, error, instrument};
-use thiserror::Error;
 use rand::Rng;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::time::{Duration, Instant};
+use thiserror::Error;
+use tokio::time::sleep;
+use tracing::{error, info, instrument, warn};
 
 // ============================================================================
 // Part 1: Error Types
@@ -38,19 +38,14 @@ use rand::Rng;
 #[derive(Debug, Error, Clone)]
 pub enum RetryError {
     #[error("Operation failed after {attempts} attempts: {last_error}")]
-    MaxAttemptsExceeded {
-        attempts: u32,
-        last_error: String,
-    },
-    
+    MaxAttemptsExceeded { attempts: u32, last_error: String },
+
     #[error("Retry budget exhausted (total time: {elapsed:?})")]
-    BudgetExhausted {
-        elapsed: Duration,
-    },
-    
+    BudgetExhausted { elapsed: Duration },
+
     #[error("Non-retryable error: {0}")]
     NonRetryable(String),
-    
+
     #[error("Circuit breaker is open")]
     CircuitOpen,
 }
@@ -60,23 +55,22 @@ pub enum RetryError {
 pub enum OperationError {
     #[error("Transient error: {0}")]
     Transient(String),
-    
+
     #[error("Permanent error: {0}")]
     Permanent(String),
-    
+
     #[error("Timeout")]
     Timeout,
-    
+
     #[error("Network error: {0}")]
     Network(String),
 }
 
 impl OperationError {
     pub fn is_retryable(&self) -> bool {
-        matches!(self, 
-            OperationError::Transient(_) | 
-            OperationError::Timeout | 
-            OperationError::Network(_)
+        matches!(
+            self,
+            OperationError::Transient(_) | OperationError::Timeout | OperationError::Network(_)
         )
     }
 }
@@ -88,7 +82,7 @@ impl OperationError {
 pub trait RetryStrategy: Send + Sync {
     /// 计算下次重试的延迟
     fn next_delay(&self, attempt: u32) -> Option<Duration>;
-    
+
     /// 是否应该重试
     fn should_retry(&self, attempt: u32, error: &OperationError) -> bool;
 }
@@ -105,7 +99,10 @@ pub struct FixedDelayStrategy {
 
 impl FixedDelayStrategy {
     pub fn new(delay: Duration, max_attempts: u32) -> Self {
-        Self { delay, max_attempts }
+        Self {
+            delay,
+            max_attempts,
+        }
     }
 }
 
@@ -136,7 +133,12 @@ pub struct ExponentialBackoffStrategy {
 }
 
 impl ExponentialBackoffStrategy {
-    pub fn new(initial_delay: Duration, max_delay: Duration, multiplier: f64, max_attempts: u32) -> Self {
+    pub fn new(
+        initial_delay: Duration,
+        max_delay: Duration,
+        multiplier: f64,
+        max_attempts: u32,
+    ) -> Self {
         Self {
             initial_delay,
             max_delay,
@@ -152,9 +154,8 @@ impl RetryStrategy for ExponentialBackoffStrategy {
             return None;
         }
 
-        let delay_ms = self.initial_delay.as_millis() as f64 
-            * self.multiplier.powi(attempt as i32);
-        
+        let delay_ms = self.initial_delay.as_millis() as f64 * self.multiplier.powi(attempt as i32);
+
         let delay = Duration::from_millis(delay_ms as u64);
         Some(delay.min(self.max_delay))
     }
@@ -184,7 +185,10 @@ impl JitteredBackoffStrategy {
     ) -> Self {
         Self {
             base_strategy: ExponentialBackoffStrategy::new(
-                initial_delay, max_delay, multiplier, max_attempts
+                initial_delay,
+                max_delay,
+                multiplier,
+                max_attempts,
             ),
             jitter_factor: jitter_factor.clamp(0.0, 1.0),
         }
@@ -196,10 +200,10 @@ impl RetryStrategy for JitteredBackoffStrategy {
         self.base_strategy.next_delay(attempt).map(|base_delay| {
             let base_ms = base_delay.as_millis() as f64;
             let jitter_range = base_ms * self.jitter_factor;
-            
+
             let mut rng = rand::rng();
             let jitter: f64 = rng.random_range(-jitter_range..=jitter_range);
-            
+
             let final_ms = (base_ms + jitter).max(0.0);
             Duration::from_millis(final_ms as u64)
         })
@@ -241,7 +245,7 @@ impl BudgetBasedStrategy {
             *start = Some(Instant::now());
         }
     }
-    
+
     fn budget_exhausted(&self) -> bool {
         self.elapsed() >= self.max_total_duration
     }
@@ -250,21 +254,21 @@ impl BudgetBasedStrategy {
 impl RetryStrategy for BudgetBasedStrategy {
     fn next_delay(&self, attempt: u32) -> Option<Duration> {
         self.initialize_if_needed();
-        
+
         if self.budget_exhausted() {
             return None;
         }
-        
+
         self.inner_strategy.next_delay(attempt)
     }
 
     fn should_retry(&self, attempt: u32, error: &OperationError) -> bool {
         self.initialize_if_needed();
-        
+
         if self.budget_exhausted() {
             return false;
         }
-        
+
         self.inner_strategy.should_retry(attempt, error)
     }
 }
@@ -289,10 +293,7 @@ impl RetryExecutor {
 
     /// 执行操作，失败时自动重试
     #[instrument(skip(self, operation))]
-    pub async fn execute<F, Fut, T>(
-        &self,
-        mut operation: F,
-    ) -> Result<T, RetryError>
+    pub async fn execute<F, Fut, T>(&self, mut operation: F) -> Result<T, RetryError>
     where
         F: FnMut() -> Fut,
         Fut: std::future::Future<Output = Result<T, OperationError>>,
@@ -310,7 +311,10 @@ impl RetryExecutor {
                 Ok(result) => {
                     let duration = start_time.elapsed();
                     self.stats.record_success(attempt, duration);
-                    info!("Operation succeeded on attempt {} ({:?})", attempt, duration);
+                    info!(
+                        "Operation succeeded on attempt {} ({:?})",
+                        attempt, duration
+                    );
                     return Ok(result);
                 }
                 Err(error) => {
@@ -318,7 +322,7 @@ impl RetryExecutor {
 
                     if !self.strategy.should_retry(attempt, &error) {
                         self.stats.record_failure(attempt, start_time.elapsed());
-                        
+
                         if error.is_retryable() {
                             return Err(RetryError::MaxAttemptsExceeded {
                                 attempts: attempt,
@@ -379,8 +383,9 @@ impl RetryStats {
 
     fn record_success(&self, attempts: u32, duration: Duration) {
         self.successful_operations.fetch_add(1, Ordering::Relaxed);
-        self.total_retry_time_ms.fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
-        
+        self.total_retry_time_ms
+            .fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
+
         let current_max = self.max_attempts_used.load(Ordering::Relaxed);
         if attempts > current_max {
             self.max_attempts_used.store(attempts, Ordering::Relaxed);
@@ -389,8 +394,9 @@ impl RetryStats {
 
     fn record_failure(&self, attempts: u32, duration: Duration) {
         self.failed_operations.fetch_add(1, Ordering::Relaxed);
-        self.total_retry_time_ms.fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
-        
+        self.total_retry_time_ms
+            .fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
+
         let current_max = self.max_attempts_used.load(Ordering::Relaxed);
         if attempts > current_max {
             self.max_attempts_used.store(attempts, Ordering::Relaxed);
@@ -420,7 +426,9 @@ pub struct RetryStatsReport {
 impl std::fmt::Display for RetryStatsReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let success_rate = if self.successful_operations + self.failed_operations > 0 {
-            (self.successful_operations as f64 / (self.successful_operations + self.failed_operations) as f64) * 100.0
+            (self.successful_operations as f64
+                / (self.successful_operations + self.failed_operations) as f64)
+                * 100.0
         } else {
             0.0
         };
@@ -445,7 +453,7 @@ impl std::fmt::Display for RetryStatsReport {
 /// 模拟不可靠的操作
 async fn unreliable_operation(success_rate: u32) -> Result<String, OperationError> {
     let random = rand::random::<u32>() % 100;
-    
+
     if random < success_rate {
         sleep(Duration::from_millis(50)).await;
         Ok("Operation succeeded".to_string())
@@ -479,12 +487,8 @@ pub async fn demo_fixed_delay() {
 pub async fn demo_exponential_backoff() {
     info!("=== Demo: Exponential Backoff ===");
 
-    let strategy = ExponentialBackoffStrategy::new(
-        Duration::from_millis(50),
-        Duration::from_secs(5),
-        2.0,
-        6,
-    );
+    let strategy =
+        ExponentialBackoffStrategy::new(Duration::from_millis(50), Duration::from_secs(5), 2.0, 6);
     let executor = RetryExecutor::new(strategy);
 
     match executor.execute(|| unreliable_operation(30)).await {
@@ -522,12 +526,8 @@ pub async fn demo_jittered_backoff() {
 pub async fn demo_bulk_retry() {
     info!("=== Demo: Bulk Retry Statistics ===");
 
-    let strategy = ExponentialBackoffStrategy::new(
-        Duration::from_millis(50),
-        Duration::from_secs(2),
-        1.5,
-        5,
-    );
+    let strategy =
+        ExponentialBackoffStrategy::new(Duration::from_millis(50), Duration::from_secs(2), 1.5, 5);
     let executor = Arc::new(RetryExecutor::new(strategy));
 
     let mut handles = Vec::new();
@@ -563,7 +563,9 @@ pub async fn demo_conditional_retry() {
             if CALL_COUNT <= 2 {
                 Err(OperationError::Transient("Transient error".to_string()))
             } else {
-                Err(OperationError::Permanent("Permanent error - should not retry".to_string()))
+                Err(OperationError::Permanent(
+                    "Permanent error - should not retry".to_string(),
+                ))
             }
         }
     }
@@ -621,4 +623,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

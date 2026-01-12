@@ -9,15 +9,11 @@
 //! - 采样频率: 99Hz (默认)
 //! - 支持pprof格式导出
 
-#[cfg(target_os = "linux")]
-mod linux;
-
+// Linux模块在内联定义（第232行）
 #[cfg(target_os = "linux")]
 pub use linux::*;
 
-#[cfg(not(target_os = "linux"))]
-mod fallback;
-
+// Fallback模块在内联定义（第278行）
 #[cfg(not(target_os = "linux"))]
 pub use fallback::*;
 

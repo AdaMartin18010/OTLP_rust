@@ -1,12 +1,11 @@
 /// 实时告警系统
 ///
 /// 提供规则引擎和多渠道告警功能
-
 use crate::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use serde::{Serialize, Deserialize};
 
 /// 告警级别
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -75,20 +74,20 @@ impl Alert {
             resolved_at: None,
         }
     }
-    
+
     /// 添加标签
     pub fn with_label(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.labels.insert(key.into(), value.into());
         self
     }
-    
+
     /// 解决告警
     pub fn resolve(&mut self) {
         self.status = AlertStatus::Resolved;
         self.resolved_at = Some(chrono::Utc::now().timestamp());
         self.updated_at = chrono::Utc::now().timestamp();
     }
-    
+
     /// 确认告警
     pub fn acknowledge(&mut self) {
         self.status = AlertStatus::Acknowledged;
@@ -127,7 +126,7 @@ impl std::fmt::Debug for AlertRule {
 pub trait AlertNotifier: Send + Sync {
     /// 发送告警
     async fn notify(&self, alert: &Alert) -> Result<()>;
-    
+
     /// 通知器名称
     fn name(&self) -> &str;
 }
@@ -144,7 +143,7 @@ impl AlertNotifier for ConsoleNotifier {
         );
         Ok(())
     }
-    
+
     fn name(&self) -> &str {
         "console"
     }
@@ -160,11 +159,13 @@ impl AlertNotifier for LogNotifier {
             AlertLevel::Info => tracing::info!("Alert: {} - {}", alert.name, alert.message),
             AlertLevel::Warning => tracing::warn!("Alert: {} - {}", alert.name, alert.message),
             AlertLevel::Error => tracing::error!("Alert: {} - {}", alert.name, alert.message),
-            AlertLevel::Critical => tracing::error!("CRITICAL Alert: {} - {}", alert.name, alert.message),
+            AlertLevel::Critical => {
+                tracing::error!("CRITICAL Alert: {} - {}", alert.name, alert.message)
+            }
         }
         Ok(())
     }
-    
+
     fn name(&self) -> &str {
         "log"
     }
@@ -195,66 +196,66 @@ impl AlertManager {
             max_history: 10000,
         }
     }
-    
+
     /// 设置最大历史数
     pub fn with_max_history(mut self, max: usize) -> Self {
         self.max_history = max;
         self
     }
-    
+
     /// 添加通知器
     pub async fn add_notifier(&self, notifier: Arc<dyn AlertNotifier>) {
         self.notifiers.write().await.push(notifier);
     }
-    
+
     /// 添加规则
     pub async fn add_rule(&self, rule: AlertRule) {
         self.rules.write().await.push(rule);
     }
-    
+
     /// 触发告警
     pub async fn fire_alert(&self, mut alert: Alert) -> Result<()> {
         alert.status = AlertStatus::Firing;
         alert.updated_at = chrono::Utc::now().timestamp();
-        
+
         // 存储活跃告警
         {
             let mut alerts = self.active_alerts.write().await;
             alerts.insert(alert.id.clone(), alert.clone());
         }
-        
+
         // 发送通知
         self.notify_alert(&alert).await?;
-        
+
         Ok(())
     }
-    
+
     /// 解决告警
     pub async fn resolve_alert(&self, alert_id: &str) -> Result<()> {
         let mut alerts = self.active_alerts.write().await;
-        
+
         if let Some(alert) = alerts.get_mut(alert_id) {
             alert.resolve();
-            
+
             // 移动到历史
             let resolved_alert = alert.clone();
             drop(alerts);
-            
+
             self.add_to_history(resolved_alert).await;
-            
+
             let mut alerts = self.active_alerts.write().await;
             alerts.remove(alert_id);
-            
+
             Ok(())
         } else {
             Err(anyhow::anyhow!("Alert not found: {}", alert_id))
         }
     }
-    
+
     /// 确认告警
     pub async fn acknowledge_alert(&self, alert_id: &str) -> Result<()> {
         let mut alerts = self.active_alerts.write().await;
-        
+
         if let Some(alert) = alerts.get_mut(alert_id) {
             alert.acknowledge();
             Ok(())
@@ -262,40 +263,40 @@ impl AlertManager {
             Err(anyhow::anyhow!("Alert not found: {}", alert_id))
         }
     }
-    
+
     /// 发送通知
     async fn notify_alert(&self, alert: &Alert) -> Result<()> {
         let notifiers = self.notifiers.read().await;
-        
+
         for notifier in notifiers.iter() {
             if let Err(e) = notifier.notify(alert).await {
                 tracing::error!("Failed to send alert via {}: {}", notifier.name(), e);
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 添加到历史
     async fn add_to_history(&self, alert: Alert) {
         let mut history = self.alert_history.write().await;
         history.push(alert);
-        
+
         if history.len() > self.max_history {
             let to_remove = history.len() - self.max_history;
             history.drain(0..to_remove);
         }
     }
-    
+
     /// 评估规则
     pub async fn evaluate_rules(&self, metrics: &HashMap<String, f64>) -> Result<()> {
         let rules = self.rules.read().await;
-        
+
         for rule in rules.iter() {
             if !rule.enabled {
                 continue;
             }
-            
+
             if (rule.condition)(metrics) {
                 let alert = Alert::new(
                     rule.name.clone(),
@@ -303,26 +304,26 @@ impl AlertManager {
                     rule.message_template.clone(),
                     "rule_engine",
                 );
-                
+
                 self.fire_alert(alert).await?;
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 获取活跃告警
     pub async fn get_active_alerts(&self) -> Vec<Alert> {
         self.active_alerts.read().await.values().cloned().collect()
     }
-    
+
     /// 获取历史告警
     pub async fn get_alert_history(&self, limit: usize) -> Vec<Alert> {
         let history = self.alert_history.read().await;
         let alerts: Vec<_> = history.iter().cloned().collect();
         alerts.into_iter().rev().take(limit).collect()
     }
-    
+
     /// 清空所有告警
     pub async fn clear(&self) {
         self.active_alerts.write().await.clear();
@@ -339,38 +340,33 @@ impl Default for AlertManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_fire_and_resolve_alert() {
         let manager = AlertManager::new();
         manager.add_notifier(Arc::new(ConsoleNotifier)).await;
-        
-        let alert = Alert::new(
-            "test_alert",
-            AlertLevel::Warning,
-            "Test message",
-            "test",
-        );
+
+        let alert = Alert::new("test_alert", AlertLevel::Warning, "Test message", "test");
         let alert_id = alert.id.clone();
-        
+
         manager.fire_alert(alert).await.unwrap();
-        
+
         let active = manager.get_active_alerts().await;
         assert_eq!(active.len(), 1);
-        
+
         manager.resolve_alert(&alert_id).await.unwrap();
-        
+
         let active = manager.get_active_alerts().await;
         assert_eq!(active.len(), 0);
-        
+
         let history = manager.get_alert_history(10).await;
         assert_eq!(history.len(), 1);
     }
-    
+
     #[tokio::test]
     async fn test_alert_rules() {
         let manager = AlertManager::new();
-        
+
         let rule = AlertRule {
             name: "high_cpu".to_string(),
             condition: Arc::new(|metrics: &HashMap<String, f64>| {
@@ -380,17 +376,16 @@ mod tests {
             message_template: "CPU usage is high".to_string(),
             enabled: true,
         };
-        
+
         manager.add_rule(rule).await;
         manager.add_notifier(Arc::new(ConsoleNotifier)).await;
-        
+
         let mut metrics = HashMap::new();
         metrics.insert("cpu_usage".to_string(), 85.0);
-        
+
         manager.evaluate_rules(&metrics).await.unwrap();
-        
+
         let active = manager.get_active_alerts().await;
         assert!(!active.is_empty());
     }
 }
-

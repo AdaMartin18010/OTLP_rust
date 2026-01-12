@@ -3,7 +3,7 @@
 ## 📋 目录
 
 - [OTLP Rust 性能基准测试指南](#otlp-rust-性能基准测试指南)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [概述](#概述)
     - [🎯 基准测试目标](#-基准测试目标)
     - [📈 关键性能指标 (KPI)](#-关键性能指标-kpi)
@@ -982,22 +982,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
-      
+
       - name: Run benchmarks
         run: cargo bench -- --save-baseline ${GITHUB_SHA}
-      
+
       - name: Store benchmark results
         uses: actions/upload-artifact@v3
         with:
           name: benchmark-results
           path: target/criterion/
-      
+
       - name: Compare with main
         if: github.event_name == 'pull_request'
         run: |
@@ -1041,11 +1041,11 @@ alerts:
   - name: high_latency
     condition: p99_latency > 20ms
     action: notify_team
-  
+
   - name: low_throughput
     condition: throughput < 10000
     action: notify_team
-  
+
   - name: high_memory
     condition: rss > 100MB
     action: notify_team
@@ -1102,7 +1102,6 @@ alerts:
 
 ---
 
-**文档版本**: 1.0.0  
-**最后更新**: 2025-10-08  
+**文档版本**: 1.0.0
+**最后更新**: 2025-10-08
 **维护者**: OTLP Rust Team
-

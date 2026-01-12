@@ -12,11 +12,11 @@
 // - Data partitioning/sharding
 // - Service discovery
 
+use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::sync::Arc;
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 
 /// Node identifier
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -114,7 +114,7 @@ pub enum HashFunctionType {
 /// let mut ring = ConsistentHashRing::new(config);
 /// ring.add_node(NodeId::new("server1"));
 /// ring.add_node(NodeId::new("server2"));
-/// 
+///
 /// let node = ring.get_node("user_123").unwrap();
 /// println!("Key maps to: {}", node);
 /// ```
@@ -450,7 +450,7 @@ impl MaglevHash {
     fn rebuild_table(&self) {
         let nodes = self.nodes.read();
         let node_count = nodes.len();
-        
+
         if node_count == 0 {
             let mut table = self.lookup_table.write();
             table.clear();
@@ -466,7 +466,7 @@ impl MaglevHash {
             .map(|node| {
                 let hash1 = FnvHasher.hash(node.as_str().as_bytes()) as usize;
                 let hash2 = Murmur3Hasher.hash(node.as_str().as_bytes()) as usize;
-                
+
                 let offset = hash1 % self.table_size;
                 let skip = (hash2 % (self.table_size - 1)) + 1;
 
@@ -485,7 +485,7 @@ impl MaglevHash {
                     next[node_idx] += 1;
                     c = permutations[node_idx][next[node_idx]];
                 }
-                
+
                 table[c] = node_idx;
                 next[node_idx] += 1;
                 filled += 1;
@@ -652,7 +652,7 @@ mod tests {
             let ratio = *count as f64 / keys.len() as f64;
             println!("{}: {} keys ({:.1}%)", node, count, ratio * 100.0);
             total_count += count;
-            
+
             // Ensure each node gets at least 5% and at most 95% of keys
             assert!(
                 ratio >= 0.05 && ratio <= 0.95,
@@ -661,10 +661,10 @@ mod tests {
                 ratio * 100.0
             );
         }
-        
+
         // Ensure all keys are distributed
         assert_eq!(total_count, keys.len(), "Not all keys were distributed");
-        
+
         // Ensure we have 3 nodes
         assert_eq!(distribution.len(), 3, "Expected 3 nodes in distribution");
     }

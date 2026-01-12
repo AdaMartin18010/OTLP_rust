@@ -1,12 +1,11 @@
 /// 指标聚合系统
 ///
 /// 提供高性能的指标收集、聚合和查询功能
-
 use crate::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use serde::{Serialize, Deserialize};
 
 /// 指标类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -114,13 +113,13 @@ impl MetricsAggregator {
             max_data_points: 10000,
         }
     }
-    
+
     /// 设置最大数据点数
     pub fn with_max_data_points(mut self, max: usize) -> Self {
         self.max_data_points = max;
         self
     }
-    
+
     /// 记录计数器
     pub async fn record_counter(
         &self,
@@ -128,9 +127,10 @@ impl MetricsAggregator {
         value: f64,
         labels: HashMap<String, String>,
     ) -> Result<()> {
-        self.record_metric(name, MetricType::Counter, value, labels).await
+        self.record_metric(name, MetricType::Counter, value, labels)
+            .await
     }
-    
+
     /// 记录仪表盘
     pub async fn record_gauge(
         &self,
@@ -138,9 +138,10 @@ impl MetricsAggregator {
         value: f64,
         labels: HashMap<String, String>,
     ) -> Result<()> {
-        self.record_metric(name, MetricType::Gauge, value, labels).await
+        self.record_metric(name, MetricType::Gauge, value, labels)
+            .await
     }
-    
+
     /// 记录直方图
     pub async fn record_histogram(
         &self,
@@ -148,9 +149,10 @@ impl MetricsAggregator {
         value: f64,
         labels: HashMap<String, String>,
     ) -> Result<()> {
-        self.record_metric(name, MetricType::Histogram, value, labels).await
+        self.record_metric(name, MetricType::Histogram, value, labels)
+            .await
     }
-    
+
     /// 记录摘要
     pub async fn record_summary(
         &self,
@@ -158,9 +160,10 @@ impl MetricsAggregator {
         value: f64,
         labels: HashMap<String, String>,
     ) -> Result<()> {
-        self.record_metric(name, MetricType::Summary, value, labels).await
+        self.record_metric(name, MetricType::Summary, value, labels)
+            .await
     }
-    
+
     /// 内部记录指标方法
     async fn record_metric(
         &self,
@@ -171,34 +174,34 @@ impl MetricsAggregator {
     ) -> Result<()> {
         let name = name.into();
         let timestamp = chrono::Utc::now().timestamp();
-        
+
         let data_point = MetricDataPoint {
             value,
             timestamp,
             labels,
         };
-        
+
         // 记录指标类型
         {
             let mut types = self.metric_types.write().await;
             types.insert(name.clone(), metric_type);
         }
-        
+
         // 存储数据点
         {
             let mut metrics = self.metrics.write().await;
             let points = metrics.entry(name).or_insert_with(Vec::new);
             points.push(data_point);
-            
+
             // 限制数据点数量
             if points.len() > self.max_data_points {
                 points.drain(0..points.len() - self.max_data_points);
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 聚合指标（指定时间窗口）
     pub async fn aggregate(
         &self,
@@ -207,24 +210,24 @@ impl MetricsAggregator {
     ) -> Result<Option<AggregatedMetric>> {
         let metrics = self.metrics.read().await;
         let types = self.metric_types.read().await;
-        
+
         let metric_type = types.get(name).copied();
         let points = metrics.get(name);
-        
+
         if let (Some(metric_type), Some(points)) = (metric_type, points) {
             let now = chrono::Utc::now().timestamp();
             let window_start = now - window.as_seconds() as i64;
-            
+
             // 过滤时间窗口内的数据点
             let window_points: Vec<_> = points
                 .iter()
                 .filter(|p| p.timestamp >= window_start)
                 .collect();
-            
+
             if window_points.is_empty() {
                 return Ok(None);
             }
-            
+
             // 根据类型聚合
             let (value, stats) = match metric_type {
                 MetricType::Counter => {
@@ -244,13 +247,13 @@ impl MetricsAggregator {
                     (stats.mean, Some(stats))
                 }
             };
-            
+
             // 合并标签（使用最新的标签）
             let labels = window_points
                 .last()
                 .map(|p| p.labels.clone())
                 .unwrap_or_default();
-            
+
             Ok(Some(AggregatedMetric {
                 name: name.to_string(),
                 metric_type,
@@ -263,7 +266,7 @@ impl MetricsAggregator {
             Ok(None)
         }
     }
-    
+
     /// 计算统计信息
     fn calculate_stats(&self, values: &[f64]) -> MetricStats {
         if values.is_empty() {
@@ -277,14 +280,14 @@ impl MetricsAggregator {
                 percentiles: HashMap::new(),
             };
         }
-        
+
         let count = values.len() as u64;
         let sum: f64 = values.iter().sum();
         let mean = sum / count as f64;
-        
+
         let min = values.iter().copied().fold(f64::INFINITY, f64::min);
         let max = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-        
+
         // 计算标准差
         let variance: f64 = values
             .iter()
@@ -295,18 +298,18 @@ impl MetricsAggregator {
             .sum::<f64>()
             / count as f64;
         let stddev = variance.sqrt();
-        
+
         // 计算分位数
         let mut sorted_values = values.to_vec();
         sorted_values.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        
+
         let mut percentiles = HashMap::new();
         for &p in &[50.0, 75.0, 90.0, 95.0, 99.0] {
             let index = ((p / 100.0) * (count - 1) as f64) as usize;
             let value = sorted_values.get(index).copied().unwrap_or(0.0);
             percentiles.insert(format!("p{}", p as u32), value);
         }
-        
+
         MetricStats {
             count,
             sum,
@@ -317,17 +320,17 @@ impl MetricsAggregator {
             percentiles,
         }
     }
-    
+
     /// 列出所有指标名称
     pub async fn list_metrics(&self) -> Vec<String> {
         self.metrics.read().await.keys().cloned().collect()
     }
-    
+
     /// 获取指标类型
     pub async fn get_metric_type(&self, name: &str) -> Option<MetricType> {
         self.metric_types.read().await.get(name).copied()
     }
-    
+
     /// 清空所有指标数据
     pub async fn clear(&self) {
         self.metrics.write().await.clear();
@@ -344,38 +347,56 @@ impl Default for MetricsAggregator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_counter() {
         let aggregator = MetricsAggregator::new();
         let labels = HashMap::new();
-        
-        aggregator.record_counter("requests", 1.0, labels.clone()).await.unwrap();
-        aggregator.record_counter("requests", 2.0, labels.clone()).await.unwrap();
-        aggregator.record_counter("requests", 3.0, labels).await.unwrap();
-        
-        let result = aggregator.aggregate("requests", TimeWindow::OneMinute).await.unwrap();
+
+        aggregator
+            .record_counter("requests", 1.0, labels.clone())
+            .await
+            .unwrap();
+        aggregator
+            .record_counter("requests", 2.0, labels.clone())
+            .await
+            .unwrap();
+        aggregator
+            .record_counter("requests", 3.0, labels)
+            .await
+            .unwrap();
+
+        let result = aggregator
+            .aggregate("requests", TimeWindow::OneMinute)
+            .await
+            .unwrap();
         assert!(result.is_some());
-        
+
         let metric = result.unwrap();
         assert_eq!(metric.value, 6.0); // 1 + 2 + 3
     }
-    
+
     #[tokio::test]
     async fn test_histogram() {
         let aggregator = MetricsAggregator::new();
         let labels = HashMap::new();
-        
+
         for i in 1..=100 {
-            aggregator.record_histogram("latency", i as f64, labels.clone()).await.unwrap();
+            aggregator
+                .record_histogram("latency", i as f64, labels.clone())
+                .await
+                .unwrap();
         }
-        
-        let result = aggregator.aggregate("latency", TimeWindow::OneMinute).await.unwrap();
+
+        let result = aggregator
+            .aggregate("latency", TimeWindow::OneMinute)
+            .await
+            .unwrap();
         assert!(result.is_some());
-        
+
         let metric = result.unwrap();
         assert!(metric.stats.is_some());
-        
+
         let stats = metric.stats.unwrap();
         assert_eq!(stats.count, 100);
         assert_eq!(stats.min, 1.0);
@@ -383,4 +404,3 @@ mod tests {
         assert!(stats.percentiles.contains_key("p50"));
     }
 }
-

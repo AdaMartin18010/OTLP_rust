@@ -1,7 +1,7 @@
 # OTLP 快速性能优化指南
 
-**版本**: 1.0.0  
-**日期**: 2025年1月10日  
+**版本**: 1.0.0
+**日期**: 2025年1月10日
 **状态**: ✅ 立即可用
 
 ---
@@ -27,22 +27,22 @@ use otlp::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建优化配置
     let config = QuickOptimizationsConfig::default();
-    
+
     // 创建优化管理器
     let mut manager = QuickOptimizationsManager::new(config);
-    
+
     // 初始化
     manager.initialize().await?;
-    
+
     // 发送数据
     let data = TelemetryData::metric("cpu_usage", MetricType::Gauge)
         .with_numeric_attribute("value", 75.5);
-    
+
     manager.send_data(data).await?;
-    
+
     // 关闭
     manager.shutdown().await?;
-    
+
     Ok(())
 }
 ```
@@ -82,6 +82,7 @@ let config = QuickOptimizationsConfig {
 ```
 
 **推荐配置**:
+
 - **低延迟场景**: `batch_size: 10`, `batch_timeout: 50ms`
 - **高吞吐场景**: `batch_size: 500`, `batch_timeout: 200ms`
 - **平衡场景**: `batch_size: 100`, `batch_timeout: 100ms`
@@ -108,6 +109,7 @@ let compression_config = CompressionConfig {
 | **Brotli** | 最高 | 慢 | 高 | 带宽受限环境 |
 
 **推荐配置**:
+
 - **网络受限**: `Zstd level 6`, `threshold: 512`
 - **CPU受限**: `Zstd level 1`, `threshold: 2048`
 - **平衡**: `Zstd level 3`, `threshold: 1024`
@@ -131,6 +133,7 @@ let connection_pool_config = ConnectionPoolConfig {
 ```
 
 **推荐配置**:
+
 - **高并发**: `max_connections: 200`, `min_connections: 20`
 - **低资源**: `max_connections: 50`, `min_connections: 5`
 - **平衡**: `max_connections: 100`, `min_connections: 10`
@@ -255,6 +258,7 @@ let config = QuickOptimizationsConfig {
 ```
 
 **自适应逻辑**:
+
 - 根据网络延迟自动调整批量大小
 - 高延迟时增加批量大小
 - 低延迟时减少批量大小
@@ -396,6 +400,7 @@ match manager.send_data(data).await {
 **症状**: 数据没有批量发送，仍然是单个发送
 
 **解决方案**:
+
 ```rust
 // 检查批量配置
 let config = QuickOptimizationsConfig {
@@ -414,6 +419,7 @@ let config = QuickOptimizationsConfig {
 **症状**: 压缩后数据大小没有明显减少
 
 **解决方案**:
+
 ```rust
 // 调整压缩配置
 let compression_config = CompressionConfig {
@@ -429,6 +435,7 @@ let compression_config = CompressionConfig {
 **症状**: 连接获取超时
 
 **解决方案**:
+
 ```rust
 // 增加连接池大小
 let connection_pool_config = ConnectionPoolConfig {
@@ -482,15 +489,15 @@ cargo run --release --example quick_optimizations_demo
 
 快速性能优化功能为OTLP客户端提供了显著的性能提升：
 
-✅ **批量发送**: 5-10x 吞吐量提升  
-✅ **数据压缩**: 65-75% 网络传输减少  
-✅ **连接池**: 50-80% 连接开销减少  
-✅ **内存池**: 30-50% 内存分配减少  
+✅ **批量发送**: 5-10x 吞吐量提升
+✅ **数据压缩**: 65-75% 网络传输减少
+✅ **连接池**: 50-80% 连接开销减少
+✅ **内存池**: 30-50% 内存分配减少
 
 通过合理配置这些优化功能，可以显著提升OTLP客户端的性能，减少资源消耗，提高系统整体效率。
 
 ---
 
-**版本**: 1.0.0  
-**最后更新**: 2025年1月10日  
+**版本**: 1.0.0
+**最后更新**: 2025年1月10日
 **状态**: ✅ 生产就绪

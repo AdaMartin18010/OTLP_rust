@@ -247,9 +247,23 @@ pub mod performance;
 // Profiling模块 (OpenTelemetry Profiling标准)
 pub mod profiling;
 
+// eBPF模块（可选特性，需要Linux内核 >= 5.8）
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+pub mod ebpf;
+
 // 重新导出2025年新增的eBPF功能
 #[cfg(target_os = "linux")]
 pub use profiling::ebpf::{EbpfProfiler, EbpfProfilerConfig, OverheadMetrics};
+
+// 重新导出新的eBPF模块功能
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+pub use ebpf::{
+    EbpfLoader, EbpfConfig, EbpfEvent, EbpfEventType,
+    EbpfCpuProfiler, EbpfNetworkTracer, EbpfSyscallTracer, EbpfMemoryTracer,
+    ProbeManager, EventProcessor, MapsManager,
+    EbpfOtlpConverter,
+    validate_config, recommended_sample_rate, recommended_duration, create_recommended_config,
+};
 
 // Semantic Conventions模块 (语义约定标准)
 pub mod semantic_conventions;

@@ -1,34 +1,34 @@
 //! # Complete Rate Limiter Implementation
-//! 
+//!
 //! 完整的限流器实现，包含多种经典限流算法
-//! 
+//!
 //! ## 限流算法
 //! - **Token Bucket (令牌桶)**: 平滑突发流量
 //! - **Leaky Bucket (漏桶)**: 恒定速率输出
 //! - **Fixed Window (固定窗口)**: 简单计数限流
 //! - **Sliding Window (滑动窗口)**: 更精确的限流
 //! - **Sliding Log (滑动日志)**: 最精确但开销大
-//! 
+//!
 //! ## 使用场景
 //! - API限流
 //! - 资源保护
 //! - 流量整形
 //! - 防止DDoS
 //! - 公平性保证
-//! 
+//!
 //! ## 分布式支持
 //! - Redis实现
 //! - 多节点协调
 //! - 配额共享
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, AtomicU32, Ordering};
-use std::time::{Duration, Instant};
 use std::collections::VecDeque;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::time::{Duration, Instant};
+use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
-use tracing::{info, warn, error, instrument};
-use thiserror::Error;
+use tracing::{info, instrument, warn};
 
 // ============================================================================
 // Part 1: Error Types
@@ -38,10 +38,10 @@ use thiserror::Error;
 pub enum RateLimitError {
     #[error("Rate limit exceeded")]
     RateLimitExceeded,
-    
+
     #[error("Invalid configuration: {0}")]
     InvalidConfig(String),
-    
+
     #[error("Timeout waiting for permit")]
     Timeout,
 }
@@ -51,7 +51,7 @@ pub enum RateLimitError {
 // ============================================================================
 
 /// 令牌桶限流器
-/// 
+///
 /// 特点：
 /// - 允许一定程度的突发流量
 /// - 令牌以恒定速率生成
@@ -83,13 +83,20 @@ impl TokenBucket {
         self.refill().await;
 
         let current = self.tokens.load(Ordering::Relaxed);
-        
+
         if current >= tokens_needed {
             self.tokens.fetch_sub(tokens_needed, Ordering::Relaxed);
-            info!("Acquired {} tokens (remaining: {})", tokens_needed, current - tokens_needed);
+            info!(
+                "Acquired {} tokens (remaining: {})",
+                tokens_needed,
+                current - tokens_needed
+            );
             Ok(())
         } else {
-            warn!("Rate limit exceeded (need: {}, available: {})", tokens_needed, current);
+            warn!(
+                "Rate limit exceeded (need: {}, available: {})",
+                tokens_needed, current
+            );
             Err(RateLimitError::RateLimitExceeded)
         }
     }
@@ -116,10 +123,10 @@ impl TokenBucket {
         let mut last_refill = self.last_refill.write().await;
         let now = Instant::now();
         let elapsed = now.duration_since(*last_refill);
-        
+
         if elapsed > Duration::from_millis(1) {
             let new_tokens = (elapsed.as_secs_f64() * self.refill_rate) as u64;
-            
+
             if new_tokens > 0 {
                 let current = self.tokens.load(Ordering::Relaxed);
                 let new_total = (current + new_tokens).min(self.capacity);
@@ -139,7 +146,7 @@ impl TokenBucket {
 // ============================================================================
 
 /// 漏桶限流器
-/// 
+///
 /// 特点：
 /// - 恒定速率输出
 /// - 请求放入队列
@@ -170,7 +177,7 @@ impl LeakyBucket {
         self.leak().await;
 
         let mut queue = self.queue.write().await;
-        
+
         if queue.len() < self.capacity {
             queue.push_back(Instant::now());
             info!("Request added to bucket (size: {})", queue.len());
@@ -186,17 +193,17 @@ impl LeakyBucket {
         let mut last_leak = self.last_leak.write().await;
         let now = Instant::now();
         let elapsed = now.duration_since(*last_leak);
-        
+
         let leak_count = (elapsed.as_secs_f64() * self.leak_rate) as usize;
-        
+
         if leak_count > 0 {
             let mut queue = self.queue.write().await;
             let to_remove = leak_count.min(queue.len());
-            
+
             for _ in 0..to_remove {
                 queue.pop_front();
             }
-            
+
             *last_leak = now;
             info!("Leaked {} requests (remaining: {})", to_remove, queue.len());
         }
@@ -212,7 +219,7 @@ impl LeakyBucket {
 // ============================================================================
 
 /// 固定窗口限流器
-/// 
+///
 /// 特点：
 /// - 简单易实现
 /// - 固定时间窗口内限制请求数
@@ -243,12 +250,15 @@ impl FixedWindow {
         self.check_window_reset().await;
 
         let current = self.request_count.fetch_add(1, Ordering::Relaxed);
-        
+
         if current < self.max_requests {
             info!("Request allowed ({}/{})", current + 1, self.max_requests);
             Ok(())
         } else {
-            warn!("Rate limit exceeded in window ({}/{})", current, self.max_requests);
+            warn!(
+                "Rate limit exceeded in window ({}/{})",
+                current, self.max_requests
+            );
             self.request_count.fetch_sub(1, Ordering::Relaxed);
             Err(RateLimitError::RateLimitExceeded)
         }
@@ -257,7 +267,7 @@ impl FixedWindow {
     async fn check_window_reset(&self) {
         let mut window_start = self.window_start.write().await;
         let now = Instant::now();
-        
+
         if now.duration_since(*window_start) >= self.window_size {
             *window_start = now;
             self.request_count.store(0, Ordering::Relaxed);
@@ -275,7 +285,7 @@ impl FixedWindow {
 // ============================================================================
 
 /// 滑动窗口限流器
-/// 
+///
 /// 特点：
 /// - 更精确的限流
 /// - 避免固定窗口边界问题
@@ -320,10 +330,17 @@ impl SlidingWindow {
 
         if estimated_count < self.max_requests {
             self.current_count.fetch_add(1, Ordering::Relaxed);
-            info!("Request allowed (estimated: {}/{})", estimated_count + 1, self.max_requests);
+            info!(
+                "Request allowed (estimated: {}/{})",
+                estimated_count + 1,
+                self.max_requests
+            );
             Ok(())
         } else {
-            warn!("Rate limit exceeded (estimated: {}/{})", estimated_count, self.max_requests);
+            warn!(
+                "Rate limit exceeded (estimated: {}/{})",
+                estimated_count, self.max_requests
+            );
             Err(RateLimitError::RateLimitExceeded)
         }
     }
@@ -331,7 +348,7 @@ impl SlidingWindow {
     async fn check_window_slide(&self) {
         let mut window_start = self.current_window_start.write().await;
         let now = Instant::now();
-        
+
         if now.duration_since(*window_start) >= self.window_size {
             let current = self.current_count.load(Ordering::Relaxed);
             self.previous_count.store(current, Ordering::Relaxed);
@@ -347,7 +364,7 @@ impl SlidingWindow {
 // ============================================================================
 
 /// 滑动日志限流器
-/// 
+///
 /// 特点：
 /// - 最精确的限流
 /// - 记录每个请求时间戳
@@ -375,7 +392,7 @@ impl SlidingLog {
         self.cleanup_old_entries().await;
 
         let mut log = self.log.write().await;
-        
+
         if log.len() < self.max_requests {
             log.push_back(Instant::now());
             info!("Request logged ({}/{})", log.len(), self.max_requests);
@@ -389,7 +406,7 @@ impl SlidingLog {
     async fn cleanup_old_entries(&self) {
         let mut log = self.log.write().await;
         let now = Instant::now();
-        
+
         while let Some(timestamp) = log.front() {
             if now.duration_since(*timestamp) > self.window_size {
                 log.pop_front();
@@ -608,4 +625,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

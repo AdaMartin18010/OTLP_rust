@@ -67,13 +67,9 @@ pub enum OverflowStrategy {
     /// 拒绝新请求
     Reject,
     /// 排队等待
-    Queue {
-        max_queue_size: usize,
-    },
+    Queue { max_queue_size: usize },
     /// 降级处理
-    Degrade {
-        fallback_concurrency: usize,
-    },
+    Degrade { fallback_concurrency: usize },
     /// 弹性扩容
     ElasticExpansion {
         max_expansion: usize,
@@ -236,7 +232,7 @@ impl EnhancedBulkhead {
     /// 创建新的舱壁隔离
     pub fn new(config: EnhancedBulkheadConfig) -> Self {
         let permits = config.max_concurrent;
-        
+
         Self {
             semaphore: Arc::new(Semaphore::new(permits)),
             token_bucket: Arc::new(Mutex::new(TokenBucket::new(permits))),
@@ -253,7 +249,8 @@ impl EnhancedBulkhead {
         F: std::future::Future<Output = Result<T>> + Send,
         T: Send,
     {
-        self.execute_with_priority(operation, TaskPriority::Normal).await
+        self.execute_with_priority(operation, TaskPriority::Normal)
+            .await
     }
 
     /// 带优先级执行
@@ -274,20 +271,16 @@ impl EnhancedBulkhead {
 
         // 尝试获取许可
         let permit = match self.config.strategy {
-            BulkheadStrategy::Semaphore => {
-                self.try_acquire_semaphore(priority).await?
-            }
+            BulkheadStrategy::Semaphore => self.try_acquire_semaphore(priority).await?,
             BulkheadStrategy::TokenBucket => {
                 self.try_acquire_token().await?;
                 self.semaphore.acquire().await.map_err(|e| {
                     UnifiedError::resource_unavailable(format!("Semaphore acquire failed: {}", e))
                 })?
             }
-            _ => {
-                self.semaphore.acquire().await.map_err(|e| {
-                    UnifiedError::resource_unavailable(format!("Semaphore acquire failed: {}", e))
-                })?
-            }
+            _ => self.semaphore.acquire().await.map_err(|e| {
+                UnifiedError::resource_unavailable(format!("Semaphore acquire failed: {}", e))
+            })?,
         };
 
         // 更新并发数
@@ -308,11 +301,11 @@ impl EnhancedBulkhead {
         {
             let mut stats = self.stats.write().await;
             stats.current_concurrency = stats.current_concurrency.saturating_sub(1);
-            
+
             let elapsed_ms = start.elapsed().as_millis() as f64;
-            stats.avg_execution_time_ms = 
+            stats.avg_execution_time_ms =
                 (stats.avg_execution_time_ms * stats.successful_executions as f64 + elapsed_ms)
-                / (stats.successful_executions as f64 + 1.0);
+                    / (stats.successful_executions as f64 + 1.0);
 
             match &result {
                 Ok(Ok(_)) => {
@@ -333,14 +326,18 @@ impl EnhancedBulkhead {
         // 处理结果
         match result {
             Ok(r) => r,
-            Err(_) => Err(UnifiedError::resource_unavailable(
-                format!("Operation timed out after {:?}", self.config.execution_timeout)
-            )),
+            Err(_) => Err(UnifiedError::resource_unavailable(format!(
+                "Operation timed out after {:?}",
+                self.config.execution_timeout
+            ))),
         }
     }
 
     /// 尝试获取信号量许可
-    async fn try_acquire_semaphore(&self, priority: TaskPriority) -> Result<tokio::sync::SemaphorePermit<'_>> {
+    async fn try_acquire_semaphore(
+        &self,
+        priority: TaskPriority,
+    ) -> Result<tokio::sync::SemaphorePermit<'_>> {
         // 尝试立即获取
         if let Ok(permit) = self.semaphore.try_acquire() {
             return Ok(permit);
@@ -351,7 +348,9 @@ impl EnhancedBulkhead {
             OverflowStrategy::Reject => {
                 let mut stats = self.stats.write().await;
                 stats.rejections += 1;
-                Err(UnifiedError::resource_unavailable("Bulkhead is full, request rejected"))
+                Err(UnifiedError::resource_unavailable(
+                    "Bulkhead is full, request rejected",
+                ))
             }
             OverflowStrategy::Queue { max_queue_size } => {
                 let mut queue = self.queue.lock().await;
@@ -360,14 +359,14 @@ impl EnhancedBulkhead {
                     stats.rejections += 1;
                     return Err(UnifiedError::resource_unavailable("Queue is full"));
                 }
-                
+
                 queue.push_back(QueuedTask {
                     priority,
                     queued_at: Instant::now(),
                 });
-                
+
                 drop(queue);
-                
+
                 // 等待许可
                 self.semaphore.acquire().await.map_err(|e| {
                     UnifiedError::resource_unavailable(format!("Failed to acquire: {}", e))
@@ -404,7 +403,7 @@ impl EnhancedBulkhead {
     async fn update_state(&self) {
         let stats = self.stats.read().await;
         let usage_ratio = stats.current_concurrency as f64 / self.config.max_concurrent as f64;
-        
+
         let new_state = if usage_ratio >= self.config.saturation_threshold {
             BulkheadState::Saturated
         } else if usage_ratio >= self.config.high_load_threshold {
@@ -412,13 +411,13 @@ impl EnhancedBulkhead {
         } else {
             BulkheadState::Normal
         };
-        
+
         let mut state = self.state.write().await;
         *state = new_state;
-        
+
         drop(state);
         drop(stats);
-        
+
         let mut stats_mut = self.stats.write().await;
         stats_mut.state = new_state;
     }
@@ -508,64 +507,61 @@ mod tests {
 
     #[tokio::test]
     async fn test_basic_bulkhead() {
-        let bulkhead = EnhancedBulkhead::builder()
-            .max_concurrent(2)
-            .build();
-        
-        let result = bulkhead.execute(async {
-            tokio::time::sleep(Duration::from_millis(10)).await;
-            Ok(42)
-        }).await;
-        
+        let bulkhead = EnhancedBulkhead::builder().max_concurrent(2).build();
+
+        let result = bulkhead
+            .execute(async {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+                Ok(42)
+            })
+            .await;
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 42);
     }
 
     #[tokio::test]
     async fn test_bulkhead_rejection() {
-        let bulkhead = Arc::new(EnhancedBulkhead::builder()
-            .max_concurrent(1)
-            .overflow_strategy(OverflowStrategy::Reject)
-            .build());
-        
+        let bulkhead = Arc::new(
+            EnhancedBulkhead::builder()
+                .max_concurrent(1)
+                .overflow_strategy(OverflowStrategy::Reject)
+                .build(),
+        );
+
         let bulkhead1 = Arc::clone(&bulkhead);
         let bulkhead2 = Arc::clone(&bulkhead);
-        
+
         // 第一个任务占用唯一的槽位
         let handle1 = tokio::spawn(async move {
-            bulkhead1.execute(async {
-                tokio::time::sleep(Duration::from_millis(100)).await;
-                Ok(1)
-            }).await
+            bulkhead1
+                .execute(async {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    Ok(1)
+                })
+                .await
         });
-        
+
         tokio::time::sleep(Duration::from_millis(10)).await;
-        
+
         // 第二个任务应该被拒绝
-        let result2 = bulkhead2.execute(async {
-            Ok(2)
-        }).await;
-        
+        let result2 = bulkhead2.execute(async { Ok(2) }).await;
+
         assert!(result2.is_err());
-        
+
         handle1.await.unwrap().unwrap();
     }
 
     #[tokio::test]
     async fn test_bulkhead_stats() {
-        let bulkhead = EnhancedBulkhead::builder()
-            .max_concurrent(10)
-            .build();
-        
+        let bulkhead = EnhancedBulkhead::builder().max_concurrent(10).build();
+
         for _ in 0..5 {
-            let _ = bulkhead.execute(async {
-                Ok(())
-            }).await;
+            let _ = bulkhead.execute(async { Ok(()) }).await;
         }
-        
+
         let stats = bulkhead.get_stats().await;
         assert_eq!(stats.total_requests, 5);
         assert_eq!(stats.successful_executions, 5);
     }
 }
-

@@ -2,8 +2,8 @@
 //!
 //! 自动检测和分析服务间依赖关系。
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// 依赖类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -42,12 +42,12 @@ impl DependencyGraph {
             dependencies: Vec::new(),
         }
     }
-    
+
     /// 添加依赖
     pub fn add_dependency(&mut self, dep: ServiceDependency) {
         self.dependencies.push(dep);
     }
-    
+
     /// 获取服务的所有依赖
     pub fn get_dependencies(&self, service: &str) -> Vec<&ServiceDependency> {
         self.dependencies
@@ -74,22 +74,22 @@ impl DependencyDetector {
             graph: DependencyGraph::new(),
         }
     }
-    
+
     /// 记录依赖
     pub fn record_dependency(&mut self, dep: ServiceDependency) {
         self.graph.add_dependency(dep);
     }
-    
+
     /// 获取依赖图
     pub fn get_graph(&self) -> &DependencyGraph {
         &self.graph
     }
-    
+
     /// 检测循环依赖
     pub fn detect_circular_dependencies(&self) -> Vec<Vec<String>> {
         Vec::new()
     }
-    
+
     /// 分析依赖深度
     pub fn analyze_dependency_depth(&self) -> HashMap<String, usize> {
         HashMap::new()
@@ -101,4 +101,3 @@ impl Default for DependencyDetector {
         Self::new()
     }
 }
-

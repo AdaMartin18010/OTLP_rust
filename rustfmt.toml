@@ -1,4 +1,4 @@
-# Rustfmt 配置文件 - Rust 1.90 稳定版设置
+# Rustfmt 配置文件 - Rust 1.92 稳定版设置
 # 2025年最新配置，仅使用稳定特性
 
 # 基本格式化选项
@@ -18,9 +18,9 @@ fn_params_layout = "Tall"
 # 表达式格式化 (仅稳定特性)
 chain_width = 60
 
-# 宏格式化 (仅稳定特性)
-format_macro_matchers = true
-format_macro_bodies = true
+# 宏格式化 - 这些是 nightly 特性，已移除
+# format_macro_matchers = true  # 需要 nightly
+# format_macro_bodies = true    # 需要 nightly
 
 # 其他选项 (仅稳定特性)
 remove_nested_parens = true

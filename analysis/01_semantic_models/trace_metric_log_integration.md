@@ -81,12 +81,12 @@ ObservabilityData = {
 Trace 形式化定义:
 Trace = (TraceId, Spans, Relations, Attributes)
 
-Span = (SpanId, ParentSpanId, Name, StartTime, EndTime, 
+Span = (SpanId, ParentSpanId, Name, StartTime, EndTime,
         Attributes, Events, Links, Status)
 
 关系类型:
 - Parent-Child: 直接因果关系
-- Follows-From: 间接因果关系  
+- Follows-From: 间接因果关系
 - Link: 跨 Trace 关联关系
 ```
 
@@ -132,19 +132,19 @@ impl Trace {
                 return Err(TraceValidationError::InvalidTimeRange);
             }
         }
-        
+
         // 验证层次约束
         self.validate_hierarchy()?;
-        
+
         // 验证一致性约束
         self.validate_consistency()?;
-        
+
         Ok(())
     }
-    
+
     fn validate_hierarchy(&self) -> Result<(), TraceValidationError> {
         let mut parent_map: HashMap<SpanId, SpanId> = HashMap::new();
-        
+
         for span in &self.spans {
             if let Some(parent_id) = span.parent_span_id {
                 // 检查循环引用
@@ -154,7 +154,7 @@ impl Trace {
                 parent_map.insert(span.span_id, parent_id);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -176,7 +176,7 @@ Metric = {
 
 DataPoint 类型:
 1. Gauge: 瞬时值测量
-2. Sum: 累积值测量  
+2. Sum: 累积值测量
 3. Histogram: 分布统计
 4. ExponentialHistogram: 指数分布统计
 ```
@@ -284,14 +284,14 @@ impl LogRecord {
     pub fn correlate_with_trace(&mut self, trace_context: TraceContext) {
         self.trace_context = Some(trace_context);
     }
-    
+
     pub fn correlate_with_span(&mut self, span_context: SpanContext) {
         self.span_context = Some(span_context);
     }
-    
+
     pub fn extract_metrics(&self) -> Vec<MetricData> {
         let mut metrics = Vec::new();
-        
+
         // 从日志中提取错误计数指标
         if matches!(self.severity, SeverityLevel::ERROR | SeverityLevel::FATAL) {
             let error_count = MetricData::Sum(SumMetric {
@@ -305,7 +305,7 @@ impl LogRecord {
             });
             metrics.push(error_count);
         }
-        
+
         metrics
     }
 }
@@ -335,23 +335,23 @@ pub struct CorrelationEngine {
 impl CorrelationEngine {
     pub fn correlate_signals(&self, signal: &Signal) -> Vec<CorrelatedSignal> {
         let mut correlations = Vec::new();
-        
+
         // 资源关联
         if let Some(resource_id) = signal.resource_id() {
             correlations.extend(self.find_resource_correlations(resource_id));
         }
-        
+
         // 时间关联
         correlations.extend(self.find_temporal_correlations(signal.timestamp()));
-        
+
         // 上下文关联
         if let Some(trace_id) = signal.trace_context() {
             correlations.extend(self.find_context_correlations(trace_id));
         }
-        
+
         correlations
     }
-    
+
     fn find_temporal_correlations(&self, timestamp: Timestamp) -> Vec<CorrelatedSignal> {
         let time_window = Duration::from_secs(60); // 1分钟时间窗口
         self.time_index.query_range(
@@ -417,7 +417,7 @@ impl UnifiedSampler {
                 return SamplingDecision::Drop;
             }
         }
-        
+
         // 信号级采样
         if let Some(signal_sampler) = self.signal_samplers.get(&signal.signal_type()) {
             let decision = signal_sampler.sample(signal, context);
@@ -425,7 +425,7 @@ impl UnifiedSampler {
                 return SamplingDecision::Drop;
             }
         }
-        
+
         // 自适应采样
         self.adaptive_sampler.sample(signal, context)
     }
@@ -441,11 +441,11 @@ impl AdaptiveSampler {
     fn adjust_sampling_rate(&self, actual_rate: f64) {
         let current = self.current_rate.load(Ordering::Relaxed);
         let target = self.target_rate;
-        
+
         // 基于误差调整采样率
         let error = actual_rate - target;
         let adjustment = error * 0.1; // 10% 调整因子
-        
+
         let new_rate = (current - adjustment).max(0.01).min(1.0);
         self.current_rate.store(new_rate, Ordering::Relaxed);
     }
@@ -483,7 +483,7 @@ impl SignalCompressor {
             compressed_attributes: self.compress_attributes(&trace.attributes),
         }
     }
-    
+
     fn compress_span(&self, span: &Span) -> CompressedSpan {
         CompressedSpan {
             span_id: span.span_id,
@@ -510,7 +510,7 @@ impl BatchProcessor {
     pub async fn process_batch(&self, signals: Vec<Signal>) -> Result<(), ProcessingError> {
         // 按类型分组
         let grouped = self.group_signals(signals);
-        
+
         // 并行处理
         let handles: Vec<_> = grouped.into_iter()
             .map(|(signal_type, signals)| {
@@ -520,12 +520,12 @@ impl BatchProcessor {
                 })
             })
             .collect();
-        
+
         // 等待所有处理完成
         for handle in handles {
             handle.await??;
         }
-        
+
         Ok(())
     }
 }
@@ -557,18 +557,18 @@ impl FaultDiagnosisEngine {
     pub async fn diagnose_fault(&self, time_range: TimeRange) -> Result<FaultDiagnosis, DiagnosisError> {
         // 1. 检测异常指标
         let anomalies = self.anomaly_detector.detect_anomalies(time_range).await?;
-        
+
         // 2. 分析相关 Trace
         let traces = self.trace_analyzer.analyze_traces(time_range, &anomalies).await?;
-        
+
         // 3. 分析相关日志
         let logs = self.log_analyzer.analyze_logs(time_range, &anomalies).await?;
-        
+
         // 4. 关联分析
         let correlations = self.correlation_engine.correlate_all(
             &anomalies, &traces, &logs
         ).await?;
-        
+
         // 5. 生成诊断报告
         Ok(FaultDiagnosis {
             anomalies,
