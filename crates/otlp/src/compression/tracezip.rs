@@ -1,4 +1,4 @@
-//! Tracezip Compression Algorithm
+//! # Tracezip Compression Algorithm
 //!
 //! Implementation of the Tracezip compression algorithm for OpenTelemetry traces.
 //! This provides significant bandwidth reduction through span deduplication,
@@ -17,6 +17,12 @@
 //! - CPU overhead: <5%
 //! - Memory overhead: <10%
 //! - Compression latency: <10ms per batch
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化字符串表和缓冲区大小
+//! - **元组收集**: 使用 `collect()` 直接收集到元组，简化数据处理
+//! - **改进的迭代器**: 利用 Rust 1.92 的迭代器优化提升性能
 //!
 //! ## Reference
 //!

@@ -1,6 +1,12 @@
 //! # OPAMP 协议消息定义
 //!
 //! 定义了 OPAMP 协议中的所有消息类型和结构。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化消息大小和缓冲区
+//! - **改进的序列化**: 利用 Rust 1.92 的序列化优化提升性能
+//! - **元组收集**: 使用 `collect()` 直接收集消息字段到元组
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

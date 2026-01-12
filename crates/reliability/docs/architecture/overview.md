@@ -3,7 +3,7 @@
 ## 📋 目录
 
 - [可靠性框架架构设计](#可靠性框架架构设计)
-  - [📊 目录](#-目录)
+  - [� 目录](#-目录)
   - [概述](#概述)
   - [核心架构](#核心架构)
     - [1. 错误处理模块 (error\_handling)](#1-错误处理模块-error_handling)
@@ -126,9 +126,9 @@ use c13_reliability::prelude::*;
 #[tokio::main]
 async fn main() -> Result<(), UnifiedError> {
     c13_reliability::init().await?;
-    
+
     // 使用各种可靠性功能
-    
+
     c13_reliability::shutdown().await?;
     Ok(())
 }
@@ -224,4 +224,3 @@ let health_status = health_checker.check_health().await;
 - 优化性能配置
 - 启用自动恢复
 - 监控告警设置
-

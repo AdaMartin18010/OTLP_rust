@@ -14,10 +14,10 @@ use std::time::Duration;
 pub fn create_test_ebpf_config() -> EbpfConfig {
     EbpfConfig::default()
         .with_sample_rate(99)
-        .with_cpu_profiling(true)
-        .with_network_tracing(false)
-        .with_syscall_tracing(false)
-        .with_memory_tracing(false)
+        .with_enable_cpu_profiling(true)
+        .with_enable_network_tracing(false)
+        .with_enable_syscall_tracing(false)
+        .with_enable_memory_tracing(false)
         .with_duration(Duration::from_secs(10))
         .with_max_samples(1000)
 }
@@ -132,5 +132,38 @@ mod tests {
         small_delay().await;
         let elapsed = start.elapsed();
         assert!(elapsed.as_millis() >= 10);
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_assert_valid_config() {
+        let config = create_test_ebpf_config();
+        assert_valid_config(&config);
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_assert_invalid_config() {
+        let mut config = EbpfConfig::default();
+        config.sample_rate = 0; // 无效配置
+        assert_invalid_config(&config);
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_create_test_ebpf_events_variety() {
+        let events = create_test_ebpf_events(12);
+        assert_eq!(events.len(), 12);
+        
+        // 验证事件类型分布
+        let cpu_count = events.iter().filter(|e| e.event_type == EbpfEventType::CpuSample).count();
+        let network_count = events.iter().filter(|e| e.event_type == EbpfEventType::NetworkPacket).count();
+        let syscall_count = events.iter().filter(|e| e.event_type == EbpfEventType::Syscall).count();
+        let memory_count = events.iter().filter(|e| e.event_type == EbpfEventType::MemoryAlloc).count();
+        
+        assert_eq!(cpu_count, 3);
+        assert_eq!(network_count, 3);
+        assert_eq!(syscall_count, 3);
+        assert_eq!(memory_count, 3);
     }
 }

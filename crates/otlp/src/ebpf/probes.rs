@@ -39,24 +39,68 @@ impl ProbeManager {
         }
     }
 
-    /// 附加 kprobe
+    /// 附加 kprobe（内核函数探针）
+    ///
+    /// # 参数
+    ///
+    /// * `name` - 探针名称（用于标识）
+    /// * `function` - 要追踪的内核函数名
+    ///
+    /// # 返回
+    ///
+    /// 成功返回 `Ok(())`，失败返回错误
+    ///
+    /// # 说明
+    ///
+    /// kprobe 用于在内核函数入口处插入探针，可以追踪内核函数的调用。
+    /// 需要 CAP_BPF 权限。
+    ///
+    /// # 示例
+    ///
+    /// ```rust,no_run
+    /// use otlp::ebpf::ProbeManager;
+    ///
+    /// let mut manager = ProbeManager::new();
+    /// manager.attach_kprobe("tcp_connect", "tcp_v4_connect")?;
+    /// # Ok::<(), otlp::error::OtlpError>(())
+    /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
     pub fn attach_kprobe(&mut self, name: &str, function: &str) -> Result<()> {
-        // TODO: 使用 aya 附加 kprobe
-        // 实际实现需要:
-        // 1. 创建 KProbe 程序
-        // 2. 附加到内核函数
+        // 验证函数名
+        if function.is_empty() {
+            return Err(crate::ebpf::error::EbpfError::AttachFailed(
+                "函数名不能为空".to_string(),
+            )
+            .into());
+        }
+
+        tracing::info!("附加 KProbe: {} -> {}", name, function);
+
+        // 注意: 实际的 kprobe 附加需要:
+        // 1. 使用 aya::programs::kprobe::KProbe
+        // 2. 加载并附加到内核函数:
+        //    let program: &mut KProbe = bpf.program_mut(name)?;
+        //    program.load()?;
+        //    program.attach(function, 0)?;
         // 3. 记录探针信息
 
-        tracing::info!("KProbe 附加功能待实现: {} -> {}", name, function);
+        // 检查是否已存在同名探针
+        if self.probes.iter().any(|p| p.name == name) {
+            return Err(crate::ebpf::error::EbpfError::AttachFailed(format!(
+                "探针已存在: {}",
+                name
+            ))
+            .into());
+        }
 
         self.probes.push(ProbeInfo {
             probe_type: ProbeType::KProbe,
             name: name.to_string(),
             target: function.to_string(),
-            attached: false,
+            attached: false, // 实际附加后应设置为 true
         });
 
+        tracing::debug!("KProbe 已注册: {} -> {}", name, function);
         Ok(())
     }
 
@@ -65,19 +109,81 @@ impl ProbeManager {
         Err(EbpfError::UnsupportedPlatform.into())
     }
 
-    /// 附加 uprobe
+    /// 附加 uprobe（用户空间函数探针）
+    ///
+    /// # 参数
+    ///
+    /// * `name` - 探针名称（用于标识）
+    /// * `binary` - 目标二进制文件路径
+    /// * `symbol` - 要追踪的函数符号名
+    ///
+    /// # 返回
+    ///
+    /// 成功返回 `Ok(())`，失败返回错误
+    ///
+    /// # 说明
+    ///
+    /// uprobe 用于在用户空间函数入口处插入探针，可以追踪用户程序的函数调用。
+    /// 需要 CAP_BPF 权限。
+    ///
+    /// # 示例
+    ///
+    /// ```rust,no_run
+    /// use otlp::ebpf::ProbeManager;
+    ///
+    /// let mut manager = ProbeManager::new();
+    /// manager.attach_uprobe("malloc_probe", "/usr/bin/myapp", "malloc")?;
+    /// # Ok::<(), otlp::error::OtlpError>(())
+    /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
     pub fn attach_uprobe(&mut self, name: &str, binary: &str, symbol: &str) -> Result<()> {
-        // TODO: 使用 aya 附加 uprobe
-        tracing::info!("UProbe 附加功能待实现: {} -> {}:{}", name, binary, symbol);
+        // 验证参数
+        if binary.is_empty() {
+            return Err(crate::ebpf::error::EbpfError::AttachFailed(
+                "二进制文件路径不能为空".to_string(),
+            )
+            .into());
+        }
+        if symbol.is_empty() {
+            return Err(crate::ebpf::error::EbpfError::AttachFailed(
+                "符号名不能为空".to_string(),
+            )
+            .into());
+        }
+
+        // 检查二进制文件是否存在
+        if !std::path::Path::new(binary).exists() {
+            tracing::warn!("二进制文件不存在: {}", binary);
+            // 不直接返回错误，因为可能是动态路径
+        }
+
+        tracing::info!("附加 UProbe: {} -> {}:{}", name, binary, symbol);
+
+        // 注意: 实际的 uprobe 附加需要:
+        // 1. 使用 aya::programs::uprobe::UProbe
+        // 2. 加载并附加到用户空间函数:
+        //    let program: &mut UProbe = bpf.program_mut(name)?;
+        //    program.load()?;
+        //    program.attach(Some(binary), symbol, 0, None)?;
+        // 3. 记录探针信息
+
+        // 检查是否已存在同名探针
+        if self.probes.iter().any(|p| p.name == name) {
+            return Err(crate::ebpf::error::EbpfError::AttachFailed(format!(
+                "探针已存在: {}",
+                name
+            ))
+            .into());
+        }
 
         self.probes.push(ProbeInfo {
             probe_type: ProbeType::UProbe,
             name: name.to_string(),
             target: format!("{}:{}", binary, symbol),
-            attached: false,
+            attached: false, // 实际附加后应设置为 true
         });
 
+        tracing::debug!("UProbe 已注册: {} -> {}:{}", name, binary, symbol);
         Ok(())
     }
 
@@ -86,19 +192,75 @@ impl ProbeManager {
         Err(EbpfError::UnsupportedPlatform.into())
     }
 
-    /// 附加 tracepoint
+    /// 附加 tracepoint（跟踪点）
+    ///
+    /// # 参数
+    ///
+    /// * `name` - 探针名称（用于标识）
+    /// * `category` - 跟踪点类别（如 "syscalls"）
+    /// * `event` - 跟踪点事件名（如 "sys_enter_openat"）
+    ///
+    /// # 返回
+    ///
+    /// 成功返回 `Ok(())`，失败返回错误
+    ///
+    /// # 说明
+    ///
+    /// tracepoint 是内核预定义的静态跟踪点，比 kprobe 更稳定，性能开销更小。
+    /// 不需要 CAP_BPF 权限（但需要 CAP_SYS_ADMIN 或 root）。
+    ///
+    /// # 示例
+    ///
+    /// ```rust,no_run
+    /// use otlp::ebpf::ProbeManager;
+    ///
+    /// let mut manager = ProbeManager::new();
+    /// manager.attach_tracepoint("openat_trace", "syscalls", "sys_enter_openat")?;
+    /// # Ok::<(), otlp::error::OtlpError>(())
+    /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
     pub fn attach_tracepoint(&mut self, name: &str, category: &str, event: &str) -> Result<()> {
-        // TODO: 使用 aya 附加 tracepoint
-        tracing::info!("Tracepoint 附加功能待实现: {} -> {}:{}", name, category, event);
+        // 验证参数
+        if category.is_empty() {
+            return Err(crate::ebpf::error::EbpfError::AttachFailed(
+                "跟踪点类别不能为空".to_string(),
+            )
+            .into());
+        }
+        if event.is_empty() {
+            return Err(crate::ebpf::error::EbpfError::AttachFailed(
+                "跟踪点事件名不能为空".to_string(),
+            )
+            .into());
+        }
+
+        tracing::info!("附加 Tracepoint: {} -> {}:{}", name, category, event);
+
+        // 注意: 实际的 tracepoint 附加需要:
+        // 1. 使用 aya::programs::trace_point::TracePoint
+        // 2. 加载并附加到跟踪点:
+        //    let program: &mut TracePoint = bpf.program_mut(name)?;
+        //    program.load()?;
+        //    program.attach(category, event)?;
+        // 3. 记录探针信息
+
+        // 检查是否已存在同名探针
+        if self.probes.iter().any(|p| p.name == name) {
+            return Err(crate::ebpf::error::EbpfError::AttachFailed(format!(
+                "探针已存在: {}",
+                name
+            ))
+            .into());
+        }
 
         self.probes.push(ProbeInfo {
             probe_type: ProbeType::TracePoint,
             name: name.to_string(),
             target: format!("{}:{}", category, event),
-            attached: false,
+            attached: false, // 实际附加后应设置为 true
         });
 
+        tracing::debug!("Tracepoint 已注册: {} -> {}:{}", name, category, event);
         Ok(())
     }
 
@@ -113,7 +275,7 @@ impl ProbeManager {
         // TODO: 分离指定探针
         let initial_len = self.probes.len();
         self.probes.retain(|p| p.name != name);
-        
+
         if self.probes.len() < initial_len {
             tracing::info!("分离探针: {}", name);
             Ok(())

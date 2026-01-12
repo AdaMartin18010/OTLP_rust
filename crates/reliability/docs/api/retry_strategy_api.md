@@ -1,8 +1,8 @@
 ﻿# Retry Strategy API 完整文档
 
-**Crate:** c13_reliability  
-**模块:** retry_strategy  
-**Rust 版本:** 1.90.0  
+**Crate:** c13_reliability
+**模块:** retry_strategy
+**Rust 版本:** 1.90.0
 **最后更新:** 2025年10月28日
 
 ---
@@ -201,27 +201,27 @@ pub struct DefaultErrorClassifier;
 impl ErrorClassifier for DefaultErrorClassifier {
     fn classify(&self, error: &dyn Error) -> ErrorClassification {
         let error_str = error.to_string().to_lowercase();
-        
+
         // 网络错误 - 可重试
-        if error_str.contains("timeout") 
-            || error_str.contains("connection") 
+        if error_str.contains("timeout")
+            || error_str.contains("connection")
             || error_str.contains("network") {
             return ErrorClassification::Retryable;
         }
-        
+
         // 限流错误 - 临时
-        if error_str.contains("rate limit") 
+        if error_str.contains("rate limit")
             || error_str.contains("too many requests") {
             return ErrorClassification::Transient;
         }
-        
+
         // 验证错误 - 不可重试
-        if error_str.contains("unauthorized") 
-            || error_str.contains("forbidden") 
+        if error_str.contains("unauthorized")
+            || error_str.contains("forbidden")
             || error_str.contains("invalid") {
             return ErrorClassification::NonRetryable;
         }
-        
+
         // 默认为可重试
         ErrorClassification::Retryable
     }
@@ -523,9 +523,11 @@ where
 ```
 
 **参数:**
+
 - `operation`: 要执行的异步操作（返回 `Result<T, E>`）
 
 **返回:**
+
 - `RetryResult<T>`: 重试结果
 
 **示例:**
@@ -544,7 +546,7 @@ let result = executor.execute(|| {
         let response = reqwest::get("https://api.example.com")
             .await
             .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-        
+
         response.json().await
             .map_err(|e| Box::new(e) as Box<dyn Error>)
     })
@@ -591,7 +593,7 @@ impl RetryStatistics {
             self.successful_executions as f64 / self.total_executions as f64
         }
     }
-    
+
     /// 平均延迟
     pub fn avg_duration(&self) -> Duration {
         if self.total_executions == 0 {
@@ -600,7 +602,7 @@ impl RetryStatistics {
             self.total_duration / self.total_executions as u32
         }
     }
-    
+
     /// 重试率
     pub fn retry_rate(&self) -> f64 {
         if self.total_executions == 0 {
@@ -641,14 +643,14 @@ async fn fetch_with_retry(url: &str) -> Result<String> {
         multiplier: 2.0,
         max_attempts: 3,
     };
-    
+
     let executor = RetryExecutor::new(policy)
         .with_classifier(Box::new(HttpErrorClassifier))
         .with_timeout(Duration::from_secs(60));
-    
+
     let client = Client::new();
     let url = url.to_string();
-    
+
     let result = executor.execute(|| {
         let client = client.clone();
         let url = url.clone();
@@ -661,7 +663,7 @@ async fn fetch_with_retry(url: &str) -> Result<String> {
                 .map_err(|e| Box::new(e) as Box<dyn Error>)
         })
     }).await;
-    
+
     match result {
         RetryResult::Success(text) => Ok(text),
         RetryResult::Failed { last_error, .. } => Err(last_error.into()),
@@ -688,17 +690,17 @@ impl RetryableDatabase {
             multiplier: 2.0,
             max_attempts: 3,
         };
-        
+
         let executor = RetryExecutor::new(policy)
             .with_timeout(Duration::from_secs(10));
-        
+
         Self { pool, executor }
     }
-    
+
     pub async fn insert_user(&self, name: &str) -> Result<i64> {
         let pool = self.pool.clone();
         let name = name.to_string();
-        
+
         let result = self.executor.execute(|| {
             let pool = pool.clone();
             let name = name.clone();
@@ -710,7 +712,7 @@ impl RetryableDatabase {
                     .map_err(|e| Box::new(e) as Box<dyn Error>)
             })
         }).await;
-        
+
         match result {
             RetryResult::Success(id) => Ok(id),
             _ => Err(Error::DatabaseError),
@@ -729,10 +731,10 @@ async fn read_file_with_retry(path: &Path) -> Result<String> {
         interval: Duration::from_millis(100),
         max_attempts: 3,
     };
-    
+
     let executor = RetryExecutor::new(policy);
     let path = path.to_path_buf();
-    
+
     let result = executor.execute(|| {
         let path = path.clone();
         Box::pin(async move {
@@ -741,7 +743,7 @@ async fn read_file_with_retry(path: &Path) -> Result<String> {
                 .map_err(|e| Box::new(e) as Box<dyn Error>)
         })
     }).await;
-    
+
     match result {
         RetryResult::Success(content) => Ok(content),
         RetryResult::Failed { last_error, .. } => {
@@ -822,7 +824,7 @@ where
     let start = Instant::now();
     let result = executor.execute(operation).await;
     let duration = start.elapsed();
-    
+
     match &result {
         RetryResult::Success(_) => {
             info!("{} succeeded after {:?}", operation_name, duration);
@@ -834,7 +836,7 @@ where
             error!("{} timeout after {} attempts", operation_name, attempts);
         }
     }
-    
+
     result
 }
 ```
@@ -919,14 +921,13 @@ tokio::time::sleep(Duration::from_millis(initial_delay)).await;
 - ✅ 最佳实践和故障排除指南
 
 **下一步推荐:**
+
 - 结合 [Circuit Breaker](./circuit_breaker_api.md) 使用
 - 配合 [Rate Limiter](./rate_limiter_api.md) 保护系统
 - 查看 [完整示例代码](../../examples/retry_strategy_complete_impl.rs)
 
 ---
 
-**文档贡献者:** AI Assistant  
-**审核状态:** ✅ 已完成  
+**文档贡献者:** AI Assistant
+**审核状态:** ✅ 已完成
 **代码覆盖率:** 100%
-
-

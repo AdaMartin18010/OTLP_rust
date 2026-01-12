@@ -1,7 +1,7 @@
 //! # Async Programming Best Practices with Rust 1.90
-//! 
+//!
 //! 全面的异步编程最佳实践示例，展示Tokio和async-std的高级用法
-//! 
+//!
 //! ## 涵盖主题
 //! - 异步任务管理（spawn, JoinSet, select）
 //! - 超时和取消
@@ -12,7 +12,7 @@
 //! - 通道（Channel）模式
 //! - 异步递归
 //! - 性能优化
-//! 
+//!
 //! ## Rust 1.90 特性
 //! - 改进的异步fn性能
 //! - 更好的编译时优化
@@ -426,12 +426,12 @@ fn async_fibonacci(n: u64) -> BoxFuture<'static, u64> {
         if n <= 1 {
             return n;
         }
-        
+
         let (a, b) = tokio::join!(
             async_fibonacci(n - 1),
             async_fibonacci(n - 2)
         );
-        
+
         a + b
     })
 }
@@ -444,13 +444,13 @@ fn async_fibonacci(n: u64) -> BoxFuture<'static, u64> {
 pub enum AsyncError {
     #[error("Timeout error")]
     Timeout,
-    
+
     #[error("Task panicked")]
     Panic,
-    
+
     #[error("Channel closed")]
     ChannelClosed,
-    
+
     #[error("Operation failed: {0}")]
     OperationFailed(String),
 }
@@ -467,7 +467,7 @@ pub async fn error_handling_patterns() -> Result<(), AsyncError> {
     ];
 
     let results = futures::future::join_all(tasks).await;
-    
+
     for (i, result) in results.into_iter().enumerate() {
         match result {
             Ok(Ok(value)) => info!("Task {} succeeded: {}", i, value),
@@ -504,7 +504,7 @@ pub async fn worker_pool_pattern() {
     for worker_id in 0..NUM_WORKERS {
         let mut work_rx = work_rx.clone();
         let result_tx = result_tx.clone();
-        
+
         tokio::spawn(async move {
             while let Some(work) = work_rx.recv().await {
                 info!("Worker {} processing {}", worker_id, work);
@@ -558,14 +558,14 @@ pub async fn request_coalescing() {
     for i in 0..10 {
         let (resp_tx, resp_rx) = oneshot::channel();
         let req_tx = req_tx.clone();
-        
+
         response_handles.push(tokio::spawn(async move {
             let request = format!("Request {}", i);
             if req_tx.send((request.clone(), resp_tx)).await.is_err() {
                 error!("Failed to send request");
                 return;
             }
-            
+
             match resp_rx.await {
                 Ok(response) => info!("Got response for {}: {}", request, response),
                 Err(_) => error!("Response channel closed"),
@@ -617,7 +617,7 @@ impl RequestBatcher {
 
     async fn process_batch(&self, batch: &mut Vec<(String, oneshot::Sender<String>)>) {
         info!("Processing batch of {} requests", batch.len());
-        
+
         for (request, response_tx) in batch.drain(..) {
             let response = format!("Processed: {}", request);
             let _ = response_tx.send(response);
@@ -638,7 +638,7 @@ pub async fn performance_optimization() {
     // 避免不必要的clone
     let data = Arc::new(vec![1, 2, 3, 4, 5]);
     let data_ref = data.clone(); // 只clone Arc指针
-    
+
     tokio::spawn(async move {
         info!("Shared data: {:?}", data_ref);
     }).await.ok();
@@ -682,7 +682,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     info!("🚀 Starting Async Programming Best Practices Demo");
-    
+
     // Part 1: Task Management
     basic_task_spawning().await;
     joinset_usage().await;
@@ -720,7 +720,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     performance_optimization().await;
 
     info!("✅ All examples completed successfully!");
-    
+
     Ok(())
 }
-

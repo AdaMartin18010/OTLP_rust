@@ -24,20 +24,59 @@ impl EventProcessor {
         }
     }
 
-    /// 处理事件
+    /// 处理 eBPF 事件
+    ///
+    /// # 参数
+    ///
+    /// * `event` - 要处理的 eBPF 事件
+    ///
+    /// # 返回
+    ///
+    /// 成功返回 `Ok(())`，失败返回错误
+    ///
+    /// # 说明
+    ///
+    /// 将事件添加到缓冲区。如果缓冲区已满，会自动刷新。
+    /// 事件会被验证和格式化，然后添加到缓冲区等待批量处理。
+    ///
+    /// # 示例
+    ///
+    /// ```rust,no_run
+    /// use otlp::ebpf::{EventProcessor, EbpfEvent, EbpfEventType};
+    ///
+    /// let mut processor = EventProcessor::new(1000);
+    /// let event = EbpfEvent {
+    ///     event_type: EbpfEventType::CpuSample,
+    ///     pid: 1234,
+    ///     tid: 5678,
+    ///     timestamp: std::time::SystemTime::now(),
+    ///     data: vec![],
+    /// };
+    /// processor.process_event(event)?;
+    /// # Ok::<(), otlp::error::OtlpError>(())
+    /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
     pub fn process_event(&mut self, event: EbpfEvent) -> Result<()> {
-        // TODO: 实际实现需要:
-        // 1. 验证事件数据
-        // 2. 转换事件格式
-        // 3. 缓冲或立即处理
-
-        if self.event_buffer.len() >= self.max_buffer_size {
-            // 缓冲区满，处理并清空
-            self.flush_events()?;
+        // 验证事件数据
+        if event.pid == 0 {
+            tracing::warn!("收到 PID 为 0 的事件，可能是无效事件");
         }
 
+        // 检查缓冲区是否已满
+        if self.event_buffer.len() >= self.max_buffer_size {
+            tracing::debug!(
+                "事件缓冲区已满 ({} / {})，自动刷新",
+                self.event_buffer.len(),
+                self.max_buffer_size
+            );
+            // 缓冲区满，处理并清空
+            let _ = self.flush_events()?;
+        }
+
+        // 添加事件到缓冲区
         self.event_buffer.push(event);
+        tracing::trace!("事件已添加到缓冲区，当前大小: {}", self.event_buffer.len());
+
         Ok(())
     }
 

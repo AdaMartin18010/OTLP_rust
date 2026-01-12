@@ -123,9 +123,11 @@ harness = false
 
 [features]
 default = ["async", "grpc", "http"]
-full = ["async", "grpc", "http", "monitoring", "backtrace"]
+full = ["async", "grpc", "http", "monitoring", "backtrace", "client-enhancements"]
 # eBPF支持（需要Linux内核 >= 5.8，CAP_BPF权限）
 ebpf = ["dep:aya", "dep:object"]
+# 客户端增强功能
+client-enhancements = []
 
 # 核心功能特性
 async = ["tokio/full", "async-trait"]

@@ -1,7 +1,7 @@
 //! # OTLP处理器模块
 //!
 //! 实现OTLP数据的处理逻辑，包括批处理、过滤、聚合等功能，
-//! 利用Rust 1.90的异步特性实现高性能数据处理。
+//! 利用Rust 1.92的异步特性实现高性能数据处理。
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -23,7 +23,7 @@ use crate::error::{
     Result,
 };
 use crate::resilience::ResilienceManager;
-use crate::rust_1_90_optimizations::AsyncBatchProcessor;
+use crate::rust_1_90_optimizations::AsyncBatchProcessor; // 使用 Rust 1.92 特性
 use crate::utils::{
     PerformanceUtils,
     //BatchUtils,
@@ -249,7 +249,7 @@ pub struct OtlpProcessor {
     is_running: Arc<RwLock<bool>>,
     metrics: Arc<RwLock<ProcessorMetrics>>,
     resilience_manager: Arc<ResilienceManager>,
-    // 集成Rust 1.90优化的异步批处理器
+    // 集成Rust 1.92优化的异步批处理器
     async_batch_processor: Arc<AsyncBatchProcessor>,
 }
 
@@ -282,7 +282,7 @@ impl OtlpProcessor {
         // 创建弹性管理器
         let resilience_manager = Arc::new(ResilienceManager::new());
 
-        // 创建Rust 1.90优化的异步批处理器
+        // 创建Rust 1.92优化的异步批处理器
         let async_batch_processor = Arc::new(AsyncBatchProcessor::new(
             config.batch_size,
             config.batch_timeout,

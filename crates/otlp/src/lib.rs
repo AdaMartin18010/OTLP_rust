@@ -17,16 +17,16 @@
 #![allow(clippy::overly_complex_bool_expr)]
 #![allow(clippy::const_is_empty)]
 #![allow(clippy::assertions_on_constants)]
-//! # OpenTelemetry Protocol (OTLP) Implementation for Rust 1.90
+//! # OpenTelemetry Protocol (OTLP) Implementation for Rust 1.92
 //!
-//! 本库提供了基于Rust 1.90语言特性的OpenTelemetry协议(OTLP)完整实现，
+//! 本库提供了基于Rust 1.92语言特性的OpenTelemetry协议(OTLP)完整实现，
 //! 支持同步和异步结合的遥测数据收集、处理和传输。
 //!
 //! ## 设计理念
 //!
 //! 本库基于以下核心设计理念构建：
 //!
-//! 1. **性能优先**: 利用Rust 1.90的性能特性，实现零拷贝、无锁并发的高性能处理
+//! 1. **性能优先**: 利用Rust 1.92的性能特性，实现零拷贝、无锁并发的高性能处理
 //! 2. **类型安全**: 利用Rust类型系统在编译时捕获错误，避免运行时异常
 //! 3. **异步优先**: 基于tokio异步运行时，支持高并发和低延迟处理
 //! 4. **可观测性**: 内置完整的监控、日志和指标收集机制
@@ -35,11 +35,11 @@
 //!
 //! ## 核心特性
 //!
-//! - **异步优先设计**: 利用Rust 1.90的async/await特性实现高性能异步处理
+//! - **异步优先设计**: 利用Rust 1.92的async/await特性实现高性能异步处理
 //! - **同步兼容**: 提供同步API接口，支持传统同步代码集成
 //! - **多传输协议**: 支持gRPC和HTTP/JSON两种OTLP传输方式
 //! - **类型安全**: 利用Rust类型系统确保编译时安全性
-//! - **零拷贝优化**: 使用Rust 1.90的内存管理特性优化性能
+//! - **零拷贝优化**: 使用Rust 1.92的内存管理特性优化性能
 //! - **并发安全**: 基于Rust的所有权系统实现无锁并发
 //! - **容错机制**: 实现熔断器、重试、负载均衡等容错模式
 //!
@@ -82,7 +82,7 @@
 //! - **连接池**: 连接复用和池化管理
 //!
 //! ### 2. 内存优化
-//! - **智能内存管理**: 基于Rust 1.90的内存管理特性
+//! - **智能内存管理**: 基于Rust 1.92的内存管理特性
 //! - **对象池**: 对象重用减少GC压力
 //! - **缓存优化**: 智能缓存策略和LRU淘汰
 //! - **内存映射**: 大文件的内存映射处理
@@ -300,8 +300,12 @@ pub mod ottl;
 // 优化和调优
 pub mod optimization;
 
-// Rust 1.90 特性优化
-pub mod rust_1_90_optimizations;
+// Rust 1.92 特性优化
+pub mod rust_1_90_optimizations; // 注意: 文件名保持兼容，但使用 Rust 1.92 特性
+
+// 客户端增强功能
+#[cfg(feature = "client-enhancements")]
+pub mod client_enhancements;
 
 // 基准测试
 pub mod benchmarks;
@@ -400,6 +404,12 @@ pub use processor::{OtlpProcessor, ProcessingConfig, ProcessorMetrics};
 pub use resilience::{ResilienceConfig, ResilienceError, ResilienceManager};
 pub use rust_1_90_optimizations::{
     AsyncBatchProcessor, AsyncClosureOptimizer, TupleCollectionOptimizer, ZeroCopyOptimizer,
+};
+
+// 客户端增强功能重新导出
+#[cfg(feature = "client-enhancements")]
+pub use client_enhancements::{
+    ClientPerformanceAnalyzer, ClientStatus, PerformanceAnalysis,
 };
 // 安全相关类型从advanced_security模块导出 (简化版本)
 pub use advanced_security::{
@@ -509,7 +519,7 @@ pub use performance_optimization_advanced::{
 
 // 版本信息
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const RUST_VERSION: &str = "1.90";
+pub const RUST_VERSION: &str = "1.92";
 
 #[cfg(test)]
 mod tests {
@@ -518,6 +528,6 @@ mod tests {
     #[test]
     fn test_version_info() {
         assert!(!VERSION.is_empty(), "VERSION should not be empty");
-        assert_eq!(RUST_VERSION, "1.90");
+        assert_eq!(RUST_VERSION, "1.92");
     }
 }

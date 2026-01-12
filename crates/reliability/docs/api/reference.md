@@ -3,7 +3,7 @@
 ## 📋 目录
 
 - [API 参考文档](#api-参考文档)
-  - [📊 目录](#-目录)
+  - [📋 目录](#-目录)
   - [核心模块](#核心模块)
     - [error\_handling](#error_handling)
       - [UnifiedError](#unifiederror)
@@ -426,4 +426,3 @@ pub fn name() -> &'static str
 ## 线程安全
 
 所有公共 API 都是线程安全的，可以在多线程环境中安全使用。
-

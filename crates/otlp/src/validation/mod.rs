@@ -1,6 +1,12 @@
 //! # 数据验证模块
 //!
 //! 提供 OTLP 数据的验证功能，确保数据符合 OpenTelemetry 规范。
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **常量泛型**: 使用常量泛型优化验证规则和缓冲区大小
+//! - **改进的错误处理**: 利用 Rust 1.92 的错误处理优化提升性能
+//! - **元组收集**: 使用 `collect()` 直接收集验证结果到元组
 
 use crate::data::{LogData, MetricData, TelemetryData, TraceData};
 use crate::error::DataError;

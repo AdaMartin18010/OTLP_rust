@@ -1,6 +1,6 @@
-//! Rust 1.90+ 新特性支持模块
+//! Rust 1.92+ 新特性支持模块
 //!
-//! 本模块展示了如何使用Rust 1.90的新特性，包括：
+//! 本模块展示了如何使用Rust 1.92的新特性，包括：
 //! - 异步闭包 (Async Closures)
 //! - 泛型关联类型 (Generic Associated Types)
 //! - 改进的错误处理
@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 /// 异步闭包示例
 ///
-/// 展示如何使用Rust 1.90的异步闭包特性
+    /// 展示如何使用Rust 1.92的异步闭包特性
 pub struct AsyncClosureExample;
 
 impl AsyncClosureExample {
@@ -99,7 +99,7 @@ impl AsyncClosureExample {
 
 /// 泛型关联类型示例
 ///
-/// 展示如何使用Rust 1.90的泛型关联类型特性
+/// 展示如何使用Rust 1.92的泛型关联类型特性
 pub trait GenericAssociatedTypeExample {
     /// 关联类型：操作结果
     type OperationResult<T>;
@@ -209,7 +209,7 @@ pub struct OperationMetadata {
     pub success: bool,
 }
 
-/// Rust 1.90 新特性演示器
+/// Rust 1.92 新特性演示器
 pub struct Rust190FeatureDemo {
     async_closure_example: AsyncClosureExample,
     reliability_service: ReliabilityService,
@@ -293,7 +293,7 @@ impl Default for Rust190FeatureDemo {
 
 /// 高级异步操作组合器
 ///
-/// 展示如何使用Rust 1.90的新特性创建更复杂的异步操作
+/// 展示如何使用Rust 1.92的新特性创建更复杂的异步操作
 pub struct AdvancedAsyncCombinator;
 
 impl AdvancedAsyncCombinator {

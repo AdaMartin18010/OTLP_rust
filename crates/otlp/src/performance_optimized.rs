@@ -1,6 +1,6 @@
 //! # 性能优化模块
 //!
-//! 基于Rust 1.90特性的性能优化实现，包括零拷贝、内存池、批量处理等
+//! 基于Rust 1.92特性的性能优化实现，包括零拷贝、内存池、批量处理等
 
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -10,7 +10,7 @@ use tokio::time::{interval, sleep};
 use crate::rust_1_90_optimizations::{OptimizedMemoryPool, ZeroCopyOptimizer};
 
 /// 高性能批处理器
-/// 
+///
 /// 使用零拷贝和内存池技术优化批量数据处理
 pub struct HighPerformanceBatchProcessor<T: Clone + Send + 'static> {
     batch_size: usize,
@@ -19,7 +19,7 @@ pub struct HighPerformanceBatchProcessor<T: Clone + Send + 'static> {
     semaphore: Arc<Semaphore>,
     last_flush: Arc<RwLock<Instant>>,
     processor: Arc<dyn BatchProcessor<T> + Send + Sync>,
-    // 集成Rust 1.90优化特性
+    // 集成Rust 1.92优化特性
     memory_pool: Arc<OptimizedMemoryPool<T>>,
     zero_copy_optimizer: Arc<ZeroCopyOptimizer>,
 }
@@ -37,13 +37,13 @@ impl<T: Clone + Send + Sync + 'static> HighPerformanceBatchProcessor<T> {
         max_concurrency: usize,
         processor: Arc<dyn BatchProcessor<T> + Send + Sync>,
     ) -> Self {
-        // 创建Rust 1.90优化的内存池和零拷贝优化器
+        // 创建Rust 1.92优化的内存池和零拷贝优化器
         let memory_pool = Arc::new(OptimizedMemoryPool::new(
             || std::default::Default::default(),
             batch_size * 2, // 预分配更多对象
         ));
         let zero_copy_optimizer = Arc::new(ZeroCopyOptimizer);
-        
+
         Self {
             batch_size,
             batch_timeout,
@@ -84,7 +84,7 @@ impl<T: Clone + Send + Sync + 'static> HighPerformanceBatchProcessor<T> {
             return Ok(());
         }
 
-        // 使用Rust 1.90的元组收集特性优化批处理
+        // 使用Rust 1.92的元组收集特性优化批处理
         let batch: Vec<T> = buffer.drain(..).collect();
         let processor = Arc::clone(&self.processor);
         let semaphore = Arc::clone(&self.semaphore);
@@ -130,7 +130,7 @@ impl<T: Clone + Send + Sync + 'static> HighPerformanceBatchProcessor<T> {
                 if should_flush {
                     let mut buffer = buffer.lock().await;
                     if !buffer.is_empty() {
-                        // 使用Rust 1.90的元组收集特性优化批处理
+                        // 使用Rust 1.92的元组收集特性优化批处理
                         let batch: Vec<T> = buffer.drain(..).collect();
                         let processor = Arc::clone(&processor);
                         let semaphore = Arc::clone(&semaphore);
@@ -152,7 +152,7 @@ impl<T: Clone + Send + Sync + 'static> HighPerformanceBatchProcessor<T> {
 }
 
 /// 内存池管理器
-/// 
+///
 /// 使用对象池技术减少内存分配和GC压力
 pub struct MemoryPool<T> {
     pool: Arc<Mutex<Vec<T>>>,
@@ -200,7 +200,7 @@ pub trait Reset {
 }
 
 /// 零拷贝字符串池
-/// 
+///
 /// 使用字符串池减少字符串分配和复制
 pub struct StringPool {
     pool: Arc<Mutex<Vec<String>>>,
@@ -233,7 +233,7 @@ impl StringPool {
 }
 
 /// 高性能计数器
-/// 
+///
 /// 使用无锁技术实现高性能计数器
 pub struct HighPerformanceCounter {
     counters: Arc<Vec<AtomicU64>>,
@@ -247,7 +247,7 @@ impl HighPerformanceCounter {
         let counters = (0..num_counters)
             .map(|_| AtomicU64::new(0))
             .collect::<Vec<_>>();
-        
+
         Self {
             counters: Arc::new(counters),
             mask: num_counters - 1,
@@ -276,7 +276,7 @@ impl HighPerformanceCounter {
 }
 
 /// 自适应批处理大小调整器
-/// 
+///
 /// 根据系统负载动态调整批处理大小
 pub struct AdaptiveBatchSizer {
     current_size: Arc<RwLock<usize>>,
@@ -315,14 +315,14 @@ impl AdaptiveBatchSizer {
     pub async fn adjust_size(&self, throughput: f64, latency: Duration) {
         let now = Instant::now();
         let last_adjustment = *self.last_adjustment.read().await;
-        
+
         if now.duration_since(last_adjustment) < self.adjustment_interval {
             return;
         }
 
         let mut current_size = self.current_size.write().await;
         let mut last_adjustment = self.last_adjustment.write().await;
-        
+
         // 基于吞吐量和延迟调整批处理大小
         let latency_ms = latency.as_millis() as f64;
         let adjustment = if latency_ms > 100.0 {
@@ -346,7 +346,7 @@ impl AdaptiveBatchSizer {
 }
 
 /// 性能监控器
-/// 
+///
 /// 监控系统性能指标并提供优化建议
 pub struct PerformanceMonitor {
     metrics: Arc<RwLock<PerformanceMetrics>>,
@@ -386,7 +386,7 @@ impl PerformanceMonitor {
     /// 记录请求
     pub async fn record_request(&self, success: bool, latency: Duration) {
         let mut metrics = self.metrics.write().await;
-        
+
         metrics.total_requests += 1;
         if success {
             metrics.successful_requests += 1;
@@ -481,13 +481,13 @@ mod tests {
     #[tokio::test]
     async fn test_memory_pool() {
         let pool = MemoryPool::new(|| String::new(), 10);
-        
+
         let s1 = pool.acquire().await;
         let s2 = pool.acquire().await;
-        
+
         pool.release(s1).await;
         pool.release(s2).await;
-        
+
         // 验证池中有对象
         let pool_internal = pool.pool.lock().await;
         assert_eq!(pool_internal.len(), 2);
@@ -496,13 +496,13 @@ mod tests {
     #[tokio::test]
     async fn test_string_pool() {
         let pool = StringPool::new(5);
-        
+
         let s1 = pool.get(100).await;
         let s2 = pool.get(200).await;
-        
+
         pool.put(s1).await;
         pool.put(s2).await;
-        
+
         // 验证池中有字符串
         let pool_internal = pool.pool.lock().await;
         assert_eq!(pool_internal.len(), 2);
@@ -511,11 +511,11 @@ mod tests {
     #[test]
     fn test_high_performance_counter() {
         let counter = HighPerformanceCounter::new(4);
-        
+
         counter.increment(1);
         counter.increment(1);
         counter.increment(2);
-        
+
         assert_eq!(counter.get(1), 2);
         assert_eq!(counter.get(2), 1);
     }
@@ -529,9 +529,9 @@ mod tests {
             0.1,
             Duration::from_millis(100),
         );
-        
+
         assert_eq!(sizer.get_current_size().await, 100);
-        
+
         // 模拟高延迟情况
         sizer.adjust_size(500.0, Duration::from_millis(200)).await;
         assert!(sizer.get_current_size().await < 100);
@@ -540,7 +540,7 @@ mod tests {
     #[tokio::test]
     async fn test_performance_monitor() {
         let monitor = PerformanceMonitor::new();
-        
+
         monitor.record_request(true, Duration::from_millis(10)).await;
         monitor.record_request(false, Duration::from_millis(20)).await;
     }

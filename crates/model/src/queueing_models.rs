@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
-// Rust 1.90 特性：使用常量泛型推断
+// Rust 1.92 特性：使用常量泛型推断
 /// 排队系统配置 - 使用常量泛型参数
 #[derive(Debug, Clone)]
 pub struct QueueConfig<const N: usize> {
@@ -34,10 +34,10 @@ impl<const N: usize> QueueConfig<N> {
     }
 }
 
-/// M/M/1 排队系统 - 使用 Rust 1.90 增强特性
+/// M/M/1 排队系统 - 使用 Rust 1.92 增强特性
 ///
 /// 实现经典的M/M/1排队模型，用于分析单服务器排队系统的性能。
-/// 利用 Rust 1.90 的新特性提供更好的类型安全和性能。
+/// 利用 Rust 1.92 的新特性提供更好的类型安全和性能。
 ///
 /// # 数学公式
 /// - 利用率: ρ = λ/μ
@@ -62,7 +62,7 @@ pub struct MM1Queue {
 }
 
 impl MM1Queue {
-    /// 创建新的M/M/1排队系统 - 使用 Rust 1.90 特性
+    /// 创建新的M/M/1排队系统 - 使用 Rust 1.92 特性
     ///
     /// # 参数
     /// - `arrival_rate`: 到达率 λ
@@ -79,7 +79,7 @@ impl MM1Queue {
         }
     }
 
-    /// 创建有限容量的排队系统 - 使用 Rust 1.90 特性
+    /// 创建有限容量的排队系统 - 使用 Rust 1.92 特性
     ///
     /// # 参数
     /// - `arrival_rate`: 到达率 λ
@@ -94,7 +94,7 @@ impl MM1Queue {
         }
     }
     
-    /// 使用配置创建排队系统 - 利用 Rust 1.90 的常量泛型推断
+    /// 使用配置创建排队系统 - 利用 Rust 1.92 的常量泛型推断
     pub fn from_config(config: QueueConfig<2>) -> Self {
         let [arrival_rate, service_rate] = config.parameters;
         Self {

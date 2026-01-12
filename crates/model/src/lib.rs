@@ -34,8 +34,8 @@ pub mod parallel_concurrent_models; // 并行并发模型 - Actor、CSP、共享
 pub mod program_design_models; // 程序设计模型 - 函数式、面向对象、响应式编程
 pub mod architecture_design_models; // 架构设计模型 - 分层、六边形、事件驱动架构
 
-// Rust 1.90 新特性模块
-pub mod rust_190_features; // Rust 1.90 新特性实现
+// Rust 1.92 新特性模块
+pub mod rust_190_features; // Rust 1.92 新特性实现
 
 // 现代机器学习模块
 pub mod modern_ml; // 现代机器学习库集成
@@ -109,7 +109,7 @@ pub use error::{
     Result as ModelResult,
 };
 
-// Rust 1.90 新特性重新导出
+// Rust 1.92 新特性重新导出
 pub use rust_190_features::{
     ModelConfig as Rust190ModelConfig, ParameterStatistics, DataProcessor, ProcessingResult, OptimizationEngine,
     AlgorithmType, OptimizationResult, OptimizedMatrix, ExternalModelChecker, ModelCheckResult,

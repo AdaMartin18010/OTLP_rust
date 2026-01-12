@@ -1,6 +1,6 @@
-//! Rust 1.90 特性优化模块
+//! Rust 1.92 特性优化模块
 //! 
-//! 本模块展示了如何利用 Rust 1.90 的新特性来优化中间件实现：
+//! 本模块展示了如何利用 Rust 1.92 的新特性来优化中间件实现：
 //! - 常量泛型推断
 //! - 生命周期语法一致性
 //! - 改进的异步编程模式
@@ -10,7 +10,7 @@ use crate::error::Result;
 use async_trait::async_trait;
 use std::sync::Arc;
 
-/// Rust 1.90 特性 1: 使用常量泛型优化连接池配置
+/// Rust 1.92 特性 1: 使用常量泛型优化连接池配置
 /// 
 /// 通过常量泛型参数提供编译时配置验证和内存优化
 #[derive(Debug)]
@@ -74,7 +74,7 @@ impl<const MAX_CONNECTIONS: usize, const TIMEOUT_MS: u64> OptimizedConnectionPoo
     }
 }
 
-/// 连接句柄，利用 Rust 1.90 的生命周期语法一致性
+/// 连接句柄，利用 Rust 1.92 的生命周期语法一致性
 pub struct ConnectionHandle {
     pool: Arc<OptimizedConnectionPool<10, 5000>>, // 默认配置
     created_at: std::time::Instant,
@@ -108,7 +108,7 @@ impl Drop for ConnectionHandle {
     }
 }
 
-/// Rust 1.90 特性 2: 类型安全的中间件类型系统
+/// Rust 1.92 特性 2: 类型安全的中间件类型系统
 /// 
 /// 使用枚举和模式匹配替代函数指针比较，避免不确定行为
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -170,7 +170,7 @@ impl MiddlewareType {
     }
 }
 
-/// Rust 1.90 特性 3: 改进的异步中间件接口
+/// Rust 1.92 特性 3: 改进的异步中间件接口
 /// 
 /// 利用 async fn in trait 和 GAT (Generic Associated Types)
 #[async_trait]
@@ -245,7 +245,7 @@ impl<const POOL_SIZE: usize, const TIMEOUT_MS: u64> MiddlewareConfig<POOL_SIZE, 
     }
 }
 
-/// Rust 1.90 特性 4: 高级错误处理优化
+/// Rust 1.92 特性 4: 高级错误处理优化
 /// 
 /// 利用 Result::flatten 和新的错误处理机制
 pub struct OptimizedErrorHandler;
@@ -260,7 +260,7 @@ impl OptimizedErrorHandler {
             .map(|op| op.map_err(|e| format!("操作失败: {}", e)))
             .collect();
         
-        // 使用 Rust 1.90 的错误处理改进
+        // 使用 Rust 1.92 的错误处理改进
         let mut success_results = Vec::new();
         let mut errors = Vec::new();
         
@@ -309,7 +309,7 @@ impl OptimizedErrorHandler {
     }
 }
 
-/// Rust 1.90 特性 5: 内存优化的缓冲区系统
+/// Rust 1.92 特性 5: 内存优化的缓冲区系统
 /// 
 /// 使用常量泛型优化内存使用模式
 #[derive(Debug)]
@@ -381,7 +381,7 @@ pub struct BufferStats {
     pub age: std::time::Duration,
 }
 
-/// Rust 1.90 特性 6: 性能监控和指标收集
+/// Rust 1.92 特性 6: 性能监控和指标收集
 /// 
 /// 利用常量泛型优化监控数据结构
 #[derive(Debug)]

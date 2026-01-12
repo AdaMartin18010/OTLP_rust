@@ -8,6 +8,7 @@ pub mod prelude {
         OptimizedConnectionPool, OptimizedMiddleware, MiddlewareType, MiddlewareConfig,
         OptimizedErrorHandler, OptimizedBuffer, PerformanceMonitor
     };
+    // 注意: 模块名保持 rust190_optimizations 以保持兼容性，但实际使用 Rust 1.92 特性
     pub use crate::benchmarks::{
         BenchmarkResult, OptimizedBenchmarker, MemoryMonitor, MemoryStats,
         ConcurrencyBenchmarker, BenchmarkSuite
@@ -16,7 +17,7 @@ pub mod prelude {
         AdvancedBenchmarker, AdvancedBenchmarkResult, AdvancedMemoryMonitor
     };
     pub use crate::glommio_runtime::{
-        RuntimeFactory, RuntimeType, RuntimeBenchmarker, 
+        RuntimeFactory, RuntimeType, RuntimeBenchmarker,
         RuntimeComparison, RuntimeBox
     };
     #[cfg(all(feature = "glommio", target_os = "linux"))]
@@ -25,6 +26,11 @@ pub mod prelude {
     pub use crate::glommio_runtime::TokioRuntime;
     pub use crate::kv::KeyValueStore;
     pub use crate::mq::mq::{MessageConsumer, MessageProducer};
+    #[cfg(feature = "reqwest")]
+    pub use crate::http_client::{
+        HttpClient, HttpClientBuilder, HttpClientConfig, HttpMethod, HttpRequest, HttpResponse,
+        ReqwestHttpClient,
+    };
 }
 
 pub mod config;
@@ -33,6 +39,7 @@ pub mod rust190_optimizations;
 pub mod benchmarks;
 pub mod advanced_benchmarks;
 pub mod glommio_runtime;
+pub mod http_client;
 pub mod kv;
 pub mod util;
 

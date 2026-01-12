@@ -31,6 +31,9 @@ rumqttc = { version = "0.25.0", optional = true }
 # pingora 已移除，存在安全漏洞 (RUSTSEC-2025-0037, RUSTSEC-2025-0070)
 nix = { version = "0.28.0", optional = true }
 
+# HTTP Client
+reqwest = { workspace = true, optional = true, default-features = false, features = ["json", "gzip", "brotli", "deflate"] }
+
 # High-performance async runtime
 glommio = { version = "0.8", optional = true, features = ["native-tls"] }
 
@@ -47,6 +50,7 @@ full = [
     "mq-kafka",
     "mq-mqtt",
     "proxy-nix",
+    "http-client",
     "tokio"
 ]
 
@@ -72,6 +76,7 @@ mq-nats = ["async-nats", "futures-util"]
 mq-kafka = ["rdkafka", "tokio"]
 mq-mqtt = ["rumqttc", "tokio"]
 proxy-nix = ["nix", "tokio"]
+http-client = ["reqwest", "tokio"]
 obs = ["tracing"]
 
 # Glommio-specific feature flags

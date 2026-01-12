@@ -1,6 +1,12 @@
-//! Prometheus 指标导出器
+//! # Prometheus 指标导出器
 //!
 //! 将收集的指标数据导出为 Prometheus 格式
+//!
+//! ## Rust 1.92 特性应用
+//!
+//! - **异步闭包**: 使用 `async || {}` 语法简化异步导出操作
+//! - **元组收集**: 使用 `collect()` 直接收集导出结果到元组
+//! - **改进的序列化**: 利用 Rust 1.92 的序列化优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -1,6 +1,6 @@
 //! # OTLP数据模型模块
 //!
-//! 定义OTLP协议的数据结构，支持Rust 1.90的类型系统特性。
+//! 定义OTLP协议的数据结构，支持Rust 1.92的类型系统特性。
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

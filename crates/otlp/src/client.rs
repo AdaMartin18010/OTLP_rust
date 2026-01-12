@@ -1,7 +1,7 @@
 //! # OTLP客户端模块
 //!
 //! 提供OTLP客户端的高级接口，整合处理器、导出器和传输层，
-//! 利用Rust 1.90的异步特性实现完整的OTLP功能。
+//! 利用Rust 1.92的异步特性实现完整的OTLP功能。
 use crate::config::OtlpConfig;
 use crate::config::TransportProtocol;
 use crate::data::TelemetryData;
@@ -258,7 +258,7 @@ impl OtlpClient {
         let filtered: Vec<_> = if (self.config.sampling_ratio - 1.0).abs() < f64::EPSILON {
             data
         } else {
-            // 使用Rust 1.90的元组收集特性优化客户端数据收集
+            // 使用Rust 1.92的元组收集特性优化客户端数据收集
             data.into_iter()
                 .filter(|d| {
                     let ratio = self.effective_sampling_ratio_for(d);

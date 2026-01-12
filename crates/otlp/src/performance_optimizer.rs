@@ -1,6 +1,6 @@
-//! 性能优化器模块 - Rust 1.90 高性能优化
-//! 
-//! 本模块实现了基于Rust 1.90最新特性的高性能优化功能，
+//! 性能优化器模块 - Rust 1.92 高性能优化
+//!
+//! 本模块实现了基于Rust 1.92最新特性的高性能优化功能，
 //! 包括SIMD优化、内存池管理、并发优化等。
 
 use std::collections::HashMap;
@@ -59,7 +59,7 @@ impl<T: Default + Clone + Send + 'static> HighPerformanceMemoryPool<T> {
     /// 从池中获取对象
     pub async fn acquire(&self) -> Result<PooledObject<T>> {
         let _permit = self.semaphore.acquire().await?;
-        
+
         for pool in &self.pools {
             let mut pool_guard = pool.lock().await;
             if let Some(obj) = pool_guard.pop() {
@@ -137,7 +137,7 @@ impl<T: Send + Default + 'static> Drop for PooledObject<T> {
             // 使用 take() 获取默认值,而不是 zeroed()
             let obj = std::mem::take(&mut self.inner);
             self.stats.total_deallocations.fetch_add(1, Ordering::Relaxed);
-            
+
             tokio::spawn(async move {
                 if let Ok(mut pool_guard) = pool.try_lock() {
                     if pool_guard.len() < pool_guard.capacity() {
@@ -225,7 +225,7 @@ impl SimdOptimizer {
         while let Some(result) = join_set.join_next().await {
             let (chunk_results, processing_time) = result?;
             results.extend(chunk_results);
-            
+
             // 计算性能增益（模拟）
             let expected_time = Duration::from_micros(results.len() as u64 * 100);
             if processing_time < expected_time {
@@ -332,7 +332,7 @@ impl ConcurrencyOptimizer {
         R: Send + 'static,
     {
         let mut handles = Vec::with_capacity(tasks.len());
-        
+
         for task in tasks {
             let handle = self.submit_task(task).await?;
             handles.push(handle);
@@ -650,16 +650,16 @@ mod tests {
     async fn test_memory_pool() {
         // 使用更小的池大小避免栈溢出
         let pool = HighPerformanceMemoryPool::<String>::new(2, 2);
-        
+
         // 测试获取和释放对象
         let obj1 = pool.acquire().await
             .expect("Failed to acquire first object from pool");
         let obj2 = pool.acquire().await
             .expect("Failed to acquire second object from pool");
-        
+
         assert_eq!(obj1.get(), "");
         assert_eq!(obj2.get(), "");
-        
+
         // 获取统计信息
         let stats = pool.get_stats();
         assert_eq!(stats.total_allocations, 2);
@@ -668,7 +668,7 @@ mod tests {
     #[tokio::test]
     async fn test_simd_optimizer() {
         let optimizer = SimdOptimizer::new(5);
-        
+
         // 创建测试数据
         let test_data = vec![
             TelemetryData {
@@ -700,7 +700,7 @@ mod tests {
     #[tokio::test]
     async fn test_concurrency_optimizer() {
         let optimizer = ConcurrencyOptimizer::new(5);
-        
+
         // 测试任务提交
         let handle = optimizer.submit_task(|| {
             42
@@ -720,7 +720,7 @@ mod tests {
     #[tokio::test]
     async fn test_comprehensive_optimizer() {
         let optimizer = ComprehensivePerformanceOptimizer::new();
-        
+
         // 创建测试数据
         let test_data = vec![
             TelemetryData {

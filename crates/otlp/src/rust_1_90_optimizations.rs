@@ -1,6 +1,6 @@
-//! # Rust 1.90 Edition=2024 特性优化实现
+//! # Rust 1.92 Edition=2024 特性优化实现
 //!
-//! 本模块展示了如何在OTLP项目中使用Rust 1.90 edition=2024的新特性
+//! 本模块展示了如何在OTLP项目中使用Rust 1.92 edition=2024的新特性
 //! 包括异步闭包、元组收集、性能优化等
 
 use anyhow::Result;
@@ -14,7 +14,7 @@ use tokio::sync::Mutex;
 
 /// 异步闭包优化示例
 ///
-/// 展示如何使用Rust 1.90的新异步闭包特性替代BoxFuture
+/// 展示如何使用Rust 1.92的新异步闭包特性替代BoxFuture
 pub struct AsyncClosureOptimizer {
     // 使用新的异步闭包特性，不再需要BoxFuture
 }
@@ -29,7 +29,7 @@ impl AsyncClosureOptimizer {
         f().await.map_err(|e| e.into())
     }
 
-    /// 优化后：使用Rust 1.90异步闭包特性的版本
+    /// 优化后：使用Rust 1.92异步闭包特性的版本（Rust 1.92 新特性）
     ///
     /// 优势：
     /// 1. 更简洁的类型签名
@@ -101,7 +101,7 @@ pub enum CircuitState {
 
 /// 元组收集优化示例
 ///
-/// 展示如何使用Rust 1.90的元组FromIterator特性
+/// 展示如何使用Rust 1.92的元组FromIterator特性
 pub struct TupleCollectionOptimizer;
 
 impl TupleCollectionOptimizer {
@@ -121,7 +121,7 @@ impl TupleCollectionOptimizer {
         (successful, failed)
     }
 
-    /// 优化后：使用Rust 1.90的元组收集特性
+    /// 优化后：使用Rust 1.92的元组收集特性
     ///
     /// 优势：
     /// 1. 单次迭代完成收集
@@ -142,7 +142,7 @@ impl TupleCollectionOptimizer {
         &self,
         data: Vec<(String, i32, bool)>,
     ) -> (HashMap<String, i32>, Vec<bool>, Vec<String>) {
-        // 使用Rust 1.90的元组收集特性，同时收集到三个不同的集合
+        // 使用Rust 1.92的元组收集特性，同时收集到三个不同的集合
         let (names, values, flags): (Vec<_>, Vec<_>, Vec<_>) = data
             .into_iter()
             .map(|(name, value, flag)| (name, value, flag))
@@ -208,7 +208,7 @@ impl ZeroCopyOptimizer {
 
 /// 高性能对象池优化
 ///
-/// 利用Rust 1.90的内存优化特性
+/// 利用Rust 1.92的内存优化特性
 pub struct OptimizedMemoryPool<T: Clone> {
     pool: Arc<Mutex<Vec<T>>>,
     factory: Arc<dyn Fn() -> T + Send + Sync>,
@@ -319,7 +319,7 @@ impl<T: Clone + Send + 'static> Drop for PooledObject<T> {
 
 /// 异步批处理优化
 ///
-/// 使用Rust 1.90的新特性优化批处理逻辑
+/// 使用Rust 1.92的新特性优化批处理逻辑
 pub struct AsyncBatchProcessor {
     batch_size: usize,
     #[allow(dead_code)]

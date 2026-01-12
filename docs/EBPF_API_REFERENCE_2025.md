@@ -32,6 +32,8 @@
     - [推荐采样频率](#推荐采样频率)
     - [推荐持续时间](#推荐持续时间)
     - [配置验证](#配置验证-1)
+  - [OpenTelemetry 集成 API](#opentelemetry-集成-api)
+    - [EbpfOtlpConverter](#ebpfotlpconverter)
   - [错误处理](#错误处理)
     - [EbpfError](#ebpferror)
   - [参考资源](#参考资源)
@@ -67,10 +69,10 @@ pub struct EbpfConfig {
 - `new() -> Self` - 创建新配置
 - `with_sample_rate(rate: u32) -> Self` - 设置采样频率
 - `with_duration(duration: Duration) -> Self` - 设置持续时间
-- `with_cpu_profiling(enabled: bool) -> Self` - 启用/禁用 CPU 性能分析
-- `with_network_tracing(enabled: bool) -> Self` - 启用/禁用网络追踪
-- `with_syscall_tracing(enabled: bool) -> Self` - 启用/禁用系统调用追踪
-- `with_memory_tracing(enabled: bool) -> Self` - 启用/禁用内存追踪
+- `with_enable_cpu_profiling(enabled: bool) -> Self` - 启用/禁用 CPU 性能分析
+- `with_enable_network_tracing(enabled: bool) -> Self` - 启用/禁用网络追踪
+- `with_enable_syscall_tracing(enabled: bool) -> Self` - 启用/禁用系统调用追踪
+- `with_enable_memory_tracing(enabled: bool) -> Self` - 启用/禁用内存追踪
 - `with_max_samples(max: usize) -> Self` - 设置最大采样数
 - `validate() -> Result<()>` - 验证配置
 
@@ -427,6 +429,51 @@ use otlp::ebpf::{EbpfConfig, validate_config};
 let config = EbpfConfig::default();
 validate_config(&config)?;
 ```
+
+---
+
+## OpenTelemetry 集成 API
+
+### EbpfOtlpConverter
+
+eBPF 事件到 OpenTelemetry 的转换器。
+
+```rust
+use otlp::ebpf::{EbpfOtlpConverter, EbpfEvent};
+use opentelemetry::trace::Tracer;
+use opentelemetry::metrics::Meter;
+
+// 创建转换器
+let converter = EbpfOtlpConverter::new()
+    .with_tracer(tracer)
+    .with_meter(meter);
+
+// 检查配置
+if converter.is_configured() {
+    // 转换单个事件到 Span
+    let span = converter.convert_event_to_span(&event)?;
+
+    // 转换单个事件到 Metric
+    converter.convert_event_to_metric(&event)?;
+
+    // 批量转换事件
+    let (spans, metric_count) = converter.convert_events_batch(&events)?;
+
+    // 转换 Profile 到 OTLP
+    converter.convert_profile_to_otlp(&profile)?;
+}
+```
+
+**方法**:
+
+- `new() -> Self` - 创建新转换器
+- `with_tracer(tracer: Tracer) -> Self` - 设置 Tracer
+- `with_meter(meter: Meter) -> Self` - 设置 Meter
+- `convert_event_to_span(&self, event: &EbpfEvent) -> Result<Option<Span>>` - 转换事件到 Span
+- `convert_event_to_metric(&self, event: &EbpfEvent) -> Result<()>` - 转换事件到 Metric
+- `convert_events_batch(&self, events: &[EbpfEvent]) -> Result<(Vec<Span>, u64)>` - 批量转换事件
+- `convert_profile_to_otlp(&self, profile: &PprofProfile) -> Result<()>` - 转换 Profile 到 OTLP
+- `is_configured(&self) -> bool` - 检查转换器是否已配置
 
 ---
 

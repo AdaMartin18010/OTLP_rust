@@ -1,11 +1,11 @@
-//! Rust 1.90 新特性实现模块
+//! Rust 1.92 新特性实现模块
 //!
-//! 本模块展示了如何利用 Rust 1.90 的新特性来增强模型实现，
+//! 本模块展示了如何利用 Rust 1.92 的新特性来增强模型实现，
 //! 包括常量泛型推断、生命周期优化、函数指针安全等。
 
 use serde::{Deserialize, Serialize};
 
-/// Rust 1.90 常量泛型推断示例
+/// Rust 1.92 常量泛型推断示例
 /// 
 /// 利用 `generic_arg_infer` 特性，允许在泛型参数中显式使用 `_` 来推断常量参数
 #[derive(Debug, Clone)]
@@ -73,7 +73,7 @@ pub struct ParameterStatistics {
     pub max: f64,
 }
 
-/// Rust 1.90 生命周期优化示例
+/// Rust 1.92 生命周期优化示例
 /// 
 /// 利用改进的生命周期语法一致性检查
 pub struct DataProcessor<'a> {
@@ -123,7 +123,7 @@ pub struct ProcessingResult<'a> {
     pub processor_id: u32,
 }
 
-/// Rust 1.90 函数指针安全示例
+/// Rust 1.92 函数指针安全示例
 /// 
 /// 利用 `unpredictable_function_pointer_comparisons` lint 增强函数指针安全性
 pub struct OptimizationEngine {
@@ -301,7 +301,7 @@ pub struct OptimizationResult {
     pub converged: bool,
 }
 
-/// Rust 1.90 标准库 API 增强示例
+/// Rust 1.92 标准库 API 增强示例
 /// 
 /// 利用新的标准库 API 进行进程间通信
 pub struct ExternalModelChecker {
@@ -363,7 +363,7 @@ pub struct PropertyResult {
     pub counterexample: Option<Vec<String>>,
 }
 
-/// Rust 1.90 编译器优化示例
+/// Rust 1.92 编译器优化示例
 /// 
 /// 利用编译时优化提升性能
 pub struct OptimizedMatrix<const ROWS: usize, const COLS: usize> {
@@ -440,7 +440,7 @@ impl<const ROWS: usize, const COLS: usize> Default for OptimizedMatrix<ROWS, COL
     }
 }
 
-/// Rust 1.90 特性演示和测试
+/// Rust 1.92 特性演示和测试
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -523,4 +523,3 @@ mod tests {
         assert!((q25 - 3.25).abs() < 1e-10);
     }
 }
-

@@ -358,4 +358,225 @@ mod tests {
         let result = profiler.stop();
         assert!(result.is_err());
     }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_event_processor_buffer_management() {
+        let mut processor = super::events::EventProcessor::new(5);
+
+        // 添加事件直到缓冲区满
+        for i in 0..5 {
+            let event = EbpfEvent::new(
+                EbpfEventType::CpuSample,
+                1000 + i,
+                2000 + i,
+                vec![i as u8],
+            );
+            assert!(processor.process_event(event).is_ok());
+        }
+
+        assert_eq!(processor.event_count(), 5);
+        assert!(processor.is_full());
+
+        // 添加更多事件应该触发刷新
+        let event = EbpfEvent::new(EbpfEventType::NetworkPacket, 1005, 2005, vec![5]);
+        assert!(processor.process_event(event).is_ok());
+        
+        // 缓冲区应该被刷新，新事件被添加
+        assert_eq!(processor.event_count(), 1);
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_event_processor_clear() {
+        let mut processor = super::events::EventProcessor::new(100);
+
+        // 添加一些事件
+        for i in 0..10 {
+            let event = EbpfEvent::new(
+                EbpfEventType::CpuSample,
+                1000 + i,
+                2000 + i,
+                vec![i as u8],
+            );
+            processor.process_event(event).unwrap();
+        }
+
+        assert_eq!(processor.event_count(), 10);
+
+        // 清空缓冲区
+        processor.clear();
+        assert_eq!(processor.event_count(), 0);
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_maps_manager_registration() {
+        let mut manager = super::maps::MapsManager::new();
+
+        // 注册多个 Maps
+        manager.register_map("map1".to_string(), super::maps::MapType::Hash, 4, 8);
+        manager.register_map("map2".to_string(), super::maps::MapType::Array, 8, 16);
+        manager.register_map("map3".to_string(), super::maps::MapType::PerfEvent, 4, 4);
+
+        assert_eq!(manager.map_count(), 3);
+
+        // 获取 Map 信息
+        let info1 = manager.get_map_info("map1");
+        assert!(info1.is_some());
+        assert_eq!(info1.unwrap().map_type, super::maps::MapType::Hash);
+        assert_eq!(info1.unwrap().key_size, 4);
+        assert_eq!(info1.unwrap().value_size, 8);
+
+        // 列出所有 Maps
+        let maps = manager.list_maps();
+        assert_eq!(maps.len(), 3);
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_loader_program_validation() {
+        let config = EbpfConfig::default();
+        let loader = super::loader::EbpfLoader::new(config);
+
+        // 测试空程序
+        assert!(loader.validate_program(&[]).is_err());
+
+        // 测试过短程序
+        assert!(loader.validate_program(&[1, 2, 3]).is_err());
+
+        // 测试有效 ELF 格式
+        let mut valid_program = vec![0x7F, b'E', b'L', b'F'];
+        valid_program.extend(vec![0; 100]);
+        assert!(loader.validate_program(&valid_program).is_ok());
+
+        // 测试无效格式
+        let invalid_program = vec![0xFF, 0xFF, 0xFF, 0xFF];
+        assert!(loader.validate_program(&invalid_program).is_err());
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_probe_manager_list_and_count() {
+        let mut manager = super::probes::ProbeManager::new();
+
+        // 添加多个探针
+        manager.attach_kprobe("kprobe1", "func1").unwrap();
+        manager.attach_uprobe("uprobe1", "/bin/test", "symbol1").unwrap();
+        manager.attach_tracepoint("tp1", "syscalls", "sys_enter_open").unwrap();
+
+        assert_eq!(manager.probe_count(), 3);
+
+        // 列出探针
+        let probes = manager.list_probes();
+        assert_eq!(probes.len(), 3);
+        assert_eq!(probes[0].0, "kprobe1");
+        assert_eq!(probes[1].0, "uprobe1");
+        assert_eq!(probes[2].0, "tp1");
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_probe_manager_detach_specific() {
+        let mut manager = super::probes::ProbeManager::new();
+
+        manager.attach_kprobe("kprobe1", "func1").unwrap();
+        manager.attach_kprobe("kprobe2", "func2").unwrap();
+
+        assert_eq!(manager.probe_count(), 2);
+
+        // 分离指定探针
+        assert!(manager.detach("kprobe1").is_ok());
+        assert_eq!(manager.probe_count(), 1);
+
+        // 分离不存在的探针应该失败
+        assert!(manager.detach("nonexistent").is_err());
+    }
+
+    #[test]
+    fn test_ebpf_config_validation() {
+        let config = EbpfConfig::default();
+        assert!(config.validate().is_ok());
+
+        // 测试无效配置
+        let mut invalid_config = EbpfConfig::default();
+        invalid_config.sample_rate = 0;
+        assert!(invalid_config.validate().is_err());
+
+        invalid_config = EbpfConfig::default();
+        invalid_config.max_samples = 0;
+        assert!(invalid_config.validate().is_err());
+    }
+
+    #[test]
+    fn test_ebpf_config_builder_chain() {
+        let config = EbpfConfig::new()
+            .with_sample_rate(50)
+            .with_duration(std::time::Duration::from_secs(120))
+            .with_enable_cpu_profiling(true)
+            .with_enable_network_tracing(true)
+            .with_enable_syscall_tracing(false)
+            .with_enable_memory_tracing(false)
+            .with_max_samples(50000);
+
+        assert_eq!(config.sample_rate, 50);
+        assert_eq!(config.duration.as_secs(), 120);
+        assert!(config.enable_cpu_profiling);
+        assert!(config.enable_network_tracing);
+        assert!(!config.enable_syscall_tracing);
+        assert!(!config.enable_memory_tracing);
+        assert_eq!(config.max_samples, 50000);
+    }
+
+    #[test]
+    fn test_ebpf_error_display() {
+        use crate::ebpf::error::EbpfError;
+
+        let error1 = EbpfError::UnsupportedPlatform;
+        assert!(error1.to_string().contains("Linux"));
+
+        let error2 = EbpfError::LoadFailed("测试错误".to_string());
+        assert!(error2.to_string().contains("测试错误"));
+
+        let error3 = EbpfError::AttachFailed("附加失败".to_string());
+        assert!(error3.to_string().contains("附加失败"));
+    }
+
+    #[test]
+    fn test_ebpf_error_conversion() {
+        use crate::ebpf::error::EbpfError;
+        use crate::error::OtlpError;
+
+        let ebpf_error = EbpfError::UnsupportedPlatform;
+        let otlp_error: OtlpError = ebpf_error.into();
+        
+        // 验证错误已转换
+        match otlp_error {
+            OtlpError::Processing(_) => {},
+            _ => panic!("错误类型不匹配"),
+        }
+    }
+
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    #[test]
+    fn test_integration_converter_batch() {
+        use super::integration::EbpfOtlpConverter;
+        use crate::ebpf::types::{EbpfEvent, EbpfEventType};
+
+        let converter = EbpfOtlpConverter::new();
+        
+        // 测试未配置的转换器
+        assert!(!converter.is_configured());
+
+        // 创建测试事件
+        let events = vec![
+            EbpfEvent::new(EbpfEventType::CpuSample, 1000, 2000, vec![1, 2, 3]),
+            EbpfEvent::new(EbpfEventType::NetworkPacket, 1001, 2001, vec![4, 5, 6]),
+        ];
+
+        // 批量转换（无 Tracer/Meter 时应该返回空）
+        let (spans, metric_count) = converter.convert_events_batch(&events).unwrap();
+        assert_eq!(spans.len(), 0);
+        assert_eq!(metric_count, 2);
+    }
 }
