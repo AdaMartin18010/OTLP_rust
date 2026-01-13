@@ -1,4 +1,4 @@
-# c12_model - Rust 1.90 建模与形式方法
+# c12_model - Rust 1.92 建模与形式方法
 
 ## 🎯 2025-10-22 文档标准化完成 ✨
 
@@ -31,22 +31,22 @@
 
 - **📊 [知识图谱与概念关系](./docs/theory_enhanced/KNOWLEDGE_GRAPH_AND_CONCEPT_RELATIONS.md)** - 建模与形式方法完整体系
 - **📐 [多维矩阵对比分析](./docs/theory_enhanced/MULTI_DIMENSIONAL_COMPARISON_MATRIX.md)** - 形式化/分布式/并发模型全面对比
-- **🗺️ [Rust 1.90 综合思维导图](./docs/RUST_190_COMPREHENSIVE_MINDMAP.md)** ⭐ NEW!
+- **🗺️ [Rust 1.92 综合思维导图](./docs/RUST_192_COMPREHENSIVE_MINDMAP.md)** ⭐ NEW!
   - 形式语义/分布式/并发模型 | 学习路径(1-6周)
-- **💻 [Rust 1.90 实战示例集](./docs/RUST_190_EXAMPLES_COLLECTION.md)** ⭐ NEW!
+- **💻 [Rust 1.92 实战示例集](./docs/RUST_192_EXAMPLES_COLLECTION.md)** ⭐ NEW!
   - 650+行代码 | Raft/向量时钟/CSP/Actor模型
 
 **完整度**: 📊 知识图谱 + 📐 多维矩阵 + 🗺️ 思维导图 + 💻 实战示例 = **100%** ✨
 
 ---
 
-[![Rust](https://img.shields.io/badge/rust-1.90+-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.92+-orange.svg)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Crates.io](https://img.shields.io/crates/v/c18_model.svg)](https://crates.io/crates/c18_model)
 [![Documentation](https://docs.rs/c18_model/badge.svg)](https://docs.rs/c18_model)
 
-一个基于 Rust 1.90 的现代化建模与形式方法库，聚焦核心建模技术，涵盖排队论、机器学习、形式化方法、数学建模、性能模型、**高级流量控制**、分布式系统、微服务架构等。
-项目采用最小稳定内核设计，充分利用 Rust 1.90 的新特性，便于学习与集成，同时提供完整的理论背景和实践指导。
+一个基于 Rust 1.92 的现代化建模与形式方法库，聚焦核心建模技术，涵盖排队论、机器学习、形式化方法、数学建模、性能模型、**高级流量控制**、分布式系统、微服务架构等。
+项目采用最小稳定内核设计，充分利用 Rust 1.92 的新特性，便于学习与集成，同时提供完整的理论背景和实践指导。
 
 ## 🆕 最新更新 (v0.3.0 - 综合完整版) 🎉
 
@@ -869,7 +869,7 @@ println!("100以内的素数: {:?}", primes);
 
 ## 🚀 主要特性
 
-### 🔧 Rust 1.90 语言特性集成
+### 🔧 Rust 1.92 语言特性集成
 
 - **显式推断的常量参数稳定化** - 在模型配置中使用 `_` 进行常量参数推断
 - **生命周期语法一致性检查** - 在模型生命周期管理中应用明确的生命周期标注
@@ -1268,7 +1268,7 @@ export PLOT_RESOLUTION="300"
 export PLOT_THEME="default"
 ```
 
-## 🧭 新增文档导航（Rust 1.90 并发/语义/算法/架构）
+## 🧭 新增文档导航（Rust 1.92 并发/语义/算法/架构）
 
 - 并发/异步：`docs/concurrency/async-sync-classification.md`
 - 背压模型：`docs/concurrency/backpressure-models.md`

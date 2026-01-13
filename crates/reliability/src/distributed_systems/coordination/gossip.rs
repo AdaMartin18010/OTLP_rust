@@ -384,7 +384,39 @@ impl GossipNode {
                         }
                     };
 
-                    // TODO: Actually send the message over the network
+                    // 注意: 实际发送消息到网络需要:
+                    // 1. 使用 RPC 客户端或 HTTP 客户端发送消息
+                    //    示例（使用 reqwest）:
+                    //       let client = reqwest::Client::new();
+                    //       let url = format!("http://{}/gossip", peer.address);
+                    //       let response = client.post(&url)
+                    //           .json(&message)
+                    //           .send()
+                    //           .await?;
+                    //
+                    // 2. 处理网络错误和重试:
+                    //    a. 设置超时
+                    //    b. 实现指数退避重试
+                    //    c. 处理网络分区和节点故障
+                    //
+                    // 3. 使用异步并发发送（提高性能）:
+                    //    示例:
+                    //       let futures: Vec<_> = selected_peers.iter()
+                    //           .map(|peer| {
+                    //               let client = client.clone();
+                    //               let message = message.clone();
+                    //               async move {
+                    //                   let url = format!("http://{}/gossip", peer.address);
+                    //                   client.post(&url).json(&message).send().await
+                    //               }
+                    //           })
+                    //           .collect();
+                    //       let results = futures::future::join_all(futures).await;
+                    //
+                    // 4. 记录发送结果:
+                    //    a. 更新统计信息（成功/失败计数）
+                    //    b. 记录错误日志
+                    //
                     // For now, just update stats
                     let mut stats_guard = stats.write().await;
                     stats_guard.messages_sent += 1;
@@ -428,7 +460,49 @@ impl GossipNode {
                 // Create pull request with digest
                 let _message = GossipMessage::new_pull(config.node_id.clone(), digest);
 
-                // TODO: Send pull request and reconcile differences
+                // 注意: 发送 pull 请求和协调差异需要:
+                // 1. 发送 pull 请求到选定的 peer:
+                //    示例（使用 reqwest）:
+                //       let client = reqwest::Client::new();
+                //       let url = format!("http://{}/gossip/pull", peer.address);
+                //       let response = client.post(&url)
+                //           .json(&message)
+                //           .send()
+                //           .await?;
+                //
+                // 2. 接收响应并解析差异:
+                //    a. 解析响应中的差异数据
+                //    b. 比较本地数据和远程数据
+                //    示例:
+                //       let remote_data: HashMap<String, Vec<u8>> = response.json().await?;
+                //       let local_data = data_store.read().await;
+                //       let differences = Self::find_differences(&local_data, &remote_data);
+                //
+                // 3. 协调差异:
+                //    a. 对于本地缺失的数据，从远程拉取
+                //    b. 对于远程缺失的数据，推送到远程
+                //    c. 对于冲突的数据，应用冲突解决策略（LWW、版本向量等）
+                //    示例:
+                //       for (key, remote_value) in differences.missing_locally {
+                //           data_store.write().await.insert(key, remote_value);
+                //       }
+                //       for (key, local_value) in differences.missing_remotely {
+                //           // 发送 push 请求
+                //       }
+                //       for (key, conflict) in differences.conflicts {
+                //           let resolved = Self::resolve_conflict(conflict.local, conflict.remote)?;
+                //           data_store.write().await.insert(key, resolved);
+                //       }
+                //
+                // 4. 处理错误和超时:
+                //    a. 设置超时
+                //    b. 实现重试机制
+                //    c. 处理网络分区
+                //
+                // 5. 更新统计信息:
+                //    a. 记录协调的键值对数量
+                //    b. 记录冲突数量
+                //    c. 更新反熵轮次计数
 
                 let mut stats_guard = stats.write().await;
                 stats_guard.anti_entropy_rounds += 1;

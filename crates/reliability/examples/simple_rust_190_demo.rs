@@ -1,6 +1,6 @@
-//! 简化的 Rust 1.90+ 新特性演示
+//! 简化的 Rust 1.92+ 新特性演示
 //!
-//! 本示例展示了reliability库中的Rust 1.90新特性支持
+//! 本示例展示了reliability库中的Rust 1.92新特性支持
 
 use reliability::prelude::*;
 //use std::time::Duration;
@@ -10,7 +10,7 @@ async fn main() -> Result<(), UnifiedError> {
     // 初始化日志
     tracing_subscriber::fmt::init();
 
-    println!("🚀 Rust 1.90+ 新特性演示");
+    println!("🚀 Rust 1.92+ 新特性演示");
     println!("================================");
 
     // 演示基本功能
@@ -29,7 +29,7 @@ async fn demonstrate_basic_features() -> Result<(), UnifiedError> {
     println!("-------------------");
 
     // 创建演示器
-    let demo = Rust190FeatureDemo::new();
+    let demo = Rust192FeatureDemo::new();
 
     // 演示泛型关联类型
     let operation_result = demo.demonstrate_generic_associated_types();

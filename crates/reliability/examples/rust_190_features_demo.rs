@@ -1,6 +1,6 @@
-//! Rust 1.90+ 新特性演示
+//! Rust 1.92+ 新特性演示
 //!
-//! 本示例展示了如何使用reliability库中的Rust 1.90新特性支持
+//! 本示例展示了如何使用reliability库中的Rust 1.92新特性支持
 
 use reliability::prelude::*;
 use std::future::Future;
@@ -12,7 +12,7 @@ async fn main() -> Result<(), UnifiedError> {
     // 初始化日志
     tracing_subscriber::fmt::init();
 
-    println!("🚀 Rust 1.90+ 新特性演示");
+    println!("🚀 Rust 1.92+ 新特性演示");
     println!("================================");
 
     // 演示异步闭包特性
@@ -36,7 +36,7 @@ async fn demonstrate_async_closures() -> Result<(), UnifiedError> {
     println!("\n📦 异步闭包特性演示");
     println!("-------------------");
 
-    let demo = Rust190FeatureDemo::new();
+    let demo = Rust192FeatureDemo::new();
 
     // 演示批量异步操作
     let results = demo.demonstrate_async_closures().await?;
@@ -61,7 +61,7 @@ fn demonstrate_generic_associated_types() -> Result<(), UnifiedError> {
     println!("\n🔧 泛型关联类型特性演示");
     println!("------------------------");
 
-    let demo = Rust190FeatureDemo::new();
+    let demo = Rust192FeatureDemo::new();
 
     // 演示操作结果
     let operation_result = demo.demonstrate_generic_associated_types();

@@ -2,8 +2,8 @@
 
 > **完整的代码示例**，展示 c12_model 的实际使用
 
-**最后更新**: 2025-10-19
-**适用版本**: Rust 1.90+
+**最后更新**: 2025-01-13
+**适用版本**: Rust 1.92+
 
 ---
 
@@ -14,7 +14,7 @@
 | 示例 | 说明 | 运行命令 |
 |------|------|---------|
 | `comprehensive_model_showcase.rs` | 综合模型展示 | `cargo run --example comprehensive_model_showcase` |
-| `model_rust_190_features_demo.rs` | Rust 1.90 特性演示 | `cargo run --example model_rust_190_features_demo` |
+| `model_rust_192_features_demo.rs` | Rust 1.92 特性演示 | `cargo run --example model_rust_192_features_demo` |
 
 ### ⚡ 并发模型示例
 

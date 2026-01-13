@@ -213,12 +213,26 @@ impl CloudProvider for AWSProvider {
 
     async fn create_database(&self, config: DatabaseConfig) -> Result<Database> {
         // RDS 创建逻辑
-        todo!()
+        // 实际实现示例:
+        // let rds_client = RdsClient::new(&self.aws_config);
+        // let request = CreateDbInstanceRequest {
+        //     db_instance_identifier: config.name.clone(),
+        //     engine: "postgres".to_string(),
+        //     db_instance_class: config.instance_type.clone(),
+        //     ..Default::default()
+        // };
+        // let response = rds_client.create_db_instance(request).await?;
+        // Ok(Database { id: response.db_instance_identifier })
+        Ok(Database { id: "db-123".to_string() })
     }
 
     async fn query_database(&self, query: &str) -> Result<QueryResult> {
         // 数据库查询逻辑
-        todo!()
+        // 实际实现示例:
+        // let pool = self.get_pool().await?;
+        // let rows = sqlx::query(query).fetch_all(&pool).await?;
+        // Ok(QueryResult { rows })
+        Ok(QueryResult { rows: vec![] })
     }
 }
 ```
@@ -241,7 +255,16 @@ pub struct AzureProvider {
 impl AzureProvider {
     pub async fn new(subscription_id: &str) -> Self {
         // Azure 认证和客户端初始化
-        todo!()
+        // 实际实现示例:
+        // let credential = DefaultAzureCredential::default();
+        // let compute_client = ComputeClient::new(credential.clone(), subscription_id);
+        // let storage_client = StorageClient::new(credential);
+        // Self { compute_client, storage_client, subscription_id: subscription_id.to_string() }
+        Self {
+            compute_client: ComputeClient::default(),
+            storage_client: StorageClient::default(),
+            subscription_id: subscription_id.to_string(),
+        }
     }
 }
 
@@ -253,32 +276,58 @@ impl CloudProvider for AzureProvider {
 
     async fn create_instance(&self, config: InstanceConfig) -> Result<Instance> {
         // Azure VM 创建逻辑
-        todo!()
+        // 实际实现示例:
+        // let vm = self.compute_client.virtual_machines()
+        //     .create_or_update(config.resource_group, config.name, vm_params)
+        //     .await?;
+        // Ok(Instance { id: vm.id().to_string() })
+        Ok(Instance { id: "vm-123".to_string() })
     }
 
     async fn delete_instance(&self, id: &str) -> Result<()> {
         // Azure VM 删除逻辑
-        todo!()
+        // 实际实现示例:
+        // self.compute_client.virtual_machines()
+        //     .delete(resource_group, vm_name)
+        //     .await?;
+        Ok(())
     }
 
     async fn upload_object(&self, container: &str, blob: &str, data: &[u8]) -> Result<()> {
         // Azure Blob Storage 上传
-        todo!()
+        // 实际实现示例:
+        // self.storage_client.blob_client(container, blob)
+        //     .put_block_blob(data)
+        //     .await?;
+        Ok(())
     }
 
     async fn download_object(&self, container: &str, blob: &str) -> Result<Vec<u8>> {
         // Azure Blob Storage 下载
-        todo!()
+        // 实际实现示例:
+        // let response = self.storage_client.blob_client(container, blob)
+        //     .get()
+        //     .await?;
+        // Ok(response.data)
+        Ok(vec![])
     }
 
     async fn create_database(&self, config: DatabaseConfig) -> Result<Database> {
         // Azure SQL Database 创建
-        todo!()
+        // 实际实现示例:
+        // let sql_client = SqlManagementClient::new(credential, subscription_id);
+        // let db = sql_client.databases().create(resource_group, server_name, db_name, params).await?;
+        // Ok(Database { id: db.id().to_string() })
+        Ok(Database { id: "db-123".to_string() })
     }
 
     async fn query_database(&self, query: &str) -> Result<QueryResult> {
         // 数据库查询
-        todo!()
+        // 实际实现示例:
+        // let pool = self.get_pool().await?;
+        // let rows = sqlx::query(query).fetch_all(&pool).await?;
+        // Ok(QueryResult { rows })
+        Ok(QueryResult { rows: vec![] })
     }
 }
 ```
@@ -654,17 +703,33 @@ impl CrossCloudIAM {
 
     async fn exchange_for_aws(&self, token: &str) -> Result<AWSCredentials> {
         // 使用 OIDC/SAML 交换 AWS 临时凭证
-        todo!()
+        // 实际实现示例:
+        // let sts_client = StsClient::new(&self.aws_config);
+        // let response = sts_client.assume_role_with_web_identity(AssumeRoleWithWebIdentityRequest {
+        //     role_arn: self.role_arn.clone(),
+        //     web_identity_token: token.to_string(),
+        //     ..Default::default()
+        // }).await?;
+        // Ok(AWSCredentials { access_key: response.credentials.access_key_id, ... })
+        Ok(AWSCredentials::default())
     }
 
     async fn exchange_for_azure(&self, token: &str) -> Result<AzureCredentials> {
         // 交换 Azure AD 令牌
-        todo!()
+        // 实际实现示例:
+        // let client = ConfidentialClientApplication::new(client_id, client_secret, authority);
+        // let result = client.acquire_token_by_refresh_token(token).await?;
+        // Ok(AzureCredentials { access_token: result.access_token() })
+        Ok(AzureCredentials::default())
     }
 
     async fn exchange_for_gcp(&self, token: &str) -> Result<GCPCredentials> {
         // 交换 GCP 服务账号令牌
-        todo!()
+        // 实际实现示例:
+        // let service_account = ServiceAccountCredentials::from_file("path/to/key.json")?;
+        // let token = service_account.token(&["https://www.googleapis.com/auth/cloud-platform"]).await?;
+        // Ok(GCPCredentials { access_token: token })
+        Ok(GCPCredentials::default())
     }
 }
 
@@ -718,7 +783,16 @@ impl MultiCloudCostAnalyzer {
 
     async fn get_aws_cost(&self, timeframe: Duration) -> Result<f64> {
         // AWS Cost Explorer API
-        todo!()
+        // 实际实现示例:
+        // let ce_client = CostExplorerClient::new(&self.aws_config);
+        // let response = ce_client.get_cost_and_usage(GetCostAndUsageRequest {
+        //     time_period: Some(TimePeriod { start: start_date, end: end_date }),
+        //     granularity: Some("DAILY".to_string()),
+        //     metrics: Some(vec!["BlendedCost".to_string()]),
+        //     ..Default::default()
+        // }).await?;
+        // Ok(response.results_by_time.iter().map(|r| r.total["BlendedCost"].amount.parse::<f64>().unwrap_or(0.0)).sum())
+        Ok(0.0)
     }
 
     fn generate_recommendations(&self, costs: &HashMap<String, f64>) -> Vec<Recommendation> {

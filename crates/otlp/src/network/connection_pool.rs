@@ -449,8 +449,35 @@ impl PooledConnection {
 
     /// 获取底层连接
     pub async fn get_connection(&self) -> Result<AsyncConnection> {
-        // 这里应该返回实际的连接，简化实现
-        Err(anyhow!("Not implemented"))
+        // 实际实现示例:
+        // // 从池中获取连接
+        // let mut pool = self.pool.lock().await;
+        // 
+        // // 尝试从可用连接中获取
+        // if let Some(conn) = pool.available.pop() {
+        //     return Ok(conn);
+        // }
+        // 
+        // // 如果池未满，创建新连接
+        // if pool.active < pool.max_size {
+        //     let conn = AsyncConnection::connect(&self.endpoint).await?;
+        //     pool.active += 1;
+        //     return Ok(conn);
+        // }
+        // 
+        // // 等待连接可用
+        // let (tx, rx) = tokio::sync::oneshot::channel();
+        // pool.waiting.push(tx);
+        // drop(pool);
+        // 
+        // // 等待连接可用或超时
+        // tokio::select! {
+        //     conn = rx => Ok(conn??),
+        //     _ = tokio::time::sleep(self.timeout) => {
+        //         Err(anyhow!("Connection timeout"))
+        //     }
+        // }
+        Err(anyhow!("Connection pool implementation requires async connection management. See implementation guide in docs."))
     }
 }
 

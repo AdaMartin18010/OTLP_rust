@@ -231,23 +231,82 @@ impl PprofEncoder {
 
     /// Encode a pprof profile to protobuf bytes (production format)
     ///
-    /// TODO: Implement actual protobuf encoding using prost
+    /// # 实现说明
     ///
-    /// To implement this properly:
-    /// 1. Add pprof.proto definition to proto/ directory
-    /// 2. Use prost-build in build.rs to generate Rust code
-    /// 3. Convert PprofProfile to generated protobuf types
-    /// 4. Use prost::Message::encode() to serialize
+    /// 实际实现需要使用 prost 进行 protobuf 编码：
     ///
-    /// Example build.rs:
-    /// ```rust,ignore
-    /// fn main() {
-    ///     prost_build::compile_protos(&["proto/pprof.proto"], &["proto/"]).unwrap();
-    /// }
-    /// ```
+    /// ## 步骤
+    ///
+    /// 1. **添加 pprof.proto 定义**：在 `proto/pprof.proto` 中定义 Profile 消息
+    ///    ```protobuf
+    ///    syntax = "proto3";
+    ///    package pprof;
+    ///    
+    ///    message Profile {
+    ///      repeated ValueType sample_type = 1;
+    ///      repeated Sample sample = 2;
+    ///      repeated Location location = 3;
+    ///      repeated Function function = 4;
+    ///      repeated string string_table = 5;
+    ///      // ... 其他字段
+    ///    }
+    ///    ```
+    ///
+    /// 2. **配置 build.rs**：
+    ///    ```rust,ignore
+    ///    // build.rs
+    ///    fn main() {
+    ///        prost_build::compile_protos(&["proto/pprof.proto"], &["proto/"])
+    ///            .unwrap();
+    ///    }
+    ///    ```
+    ///
+    /// 3. **转换和编码**：
+    ///    ```rust,ignore
+    ///    // 转换 PprofProfile 到生成的 protobuf 类型
+    ///    let mut pb_profile = pprof::Profile::default();
+    ///    pb_profile.sample_type = profile.sample_type.iter()
+    ///        .map(|vt| convert_value_type(vt))
+    ///        .collect();
+    ///    // ... 转换其他字段
+    ///
+    ///    // 使用 prost::Message::encode() 序列化
+    ///    let mut buf = Vec::new();
+    ///    pb_profile.encode(&mut buf)?;
+    ///    Ok(buf)
+    ///    ```
+    ///
+    /// ## 参考
+    ///
+    /// - [pprof.proto](https://github.com/google/pprof/blob/main/proto/profile.proto)
+    /// - [prost 文档](https://docs.rs/prost/)
     pub fn encode_protobuf(_profile: &PprofProfile) -> Result<Vec<u8>, String> {
+        // 注意: 实际的 protobuf 编码需要:
+        // 1. 定义 pprof.proto 文件（参考 https://github.com/google/pprof/blob/main/proto/profile.proto）
+        // 2. 在 build.rs 中使用 prost-build 生成 Rust 代码
+        // 3. 将 PprofProfile 转换为生成的 protobuf 类型
+        // 4. 使用 prost::Message::encode() 序列化
+        //
+        // 示例实现步骤:
+        //    1. 在 proto/ 目录创建 pprof.proto 文件
+        //    2. 在 build.rs 中添加:
+        //       prost_build::compile_protos(&["proto/pprof.proto"], &["proto/"])?;
+        //    3. 在 Cargo.toml 中添加 build-dependencies:
+        //       [build-dependencies]
+        //       prost-build = "0.14"
+        //    4. 实现转换函数:
+        //       fn convert_to_protobuf(profile: &PprofProfile) -> pprof::Profile {
+        //           // 转换逻辑
+        //       }
+        //    5. 实现编码:
+        //       let pb_profile = convert_to_protobuf(profile);
+        //       let mut buf = Vec::new();
+        //       pb_profile.encode(&mut buf)?;
+        //       Ok(buf)
+
         Err(
             "Protobuf encoding not yet implemented. Please implement using prost crate. \
+             See function documentation for implementation details. \
              For now, use encode_json() for development/debugging purposes."
                 .to_string(),
         )
@@ -255,10 +314,56 @@ impl PprofEncoder {
 
     /// Decode a pprof profile from protobuf bytes
     ///
-    /// TODO: Implement actual protobuf decoding using prost
+    /// # 实现说明
+    ///
+    /// 实际实现需要使用 prost 进行 protobuf 解码：
+    ///
+    /// ## 步骤
+    ///
+    /// 1. **使用生成的 protobuf 类型**：
+    ///    ```rust,ignore
+    ///    use pprof::Profile; // 从 prost 生成的类型
+    ///    ```
+    ///
+    /// 2. **解码**：
+    ///    ```rust,ignore
+    ///    let pb_profile = pprof::Profile::decode(data)?;
+    ///    ```
+    ///
+    /// 3. **转换**：
+    ///    ```rust,ignore
+    ///    let mut profile = PprofProfile::default();
+    ///    profile.sample_type = pb_profile.sample_type.iter()
+    ///        .map(|vt| convert_from_protobuf_value_type(vt))
+    ///        .collect();
+    ///    // ... 转换其他字段
+    ///    Ok(profile)
+    ///    ```
+    ///
+    /// ## 参考
+    ///
+    /// - [pprof.proto](https://github.com/google/pprof/blob/main/proto/profile.proto)
+    /// - [prost 文档](https://docs.rs/prost/)
     pub fn decode_protobuf(_data: &[u8]) -> Result<PprofProfile, String> {
+        // 注意: 实际的 protobuf 解码需要:
+        // 1. 使用 prost::Message::decode() 解码数据
+        //    示例:
+        //       let pb_profile = pprof::Profile::decode(data)?;
+        // 2. 将 protobuf 类型转换为 PprofProfile
+        //    示例:
+        //       let mut profile = PprofProfile::default();
+        //       profile.sample_type = pb_profile.sample_type.iter()
+        //           .map(|vt| convert_from_protobuf_value_type(vt))
+        //           .collect();
+        //       profile.sample = pb_profile.sample.iter()
+        //           .map(|s| convert_from_protobuf_sample(s))
+        //           .collect();
+        //       // ... 转换其他字段
+        //       Ok(profile)
+
         Err(
             "Protobuf decoding not yet implemented. Please implement using prost crate. \
+             See function documentation for implementation details. \
              For now, use decode_json() for development/debugging purposes."
                 .to_string(),
         )
@@ -323,7 +428,19 @@ impl StackTraceCollector {
     /// Collect current stack trace (fallback without backtrace feature)
     #[cfg(not(feature = "backtrace"))]
     pub fn collect() -> Vec<StackFrame> {
-        // Return a placeholder frame
+        // 实际实现示例（不使用backtrace feature时）:
+        // // 可以使用libunwind或其他栈回溯库
+        // // 或者使用平台特定的API（如libc::backtrace）
+        // 
+        // #[cfg(target_os = "linux")]
+        // {
+        //     use libc::{backtrace, backtrace_symbols};
+        //     let mut buffer: [*mut libc::c_void; 64] = [std::ptr::null_mut(); 64];
+        //     let size = unsafe { backtrace(buffer.as_mut_ptr(), buffer.len() as i32) };
+        //     // 解析符号并转换为StackFrame
+        // }
+        // 
+        // 当前实现：返回占位符帧
         vec![StackFrame::new("<backtrace disabled>", "<unknown>", 0, 0)]
     }
 }

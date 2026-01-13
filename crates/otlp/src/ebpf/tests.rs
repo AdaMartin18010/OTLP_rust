@@ -107,7 +107,18 @@ mod tests {
         let profiler = super::profiling::EbpfCpuProfiler::new(config);
 
         // 验证性能分析器已创建
-        // 注意：实际加载功能待实现
+        assert_eq!(profiler.config().sample_rate, 100);  // 默认采样率
+        assert!(!profiler.is_running());  // 初始状态未运行
+        
+        // 注意：实际加载功能需要Linux平台和aya crate集成
+        // 在Linux平台上可以测试:
+        // if EbpfLoader::check_system_support().is_ok() {
+        //     // 加载eBPF程序并启动
+        //     let program_bytes = include_bytes!("../programs/cpu_profiler.bpf.o");
+        //     profiler.loader.load(program_bytes)?;
+        //     profiler.start()?;
+        //     assert!(profiler.is_running());
+        // }
     }
 
     #[cfg(all(feature = "ebpf", target_os = "linux"))]

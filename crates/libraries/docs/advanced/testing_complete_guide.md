@@ -323,7 +323,14 @@ async fn health_check() -> StatusCode {
 
 async fn get_user(Path(id): Path<u64>) -> Result<Json<User>, StatusCode> {
     // 实现获取用户逻辑
-    todo!()
+    // 实际实现示例:
+    // let user = database::get_user(id).await
+    //     .map_err(|_| StatusCode::NOT_FOUND)?;
+    // Ok(Json(user))
+    Ok(Json(User {
+        id,
+        name: format!("User {}", id),
+    }))
 }
 
 #[tokio::test]

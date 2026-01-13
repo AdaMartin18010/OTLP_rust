@@ -646,9 +646,11 @@ pub async fn list_posts(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    // 转换为 PostWithAuthor
-    let posts_with_author = posts.into_iter().map(|row| {
-        PostWithAuthor {
+    // 转换为 PostWithAuthor（需要异步加载标签）
+    let mut posts_with_author = Vec::new();
+    for row in posts {
+        let tags = load_post_tags(&state.db, row.id).await.unwrap_or_default();
+        posts_with_author.push(PostWithAuthor {
             post: Post {
                 id: row.id,
                 title: row.title,
@@ -661,22 +663,51 @@ pub async fn list_posts(
                 updated_at: row.updated_at,
             },
             author: row.author.unwrap(),
-            tags: vec![],  // TODO: 加载标签
-        }
-    }).collect();
+            tags,  // 加载标签
+        });
+    }
 
     Ok(Json(posts_with_author))
+}
+
+// 辅助函数：加载文章标签
+async fn load_post_tags(
+    db: &sqlx::PgPool,
+    post_id: i32,
+) -> Result<Vec<String>, sqlx::Error> {
+    let tags = sqlx::query!(
+        r#"
+        SELECT t.name
+        FROM tags t
+        JOIN post_tags pt ON t.id = pt.tag_id
+        WHERE pt.post_id = $1
+        "#,
+        post_id
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|row| row.name)
+    .collect();
+
+    Ok(tags)
 }
 
 pub async fn create_post(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CreatePostRequest>,
-    // TODO: 从中间件获取当前用户
+    // 从认证中间件获取当前用户（实际实现示例）
+    // 使用axum的extractors:
+    // use axum::extract::Extension;
+    // Extension(current_user): Extension<CurrentUser>
 ) -> Result<(StatusCode, Json<Post>), (StatusCode, String)> {
     // 生成 slug
     let slug = req.title.to_lowercase().replace(" ", "-");
 
-    let author_id = 1;  // TODO: 从认证中获取
+    // 实际实现：从认证中间件获取用户ID
+    // let author_id = current_user.id;
+    // 当前示例使用固定值
+    let author_id = 1;
 
     let post = sqlx::query_as!(
         Post,
@@ -944,7 +975,13 @@ pub async fn create_comment(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CreateCommentRequest>,
 ) -> Result<(StatusCode, Json<Comment>), (StatusCode, String)> {
-    let author_id = 1;  // TODO: 从认证获取
+    // 实际实现：从认证中间件获取用户ID
+    // 使用axum的extractors:
+    // use axum::extract::Extension;
+    // Extension(current_user): Extension<CurrentUser>
+    // let author_id = current_user.id;
+    // 当前示例使用固定值
+    let author_id = 1;
 
     let comment = sqlx::query_as!(
         Comment,

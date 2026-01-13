@@ -256,13 +256,31 @@ pub fn link_profile_to_current_trace(_profile: &mut Profile) -> Result<(), Strin
     // In a real implementation, this would use opentelemetry::Context
     // to get the current trace and span IDs
 
-    // Placeholder implementation
-    // let context = opentelemetry::Context::current();
-    // let span_context = context.span().span_context();
-    // profile.trace_id = Some(span_context.trace_id().to_bytes().to_vec());
-    // profile.span_id = Some(span_context.span_id().to_bytes().to_vec());
+    // 实际实现示例:
+    // use opentelemetry::trace::TraceContextExt;
+    // use opentelemetry::Context;
+    //
+    // let context = Context::current();
+    // if let Some(span_context) = context.span().span_context() {
+    //     // 转换TraceID和SpanID为字节数组
+    //     profile.trace_id = Some(span_context.trace_id().to_bytes().to_vec());
+    //     profile.span_id = Some(span_context.span_id().to_bytes().to_vec());
+    //
+    //     tracing::debug!(
+    //         "Linked profile to trace: {:?}, span: {:?}",
+    //         profile.trace_id,
+    //         profile.span_id
+    //     );
+    // } else {
+    //     tracing::warn!("No active span context found");
+    // }
+    //
+    // Ok(())
 
+    // 当前占位实现
+    tracing::debug!("Profile linking to trace requires active OpenTelemetry context");
     Ok(())
+
 }
 
 #[cfg(test)]

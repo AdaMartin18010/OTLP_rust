@@ -398,7 +398,7 @@ cargo build
 - 查看 [README](README.md)
 - 阅读 [最佳实践](docs/BEST_PRACTICES.md)
 - 查看测试用例作为示例
-- GitHub Issues (待添加)
+- GitHub Issues: https://github.com/your-org/OTLP_rust/issues
 
 ---
 

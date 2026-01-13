@@ -672,9 +672,22 @@ async fn get_user_by_username(pool: &PgPool, username: &str) -> Result<Option<Us
 // ❌ 危险：永远不要这样做！
 async fn get_user_unsafe(pool: &PgPool, username: &str) -> Result<Option<User>, sqlx::Error> {
     // 如果 username = "admin' OR '1'='1"，会返回所有用户！
+    // 这种字符串拼接方式容易受到 SQL 注入攻击
     let query = format!("SELECT id, username, email FROM users WHERE username = '{}'", username);
-    // ...
-    unimplemented!()
+
+    // 注意: 此函数仅用于演示 SQL 注入风险，不应在实际代码中使用
+    // 正确的做法是使用参数化查询（见上面的 get_user_safe 函数）
+
+    // 实际实现应使用参数化查询:
+    // sqlx::query_as!(
+    //     User,
+    //     "SELECT id, username, email FROM users WHERE username = $1",
+    //     username
+    // )
+    // .fetch_optional(pool)
+    // .await
+
+    Err(sqlx::Error::RowNotFound) // 占位实现，实际不应使用此函数
 }
 ```
 

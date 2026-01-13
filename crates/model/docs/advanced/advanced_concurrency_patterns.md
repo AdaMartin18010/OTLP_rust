@@ -741,7 +741,16 @@ pub struct ConcurrentSkipList<K, V> {
 impl<K: Ord, V> ConcurrentSkipList<K, V> {
     pub fn new() -> Self {
         // 实现省略...
-        todo!()
+        // 实际实现示例:
+        // let head = Node::new_head(max_level);
+        // Self {
+        //     head: Atomic::new(head),
+        //     max_level: AtomicUsize::new(max_level),
+        // }
+        Self {
+            head: Atomic::new(Node::default()),
+            max_level: AtomicUsize::new(16),
+        }
     }
 
     pub fn insert(&self, key: K, value: V) {

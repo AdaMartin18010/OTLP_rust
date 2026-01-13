@@ -1,6 +1,6 @@
 //! 高级中间件模式示例
 //!
-//! 本示例展示了如何在 libraries 中使用 Rust 1.90 特性实现高级中间件模式：
+//! 本示例展示了如何在 libraries 中使用 Rust 1.92 特性实现高级中间件模式：
 //! - 连接池管理
 //! - 中间件链式调用
 //! - 错误恢复机制
@@ -9,7 +9,7 @@
 
 use libraries::prelude::*;
 // use libraries::config::{RedisConfig, PostgresConfig, NatsConfig};
-use libraries::rust190_optimizations::PerformanceStats;
+use libraries::rust192_optimizations::PerformanceStats;
 use libraries::{Error, Result};
 
 #[cfg(feature = "obs")]
@@ -23,7 +23,7 @@ fn init_tracing() {}
 
 /// 中间件链式调用模式
 ///
-/// 展示如何使用 Rust 1.90 的常量泛型创建高效的中间件链
+/// 展示如何使用 Rust 1.92 的常量泛型创建高效的中间件链
 pub struct MiddlewareChain<const CHAIN_SIZE: usize = 5> {
     middlewares: Vec<MiddlewareType>,
     configs: Vec<MiddlewareConfig<10, 5000>>,
@@ -128,7 +128,7 @@ impl<const CHAIN_SIZE: usize> MiddlewareChain<CHAIN_SIZE> {
 
 /// 配置热更新系统
 ///
-/// 利用 Rust 1.90 的生命周期语法一致性实现安全的配置更新
+/// 利用 Rust 1.92 的生命周期语法一致性实现安全的配置更新
 pub struct ConfigHotReload<'a> {
     configs: std::collections::HashMap<&'a str, MiddlewareConfig<10, 5000>>,
     watchers: Vec<ConfigWatcher<'a>>,
@@ -595,7 +595,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     println!("\n{}", report);
 
     println!("\n=== 高级中间件模式演示完成 ===");
-    println!("展示了 Rust 1.90 特性在高级中间件模式中的应用！");
+    println!("展示了 Rust 1.92 特性在高级中间件模式中的应用！");
 
     Ok(())
 }

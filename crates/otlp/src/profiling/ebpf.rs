@@ -244,34 +244,211 @@ mod linux {
 
     impl EbpfProgram {
         /// 创建新的eBPF程序
+        ///
+        /// # 实现说明
+        ///
+        /// 实际实现需要使用 aya crate 加载eBPF程序：
+        /// ```rust,ignore
+        /// use aya::Bpf;
+        /// use aya::programs::perf_event::PerfEvent;
+        ///
+        /// let mut bpf = Bpf::load(program_bytes)?;
+        /// // 获取 perf_event 程序
+        /// let program: &mut PerfEvent = bpf.program_mut("cpu_profiler")?;
+        /// program.load()?;
+        /// ```
+        ///
+        /// 或者使用 libbpf-rs：
+        /// ```rust,ignore
+        /// use libbpf_rs::{Object, ObjectBuilder, OpenObject};
+        ///
+        /// let obj = ObjectBuilder::default()
+        ///     .open_file("cpu_profiler.bpf.o")?
+        ///     .load()?;
+        /// ```
         pub fn new(config: &EbpfProfilerConfig) -> Result<Self> {
-            // TODO: 实际实现需要加载eBPF程序
-            // 使用libbpf-rs或类似库
+            // 注意: 实际的eBPF程序加载需要:
+            // 1. 编译eBPF程序（使用 clang 或 bpftool）
+            // 2. 加载编译后的字节码
+            // 3. 验证程序格式和兼容性
+            // 4. 初始化 eBPF Maps
+            //
+            // 使用 aya crate 的示例:
+            //     use aya::Bpf;
+            //     let program_bytes = include_bytes!("cpu_profiler.bpf.o");
+            //     let mut bpf = Bpf::load(program_bytes)?;
+            //
+            // 使用 libbpf-rs 的示例:
+            //     use libbpf_rs::{ObjectBuilder, Object};
+            //     let obj = ObjectBuilder::default()
+            //         .open_file("cpu_profiler.bpf.o")?
+            //         .load()?;
+
+            tracing::debug!(
+                "初始化eBPF程序，采样频率: {}Hz，持续时间: {:?}",
+                config.sample_rate,
+                config.duration
+            );
+
             Ok(Self {
                 config: config.clone(),
             })
         }
 
         /// 启动eBPF采样
+        ///
+        /// # 实现说明
+        ///
+        /// 实际实现需要使用 perf_event_open 系统调用：
+        /// ```rust,ignore
+        /// use libc::{perf_event_attr, perf_event_open, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK};
+        ///
+        /// let mut attr = perf_event_attr::default();
+        /// attr.type_ = PERF_TYPE_SOFTWARE;
+        /// attr.config = PERF_COUNT_SW_CPU_CLOCK;
+        /// attr.sample_period = 10000000 / config.sample_rate; // 转换为纳秒
+        /// attr.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME;
+        ///
+        /// let fd = perf_event_open(&mut attr, -1, 0, -1, 0)?;
+        /// // 将 fd 附加到 eBPF 程序
+        /// program.attach(fd)?;
+        /// ```
         pub fn start(&mut self) -> Result<()> {
-            // TODO: 实际实现需要启动perf_event_open
+            // 注意: 实际的perf_event_open需要:
+            // 1. 设置 perf_event_attr 结构
+            // 2. 调用 perf_event_open 系统调用
+            // 3. 将返回的文件描述符附加到 eBPF 程序
+            //
+            // 使用 aya crate 的示例:
+            //     use aya::programs::perf_event::{PerfEvent, PerfEventScope};
+            //     let program: &mut PerfEvent = bpf.program_mut("cpu_profiler")?;
+            //     program.load()?;
+            //     let perf_fd = perf_event_open(...)?;
+            //     program.attach(perf_fd, PerfEventScope::Cpu(0))?;
+            //
+            // 或者使用 aya 的内置支持:
+            //     use aya::programs::perf_event::{PerfEvent, PerfEventAttrBuilder, PerfTypeId};
+            //     let mut program: &mut PerfEvent = bpf.program_mut("cpu_profiler")?;
+            //     program.load()?;
+            //     let attr = PerfEventAttrBuilder::default()
+            //         .ty(PerfTypeId::Software)
+            //         .config(PerfSoftwareEvent::CpuClock as u64)
+            //         .sample_period(self.config.sample_rate as u64)
+            //         .build()?;
+            //     program.attach_perf_event(attr)?;
+
             tracing::info!("启动eBPF性能分析，采样频率: {}Hz", self.config.sample_rate);
             Ok(())
         }
 
         /// 停止采样并生成profile
+        ///
+        /// # 实现说明
+        ///
+        /// 实际实现需要：
+        /// 1. 停止 perf_event 数据收集
+        /// 2. 从 eBPF Maps 读取采样数据
+        /// 3. 转换为 pprof 格式
+        ///
+        /// ```rust,ignore
+        /// // 从 eBPF Map 读取数据
+        /// let stack_traces: HashMap<StackKey, u64> = bpf.map("stack_traces")?
+        ///     .iter()
+        ///     .collect();
+        ///
+        /// // 转换为 pprof Profile
+        /// let mut profile = PprofProfile::default();
+        /// for (stack_key, count) in stack_traces {
+        ///     // 将 stack_key 转换为 pprof Sample
+        ///     // profile.add_sample(...);
+        /// }
+        /// ```
         pub fn stop(&mut self) -> Result<PprofProfile> {
-            // TODO: 实际实现需要收集采样数据并转换为pprof格式
+            // 注意: 实际的profile生成需要:
+            // 1. 停止 perf_event 数据收集
+            // 2. 从 eBPF Maps 读取堆栈跟踪数据
+            //    使用 aya 的示例:
+            //        use aya::maps::HashMap;
+            //        let stack_traces: HashMap<_, StackKey, u64> = HashMap::try_from(
+            //            bpf.map_mut("stack_traces")?
+            //        )?;
+            //        for item in stack_traces.iter() {
+            //            let (key, value) = item?;
+            //            // 处理堆栈跟踪数据
+            //        }
+            // 3. 读取符号表（从 /proc/kallsyms 或 /proc/self/maps）
+            // 4. 将堆栈跟踪转换为 pprof 格式
+            //    参考 pprof.proto 定义，创建相应的 Profile、Sample、Location、Function 等结构
+            //
+            // pprof 格式转换示例（伪代码）:
+            //     let mut profile = PprofProfile::default();
+            //     for (stack_key, count) in stack_traces {
+            //         let mut sample = Sample::default();
+            //         sample.value = vec![count as i64];
+            //         // 将 stack_key 中的地址转换为 Location ID
+            //         for addr in stack_key.addresses {
+            //             let location_id = resolve_address(addr);
+            //             sample.location_id.push(location_id);
+            //         }
+            //         profile.sample.push(sample);
+            //     }
+
             tracing::info!("停止eBPF性能分析");
             Ok(PprofProfile::default())
         }
 
         /// 获取性能开销
+        ///
+        /// # 实现说明
+        ///
+        /// 实际实现需要：
+        /// 1. 使用 /proc/self/stat 或 /proc/self/status 读取 CPU 使用率
+        /// 2. 使用 /proc/self/status 读取内存使用量
+        /// 3. 或者使用 libc 的系统调用获取资源使用情况
+        ///
+        /// ```rust,ignore
+        /// use std::fs;
+        /// // 读取 CPU 使用率
+        /// let stat = fs::read_to_string("/proc/self/stat")?;
+        /// // 解析 stat 获取 CPU 时间
+        ///
+        /// // 读取内存使用量
+        /// let status = fs::read_to_string("/proc/self/status")?;
+        /// // 解析 status 获取 RSS 或 VmRSS
+        /// ```
         pub fn get_overhead(&self) -> OverheadMetrics {
-            // TODO: 实际实现需要测量CPU和内存使用
+            // 注意: 实际的性能开销测量需要:
+            // 1. 读取 /proc/self/stat 获取 CPU 时间
+            //    格式: pid comm state ppid pgrp session tty_nr tpgid flags minflt cminflt majflt cmajflt utime stime ...
+            //    utime 和 stime 是用户态和内核态 CPU 时间（单位：clock ticks）
+            //
+            // 2. 读取 /proc/self/status 获取内存使用
+            //    查找 "VmRSS:" 行获取实际物理内存使用量（单位：KB）
+            //
+            // 3. 计算 CPU 使用率（相对于总 CPU 时间）
+            //    cpu_percent = (current_cpu_time - initial_cpu_time) / (current_wall_time - initial_wall_time) * 100.0
+            //
+            // 示例代码:
+            //     let stat = std::fs::read_to_string("/proc/self/stat")?;
+            //     let fields: Vec<&str> = stat.split_whitespace().collect();
+            //     let utime: u64 = fields[13].parse()?;
+            //     let stime: u64 = fields[14].parse()?;
+            //     let total_cpu_time = utime + stime;
+            //
+            //     let status = std::fs::read_to_string("/proc/self/status")?;
+            //     for line in status.lines() {
+            //         if line.starts_with("VmRSS:") {
+            //             let rss_kb: usize = line.split_whitespace().nth(1)?.parse()?;
+            //             return OverheadMetrics {
+            //                 cpu_percent: calculate_cpu_percent(total_cpu_time),
+            //                 memory_bytes: rss_kb * 1024,
+            //             };
+            //         }
+            //     }
+
             OverheadMetrics {
-                cpu_percent: 0.5,               // 示例值
-                memory_bytes: 10 * 1024 * 1024, // 示例值: 10MB
+                cpu_percent: 0.5,               // 示例值，实际应从 /proc/self/stat 计算
+                memory_bytes: 10 * 1024 * 1024, // 示例值，实际应从 /proc/self/status 读取
             }
         }
     }

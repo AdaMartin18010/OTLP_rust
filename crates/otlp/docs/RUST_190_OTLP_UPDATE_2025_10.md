@@ -1,8 +1,8 @@
-﻿# OTLP Rust 1.90特性更新指南 - 2025年10月
+﻿# OTLP Rust 1.92特性更新指南 - 2025年1月
 
 **版本**: 1.0
-**发布日期**: 2025年10月28日
-**Rust版本**: 1.90.0
+**发布日期**: 2025年1月13日
+**Rust版本**: 1.92.0
 **OpenTelemetry版本**: 0.31.0
 **状态**: ✅ 生产就绪
 
@@ -11,7 +11,7 @@
 ## 📋 目录
 
 - [1. 概述](#1-概述)
-- [2. Rust 1.90核心特性应用](#2-rust-190核心特性应用)
+- [2. Rust 1.92核心特性应用](#2-rust-192核心特性应用)
 - [3. OpenTelemetry 0.31.0集成](#3-opentelemetry-0310集成)
 - [4. 性能优化实践](#4-性能优化实践)
 - [5. 微服务架构增强](#5-微服务架构增强)
@@ -27,7 +27,7 @@
 
 ### 1.1 更新亮点
 
-本次更新全面整合Rust 1.90和OpenTelemetry 0.31.0的最新特性，带来显著的性能提升和功能增强：
+本次更新全面整合Rust 1.92和OpenTelemetry 0.31.0的最新特性，带来显著的性能提升和功能增强：
 
 **性能提升**:
 
@@ -47,7 +47,7 @@
 
 | 组件 | 最低版本 | 推荐版本 | 测试版本 |
 |------|---------|---------|---------|
-| Rust | 1.90.0 | 1.90.0 | 1.90.0 |
+| Rust | 1.92.0 | 1.92.0 | 1.92.0 |
 | OpenTelemetry | 0.31.0 | 0.31.0 | 0.31.0 |
 | Tokio | 1.40+ | 1.48.0 | 1.48.0 |
 | Tonic | 0.12+ | 0.14.2 | 0.14.2 |
@@ -55,7 +55,7 @@
 
 ---
 
-## 📝 Rust 1.90核心特性应用
+## 📝 Rust 1.92核心特性应用
 
 ### 2.1 LLD链接器加速
 
@@ -101,7 +101,7 @@ pub mod batch_config {
     pub const MAX_QUEUE_SIZE: usize = 4096;
     pub const MAX_BATCH_SIZE: usize = 512;
 
-    // Rust 1.90: const浮点运算
+    // Rust 1.92: const浮点运算
     pub const TIMEOUT_MS: f64 = 100.0_f64;
     pub const TIMEOUT_FLOOR: f64 = TIMEOUT_MS.floor(); // 100.0
 
@@ -113,7 +113,7 @@ pub mod batch_config {
 /// 编译期数组操作
 pub const PRIORITY_LEVELS: [u8; 5] = {
     let mut levels = [1, 2, 3, 4, 5];
-    // levels.reverse(); // Rust 1.90稳定
+    // levels.reverse(); // Rust 1.92稳定
     levels
 };
 
@@ -1234,7 +1234,7 @@ pub async fn jwt_middleware(
 # 备份当前Cargo.lock
 cp Cargo.lock Cargo.lock.backup
 
-# 更新到Rust 1.90
+# 更新到Rust 1.92
 rustup update stable
 
 # 更新依赖
@@ -1308,7 +1308,7 @@ rustc -C help | grep lld
 
 # 解决方案
 # 1. 确认Rust版本
-rustc --version # 应显示 1.90.0
+rustc --version # 应显示 1.92.0
 
 # 2. 手动指定链接器
 export RUSTFLAGS="-C link-arg=-fuse-ld=lld"
@@ -1362,7 +1362,7 @@ cargo bench --bench otlp_benchmarks
 ```
 硬件：AMD Ryzen 9 5950X, 64GB RAM
 OS: Ubuntu 24.04 LTS
-Rust: 1.90.0
+Rust: 1.92.0
 
 编译性能：
 - 完整编译：48秒 (提升43%)
@@ -1378,7 +1378,7 @@ Rust: 1.90.0
 
 ### B. 参考资源
 
-- [Rust 1.90发布公告](https://blog.rust-lang.org/2025/09/18/Rust-1.90.0.html)
+- [Rust 1.92发布公告](https://blog.rust-lang.org/)
 - [OpenTelemetry文档](https://opentelemetry.io/docs/rust/)
 - [OTLP协议规范](https://opentelemetry.io/docs/specs/otlp/)
 - [项目GitHub](https://github.com/your-org/otlp-rust)

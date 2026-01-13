@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_weight(0.1) // 10%灰度
         .with_rollback_window(Duration::from_secs(300)) // 5分钟回滚窗口
         .with_min_healthy_instances(2)
-        .with_max_instances(Some(50));
+        .with_max_instances(50);
 
     // 3. 模拟Agent标签
     let mut agent_labels = HashMap::new();

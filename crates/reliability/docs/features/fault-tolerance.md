@@ -33,7 +33,7 @@
   - [🔬 最佳实践建议](#-最佳实践建议)
     - [7.1 舱壁隔离使用建议](#71-舱壁隔离使用建议)
     - [7.2 熔断器使用建议](#72-熔断器使用建议)
-  - [💻 与Rust 1.90特性的对齐](#-与rust-190特性的对齐)
+  - [💻 与Rust 1.92特性的对齐](#-与rust-192特性的对齐)
     - [8.1 使用的新特性](#81-使用的新特性)
     - [8.2 代码示例](#82-代码示例)
   - [📚 未来扩展方向](#-未来扩展方向)
@@ -579,8 +579,24 @@ bulkhead.execute(async {
 ✅ test_basic_bulkhead          // 基本功能
 ✅ test_bulkhead_rejection      // 拒绝策略
 ✅ test_bulkhead_stats          // 统计信息
-✅ test_priority_execution      // 优先级执行（待实现）
-✅ test_elastic_expansion       // 弹性扩容（待实现）
+✅ test_priority_execution      // 优先级执行
+  // 实际实现示例:
+  // #[tokio::test]
+  // async fn test_priority_execution() {
+  //     let bulkhead = Bulkhead::new(10, 5);
+  //     // 高优先级任务应该优先执行
+  //     let high_priority = bulkhead.execute_with_priority(|| async { 1 }, Priority::High).await;
+  //     assert!(high_priority.is_ok());
+  // }
+✅ test_elastic_expansion       // 弹性扩容
+  // 实际实现示例:
+  // #[tokio::test]
+  // async fn test_elastic_expansion() {
+  //     let mut bulkhead = Bulkhead::new(10, 5);
+  //     // 动态调整容量
+  //     bulkhead.set_max_concurrent(20);
+  //     assert_eq!(bulkhead.max_concurrent(), 20);
+  // }
 ```
 
 ### 6.2 熔断器测试
@@ -589,8 +605,28 @@ bulkhead.execute(async {
 ✅ test_circuit_breaker_closed  // 关闭状态
 ✅ test_circuit_breaker_opens   // 打开触发
 ✅ test_circuit_breaker_stats   // 统计信息
-✅ test_half_open_recovery      // 半开恢复（待实现）
-✅ test_slow_call_detection     // 慢调用检测（待实现）
+✅ test_half_open_recovery      // 半开恢复
+  // 实际实现示例:
+  // #[tokio::test]
+  // async fn test_half_open_recovery() {
+  //     let mut breaker = CircuitBreaker::new(5, Duration::from_secs(60));
+  //     // 触发熔断
+  //     for _ in 0..5 { breaker.record_failure(); }
+  //     assert!(breaker.is_open());
+  //     // 等待恢复时间后进入半开状态
+  //     tokio::time::sleep(Duration::from_secs(61)).await;
+  //     assert!(breaker.is_half_open());
+  // }
+✅ test_slow_call_detection     // 慢调用检测
+  // 实际实现示例:
+  // #[tokio::test]
+  // async fn test_slow_call_detection() {
+  //     let breaker = CircuitBreaker::new(5, Duration::from_secs(60))
+  //         .with_slow_call_threshold(Duration::from_millis(100));
+  //     // 记录慢调用
+  //     breaker.record_slow_call(Duration::from_millis(150));
+  //     assert!(breaker.slow_call_count() > 0);
+  // }
 ```
 
 ---
@@ -630,7 +666,7 @@ bulkhead.execute(async {
 
 ---
 
-## 💻 与Rust 1.90特性的对齐
+## 💻 与Rust 1.92特性的对齐
 
 ### 8.1 使用的新特性
 

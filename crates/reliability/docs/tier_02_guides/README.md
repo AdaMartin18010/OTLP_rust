@@ -14,7 +14,7 @@
 
 ## 💻 实战示例
 
-[RUST_190_EXAMPLES_COLLECTION.md](../RUST_190_EXAMPLES_COLLECTION.md) - 700+行代码
+[RUST_192_EXAMPLES_COLLECTION.md](../RUST_192_EXAMPLES_COLLECTION.md) - 700+行代码
 
 ---
 

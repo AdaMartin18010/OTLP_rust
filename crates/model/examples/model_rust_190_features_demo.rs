@@ -1,7 +1,7 @@
-//! Rust 1.90 特性演示
+//! Rust 1.92 特性演示
 //!
-//! 本示例展示了如何使用 c12_model 库中的 Rust 1.90 新特性，
-//! 包括常量泛型推断、生命周期语法改进等。
+//! 本示例展示了如何使用 c12_model 库中的 Rust 1.92 新特性，
+//! 包括异步闭包、元组收集、常量泛型推断、生命周期语法改进等。
 
 use c12_model::{
     queueing_models::{
@@ -19,7 +19,7 @@ use c12_model::{
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("=== Rust 1.90 特性演示 ===\n");
+    println!("=== Rust 1.92 特性演示 ===\n");
 
     // 演示常量泛型推断
     demo_const_generics()?;

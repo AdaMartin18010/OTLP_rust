@@ -1,16 +1,16 @@
-//! Rust 1.90 现代机器学习演示
+//! Rust 1.92 现代机器学习演示
 //!
-//! 本示例展示了如何使用 c12_model 库的 Rust 1.90 新特性和现代机器学习功能
+//! 本示例展示了如何使用 c12_model 库的 Rust 1.92 新特性和现代机器学习功能
 //!
 //! 运行命令：
 //! ```bash
-//! cargo run --example rust_190_modern_ml_demo --features "candle-ml,tensor-computing"
+//! cargo run --example rust_192_modern_ml_demo --features "candle-ml,tensor-computing"
 //! ```
 
 use c12_model::{
-    // Rust 1.90 新特性
-    rust_190_features::{
-        ModelConfig as Rust190ModelConfig, DataProcessor, OptimizationEngine, AlgorithmType, 
+    // Rust 1.92 新特性
+    rust_192_features::{
+        ModelConfig as Rust192ModelConfig, DataProcessor, OptimizationEngine, AlgorithmType, 
         OptimizedMatrix
     },
     // 现代机器学习
@@ -25,10 +25,10 @@ use c12_model::{
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("🚀 Rust 1.90 现代机器学习演示");
+    println!("🚀 Rust 1.92 现代机器学习演示");
     println!("=====================================");
 
-    // 1. 演示 Rust 1.90 常量泛型推断
+    // 1. 演示 Rust 1.92 常量泛型推断
     demo_const_generic_inference()?;
 
     // 2. 演示生命周期优化
@@ -50,9 +50,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// 演示 Rust 1.90 常量泛型推断
+/// 演示 Rust 1.92 常量泛型推断
 fn demo_const_generic_inference() -> Result<(), Box<dyn std::error::Error>> {
-    println!("\n📊 演示 Rust 1.90 常量泛型推断");
+    println!("\n📊 演示 Rust 1.92 常量泛型推断");
     println!("--------------------------------");
 
     // 使用常量泛型推断创建模型配置

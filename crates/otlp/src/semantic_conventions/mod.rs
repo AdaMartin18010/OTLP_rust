@@ -11,6 +11,17 @@
 //! - **K8s Conventions**: Kubernetes resource attributes
 //! - **Resource Conventions**: Service and deployment attributes
 //!
+//! ## 扩展计划
+//!
+//! 未来将添加以下语义约定支持：
+//!
+//! - **RPC Conventions**: gRPC, Thrift等RPC框架属性
+//! - **FaaS Conventions**: AWS Lambda, Azure Functions等函数即服务属性
+//! - **General Resource Attributes**: 通用资源属性（服务名、版本等）
+//! - **Deployment Environment**: 部署环境属性（云提供商、区域等）
+//! - **Exception Conventions**: 异常和错误属性
+//! - **Log Conventions**: 日志相关属性
+//!
 //! ## Rust 1.92 特性应用
 //!
 //! - **常量泛型**: 使用常量泛型优化属性键值对大小

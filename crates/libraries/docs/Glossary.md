@@ -5,7 +5,7 @@
 **Rust 版本**: 1.90.0 (LLD链接器、const API、workspace发布)
 **状态**: 🟢 活跃维护
 
-> **简介**: C11开发库核心术语快速参考，帮助您理解中间件核心概念和Rust 1.90+特性。
+> **简介**: C11开发库核心术语快速参考，帮助您理解中间件核心概念和Rust 1.92+特性。
 
 ---
 
@@ -38,7 +38,7 @@
   - [🔬 相关资源](#-相关资源)
     - [7.1 核心文档](#71-核心文档)
     - [7.2 专题指南](#72-专题指南)
-    - [7.3 Rust 1.90特性](#73-rust-190特性)
+    - [7.3 Rust 1.92特性](#73-rust-192特性)
     - [7.4 实践资源](#74-实践资源)
 
 ---
@@ -284,7 +284,7 @@ async fn query_database(id: i32) -> Result<User> {
 
 ### 6.1 async fn in trait
 
-**定义**: Rust 1.90+ 特性，允许trait方法为async fn。
+**定义**: Rust 1.92+ 特性，允许trait方法为async fn。
 
 **示例**:
 
@@ -294,7 +294,7 @@ trait AsyncDatabase {
 }
 ```
 
-**相关**: [RUST_190_FEATURES_GUIDE.md](./RUST_190_FEATURES_GUIDE.md)
+**相关**: [RUST_192_FEATURES_GUIDE.md](./RUST_192_FEATURES_GUIDE.md)
 
 ---
 
@@ -310,7 +310,7 @@ trait Config {
 }
 ```
 
-**相关**: [RUST_190_FEATURES_GUIDE.md](./RUST_190_FEATURES_GUIDE.md)
+**相关**: [RUST_192_FEATURES_GUIDE.md](./RUST_192_FEATURES_GUIDE.md)
 
 ---
 
@@ -329,9 +329,9 @@ trait Config {
 - [guides/mq.md](./guides/mq.md) - 消息队列详细指南
 - [guides/pingora.md](./guides/pingora.md) - HTTP代理详细指南
 
-### 7.3 Rust 1.90特性
+### 7.3 Rust 1.92特性
 
-- [references/RUST_190_FEATURES_GUIDE.md](./references/RUST_190_FEATURES_GUIDE.md) - Rust 1.90 特性完整指南
+- [references/RUST_192_FEATURES_GUIDE.md](./references/RUST_192_FEATURES_GUIDE.md) - Rust 1.92 特性完整指南
 
 ### 7.4 实践资源
 

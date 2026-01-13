@@ -1,18 +1,18 @@
-﻿# C12 Model Crate - Rust 1.90 特性更新指南 2025年10月
+﻿# C12 Model Crate - Rust 1.92 特性更新指南 2025年1月
 
 **版本**: 1.0
-**发布日期**: 2025年10月28日
-**Rust版本**: 1.90.0
+**发布日期**: 2025年1月13日
+**Rust版本**: 1.92.0
 **状态**: ✅ 生产就绪
 
 ---
 
 ## 📋 目录
 
-- [C12 Model Crate - Rust 1.90 特性更新指南 2025年10月](#c12-model-crate---rust-190-特性更新指南-2025年10月)
+- [C12 Model Crate - Rust 1.92 特性更新指南 2025年1月](#c12-model-crate---rust-192-特性更新指南-2025年1月)
   - [📋 目录](#-目录)
   - [🎯 概述](#-概述)
-    - [1.1 Rust 1.90 对建模的影响](#11-rust-190-对建模的影响)
+    - [1.1 Rust 1.92 对建模的影响](#11-rust-192-对建模的影响)
     - [1.2 更新收益](#12-更新收益)
   - [📝 Const API 建模优化](#-const-api-建模优化)
     - [2.1 状态机模型](#21-状态机模型)
@@ -43,9 +43,9 @@
 
 ## 🎯 概述
 
-### 1.1 Rust 1.90 对建模的影响
+### 1.1 Rust 1.92 对建模的影响
 
-Rust 1.90为建模库带来了革命性的提升：
+Rust 1.92为建模库带来了革命性的提升：
 
 **编译期计算**:
 
@@ -163,14 +163,14 @@ mod tests {
 
 /// 编译期概率计算
 pub mod probability_const {
-    /// Rust 1.90: const浮点运算
+    /// Rust 1.92: const浮点运算
     pub const CONFIDENCE_THRESHOLD: f64 = 0.95;
     pub const ALPHA: f64 = 0.05;
     pub const BETA: f64 = 0.95_f64;
 
     /// 编译期计算置信区间
     pub const fn confidence_interval(alpha: f64) -> f64 {
-        (1.0 - alpha).floor() // Rust 1.90稳定
+        (1.0 - alpha).floor() // Rust 1.92稳定
     }
 
     /// 贝叶斯先验概率
@@ -263,7 +263,7 @@ pub mod mm1_queue {
     pub const SERVICE_RATE: f64 = 15.0_f64;      // μ (请求/秒)
     pub const UTILIZATION: f64 = ARRIVAL_RATE / SERVICE_RATE; // ρ = λ/μ
 
-    /// Rust 1.90: 编译期浮点计算
+    /// Rust 1.92: 编译期浮点计算
     pub const fn average_queue_length() -> f64 {
         // L = ρ / (1 - ρ)
         const RHO: f64 = UTILIZATION;
@@ -341,11 +341,11 @@ mod tests {
 ```rust
 // src/models/integer_ops.rs
 
-/// Rust 1.90: 有符号/无符号安全混合
+/// Rust 1.92: 有符号/无符号安全混合
 pub mod safe_integer_ops {
     /// 容量计算（处理负增量）
     pub const fn adjust_capacity(base: u32, delta: i32) -> u32 {
-        // Rust 1.90新增API
+        // Rust 1.92新增API
         base.checked_sub_signed(delta.saturating_neg())
             .unwrap_or(0)
     }
@@ -405,7 +405,7 @@ pub mod state_transitions {
     /// 反转状态优先级
     pub const PRIORITIES: [u8; 5] = {
         let mut arr = [1, 2, 3, 4, 5];
-        // Rust 1.90: const reverse
+        // Rust 1.92: const reverse
         // arr.reverse();
         arr
     };
@@ -737,7 +737,7 @@ pub mod raft_config {
     pub const HEARTBEAT_INTERVAL: Duration =
         Duration::from_millis(HEARTBEAT_MS);
 
-    /// Rust 1.90: const浮点计算
+    /// Rust 1.92: const浮点计算
     pub const TIMEOUT_FACTOR: f64 = 2.5_f64;
     pub const MAX_TIMEOUT_MS: f64 =
         ELECTION_TIMEOUT_MS as f64 * TIMEOUT_FACTOR;
@@ -1205,7 +1205,7 @@ cargo publish --workspace
 
 ```text
 硬件: AMD Ryzen 9 5950X
-编译器: rustc 1.90.0
+编译器: rustc 1.92.0
 
 编译性能:
 - 完整编译: 32秒 (提升45%)
@@ -1219,7 +1219,7 @@ cargo publish --workspace
 
 ### B. 参考资源
 
-- [Rust 1.90发布说明](https://blog.rust-lang.org/)
+- [Rust 1.92发布说明](https://blog.rust-lang.org/)
 - [Const API文档](https://doc.rust-lang.org/std/)
 - [SIMD文档](https://doc.rust-lang.org/std/simd/)
 

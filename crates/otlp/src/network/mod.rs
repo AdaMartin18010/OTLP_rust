@@ -129,7 +129,12 @@ impl NetworkManager {
         if let Some(ref pool) = self.connection_pool {
             let _pooled_connection = pool.get_connection().await?;
             // 这里应该返回实际的连接，简化实现
-            Err(anyhow::anyhow!("Not implemented"))
+            // 实际实现示例:
+            // // 从连接池获取连接
+            // let pooled_conn = pool.get_connection().await?;
+            // // 返回底层连接
+            // Ok(pooled_conn.into_inner())
+            Err(anyhow::anyhow!("Connection retrieval requires pool implementation. See implementation guide in docs."))
         } else {
             // 直接使用异步I/O管理器
             self.async_io_manager.connect("127.0.0.1:8080").await

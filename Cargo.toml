@@ -349,7 +349,7 @@ tracing-core = "0.1.36" # 追踪核心库
 log = "0.4.29" # 标准日志库
 env_logger = "0.11.8" # 环境变量日志配置
 # OpenTelemetry: 可观测性标准（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
-tracing-opentelemetry = "0.32"                                         # 追踪集成 (更新到0.32以匹配opentelemetry 0.31)
+tracing-opentelemetry = "0.32.1"                                       # 追踪集成 (更新: 0.32.0 -> 0.32.1, 2025-01)
 opentelemetry = "0.31.0"                                               # 核心API
 opentelemetry_sdk = { version = "0.31.0", features = ["rt-tokio"] }    # SDK实现
 opentelemetry-otlp = { version = "0.31.0", features = ["http-json"] }  # OTLP协议

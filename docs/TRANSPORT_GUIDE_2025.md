@@ -8,7 +8,7 @@
 
 ## 📋 概述
 
-OTLP 传输层模块 (`transport.rs`) 提供了 OpenTelemetry Protocol (OTLP) 的数据传输实现，支持多种传输协议，包括 gRPC 和 HTTP。该模块利用 Rust 1.90+ 的异步特性，实现了高性能、可扩展的数据传输层。
+OTLP 传输层模块 (`transport.rs`) 提供了 OpenTelemetry Protocol (OTLP) 的数据传输实现，支持多种传输协议，包括 gRPC 和 HTTP。该模块利用 Rust 1.92+ 的异步特性，实现了高性能、可扩展的数据传输层。
 
 ### 核心功能
 

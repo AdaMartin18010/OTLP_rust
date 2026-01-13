@@ -476,8 +476,36 @@ impl PluginLoader {
 
     async fn dynamic_load_plugin(&self, plugin_path: &str) -> Result<Arc<dyn OtlpPlugin>> {
         // 动态库加载实现
-        // 这里需要根据具体的插件加载机制实现
-        todo!("实现动态插件加载")
+        //
+        // 实现步骤:
+        // 1. 使用 libloading crate 加载动态库:
+        //    use libloading::{Library, Symbol};
+        //    let lib = Library::new(plugin_path)?;
+        //
+        // 2. 获取插件入口函数:
+        //    let create_plugin: Symbol<unsafe extern "C" fn() -> *mut dyn OtlpPlugin> =
+        //        lib.get(b"create_plugin")?;
+        //
+        // 3. 调用入口函数创建插件实例:
+        //    let plugin_ptr = create_plugin();
+        //    let plugin = unsafe { Arc::from_raw(plugin_ptr) };
+        //
+        // 4. 验证插件接口版本兼容性:
+        //    if plugin.version() != EXPECTED_VERSION {
+        //        return Err("Plugin version mismatch".into());
+        //    }
+        //
+        // 5. 注册插件到注册表:
+        //    let mut registry = self.plugin_registry.lock().await;
+        //    registry.insert(plugin.name(), plugin.metadata());
+        //
+        // 注意: 动态加载需要插件实现 C ABI 接口，确保 ABI 兼容性
+        // 参考: https://docs.rs/libloading/
+
+        // 当前实现: 返回错误，提示需要实现动态加载
+        Err("Dynamic plugin loading not yet implemented. \
+             Use register_plugin() for static plugin registration instead. \
+             For dynamic loading, implement using libloading crate as shown in comments above.".into())
     }
 }
 ```

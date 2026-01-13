@@ -1,17 +1,17 @@
-﻿# 微服务设计机制与并发/背压策略（Rust 1.90）
+﻿# 微服务设计机制与并发/背压策略（Rust 1.92）
 
 > 侧重机制与组合：命名、发现、配置、限流、超时、重试、熔断、隔离、舱壁、缓存、幂等、去重、编排/补偿、观测性、部署拓扑。
 
 ## 📋 目录
 
-- [微服务设计机制与并发/背压策略（Rust 1.90）](#微服务设计机制与并发背压策略rust-190)
+- [微服务设计机制与并发/背压策略（Rust 1.92）](#微服务设计机制与并发背压策略rust-192)
   - [📋 目录](#-目录)
   - [机制清单与Rust落地](#机制清单与rust落地)
   - [部署拓扑与流量治理](#部署拓扑与流量治理)
   - [缓存与一致性](#缓存与一致性)
   - [参考组合栈](#参考组合栈)
   - [数据与一致性](#数据与一致性)
-  - [Rust 1.90 关键API](#rust-190-关键api)
+  - [Rust 1.92 关键API](#rust-192-关键api)
   - [检查清单](#检查清单)
 
 ## 机制清单与Rust落地
@@ -50,7 +50,7 @@ Ingress → [RateLimit] → [Auth] → [Buffer(K)] → Service → [Timeout+Retr
 - 复制：主从、Quorum、Raft；最终一致采用 CRDT/版本向量。
 - 分区：按所有权/访问模式划分；跨区操作以异步编排与补偿。
 
-## Rust 1.90 关键API
+## Rust 1.92 关键API
 
 - `tokio::{mpsc, Semaphore, JoinSet, time::timeout, task::spawn_blocking}`
 - `tower::{Buffer, RateLimit, ConcurrencyLimit, Timeout, Retry, LoadShed}`

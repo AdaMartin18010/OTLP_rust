@@ -32,10 +32,23 @@ impl EbpfMemoryTracer {
         {
             tracing::info!("启动 eBPF 内存分配追踪");
 
-            // TODO: 实际实现需要:
+            // 注意: 实际的内存追踪实现需要:
             // 1. 加载内存追踪 eBPF 程序
-            // 2. 附加到 uprobes (malloc, free等)
-            // 3. 开始追踪
+            //    使用 aya crate:
+            //       let mut bpf = Bpf::load(include_bytes!("memory_tracer.bpf.o"))?;
+            // 2. 附加到 uprobes
+            //    - malloc: 附加到用户空间 malloc 函数
+            //    - free: 附加到用户空间 free 函数
+            //    - mmap: 附加到 mmap 系统调用
+            //    示例:
+            //       let program: &mut UProbe = bpf.program_mut("trace_malloc")?;
+            //       program.load()?;
+            //       program.attach(Some("/usr/lib/libc.so.6"), "malloc", 0, None)?;
+            // 3. 开始追踪（程序附加后自动开始）
+            //    使用 Maps 存储追踪数据:
+            //       let events: HashMap<_, u64, MemoryEvent> = HashMap::try_from(
+            //           bpf.map_mut("memory_events")?
+            //       )?;
 
             self.started = true;
         }
@@ -62,10 +75,24 @@ impl EbpfMemoryTracer {
 
             tracing::info!("停止 eBPF 内存分配追踪");
 
-            // TODO: 实际实现需要:
-            // 1. 停止追踪
-            // 2. 收集内存分配事件
+            // 注意: 实际的停止和事件收集实现需要:
+            // 1. 停止追踪（分离所有附加的探针）
+            //    遍历所有程序并分离:
+            //       for program in &mut bpf.programs_mut() {
+            //           program.detach()?;
+            //       }
+            // 2. 从 eBPF Maps 收集内存分配事件
+            //    使用 aya 的 Map 迭代器:
+            //       let mut events = Vec::new();
+            //       let memory_events: HashMap<_, u64, MemoryEvent> = HashMap::try_from(
+            //           bpf.map_mut("memory_events")?
+            //       )?;
+            //       for item in memory_events.iter() {
+            //           let (_, event) = item?;
+            //           events.push(convert_to_ebpf_event(event)?);
+            //       }
             // 3. 返回事件列表
+            //    Ok(events)
 
             self.started = false;
         }
@@ -96,7 +123,25 @@ impl EbpfMemoryTracer {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
         {
             if self.started {
-                // TODO: 实际实现需要从 eBPF Maps 读取统计信息
+                // 注意: 实际的统计信息读取需要:
+                // 1. 从 eBPF Maps 读取统计信息
+                //    使用 aya 的 Map API:
+                //       let stats_map: HashMap<_, u32, MemoryStats> = HashMap::try_from(
+                //           bpf.map("memory_stats")?
+                //       )?;
+                //       let stats = stats_map.get(&0, 0)?;
+                // 2. 聚合多个 CPU 的统计信息（如果使用 per-CPU Maps）
+                //    如果使用 PerCpuHashMap:
+                //       let stats = stats_map.get(&0, 0)?;
+                //       let aggregated = stats.iter().fold(MemoryStats::default(), |acc, cpu_stats| {
+                //           MemoryStats {
+                //               allocations: acc.allocations + cpu_stats.allocations,
+                //               frees: acc.frees + cpu_stats.frees,
+                //               total_allocated: acc.total_allocated + cpu_stats.total_allocated,
+                //               total_freed: acc.total_freed + cpu_stats.total_freed,
+                //               active_allocations: acc.active_allocations + cpu_stats.active_allocations,
+                //           }
+                //       });
                 MemoryStats {
                     allocations: 0,
                     frees: 0,

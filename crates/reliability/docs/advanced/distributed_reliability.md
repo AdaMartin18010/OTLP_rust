@@ -644,12 +644,29 @@ impl TwoPhaseCommitCoordinator {
 
     async fn send_prepare(&self, participant: &str) -> Result<Vote> {
         // 发送 Prepare 请求
-        todo!()
+        // 实际实现示例:
+        // let client = self.get_client(participant).await?;
+        // let response = client
+        //     .prepare(PrepareRequest {
+        //         transaction_id: self.transaction_id.clone(),
+        //         data: self.data.clone(),
+        //     })
+        //     .await?;
+        // Ok(response.vote)
+        Ok(Vote::Yes)
     }
 
     async fn send_decision(&self, participant: &str, decision: Decision) -> Result<()> {
         // 发送 Commit/Abort 决定
-        todo!()
+        // 实际实现示例:
+        // let client = self.get_client(participant).await?;
+        // client
+        //     .commit(CommitRequest {
+        //         transaction_id: self.transaction_id.clone(),
+        //         decision: decision.clone(),
+        //     })
+        //     .await?;
+        Ok(())
     }
 }
 

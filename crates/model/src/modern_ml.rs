@@ -657,24 +657,66 @@ impl NeuralNetworkModel {
 
 impl ModelTrait for NeuralNetworkModel {
     fn train(&mut self, _data: &TrainingData) -> Result<TrainingResult, String> {
-        // 简化的神经网络实现
-        Err("Neural network training not implemented yet".to_string())
+        // 实际实现示例（需要ML库如candle或tch）:
+        // use candle_core::{Tensor, Device};
+        // 
+        // // 初始化权重
+        // let weights = Tensor::randn(0f32, 0.01, (input_size, hidden_size), &Device::Cpu)?;
+        // 
+        // // 前向传播
+        // let output = self.forward(&input_tensor)?;
+        // 
+        // // 计算损失（例如MSE）
+        // let loss = self.compute_loss(&output, &target)?;
+        // 
+        // // 反向传播和优化（例如SGD）
+        // self.backward(&loss)?;
+        // self.optimize()?;
+        // 
+        // Ok(TrainingResult { loss, accuracy: 0.0, epochs: 1 })
+        Err("Neural network training requires ML library integration (e.g., candle, tch). See implementation guide in docs.".to_string())
     }
 
     fn predict(&self, _input: &[f64]) -> Result<Vec<f64>, String> {
-        Err("Neural network prediction not implemented yet".to_string())
+        // 实际实现示例:
+        // let input_tensor = Tensor::from_slice(input, (1, input.len()), &Device::Cpu)?;
+        // let output = self.forward(&input_tensor)?;
+        // let predictions = output.to_vec1::<f64>()?;
+        // Ok(predictions)
+        Err("Neural network prediction requires ML library integration. See implementation guide in docs.".to_string())
     }
 
     fn evaluate(&self, _data: &EvaluationData) -> Result<EvaluationResult, String> {
-        Err("Neural network evaluation not implemented yet".to_string())
+        // 实际实现示例:
+        // let predictions = self.predict_batch(&data.inputs)?;
+        // let accuracy = compute_accuracy(&predictions, &data.targets)?;
+        // let loss = compute_loss(&predictions, &data.targets)?;
+        // Ok(EvaluationResult { accuracy, loss, metrics: HashMap::new() })
+        Err("Neural network evaluation requires ML library integration. See implementation guide in docs.".to_string())
     }
 
     fn save(&self, _path: &str) -> Result<(), String> {
-        Err("Neural network save not implemented yet".to_string())
+        // 实际实现示例:
+        // use std::fs::File;
+        // use std::io::Write;
+        // 
+        // let mut file = File::create(path)?;
+        // // 序列化权重和配置
+        // let serialized = serde_json::to_string(&self.weights)?;
+        // file.write_all(serialized.as_bytes())?;
+        // Ok(())
+        Err("Neural network save requires serialization. See implementation guide in docs.".to_string())
     }
 
     fn load(&mut self, _path: &str) -> Result<(), String> {
-        Err("Neural network load not implemented yet".to_string())
+        // 实际实现示例:
+        // use std::fs::read_to_string;
+        // 
+        // let content = read_to_string(path)?;
+        // let weights: Vec<Vec<f64>> = serde_json::from_str(&content)?;
+        // self.weights = weights;
+        // Ok(())
+        Err("Neural network load requires deserialization. See implementation guide in docs.".to_string())
     }
 
     fn get_info(&self) -> ModelInfo {
@@ -723,19 +765,23 @@ impl SVMModel {
 #[allow(dead_code)]
 impl ModelTrait for CNNModel {
     fn train(&mut self, _data: &TrainingData) -> Result<TrainingResult, String> {
-        Err("CNN training not implemented yet".to_string())
+        // 实际实现示例（需要candle或tch）:
+        // // CNN训练需要卷积层、池化层、全连接层
+        // // 使用candle: candle_nn::conv2d, candle_nn::max_pool2d等
+        // Err("CNN training requires ML library with CNN support (e.g., candle, tch). See implementation guide.".to_string())
+        Err("CNN training requires ML library with CNN support. See implementation guide in docs.".to_string())
     }
     fn predict(&self, _input: &[f64]) -> Result<Vec<f64>, String> {
-        Err("CNN prediction not implemented yet".to_string())
+        Err("CNN prediction requires ML library with CNN support. See implementation guide in docs.".to_string())
     }
     fn evaluate(&self, _data: &EvaluationData) -> Result<EvaluationResult, String> {
-        Err("CNN evaluation not implemented yet".to_string())
+        Err("CNN evaluation requires ML library with CNN support. See implementation guide in docs.".to_string())
     }
     fn save(&self, _path: &str) -> Result<(), String> {
-        Err("CNN save not implemented yet".to_string())
+        Err("CNN save requires serialization. See implementation guide in docs.".to_string())
     }
     fn load(&mut self, _path: &str) -> Result<(), String> {
-        Err("CNN load not implemented yet".to_string())
+        Err("CNN load requires deserialization. See implementation guide in docs.".to_string())
     }
     fn get_info(&self) -> ModelInfo {
         ModelInfo {
@@ -751,19 +797,22 @@ impl ModelTrait for CNNModel {
 
 impl ModelTrait for RNNModel {
     fn train(&mut self, _data: &TrainingData) -> Result<TrainingResult, String> {
-        Err("RNN training not implemented yet".to_string())
+        // 实际实现示例（需要RNN支持）:
+        // // RNN训练需要LSTM/GRU单元，处理序列数据
+        // // 使用candle: candle_nn::rnn, candle_nn::lstm等
+        Err("RNN training requires ML library with RNN support (e.g., candle, tch). See implementation guide in docs.".to_string())
     }
     fn predict(&self, _input: &[f64]) -> Result<Vec<f64>, String> {
-        Err("RNN prediction not implemented yet".to_string())
+        Err("RNN prediction requires ML library with RNN support. See implementation guide in docs.".to_string())
     }
     fn evaluate(&self, _data: &EvaluationData) -> Result<EvaluationResult, String> {
-        Err("RNN evaluation not implemented yet".to_string())
+        Err("RNN evaluation requires ML library with RNN support. See implementation guide in docs.".to_string())
     }
     fn save(&self, _path: &str) -> Result<(), String> {
-        Err("RNN save not implemented yet".to_string())
+        Err("RNN save requires serialization. See implementation guide in docs.".to_string())
     }
     fn load(&mut self, _path: &str) -> Result<(), String> {
-        Err("RNN load not implemented yet".to_string())
+        Err("RNN load requires deserialization. See implementation guide in docs.".to_string())
     }
     fn get_info(&self) -> ModelInfo {
         ModelInfo {
@@ -779,19 +828,22 @@ impl ModelTrait for RNNModel {
 
 impl ModelTrait for TransformerModel {
     fn train(&mut self, _data: &TrainingData) -> Result<TrainingResult, String> {
-        Err("Transformer training not implemented yet".to_string())
+        // 实际实现示例（需要Transformer支持）:
+        // // Transformer训练需要注意力机制、位置编码等
+        // // 使用candle-transformers或tch的transformer模块
+        Err("Transformer training requires ML library with Transformer support (e.g., candle-transformers, tch). See implementation guide in docs.".to_string())
     }
     fn predict(&self, _input: &[f64]) -> Result<Vec<f64>, String> {
-        Err("Transformer prediction not implemented yet".to_string())
+        Err("Transformer prediction requires ML library with Transformer support. See implementation guide in docs.".to_string())
     }
     fn evaluate(&self, _data: &EvaluationData) -> Result<EvaluationResult, String> {
-        Err("Transformer evaluation not implemented yet".to_string())
+        Err("Transformer evaluation requires ML library with Transformer support. See implementation guide in docs.".to_string())
     }
     fn save(&self, _path: &str) -> Result<(), String> {
-        Err("Transformer save not implemented yet".to_string())
+        Err("Transformer save requires serialization. See implementation guide in docs.".to_string())
     }
     fn load(&mut self, _path: &str) -> Result<(), String> {
-        Err("Transformer load not implemented yet".to_string())
+        Err("Transformer load requires deserialization. See implementation guide in docs.".to_string())
     }
     fn get_info(&self) -> ModelInfo {
         ModelInfo {
@@ -807,19 +859,23 @@ impl ModelTrait for TransformerModel {
 
 impl ModelTrait for SVMModel {
     fn train(&mut self, _data: &TrainingData) -> Result<TrainingResult, String> {
-        Err("SVM training not implemented yet".to_string())
+        // 实际实现示例（可以使用libsvm-rs或linfa）:
+        // // SVM训练需要求解二次规划问题
+        // // 使用libsvm-rs: libsvm::Svm::train(&data, params)?
+        // // 或使用linfa: linfa_svm::Svm::params().fit(&dataset)?
+        Err("SVM training requires ML library with SVM support (e.g., libsvm-rs, linfa). See implementation guide in docs.".to_string())
     }
     fn predict(&self, _input: &[f64]) -> Result<Vec<f64>, String> {
-        Err("SVM prediction not implemented yet".to_string())
+        Err("SVM prediction requires ML library with SVM support. See implementation guide in docs.".to_string())
     }
     fn evaluate(&self, _data: &EvaluationData) -> Result<EvaluationResult, String> {
-        Err("SVM evaluation not implemented yet".to_string())
+        Err("SVM evaluation requires ML library with SVM support. See implementation guide in docs.".to_string())
     }
     fn save(&self, _path: &str) -> Result<(), String> {
-        Err("SVM save not implemented yet".to_string())
+        Err("SVM save requires serialization. See implementation guide in docs.".to_string())
     }
     fn load(&mut self, _path: &str) -> Result<(), String> {
-        Err("SVM load not implemented yet".to_string())
+        Err("SVM load requires deserialization. See implementation guide in docs.".to_string())
     }
     fn get_info(&self) -> ModelInfo {
         ModelInfo {

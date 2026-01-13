@@ -47,6 +47,7 @@ impl MapsManager {
     ///
     /// * `name` - Map 名称
     /// * `key` - 键的字节表示
+    /// * `bpf` - Bpf 实例（可选，如果提供则进行实际读取）
     ///
     /// # 返回
     ///
@@ -60,15 +61,20 @@ impl MapsManager {
     /// # 示例
     ///
     /// ```rust,no_run
-    /// use otlp::ebpf::MapsManager;
+    /// use otlp::ebpf::{MapsManager, EbpfLoader, EbpfConfig};
     ///
+    /// let config = EbpfConfig::default();
+    /// let mut loader = EbpfLoader::new(config);
+    /// // ... 加载 eBPF 程序 ...
     /// let manager = MapsManager::new();
-    /// let key = b"my_key";
-    /// let value = manager.read_map("my_map", key)?;
+    /// if let Some(bpf) = loader.bpf() {
+    ///     let key = b"my_key";
+    ///     let value = manager.read_map("my_map", key, Some(bpf))?;
+    /// }
     /// # Ok::<(), otlp::error::OtlpError>(())
     /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
-    pub fn read_map(&self, name: &str, key: &[u8]) -> Result<Vec<u8>> {
+    pub fn read_map(&self, name: &str, key: &[u8], bpf: Option<&aya::Bpf>) -> Result<Vec<u8>> {
         // 验证参数
         if name.is_empty() {
             return Err(crate::ebpf::error::EbpfError::MapOperationFailed(
@@ -108,20 +114,64 @@ impl MapsManager {
         tracing::debug!("读取 Map: {} (key: {:?}, key_size: {}, value_size: {})", 
             name, key, map_info.key_size, map_info.value_size);
 
-        // 注意: 实际的 Map 读取需要:
-        // 1. 使用 aya 获取 Map:
-        //    let map = bpf.map(name)?;
-        // 2. 根据 Map 类型读取:
-        //    - Hash Map: map.get(key, 0)?;
-        //    - Array Map: map.get(index, 0)?;
-        // 3. 返回值的字节表示
+        // 如果提供了 Bpf 实例，进行实际读取
+        if let Some(bpf) = bpf {
+            use aya::maps::Map;
+            
+            let map = bpf.map(name)
+                .ok_or_else(|| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                    "Map 不存在: {}",
+                    name
+                )))?;
 
-        // 临时实现：返回空值（实际应从 Map 读取）
-        Ok(vec![0u8; map_info.value_size])
+            // 根据 Map 类型读取
+            match map {
+                Map::HashMap(hash_map) => {
+                    let value = hash_map.get(key, 0)
+                        .map_err(|e| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                            "读取 Map 失败: {}",
+                            e
+                        )))?;
+                    Ok(value.to_vec())
+                }
+                Map::Array(array_map) => {
+                    // 将 key 转换为索引
+                    if key.len() != 4 {
+                        return Err(crate::ebpf::error::EbpfError::MapOperationFailed(
+                            "Array Map 的键必须是 4 字节的 u32".to_string(),
+                        ).into());
+                    }
+                    let index = u32::from_ne_bytes(key.try_into().unwrap());
+                    let value = array_map.get(index, 0)
+                        .map_err(|e| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                            "读取 Map 失败: {}",
+                            e
+                        )))?;
+                    Ok(value.to_vec())
+                }
+                Map::PerCpuHashMap(per_cpu_map) => {
+                    // Per-CPU Map 返回每个 CPU 的值
+                    let values = per_cpu_map.get(key, 0)
+                        .map_err(|e| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                            "读取 Map 失败: {}",
+                            e
+                        )))?;
+                    // 合并所有 CPU 的值
+                    Ok(values.iter().flatten().cloned().collect())
+                }
+                _ => Err(crate::ebpf::error::EbpfError::MapOperationFailed(
+                    format!("不支持的 Map 类型: {:?}", map_info.map_type)
+                ).into()),
+            }
+        } else {
+            // 没有提供 Bpf 实例，返回空值（用于测试）
+            tracing::debug!("未提供 Bpf 实例，返回空值");
+            Ok(vec![0u8; map_info.value_size])
+        }
     }
 
     #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
-    pub fn read_map(&self, _name: &str, _key: &[u8]) -> Result<Vec<u8>> {
+    pub fn read_map(&self, _name: &str, _key: &[u8], _bpf: Option<&aya::Bpf>) -> Result<Vec<u8>> {
         Err(EbpfError::UnsupportedPlatform.into())
     }
 
@@ -132,6 +182,7 @@ impl MapsManager {
     /// * `name` - Map 名称
     /// * `key` - 键的字节表示
     /// * `value` - 值的字节表示
+    /// * `bpf` - Bpf 实例（可选，如果提供则进行实际写入）
     ///
     /// # 返回
     ///
@@ -145,16 +196,21 @@ impl MapsManager {
     /// # 示例
     ///
     /// ```rust,no_run
-    /// use otlp::ebpf::MapsManager;
+    /// use otlp::ebpf::{MapsManager, EbpfLoader, EbpfConfig};
     ///
+    /// let config = EbpfConfig::default();
+    /// let mut loader = EbpfLoader::new(config);
+    /// // ... 加载 eBPF 程序 ...
     /// let mut manager = MapsManager::new();
-    /// let key = b"my_key";
-    /// let value = b"my_value";
-    /// manager.write_map("my_map", key, value)?;
+    /// if let Some(bpf) = loader.bpf_mut() {
+    ///     let key = b"my_key";
+    ///     let value = b"my_value";
+    ///     manager.write_map("my_map", key, value, Some(bpf))?;
+    /// }
     /// # Ok::<(), otlp::error::OtlpError>(())
     /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
-    pub fn write_map(&mut self, name: &str, key: &[u8], value: &[u8]) -> Result<()> {
+    pub fn write_map(&mut self, name: &str, key: &[u8], value: &[u8], bpf: Option<&mut aya::Bpf>) -> Result<()> {
         // 验证参数
         if name.is_empty() {
             return Err(crate::ebpf::error::EbpfError::MapOperationFailed(
@@ -207,19 +263,62 @@ impl MapsManager {
 
         tracing::debug!("写入 Map: {} (key: {:?}, value: {:?})", name, key, value);
 
-        // 注意: 实际的 Map 写入需要:
-        // 1. 使用 aya 获取 Map:
-        //    let mut map = bpf.map_mut(name)?;
-        // 2. 根据 Map 类型写入:
-        //    - Hash Map: map.insert(key, value, 0)?;
-        //    - Array Map: map.set(index, value, 0)?;
-        // 3. 处理写入结果
+        // 如果提供了 Bpf 实例，进行实际写入
+        if let Some(bpf) = bpf {
+            use aya::maps::Map;
+            
+            let map = bpf.map_mut(name)
+                .ok_or_else(|| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                    "Map 不存在: {}",
+                    name
+                )))?;
+
+            // 根据 Map 类型写入
+            match map {
+                Map::HashMap(hash_map) => {
+                    hash_map.insert(key, value, 0)
+                        .map_err(|e| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                            "写入 Map 失败: {}",
+                            e
+                        )))?;
+                }
+                Map::Array(array_map) => {
+                    // 将 key 转换为索引
+                    if key.len() != 4 {
+                        return Err(crate::ebpf::error::EbpfError::MapOperationFailed(
+                            "Array Map 的键必须是 4 字节的 u32".to_string(),
+                        ).into());
+                    }
+                    let index = u32::from_ne_bytes(key.try_into().unwrap());
+                    array_map.set(index, value, 0)
+                        .map_err(|e| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                            "写入 Map 失败: {}",
+                            e
+                        )))?;
+                }
+                Map::PerCpuHashMap(per_cpu_map) => {
+                    // Per-CPU Map 需要为每个 CPU 写入
+                    per_cpu_map.insert(key, value, 0)
+                        .map_err(|e| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                            "写入 Map 失败: {}",
+                            e
+                        )))?;
+                }
+                _ => return Err(crate::ebpf::error::EbpfError::MapOperationFailed(
+                    format!("不支持的 Map 类型: {:?}", map_info.map_type)
+                ).into()),
+            }
+            
+            tracing::debug!("Map 写入成功: {}", name);
+        } else {
+            tracing::debug!("未提供 Bpf 实例，跳过实际写入");
+        }
 
         Ok(())
     }
 
     #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
-    pub fn write_map(&mut self, _name: &str, _key: &[u8], _value: &[u8]) -> Result<()> {
+    pub fn write_map(&mut self, _name: &str, _key: &[u8], _value: &[u8], _bpf: Option<&mut aya::Bpf>) -> Result<()> {
         Err(EbpfError::UnsupportedPlatform.into())
     }
 
@@ -300,10 +399,23 @@ impl MapsManager {
 
         // 注意: 实际的 Map 删除需要:
         // 1. 使用 aya 获取 Map:
-        //    let mut map = bpf.map_mut(name)?;
-        // 2. 删除键值对:
-        //    map.remove(key)?;
+        //    use aya::maps::{Map, HashMap};
+        //    let map = bpf.map_mut(name)
+        //        .ok_or_else(|| EbpfError::MapOperationFailed(format!("Map 不存在: {}", name)))?;
+        // 2. 删除键值对（仅 Hash Map 支持）:
+        //    match map {
+        //        Map::HashMap(hash_map) => {
+        //            hash_map.remove(key)?;
+        //        }
+        //        Map::PerCpuHashMap(per_cpu_map) => {
+        //            per_cpu_map.remove(key)?;
+        //        }
+        //        _ => return Err(EbpfError::MapOperationFailed(
+        //            format!("Map 类型 {} 不支持删除操作", format!("{:?}", map_info.map_type))
+        //        ).into()),
+        //    }
         // 3. 处理删除结果
+        //    注意：Array Map 不支持删除操作，只能设置为零值
 
         Ok(())
     }

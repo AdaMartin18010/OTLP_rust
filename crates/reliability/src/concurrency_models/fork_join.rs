@@ -70,8 +70,29 @@ pub trait ForkJoinTask: Send + Sync {
     }
 
     /// 合并子任务结果
-    fn join(&self, _results: Vec<Self::Output>) -> Result<Self::Output> {
-        Err(UnifiedError::state_error("Join not implemented"))
+    fn join(&self, results: Vec<Self::Output>) -> Result<Self::Output> {
+        // 实际实现示例:
+        // match self.join_strategy {
+        //     JoinStrategy::Sum => {
+        //         Ok(results.into_iter().sum())
+        //     }
+        //     JoinStrategy::Product => {
+        //         Ok(results.into_iter().product())
+        //     }
+        //     JoinStrategy::Concat => {
+        //         Ok(results.into_iter().flatten().collect())
+        //     }
+        //     JoinStrategy::Custom(ref f) => {
+        //         f(results)
+        //     }
+        // }
+        // 
+        // 当前实现：返回第一个结果作为占位
+        if results.is_empty() {
+            Err(UnifiedError::state_error("No results to join"))
+        } else {
+            Ok(results.into_iter().next().unwrap())
+        }
     }
 }
 

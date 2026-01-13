@@ -45,7 +45,7 @@ docs/
 │
 ├── 05_IMPLEMENTATION/                  # 实现指南
 │   ├── README.md
-│   ├── rust_1_90_features.md
+│   ├── rust_1_92_features.md
 │   ├── async_programming.md
 │   ├── error_handling_patterns.md
 │   └── testing_strategies.md

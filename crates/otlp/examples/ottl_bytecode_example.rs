@@ -2,7 +2,8 @@
 //!
 //! 演示如何使用字节码解析器实现10×性能提升
 
-use otlp::{BytecodeCompiler, OttlParser};
+use otlp::ottl::bytecode::BytecodeCompiler;
+use otlp::ottl::parser::OttlParser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. 解析OTTL语句
@@ -16,12 +17,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for statement in statements {
         let program = compiler.compile(&statement)?;
-        programs.push(program);
-
+        
         println!("编译成功:");
         println!("  指令数: {}", program.instructions.len());
         println!("  字符串表大小: {}", program.string_table.len());
         println!("  常量池大小: {}", program.constants.len());
+        
+        programs.push(program);
     }
 
     // 3. 执行字节码 (实际应用中需要TelemetryData)

@@ -139,12 +139,12 @@
 
 ### 2.4 实践示例
 
-1. **[RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md](RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md)**
+1. **[RUST_192_MIDDLEWARE_PRACTICAL_EXAMPLES.md](RUST_192_MIDDLEWARE_PRACTICAL_EXAMPLES.md)**
    - Middleware patterns
    - Integration examples
    - Real-world use cases
 
-2. **[RUST_190_COMPREHENSIVE_MINDMAP.md](RUST_190_COMPREHENSIVE_MINDMAP.md)**
+2. **[RUST_192_COMPREHENSIVE_MINDMAP.md](RUST_192_COMPREHENSIVE_MINDMAP.md)**
    - Visual overview
    - Concept relationships
    - Learning paths
@@ -164,7 +164,7 @@
 
 Advanced analysis documents
 
-- Rust 1.90 ecosystem analysis
+- Rust 1.92 ecosystem analysis
 - Performance comparisons
 - Technical deep dives
 
@@ -226,7 +226,7 @@ Archived reports and historical documents
 
 **Ready to code?** Check:
 
-1. [RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md](RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md) - Examples
+1. [RUST_192_MIDDLEWARE_PRACTICAL_EXAMPLES.md](RUST_192_MIDDLEWARE_PRACTICAL_EXAMPLES.md) - Examples
 2. `examples/` directory - Code samples
 3. `essential_crates/` directory - Detailed guides
 
@@ -235,7 +235,7 @@ Archived reports and historical documents
 **Planning system architecture?** Review:
 
 1. [RUST_CRATES_CLASSIFICATION_2025.md](RUST_CRATES_CLASSIFICATION_2025.md) - Classification
-2. [RUST_190_COMPREHENSIVE_MINDMAP.md](RUST_190_COMPREHENSIVE_MINDMAP.md) - Visual overview
+2. [RUST_192_COMPREHENSIVE_MINDMAP.md](RUST_192_COMPREHENSIVE_MINDMAP.md) - Visual overview
 3. `analysis/` directory - Technical analysis
 
 ---
@@ -447,7 +447,7 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 1. **第1-2天**: [README](README.md) + [Essential Guide](RUST_ESSENTIAL_CRATES_GUIDE_2025.md)
 2. **第3-4天**: [生态系统索引](RUST_CRATES_ECOSYSTEM_INDEX_2025.md)
 3. **第5-7天**: 选择场景，学习对应crates
-4. **第8-14天**: 实践项目，参考[示例](RUST_190_MIDDLEWARE_PRACTICAL_EXAMPLES.md)
+4. **第8-14天**: 实践项目，参考[示例](RUST_192_MIDDLEWARE_PRACTICAL_EXAMPLES.md)
 
 **预期成果**: 能够为项目选择合适的crates
 
@@ -470,7 +470,7 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 
 **目标**: 精通生态系统，能够做架构设计和技术选型
 
-1. **第1-2周**: [生态系统深度分析](analysis/rust190_ecosystem/)
+1. **第1-2周**: [生态系统深度分析](analysis/rust192_ecosystem/)
 2. **第3周**: [性能基准测试](references/3.4_性能基准测试报告.md)
 3. **第4周**: [架构设计模式](references/3.5_架构设计模式集.md)
 4. **持续**: 跟踪生态系统演进，参与社区
@@ -485,7 +485,7 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 
 **验证工具**: Kani | Creusot | Prusti | MIRI
 
-**文档**: [形式化验证框架](analysis/rust190_ecosystem/01_formal_verification/formal_verification_framework.md)
+**文档**: [形式化验证框架](analysis/rust192_ecosystem/01_formal_verification/formal_verification_framework.md)
 
 **应用**: 安全关键系统 | 密码学库 | 金融系统 | 医疗设备
 
@@ -495,7 +495,7 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 
 **优化技术**: 零拷贝 | SIMD | 缓存优化 | 内存布局
 
-**文档**: [性能分析](analysis/rust190_ecosystem/03_performance_benchmarks/performance_analysis.md) | [性能基准](references/3.4_性能基准测试报告.md)
+**文档**: [性能分析](analysis/rust192_ecosystem/03_performance_benchmarks/performance_analysis.md) | [性能基准](references/3.4_性能基准测试报告.md)
 
 **关键指标**: 吞吐量 | 延迟 | 内存占用 | CPU使用率
 
@@ -515,7 +515,7 @@ See [RUST_CRATES_ECOSYSTEM_INDEX_2025.md](RUST_CRATES_ECOSYSTEM_INDEX_2025.md) f
 
 **评估维度**: 活跃度 | 维护性 | 社区规模 | 生产使用
 
-**文档**: [成熟度矩阵](RUST_CRATES_MATURITY_MATRIX_2025.md) | [生态系统评估](analysis/rust190_ecosystem/05_ecosystem_maturity/ecosystem_maturity_assessment.md)
+**文档**: [成熟度矩阵](RUST_CRATES_MATURITY_MATRIX_2025.md) | [生态系统评估](analysis/rust192_ecosystem/05_ecosystem_maturity/ecosystem_maturity_assessment.md)
 
 **应用**: 技术选型 | 风险评估 | 迁移决策
 

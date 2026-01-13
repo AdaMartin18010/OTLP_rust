@@ -48,7 +48,7 @@
 
 ## 概述
 
-软件设计模型是构建高质量软件系统的理论基础。本文档全面分析了程序设计范式、架构设计模式、它们之间的等价性关系和转换方法,并展示如何在Rust 1.90中优雅地实现这些模式。
+软件设计模型是构建高质量软件系统的理论基础。本文档全面分析了程序设计范式、架构设计模式、它们之间的等价性关系和转换方法,并展示如何在Rust 1.92中优雅地实现这些模式。
 
 **核心主题**:
 
@@ -82,8 +82,13 @@ let list = ImmutableList::new()
 
 // 高阶函数
 fn map<A, B>(list: ImmutableList<A>, f: impl Fn(A) -> B) -> ImmutableList<B> {
-    // 函数式映射实现
-    todo!()
+    // 函数式映射实现：递归构建新列表
+    match list {
+        ImmutableList::Nil => ImmutableList::Nil,
+        ImmutableList::Cons(head, tail) => {
+            ImmutableList::Cons(f(head), Box::new(map(*tail, f)))
+        }
+    }
 }
 
 // Functor实例
@@ -879,12 +884,30 @@ struct PostgresUserRepository {
 impl UserRepository for PostgresUserRepository {
     fn find(&self, id: UserId) -> Result<User> {
         // PostgreSQL特定实现
-        todo!()
+        // 使用 sqlx 查询数据库:
+        // sqlx::query_as!(
+        //     User,
+        //     "SELECT id, email FROM users WHERE id = $1",
+        //     id
+        // )
+        // .fetch_one(&self.pool)
+        // .await
+        // .map_err(|e| anyhow::anyhow!("Database error: {}", e))
+        Ok(User::new(id, "example@example.com".to_string()))
     }
 
     fn save(&self, user: User) -> Result<()> {
         // PostgreSQL特定实现
-        todo!()
+        // 使用 sqlx 插入或更新:
+        // sqlx::query!(
+        //     "INSERT INTO users (id, email) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET email = $2",
+        //     user.id,
+        //     user.email
+        // )
+        // .execute(&self.pool)
+        // .await
+        // .map_err(|e| anyhow::anyhow!("Database error: {}", e))?;
+        Ok(())
     }
 }
 

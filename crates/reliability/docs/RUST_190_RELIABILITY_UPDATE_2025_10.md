@@ -1,8 +1,8 @@
-﻿# C13 Reliability - Rust 1.90 可靠性模式更新 2025年10月
+﻿# C13 Reliability - Rust 1.92 可靠性模式更新 2025年1月
 
-**版本**: 1.0  
-**发布日期**: 2025年10月28日  
-**Rust版本**: 1.90.0  
+**版本**: 1.0
+**发布日期**: 2025年1月13日
+**Rust版本**: 1.92.0
 **状态**: ✅ 生产就绪
 
 ---
@@ -41,7 +41,7 @@
 - 故障恢复：1ms
 - 确定性延迟保证
 
-### 1.2 Rust 1.90对可靠性的影响
+### 1.2 Rust 1.92对可靠性的影响
 
 | 特性 | 提升 | 说明 |
 |------|------|------|
@@ -72,19 +72,19 @@ pub enum CircuitState {
     HalfOpen = 2,    // 半开状态
 }
 
-/// 熔断器配置（Rust 1.90 const优化）
+/// 熔断器配置（Rust 1.92 const优化）
 pub mod circuit_config {
     use std::time::Duration;
-    
+
     /// 编译期配置验证
     pub const FAILURE_THRESHOLD: u64 = 5;
     pub const SUCCESS_THRESHOLD: u64 = 2;
     pub const TIMEOUT_MS: u64 = 30_000;
-    
-    /// Rust 1.90: const Duration
+
+    /// Rust 1.92: const Duration
     pub const TIMEOUT: Duration = Duration::from_millis(TIMEOUT_MS);
     pub const HALF_OPEN_TIMEOUT: Duration = Duration::from_secs(5);
-    
+
     /// 编译期验证配置合理性
     pub const fn validate() -> bool {
         FAILURE_THRESHOLD > 0
@@ -110,12 +110,12 @@ pub struct CircuitBreaker {
     failure_count: Arc<AtomicU64>,
     success_count: Arc<AtomicU64>,
     last_state_change: Arc<AtomicU64>,
-    
+
     // 配置
     failure_threshold: u64,
     success_threshold: u64,
     timeout: Duration,
-    
+
     // 指标
     total_requests: Arc<AtomicU64>,
     rejection_count: Arc<AtomicU64>,
@@ -130,7 +130,7 @@ impl CircuitBreaker {
     ) -> Self {
         // 编译期验证
         const _: () = assert!(circuit_config::validate());
-        
+
         Self {
             state: Arc::new(AtomicU8::new(CircuitState::Closed as u8)),
             failure_count: Arc::new(AtomicU64::new(0)),
@@ -146,16 +146,16 @@ impl CircuitBreaker {
             state_transitions: Arc::new(AtomicU64::new(0)),
         }
     }
-    
+
     /// 执行带熔断保护的操作
     pub async fn call<F, T, E>(&self, f: F) -> Result<T, CircuitBreakerError<E>>
     where
         F: Future<Output = Result<T, E>>,
     {
         self.total_requests.fetch_add(1, Ordering::Relaxed);
-        
+
         let state = self.current_state();
-        
+
         match state {
             CircuitState::Open => {
                 if self.should_attempt_reset() {
@@ -168,7 +168,7 @@ impl CircuitBreaker {
             }
             _ => {}
         }
-        
+
         // 执行操作
         match f.await {
             Ok(result) => {
@@ -181,14 +181,14 @@ impl CircuitBreaker {
             }
         }
     }
-    
+
     fn on_success(&self) {
         let state = self.current_state();
-        
+
         match state {
             CircuitState::HalfOpen => {
                 let successes = self.success_count.fetch_add(1, Ordering::Relaxed) + 1;
-                
+
                 if successes >= self.success_threshold {
                     info!(
                         successes = successes,
@@ -207,11 +207,11 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     fn on_failure(&self) {
         let failures = self.failure_count.fetch_add(1, Ordering::Relaxed) + 1;
         let state = self.current_state();
-        
+
         match state {
             CircuitState::HalfOpen => {
                 warn!("Circuit breaker opening (half-open failure)");
@@ -231,7 +231,7 @@ impl CircuitBreaker {
             _ => {}
         }
     }
-    
+
     fn current_state(&self) -> CircuitState {
         match self.state.load(Ordering::Relaxed) {
             0 => CircuitState::Closed,
@@ -240,7 +240,7 @@ impl CircuitBreaker {
             _ => CircuitState::Closed,
         }
     }
-    
+
     fn transition_to(&self, new_state: CircuitState) {
         self.state.store(new_state as u8, Ordering::Relaxed);
         self.last_state_change.store(
@@ -249,14 +249,14 @@ impl CircuitBreaker {
         );
         self.state_transitions.fetch_add(1, Ordering::Relaxed);
     }
-    
+
     fn should_attempt_reset(&self) -> bool {
         let last_change = self.last_state_change.load(Ordering::Relaxed);
         let now = Instant::now().elapsed().as_millis() as u64;
-        
+
         now - last_change >= self.timeout.as_millis() as u64
     }
-    
+
     /// 获取熔断器指标
     pub fn metrics(&self) -> CircuitMetrics {
         CircuitMetrics {
@@ -291,11 +291,11 @@ pub async fn protected_http_call(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_circuit_breaker_opens_on_failures() {
         let cb = CircuitBreaker::new(3, 2, Duration::from_secs(1));
-        
+
         // 模拟失败
         for _ in 0..3 {
             let result: Result<(), _> = cb.call(async {
@@ -303,35 +303,35 @@ mod tests {
             }).await;
             assert!(result.is_err());
         }
-        
+
         // 熔断器应该打开
         assert_eq!(cb.current_state(), CircuitState::Open);
-        
+
         // 请求应该被拒绝
         let result: Result<(), _> = cb.call(async {
             Ok::<(), &str>(())
         }).await;
-        
+
         match result {
             Err(CircuitBreakerError::CircuitOpen) => {}
             _ => panic!("Expected circuit open error"),
         }
     }
-    
+
     #[tokio::test]
     async fn test_circuit_breaker_recovers() {
         let cb = CircuitBreaker::new(2, 2, Duration::from_millis(10));
-        
+
         // 触发熔断
         for _ in 0..2 {
             let _: Result<(), _> = cb.call(async {
                 Err::<(), _>("error")
             }).await;
         }
-        
+
         // 等待超时
         tokio::time::sleep(Duration::from_millis(20)).await;
-        
+
         // 成功调用应该恢复熔断器
         for _ in 0..2 {
             let result: Result<(), _> = cb.call(async {
@@ -339,7 +339,7 @@ mod tests {
             }).await;
             assert!(result.is_ok());
         }
-        
+
         assert_eq!(cb.current_state(), CircuitState::Closed);
     }
 }
@@ -377,13 +377,13 @@ impl TokenBucketRateLimiter {
             )),
         }
     }
-    
+
     /// 尝试获取令牌
     pub async fn acquire(&self, tokens: u64) -> Result<(), RateLimitError> {
         self.refill();
-        
+
         let current = self.tokens.load(Ordering::Relaxed);
-        
+
         if current >= tokens {
             self.tokens.fetch_sub(tokens, Ordering::Relaxed);
             Ok(())
@@ -394,22 +394,22 @@ impl TokenBucketRateLimiter {
             })
         }
     }
-    
+
     /// 补充令牌
     fn refill(&self) {
         let now = Instant::now().elapsed().as_millis() as u64;
         let last = self.last_refill.swap(now, Ordering::Relaxed);
-        
+
         let elapsed_ms = now - last;
         let new_tokens = ((elapsed_ms as f64 / 1000.0) * self.rate) as u64;
-        
+
         if new_tokens > 0 {
             let current = self.tokens.load(Ordering::Relaxed);
             let new_value = std::cmp::min(current + new_tokens, self.capacity);
             self.tokens.store(new_value, Ordering::Relaxed);
         }
     }
-    
+
     /// 获取当前令牌数
     pub fn available_tokens(&self) -> u64 {
         self.refill();
@@ -440,16 +440,16 @@ impl SlidingWindowRateLimiter {
             requests: Arc::new(parking_lot::Mutex::new(Vec::new())),
         }
     }
-    
+
     pub async fn acquire(&self) -> Result<(), RateLimitError> {
         let now = Instant::now();
         let mut requests = self.requests.lock();
-        
+
         // 清理过期请求
         requests.retain(|&timestamp| {
             now.duration_since(timestamp) < self.window_size
         });
-        
+
         if requests.len() < self.max_requests as usize {
             requests.push(now);
             Ok(())
@@ -465,43 +465,43 @@ impl SlidingWindowRateLimiter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_token_bucket() {
         let limiter = TokenBucketRateLimiter::new(10, 10.0);
-        
+
         // 应该成功获取令牌
         assert!(limiter.acquire(5).await.is_ok());
         assert!(limiter.acquire(5).await.is_ok());
-        
+
         // 应该失败（令牌不足）
         assert!(limiter.acquire(1).await.is_err());
-        
+
         // 等待补充
         tokio::time::sleep(Duration::from_millis(500)).await;
-        
+
         // 应该有新令牌
         assert!(limiter.acquire(5).await.is_ok());
     }
-    
+
     #[tokio::test]
     async fn test_sliding_window() {
         let limiter = SlidingWindowRateLimiter::new(
             Duration::from_secs(1),
             5,
         );
-        
+
         // 前5个请求应该成功
         for _ in 0..5 {
             assert!(limiter.acquire().await.is_ok());
         }
-        
+
         // 第6个请求应该失败
         assert!(limiter.acquire().await.is_err());
-        
+
         // 等待窗口过期
         tokio::time::sleep(Duration::from_secs(1)).await;
-        
+
         // 应该可以再次请求
         assert!(limiter.acquire().await.is_ok());
     }
@@ -516,28 +516,28 @@ use std::time::Duration;
 use tokio::time::sleep;
 use tracing::{warn, info};
 
-/// 重试配置（Rust 1.90 const优化）
+/// 重试配置（Rust 1.92 const优化）
 pub mod retry_config {
     use std::time::Duration;
-    
+
     /// 编译期配置
     pub const MAX_RETRIES: u32 = 3;
     pub const INITIAL_BACKOFF_MS: u64 = 100;
     pub const MAX_BACKOFF_MS: u64 = 10_000;
     pub const BACKOFF_MULTIPLIER: f64 = 2.0;
-    
-    /// Rust 1.90: const Duration
-    pub const INITIAL_BACKOFF: Duration = 
+
+    /// Rust 1.92: const Duration
+    pub const INITIAL_BACKOFF: Duration =
         Duration::from_millis(INITIAL_BACKOFF_MS);
-    pub const MAX_BACKOFF: Duration = 
+    pub const MAX_BACKOFF: Duration =
         Duration::from_millis(MAX_BACKOFF_MS);
-    
+
     /// 编译期计算最大重试时间
     pub const fn max_retry_time_ms() -> f64 {
         let mut total = 0.0;
         let mut current = INITIAL_BACKOFF_MS as f64;
         let mut i = 0;
-        
+
         while i < MAX_RETRIES {
             total += current;
             current *= BACKOFF_MULTIPLIER;
@@ -546,7 +546,7 @@ pub mod retry_config {
             }
             i += 1;
         }
-        
+
         total
     }
 }
@@ -575,7 +575,7 @@ impl RetryStrategy {
         match self {
             Self::FixedDelay(duration) => *duration,
             Self::ExponentialBackoff { initial, max, multiplier } => {
-                let duration_ms = initial.as_millis() as f64 
+                let duration_ms = initial.as_millis() as f64
                     * multiplier.powi(attempt as i32);
                 let duration_ms = duration_ms.min(max.as_millis() as f64);
                 Duration::from_millis(duration_ms as u64)
@@ -601,7 +601,7 @@ impl RetryExecutor {
             strategy,
         }
     }
-    
+
     /// 带重试的异步执行
     pub async fn execute<F, T, E>(&self, mut f: F) -> Result<T, RetryError<E>>
     where
@@ -609,7 +609,7 @@ impl RetryExecutor {
         E: std::fmt::Display,
     {
         let mut attempt = 0;
-        
+
         loop {
             match f().await {
                 Ok(result) => {
@@ -620,7 +620,7 @@ impl RetryExecutor {
                 }
                 Err(e) => {
                     attempt += 1;
-                    
+
                     if attempt > self.max_retries {
                         warn!(
                             attempt = attempt,
@@ -633,7 +633,7 @@ impl RetryExecutor {
                             last_error: format!("{}", e),
                         });
                     }
-                    
+
                     let backoff = self.strategy.backoff_duration(attempt - 1);
                     warn!(
                         attempt = attempt,
@@ -641,7 +641,7 @@ impl RetryExecutor {
                         error = %e,
                         "Retrying after backoff"
                     );
-                    
+
                     sleep(backoff).await;
                 }
             }
@@ -674,7 +674,7 @@ where
             multiplier: retry_config::BACKOFF_MULTIPLIER,
         },
     );
-    
+
     executor.execute(f).await
 }
 
@@ -682,19 +682,19 @@ where
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
-    
+
     #[test]
     fn test_const_retry_time() {
         // 编译期计算
         const MAX_TIME: f64 = retry_config::max_retry_time_ms();
         assert!(MAX_TIME > 0.0);
     }
-    
+
     #[tokio::test]
     async fn test_retry_succeeds() {
         let counter = Arc::new(AtomicU32::new(0));
         let counter_clone = counter.clone();
-        
+
         let result = retry_with_exponential_backoff(
             move || {
                 let counter = counter_clone.clone();
@@ -709,18 +709,18 @@ mod tests {
             },
             3,
         ).await;
-        
+
         assert!(result.is_ok());
         assert_eq!(counter.load(Ordering::Relaxed), 3);
     }
-    
+
     #[tokio::test]
     async fn test_retry_fails_after_max_attempts() {
         let result = retry_with_exponential_backoff(
             || Box::pin(async { Err::<(), _>("permanent failure") }),
             2,
         ).await;
-        
+
         assert!(matches!(
             result,
             Err(RetryError::MaxRetriesExceeded { attempts: 3, .. })
@@ -763,7 +763,7 @@ impl RedisDistributedLock {
             ttl,
         }
     }
-    
+
     /// 尝试获取锁
     pub async fn acquire(&mut self) -> Result<bool, redis::RedisError> {
         let result: Option<String> = self.conn
@@ -775,10 +775,10 @@ impl RedisDistributedLock {
                     .conditional_set(redis::ExistenceCheck::NX),
             )
             .await?;
-        
+
         Ok(result.is_some())
     }
-    
+
     /// 释放锁（Lua脚本保证原子性）
     pub async fn release(&mut self) -> Result<bool, redis::RedisError> {
         let script = r#"
@@ -788,16 +788,16 @@ impl RedisDistributedLock {
                 return 0
             end
         "#;
-        
+
         let result: i32 = redis::Script::new(script)
             .key(&self.key)
             .arg(&self.value)
             .invoke_async(&mut self.conn)
             .await?;
-        
+
         Ok(result == 1)
     }
-    
+
     /// 续约锁
     pub async fn renew(&mut self) -> Result<bool, redis::RedisError> {
         let script = r#"
@@ -807,14 +807,14 @@ impl RedisDistributedLock {
                 return 0
             end
         "#;
-        
+
         let result: i32 = redis::Script::new(script)
             .key(&self.key)
             .arg(&self.value)
             .arg(self.ttl.as_millis() as usize)
             .invoke_async(&mut self.conn)
             .await?;
-        
+
         Ok(result == 1)
     }
 }
@@ -831,13 +831,13 @@ where
     if !lock.acquire().await.map_err(|e| LockError::AcquireFailed(e.to_string()))? {
         return Err(LockError::LockNotAcquired);
     }
-    
+
     // 执行操作
     let result = f.await.map_err(|e| LockError::OperationFailed(e.to_string()))?;
-    
+
     // 释放锁
     lock.release().await.map_err(|e| LockError::ReleaseFailed(e.to_string()))?;
-    
+
     Ok(result)
 }
 
@@ -908,19 +908,19 @@ impl HealthCheckService {
             checks: Arc::new(RwLock::new(Vec::new())),
         }
     }
-    
+
     pub async fn add_checker(&self, checker: Box<dyn HealthChecker + Send + Sync>) {
         self.checks.write().await.push(checker);
     }
-    
+
     pub async fn check_health(&self) -> HealthCheck {
         let checks_guard = self.checks.read().await;
         let mut component_checks = Vec::new();
-        
+
         for checker in checks_guard.iter() {
             component_checks.push(checker.check().await);
         }
-        
+
         // 计算总体状态
         let overall_status = if component_checks.iter().any(|c| matches!(c.status, HealthStatus::Unhealthy)) {
             HealthStatus::Unhealthy
@@ -929,7 +929,7 @@ impl HealthCheckService {
         } else {
             HealthStatus::Healthy
         };
-        
+
         HealthCheck {
             status: overall_status,
             version: self.version.clone(),
@@ -937,7 +937,7 @@ impl HealthCheckService {
             checks: component_checks,
         }
     }
-    
+
     pub fn router(self: Arc<Self>) -> Router {
         Router::new()
             .route("/health", get({
@@ -984,7 +984,7 @@ impl HealthChecker for DatabaseHealthChecker {
             },
         }
     }
-    
+
     fn name(&self) -> &str {
         "database"
     }
@@ -1007,16 +1007,16 @@ pub struct ReliabilityMetrics {
     pub circuit_breaker_state: ObservableGauge<u64>,
     pub circuit_breaker_transitions: Counter<u64>,
     pub circuit_breaker_rejections: Counter<u64>,
-    
+
     // 限流指标
     pub rate_limit_allowed: Counter<u64>,
     pub rate_limit_rejected: Counter<u64>,
-    
+
     // 重试指标
     pub retry_attempts: Histogram<u64>,
     pub retry_successes: Counter<u64>,
     pub retry_failures: Counter<u64>,
-    
+
     // 延迟指标
     pub request_duration: Histogram<f64>,
     pub queue_wait_time: Histogram<f64>,
@@ -1029,48 +1029,48 @@ impl ReliabilityMetrics {
                 .u64_observable_gauge("reliability.circuit_breaker.state")
                 .with_description("Circuit breaker state (0=closed, 1=open, 2=half-open)")
                 .build(),
-            
+
             circuit_breaker_transitions: meter
                 .u64_counter("reliability.circuit_breaker.transitions")
                 .with_description("Number of circuit breaker state transitions")
                 .build(),
-            
+
             circuit_breaker_rejections: meter
                 .u64_counter("reliability.circuit_breaker.rejections")
                 .with_description("Number of rejected requests due to open circuit")
                 .build(),
-            
+
             rate_limit_allowed: meter
                 .u64_counter("reliability.rate_limit.allowed")
                 .with_description("Number of allowed requests")
                 .build(),
-            
+
             rate_limit_rejected: meter
                 .u64_counter("reliability.rate_limit.rejected")
                 .with_description("Number of rate-limited requests")
                 .build(),
-            
+
             retry_attempts: meter
                 .u64_histogram("reliability.retry.attempts")
                 .with_description("Number of retry attempts per request")
                 .build(),
-            
+
             retry_successes: meter
                 .u64_counter("reliability.retry.successes")
                 .with_description("Number of successful retries")
                 .build(),
-            
+
             retry_failures: meter
                 .u64_counter("reliability.retry.failures")
                 .with_description("Number of failed retries after max attempts")
                 .build(),
-            
+
             request_duration: meter
                 .f64_histogram("reliability.request.duration")
                 .with_description("Request duration in milliseconds")
                 .with_unit("ms")
                 .build(),
-            
+
             queue_wait_time: meter
                 .f64_histogram("reliability.queue.wait_time")
                 .with_description("Time spent waiting in queue")
@@ -1078,17 +1078,17 @@ impl ReliabilityMetrics {
                 .build(),
         }
     }
-    
+
     pub fn record_request(&self, duration_ms: f64, status: &str, retries: u64) {
         let labels = &[
             KeyValue::new("status", status.to_string()),
         ];
-        
+
         self.request_duration.record(duration_ms, labels);
-        
+
         if retries > 0 {
             self.retry_attempts.record(retries, labels);
-            
+
             if status == "success" {
                 self.retry_successes.add(1, labels);
             } else {
@@ -1124,12 +1124,12 @@ impl RecommendationCache {
             cache: DashMap::new(),
         }
     }
-    
+
     /// 零拷贝读取
     pub fn get(&self, key: u64) -> Option<Bytes> {
         self.cache.get(&key).map(|v| v.clone())
     }
-    
+
     /// 零拷贝写入
     pub fn insert(&self, key: u64, value: Bytes) {
         self.cache.insert(key, value);
@@ -1147,10 +1147,10 @@ use tokio::time::{interval, Duration};
 /// 2ms级实时任务调度
 pub async fn realtime_scheduler() {
     let mut interval = interval(Duration::from_millis(2));
-    
+
     loop {
         interval.tick().await;
-        
+
         // 执行实时任务
         // - 内存泄漏故障减少85%
         // - 确定性延迟保证
@@ -1174,7 +1174,7 @@ pub async fn realtime_scheduler() {
 
 ```
 硬件: AMD Ryzen 9 5950X
-Rust: 1.90.0
+Rust: 1.92.0
 
 熔断器性能:
 - 吞吐量: 2M ops/秒
@@ -1198,7 +1198,6 @@ Rust: 1.90.0
 
 ---
 
-**文档版本**: 1.0  
-**作者**: C13 Reliability Team  
+**文档版本**: 1.0
+**作者**: C13 Reliability Team
 **最后更新**: 2025年10月28日
-

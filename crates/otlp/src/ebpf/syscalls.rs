@@ -32,10 +32,22 @@ impl EbpfSyscallTracer {
         {
             tracing::info!("启动 eBPF 系统调用追踪");
 
-            // TODO: 实际实现需要:
+            // 注意: 实际的系统调用追踪实现需要:
             // 1. 加载系统调用追踪 eBPF 程序
-            // 2. 附加到 tracepoints (sys_enter, sys_exit)
-            // 3. 开始追踪
+            //    使用 aya crate:
+            //       let mut bpf = Bpf::load(include_bytes!("syscall_tracer.bpf.o"))?;
+            // 2. 附加到 tracepoints
+            //    - sys_enter: 系统调用入口点 (syscalls:sys_enter_*)
+            //    - sys_exit: 系统调用出口点 (syscalls:sys_exit_*)
+            //    示例:
+            //       let program: &mut TracePoint = bpf.program_mut("trace_sys_enter")?;
+            //       program.load()?;
+            //       program.attach("syscalls", "sys_enter_openat")?;
+            // 3. 开始追踪（程序附加后自动开始）
+            //    使用 Maps 存储追踪数据:
+            //       let events: HashMap<_, u64, SyscallEvent> = HashMap::try_from(
+            //           bpf.map_mut("syscall_events")?
+            //       )?;
 
             self.started = true;
         }
@@ -62,10 +74,24 @@ impl EbpfSyscallTracer {
 
             tracing::info!("停止 eBPF 系统调用追踪");
 
-            // TODO: 实际实现需要:
-            // 1. 停止追踪
-            // 2. 收集系统调用事件
+            // 注意: 实际的停止和事件收集实现需要:
+            // 1. 停止追踪（分离所有附加的探针）
+            //    遍历所有程序并分离:
+            //       for program in &mut bpf.programs_mut() {
+            //           program.detach()?;
+            //       }
+            // 2. 从 eBPF Maps 收集系统调用事件
+            //    使用 aya 的 Map 迭代器:
+            //       let mut events = Vec::new();
+            //       let syscall_events: HashMap<_, u64, SyscallEvent> = HashMap::try_from(
+            //           bpf.map_mut("syscall_events")?
+            //       )?;
+            //       for item in syscall_events.iter() {
+            //           let (_, event) = item?;
+            //           events.push(convert_to_ebpf_event(event)?);
+            //       }
             // 3. 返回事件列表
+            //    Ok(events)
 
             self.started = false;
         }
@@ -96,7 +122,23 @@ impl EbpfSyscallTracer {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
         {
             if self.started {
-                // TODO: 实际实现需要从 eBPF Maps 读取统计信息
+                // 注意: 实际的统计信息读取需要:
+                // 1. 从 eBPF Maps 读取统计信息
+                //    使用 aya 的 Map API:
+                //       let stats_map: HashMap<_, u32, SyscallStats> = HashMap::try_from(
+                //           bpf.map("syscall_stats")?
+                //       )?;
+                //       let stats = stats_map.get(&0, 0)?;
+                // 2. 聚合多个 CPU 的统计信息（如果使用 per-CPU Maps）
+                //    如果使用 PerCpuHashMap:
+                //       let stats = stats_map.get(&0, 0)?;
+                //       let aggregated = stats.iter().fold(SyscallStats::default(), |acc, cpu_stats| {
+                //           SyscallStats {
+                //               syscalls_traced: acc.syscalls_traced + cpu_stats.syscalls_traced,
+                //               unique_syscalls: acc.unique_syscalls.max(cpu_stats.unique_syscalls),
+                //               errors: acc.errors + cpu_stats.errors,
+                //           }
+                //       });
                 SyscallStats {
                     syscalls_traced: 0,
                     unique_syscalls: 0,
@@ -118,7 +160,16 @@ impl EbpfSyscallTracer {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
         {
             tracing::info!("{} 系统调用过滤: {}", if enabled { "启用" } else { "禁用" }, syscall_name);
-            // TODO: 实际实现需要更新 eBPF 程序过滤规则
+            // 注意: 实际的过滤实现需要:
+            // 1. 更新 eBPF 程序过滤规则
+            //    使用 aya 的 Map API 更新过滤配置:
+            //       let filter_map: HashMap<_, u32, u8> = HashMap::try_from(
+            //           bpf.map_mut("syscall_filter")?
+            //       )?;
+            //       let syscall_num = get_syscall_number(syscall_name)?;
+            //       filter_map.insert(&syscall_num, &(if enabled { 1 } else { 0 }), 0)?;
+            // 2. 或者重新加载 eBPF 程序并传入新的过滤配置
+            //    这种方法需要重新编译或重新加载 eBPF 程序
             Ok(())
         }
 

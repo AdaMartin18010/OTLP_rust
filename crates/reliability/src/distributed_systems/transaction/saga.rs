@@ -268,7 +268,58 @@ impl DistributedTransaction for SagaCoordinator {
                 self.execute_orchestration(tx_id).await?;
             }
             SagaOrchestrationMode::Choreography => {
-                // TODO: 实现编舞式 Saga
+                // 注意: 编舞式 Saga 实现需要:
+                // 1. 事件驱动架构:
+                //    a. 每个服务发布事件（通过消息队列）
+                //    b. 其他服务订阅相关事件
+                //    c. 通过事件协调整个事务流程
+                //    示例:
+                //       use async_channel::{Sender, Receiver};
+                //       let event_publisher: Sender<SagaEvent> = ...;
+                //       event_publisher.send(SagaEvent::OrderCreated { order_id, amount }).await?;
+                //
+                // 2. 服务间通信:
+                //    a. 使用消息队列（Kafka、RabbitMQ、NATS等）
+                //    b. 每个服务独立处理自己的业务逻辑
+                //    c. 通过事件订阅者响应其他服务的事件
+                //    示例:
+                //       let mut subscriber = event_subscriber.clone();
+                //       while let Ok(event) = subscriber.recv().await {
+                //           match event {
+                //               SagaEvent::OrderCreated { order_id, amount } => {
+                //                   // 处理订单创建事件
+                //                   self.process_payment(order_id, amount).await?;
+                //                   event_publisher.send(SagaEvent::PaymentProcessed { order_id }).await?;
+                //               }
+                //               SagaEvent::PaymentProcessed { order_id } => {
+                //                   // 处理支付完成事件
+                //                   self.ship_order(order_id).await?;
+                //               }
+                //               // ... 其他事件
+                //           }
+                //       }
+                //
+                // 3. 补偿处理:
+                //    a. 如果某个服务失败，发布补偿事件
+                //    b. 其他服务订阅补偿事件并执行补偿操作
+                //    示例:
+                //       if payment_failed {
+                //           event_publisher.send(SagaEvent::PaymentFailed { order_id }).await?;
+                //       }
+                //       // 订阅者处理补偿:
+                //       SagaEvent::PaymentFailed { order_id } => {
+                //           self.cancel_order(order_id).await?;
+                //       }
+                //
+                // 4. 事件持久化:
+                //    a. 所有事件都持久化到事件存储
+                //    b. 支持事件重放和恢复
+                //    c. 使用事件溯源（Event Sourcing）模式
+                //
+                // 5. 状态管理:
+                //    a. 每个服务维护自己的状态
+                //    b. 通过事件流追踪整个 Saga 的状态
+                //    c. 实现 Saga 协调器（可选，用于监控和调试）
                 return Err(UnifiedError::new(
                     "编舞式 Saga 尚未实现",
                     ErrorSeverity::Medium,

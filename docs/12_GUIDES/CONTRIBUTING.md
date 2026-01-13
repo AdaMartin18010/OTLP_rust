@@ -47,7 +47,7 @@
 ### 1. 环境准备
 
 ```bash
-# 安装Rust 1.90+
+# 安装Rust 1.92+
 rustup install 1.90.0
 rustup default 1.90.0
 

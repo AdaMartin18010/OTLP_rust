@@ -501,9 +501,9 @@ docs/
 
 有问题？
 
-- GitHub Issues: (待添加)
-- 讨论区: (待添加)
-- Email: (待添加)
+- GitHub Issues: https://github.com/your-org/OTLP_rust/issues
+- 讨论区: https://github.com/your-org/OTLP_rust/discussions
+- Email: your-email@example.com
 
 ---
 

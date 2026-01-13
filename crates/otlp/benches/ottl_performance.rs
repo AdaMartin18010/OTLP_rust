@@ -4,7 +4,7 @@
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use otlp::ottl::bytecode::BytecodeCompiler;
-use otlp::ottl::parser::{OttlParser, Statement};
+use otlp::ottl::parser::OttlParser;
 
 fn generate_test_statements(count: usize) -> Vec<String> {
     (0..count)
@@ -76,9 +76,11 @@ fn ottl_execute_bytecode(c: &mut Criterion) {
 
         for stmt_str in &statements {
             let mut parser = OttlParser::new(stmt_str.clone());
-            if let Ok(stmt) = parser.parse_statement() {
-                if let Ok(program) = compiler.compile(&stmt) {
-                    programs.push(program);
+            if let Ok(stmts) = parser.parse() {
+                if let Some(stmt) = stmts.first() {
+                    if let Ok(program) = compiler.compile(stmt) {
+                        programs.push(program);
+                    }
                 }
             }
         }

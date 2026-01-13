@@ -110,7 +110,7 @@ C11 开发库文档体系按照以下结构组织：
 
 1. 研究 [analysis/README.md](analysis/README.md) 深度分析
 2. 查看 [reports/](reports/) 项目报告
-3. 参考 [references/RUST_190_FEATURES_GUIDE.md](references/RUST_190_FEATURES_GUIDE.md) Rust 特性
+3. 参考 [references/RUST_192_FEATURES_GUIDE.md](references/RUST_192_FEATURES_GUIDE.md) Rust 特性
 
 ### 3. 导航说明
 
@@ -211,7 +211,7 @@ C11 开发库文档体系按照以下结构组织：
 
 | 文档 | 说明 | 版本 |
 |------|------|------|
-| [references/RUST_190_FEATURES_GUIDE.md](references/RUST_190_FEATURES_GUIDE.md) | Rust 1.90 特性指南 | 1.90+ |
+| [references/RUST_192_FEATURES_GUIDE.md](references/RUST_192_FEATURES_GUIDE.md) | Rust 1.92 特性指南 | 1.92+ |
 
 ### 2. API 参考
 
@@ -238,38 +238,38 @@ C11 开发库文档体系按照以下结构组织：
 
 | 文档 | 说明 | 更新日期 |
 |------|------|---------|
-| [analysis/rust190_ecosystem/README.md](analysis/rust190_ecosystem/README.md) | Rust 1.90 生态系统总览 | 2025-09-28 |
+| [analysis/rust192_ecosystem/README.md](analysis/rust192_ecosystem/README.md) | Rust 1.92 生态系统总览 | 2025-01-13 |
 
 ### 2. 形式化验证
 
 | 文档 | 说明 | 更新日期 |
 |------|------|---------|
-| [analysis/rust190_ecosystem/01_formal_verification/formal_verification_framework.md](analysis/rust190_ecosystem/01_formal_verification/formal_verification_framework.md) | 形式化验证框架 | 2025-09-28 |
+| [analysis/rust192_ecosystem/01_formal_verification/formal_verification_framework.md](analysis/rust192_ecosystem/01_formal_verification/formal_verification_framework.md) | 形式化验证框架 | 2025-01-13 |
 
 ### 3. 跨行业分析
 
 | 文档 | 说明 | 更新日期 |
 |------|------|---------|
-| [analysis/rust190_ecosystem/02_cross_industry_analysis/cross_industry_comparison.md](analysis/rust190_ecosystem/02_cross_industry_analysis/cross_industry_comparison.md) | 跨行业对比分析 | 2025-09-28 |
+| [analysis/rust192_ecosystem/02_cross_industry_analysis/cross_industry_comparison.md](analysis/rust192_ecosystem/02_cross_industry_analysis/cross_industry_comparison.md) | 跨行业对比分析 | 2025-01-13 |
 
 ### 4. 性能基准
 
 | 文档 | 说明 | 更新日期 |
 |------|------|---------|
-| [analysis/rust190_ecosystem/03_performance_benchmarks/performance_analysis.md](analysis/rust190_ecosystem/03_performance_benchmarks/performance_analysis.md) | 性能分析报告 | 2025-09-28 |
+| [analysis/rust192_ecosystem/03_performance_benchmarks/performance_analysis.md](analysis/rust192_ecosystem/03_performance_benchmarks/performance_analysis.md) | 性能分析报告 | 2025-01-13 |
 | [analysis/glommio_integration_analysis.md](analysis/glommio_integration_analysis.md) | Glommio 集成分析 | 2025-09-28 |
 
 ### 5. 安全分析
 
 | 文档 | 说明 | 更新日期 |
 |------|------|---------|
-| [analysis/rust190_ecosystem/04_security_analysis/security_comprehensive_analysis.md](analysis/rust190_ecosystem/04_security_analysis/security_comprehensive_analysis.md) | 安全综合分析 | 2025-09-28 |
+| [analysis/rust192_ecosystem/04_security_analysis/security_comprehensive_analysis.md](analysis/rust192_ecosystem/04_security_analysis/security_comprehensive_analysis.md) | 安全综合分析 | 2025-01-13 |
 
 ### 6. 成熟度评估
 
 | 文档 | 说明 | 更新日期 |
 |------|------|---------|
-| [analysis/rust190_ecosystem/05_ecosystem_maturity/ecosystem_maturity_assessment.md](analysis/rust190_ecosystem/05_ecosystem_maturity/ecosystem_maturity_assessment.md) | 生态成熟度评估 | 2025-09-28 |
+| [analysis/rust192_ecosystem/05_ecosystem_maturity/ecosystem_maturity_assessment.md](analysis/rust192_ecosystem/05_ecosystem_maturity/ecosystem_maturity_assessment.md) | 生态成熟度评估 | 2025-01-13 |
 
 ## 📊 项目报告
 
@@ -286,9 +286,9 @@ C11 开发库文档体系按照以下结构组织：
 
 | 报告 | 说明 | 日期 |
 |------|------|------|
-| [reports/COMPREHENSIVE_RUST_190_ECOSYSTEM_ANALYSIS.md](reports/COMPREHENSIVE_RUST_190_ECOSYSTEM_ANALYSIS.md) | Rust 1.90 生态系统分析 | 2025-09-28 |
-| [reports/RUST_190_ENHANCEMENT_ANALYSIS.md](reports/RUST_190_ENHANCEMENT_ANALYSIS.md) | Rust 1.90 增强分析 | 2025-09-28 |
-| [reports/FINAL_RUST_190_ANALYSIS_REPORT.md](reports/FINAL_RUST_190_ANALYSIS_REPORT.md) | Rust 1.90 最终分析报告 | 2025-09-28 |
+| [reports/COMPREHENSIVE_RUST_192_ECOSYSTEM_ANALYSIS.md](reports/COMPREHENSIVE_RUST_192_ECOSYSTEM_ANALYSIS.md) | Rust 1.92 生态系统分析 | 2025-01-13 |
+| [reports/RUST_192_ENHANCEMENT_ANALYSIS.md](reports/RUST_192_ENHANCEMENT_ANALYSIS.md) | Rust 1.92 增强分析 | 2025-01-13 |
+| [reports/FINAL_RUST_192_ANALYSIS_REPORT.md](reports/FINAL_RUST_192_ANALYSIS_REPORT.md) | Rust 1.92 最终分析报告 | 2025-01-13 |
 | [reports/GLOMMIO_INTEGRATION_COMPLETION_REPORT_2025_09_28.md](reports/GLOMMIO_INTEGRATION_COMPLETION_REPORT_2025_09_28.md) | Glommio 集成完成报告 | 2025-09-28 |
 | [reports/FINAL_ADVANCED_DEVELOPMENT_REPORT_2025_09_28.md](reports/FINAL_ADVANCED_DEVELOPMENT_REPORT_2025_09_28.md) | 高级开发最终报告 | 2025-09-28 |
 
@@ -338,7 +338,7 @@ C11 开发库文档体系按照以下结构组织：
 | 示例 | 文件 | 说明 |
 |------|------|------|
 | 基础使用 | `middleware_basic_usage.rs` | 中间件基础使用 |
-| 简单演示 | `rust190_simple_demo.rs` | Rust 1.90 简单演示 |
+| 简单演示 | `rust192_simple_demo.rs` | Rust 1.92 简单演示 |
 
 ### 2. 中级示例
 
@@ -346,7 +346,7 @@ C11 开发库文档体系按照以下结构组织：
 |------|------|------|
 | 综合演示 | `middleware_comprehensive_demo.rs` | 中间件综合功能演示 |
 | 消息队列 | `message_queue.rs` | 消息队列使用示例 |
-| Rust 1.90 特性 | `rust190_features_demo.rs` | Rust 1.90 特性展示 |
+| Rust 1.92 特性 | `rust192_features_demo.rs` | Rust 1.92 特性展示 |
 
 ### 3. 高级示例
 

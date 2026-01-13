@@ -64,20 +64,6 @@ impl EbpfLoader {
             self.config
         );
 
-        // 注意: 实际的 eBPF 程序加载需要:
-        // 1. Linux 内核 >= 5.8
-        // 2. CAP_BPF 权限
-        // 3. BTF (BPF Type Format) 支持
-        // 4. 使用 aya crate 加载:
-        //    let mut bpf = Bpf::load(program_bytes)?;
-        //    self.bpf = Some(bpf);
-
-        // 当前实现：验证和准备
-        // 实际运行时加载需要完整的 aya 集成
-        if program_bytes.is_empty() {
-            return Err(EbpfError::LoadFailed("程序字节码为空".to_string()).into());
-        }
-
         // 检查程序大小限制（eBPF 程序通常有大小限制）
         const MAX_PROGRAM_SIZE: usize = 1_000_000; // 1MB
         if program_bytes.len() > MAX_PROGRAM_SIZE {
@@ -89,8 +75,58 @@ impl EbpfLoader {
             .into());
         }
 
-        tracing::debug!("eBPF 程序验证通过，准备加载到内核");
-        Ok(())
+        // 检查系统支持
+        Self::check_system_support()?;
+
+        // 实际加载 eBPF 程序（使用 aya）
+        // 注意：这需要实际的 eBPF 程序字节码和适当的权限
+        use aya::util::KernelVersion;
+
+        // 检查内核版本
+        match KernelVersion::current() {
+            Ok(kernel_version) => {
+                if kernel_version < KernelVersion::new(5, 8, 0) {
+                    return Err(EbpfError::IncompatibleKernel.into());
+                }
+                tracing::debug!("内核版本检查通过: {:?}", kernel_version);
+            }
+            Err(e) => {
+                tracing::warn!("无法获取内核版本: {}，继续尝试加载", e);
+                // 继续执行，因为某些环境可能无法获取内核版本
+            }
+        }
+
+        // 尝试加载 eBPF 程序
+        // 注意：这需要实际的 eBPF 程序字节码
+        // 如果程序字节码无效或权限不足，会返回错误
+        match Bpf::load(program_bytes) {
+            Ok(mut bpf) => {
+                tracing::info!("eBPF 程序加载成功");
+
+                // 验证程序是否包含必要的段
+                let program_count = bpf.programs().count();
+                if program_count == 0 {
+                    tracing::warn!("eBPF 程序未包含任何程序段");
+                } else {
+                    tracing::debug!("eBPF 程序包含 {} 个程序段", program_count);
+                }
+
+                // 验证 Maps
+                let map_count = bpf.maps().count();
+                if map_count > 0 {
+                    tracing::debug!("eBPF 程序包含 {} 个 Maps", map_count);
+                }
+
+                self.bpf = Some(bpf);
+                tracing::info!("eBPF 程序已成功加载到内核");
+                Ok(())
+            }
+            Err(e) => {
+                // 如果加载失败，返回错误
+                tracing::warn!("eBPF 程序加载失败: {}，这可能是因为缺少权限或程序格式不正确", e);
+                Err(EbpfError::LoadFailed(format!("eBPF 程序加载失败: {}", e)).into())
+            }
+        }
     }
 
     #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
@@ -125,23 +161,82 @@ impl EbpfLoader {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
         {
             // 检查内核版本（需要 >= 5.8 以获得完整的 eBPF 支持）
-            // 注意: 实际检查需要读取 /proc/version 或使用系统调用
-            // 这里提供基本检查框架
-            tracing::debug!("检查 Linux 内核版本支持");
+            use std::fs;
+
+            // 读取内核版本信息
+            let version_info = match fs::read_to_string("/proc/version") {
+                Ok(info) => info,
+                Err(e) => {
+                    tracing::warn!("无法读取 /proc/version: {}", e);
+                    // 继续执行，不阻塞
+                    return Ok(());
+                }
+            };
+
+            // 解析内核版本 (格式: Linux version X.Y.Z)
+            if let Some(version_start) = version_info.find("Linux version ") {
+                let version_str = &version_info[version_start + 14..];
+                if let Some(space_pos) = version_str.find(' ') {
+                    let version = &version_str[..space_pos];
+                    let parts: Vec<&str> = version.split('.').collect();
+                    if parts.len() >= 2 {
+                        if let (Ok(major), Ok(minor)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
+                            if major < 5 || (major == 5 && minor < 8) {
+                                return Err(EbpfError::IncompatibleKernel.into());
+                            }
+                            tracing::debug!("内核版本检查通过: {}.{}", major, minor);
+                        }
+                    }
+                }
+            }
 
             // 检查 BTF 支持
             // BTF 信息通常在 /sys/kernel/btf/vmlinux
+            // BTF (BPF Type Format) 允许 eBPF 程序访问内核数据结构
             let btf_path = "/sys/kernel/btf/vmlinux";
             if std::path::Path::new(btf_path).exists() {
                 tracing::debug!("检测到 BTF 支持");
             } else {
                 tracing::warn!("未检测到 BTF 支持，某些 eBPF 功能可能受限");
+                // 注意：BTF 不是必需的，但强烈推荐使用
             }
 
             // 检查权限（CAP_BPF）
-            // 注意: 实际检查需要 libcap 或系统调用
-            tracing::debug!("eBPF 系统支持检查完成（基本检查）");
-            tracing::info!("eBPF 系统支持检查通过（注意：完整检查需要运行时权限验证）");
+            // 读取进程状态检查能力
+            if let Ok(status) = fs::read_to_string("/proc/self/status") {
+                // 检查是否是root用户
+                let is_root = status.lines()
+                    .find(|line| line.starts_with("Uid:"))
+                    .and_then(|line| {
+                        line.split_whitespace().nth(2).and_then(|uid| uid.parse::<u32>().ok())
+                    })
+                    .map(|uid| uid == 0)
+                    .unwrap_or(false);
+
+                if !is_root {
+                    // 检查CAP_BPF能力
+                    let has_cap_bpf = status.lines()
+                        .find(|line| line.starts_with("CapBpf:"))
+                    .and_then(|line| {
+                        line.split_whitespace().nth(1)
+                                .and_then(|cap| u64::from_str_radix(cap, 16).ok())
+                                .map(|cap| cap != 0)
+                    })
+                        .unwrap_or(false);
+
+                    if !has_cap_bpf {
+                        tracing::warn!("未检测到 CAP_BPF 权限，某些 eBPF 功能可能受限");
+                        // 不直接返回错误，允许继续（某些功能可能不需要）
+                    } else {
+                        tracing::debug!("检测到 CAP_BPF 权限");
+                    }
+                } else {
+                    tracing::debug!("检测到 root 权限");
+                }
+            }
+
+            tracing::debug!("eBPF 系统支持检查完成");
+            tracing::info!("eBPF 系统支持检查通过");
             Ok(())
         }
 
@@ -154,6 +249,34 @@ impl EbpfLoader {
     /// 获取配置
     pub fn config(&self) -> &EbpfConfig {
         &self.config
+    }
+
+    /// 获取 Bpf 实例（用于高级操作）
+    ///
+    /// # 返回
+    ///
+    /// 如果程序已加载，返回 `Some(&Bpf)`，否则返回 `None`
+    ///
+    /// # 注意
+    ///
+    /// 这个方法返回不可变引用。如果需要可变引用，请使用 `bpf_mut()`。
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn bpf(&self) -> Option<&Bpf> {
+        self.bpf.as_ref()
+    }
+
+    /// 获取 Bpf 实例的可变引用（用于高级操作）
+    ///
+    /// # 返回
+    ///
+    /// 如果程序已加载，返回 `Some(&mut Bpf)`，否则返回 `None`
+    ///
+    /// # 注意
+    ///
+    /// 这个方法返回可变引用，可以用于附加探针、操作 Maps 等。
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn bpf_mut(&mut self) -> Option<&mut Bpf> {
+        self.bpf.as_mut()
     }
 
     /// 验证 eBPF 程序字节码
@@ -210,14 +333,25 @@ impl EbpfLoader {
             #[cfg(feature = "object")]
             {
                 use object::Object;
-                match object::File::parse(program_bytes) {
-                    Ok(_) => {
-                        tracing::debug!("ELF 文件解析成功");
+                if let Ok(obj_file) = object::File::parse(program_bytes) {
+                    // 验证是 eBPF 目标
+                    let arch = obj_file.architecture();
+                    if !matches!(arch, object::Architecture::Bpf) {
+                        tracing::warn!("ELF 文件不是 eBPF 目标架构: {:?}", arch);
                     }
-                    Err(e) => {
-                        tracing::warn!("ELF 文件解析失败: {}", e);
-                        // 不直接返回错误，因为可能是其他格式
+
+                    // 检查是否有 eBPF 程序段
+                    let has_programs = obj_file.sections().any(|section| {
+                        section.name().map(|name| name.contains("prog")).unwrap_or(false)
+                    });
+
+                    if !has_programs {
+                        tracing::warn!("ELF 文件中未找到 eBPF 程序段");
+                    } else {
+                        tracing::debug!("ELF 文件验证通过，包含 eBPF 程序");
                     }
+                } else {
+                    tracing::warn!("无法解析 ELF 文件，跳过详细验证");
                 }
             }
 
@@ -276,9 +410,17 @@ impl EbpfLoader {
 
             // 注意: 实际的 eBPF 程序卸载需要:
             // 1. 分离所有附加的探针
-            // 2. 关闭所有 Maps
+            //    遍历所有程序并分离:
+            //    for program in bpf.programs_mut() {
+            //        program.detach()?;
+            //    }
+            // 2. 关闭所有 Maps（如果需要）
+            //    aya 会在 drop 时自动处理
             // 3. 调用 aya 的卸载方法:
             //    drop(bpf); // aya 会自动处理清理
+            //    或者显式调用:
+            //    bpf.take_all_programs(); // 分离所有程序
+            //    bpf.take_all_maps(); // 关闭所有 Maps
 
             tracing::debug!("eBPF 程序已卸载");
         } else {

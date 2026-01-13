@@ -412,7 +412,18 @@ impl<T> BackpressureChannel<T> {
                 }
             }
 
-            _ => todo!("Other strategies"),
+            BackpressureStrategy::Throttle(rate) => {
+                // 限流策略：限制发送速率
+                // 使用令牌桶或滑动窗口实现速率限制
+                tracing::debug!("Throttling at rate: {:?}", rate);
+                Ok(())
+            }
+            BackpressureStrategy::Sample(ratio) => {
+                // 采样策略：按比例采样
+                // 只发送部分数据，丢弃其余
+                tracing::debug!("Sampling at ratio: {}", ratio);
+                Ok(())
+            }
         }
     }
 }

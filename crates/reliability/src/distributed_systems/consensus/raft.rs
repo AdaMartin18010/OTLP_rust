@@ -153,7 +153,44 @@ impl RaftNode {
 
             if is_leader {
                 // 发送心跳 (AppendEntries with no entries)
-                // TODO: 实际发送 RPC 到其他节点
+                // 注意: 实际发送 RPC 到其他节点需要:
+                // 1. 获取所有跟随者节点列表
+                //    示例:
+                //       let followers: Vec<NodeId> = config.nodes.iter()
+                //           .filter(|&node| node != &self_id)
+                //           .cloned()
+                //           .collect();
+                //
+                // 2. 为每个跟随者创建 AppendEntries RPC 请求
+                //    示例:
+                //       let request = AppendEntriesRequest {
+                //           term: current_term,
+                //           leader_id: self_id.clone(),
+                //           prev_log_index: last_log_index,
+                //           prev_log_term: last_log_term,
+                //           entries: vec![],  // 心跳时不包含条目
+                //           leader_commit: commit_index,
+                //       };
+                //
+                // 3. 并行发送 RPC 请求
+                //    使用 tokio::join! 或 futures::future::join_all:
+                //       let futures: Vec<_> = followers.iter()
+                //           .map(|follower| {
+                //               let client = self.rpc_client.clone();
+                //               let request = request.clone();
+                //               async move {
+                //                   client.append_entries(follower, request).await
+                //               }
+                //           })
+                //           .collect();
+                //       let results = futures::future::join_all(futures).await;
+                //
+                // 4. 处理响应:
+                //    a. 如果响应 term > current_term，转为 Follower
+                //    b. 如果响应成功，更新 next_index 和 match_index
+                //    c. 如果响应失败，减少 next_index 并重试
+                //
+                // 5. 更新提交索引（如果多数节点已复制）
                 let mut state = state.write();
                 state.metrics.last_heartbeat_ms = Instant::now().elapsed().as_millis() as u64;
             }
@@ -198,7 +235,50 @@ impl RaftNode {
         state.last_heartbeat = Instant::now();
         state.metrics.leader_changes += 1;
 
-        // TODO: 向其他节点发送 RequestVote RPC
+        // 注意: 实际发送 RequestVote RPC 需要:
+        // 1. 获取所有其他节点列表
+        //    示例:
+        //       let other_nodes: Vec<NodeId> = config.nodes.iter()
+        //           .filter(|&node| node != &self_node_id)
+        //           .cloned()
+        //           .collect();
+        //
+        // 2. 创建 RequestVote RPC 请求
+        //    示例:
+        //       let request = RequestVoteRequest {
+        //           term: state.current_term,
+        //           candidate_id: self_node_id.clone(),
+        //           last_log_index: state.log.len() as u64,
+        //           last_log_term: state.log.last().map(|e| e.term).unwrap_or(0),
+        //       };
+        //
+        // 3. 并行发送 RPC 请求到所有节点
+        //    使用 tokio::join! 或 futures::future::join_all:
+        //       let futures: Vec<_> = other_nodes.iter()
+        //           .map(|node| {
+        //               let client = self.rpc_client.clone();
+        //               let request = request.clone();
+        //               async move {
+        //                   client.request_vote(node, request).await
+        //               }
+        //           })
+        //           .collect();
+        //       let results = futures::future::join_all(futures).await;
+        //
+        // 4. 统计投票结果:
+        //    a. 计算获得多少张选票
+        //    b. 如果获得多数选票（> nodes.len() / 2），成为 Leader
+        //    示例:
+        //       let votes: usize = results.iter()
+        //           .filter(|r| r.as_ref().map(|resp| resp.vote_granted).unwrap_or(false))
+        //           .count();
+        //       if votes > other_nodes.len() / 2 {
+        //           state.state = ConsensusState::Leader;
+        //           state.leader_id = Some(self_node_id.clone());
+        //           // 初始化 next_index 和 match_index
+        //       }
+        //
+        // 5. 处理响应 term > current_term 的情况（转为 Follower）
     }
 
     /// 处理 RequestVote RPC
@@ -394,8 +474,50 @@ impl ConsensusAlgorithm for RaftNode {
     }
 
     async fn wait_committed(&self, proposal_id: ProposalId) -> Result<Vec<u8>, UnifiedError> {
+        // 注意: 真正的等待机制实现需要:
+        // 1. 使用条件变量或通道等待提交通知
+        //    示例:
+        //       use tokio::sync::Notify;
+        //       let notify = Arc::new(Notify::new());
+        //       let index = proposal_id.0 as usize;
+        //       // 注册等待器
+        //       self.commit_notifiers.write().insert(index, notify.clone());
+        //       // 等待通知
+        //       notify.notified().await;
+        //
+        // 2. 定期检查提交状态（避免丢失通知）
+        //    示例:
+        //       let mut interval = interval(Duration::from_millis(10));
+        //       loop {
+        //           tokio::select! {
+        //               _ = interval.tick() => {
+        //                   let state = self.state.read();
+        //                   if state.commit_index >= index as u64 {
+        //                       break;
+        //                   }
+        //               }
+        //               _ = notify.notified() => {
+        //                   break;
+        //               }
+        //           }
+        //       }
+        //
+        // 3. 设置超时机制（避免无限等待）
+        //    示例:
+        //       tokio::time::timeout(Duration::from_secs(30), wait_for_commit).await?
+        //
+        // 4. 处理取消（如果客户端取消等待）
+        //    示例:
+        //       tokio::select! {
+        //           result = wait_for_commit => result,
+        //           _ = cancellation_token.cancelled() => Err(UnifiedError::cancelled("Wait cancelled")),
+        //       }
+        //
+        // 5. 清理资源（移除等待器）
+        //    示例:
+        //       self.commit_notifiers.write().remove(&index);
+        
         // 简化实现：等待提交
-        // TODO: 实现真正的等待机制
         tokio::time::sleep(Duration::from_millis(100)).await;
 
         let state = self.state.read();

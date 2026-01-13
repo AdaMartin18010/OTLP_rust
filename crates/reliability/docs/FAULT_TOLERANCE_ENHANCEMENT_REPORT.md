@@ -580,7 +580,11 @@ bulkhead.execute(async {
 ✅ test_bulkhead_rejection      // 拒绝策略
 ✅ test_bulkhead_stats          // 统计信息
 ✅ test_priority_execution      // 优先级执行（待实现）
+   // 实现指导: 测试优先级队列功能，验证高优先级任务优先执行
+   // 示例: 创建多个不同优先级的任务，验证执行顺序
 ✅ test_elastic_expansion       // 弹性扩容（待实现）
+   // 实现指导: 测试舱壁容量动态调整功能
+   // 示例: 模拟负载增加，验证舱壁自动扩容机制
 ```
 
 ### 6.2 熔断器测试
@@ -590,7 +594,11 @@ bulkhead.execute(async {
 ✅ test_circuit_breaker_opens   // 打开触发
 ✅ test_circuit_breaker_stats   // 统计信息
 ✅ test_half_open_recovery      // 半开恢复（待实现）
+   // 实现指导: 测试熔断器从打开状态到半开状态的恢复机制
+   // 示例: 模拟熔断器打开后，等待冷却期，验证半开状态下的探测请求
 ✅ test_slow_call_detection     // 慢调用检测（待实现）
+   // 实现指导: 测试慢调用检测和统计功能
+   // 示例: 模拟慢调用（延迟>阈值），验证慢调用计数和统计信息更新
 ```
 
 ---

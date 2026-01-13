@@ -1,0 +1,139 @@
+# Tarpaulin 覆盖率配置文件
+# 用于配置测试覆盖率工具的行为
+
+[tool.tarpaulin]
+# 超时设置（秒）
+timeout = 300
+
+# 输出格式
+# Html: HTML报告
+# Lcov: LCOV格式（用于Codecov等工具）
+# Json: JSON格式（用于程序化处理）
+# Stdout: 标准输出
+# Xml: Cobertura XML格式
+# Tarpaulin: Tarpaulin格式
+
+# 排除的文件和目录
+exclude_files = [
+    "*/tests/*",
+    "*/benches/*",
+    "*/examples/*",
+    "*/target/*",
+    "*/build.rs",
+    "*/examples/*.rs",
+]
+
+# 排除的行（正则表达式）
+exclude_lines = [
+    "panic!",
+    "unreachable!",
+    "unimplemented!",
+    "todo!",
+    "#\\[cfg\\(test\\)\\]",
+    "#\\[cfg\\(feature.*\\)\\]",
+]
+
+# 排除的测试
+exclude_tests = [
+    "test_benchmark",
+    "bench_",
+]
+
+# 覆盖率阈值
+# 如果覆盖率低于此值，tarpaulin会返回非零退出码
+# 当前设置为50%，逐步提升到70%
+coverage_threshold = 50.0
+
+# 输出目录
+output_dir = "coverage"
+
+# 详细输出
+verbose = true
+
+# 失败快速模式（遇到第一个失败就停止）
+fail_fast = false
+
+# 包含测试依赖
+include_tests = false
+
+# 包含示例
+include_examples = false
+
+# 包含基准测试
+include_benches = false
+
+# 包含未使用的代码
+include_unused = false
+
+# 包含文档测试
+include_doc = false
+
+# 包含所有目标
+all_targets = false
+
+# 包含lib
+lib = true
+
+# 包含bin
+bin = false
+
+# 包含测试
+tests = true
+
+# 包含示例
+examples = false
+
+# 包含基准测试
+benches = false
+
+# 工作区模式
+workspace = true
+
+# 遵循符号链接
+follow_exec = false
+
+# 忽略panic
+ignore_panics = false
+
+# 忽略测试错误
+ignore_tests = false
+
+# 忽略配置文件
+ignore_config = false
+
+# 锁定文件
+lockfile = "Cargo.lock"
+
+# 清单路径
+manifest = "Cargo.toml"
+
+# 包过滤器
+packages = []
+
+# 排除包
+exclude = []
+
+# 特性
+features = []
+
+# 所有特性
+all_features = false
+
+# 无默认特性
+no_default_features = false
+
+# 测试线程数
+test_threads = None
+
+# 测试超时
+test_timeout = None
+
+# 覆盖率类型
+# Line: 行覆盖率
+# Branch: 分支覆盖率
+# Instruction: 指令覆盖率
+coverage_type = "Line"
+
+# 输出格式（命令行参数会覆盖此设置）
+# 默认输出到stdout和HTML文件
+out = ["Html", "Lcov", "Json"]

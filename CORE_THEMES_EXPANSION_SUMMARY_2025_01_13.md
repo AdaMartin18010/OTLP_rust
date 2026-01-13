@@ -799,7 +799,249 @@
 - ✅ 更新 `libraries/src/http/pingora_proxy.rs` 文档
   - 添加 Rust 1.92 特性应用说明
 
-### 53. 文档创建
+### 53. 更多核心模块文档更新（新增）
+
+- ✅ 更新 `otlp/src/monitoring/error_monitoring_types.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/optimization/performance_tuner.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/optimization/smart_config.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/core/mod.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/core/enhanced_client.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/core/performance_layer.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/core/reliability_layer.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+### 54. eBPF 模块文档更新（新增）
+
+- ✅ 更新 `otlp/src/ebpf/mod.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/ebpf/types.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/ebpf/utils.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/ebpf/error.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `otlp/src/ebpf/tests.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+### 55. Reliability 分布式系统和并发模型文档更新（新增）
+
+- ✅ 更新 `reliability/src/distributed_systems/consensus/mod.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/distributed_systems/consistent_hashing.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/distributed_systems/coordination/mod.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/distributed_systems/distributed_lock.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/distributed_systems/replication.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/distributed_systems/transaction/mod.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/concurrency_models/actor.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/concurrency_models/csp.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/concurrency_models/fork_join.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+- ✅ 更新 `reliability/src/concurrency_models/stm.rs` 文档
+  - 添加 Rust 1.92 特性应用说明
+
+### 56. 示例和文档中的 Rust 1.90 引用更新（新增）
+
+- ✅ 更新 `libraries/examples/advanced_middleware_patterns.rs`
+  - 更新所有 Rust 1.90 引用为 1.92（5处）
+  - 更新 `rust190_optimizations` 为 `rust192_optimizations`
+
+- ✅ 更新 `libraries/examples/async_programming_best_practices.rs`
+  - 更新标题和特性说明为 Rust 1.92
+
+- ✅ 更新 `otlp/docs/09_参考资料/OTLP_RUST_API_文档.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `libraries/README.md`
+  - 更新 Rust 1.90 引用为 1.92（3处）
+
+- ✅ 更新 `model/README.md`
+  - 更新 Rust 1.90 引用为 1.92（6处）
+
+- ✅ 更新 `reliability/README.md`
+  - 更新 Rust 1.90 引用为 1.92（4处）
+
+### 57. 文档目录中的 Rust 1.90 引用更新（新增）
+
+- ✅ 更新 `docs/TRANSPORT_GUIDE_2025.md`
+  - 更新 Rust 1.90+ 引用为 1.92+
+
+- ✅ 更新 `docs/DEPENDENCIES_UPDATE_2025_10_27.md`
+  - 更新 Rust 1.90 引用为 1.92（3处）
+
+- ✅ 更新 `docs/12_GUIDES/CONTRIBUTING.md`
+  - 更新 Rust 1.90+ 引用为 1.92+
+
+- ✅ 更新 `docs/12_GUIDES/COMMUNITY_GUIDE.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `docs/11_EXAMPLES/INDEX.md`
+  - 更新 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `reliability/docs/tier_02_guides/README.md`
+  - 更新 RUST_190_EXAMPLES_COLLECTION 为 RUST_192_EXAMPLES_COLLECTION
+
+- ✅ 更新 `reliability/docs/tier_01_foundations/README.md`
+  - 更新 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `reliability/docs/tier_01_foundations/01_项目概览.md`
+  - 更新 Rust 1.90 引用为 1.92（3处）
+
+- ✅ 更新 `reliability/docs/theory_enhanced/README.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `reliability/docs/theory_enhanced/MULTI_DIMENSIONAL_COMPARISON_MATRIX.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `reliability/docs/theory_enhanced/MINDMAP_VISUALIZATION.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `reliability/docs/theory_enhanced/KNOWLEDGE_GRAPH_AND_CONCEPT_RELATIONS.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `reliability/docs/features/fault-tolerance.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `reliability/docs/features/distributed-systems.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `reliability/docs/features/concurrency-models.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `reliability/docs/architecture/implementation-roadmap.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+### 58. Model 和 Libraries Docs 目录中的 Rust 1.90 引用更新（新增）
+
+- ✅ 更新 `model/docs/architecture/software-design-models-comprehensive.md`
+  - 更新 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `model/docs/architecture/design-models.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `model/docs/architecture/microservices-mechanisms.md`
+  - 更新 Rust 1.90 引用为 1.92（3处）
+
+- ✅ 更新 `model/docs/architecture/distributed-design.md`
+  - 更新 Rust 1.90 引用为 1.92（4处）
+
+- ✅ 更新 `model/docs/archives/legacy_formal/README.md`
+  - 更新 Rust 1.90 引用为 1.92（4处）
+
+- ✅ 更新 `model/docs/archives/legacy_formal/semantic-models-comprehensive.md`
+  - 更新 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `model/docs/archives/legacy_formal/language-semantics.md`
+  - 更新 Rust 1.90 引用为 1.92（6处）
+
+- ✅ 更新 `model/docs/archives/legacy_distributed/README.md`
+  - 更新 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `model/docs/archives/legacy_distributed/raft-consensus-comprehensive.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `model/docs/archives/legacy_core/README.md`
+  - 更新 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `model/docs/archives/legacy_core/modeling-overview.md`
+  - 更新 Rust 1.90 引用为 1.92（5处）
+
+- ✅ 更新 `model/docs/archives/legacy_concurrency/async-sync-classification.md`
+  - 更新 Rust 1.90 引用为 1.92（6处）
+
+- ✅ 更新 `model/docs/archives/legacy_concurrency/async-recursion.md`
+  - 更新 Rust 1.90 引用为 1.92（4处）
+
+- ✅ 更新 `model/docs/archives/legacy_advanced/README.md`
+  - 更新 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `model/docs/archives/legacy_advanced/MODEL_COMPREHENSIVE_TAXONOMY.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `model/docs/archives/legacy_advanced/MODEL_ARCHITECTURE_DESIGN.md`
+  - 更新 Rust 1.90 引用为 1.92（7处）
+
+- ✅ 更新 `libraries/docs/RUST_ESSENTIAL_CRATES_GUIDE_2025.md`
+  - 更新 Rust 1.90 引用为 1.92（3处）
+
+- ✅ 更新 `libraries/docs/RUST_190_COMPREHENSIVE_MINDMAP.md`
+  - 更新 Rust 1.90 引用为 1.92（3处）
+
+- ✅ 更新 `libraries/docs/Glossary.md`
+  - 更新 Rust 1.90 引用为 1.92（5处）
+
+- ✅ 更新 `libraries/docs/COMPREHENSIVE_DOCUMENTATION_INDEX.md`
+  - 更新 Rust 1.90 引用为 1.92（8处）
+
+- ✅ 更新 `libraries/docs/00_MASTER_INDEX.md`
+  - 更新 Rust 1.90 引用为 1.92（7处）
+
+### 59. 剩余文档引用更新（新增）
+
+- ✅ 更新 `model/docs/architecture/microservices-mechanisms.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `reliability/docs/theory_enhanced/KNOWLEDGE_GRAPH_AND_CONCEPT_RELATIONS.md`
+  - 更新 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `libraries/docs/Glossary.md`
+  - 更新 Rust 1.90 引用为 1.92（3处）
+
+- ✅ 更新 `libraries/docs/COMPREHENSIVE_DOCUMENTATION_INDEX.md`
+  - 更新 rust190_ecosystem 引用为 rust192_ecosystem（5处）
+
+- ✅ 更新 `model/docs/architecture/distributed-design.md`
+  - 更新 Rust 1.90 引用为 1.92（2处）
+
+- ✅ 更新 `docs/10_DEVELOPMENT/DOCUMENTATION_STRUCTURE.md`
+  - 更新 rust_1_90_features.md 为 rust_1_92_features.md
+
+### 60. 最终文档引用更新（新增）
+
+- ✅ 更新 `model/docs/architecture/distributed-design.md`
+  - 更新标题中的 Rust 1.90 引用为 1.92
+
+- ✅ 更新 `libraries/docs/00_MASTER_INDEX.md`
+  - 更新 rust190_ecosystem 引用为 rust192_ecosystem（2处）
+
+- ✅ 更新 `otlp/COMPREHENSIVE_IMPROVEMENTS_SUMMARY.md`
+  - 更新 Rust 1.90 引用为 1.92（3处）
+
+- ✅ 更新 `docs/10_DEVELOPMENT/DOCUMENTATION_STRUCTURE.md`
+  - 更新 rust_1_90_features.md 为 rust_1_92_features.md
+
+### 61. 文档创建
 
 - ✅ 创建 `CORE_THEMES_EXPANSION_PLAN_2025.md` - 扩展计划
 - ✅ 创建 `CORE_THEMES_EXPANSION_PROGRESS_2025_01_13.md` - 进度报告

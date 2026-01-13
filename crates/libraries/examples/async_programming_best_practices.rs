@@ -1,4 +1,4 @@
-//! # Async Programming Best Practices with Rust 1.90
+//! # Async Programming Best Practices with Rust 1.92
 //!
 //! 全面的异步编程最佳实践示例，展示Tokio和async-std的高级用法
 //!
@@ -13,7 +13,9 @@
 //! - 异步递归
 //! - 性能优化
 //!
-//! ## Rust 1.90 特性
+//! ## Rust 1.92 特性
+//! - 异步闭包：使用 `async || {}` 语法简化异步操作
+//! - 元组收集：使用 `collect()` 直接收集到元组
 //! - 改进的异步fn性能
 //! - 更好的编译时优化
 //! - 新的Future组合器

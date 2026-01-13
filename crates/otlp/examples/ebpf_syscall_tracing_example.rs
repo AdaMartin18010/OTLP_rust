@@ -7,7 +7,6 @@ use otlp::ebpf::{
     EbpfConfig, EbpfSyscallTracer,
     validate_config, create_recommended_config,
 };
-use std::time::Duration;
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 #[tokio::main]

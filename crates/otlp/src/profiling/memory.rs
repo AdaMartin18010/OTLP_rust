@@ -329,11 +329,29 @@ impl MemoryProfilerStats {
 
 /// Helper function to get system memory info
 pub fn get_system_memory_info() -> Result<SystemMemoryInfo, String> {
-    // This would use platform-specific APIs in a real implementation
-    // For now, return a placeholder
-
+    // 实际实现示例（Linux平台）:
     #[cfg(target_os = "linux")]
     {
+        // 读取 /proc/meminfo 获取系统内存信息
+        // use std::fs::read_to_string;
+        // 
+        // let meminfo = read_to_string("/proc/meminfo")?;
+        // let mut total = 0;
+        // let mut free = 0;
+        // 
+        // for line in meminfo.lines() {
+        //     if line.starts_with("MemTotal:") {
+        //         total = parse_meminfo_line(line)?;
+        //     } else if line.starts_with("MemFree:") {
+        //         free = parse_meminfo_line(line)?;
+        //     }
+        // }
+        // 
+        // Ok(SystemMemoryInfo {
+        //     total_bytes: total * 1024,  // KB to bytes
+        //     free_bytes: free * 1024,
+        //     available_bytes: (total - free) * 1024,
+        // })
         get_linux_memory_info()
     }
 
