@@ -29,13 +29,23 @@
 //! - [x] 批量操作性能
 //! - [x] 事件过滤性能
 //!
-//! ## 待添加的基准测试（需要实际 eBPF 程序）
+//! ## 已添加的基准测试
 //!
-//! - [ ] eBPF 程序加载性能（需要实际 eBPF 程序）
-//! - [ ] 探针附加/分离性能（需要实际 eBPF 程序）
-//! - [ ] Map 读写性能（需要实际 eBPF Maps）
+//! - [x] eBPF 程序验证性能（模拟加载）
+//! - [x] Map 读写性能（使用模拟Maps）
+//! - [x] 探针管理性能
+//! - [x] 事件批处理性能
+//! - [x] 事件过滤性能
+//!
+//! ## 性能对比报告
+//!
+//! 运行基准测试后，可以使用以下命令生成对比报告：
+//!
+//! ```bash
+//! cargo bench --bench ebpf_performance -- --output-format html > ebpf_performance_report.html
+//! ```
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
 use std::hint::black_box;
 
 // 注意: eBPF 模块需要 feature = "ebpf" 才能使用
@@ -324,6 +334,125 @@ fn bench_ebpf_maps_manager(c: &mut Criterion) {
             black_box(manager.register_map("test_map".to_string(), MapType::Hash, 4, 8));
         });
     });
+
+    // 添加更多Map类型注册的性能测试
+    let mut group = c.benchmark_group("ebpf_maps_manager_register_different_types");
+
+    group.bench_function("register_hash_map", |b| {
+        b.iter(|| {
+            let mut manager = MapsManager::new();
+            black_box(manager.register_map("hash_map".to_string(), MapType::Hash, 4, 8));
+        });
+    });
+
+    group.bench_function("register_array_map", |b| {
+        b.iter(|| {
+            let mut manager = MapsManager::new();
+            black_box(manager.register_map("array_map".to_string(), MapType::Array, 4, 8));
+        });
+    });
+
+    group.bench_function("register_perf_event_map", |b| {
+        b.iter(|| {
+            let mut manager = MapsManager::new();
+            black_box(manager.register_map("perf_map".to_string(), MapType::PerfEvent, 4, 8));
+        });
+    });
+
+    group.bench_function("register_ring_buffer_map", |b| {
+        b.iter(|| {
+            let mut manager = MapsManager::new();
+            black_box(manager.register_map("ring_map".to_string(), MapType::RingBuffer, 4, 8));
+        });
+    });
+
+    group.finish();
+}
+
+#[cfg(feature = "ebpf")]
+fn bench_ebpf_probe_operations(c: &mut Criterion) {
+    use otlp::ebpf::ProbeManager;
+
+    let mut group = c.benchmark_group("ebpf_probe_operations");
+
+    group.bench_function("attach_uprobe", |b| {
+        b.iter(|| {
+            let mut manager = ProbeManager::new();
+            let _ = black_box(manager.attach_uprobe("test_uprobe", "/usr/bin/test", "malloc", None));
+        });
+    });
+
+    group.bench_function("attach_tracepoint", |b| {
+        b.iter(|| {
+            let mut manager = ProbeManager::new();
+            let _ = black_box(manager.attach_tracepoint("test_tracepoint", "syscalls", "sys_enter_open", None));
+        });
+    });
+
+    group.bench_function("detach_all", |b| {
+        b.iter(|| {
+            let mut manager = ProbeManager::new();
+            let _ = manager.attach_kprobe("test1", "func1", None);
+            let _ = manager.attach_kprobe("test2", "func2", None);
+            let _ = manager.attach_uprobe("test3", "/usr/bin/test", "malloc", None);
+            let _ = black_box(manager.detach_all());
+        });
+    });
+
+    group.bench_function("probe_count", |b| {
+        b.iter(|| {
+            let mut manager = ProbeManager::new();
+            let _ = manager.attach_kprobe("test1", "func1", None);
+            let _ = manager.attach_kprobe("test2", "func2", None);
+            let _ = manager.attach_uprobe("test3", "/usr/bin/test", "malloc", None);
+            black_box(manager.probe_count());
+        });
+    });
+
+    group.finish();
+}
+
+#[cfg(feature = "ebpf")]
+fn bench_ebpf_event_batch_sizes(c: &mut Criterion) {
+    use otlp::ebpf::{EventProcessor, EbpfEvent, EbpfEventType};
+
+    let mut group = c.benchmark_group("ebpf_event_batch_processing_sizes");
+
+    for size in [10, 100, 1000, 10000].iter() {
+        let events: Vec<EbpfEvent> = (0..*size).map(|i| {
+            EbpfEvent {
+                event_type: EbpfEventType::CpuSample,
+                pid: 1000 + (i % 10),
+                tid: 2000 + i,
+                timestamp: std::time::SystemTime::now(),
+                data: vec![0; 50],
+            }
+        }).collect();
+
+        group.bench_with_input(
+            BenchmarkId::from_parameter(format!("batch_size_{}", size)),
+            &events,
+            |b, events| {
+                b.iter(|| {
+                    let mut processor = EventProcessor::new(10000);
+                    let _ = black_box(processor.process_batch(events.clone()));
+                });
+            },
+        );
+    }
+
+    group.finish();
+}
+
+#[cfg(feature = "ebpf")]
+fn bench_ebpf_system_support_check(c: &mut Criterion) {
+    use otlp::ebpf::EbpfLoader;
+
+    c.bench_function("ebpf_system_support_check", |b| {
+        b.iter(|| {
+            let _ = black_box(EbpfLoader::check_system_support());
+        });
+    });
 }
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
@@ -338,11 +467,14 @@ criterion_group!(
     bench_ebpf_loader_new,
     bench_ebpf_loader_validate_program,
     bench_ebpf_program_load,
+    bench_ebpf_system_support_check,
     bench_ebpf_map_read_write,
     bench_ebpf_event_processing,
     bench_ebpf_event_batch_processing,
+    bench_ebpf_event_batch_sizes,
     bench_ebpf_event_filtering,
     bench_ebpf_probe_manager,
+    bench_ebpf_probe_operations,
     bench_ebpf_maps_manager,
 );
 
@@ -358,8 +490,10 @@ criterion_group!(
     bench_ebpf_loader_new,
     bench_ebpf_loader_validate_program,
     bench_ebpf_event_batch_processing,
+    bench_ebpf_event_batch_sizes,
     bench_ebpf_event_filtering,
     bench_ebpf_probe_manager,
+    bench_ebpf_probe_operations,
     bench_ebpf_maps_manager,
 );
 

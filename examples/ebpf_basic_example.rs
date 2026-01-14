@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("4. 验证 eBPF 程序格式...");
     let mut elf_program = vec![0x7F, b'E', b'L', b'F'];
     elf_program.extend(vec![0; 100]);
-    
+
     match loader.validate_program(&elf_program) {
         Ok(()) => println!("   ✅ 程序格式验证通过"),
         Err(e) => println!("   ❌ 程序格式验证失败: {}", e),
@@ -60,30 +60,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 5. 创建探针管理器
     println!("5. 创建探针管理器...");
     let mut probe_manager = ProbeManager::new();
-    
+
     // 附加一些探针
     if probe_manager.attach_kprobe("tcp_connect", "tcp_v4_connect").is_ok() {
         println!("   ✅ KProbe 附加成功: tcp_connect -> tcp_v4_connect");
     }
-    
+
     if probe_manager.attach_tracepoint("sys_open", "syscalls", "sys_enter_open").is_ok() {
         println!("   ✅ Tracepoint 附加成功: sys_open -> syscalls:sys_enter_open");
     }
-    
+
     println!("   - 探针数量: {}", probe_manager.probe_count());
     println!();
 
     // 6. 创建 Maps 管理器
     println!("6. 创建 Maps 管理器...");
     let mut maps_manager = MapsManager::new();
-    
+
     // 注册一些 Maps
     maps_manager.register_map("events_map".to_string(), MapType::Hash, 8, 16);
     println!("   ✅ Map 注册成功: events_map (Hash)");
-    
+
     maps_manager.register_map("stats_map".to_string(), MapType::Array, 4, 8);
     println!("   ✅ Map 注册成功: stats_map (Array)");
-    
+
     println!("   - Map 数量: {}", maps_manager.map_count());
     println!();
 
@@ -97,17 +97,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 8. CPU 性能分析示例
     println!("8. CPU 性能分析示例...");
     let mut profiler = EbpfCpuProfiler::new(config.clone());
-    
+
     if profiler.start().is_ok() {
         println!("   ✅ 性能分析器启动成功");
-        
+
         // 模拟一些工作
         println!("   - 执行一些CPU密集型操作...");
         let start = std::time::Instant::now();
         while start.elapsed() < Duration::from_millis(100) {
             let _ = (0..1000).sum::<i32>();
         }
-        
+
         // 停止并获取profile
         match profiler.stop() {
             Ok(profile) => {

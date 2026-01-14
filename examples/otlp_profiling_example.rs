@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("   - 样本数量: {}", profile.samples.len());
             println!("   - 位置数量: {}", profile.locations.len());
             println!("   - 函数数量: {}", profile.functions.len());
-            
+
             // 6. 导出为 JSON
             println!();
             println!("6. 导出 Profile 为 JSON...");

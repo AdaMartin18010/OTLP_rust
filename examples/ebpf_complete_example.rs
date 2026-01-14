@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("3. 验证 eBPF 程序...");
     let mut elf_program = vec![0x7F, b'E', b'L', b'F'];
     elf_program.extend(vec![0; 100]);
-    
+
     match loader.validate_program(&elf_program) {
         Ok(()) => println!("   ✅ 程序验证通过"),
         Err(e) => println!("   ⚠️  程序验证失败: {}", e),
@@ -60,23 +60,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 4. 创建探针管理器
     println!("4. 创建探针管理器...");
     let mut probe_manager = ProbeManager::new();
-    
+
     // 注册多个探针（不提供 Bpf 实例，仅演示注册功能）
     println!("   - 注册 KProbe...");
     probe_manager.attach_kprobe("tcp_connect", "tcp_v4_connect", None)?;
-    
+
     println!("   - 注册 UProbe...");
     probe_manager.attach_uprobe("malloc_trace", "/usr/lib/libc.so.6", "malloc", None)?;
-    
+
     println!("   - 注册 Tracepoint...");
     probe_manager.attach_tracepoint("open_trace", "syscalls", "sys_enter_openat", None)?;
-    
+
     println!("   ✅ 探针管理器创建成功");
     println!("   - 已注册探针数: {}", probe_manager.probe_count());
-    
+
     let probes = probe_manager.list_probes();
     for (name, probe_type, target, attached) in probes {
-        println!("     - {} ({:?}): {} [{}]", 
+        println!("     - {} ({:?}): {} [{}]",
             name, probe_type, target, if attached { "已附加" } else { "已注册" });
     }
     println!();
@@ -84,17 +84,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 5. 创建 Maps 管理器
     println!("5. 创建 Maps 管理器...");
     let mut maps_manager = MapsManager::new();
-    
+
     maps_manager.register_map("event_map".to_string(), MapType::Hash, 4, 8);
     maps_manager.register_map("stats_map".to_string(), MapType::Array, 4, 16);
     maps_manager.register_map("perf_map".to_string(), MapType::PerfEvent, 8, 32);
-    
+
     println!("   ✅ Maps 管理器创建成功");
     println!("   - 已注册 Maps 数: {}", maps_manager.map_count());
-    
+
     let maps = maps_manager.list_maps();
     for (name, map_type, key_size, value_size) in maps {
-        println!("     - {} ({:?}): key={} bytes, value={} bytes", 
+        println!("     - {} ({:?}): key={} bytes, value={} bytes",
             name, map_type, key_size, value_size);
     }
     println!();
@@ -149,7 +149,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cpu_events = event_processor.filter_by_type(EbpfEventType::CpuSample);
     let network_events = event_processor.filter_by_type(EbpfEventType::NetworkPacket);
     let pid_1005_events = event_processor.filter_by_pid(1005);
-    
+
     println!("   ✅ 事件过滤成功");
     println!("   - CPU 采样事件: {} 个", cpu_events.len());
     println!("   - 网络包事件: {} 个", network_events.len());
@@ -168,16 +168,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("11. Maps 操作演示...");
     let test_key = vec![1, 2, 3, 4];
     let test_value = vec![5, 6, 7, 8, 9, 10, 11, 12];
-    
+
     // 写入 Map（不提供 Bpf 实例，仅演示 API）
     maps_manager.write_map("event_map", &test_key, &test_value, None)?;
     println!("   ✅ Map 写入成功");
-    
+
     // 读取 Map
     let read_value = maps_manager.read_map("event_map", &test_key, None)?;
     println!("   ✅ Map 读取成功");
     println!("   - 读取的值大小: {} bytes", read_value.len());
-    
+
     // 删除键值对
     maps_manager.delete_map("event_map", &test_key)?;
     println!("   ✅ Map 键值对删除成功");

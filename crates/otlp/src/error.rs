@@ -135,6 +135,9 @@ pub enum ProcessingError {
 
     #[error("压缩错误: {reason}")]
     Compression { reason: String },
+
+    #[error("无效状态: {message}")]
+    InvalidState { message: String },
 }
 
 /// 性能错误
@@ -377,8 +380,109 @@ impl OtlpError {
 pub type Result<T> = std::result::Result<T, OtlpError>;
 
 impl OtlpError {
+    /// 从 anyhow::Error 转换
     pub fn from_anyhow(err: anyhow::Error) -> Self {
         OtlpError::from(err)
+    }
+
+    /// 创建网络错误
+    pub fn network(context: impl Into<String>, source: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Transport(TransportError::Connection {
+            endpoint: context.into(),
+            reason: source.to_string(),
+        })
+    }
+
+    /// 创建配置错误
+    pub fn configuration(field: impl Into<String>, value: impl Into<String>) -> Self {
+        Self::Configuration(ConfigurationError::InvalidBatchConfig {
+            message: format!("{} = {}", field.into(), value.into()),
+        })
+    }
+
+    /// 创建处理错误
+    pub fn processing(operation: impl Into<String>, source: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Processing(ProcessingError::Batch {
+            reason: format!("{}: {}", operation.into(), source),
+        })
+    }
+
+    /// 创建内部错误
+    pub fn internal(message: impl Into<String>) -> Self {
+        Self::System(SystemError::SystemCall {
+            reason: message.into(),
+        })
+    }
+}
+
+impl ConfigurationError {
+    /// 创建无效端点错误
+    pub fn invalid_endpoint(url: impl Into<String>) -> Self {
+        Self::InvalidEndpoint { url: url.into() }
+    }
+
+    /// 创建值超出范围错误
+    pub fn value_out_of_range(field: impl Into<String>, value: f64, min: f64, max: f64) -> Self {
+        Self::ValueOutOfRange {
+            field: field.into(),
+            value,
+            min,
+            max,
+        }
+    }
+}
+
+impl TransportError {
+    /// 创建连接错误
+    pub fn connection(endpoint: impl Into<String>, reason: impl Into<String>) -> Self {
+        Self::Connection {
+            endpoint: endpoint.into(),
+            reason: reason.into(),
+        }
+    }
+
+    /// 创建超时错误
+    pub fn timeout(operation: impl Into<String>, timeout: std::time::Duration) -> Self {
+        Self::Timeout {
+            operation: operation.into(),
+            timeout,
+        }
+    }
+
+    /// 创建服务器错误
+    pub fn server(status: u16, reason: impl Into<String>) -> Self {
+        Self::Server {
+            status,
+            reason: reason.into(),
+        }
+    }
+}
+
+impl DataError {
+    /// 创建验证错误
+    pub fn validation(reason: impl Into<String>) -> Self {
+        Self::Validation {
+            reason: reason.into(),
+        }
+    }
+
+    /// 创建大小超限错误
+    pub fn size_limit(actual: usize, max: usize) -> Self {
+        Self::SizeLimit { actual, max }
+    }
+}
+
+impl ExportError {
+    /// 创建导出失败错误
+    pub fn failed(reason: impl Into<String>) -> Self {
+        Self::Failed {
+            reason: reason.into(),
+        }
+    }
+
+    /// 创建部分失败错误
+    pub fn partial_failure(success: usize, failed: usize) -> Self {
+        Self::PartialFailure { success, failed }
     }
 }
 
@@ -401,7 +505,7 @@ mod tests {
     }
 
     #[test]
-    fn test_error_category() {
+    fn test_error_category_method() {
         let config_error = OtlpError::Configuration(ConfigurationError::InvalidEndpoint {
             url: "invalid".to_string(),
         });
@@ -454,5 +558,96 @@ mod tests {
         assert_eq!(context.severity, ErrorSeverity::High);
         assert!(context.is_retryable);
         assert!(context.recovery_suggestion.is_some());
+    }
+
+    #[test]
+    fn test_error_convenience_constructors() {
+        // 测试网络错误构造函数
+        let network_err = OtlpError::network(
+            "http://example.com",
+            std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "Connection refused")
+        );
+        assert!(matches!(network_err, OtlpError::Transport(_)));
+
+        // 测试配置错误构造函数
+        let config_err = OtlpError::configuration("endpoint", "invalid");
+        assert!(matches!(config_err, OtlpError::Configuration(_)));
+
+        // 测试处理错误构造函数
+        let processing_err = OtlpError::processing(
+            "batch",
+            std::io::Error::new(std::io::ErrorKind::Other, "Processing failed")
+        );
+        assert!(matches!(processing_err, OtlpError::Processing(_)));
+
+        // 测试内部错误构造函数
+        let internal_err = OtlpError::internal("Internal error");
+        assert!(matches!(internal_err, OtlpError::System(_)));
+    }
+
+    #[test]
+    fn test_configuration_error_helpers() {
+        let err = ConfigurationError::invalid_endpoint("invalid://url");
+        assert!(matches!(err, ConfigurationError::InvalidEndpoint { .. }));
+
+        let err = ConfigurationError::value_out_of_range("batch_size", 1000.0, 1.0, 100.0);
+        assert!(matches!(err, ConfigurationError::ValueOutOfRange { .. }));
+    }
+
+    #[test]
+    fn test_transport_error_helpers() {
+        let err = TransportError::connection("http://example.com", "timeout");
+        assert!(matches!(err, TransportError::Connection { .. }));
+
+        let err = TransportError::timeout("export", std::time::Duration::from_secs(5));
+        assert!(matches!(err, TransportError::Timeout { .. }));
+
+        let err = TransportError::server(500, "Internal Server Error");
+        assert!(matches!(err, TransportError::Server { status: 500, .. }));
+    }
+
+    #[test]
+    fn test_data_error_helpers() {
+        let err = DataError::validation("Invalid format");
+        assert!(matches!(err, DataError::Validation { .. }));
+
+        let err = DataError::size_limit(1000, 100);
+        assert!(matches!(err, DataError::SizeLimit { actual: 1000, max: 100 }));
+    }
+
+    #[test]
+    fn test_export_error_helpers() {
+        let err = ExportError::failed("Network error");
+        assert!(matches!(err, ExportError::Failed { .. }));
+
+        let err = ExportError::partial_failure(90, 10);
+        assert!(matches!(err, ExportError::PartialFailure { success: 90, failed: 10 }));
+    }
+
+    #[test]
+    fn test_error_severity_ordering() {
+        assert!(ErrorSeverity::Low < ErrorSeverity::Medium);
+        assert!(ErrorSeverity::Medium < ErrorSeverity::High);
+        assert!(ErrorSeverity::High < ErrorSeverity::Critical);
+    }
+
+    #[test]
+    fn test_error_category_enum() {
+        let categories = [
+            ErrorCategory::Network,
+            ErrorCategory::Data,
+            ErrorCategory::Configuration,
+            ErrorCategory::Processing,
+            ErrorCategory::Export,
+            ErrorCategory::Performance,
+            ErrorCategory::Concurrency,
+            ErrorCategory::Resource,
+            ErrorCategory::Compatibility,
+            ErrorCategory::System,
+        ];
+
+        for category in &categories {
+            assert_eq!(*category, *category);
+        }
     }
 }

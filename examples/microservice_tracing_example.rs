@@ -47,26 +47,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn simulate_service(service_name: &str, duration: Duration) -> Result<(), Box<dyn std::error::Error>> {
     println!("   📍 服务: {}", service_name);
-    
+
     // 创建 Profiler
     let config = ProfilerConfig::default();
     let mut profiler = CpuProfiler::new(config);
-    
+
     // 启动性能分析
     profiler.start().await?;
     println!("   ✅ 性能分析启动");
-    
+
     // 模拟服务处理
     tokio::time::sleep(duration).await;
-    
+
     // 停止并获取 Profile
     let profile = profiler.stop().await?;
     println!("   ✅ 处理完成");
     println!("   - 样本数: {}", profile.samples.len());
-    
+
     // 在实际场景中，这里会将 Profile 导出到 OTLP Collector
     // let exporter = ProfilesExporter::new("http://otel-collector:4317".to_string());
     // exporter.export(&profile).await?;
-    
+
     Ok(())
 }

@@ -29,23 +29,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 3. 注册不同类型的 Maps
     println!("3. 注册不同类型的 Maps...");
-    
+
     // Hash Map - 用于键值对存储
     maps_manager.register_map("event_map".to_string(), MapType::Hash, 4, 8);
     println!("   ✅ Hash Map 注册成功: event_map (key: 4 bytes, value: 8 bytes)");
-    
+
     // Array Map - 用于数组存储
     maps_manager.register_map("stats_map".to_string(), MapType::Array, 4, 16);
     println!("   ✅ Array Map 注册成功: stats_map (key: 4 bytes, value: 16 bytes)");
-    
+
     // PerfEvent Map - 用于性能事件
     maps_manager.register_map("perf_map".to_string(), MapType::PerfEvent, 8, 32);
     println!("   ✅ PerfEvent Map 注册成功: perf_map (key: 8 bytes, value: 32 bytes)");
-    
+
     // RingBuffer Map - 用于环形缓冲区
     maps_manager.register_map("ring_buffer".to_string(), MapType::RingBuffer, 0, 64);
     println!("   ✅ RingBuffer Map 注册成功: ring_buffer (value: 64 bytes)");
-    
+
     println!("   - 已注册 Maps 数: {}", maps_manager.map_count());
     println!();
 
@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             MapType::PerfEvent => "PerfEvent",
             MapType::RingBuffer => "RingBuffer",
         };
-        println!("     - {} ({}) -> key: {} bytes, value: {} bytes", 
+        println!("     - {} ({}) -> key: {} bytes, value: {} bytes",
             name, type_str, key_size, value_size);
     }
     println!();
@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("5. 写入 Hash Map...");
     let key1 = vec![1, 2, 3, 4];
     let value1 = vec![10, 20, 30, 40, 50, 60, 70, 80];
-    
+
     match maps_manager.write_map("event_map", &key1, &value1, None) {
         Ok(()) => println!("   ✅ Hash Map 写入成功"),
         Err(e) => println!("   ⚠️  Hash Map 写入失败: {}", e),
@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("7. 写入 Array Map...");
     let array_index = 0u32.to_ne_bytes().to_vec();
     let array_value = vec![100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600];
-    
+
     match maps_manager.write_map("stats_map", &array_index, &array_value, None) {
         Ok(()) => println!("   ✅ Array Map 写入成功"),
         Err(e) => println!("   ⚠️  Array Map 写入失败: {}", e),
@@ -138,7 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let array_count = maps.iter().filter(|(_, t, _, _)| *t == MapType::Array).count();
     let perf_count = maps.iter().filter(|(_, t, _, _)| *t == MapType::PerfEvent).count();
     let ring_count = maps.iter().filter(|(_, t, _, _)| *t == MapType::RingBuffer).count();
-    
+
     println!("   ✅ Maps 统计:");
     println!("     - Hash Map: {} 个", hash_count);
     println!("     - Array Map: {} 个", array_count);

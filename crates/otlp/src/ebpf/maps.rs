@@ -111,13 +111,13 @@ impl MapsManager {
             .into());
         }
 
-        tracing::debug!("读取 Map: {} (key: {:?}, key_size: {}, value_size: {})", 
+        tracing::debug!("读取 Map: {} (key: {:?}, key_size: {}, value_size: {})",
             name, key, map_info.key_size, map_info.value_size);
 
         // 如果提供了 Bpf 实例，进行实际读取
         if let Some(bpf) = bpf {
             use aya::maps::Map;
-            
+
             let map = bpf.map(name)
                 .ok_or_else(|| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
                     "Map 不存在: {}",
@@ -266,7 +266,7 @@ impl MapsManager {
         // 如果提供了 Bpf 实例，进行实际写入
         if let Some(bpf) = bpf {
             use aya::maps::Map;
-            
+
             let map = bpf.map_mut(name)
                 .ok_or_else(|| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
                     "Map 不存在: {}",
@@ -308,7 +308,7 @@ impl MapsManager {
                     format!("不支持的 Map 类型: {:?}", map_info.map_type)
                 ).into()),
             }
-            
+
             tracing::debug!("Map 写入成功: {}", name);
         } else {
             tracing::debug!("未提供 Bpf 实例，跳过实际写入");
@@ -397,27 +397,152 @@ impl MapsManager {
 
         tracing::debug!("删除 Map 键值对: {} (key: {:?})", name, key);
 
-        // 注意: 实际的 Map 删除需要:
-        // 1. 使用 aya 获取 Map:
-        //    use aya::maps::{Map, HashMap};
-        //    let map = bpf.map_mut(name)
-        //        .ok_or_else(|| EbpfError::MapOperationFailed(format!("Map 不存在: {}", name)))?;
-        // 2. 删除键值对（仅 Hash Map 支持）:
-        //    match map {
-        //        Map::HashMap(hash_map) => {
-        //            hash_map.remove(key)?;
-        //        }
-        //        Map::PerCpuHashMap(per_cpu_map) => {
-        //            per_cpu_map.remove(key)?;
-        //        }
-        //        _ => return Err(EbpfError::MapOperationFailed(
-        //            format!("Map 类型 {} 不支持删除操作", format!("{:?}", map_info.map_type))
-        //        ).into()),
-        //    }
-        // 3. 处理删除结果
-        //    注意：Array Map 不支持删除操作，只能设置为零值
+        // 注意: 实际的 Map 删除需要提供 Bpf 实例
+        // 这里只做验证和记录，实际删除需要在调用时提供 Bpf 实例
+        //
+        // 实际删除示例:
+        // ```rust,no_run
+        // use aya::maps::Map;
+        // let map = bpf.map_mut(name)
+        //     .ok_or_else(|| EbpfError::MapOperationFailed(format!("Map 不存在: {}", name)))?;
+        // match map {
+        //     Map::HashMap(hash_map) => {
+        //         hash_map.remove(key, 0)
+        //             .map_err(|e| EbpfError::MapOperationFailed(format!("删除失败: {}", e)))?;
+        //     }
+        //     Map::PerCpuHashMap(per_cpu_map) => {
+        //         per_cpu_map.remove(key, 0)
+        //             .map_err(|e| EbpfError::MapOperationFailed(format!("删除失败: {}", e)))?;
+        //     }
+        //     _ => return Err(EbpfError::MapOperationFailed(
+        //         format!("Map 类型 {} 不支持删除操作", format!("{:?}", map_info.map_type))
+        //     ).into()),
+        // }
+        // ```
+        //
+        // 注意：Array Map 不支持删除操作，只能设置为零值
 
         Ok(())
+    }
+
+    /// 删除 Map 中的键值对（需要 Bpf 实例）
+    ///
+    /// # 参数
+    ///
+    /// * `name` - Map 名称
+    /// * `key` - 要删除的键的字节表示
+    /// * `bpf` - Bpf 实例（必须提供）
+    ///
+    /// # 返回
+    ///
+    /// 成功返回 `Ok(())`，失败返回错误
+    ///
+    /// # 说明
+    ///
+    /// 从 eBPF Map 中删除指定的键值对。
+    /// 仅支持 Hash Map 和 Per-CPU Hash Map（Array Map 不支持删除操作）。
+    ///
+    /// # 示例
+    ///
+    /// ```rust,no_run
+    /// use otlp::ebpf::{MapsManager, EbpfLoader, EbpfConfig};
+    ///
+    /// let config = EbpfConfig::default();
+    /// let mut loader = EbpfLoader::new(config);
+    /// // ... 加载 eBPF 程序 ...
+    /// let mut manager = MapsManager::new();
+    /// if let Some(bpf) = loader.bpf_mut() {
+    ///     let key = b"my_key";
+    ///     manager.delete_map_with_bpf("my_map", key, bpf)?;
+    /// }
+    /// # Ok::<(), otlp::error::OtlpError>(())
+    /// ```
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn delete_map_with_bpf(&mut self, name: &str, key: &[u8], bpf: &mut aya::Bpf) -> Result<()> {
+        // 验证参数
+        if name.is_empty() {
+            return Err(crate::ebpf::error::EbpfError::MapOperationFailed(
+                "Map 名称不能为空".to_string(),
+            )
+            .into());
+        }
+        if key.is_empty() {
+            return Err(crate::ebpf::error::EbpfError::MapOperationFailed(
+                "键不能为空".to_string(),
+            )
+            .into());
+        }
+
+        // 检查 Map 是否存在
+        let map_info = self.get_map_info(name);
+        if map_info.is_none() {
+            return Err(crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                "Map 不存在: {}",
+                name
+            ))
+            .into());
+        }
+
+        let map_info = map_info.unwrap();
+
+        // 验证 Map 类型（只有 Hash Map 支持删除）
+        if map_info.map_type != MapType::Hash {
+            return Err(crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                "Map 类型 {:?} 不支持删除操作，仅 Hash Map 支持",
+                map_info.map_type
+            ))
+            .into());
+        }
+
+        // 验证键大小
+        if key.len() != map_info.key_size {
+            return Err(crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                "键大小不匹配: 期望 {} bytes，实际 {} bytes",
+                map_info.key_size,
+                key.len()
+            ))
+            .into());
+        }
+
+        tracing::debug!("删除 Map 键值对: {} (key: {:?})", name, key);
+
+        // 使用 aya 删除键值对
+        use aya::maps::Map;
+
+        let map = bpf.map_mut(name)
+            .ok_or_else(|| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                "Map 不存在: {}",
+                name
+            )))?;
+
+        // 根据 Map 类型删除
+        match map {
+            Map::HashMap(hash_map) => {
+                hash_map.remove(key, 0)
+                    .map_err(|e| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                        "删除 Map 失败: {}",
+                        e
+                    )))?;
+            }
+            Map::PerCpuHashMap(per_cpu_map) => {
+                per_cpu_map.remove(key, 0)
+                    .map_err(|e| crate::ebpf::error::EbpfError::MapOperationFailed(format!(
+                        "删除 Map 失败: {}",
+                        e
+                    )))?;
+            }
+            _ => return Err(crate::ebpf::error::EbpfError::MapOperationFailed(
+                format!("Map 类型 {:?} 不支持删除操作", map_info.map_type)
+            ).into()),
+        }
+
+        tracing::debug!("Map 键值对删除成功: {}", name);
+        Ok(())
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn delete_map_with_bpf(&mut self, _name: &str, _key: &[u8], _bpf: &mut aya::Bpf) -> Result<()> {
+        Err(EbpfError::UnsupportedPlatform.into())
     }
 
     #[cfg(not(all(feature = "ebpf", target_os = "linux")))]

@@ -14,6 +14,8 @@ pub struct EbpfCpuProfiler {
     loader: EbpfLoader,
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
     started: bool,
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    start_time: Option<std::time::Instant>,
 }
 
 impl EbpfCpuProfiler {
@@ -25,6 +27,8 @@ impl EbpfCpuProfiler {
             loader,
             #[cfg(all(feature = "ebpf", target_os = "linux"))]
             started: false,
+            #[cfg(all(feature = "ebpf", target_os = "linux"))]
+            start_time: None,
         }
     }
 
@@ -59,6 +63,7 @@ impl EbpfCpuProfiler {
             //       )?;
 
             self.started = true;
+            self.start_time = Some(std::time::Instant::now());
         }
 
         #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
@@ -114,6 +119,7 @@ impl EbpfCpuProfiler {
             //    返回: Ok(profile)
 
             self.started = false;
+            self.start_time = None;
         }
 
         // 注意: 实际实现需要完成以下步骤:
@@ -153,31 +159,54 @@ impl EbpfCpuProfiler {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
         {
             if self.started {
-                // 注意: 实际的性能开销测量需要:
-                // 1. 读取 /proc/self/stat 获取 CPU 时间
-                //    格式: pid comm state ppid ... utime stime ...
-                //    utime 和 stime 是用户态和内核态 CPU 时间（单位：clock ticks）
-                //    示例:
-                //       let stat = std::fs::read_to_string("/proc/self/stat")?;
-                //       let fields: Vec<&str> = stat.split_whitespace().collect();
-                //       let utime: u64 = fields[13].parse()?;
-                //       let stime: u64 = fields[14].parse()?;
-                // 2. 读取 /proc/self/status 获取内存使用
-                //    查找 "VmRSS:" 行获取实际物理内存使用量（单位：KB）
-                //    示例:
-                //       let status = std::fs::read_to_string("/proc/self/status")?;
-                //       for line in status.lines() {
-                //           if line.starts_with("VmRSS:") {
-                //               let rss_kb: usize = line.split_whitespace().nth(1)?.parse()?;
-                //               // 使用 rss_kb * 1024 作为 memory_bytes
-                //           }
-                //       }
-                // 3. 计算 CPU 使用率（相对于总 CPU 时间）
-                //    cpu_percent = (current_cpu_time - initial_cpu_time) / (current_wall_time - initial_wall_time) * 100.0
+                // 读取 /proc/self/stat 获取 CPU 时间
+                let cpu_time = match std::fs::read_to_string("/proc/self/stat") {
+                    Ok(stat) => {
+                        let fields: Vec<&str> = stat.split_whitespace().collect();
+                        if fields.len() >= 15 {
+                            let utime: u64 = fields[13].parse().unwrap_or(0);
+                            let stime: u64 = fields[14].parse().unwrap_or(0);
+                            // 转换为秒（假设 clock ticks = 100 Hz）
+                            let clock_ticks_per_sec = 100;
+                            (utime + stime) as f64 / clock_ticks_per_sec as f64
+                        } else {
+                            0.0
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("无法读取 /proc/self/stat: {}", e);
+                        0.0
+                    }
+                };
+
+                // 读取 /proc/self/status 获取内存使用
+                let memory_bytes = match std::fs::read_to_string("/proc/self/status") {
+                    Ok(status) => {
+                        for line in status.lines() {
+                            if line.starts_with("VmRSS:") {
+                                if let Some(rss_kb_str) = line.split_whitespace().nth(1) {
+                                    if let Ok(rss_kb) = rss_kb_str.parse::<usize>() {
+                                        return crate::ebpf::types::EbpfOverheadMetrics {
+                                            cpu_percent: cpu_time.min(100.0),
+                                            memory_bytes: rss_kb * 1024,
+                                            event_latency_us: 10, // 估算值，实际需要从事件中测量
+                                        };
+                                    }
+                                }
+                            }
+                        }
+                        0
+                    }
+                    Err(e) => {
+                        tracing::warn!("无法读取 /proc/self/status: {}", e);
+                        0
+                    }
+                };
+
                 crate::ebpf::types::EbpfOverheadMetrics {
-                    cpu_percent: 0.5,  // 示例值
-                    memory_bytes: 10 * 1024 * 1024,  // 示例值：10MB
-                    event_latency_us: 10,  // 示例值：10微秒
+                    cpu_percent: cpu_time.min(100.0),
+                    memory_bytes,
+                    event_latency_us: 10, // 估算值
                 }
             } else {
                 crate::ebpf::types::EbpfOverheadMetrics::default()
@@ -208,6 +237,19 @@ impl EbpfCpuProfiler {
         &self.config
     }
 
+    /// 获取运行时长
+    pub fn get_duration(&self) -> Option<Duration> {
+        #[cfg(all(feature = "ebpf", target_os = "linux"))]
+        {
+            self.start_time.map(|start| start.elapsed())
+        }
+
+        #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+        {
+            None
+        }
+    }
+
     /// 暂停性能分析（保持状态）
     pub fn pause(&mut self) -> Result<()> {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
@@ -216,7 +258,7 @@ impl EbpfCpuProfiler {
                 return Err(crate::error::OtlpError::Processing(
                     crate::error::ProcessingError::InvalidState {
                         message: "性能分析器未启动".to_string(),
-                    },
+                    }.into(),
                 ));
             }
 
@@ -249,7 +291,7 @@ impl EbpfCpuProfiler {
                 return Err(crate::error::OtlpError::Processing(
                     crate::error::ProcessingError::InvalidState {
                         message: "性能分析器未启动".to_string(),
-                    },
+                    }.into(),
                 ));
             }
 

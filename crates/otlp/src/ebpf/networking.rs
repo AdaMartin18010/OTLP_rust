@@ -69,7 +69,7 @@ impl EbpfNetworkTracer {
                 return Err(crate::error::OtlpError::Processing(
                     crate::error::ProcessingError::InvalidState {
                         message: "网络追踪器未启动".to_string(),
-                    },
+                    }.into(),
                 ));
             }
 

@@ -68,6 +68,12 @@ impl EventProcessor {
     /// 将事件添加到缓冲区。如果缓冲区已满，会自动刷新。
     /// 事件会被验证和格式化，然后添加到缓冲区等待批量处理。
     ///
+    /// # 事件验证
+    ///
+    /// - 验证 PID 不为 0（除非是系统事件）
+    /// - 验证时间戳有效
+    /// - 验证事件类型匹配数据内容
+    ///
     /// # 示例
     ///
     /// ```rust,no_run
@@ -221,11 +227,66 @@ impl EventProcessor {
     ///
     /// 批量处理多个事件，比逐个处理更高效。
     /// 如果缓冲区已满，会自动刷新。
+    ///
+    /// # 性能优化
+    ///
+    /// - 批量验证事件，减少重复检查
+    /// - 批量添加到缓冲区，减少内存分配
+    /// - 智能刷新策略，避免频繁刷新
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
-    pub fn process_batch(&mut self, events: Vec<EbpfEvent>) -> Result<()> {
-        for event in events {
-            self.process_event(event)?;
+    pub fn process_batch(&mut self, mut events: Vec<EbpfEvent>) -> Result<()> {
+        // 验证所有事件
+        let valid_events: Vec<EbpfEvent> = events
+            .drain(..)
+            .filter(|event| {
+                // 验证事件数据
+                if event.pid == 0 {
+                    tracing::warn!("跳过 PID 为 0 的无效事件");
+                    return false;
+                }
+                true
+            })
+            .collect();
+
+        if valid_events.is_empty() {
+            return Ok(());
         }
+
+        // 检查缓冲区空间
+        let available_space = self.max_buffer_size.saturating_sub(self.event_buffer.len());
+
+        if available_space < valid_events.len() {
+            // 缓冲区空间不足，需要刷新
+            tracing::debug!(
+                "缓冲区空间不足 (可用: {}, 需要: {})，先刷新",
+                available_space,
+                valid_events.len()
+            );
+            let _ = self.flush_events()?;
+        }
+
+        // 批量添加到缓冲区
+        let remaining_space = self.max_buffer_size.saturating_sub(self.event_buffer.len());
+        if remaining_space >= valid_events.len() {
+            // 有足够空间，直接添加所有事件
+            self.event_buffer.extend(valid_events);
+        } else {
+            // 空间不足，分批添加
+            let (first_batch, rest) = valid_events.split_at(remaining_space);
+            self.event_buffer.extend_from_slice(first_batch);
+
+            // 处理剩余事件
+            for event in rest {
+                self.process_event(event.clone())?;
+            }
+        }
+
+        tracing::trace!(
+            "批量处理了 {} 个事件，当前缓冲区大小: {}",
+            valid_events.len(),
+            self.event_buffer.len()
+        );
+
         Ok(())
     }
 

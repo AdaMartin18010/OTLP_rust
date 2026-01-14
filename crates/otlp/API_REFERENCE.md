@@ -4,6 +4,22 @@
 
 本文档提供了 OTLP Rust 库的完整 API 参考。所有公共 API 都包含详细的文档和示例。
 
+---
+
+## 📑 目录
+
+- [核心模块](#核心模块)
+  - [Client 模块](#client-模块)
+  - [Config 模块](#config-模块)
+- [eBPF 模块](#ebpf-模块) ⭐ 新增
+  - [EbpfConfig](#ebpfconfig)
+  - [EbpfLoader](#ebpfloader)
+  - [EbpfCpuProfiler](#ebpfcpuprofiler)
+  - [EbpfNetworkTracer](#ebpfnetworktracer)
+  - [EbpfSyscallTracer](#ebpfsyscalltracer)
+  - [EbpfMemoryTracer](#ebpfmemorytracer)
+  - [EbpfOtlpConverter](#ebpfotlpconverter)
+
 ## 🔧 核心模块
 
 ### Client 模块
@@ -702,6 +718,317 @@ impl CustomValidator {
     }
 }
 ```
+
+## 🔧 eBPF 模块
+
+### EbpfConfig
+
+eBPF 配置结构，用于配置 eBPF 功能。
+
+```rust
+pub struct EbpfConfig {
+    pub enable_cpu_profiling: bool,
+    pub enable_network_tracing: bool,
+    pub enable_syscall_tracing: bool,
+    pub enable_memory_tracing: bool,
+    pub sample_rate: u32,
+    pub duration: Duration,
+    pub max_samples: usize,
+}
+```
+
+**方法**:
+
+- `new() -> Self`: 创建新配置
+- `with_sample_rate(rate: u32) -> Self`: 设置采样频率
+- `with_duration(duration: Duration) -> Self`: 设置采样持续时间
+- `with_network_tracing(enabled: bool) -> Self`: 启用/禁用网络追踪
+- `with_syscall_tracing(enabled: bool) -> Self`: 启用/禁用系统调用追踪
+- `with_memory_tracing(enabled: bool) -> Self`: 启用/禁用内存追踪
+- `validate() -> Result<()>`: 验证配置
+
+**示例**:
+
+```rust
+use otlp::ebpf::EbpfConfig;
+use std::time::Duration;
+
+let config = EbpfConfig::default()
+    .with_sample_rate(99)
+    .with_duration(Duration::from_secs(60))
+    .with_network_tracing(true);
+
+config.validate()?;
+```
+
+### EbpfLoader
+
+eBPF 程序加载器，用于加载和管理 eBPF 程序。
+
+```rust
+pub struct EbpfLoader {
+    // 私有字段
+}
+```
+
+**方法**:
+
+- `new(config: EbpfConfig) -> Self`: 创建新的加载器
+- `check_system_support() -> Result<()>`: 检查系统是否支持 eBPF
+- `load(program: &[u8]) -> Result<()>`: 加载 eBPF 程序
+- `unload() -> Result<()>`: 卸载 eBPF 程序
+- `config() -> &EbpfConfig`: 获取配置
+
+**示例**:
+
+```rust
+use otlp::ebpf::{EbpfConfig, EbpfLoader};
+
+let config = EbpfConfig::default();
+let mut loader = EbpfLoader::new(config);
+
+// 检查系统支持
+EbpfLoader::check_system_support()?;
+
+// 加载程序
+let program_bytes = include_bytes!("program.bpf.o");
+loader.load(program_bytes)?;
+
+// 卸载程序
+loader.unload()?;
+```
+
+### EbpfCpuProfiler
+
+CPU 性能分析器，用于收集 CPU 性能数据。
+
+```rust
+pub struct EbpfCpuProfiler {
+    // 私有字段
+}
+```
+
+**方法**:
+
+- `new(config: EbpfConfig) -> Self`: 创建新的性能分析器
+- `start() -> Result<()>`: 启动性能分析
+- `stop() -> Result<PprofProfile>`: 停止性能分析并生成 profile
+- `pause() -> Result<()>`: 暂停性能分析
+- `resume() -> Result<()>`: 恢复性能分析
+- `get_overhead() -> EbpfOverheadMetrics`: 获取性能开销
+- `get_duration() -> Option<Duration>`: 获取运行时长
+- `is_running() -> bool`: 检查是否正在运行
+
+**示例**:
+
+```rust
+use otlp::ebpf::{EbpfConfig, EbpfCpuProfiler};
+use std::time::Duration;
+
+let config = EbpfConfig::default()
+    .with_sample_rate(99);
+
+let mut profiler = EbpfCpuProfiler::new(config);
+profiler.start()?;
+
+// 执行一些工作...
+
+let profile = profiler.stop()?;
+let overhead = profiler.get_overhead();
+println!("CPU开销: {}%, 内存: {} bytes", 
+         overhead.cpu_percent, overhead.memory_bytes);
+```
+
+### EbpfNetworkTracer
+
+网络追踪器，用于追踪网络事件。
+
+```rust
+pub struct EbpfNetworkTracer {
+    // 私有字段
+}
+```
+
+**方法**:
+
+- `new(config: EbpfConfig) -> Self`: 创建新的网络追踪器
+- `start() -> Result<()>`: 启动网络追踪
+- `stop() -> Result<Vec<EbpfEvent>>`: 停止追踪并返回事件
+- `get_stats() -> NetworkStats`: 获取统计信息
+- `is_running() -> bool`: 检查是否正在运行
+
+**示例**:
+
+```rust
+use otlp::ebpf::{EbpfConfig, EbpfNetworkTracer};
+
+let config = EbpfConfig::default()
+    .with_network_tracing(true);
+
+let mut tracer = EbpfNetworkTracer::new(config);
+tracer.start()?;
+
+// 等待收集数据...
+
+let events = tracer.stop()?;
+let stats = tracer.get_stats();
+println!("捕获数据包: {}, 字节数: {}", 
+         stats.packets_captured, stats.bytes_captured);
+```
+
+### EbpfSyscallTracer
+
+系统调用追踪器，用于追踪系统调用事件。
+
+```rust
+pub struct EbpfSyscallTracer {
+    // 私有字段
+}
+```
+
+**方法**:
+
+- `new(config: EbpfConfig) -> Self`: 创建新的系统调用追踪器
+- `start() -> Result<()>`: 启动系统调用追踪
+- `stop() -> Result<Vec<EbpfEvent>>`: 停止追踪并返回事件
+- `get_stats() -> SyscallStats`: 获取统计信息
+- `filter_syscall(name: &str, enabled: bool) -> Result<()>`: 过滤特定系统调用
+- `is_running() -> bool`: 检查是否正在运行
+
+**示例**:
+
+```rust
+use otlp::ebpf::{EbpfConfig, EbpfSyscallTracer};
+
+let config = EbpfConfig::default()
+    .with_syscall_tracing(true);
+
+let mut tracer = EbpfSyscallTracer::new(config);
+tracer.start()?;
+
+// 过滤特定系统调用
+tracer.filter_syscall("openat", true)?;
+
+let events = tracer.stop()?;
+```
+
+### EbpfMemoryTracer
+
+内存追踪器，用于追踪内存分配事件。
+
+```rust
+pub struct EbpfMemoryTracer {
+    // 私有字段
+}
+```
+
+**方法**:
+
+- `new(config: EbpfConfig) -> Self`: 创建新的内存追踪器
+- `start() -> Result<()>`: 启动内存追踪
+- `stop() -> Result<Vec<EbpfEvent>>`: 停止追踪并返回事件
+- `get_stats() -> MemoryStats`: 获取统计信息
+- `is_running() -> bool`: 检查是否正在运行
+
+**示例**:
+
+```rust
+use otlp::ebpf::{EbpfConfig, EbpfMemoryTracer};
+
+let config = EbpfConfig::default()
+    .with_memory_tracing(true);
+
+let mut tracer = EbpfMemoryTracer::new(config);
+tracer.start()?;
+
+let events = tracer.stop()?;
+let stats = tracer.get_stats();
+println!("分配次数: {}, 总分配: {} bytes", 
+         stats.allocations, stats.total_allocated);
+```
+
+### EbpfOtlpConverter
+
+eBPF 事件到 OpenTelemetry 的转换器。
+
+```rust
+pub struct EbpfOtlpConverter {
+    // 私有字段
+}
+```
+
+**方法**:
+
+- `new() -> Self`: 创建新的转换器
+- `with_tracer(tracer: Tracer) -> Self`: 设置 Tracer
+- `with_meter(meter: Meter) -> Self`: 设置 Meter
+- `convert_event_to_span(event: &EbpfEvent) -> Result<Option<Span>>`: 转换事件到 Span
+- `convert_event_to_span_enhanced(event: &EbpfEvent) -> Result<Option<Span>>`: 增强的事件到 Span 转换
+- `convert_event_to_metric(event: &EbpfEvent) -> Result<()>`: 转换事件到 Metric
+- `convert_event_to_metric_enhanced(event: &EbpfEvent) -> Result<()>`: 增强的事件到 Metric 转换
+- `convert_profile_to_otlp(profile: &PprofProfile) -> Result<()>`: 转换 Profile 到 OTLP
+- `convert_events_batch(events: &[EbpfEvent]) -> Result<(Vec<Span>, u64)>`: 批量转换事件
+- `is_configured() -> bool`: 检查是否已配置
+- `get_conversion_stats() -> ConversionStats`: 获取转换统计信息
+
+**示例**:
+
+```rust
+use otlp::ebpf::integration::EbpfOtlpConverter;
+use otlp::ebpf::types::{EbpfEvent, EbpfEventType};
+use opentelemetry::trace::Tracer;
+
+let converter = EbpfOtlpConverter::new()
+    .with_tracer(tracer);
+
+let event = EbpfEvent::new(
+    EbpfEventType::CpuSample,
+    1234,
+    5678,
+    vec![1, 2, 3, 4],
+);
+
+// 转换到 Span
+let span = converter.convert_event_to_span_enhanced(&event)?;
+
+// 批量转换
+let events = vec![event];
+let (spans, metric_count) = converter.convert_events_batch(&events)?;
+```
+
+### EbpfEvent
+
+eBPF 事件结构。
+
+```rust
+pub struct EbpfEvent {
+    pub event_type: EbpfEventType,
+    pub timestamp: Duration,
+    pub pid: u32,
+    pub tid: u32,
+    pub data: Vec<u8>,
+}
+```
+
+**方法**:
+
+- `new(event_type: EbpfEventType, pid: u32, tid: u32, data: Vec<u8>) -> Self`: 创建新事件
+
+### EbpfEventType
+
+eBPF 事件类型枚举。
+
+```rust
+pub enum EbpfEventType {
+    CpuSample,
+    NetworkPacket,
+    Syscall,
+    MemoryAlloc,
+    MemoryFree,
+}
+```
+
+---
 
 ## 📝 版本兼容性
 

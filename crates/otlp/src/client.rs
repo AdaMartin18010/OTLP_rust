@@ -2,6 +2,88 @@
 //!
 //! 提供OTLP客户端的高级接口，整合处理器、导出器和传输层，
 //! 利用Rust 1.92的异步特性实现完整的OTLP功能。
+//!
+//! ## 功能特性
+//!
+//! - 支持Traces、Metrics、Logs三种遥测数据类型
+//! - 内置重试、熔断、超时等容错机制
+//! - 支持gRPC和HTTP两种传输协议
+//! - 提供高性能的批处理能力
+//! - 支持插件系统和依赖注入
+//!
+//! ## 使用示例
+//!
+//! ### 基本使用
+//!
+//! ```rust,no_run
+//! use otlp::{OtlpClient, OtlpConfig};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let config = OtlpConfig::default()
+//!         .with_endpoint("http://localhost:4317")
+//!         .with_batch_size(100);
+//!
+//!     let client = OtlpClient::new(config).await?;
+//!     client.initialize().await?;
+//!
+//!     // 发送追踪数据
+//!     let trace = client.send_trace("user-operation").await?;
+//!     trace.with_attribute("user_id", "12345")
+//!          .with_duration(150)
+//!          .finish().await?;
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ### 使用插件系统
+//!
+//! ```rust,no_run
+//! use otlp::{OtlpClient, OtlpConfig, plugin::{PluginManager, ValidationPlugin}};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let config = OtlpConfig::default();
+//!     let client = OtlpClient::new(config).await?;
+//!
+//!     // 注册插件
+//!     let mut plugin_manager = PluginManager::default();
+//!     plugin_manager.register_plugin(Box::new(ValidationPlugin::new()))?;
+//!
+//!     client.initialize().await?;
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## 错误处理
+//!
+//! 所有操作都返回`Result<T, OtlpError>`，包含详细的错误信息和恢复建议。
+//!
+//! ```rust,no_run
+//! use otlp::{OtlpClient, OtlpConfig, error::OtlpError};
+//!
+//! # async fn example() -> Result<(), OtlpError> {
+//! let client = OtlpClient::new(OtlpConfig::default()).await?;
+//! match client.initialize().await {
+//!     Ok(()) => println!("初始化成功"),
+//!     Err(e) => {
+//!         eprintln!("初始化失败: {}", e);
+//!         if let Some(suggestion) = e.recovery_suggestion() {
+//!             eprintln!("建议: {}", suggestion);
+//!         }
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## 性能考虑
+//!
+//! - 使用异步I/O，支持高并发
+//! - 内置连接池，减少连接开销
+//! - 智能批处理，优化网络传输
+//! - 零拷贝优化，减少内存使用
 use crate::config::OtlpConfig;
 use crate::config::TransportProtocol;
 use crate::data::TelemetryData;

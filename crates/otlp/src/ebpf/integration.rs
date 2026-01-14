@@ -284,10 +284,246 @@ impl EbpfOtlpConverter {
     pub fn is_configured(&self) -> bool {
         self.tracer.is_some() || self.meter.is_some()
     }
+
+    /// 获取已转换的事件统计
+    pub fn get_conversion_stats(&self) -> ConversionStats {
+        ConversionStats::default()
+    }
+}
+
+/// 转换统计信息
+#[derive(Debug, Clone, Default)]
+pub struct ConversionStats {
+    /// 转换的 Span 数量
+    pub spans_converted: u64,
+    /// 转换的 Metric 数量
+    pub metrics_converted: u64,
+    /// 转换的 Profile 数量
+    pub profiles_converted: u64,
+    /// 转换错误数量
+    pub conversion_errors: u64,
+}
+
+impl EbpfOtlpConverter {
+    /// 增强的事件到 Span 转换（带更多属性）
+    pub fn convert_event_to_span_enhanced(&self, event: &EbpfEvent) -> Result<Option<Span>> {
+        if let Some(ref tracer) = self.tracer {
+            let span_name = match event.event_type {
+                EbpfEventType::CpuSample => "ebpf.cpu.sample",
+                EbpfEventType::NetworkPacket => "ebpf.network.packet",
+                EbpfEventType::Syscall => "ebpf.syscall",
+                EbpfEventType::MemoryAlloc => "ebpf.memory.alloc",
+                EbpfEventType::MemoryFree => "ebpf.memory.free",
+            };
+
+            let span = tracer.start(span_name);
+
+            // 基础属性
+            span.set_attribute(opentelemetry::KeyValue::new("ebpf.pid", event.pid as i64));
+            span.set_attribute(opentelemetry::KeyValue::new("ebpf.tid", event.tid as i64));
+            span.set_attribute(
+                opentelemetry::KeyValue::new("ebpf.event_type", format!("{:?}", event.event_type)),
+            );
+
+            // 时间戳属性
+            let timestamp_nanos = event.timestamp.as_nanos() as i64;
+            span.set_attribute(
+                opentelemetry::KeyValue::new("ebpf.timestamp", timestamp_nanos),
+            );
+
+            // 数据大小属性
+            if !event.data.is_empty() {
+                span.set_attribute(
+                    opentelemetry::KeyValue::new("ebpf.data_size", event.data.len() as i64),
+                );
+            }
+
+            Ok(Some(span))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// 增强的事件到 Metric 转换（带更多指标）
+    pub fn convert_event_to_metric_enhanced(&self, event: &EbpfEvent) -> Result<()> {
+        if let Some(ref meter) = self.meter {
+            // 基础指标：事件计数
+            let counter = meter.u64_counter("ebpf.events.count").init();
+            counter.add(
+                1,
+                &[
+                    opentelemetry::KeyValue::new("event.type", format!("{:?}", event.event_type)),
+                    opentelemetry::KeyValue::new("pid", event.pid.to_string()),
+                ],
+            );
+
+            // 数据大小指标
+            if !event.data.is_empty() {
+                let size_gauge = meter.u64_gauge("ebpf.events.data_size").init();
+                size_gauge.record(
+                    event.data.len() as u64,
+                    &[opentelemetry::KeyValue::new("event.type", format!("{:?}", event.event_type))],
+                );
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl Default for EbpfOtlpConverter {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ebpf::types::EbpfEvent;
+    use std::time::SystemTime;
+
+    fn create_test_event(event_type: EbpfEventType) -> EbpfEvent {
+        EbpfEvent::new(event_type, 1234, 5678, vec![1, 2, 3, 4])
+    }
+
+    #[test]
+    fn test_converter_new() {
+        let converter = EbpfOtlpConverter::new();
+        assert!(!converter.is_configured());
+    }
+
+    #[test]
+    fn test_converter_default() {
+        let converter = EbpfOtlpConverter::default();
+        assert!(!converter.is_configured());
+    }
+
+    #[test]
+    fn test_converter_is_configured() {
+        let converter = EbpfOtlpConverter::new();
+        assert!(!converter.is_configured());
+    }
+
+    #[test]
+    fn test_convert_event_to_span_no_tracer() {
+        let converter = EbpfOtlpConverter::new();
+        let event = create_test_event(EbpfEventType::CpuSample);
+        let result = converter.convert_event_to_span(&event);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_convert_event_to_span_enhanced_no_tracer() {
+        let converter = EbpfOtlpConverter::new();
+        let event = create_test_event(EbpfEventType::NetworkPacket);
+        let result = converter.convert_event_to_span_enhanced(&event);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_convert_event_to_metric_no_meter() {
+        let converter = EbpfOtlpConverter::new();
+        let event = create_test_event(EbpfEventType::Syscall);
+        let result = converter.convert_event_to_metric(&event);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_convert_event_to_metric_enhanced_no_meter() {
+        let converter = EbpfOtlpConverter::new();
+        let event = create_test_event(EbpfEventType::MemoryAlloc);
+        let result = converter.convert_event_to_metric_enhanced(&event);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_convert_events_batch_empty() {
+        let converter = EbpfOtlpConverter::new();
+        let events = vec![];
+        let result = converter.convert_events_batch(&events);
+        assert!(result.is_ok());
+        let (spans, metric_count) = result.unwrap();
+        assert_eq!(spans.len(), 0);
+        assert_eq!(metric_count, 0);
+    }
+
+    #[test]
+    fn test_convert_events_batch_multiple() {
+        let converter = EbpfOtlpConverter::new();
+        let events = vec![
+            create_test_event(EbpfEventType::CpuSample),
+            create_test_event(EbpfEventType::NetworkPacket),
+            create_test_event(EbpfEventType::Syscall),
+        ];
+        let result = converter.convert_events_batch(&events);
+        assert!(result.is_ok());
+        let (spans, metric_count) = result.unwrap();
+        assert_eq!(spans.len(), 0); // No tracer configured
+        assert_eq!(metric_count, 3);
+    }
+
+    #[test]
+    fn test_convert_profile_to_otlp() {
+        let converter = EbpfOtlpConverter::new();
+        let profile = PprofProfile::default();
+        let result = converter.convert_profile_to_otlp(&profile);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_get_conversion_stats() {
+        let converter = EbpfOtlpConverter::new();
+        let stats = converter.get_conversion_stats();
+        assert_eq!(stats.spans_converted, 0);
+        assert_eq!(stats.metrics_converted, 0);
+        assert_eq!(stats.profiles_converted, 0);
+        assert_eq!(stats.conversion_errors, 0);
+    }
+
+    #[test]
+    fn test_conversion_stats_default() {
+        let stats = ConversionStats::default();
+        assert_eq!(stats.spans_converted, 0);
+        assert_eq!(stats.metrics_converted, 0);
+        assert_eq!(stats.profiles_converted, 0);
+        assert_eq!(stats.conversion_errors, 0);
+    }
+
+    #[test]
+    fn test_conversion_stats_clone() {
+        let stats = ConversionStats {
+            spans_converted: 10,
+            metrics_converted: 20,
+            profiles_converted: 5,
+            conversion_errors: 1,
+        };
+        let cloned = stats.clone();
+        assert_eq!(cloned.spans_converted, 10);
+        assert_eq!(cloned.metrics_converted, 20);
+        assert_eq!(cloned.profiles_converted, 5);
+        assert_eq!(cloned.conversion_errors, 1);
+    }
+
+    #[test]
+    fn test_all_event_types() {
+        let converter = EbpfOtlpConverter::new();
+        let event_types = vec![
+            EbpfEventType::CpuSample,
+            EbpfEventType::NetworkPacket,
+            EbpfEventType::Syscall,
+            EbpfEventType::MemoryAlloc,
+            EbpfEventType::MemoryFree,
+        ];
+
+        for event_type in event_types {
+            let event = create_test_event(event_type);
+            let span_result = converter.convert_event_to_span(&event);
+            assert!(span_result.is_ok());
+            let metric_result = converter.convert_event_to_metric(&event);
+            assert!(metric_result.is_ok());
+        }
     }
 }

@@ -3,11 +3,72 @@
 //! 实现OTLP数据的导出功能，支持多种传输方式和重试机制，
 //! 利用Rust 1.92的异步特性实现高性能数据导出。
 //!
+//! ## 功能特性
+//!
+//! - 支持gRPC和HTTP/JSON两种传输协议
+//! - 自动重试机制，支持指数退避
+//! - 批量导出，提高吞吐量
+//! - 连接池管理，减少连接开销
+//! - 详细的导出指标和监控
+//!
 //! ## Rust 1.92 特性应用
 //!
 //! - **异步闭包**: 使用 `async || {}` 语法简化异步导出操作
 //! - **元组收集**: 使用 `collect()` 直接收集导出结果到元组
 //! - **改进的异步I/O**: 利用 Rust 1.92 的异步I/O优化提升性能
+//!
+//! ## 使用示例
+//!
+//! ### 基本导出
+//!
+//! ```rust,no_run
+//! use otlp::{OtlpExporter, OtlpConfig, data::TelemetryData};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let config = OtlpConfig::default()
+//!         .with_endpoint("http://localhost:4317");
+//!
+//!     let exporter = OtlpExporter::new(config);
+//!     exporter.initialize().await?;
+//!
+//!     let data = TelemetryData::trace("operation");
+//!     let result = exporter.export(data).await?;
+//!
+//!     println!("导出成功: {} 条数据", result.success_count);
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ### 批量导出
+//!
+//! ```rust,no_run
+//! use otlp::{OtlpExporter, OtlpConfig, data::TelemetryData};
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let exporter = OtlpExporter::new(OtlpConfig::default());
+//! exporter.initialize().await?;
+//!
+//! let mut batch = Vec::new();
+//! for i in 0..100 {
+//!     batch.push(TelemetryData::trace(format!("operation-{}", i)));
+//! }
+//!
+//! let result = exporter.export_batch(batch).await?;
+//! println!("批量导出: 成功={}, 失败={}",
+//!          result.success_count, result.failure_count);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## 错误处理
+//!
+//! 导出操作可能返回以下错误：
+//! - `ExportError::Failed` - 导出失败
+//! - `ExportError::PartialFailure` - 部分导出失败
+//! - `ExportError::QueueFull` - 导出队列满
+//!
+//! 所有错误都包含详细的错误信息和恢复建议。
 
 use crate::config::OtlpConfig;
 use crate::data::TelemetryData;

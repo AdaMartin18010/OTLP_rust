@@ -47,6 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 连接池，用于管理连接复用。
 
 **方法**:
+
 - `new(config: ConnectionPoolConfig) -> Self` - 创建连接池
 - `get_connection() -> Result<PooledConnection>` - 获取连接
 - `return_connection(connection: PooledConnection) -> Result<()>` - 归还连接
@@ -57,12 +58,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 负载均衡器，用于分发请求。
 
 **策略**:
+
 - `RoundRobin` - 轮询
 - `LeastConnections` - 最少连接
 - `Random` - 随机
 - `WeightedRoundRobin` - 加权轮询
 
 **方法**:
+
 - `new(config: LoadBalancerConfig) -> Self` - 创建负载均衡器
 - `select_backend() -> Option<BackendServer>` - 选择后端
 - `get_stats() -> LoadBalancerStats` - 获取统计信息
@@ -72,6 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 网络管理器，统一管理网络功能。
 
 **方法**:
+
 - `new(config: NetworkConfig) -> Self` - 创建管理器
 - `get_connection_pool(name: &str) -> Option<Arc<ConnectionPool>>` - 获取连接池
 - `get_load_balancer(name: &str) -> Option<Arc<LoadBalancer>>` - 获取负载均衡器

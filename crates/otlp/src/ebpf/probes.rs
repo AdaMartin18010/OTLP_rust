@@ -94,7 +94,7 @@ impl ProbeManager {
         // 如果提供了 Bpf 实例，进行实际附加
         if let Some(bpf) = bpf {
             use aya::programs::kprobe::KProbe;
-            
+
             // 从 Bpf 实例获取程序并加载
             let program: &mut KProbe = bpf.program_mut(name)
                 .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
@@ -106,22 +106,22 @@ impl ProbeManager {
                     "程序类型转换失败: {:?}",
                     e
                 )))?;
-            
+
             program.load()
                 .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
                     "程序加载失败: {}",
                     e
                 )))?;
-            
+
             // 附加到内核函数
             program.attach(function, 0)
                 .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
                     "探针附加失败: {}",
                     e
                 )))?;
-            
+
             tracing::info!("KProbe 已成功附加: {} -> {}", name, function);
-            
+
             self.probes.push(ProbeInfo {
                 probe_type: ProbeType::KProbe,
                 name: name.to_string(),
@@ -215,7 +215,7 @@ impl ProbeManager {
         // 如果提供了 Bpf 实例，进行实际附加
         if let Some(bpf) = bpf {
             use aya::programs::uprobe::UProbe;
-            
+
             // 从 Bpf 实例获取程序并加载
             let program: &mut UProbe = bpf.program_mut(name)
                 .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
@@ -227,13 +227,13 @@ impl ProbeManager {
                     "程序类型转换失败: {:?}",
                     e
                 )))?;
-            
+
             program.load()
                 .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
                     "程序加载失败: {}",
                     e
                 )))?;
-            
+
             // 附加到用户空间函数
             // pid: None 表示附加到所有进程
             program.attach(Some(binary), symbol, 0, None)
@@ -241,9 +241,9 @@ impl ProbeManager {
                     "探针附加失败: {}",
                     e
                 )))?;
-            
+
             tracing::info!("UProbe 已成功附加: {} -> {}:{}", name, binary, symbol);
-            
+
             self.probes.push(ProbeInfo {
                 probe_type: ProbeType::UProbe,
                 name: name.to_string(),
@@ -331,7 +331,7 @@ impl ProbeManager {
         // 如果提供了 Bpf 实例，进行实际附加
         if let Some(bpf) = bpf {
             use aya::programs::trace_point::TracePoint;
-            
+
             // 从 Bpf 实例获取程序并加载
             let program: &mut TracePoint = bpf.program_mut(name)
                 .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
@@ -343,22 +343,22 @@ impl ProbeManager {
                     "程序类型转换失败: {:?}",
                     e
                 )))?;
-            
+
             program.load()
                 .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
                     "程序加载失败: {}",
                     e
                 )))?;
-            
+
             // 附加到跟踪点
             program.attach(category, event)
                 .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
                     "探针附加失败: {}",
                     e
                 )))?;
-            
+
             tracing::info!("Tracepoint 已成功附加: {} -> {}:{}", name, category, event);
-            
+
             self.probes.push(ProbeInfo {
                 probe_type: ProbeType::TracePoint,
                 name: name.to_string(),
@@ -458,6 +458,196 @@ impl ProbeManager {
 
     #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
     pub fn detach(&mut self, _name: &str) -> Result<()> {
+        Err(EbpfError::UnsupportedPlatform.into())
+    }
+
+    /// 分离探针（需要 Bpf 实例）
+    ///
+    /// # 参数
+    ///
+    /// * `name` - 探针名称
+    /// * `bpf` - Bpf 实例（必须提供）
+    ///
+    /// # 返回
+    ///
+    /// 成功返回 `Ok(())`，失败返回错误
+    ///
+    /// # 说明
+    ///
+    /// 分离指定的探针，停止收集数据。
+    /// 分离后探针将停止收集数据，但 eBPF 程序仍在内存中。
+    ///
+    /// # 示例
+    ///
+    /// ```rust,no_run
+    /// use otlp::ebpf::{ProbeManager, EbpfLoader, EbpfConfig};
+    ///
+    /// let config = EbpfConfig::default();
+    /// let mut loader = EbpfLoader::new(config);
+    /// // ... 加载 eBPF 程序 ...
+    /// let mut manager = ProbeManager::new();
+    /// // ... 附加探针 ...
+    /// if let Some(bpf) = loader.bpf_mut() {
+    ///     manager.detach_with_bpf("my_probe", bpf)?;
+    /// }
+    /// # Ok::<(), otlp::error::OtlpError>(())
+    /// ```
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn detach_with_bpf(&mut self, name: &str, bpf: &mut aya::Bpf) -> Result<()> {
+        // 查找探针信息
+        let probe_info = self.probes.iter().find(|p| p.name == name);
+
+        if let Some(probe_info) = probe_info {
+            // 根据探针类型分离
+            match probe_info.probe_type {
+                ProbeType::KProbe => {
+                    use aya::programs::kprobe::KProbe;
+                    if let Ok(program) = bpf.program_mut(name)
+                        .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                            "程序不存在: {}",
+                            name
+                        )))?
+                        .try_into::<KProbe>()
+                    {
+                        program.detach()
+                            .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                                "分离 KProbe 失败: {}",
+                                e
+                            )))?;
+                    }
+                }
+                ProbeType::UProbe => {
+                    use aya::programs::uprobe::UProbe;
+                    if let Ok(program) = bpf.program_mut(name)
+                        .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                            "程序不存在: {}",
+                            name
+                        )))?
+                        .try_into::<UProbe>()
+                    {
+                        program.detach()
+                            .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                                "分离 UProbe 失败: {}",
+                                e
+                            )))?;
+                    }
+                }
+                ProbeType::TracePoint => {
+                    use aya::programs::trace_point::TracePoint;
+                    if let Ok(program) = bpf.program_mut(name)
+                        .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                            "程序不存在: {}",
+                            name
+                        )))?
+                        .try_into::<TracePoint>()
+                    {
+                        program.detach()
+                            .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                                "分离 TracePoint 失败: {}",
+                                e
+                            )))?;
+                    }
+                }
+            }
+
+            // 从列表中移除
+            self.probes.retain(|p| p.name != name);
+            tracing::info!("探针已成功分离: {}", name);
+            Ok(())
+        } else {
+            Err(EbpfError::AttachFailed(format!("探针不存在: {}", name)).into())
+        }
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn detach_with_bpf(&mut self, _name: &str, _bpf: &mut aya::Bpf) -> Result<()> {
+        Err(EbpfError::UnsupportedPlatform.into())
+    }
+
+    /// 分离所有探针（需要 Bpf 实例）
+    ///
+    /// # 参数
+    ///
+    /// * `bpf` - Bpf 实例（必须提供）
+    ///
+    /// # 返回
+    ///
+    /// 成功返回 `Ok(())`，失败返回错误
+    ///
+    /// # 说明
+    ///
+    /// 分离所有已附加的探针，释放所有相关资源。
+    /// 分离所有探针后，eBPF 程序仍在内存中，需要卸载程序才能完全清理。
+    ///
+    /// # 示例
+    ///
+    /// ```rust,no_run
+    /// use otlp::ebpf::{ProbeManager, EbpfLoader, EbpfConfig};
+    ///
+    /// let config = EbpfConfig::default();
+    /// let mut loader = EbpfLoader::new(config);
+    /// // ... 加载 eBPF 程序 ...
+    /// let mut manager = ProbeManager::new();
+    /// // ... 附加探针 ...
+    /// if let Some(bpf) = loader.bpf_mut() {
+    ///     manager.detach_all_with_bpf(bpf)?;
+    /// }
+    /// # Ok::<(), otlp::error::OtlpError>(())
+    /// ```
+    #[cfg(all(feature = "ebpf", target_os = "linux"))]
+    pub fn detach_all_with_bpf(&mut self, bpf: &mut aya::Bpf) -> Result<()> {
+        let count = self.probes.len();
+        if count == 0 {
+            return Ok(());
+        }
+
+        tracing::info!("分离 {} 个探针", count);
+
+        // 收集所有探针名称（避免在迭代时修改列表）
+        let probe_names: Vec<String> = self.probes.iter().map(|p| p.name.clone()).collect();
+
+        // 遍历所有探针并分离
+        for name in &probe_names {
+            // 查找探针信息
+            if let Some(probe_info) = self.probes.iter().find(|p| p.name == *name) {
+                match probe_info.probe_type {
+                    ProbeType::KProbe => {
+                        use aya::programs::kprobe::KProbe;
+                        if let Ok(program) = bpf.program_mut(name)
+                            .and_then(|p| p.try_into::<KProbe>().ok())
+                        {
+                            let _ = program.detach();
+                        }
+                    }
+                    ProbeType::UProbe => {
+                        use aya::programs::uprobe::UProbe;
+                        if let Ok(program) = bpf.program_mut(name)
+                            .and_then(|p| p.try_into::<UProbe>().ok())
+                        {
+                            let _ = program.detach();
+                        }
+                    }
+                    ProbeType::TracePoint => {
+                        use aya::programs::trace_point::TracePoint;
+                        if let Ok(program) = bpf.program_mut(name)
+                            .and_then(|p| p.try_into::<TracePoint>().ok())
+                        {
+                            let _ = program.detach();
+                        }
+                    }
+                }
+            }
+        }
+
+        // 清空探针列表
+        self.probes.clear();
+        tracing::info!("所有探针已成功分离");
+
+        Ok(())
+    }
+
+    #[cfg(not(all(feature = "ebpf", target_os = "linux")))]
+    pub fn detach_all_with_bpf(&mut self, _bpf: &mut aya::Bpf) -> Result<()> {
         Err(EbpfError::UnsupportedPlatform.into())
     }
 

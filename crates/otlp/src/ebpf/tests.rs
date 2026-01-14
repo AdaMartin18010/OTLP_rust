@@ -109,7 +109,7 @@ mod tests {
         // 验证性能分析器已创建
         assert_eq!(profiler.config().sample_rate, 100);  // 默认采样率
         assert!(!profiler.is_running());  // 初始状态未运行
-        
+
         // 注意：实际加载功能需要Linux平台和aya crate集成
         // 在Linux平台上可以测试:
         // if EbpfLoader::check_system_support().is_ok() {
@@ -399,7 +399,7 @@ mod tests {
         // 添加更多事件应该触发刷新
         let event = EbpfEvent::new(EbpfEventType::NetworkPacket, 1005, 2005, vec![5]);
         assert!(processor.process_event(event).is_ok());
-        
+
         // 缓冲区应该被刷新，新事件被添加
         assert_eq!(processor.event_count(), 1);
     }
@@ -567,7 +567,7 @@ mod tests {
 
         let ebpf_error = EbpfError::UnsupportedPlatform;
         let otlp_error: OtlpError = ebpf_error.into();
-        
+
         // 验证错误已转换
         match otlp_error {
             OtlpError::Processing(_) => {},
@@ -582,7 +582,7 @@ mod tests {
         use crate::ebpf::types::{EbpfEvent, EbpfEventType};
 
         let converter = EbpfOtlpConverter::new();
-        
+
         // 测试未配置的转换器
         assert!(!converter.is_configured());
 

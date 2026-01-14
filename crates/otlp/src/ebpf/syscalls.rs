@@ -68,7 +68,7 @@ impl EbpfSyscallTracer {
                 return Err(crate::error::OtlpError::Processing(
                     crate::error::ProcessingError::InvalidState {
                         message: "系统调用追踪器未启动".to_string(),
-                    },
+                    }.into(),
                 ));
             }
 

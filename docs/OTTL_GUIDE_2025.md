@@ -43,6 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 OTTL 转换器，用于执行数据转换。
 
 **方法**:
+
 - `new(config: TransformConfig) -> Result<Self>` - 创建转换器
 - `transform(data: TelemetryData) -> Result<TransformResult>` - 转换数据
 
@@ -51,6 +52,7 @@ OTTL 转换器，用于执行数据转换。
 转换配置，包含 OTTL 语句。
 
 **方法**:
+
 - `new() -> Self` - 创建配置
 - `add_statement(statement: impl Into<String>) -> Self` - 添加语句
 
@@ -59,6 +61,7 @@ OTTL 转换器，用于执行数据转换。
 字节码编译器，将 OTTL 语句编译为字节码以提高性能。
 
 **方法**:
+
 - `new() -> Self` - 创建编译器
 - `compile(statement: &Statement) -> Result<BytecodeProgram>` - 编译语句
 

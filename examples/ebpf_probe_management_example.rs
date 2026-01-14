@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_cpu_profiling(true)
         .with_network_tracing(true)
         .with_syscall_tracing(true);
-    
+
     let mut loader = EbpfLoader::new(config);
     let _ = loader.check_system_support();
     println!("   ✅ eBPF 环境初始化完成");
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("tcp_send", "tcp_v4_sendmsg"),
         ("tcp_receive", "tcp_v4_do_rcv"),
     ];
-    
+
     for (name, function) in kprobes {
         match probe_manager.attach_kprobe(name, function, None) {
             Ok(()) => println!("   ✅ KProbe 注册成功: {} -> {}", name, function),
@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("free_trace", "/usr/lib/libc.so.6", "free"),
         ("open_trace", "/usr/lib/libc.so.6", "open"),
     ];
-    
+
     for (name, binary, symbol) in uprobes {
         match probe_manager.attach_uprobe(name, binary, symbol, None) {
             Ok(()) => println!("   ✅ UProbe 注册成功: {} -> {}:{}", name, binary, symbol),
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("syscall_write", "syscalls", "sys_enter_write"),
         ("sched_switch", "sched", "sched_switch"),
     ];
-    
+
     for (name, category, event) in tracepoints {
         match probe_manager.attach_tracepoint(name, category, event, None) {
             Ok(()) => println!("   ✅ Tracepoint 注册成功: {} -> {}:{}", name, category, event),
@@ -91,8 +91,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ProbeType::UProbe => "UProbe",
             ProbeType::TracePoint => "Tracepoint",
         };
-        println!("     - {} ({}) -> {} [{}]", 
-            name, type_str, target, 
+        println!("     - {} ({}) -> {} [{}]",
+            name, type_str, target,
             if attached { "已附加" } else { "已注册" });
     }
     println!();
@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let kprobe_count = probes.iter().filter(|(_, t, _, _)| *t == ProbeType::KProbe).count();
     let uprobe_count = probes.iter().filter(|(_, t, _, _)| *t == ProbeType::UProbe).count();
     let tracepoint_count = probes.iter().filter(|(_, t, _, _)| *t == ProbeType::TracePoint).count();
-    
+
     println!("   ✅ 探针统计:");
     println!("     - KProbe: {} 个", kprobe_count);
     println!("     - UProbe: {} 个", uprobe_count);

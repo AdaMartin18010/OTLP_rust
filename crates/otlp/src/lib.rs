@@ -241,6 +241,10 @@ pub mod transport;
 pub mod utils;
 pub mod validation;
 
+// 依赖注入和插件系统
+pub mod di;
+pub mod plugin;
+
 // 性能优化模块 (合并后的统一模块)
 pub mod performance;
 

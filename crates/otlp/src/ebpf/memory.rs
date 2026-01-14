@@ -69,7 +69,7 @@ impl EbpfMemoryTracer {
                 return Err(crate::error::OtlpError::Processing(
                     crate::error::ProcessingError::InvalidState {
                         message: "内存追踪器未启动".to_string(),
-                    },
+                    }.into(),
                 ));
             }
 
