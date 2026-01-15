@@ -86,8 +86,25 @@ opt-level = 2
 # 最后更新: 2025年1月 (最新更新) - 升级到 Rust 1.92.0
 # OpenTelemetry: v0.31.0 (当前最新稳定版本)
 # 2025-01更新 (cargo update - 主要依赖更新):
-#   最新更新 (cargo update):
-#   - zmij: v1.0.12 -> v1.0.13 (传递依赖更新)
+#   最新更新 (cargo update - 2025年1月):
+#   - aws-lc-rs: v1.15.2 -> v1.15.3 (加密库)
+#   - aws-lc-sys: v0.35.0 -> v0.36.0 (加密系统库)
+#   - chrono: v0.4.42 -> v0.4.43 (日期时间库)
+#   - js-sys: v0.3.83 -> v0.3.85 (WebAssembly JS绑定)
+#   - rand_core: v0.9.4 -> v0.9.5 (随机数核心)
+#   - rustc-demangle: v0.1.26 -> v0.1.27 (符号反混淆)
+#   - time: v0.3.44 -> v0.3.45 (时间库)
+#   - time-core: v0.1.6 -> v0.1.7 (时间核心)
+#   - time-macros: v0.2.24 -> v0.2.25 (时间宏)
+#   - wasip2: v1.0.1+wasi-0.2.4 -> v1.0.2+wasi-0.2.9 (WASI支持)
+#   - wasm-bindgen: v0.2.106 -> v0.2.108 (WebAssembly绑定)
+#   - wasm-bindgen-futures: v0.4.56 -> v0.4.58 (异步绑定)
+#   - wasm-bindgen-macro: v0.2.106 -> v0.2.108 (宏)
+#   - wasm-bindgen-macro-support: v0.2.106 -> v0.2.108 (宏支持)
+#   - wasm-bindgen-shared: v0.2.106 -> v0.2.108 (共享组件)
+#   - web-sys: v0.3.83 -> v0.3.85 (Web API绑定)
+#   - wit-bindgen: v0.46.0 -> v0.51.0 (WIT绑定生成器)
+#   - zmij: v1.0.13 -> v1.0.14 (传递依赖更新)
 # 2025-01更新 (cargo update - 主要依赖更新):
 #   - reqwest: v0.12.24 -> v0.12.28 (HTTP客户端)
 #   - hyper: v1.7.0 -> v1.8.1 (HTTP库)
@@ -365,11 +382,11 @@ metrics-exporter-prometheus = "0.17.2" # Prometheus导出器
 
 # ========== 时间处理 ==========
 # 时间处理 - 2025年10月最新稳定版本，与系统时间同步
-chrono = { version = "0.4.42", features = ["serde"] } # 日期时间库
-time = { version = "0.3.44", features = [
+chrono = { version = "0.4.43", features = ["serde"] } # 日期时间库 (更新: 0.4.42 -> 0.4.43)
+time = { version = "0.3.45", features = [
   "serde",
   "macros",
-] } # 现代时间库，支持Rust 1.92
+] } # 现代时间库，支持Rust 1.92 (更新: 0.3.44 -> 0.3.45)
 
 # ========== 常用工具库 ==========
 # 其他常用库 - 2025年10月20日最新稳定版本，提供基础功能支持
@@ -500,11 +517,11 @@ ahash = "0.8.12"            # 替代 fxhash (未维护) - 高性能哈希
 quote = "1.0.43"            # 替代 paste (未维护) - 代码生成
 proc-macro-error2 = "2.0.1" # 替代 proc-macro-error (未维护) - 宏错误处理
 is-terminal = "0.2.0"       # 替代 atty (有安全漏洞) - 终端检测
-wasm-bindgen = "0.2.106"    # 最新稳定版本，支持WebAssembly 2.0
+wasm-bindgen = "0.2.108"    # 最新稳定版本，支持WebAssembly 2.0 (更新: 0.2.106 -> 0.2.108)
 proc-macro2 = "1.0.105"     # 过程宏支持
 syn = "2.0.114"             # 语法解析
-js-sys = "0.3.83"           # JS绑定
-web-sys = "0.3.83"          # Web API绑定
+js-sys = "0.3.85"           # JS绑定 (更新: 0.3.83 -> 0.3.85)
+web-sys = "0.3.85"          # Web API绑定 (更新: 0.3.83 -> 0.3.85)
 nix = "0.28.0"              # 系统调用安全封装
 # pingora 已移除，存在安全漏洞 (RUSTSEC-2025-0037, RUSTSEC-2025-0070)
 

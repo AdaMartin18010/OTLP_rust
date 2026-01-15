@@ -6,6 +6,7 @@ use otlp::config::{
     validate_batch_size, validate_timeout, DEFAULT_BATCH_SIZE, DEFAULT_TIMEOUT, MAX_BATCH_SIZE,
     MIN_BATCH_SIZE,
 };
+use std::time::Duration;
 
 fn main() {
     // 1. 使用const常量
@@ -36,6 +37,14 @@ fn main() {
     // 3. 使用const常量进行配置
     println!("\n配置已使用const常量，实现编译时优化");
     println!("可以使用这些const常量在编译时进行配置验证");
+
+    // 4. 使用配置构建器示例
+    let config = OtlpConfigBuilder::new()
+        .batch_size(1000)
+        .timeout(Duration::from_secs(5))
+        .build();
+    println!("\n配置构建器示例已创建");
+    println!("批处理大小: {}, 超时: {:?}", config.batch_size, config.timeout);
 }
 
 // 示例配置构建器 (简化版)

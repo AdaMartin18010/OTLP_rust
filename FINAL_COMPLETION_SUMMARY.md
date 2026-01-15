@@ -25,24 +25,28 @@
 ### Phase 1: eBPF Phase 2 核心实现 ✅
 
 #### 1. loader.rs
+
 - ✅ 实际 aya 集成 (`Bpf::load()`)
 - ✅ 内核版本检查
 - ✅ 程序验证和 Maps 验证
 - ✅ `bpf()` 和 `bpf_mut()` 方法
 
 #### 2. probes.rs
+
 - ✅ KProbe 实际附加逻辑
 - ✅ UProbe 实际附加逻辑
 - ✅ TracePoint 实际附加逻辑
 - ✅ 支持延迟附加（可选 Bpf 参数）
 
 #### 3. maps.rs
+
 - ✅ HashMap 读写操作
 - ✅ Array Map 读写操作
 - ✅ PerCpuHashMap 支持
 - ✅ 完整的类型验证
 
 #### 4. events.rs
+
 - ✅ 批量处理支持
 - ✅ `AsyncEventProcessor` 实现
 - ✅ 线程安全的事件处理
@@ -51,17 +55,20 @@
 ### Phase 2: 测试和基准测试 ✅
 
 #### 单元测试
+
 - ✅ 更新所有现有测试 (50+ 个)
 - ✅ 添加批处理测试 (5 个)
 - ✅ 添加异步处理测试
 - ✅ 添加缓冲区管理测试
 
 #### 集成测试
+
 - ✅ 创建 `ebpf_advanced_test.rs` (6 个高级测试)
 - ✅ 更新 `ebpf_e2e_test.rs`
 - ✅ 完整工作流程测试
 
 #### 基准测试
+
 - ✅ 事件批处理性能测试
 - ✅ 事件过滤性能测试
 - ✅ 探针管理器性能测试
@@ -70,12 +77,14 @@
 ### Phase 3: 示例和文档 ✅
 
 #### 示例代码
+
 - ✅ `ebpf_complete_example.rs` - 完整功能演示
 - ✅ `ebpf_async_example.rs` - 异步处理演示
 - ✅ `ebpf_probe_management_example.rs` - 探针管理演示
 - ✅ `ebpf_maps_operations_example.rs` - Maps 操作演示
 
 #### 文档
+
 - ✅ `EBPF_USAGE_GUIDE.md` - 完整使用指南
 - ✅ `EBPF_PHASE2_COMPLETION_REPORT.md` - 完成报告
 - ✅ API 文档完善

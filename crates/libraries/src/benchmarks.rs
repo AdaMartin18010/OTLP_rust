@@ -1,5 +1,5 @@
 ﻿//! # 性能基准测试模块
-//! 
+//!
 //! 本模块提供了基于 Rust 1.92 特性的性能基准测试功能：
 //! - 常量泛型优化的基准测试
 //! - 异步性能测试
@@ -49,40 +49,40 @@ impl BenchmarkResult {
             p99_latency_ms: 0.0,
         }
     }
-    
+
     pub fn calculate_stats(&mut self, latencies: &[f64]) {
         if latencies.is_empty() {
             return;
         }
-        
+
         let mut sorted_latencies = latencies.to_vec();
         sorted_latencies.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        
+
         self.total_operations = latencies.len();
         self.average_latency_ms = latencies.iter().sum::<f64>() / latencies.len() as f64;
         self.min_latency_ms = *sorted_latencies.first().unwrap();
         self.max_latency_ms = *sorted_latencies.last().unwrap();
-        
+
         // 计算百分位数
         self.p50_latency_ms = self.calculate_percentile(&sorted_latencies, 50.0);
         self.p95_latency_ms = self.calculate_percentile(&sorted_latencies, 95.0);
         self.p99_latency_ms = self.calculate_percentile(&sorted_latencies, 99.0);
-        
+
         // 计算每秒操作数
         if self.total_duration.as_secs_f64() > 0.0 {
             self.operations_per_second = self.total_operations as f64 / self.total_duration.as_secs_f64();
         }
     }
-    
+
     fn calculate_percentile(&self, sorted_data: &[f64], percentile: f64) -> f64 {
         if sorted_data.is_empty() {
             return 0.0;
         }
-        
+
         let index = (percentile / 100.0) * (sorted_data.len() - 1) as f64;
         let lower = index.floor() as usize;
         let upper = index.ceil() as usize;
-        
+
         if lower == upper {
             sorted_data[lower]
         } else {
@@ -90,7 +90,7 @@ impl BenchmarkResult {
             sorted_data[lower] * (1.0 - weight) + sorted_data[upper] * weight
         }
     }
-    
+
     pub fn format_report(&self) -> String {
         format!(
             "=== {} 基准测试结果 ===\n\
@@ -118,7 +118,7 @@ impl BenchmarkResult {
 }
 
 /// Rust 1.92 特性：使用常量泛型优化的基准测试器
-/// 
+///
 /// 通过常量泛型参数提供编译时优化的基准测试框架
 pub struct OptimizedBenchmarker<const BUFFER_SIZE: usize = 10000> {
     results: Vec<BenchmarkResult>,
@@ -136,12 +136,12 @@ impl<const BUFFER_SIZE: usize> OptimizedBenchmarker<BUFFER_SIZE> {
             buffer_size: BUFFER_SIZE,
         }
     }
-    
+
     /// 使用常量推断创建指定大小的基准测试器
     pub fn with_buffer_size<const NEW_SIZE: usize>(_size: usize) -> OptimizedBenchmarker<NEW_SIZE> {
         OptimizedBenchmarker::new()
     }
-    
+
     /// 运行基准测试
     pub async fn run_benchmark<F, Fut>(
         &mut self,
@@ -155,19 +155,19 @@ impl<const BUFFER_SIZE: usize> OptimizedBenchmarker<BUFFER_SIZE> {
         Fut: std::future::Future<Output = Result<Vec<u8>>> + Send,
     {
         println!("开始基准测试: {}, 迭代次数: {}, 并发数: {}", operation_name, iterations, concurrency);
-        
+
         let start_time = Instant::now();
         let latencies = self.run_concurrent_benchmark(operation, iterations, concurrency).await?;
         let total_duration = start_time.elapsed();
-        
+
         let mut result = BenchmarkResult::new(operation_name);
         result.total_duration = total_duration;
         result.calculate_stats(&latencies);
-        
+
         self.results.push(result);
         Ok(self.results.last().unwrap())
     }
-    
+
     async fn run_concurrent_benchmark<F, Fut>(
         &mut self,
         operation: F,
@@ -181,29 +181,29 @@ impl<const BUFFER_SIZE: usize> OptimizedBenchmarker<BUFFER_SIZE> {
         let latencies = Arc::new(std::sync::Mutex::new(Vec::with_capacity(iterations)));
         #[cfg(feature = "tokio")]
         let completed = Arc::new(AtomicUsize::new(0));
-        
+
         #[cfg(feature = "tokio")]
         {
             let mut handles = Vec::new();
-            
+
             for _ in 0.._concurrency {
                 let operation = operation.clone();
                 let latencies = Arc::clone(&latencies);
                 let completed = Arc::clone(&completed);
-                
+
                 let handle = tokio::spawn(async move {
                     loop {
                         let current = completed.fetch_add(1, Ordering::Relaxed);
                         if current >= iterations {
                             break;
                         }
-                        
+
                         let start = Instant::now();
                         match operation().await {
                             Ok(_) => {
                                 let duration = start.elapsed();
                                 let latency_ms = duration.as_secs_f64() * 1000.0;
-                                
+
                                 if let Ok(mut latencies_vec) = latencies.lock() {
                                     latencies_vec.push(latency_ms);
                                 }
@@ -217,16 +217,16 @@ impl<const BUFFER_SIZE: usize> OptimizedBenchmarker<BUFFER_SIZE> {
                         }
                     }
                 });
-                
+
                 handles.push(handle);
             }
-            
+
             // 等待所有任务完成
             for handle in handles {
                 let _ = handle.await;
             }
         }
-        
+
         #[cfg(not(feature = "tokio"))]
         {
             // 同步版本的基准测试
@@ -236,7 +236,7 @@ impl<const BUFFER_SIZE: usize> OptimizedBenchmarker<BUFFER_SIZE> {
                     Ok(_) => {
                         let duration = start.elapsed();
                         let latency_ms = duration.as_secs_f64() * 1000.0;
-                        
+
                         if let Ok(mut latencies_vec) = latencies.lock() {
                             latencies_vec.push(latency_ms);
                         }
@@ -249,32 +249,32 @@ impl<const BUFFER_SIZE: usize> OptimizedBenchmarker<BUFFER_SIZE> {
                 }
             }
         }
-        
+
         let latencies_vec = latencies.lock().unwrap();
         Ok(latencies_vec.clone())
     }
-    
+
     /// 获取所有基准测试结果
     pub fn get_results(&self) -> &[BenchmarkResult] {
         &self.results
     }
-    
+
     /// 生成综合报告
     pub fn generate_report(&self) -> String {
         let mut report = String::new();
         report.push_str("=== 综合基准测试报告 ===\n\n");
-        
+
         for result in &self.results {
             report.push_str(&result.format_report());
             report.push_str("\n");
         }
-        
+
         report
     }
 }
 
 /// 内存使用监控器
-/// 
+///
 /// 使用常量泛型优化内存监控数据结构
 pub struct MemoryMonitor<const SAMPLE_COUNT: usize = 1000> {
     samples: [MemorySample; SAMPLE_COUNT],
@@ -303,12 +303,12 @@ impl<const SAMPLE_COUNT: usize> MemoryMonitor<SAMPLE_COUNT> {
             total_samples: 0,
         }
     }
-    
+
     /// 使用常量推断创建指定大小的内存监控器
     pub fn with_capacity<const NEW_SIZE: usize>(_size: usize) -> MemoryMonitor<NEW_SIZE> {
         MemoryMonitor::new()
     }
-    
+
     pub fn record_sample(&mut self, allocated_bytes: usize, used_bytes: usize, peak_bytes: usize) {
         self.samples[self.current_index] = MemorySample {
             timestamp: Instant::now(),
@@ -316,22 +316,22 @@ impl<const SAMPLE_COUNT: usize> MemoryMonitor<SAMPLE_COUNT> {
             used_bytes,
             peak_bytes,
         };
-        
+
         self.current_index = (self.current_index + 1) % SAMPLE_COUNT;
         self.total_samples += 1;
     }
-    
+
     pub fn get_memory_stats(&self) -> MemoryStats {
         let samples = &self.samples[..self.total_samples.min(SAMPLE_COUNT)];
-        
+
         if samples.is_empty() {
             return MemoryStats::default();
         }
-        
+
         let avg_allocated = samples.iter().map(|s| s.allocated_bytes).sum::<usize>() as f64 / samples.len() as f64;
         let avg_used = samples.iter().map(|s| s.used_bytes).sum::<usize>() as f64 / samples.len() as f64;
         let max_peak = samples.iter().map(|s| s.peak_bytes).max().unwrap_or(0);
-        
+
         MemoryStats {
             average_allocated_bytes: avg_allocated,
             average_used_bytes: avg_used,
@@ -350,7 +350,7 @@ pub struct MemoryStats {
 }
 
 /// 并发性能测试器
-/// 
+///
 /// 测试不同并发级别下的性能表现
 pub struct ConcurrencyBenchmarker {
     base_operations: usize,
@@ -364,12 +364,12 @@ impl ConcurrencyBenchmarker {
             concurrency_levels: vec![1, 2, 4, 8, 16, 32, 64],
         }
     }
-    
+
     pub fn with_concurrency_levels(mut self, levels: Vec<usize>) -> Self {
         self.concurrency_levels = levels;
         self
     }
-    
+
     /// 运行并发基准测试
     pub async fn run_concurrency_benchmark<F, Fut>(
         &self,
@@ -381,37 +381,37 @@ impl ConcurrencyBenchmarker {
         Fut: std::future::Future<Output = Result<Vec<u8>>> + Send,
     {
         let mut results = Vec::new();
-        
+
         for &concurrency in &self.concurrency_levels {
             let mut benchmarker = OptimizedBenchmarker::<10000>::new();
             let operation_name = format!("{} (并发: {})", operation_name, concurrency);
-            
+
             let result = benchmarker.run_benchmark(
                 operation_name,
                 operation.clone(),
                 self.base_operations,
                 concurrency,
             ).await?;
-            
+
             results.push(result.clone());
         }
-        
+
         Ok(results)
     }
-    
+
     /// 生成并发性能报告
     pub fn generate_concurrency_report(&self, results: &[BenchmarkResult]) -> String {
         let mut report = String::new();
         report.push_str("=== 并发性能测试报告 ===\n");
         report.push_str("并发数\t每秒操作数\t平均延迟(ms)\tP95延迟(ms)\tP99延迟(ms)\n");
-        
+
         for result in results {
             let concurrency = result.operation_name
                 .split("并发: ")
                 .nth(1)
                 .unwrap_or("1")
                 .trim_end_matches(')');
-            
+
             report.push_str(&format!(
                 "{}\t{:.2}\t\t{:.2}\t\t{:.2}\t\t{:.2}\n",
                 concurrency,
@@ -421,13 +421,13 @@ impl ConcurrencyBenchmarker {
                 result.p99_latency_ms
             ));
         }
-        
+
         report
     }
 }
 
 /// 基准测试套件
-/// 
+///
 /// 整合所有基准测试功能
 pub struct BenchmarkSuite {
     benchmarker: OptimizedBenchmarker<10000>,
@@ -443,15 +443,15 @@ impl BenchmarkSuite {
             concurrency_benchmarker: ConcurrencyBenchmarker::new(1000),
         }
     }
-    
+
     /// 运行完整的基准测试套件
     pub async fn run_full_suite(&mut self) -> Result<String> {
         let mut report = String::new();
         report.push_str("=== c11_libraries 完整基准测试套件 ===\n\n");
-        
+
         // 1. 基础性能测试
         report.push_str("--- 基础性能测试 ---\n");
-        
+
         // 模拟 Redis 操作
         let redis_result = self.benchmarker.run_benchmark(
             "Redis SET/GET".to_string(),
@@ -466,10 +466,10 @@ impl BenchmarkSuite {
             10000,
             10,
         ).await?;
-        
+
         report.push_str(&redis_result.format_report());
         report.push_str("\n");
-        
+
         // 模拟 PostgreSQL 操作
         let postgres_result = self.benchmarker.run_benchmark(
             "PostgreSQL INSERT/SELECT".to_string(),
@@ -484,13 +484,13 @@ impl BenchmarkSuite {
             5000,
             5,
         ).await?;
-        
+
         report.push_str(&postgres_result.format_report());
         report.push_str("\n");
-        
+
         // 2. 并发性能测试
         report.push_str("--- 并发性能测试 ---\n");
-        
+
         let concurrency_results = self.concurrency_benchmarker.run_concurrency_benchmark(
             "Redis 操作".to_string(),
             || async {
@@ -501,22 +501,22 @@ impl BenchmarkSuite {
                 Ok(b"concurrent_result".to_vec())
             },
         ).await?;
-        
+
         report.push_str(&self.concurrency_benchmarker.generate_concurrency_report(&concurrency_results));
         report.push_str("\n");
-        
+
         // 3. 内存使用分析
         report.push_str("--- 内存使用分析 ---\n");
-        
+
         // 模拟内存使用
         for i in 0..100 {
             let allocated = 1024 * (i + 1);
             let used = allocated * 80 / 100; // 80% 使用率
             let peak = allocated;
-            
+
             self.memory_monitor.record_sample(allocated, used, peak);
         }
-        
+
         let memory_stats = self.memory_monitor.get_memory_stats();
         report.push_str(&format!(
             "平均分配内存: {:.2} KB\n\
@@ -528,17 +528,17 @@ impl BenchmarkSuite {
             memory_stats.peak_memory_bytes / 1024,
             memory_stats.total_samples
         ));
-        
+
         report.push_str("\n=== 基准测试套件完成 ===\n");
-        
+
         Ok(report)
     }
-    
+
     /// 获取基准测试结果
     pub fn get_benchmark_results(&self) -> &[BenchmarkResult] {
         self.benchmarker.get_results()
     }
-    
+
     /// 获取内存统计
     pub fn get_memory_stats(&self) -> MemoryStats {
         self.memory_monitor.get_memory_stats()
@@ -548,27 +548,27 @@ impl BenchmarkSuite {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[cfg(feature = "tokio")]
     #[tokio::test]
     async fn test_benchmark_result() {
         let mut result = BenchmarkResult::new("test_operation".to_string());
         let latencies = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        
+
         result.total_duration = Duration::from_millis(100);
         result.calculate_stats(&latencies);
-        
+
         assert_eq!(result.total_operations, 5);
         assert_eq!(result.average_latency_ms, 3.0);
         assert_eq!(result.min_latency_ms, 1.0);
         assert_eq!(result.max_latency_ms, 5.0);
     }
-    
+
     #[cfg(feature = "tokio")]
     #[tokio::test]
     async fn test_optimized_benchmarker() {
         let mut benchmarker = OptimizedBenchmarker::<100>::new();
-        
+
         let result = benchmarker.run_benchmark(
             "test_operation".to_string(),
             || async {
@@ -581,18 +581,18 @@ mod tests {
             10,
             2,
         ).await.unwrap();
-        
+
         assert_eq!(result.operation_name, "test_operation");
         assert!(result.total_operations > 0);
     }
-    
+
     #[test]
     fn test_memory_monitor() {
         let mut monitor = MemoryMonitor::<10>::new();
-        
+
         monitor.record_sample(1024, 512, 1024);
         monitor.record_sample(2048, 1024, 2048);
-        
+
         let stats = monitor.get_memory_stats();
         assert_eq!(stats.total_samples, 2);
         assert!(stats.average_allocated_bytes > 0.0);

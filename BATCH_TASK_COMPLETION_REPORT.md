@@ -26,12 +26,14 @@
 **文件**: `crates/otlp/benches/ebpf_performance.rs`
 
 **完成内容**:
+
 - ✅ 实现 `bench_ebpf_program_load` - eBPF程序加载性能测试
 - ✅ 实现 `bench_ebpf_map_read_write` - Map读写性能测试
 - ✅ 实现 `bench_ebpf_event_processing` - 事件处理性能测试
 - ✅ 启用所有基准测试（移除注释）
 
 **改进**:
+
 - 所有TODO项已实现
 - 测试可以正常运行（即使没有真实eBPF程序）
 - 使用模拟数据测试性能特征
@@ -41,6 +43,7 @@
 **文件**: `crates/otlp/benches/comprehensive_benchmarks.rs`
 
 **包含基准测试**:
+
 - ✅ 压缩性能测试 (Gzip, Brotli, Zstd)
 - ✅ 解压性能测试
 - ✅ Profile创建性能测试
@@ -51,6 +54,7 @@
 - ✅ eBPF事件处理性能测试
 
 **特性**:
+
 - 使用BenchmarkId进行参数化测试
 - 测试不同数据大小的性能
 - 覆盖所有主要模块
@@ -62,6 +66,7 @@
 **文件**: `tests/integration/ebpf_e2e_test.rs`
 
 **测试用例** (5个):
+
 - ✅ `test_ebpf_full_workflow` - 完整工作流程测试
 - ✅ `test_ebpf_probe_manager_workflow` - 探针管理器工作流程
 - ✅ `test_ebpf_maps_manager_workflow` - Maps管理器工作流程
@@ -73,6 +78,7 @@
 **文件**: `tests/integration/otlp_export_test.rs`
 
 **测试用例** (4个):
+
 - ✅ `test_otlp_profile_export` - Profile导出测试
 - ✅ `test_otlp_profile_export_batch` - 批量导出测试
 - ✅ `test_otlp_profile_export_pprof_format` - pprof格式导出测试
@@ -83,6 +89,7 @@
 **文件**: `tests/integration/scenario_test.rs`
 
 **测试用例** (5个):
+
 - ✅ `test_scenario_high_throughput_profiling` - 高吞吐量场景
 - ✅ `test_scenario_compression_with_profiling` - 压缩+性能分析场景
 - ✅ `test_scenario_multiple_profiling_sessions` - 多会话场景
@@ -127,12 +134,12 @@
 
 ### 中优先级
 
-3. **文档和示例** (2周)
+1. **文档和示例** (2周)
    - [ ] 端到端示例
    - [ ] API文档改进
    - [ ] 使用指南完善
 
-4. **代码质量** (1周)
+2. **代码质量** (1周)
    - [ ] OpenTelemetry版本冲突解决
    - [ ] 依赖清理
    - [ ] 代码重构

@@ -15,7 +15,7 @@ use tokio::sync::{RwLock, Semaphore};
 use tokio::time::interval;
 
 /// 优化的OTLP客户端
-/// 
+///
 /// 使用Rust 1.90的最新特性，提供更好的性能和内存安全
 #[derive(Debug)]
 pub struct OtlpClient {
@@ -87,32 +87,32 @@ impl OtlpClientBuilder {
     /// 构建客户端
     pub async fn build(self) -> Result<OtlpClient> {
         let config = Arc::new(self.config);
-        
+
         // 创建导出器
         let exporter = Arc::new(OtlpExporter::new(config.clone()).await?);
-        
+
         // 创建处理器
         let processing_config = self.processing_config
             .unwrap_or_else(ProcessingConfig::default);
         let processor = Arc::new(RwLock::new(Some(
             OtlpProcessor::new(processing_config).await?
         )));
-        
+
         // 创建弹性管理器
         let resilience_config = self.resilience_config
             .unwrap_or_else(ResilienceConfig::default);
         let resilience_manager = Arc::new(ResilienceManager::new(resilience_config));
-        
+
         // 创建并发限制器
         let max_concurrency = self.max_concurrency.unwrap_or(100);
         let concurrency_limiter = Arc::new(Semaphore::new(max_concurrency));
-        
+
         // 创建指标
         let metrics = Arc::new(RwLock::new(ClientMetrics {
             start_time: Some(Instant::now()),
             ..Default::default()
         }));
-        
+
         Ok(OtlpClient {
             config,
             exporter,
@@ -142,15 +142,15 @@ impl OtlpClient {
 
         // 初始化导出器
         self.exporter.initialize().await?;
-        
+
         // 初始化处理器
         if let Some(processor) = self.processor.read().await.as_ref() {
             processor.initialize().await?;
         }
-        
+
         // 初始化弹性管理器
         self.resilience_manager.initialize().await?;
-        
+
         *is_initialized = true;
         Ok(())
     }
@@ -186,7 +186,7 @@ impl OtlpClient {
 
         // 导出数据
         let result = self.exporter.export(processed_data).await;
-        
+
         // 更新指标
         {
             let mut metrics = self.metrics.write().await;
@@ -207,24 +207,24 @@ impl OtlpClient {
     /// 批量发送数据
     pub async fn send_batch(&self, batch: Vec<TelemetryData>) -> Result<Vec<ExportResult>> {
         let mut results = Vec::with_capacity(batch.len());
-        
+
         for data in batch {
             let result = self.send_data(data).await;
             results.push(result);
         }
-        
+
         Ok(results)
     }
 
     /// 获取客户端指标
     pub async fn get_metrics(&self) -> ClientMetrics {
         let mut metrics = self.metrics.read().await.clone();
-        
+
         // 更新运行时间
         if let Some(start_time) = metrics.start_time {
             metrics.uptime = start_time.elapsed();
         }
-        
+
         metrics
     }
 
@@ -242,10 +242,10 @@ impl OtlpClient {
 
         // 关闭导出器
         self.exporter.shutdown().await?;
-        
+
         // 关闭弹性管理器
         self.resilience_manager.shutdown().await?;
-        
+
         *is_shutdown = true;
         Ok(())
     }

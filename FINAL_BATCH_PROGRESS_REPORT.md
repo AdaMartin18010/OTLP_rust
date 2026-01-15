@@ -17,6 +17,7 @@
 5. ✅ **性能对比报告模板** - 创建基准测试报告框架
 
 **总计**:
+
 - 新增测试文件: 17个
 - 新增测试用例: 88+个
 - 新增基准测试: 8个基准组
@@ -29,6 +30,7 @@
 ### Phase 1: 测试基础设施 ✅
 
 #### 1.1 测试覆盖率工具配置
+
 - ✅ `coverage.toml` - Tarpaulin配置文件
 - ✅ `.github/workflows/ci.yml` - CI工作流
 - ✅ `.github/workflows/coverage.yml` - 覆盖率工作流
@@ -38,6 +40,7 @@
 #### 1.2 单元测试 (74个测试用例)
 
 **eBPF模块** (44个):
+
 - ✅ `tests/ebpf/loader_test.rs` - 10个测试
 - ✅ `tests/ebpf/probes_test.rs` - 10个测试
 - ✅ `tests/ebpf/maps_test.rs` - 10个测试
@@ -45,34 +48,41 @@
 - ✅ `tests/ebpf/profiling_test.rs` - 6个测试
 
 **性能模块** (18个):
+
 - ✅ `tests/performance/simd_test.rs` - 6个测试
 - ✅ `tests/performance/compression_test.rs` - 6个测试
 - ✅ `tests/performance/memory_pool_test.rs` - 6个测试
 
 **Profiling模块** (12个):
+
 - ✅ `tests/profiling/cpu_profiler_test.rs` - 6个测试
 - ✅ `tests/profiling/pprof_test.rs` - 6个测试
 
 ### Phase 2: 集成测试 ✅
 
 #### 2.1 eBPF端到端测试
+
 - ✅ `tests/integration/ebpf_e2e_test.rs` - 5个测试用例
 
 #### 2.2 OTLP导出测试
+
 - ✅ `tests/integration/otlp_export_test.rs` - 4个测试用例
 
 #### 2.3 场景测试
+
 - ✅ `tests/integration/scenario_test.rs` - 5个测试用例
 
 ### Phase 3: 基准测试 ✅
 
 #### 3.1 完善现有基准测试
+
 - ✅ 实现 `bench_ebpf_program_load`
 - ✅ 实现 `bench_ebpf_map_read_write`
 - ✅ 实现 `bench_ebpf_event_processing`
 - ✅ 启用所有基准测试
 
 #### 3.2 综合基准测试
+
 - ✅ `crates/otlp/benches/comprehensive_benchmarks.rs`
   - 压缩性能测试
   - 解压性能测试
@@ -134,12 +144,12 @@
 
 ### 中优先级 (下周)
 
-3. **文档和示例** (2周)
+1. **文档和示例** (2周)
    - [ ] 端到端示例
    - [ ] API文档改进
    - [ ] 使用指南完善
 
-4. **代码质量** (1周)
+2. **代码质量** (1周)
    - [ ] OpenTelemetry版本冲突解决
    - [ ] 依赖清理
    - [ ] 代码重构

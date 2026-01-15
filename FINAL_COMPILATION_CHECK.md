@@ -21,6 +21,7 @@
 **问题**: 测试中错误地使用了 `register_map().is_ok()`
 
 **位置**:
+
 - ✅ `tests/ebpf/maps_test.rs` - 已修复
 - ✅ `tests/integration/ebpf_e2e_test.rs` - 已修复
 - ✅ `examples/ebpf_basic_example.rs` - 已修复
@@ -73,6 +74,7 @@
 ### 修复的代码模式
 
 **修复前**:
+
 ```rust
 assert!(manager.register_map("test_map".to_string(), MapType::Hash, 4, 8).is_ok());
 // 或
@@ -82,6 +84,7 @@ if maps_manager.register_map("events_map".to_string(), MapType::Hash, 8, 16).is_
 ```
 
 **修复后**:
+
 ```rust
 manager.register_map("test_map".to_string(), MapType::Hash, 4, 8);
 // 或

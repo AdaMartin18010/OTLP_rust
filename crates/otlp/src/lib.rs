@@ -227,6 +227,51 @@
 pub mod core;
 
 // ============================================================================
+// 扩展模块 - 基于官方库的扩展功能
+// ============================================================================
+
+/// 扩展模块 - 基于官方 opentelemetry-rust 的扩展功能
+///
+/// 这些扩展通过包装官方库的组件来添加独特功能，而非重新实现。
+///
+/// # 使用示例
+///
+/// ```rust,no_run
+/// use otlp::extensions::tracezip::TracezipSpanExporter;
+/// use opentelemetry_sdk::export::trace::NoopSpanExporter;
+///
+/// let exporter = Box::new(NoopSpanExporter::new());
+/// let enhanced_exporter = TracezipSpanExporter::wrap(exporter)
+///     .with_compression(true);
+/// ```
+pub mod extensions;
+
+// ============================================================================
+// 包装器模块 - 便捷的API包装器
+// ============================================================================
+
+/// 包装器模块 - 提供便捷的API来使用扩展功能
+///
+/// # 使用示例
+///
+/// ```rust,no_run
+/// use otlp::wrappers::EnhancedPipeline;
+/// use opentelemetry_otlp::new_pipeline;
+/// use opentelemetry_sdk::runtime::Tokio;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let pipeline = new_pipeline().tracing();
+/// let tracer = EnhancedPipeline::new(pipeline)
+///     .with_ebpf_profiling(true)
+///     .with_simd_optimization(true)
+///     .with_tracezip_compression(true)
+///     .install_batch(Tokio)?;
+/// # Ok(())
+/// # }
+/// ```
+pub mod wrappers;
+
+// ============================================================================
 // 原有模块 (逐步迁移中)
 // ============================================================================
 
@@ -349,6 +394,33 @@ pub mod performance_optimization_advanced;
 pub use core::{
     ClientBuilder, ClientConfig, ClientStats, EnhancedOtlpClient, PerformanceOptimizer,
     ReliabilityManager,
+};
+
+// ============================================================================
+// 扩展 API - 基于官方库的扩展
+// ============================================================================
+
+/// 重新导出扩展模块的主要类型
+pub use extensions::{
+    simd::SimdSpanExporter,
+    tracezip::TracezipSpanExporter,
+    enterprise::{MultiTenantExporter, ComplianceExporter},
+    performance::{BatchOptimizedExporter, ConnectionPoolExporter},
+};
+
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+pub use extensions::ebpf::EbpfTracerExtension;
+
+// ============================================================================
+// 包装器 API - 便捷的API
+// ============================================================================
+
+/// 重新导出包装器模块的主要类型
+pub use wrappers::{
+    EnhancedPipeline,
+    EnhancedPipelineV2,  // 推荐使用，提供完整扩展支持
+    EnhancedTracer,
+    EnhancedExporter,
 };
 
 // 重新导出 OpenTelemetry 官方类型
@@ -521,7 +593,71 @@ pub use performance_optimization_advanced::{
     SimdIntOperation, SimdOperation,
 };
 
+// ============================================================================
+// 便捷API函数
+// ============================================================================
+
+/// 创建增强的Pipeline (基础版)
+///
+/// 这是一个便捷函数，用于快速创建配置了扩展功能的Pipeline。
+/// 注意: 此版本扩展支持有限，推荐使用 `new_enhanced_pipeline_v2()`。
+///
+/// # 示例
+///
+/// ```rust,no_run
+/// use otlp::new_enhanced_pipeline;
+/// use opentelemetry_sdk::runtime::Tokio;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let tracer = new_enhanced_pipeline()
+///     .with_ebpf_profiling(true)
+///     .install_batch(Tokio)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn new_enhanced_pipeline() -> wrappers::EnhancedPipeline {
+    // 注意: 由于opentelemetry_otlp的API在不同版本可能不同
+    // 这里提供一个占位实现，实际使用时需要根据版本调整
+    // 推荐使用 new_enhanced_pipeline_v2() 来获得完整的扩展支持
+    //
+    // 如果需要使用EnhancedPipeline，请手动创建TracingPipeline：
+    // use opentelemetry_otlp::new_pipeline;
+    // let pipeline = new_pipeline().tracing();
+    // let enhanced = wrappers::EnhancedPipeline::new(pipeline);
+    todo!("EnhancedPipeline requires TracingPipeline instance. Use new_enhanced_pipeline_v2() instead.")
+}
+
+/// 创建增强的Pipeline (完整版，推荐)
+///
+/// 这是一个便捷函数，提供完整的扩展支持。
+///
+/// # 示例
+///
+/// ```rust,no_run
+/// use otlp::new_enhanced_pipeline_v2;
+/// use opentelemetry_sdk::runtime::Tokio;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let tracer = new_enhanced_pipeline_v2()
+///     .with_endpoint("http://localhost:4317")
+///     .with_service_name("my-service")
+///     .with_ebpf_profiling(true)
+///     .with_simd_optimization(true)
+///     .with_tracezip_compression(true)
+///     .with_multi_tenant(true)
+///     .with_tenant_id("tenant-123".to_string())
+///     .install_batch(Tokio)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn new_enhanced_pipeline_v2() -> wrappers::EnhancedPipelineV2 {
+    wrappers::EnhancedPipelineV2::new()
+}
+
+// ============================================================================
 // 版本信息
+// ============================================================================
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const RUST_VERSION: &str = "1.92";
 

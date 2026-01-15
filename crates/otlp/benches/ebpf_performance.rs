@@ -45,11 +45,12 @@
 //! cargo bench --bench ebpf_performance -- --output-format html > ebpf_performance_report.html
 //! ```
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use std::hint::black_box;
-
 // 注意: eBPF 模块需要 feature = "ebpf" 才能使用
 // 如果编译时没有启用该 feature，这些导入会失败
+#[cfg(feature = "ebpf")]
+use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
+#[cfg(feature = "ebpf")]
+use std::hint::black_box;
 #[cfg(feature = "ebpf")]
 use otlp::ebpf::{EbpfConfig, EbpfLoader, validate_config, recommended_sample_rate};
 

@@ -106,6 +106,7 @@ pub trait Plugin: Send + Sync {
 /// 插件管理器
 pub struct PluginManager {
     plugins: HashMap<String, Box<dyn Plugin>>,
+    #[allow(dead_code)]
     config: PluginConfig,
 }
 

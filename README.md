@@ -146,9 +146,11 @@
 
 ## 项目简介
 
-OTLP Rust 是一个基于 Rust 1.92+ 的 OpenTelemetry Protocol (OTLP) 完整实现，提供高性能、类型安全的遥测数据收集、处理和传输功能。项目采用现代化的架构设计，集成了统一的可靠性框架，支持企业级应用的可观测性需求。
+OTLP Rust 是一个基于 Rust 1.92+ 的 OpenTelemetry Protocol (OTLP) 扩展实现，**基于官方 `opentelemetry-rust` 库进行扩展**，提供高性能、类型安全的遥测数据收集、处理和传输功能。项目专注于独特价值（eBPF、SIMD、Tracezip等），同时保持与官方API的完全兼容。
 
-**当前版本**: v0.5.0-rc1 (2025-10-23) | **状态**: ✅ 准备就绪
+**当前版本**: v0.6.0-dev (2025-01-13) | **状态**: ✅ 核心功能完成，可投入使用
+
+> **🎯 重要更新**: 项目已重构为基于官方 `opentelemetry-rust` 库的扩展实现，而非完全重新实现。详见 [架构重构方案](ARCHITECTURE_REFACTORING_PLAN.md)
 
 ## 核心特性
 
@@ -318,27 +320,53 @@ rustup update stable
 rustc --version  # 应显示 1.92.0 或更高版本
 ```
 
-### 2. 克隆项目
+### 2. 添加依赖
 
-```bash
-git clone <repository-url>
-cd OTLP_rust
+**Cargo.toml**:
+```toml
+[dependencies]
+otlp = { path = "crates/otlp" }
+opentelemetry = "0.31"
+opentelemetry-sdk = "0.31"
+opentelemetry-otlp = "0.31"
+tokio = { version = "1.49", features = ["full"] }
 ```
 
-### 3. 构建项目
+### 3. 使用增强API（推荐）
 
-```bash
-cargo build
+```rust
+use otlp::new_enhanced_pipeline_v2;
+use opentelemetry_sdk::runtime::Tokio;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let tracer = new_enhanced_pipeline_v2()
+        .with_endpoint("http://localhost:4317")
+        .with_service_name("my-service")
+        .with_simd_optimization(true)      // SIMD优化
+        .with_tracezip_compression(true)    // Tracezip压缩
+        .install_batch(Tokio)?;
+
+    let span = tracer.start("my-operation");
+    span.set_attribute("key".into(), "value".into());
+    drop(span);
+    Ok(())
+}
 ```
 
-### 4. 运行示例
+### 4. 或使用官方API（完全兼容）
 
-```bash
-# 运行 OTLP 示例
-cargo run -p otlp --example quick_optimizations_demo
+```rust
+use opentelemetry_otlp::new_pipeline;
 
-# 运行可靠性框架示例
-cargo run -p reliability --example reliability_basic_usage
+let tracer = new_pipeline()
+    .tracing()
+    .with_exporter(
+        opentelemetry_otlp::new_exporter()
+            .tonic()
+            .with_endpoint("http://localhost:4317")
+    )
+    .install_batch(opentelemetry_sdk::runtime::Tokio)?;
 ```
 
 ### 5. 运行测试
@@ -347,10 +375,11 @@ cargo run -p reliability --example reliability_basic_usage
 # 运行所有测试
 cargo test
 
-# 运行特定 crate 的测试
-cargo test -p otlp
-cargo test -p reliability
+# 运行扩展模块测试
+cargo test --package otlp --lib extensions_test
 ```
+
+**更多信息**: 参见 [快速开始指南](QUICK_START_ENHANCED_API.md) 和 [使用指南](crates/otlp/docs/EXTENSIONS_USAGE_GUIDE.md)
 
 ## 核心组件
 

@@ -2,7 +2,7 @@
 //!
 //! 测试 OTLP 模块的整体性能特征
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint::black_box;
 
 // 性能模块基准测试
@@ -63,7 +63,7 @@ mod profiling_benchmarks {
 
     pub fn profile_encode_json_benchmark(c: &mut Criterion) {
         let mut profile = PprofProfile::new();
-        
+
         // 添加一些样本
         for i in 0..100 {
             let sample = Sample {

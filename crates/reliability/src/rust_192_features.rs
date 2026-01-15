@@ -12,9 +12,19 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
+/// 异步闭包类型别名：无参数的异步闭包
+type AsyncClosure<T> = Box<
+    dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>> + Send,
+>;
+
+/// 异步闭包类型别名：带参数的异步闭包
+type AsyncClosureWithArg<T> = Box<
+    dyn FnOnce(T) -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>> + Send,
+>;
+
 /// 异步闭包示例
 ///
-    /// 展示如何使用Rust 1.92的异步闭包特性
+/// 展示如何使用Rust 1.92的异步闭包特性
 pub struct AsyncClosureExample;
 
 impl AsyncClosureExample {
@@ -70,27 +80,18 @@ impl AsyncClosureExample {
         );
 
         let mut results = Vec::new();
-        let mut errors = Vec::new();
 
         for (index, operation) in operations.into_iter().enumerate() {
-            match operation().await {
-                Ok(result) => results.push(result),
-                Err(error) => {
-                    let batch_error = UnifiedError::new(
-                        format!("批量操作第{}个失败", index + 1),
-                        ErrorSeverity::Medium,
-                        "batch_operation",
-                        context.clone(),
-                    )
-                    .with_source(error);
-                    errors.push(batch_error);
-                }
-            }
-        }
-
-        if !errors.is_empty() {
-            let first_error = errors.into_iter().next().unwrap();
-            return Err(first_error);
+            let result = operation().await.map_err(|error| {
+                UnifiedError::new(
+                    format!("批量操作第{}个失败", index + 1),
+                    ErrorSeverity::Medium,
+                    "batch_operation",
+                    context.clone(),
+                )
+                .with_source(error)
+            })?;
+            results.push(result);
         }
 
         Ok(results)
@@ -232,21 +233,14 @@ impl Rust192FeatureDemo {
 
     /// 演示异步闭包特性
     pub async fn demonstrate_async_closures(&self) -> Result<Vec<String>, UnifiedError> {
-        let operations: Vec<
-            Box<
-                dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<String, UnifiedError>> + Send>>
-                    + Send,
-            >,
-        > = vec![
-            Box::new(|| {
-                Box::pin(async { Ok::<String, UnifiedError>("操作1完成".to_string()) })
-            }),
-            Box::new(|| {
-                Box::pin(async { Ok::<String, UnifiedError>("操作2完成".to_string()) })
-            }),
-            Box::new(|| {
-                Box::pin(async { Ok::<String, UnifiedError>("操作3完成".to_string()) })
-            }),
+        fn create_operation(msg: &'static str) -> AsyncClosure<String> {
+            Box::new(move || Box::pin(async move { Ok(msg.to_string()) }))
+        }
+
+        let operations: Vec<AsyncClosure<String>> = vec![
+            create_operation("操作1完成"),
+            create_operation("操作2完成"),
+            create_operation("操作3完成"),
         ];
 
         let mut results = Vec::new();
@@ -301,12 +295,7 @@ impl AdvancedAsyncCombinator {
     pub async fn create_operation_chain<T>(
         &self,
         initial_value: T,
-        operations: Vec<
-            Box<
-                dyn FnOnce(T) -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>>
-                    + Send,
-            >,
-        >,
+        operations: Vec<AsyncClosureWithArg<T>>,
     ) -> Result<T, UnifiedError>
     where
         T: Clone + Send + Sync + 'static,
@@ -323,22 +312,16 @@ impl AdvancedAsyncCombinator {
                 "operation_chain",
             );
 
-            match operation(current_value).await {
-                Ok(result) => {
-                    current_value = result;
-                    tracing::info!("操作链第{}步成功", index + 1);
-                }
-                Err(error) => {
-                    let chain_error = UnifiedError::new(
-                        format!("操作链第{}步失败", index + 1),
-                        ErrorSeverity::High,
-                        "operation_chain_failure",
-                        context,
-                    )
-                    .with_source(error);
-                    return Err(chain_error);
-                }
-            }
+            current_value = operation(current_value).await.map_err(|error| {
+                UnifiedError::new(
+                    format!("操作链第{}步失败", index + 1),
+                    ErrorSeverity::High,
+                    "operation_chain_failure",
+                    context,
+                )
+                .with_source(error)
+            })?;
+            tracing::info!("操作链第{}步成功", index + 1);
         }
 
         Ok(current_value)
@@ -347,12 +330,7 @@ impl AdvancedAsyncCombinator {
     /// 并行执行多个异步操作
     pub async fn execute_parallel_operations<T>(
         &self,
-        operations: Vec<
-            Box<
-                dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>>
-                    + Send,
-            >,
-        >,
+        operations: Vec<AsyncClosure<T>>,
     ) -> Result<Vec<T>, UnifiedError>
     where
         T: Send + 'static,

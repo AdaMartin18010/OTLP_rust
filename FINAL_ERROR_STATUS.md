@@ -25,11 +25,13 @@ Linter 报告了一些错误，但这些错误已经被修复或属于误报：
 ### 1. comprehensive_benchmarks.rs 的错误（Linter 缓存问题）
 
 Linter 报告的错误：
+
 - `QuickOptimizationsManager::default()` 不存在
 - `Sample` 结构体字段名错误
 - `PprofProfile` API 错误
 
 **实际状态**: 这些错误已经修复：
+
 - ✅ 已使用 `QuickOptimizationsManager::new(QuickOptimizationsConfig::default())`
 - ✅ 已使用正确的字段名：`location_id`, `value`, `label`
 - ✅ 已使用正确的 API：`PprofEncoder::encode_json()`
@@ -39,6 +41,7 @@ Linter 报告的错误：
 ### 2. loader.rs 的语法错误（Linter 误报）
 
 Linter 报告的错误：
+
 - Line 435:6: Syntax Error: expected R_CURLY
 
 **实际状态**: 代码结构正确，文件以 `}` 结尾。
@@ -49,7 +52,7 @@ Linter 报告的错误：
 
 ## 📝 建议
 
-### 如果 Linter 错误持续存在：
+### 如果 Linter 错误持续存在
 
 1. **清除 Linter 缓存**: 尝试重启 IDE 或清除 Linter 缓存
 2. **忽略 Linter 误报**: 如果 `cargo check` 通过，可以安全忽略 Linter 的错误报告
