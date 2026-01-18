@@ -505,7 +505,7 @@ mod tests {
         let mut auth_handler = AuthenticationHandler::new();
         auth_handler.add_token("valid-token").await;
 
-        let mut business_handler = BusinessLogicHandler::new();
+        let business_handler = BusinessLogicHandler::new();
         auth_handler.set_next(Arc::new(business_handler));
 
         let valid_request = Request::new("req-1", serde_json::json!({}))
@@ -528,7 +528,7 @@ mod tests {
         let mut auth_handler = AuthenticationHandler::new();
         auth_handler.add_token("token1").await;
 
-        let mut authz_handler = AuthorizationHandler::new();
+        let authz_handler = AuthorizationHandler::new();
         authz_handler.grant_permission("user1", "read").await;
 
         let business_handler = BusinessLogicHandler::new();

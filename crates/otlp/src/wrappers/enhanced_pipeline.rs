@@ -6,8 +6,10 @@
 //! 注意: 由于opentelemetry_otlp的API在不同版本可能不同，
 //! 此包装器主要用于概念展示。推荐使用EnhancedPipelineV2来获得完整的扩展支持。
 
-use opentelemetry_sdk::runtime::Runtime;
-use opentelemetry::trace::Tracer;
+// 注意: opentelemetry_sdk 0.31中Runtime可能是一个trait，不能直接作为类型参数
+// use opentelemetry_sdk::runtime::Runtime;
+// 注意: Tracer导入暂时注释掉，因为install_batch()已暂时禁用
+// use opentelemetry::trace::Tracer;
 // 注意: 扩展导入已移除，因为EnhancedPipeline主要用于基础场景
 // 完整扩展支持请使用EnhancedPipelineV2
 
@@ -133,10 +135,15 @@ impl EnhancedPipeline {
     ///
     /// 注意: 由于opentelemetry_otlp的API在不同版本可能不同，
     /// 此方法主要用于概念展示。推荐使用EnhancedPipelineV2。
+    ///
+    /// 注意: Runtime在opentelemetry_sdk 0.31中可能需要具体类型（如Tokio）
+    /// 而不是trait，此方法需要根据实际的API调整
+    ///
+    /// 注意: Tracer 不是 dyn 兼容的，此方法需要重构为使用具体类型
     pub fn install_batch(
         self,
-        _runtime: Runtime,
-    ) -> Result<Box<dyn Tracer>, Box<dyn std::error::Error>> {
+        _runtime: impl Send + Sync, // 临时使用泛型，避免Runtime trait问题
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // 注意: 由于opentelemetry_otlp的API限制，此方法主要用于概念展示
         // 推荐使用EnhancedPipelineV2来获得完整的扩展支持
         todo!("EnhancedPipeline requires TracingPipeline instance. Use new_enhanced_pipeline_v2() instead.")

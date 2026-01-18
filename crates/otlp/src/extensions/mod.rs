@@ -26,7 +26,10 @@ pub mod ebpf {
     // 非Linux平台或ebpf feature未启用时的占位实现
     pub struct EbpfTracerExtension;
     impl EbpfTracerExtension {
-        pub fn wrap(_tracer: Box<dyn opentelemetry::trace::Tracer>) -> Self {
+        pub fn wrap<S>(_tracer: S) -> Self
+        where
+            S: opentelemetry::trace::Tracer,
+        {
             Self
         }
         pub fn with_ebpf_profiling(self, _enabled: bool) -> Self {

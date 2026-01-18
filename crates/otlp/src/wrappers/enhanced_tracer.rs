@@ -28,7 +28,9 @@ impl EnhancedTracer {
     ///
     /// 注意: 由于Tracer trait的复杂性，这个包装器主要用于概念展示。
     /// 实际使用建议通过EnhancedPipelineV2在Pipeline层面应用扩展。
-    pub fn new(_tracer: Box<dyn Tracer>) -> Self {
+    /// 
+    /// 注意: Tracer 不是 dyn 兼容的，此方法需要重构为使用具体类型
+    pub fn new<T: Tracer>(_tracer: T) -> Self {
         Self {
             _phantom: std::marker::PhantomData,
         }

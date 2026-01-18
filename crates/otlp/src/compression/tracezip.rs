@@ -367,6 +367,7 @@ pub struct CompressionMetadata {
 }
 
 /// Main trace compressor
+#[derive(Debug)]
 pub struct TraceCompressor {
     /// Configuration
     config: CompressorConfig,

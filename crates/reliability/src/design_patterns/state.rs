@@ -460,7 +460,7 @@ mod tests {
         // 创建一个带短超时的OpenState用于测试
         // 注意：由于状态机内部状态管理，我们需要直接测试状态转换逻辑
         // 这里简化测试，只验证基本的状态转换
-        let open_state = OpenState::with_timeout(Duration::from_millis(50));
+        let _open_state = OpenState::with_timeout(Duration::from_millis(50));
         tokio::time::sleep(Duration::from_millis(60)).await;
 
         // 手动触发超时事件（在实际使用中，这应该由定时器触发）

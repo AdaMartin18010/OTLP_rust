@@ -5,20 +5,24 @@
 //!
 //! 本版本通过直接操作TracerProvider来应用扩展，避免API限制。
 
-use opentelemetry_sdk::{
-    runtime::Runtime,
-    trace::{TracerProviderBuilder, Config},
-    Resource,
-};
-use opentelemetry::trace::Tracer;
-use opentelemetry::KeyValue;
+// 注意: opentelemetry_sdk 0.31中Runtime可能是一个trait，不能直接作为类型参数
+// 需要使用具体的运行时类型，如Tokio
+// use opentelemetry_sdk::runtime::Runtime;
+// 注意: 以下导入暂时注释掉，因为install_batch()已暂时禁用
+// 实际使用时需要根据具体的API重新启用
+// use opentelemetry_sdk::{
+//     trace::{TracerProviderBuilder, Config},
+//     Resource,
+// };
+// use opentelemetry::trace::Tracer;
+// use opentelemetry::KeyValue;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 use crate::extensions::ebpf::EbpfTracerExtension;
-use crate::extensions::simd::SimdSpanExporter;
-use crate::extensions::tracezip::TracezipSpanExporter;
-use crate::extensions::enterprise::{MultiTenantExporter, ComplianceExporter};
-use crate::extensions::performance::{BatchOptimizedExporter, ConnectionPoolExporter};
-use opentelemetry_sdk::export::trace::SpanExporter as SdkSpanExporter;
+// use crate::extensions::simd::SimdSpanExporter;
+// use crate::extensions::tracezip::TracezipSpanExporter;
+// use crate::extensions::enterprise::{MultiTenantExporter, ComplianceExporter};
+// use crate::extensions::performance::{BatchOptimizedExporter, ConnectionPoolExporter};
+// use opentelemetry_sdk::trace::SpanExporter as SdkSpanExporter;
 
 /// 增强的Pipeline配置 (改进版)
 pub struct EnhancedPipelineV2 {
@@ -123,10 +127,15 @@ impl EnhancedPipelineV2 {
     /// 安装Pipeline并返回Tracer
     ///
     /// 通过直接构建TracerProvider来应用扩展
+    ///
+    /// 注意: Runtime在opentelemetry_sdk 0.31中可能需要具体类型（如Tokio）
+    /// 而不是trait，此方法需要根据实际的API调整
+    ///
+    /// 注意: Tracer 不是 dyn 兼容的，此方法需要重构为使用具体类型
     pub fn install_batch(
         self,
-        runtime: Runtime,
-    ) -> Result<Box<dyn Tracer>, Box<dyn std::error::Error>> {
+        _runtime: impl Send + Sync, // 临时使用泛型，避免Runtime trait问题
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // 创建基础exporter
         // 注意: opentelemetry_otlp的API在不同版本可能不同
         // 这里提供一个框架实现，实际使用时需要根据版本调整
@@ -143,87 +152,93 @@ impl EnhancedPipelineV2 {
 
         // 当前实现：使用NoopSpanExporter作为占位
         // 实际使用时需要替换为真实的OTLP exporter
-        use opentelemetry_sdk::export::trace::NoopSpanExporter;
-        let base_exporter: Box<dyn SdkSpanExporter> = Box::new(NoopSpanExporter::new());
+        // 注意: opentelemetry_sdk 0.31中NoopSpanExporter可能不存在或路径不同
+        //
+        // 临时解决方案：返回错误，提示需要使用真实的exporter
+        // 因为需要使用Box<dyn SpanExporter>，而SpanExporter不是dyn兼容的
+        // 这个功能需要重新设计，使用泛型而不是Box<dyn>
+        // 同时 Tracer 也不是 dyn 兼容的，需要返回具体类型
+        Err("SpanExporter and Tracer are not dyn-compatible in opentelemetry_sdk 0.31. This method needs to be redesigned to use generics or concrete types instead of Box<dyn>. Please use a real exporter builder pattern.".into())
 
-        let mut exporter: Box<dyn SdkSpanExporter> = base_exporter;
-
-        // 按顺序应用扩展（从内到外）
-        // 注意: 扩展类型需要实现SdkSpanExporter trait
-
-        // 1. 合规管理（最内层）
-        if self.compliance_enabled {
-            exporter = Box::new(ComplianceExporter::wrap(exporter)
-                .with_compliance(true));
-        }
-
-        // 2. 多租户
-        if self.multi_tenant_enabled {
-            let mut multi_tenant = MultiTenantExporter::wrap(exporter);
-            if let Some(tenant_id) = self.tenant_id {
-                multi_tenant = multi_tenant.with_tenant_id(tenant_id);
-            }
-            exporter = Box::new(multi_tenant);
-        }
-
-        // 3. SIMD优化
-        if self.simd_enabled {
-            exporter = Box::new(SimdSpanExporter::wrap(exporter)
-                .with_simd_optimization(true));
-        }
-
-        // 4. Tracezip压缩
-        if self.tracezip_enabled {
-            exporter = Box::new(TracezipSpanExporter::wrap(exporter)
-                .with_compression(true));
-        }
-
-        // 5. 批量处理
-        if self.batch_optimization_enabled {
-            exporter = Box::new(BatchOptimizedExporter::wrap(exporter));
-        }
-
-        // 6. 连接池（最外层）
-        if self.connection_pool_enabled {
-            exporter = Box::new(ConnectionPoolExporter::wrap(exporter)
-                .with_connection_pool(true));
-        }
-
-        // 构建资源
-        let mut resource_builder = Resource::default();
-        if let Some(ref service_name) = self.service_name {
-            resource_builder = resource_builder.merge(Resource::new(vec![
-                KeyValue::new("service.name", service_name.clone()),
-            ]));
-        }
-        if let Some(ref service_version) = self.service_version {
-            resource_builder = resource_builder.merge(Resource::new(vec![
-                KeyValue::new("service.version", service_version.clone()),
-            ]));
-        }
-
-        // 构建TracerProvider
-        let provider = TracerProviderBuilder::default()
-            .with_batch_exporter(exporter, runtime)
-            .with_config(
-                Config::default()
-                    .with_resource(resource_builder)
-            )
-            .build();
-
-        // 获取Tracer
-        let tracer = provider.tracer("otlp-enhanced");
-
-        // 注意: eBPF扩展在Tracer层面应用比较复杂
-        // 当前实现先直接返回tracer，eBPF功能可以通过其他方式集成
-        // 例如：在span创建后通过hook机制添加eBPF profiling
-        if self.ebpf_enabled {
-            // eBPF扩展可以通过span hook或其他机制实现
-            // 这里先返回基础tracer，eBPF功能待完善
-            tracing::debug!("eBPF profiling enabled, but Tracer-level integration not yet implemented");
-        }
-
-        Ok(Box::new(tracer))
+        // 以下代码被注释，因为SpanExporter不是dyn兼容的，需要重新设计
+        // let mut exporter: Box<dyn SdkSpanExporter> = base_exporter;
+        //
+        // // 按顺序应用扩展（从内到外）
+        // // 注意: 扩展类型需要实现SdkSpanExporter trait
+        //
+        // // 1. 合规管理（最内层）
+        // if self.compliance_enabled {
+        //     exporter = Box::new(ComplianceExporter::wrap(exporter)
+        //         .with_compliance(true));
+        // }
+        //
+        // // 2. 多租户
+        // if self.multi_tenant_enabled {
+        //     let mut multi_tenant = MultiTenantExporter::wrap(exporter);
+        //     if let Some(tenant_id) = self.tenant_id {
+        //         multi_tenant = multi_tenant.with_tenant_id(tenant_id);
+        //     }
+        //     exporter = Box::new(multi_tenant);
+        // }
+        //
+        // // 3. SIMD优化
+        // if self.simd_enabled {
+        //     exporter = Box::new(SimdSpanExporter::wrap(exporter)
+        //         .with_simd_optimization(true));
+        // }
+        //
+        // // 4. Tracezip压缩
+        // if self.tracezip_enabled {
+        //     exporter = Box::new(TracezipSpanExporter::wrap(exporter)
+        //         .with_compression(true));
+        // }
+        //
+        // // 5. 批量处理
+        // if self.batch_optimization_enabled {
+        //     exporter = Box::new(BatchOptimizedExporter::wrap(exporter));
+        // }
+        //
+        // // 6. 连接池（最外层）
+        // if self.connection_pool_enabled {
+        //     exporter = Box::new(ConnectionPoolExporter::wrap(exporter)
+        //         .with_connection_pool(true));
+        // }
+        //
+        // // 构建资源
+        // let mut resource_builder = Resource::default();
+        // if let Some(ref service_name) = self.service_name {
+        //     resource_builder = resource_builder.merge(Resource::new(vec![
+        //         KeyValue::new("service.name", service_name.clone()),
+        //     ]));
+        // }
+        // if let Some(ref service_version) = self.service_version {
+        //     resource_builder = resource_builder.merge(Resource::new(vec![
+        //         KeyValue::new("service.version", service_version.clone()),
+        //     ]));
+        // }
+        //
+        // // 构建TracerProvider
+        // let provider = TracerProviderBuilder::default()
+        //     .with_batch_exporter(exporter, runtime)
+        //     .with_config(
+        //         Config::default()
+        //             .with_resource(resource_builder)
+        //     )
+        //     .build();
+        //
+        // // 获取Tracer
+        // let tracer = provider.tracer("otlp-enhanced");
+        //
+        // // 注意: eBPF扩展在Tracer层面应用比较复杂
+        // // 当前实现先直接返回tracer，eBPF功能可以通过其他方式集成
+        // // 例如：在span创建后通过hook机制添加eBPF profiling
+        // if self.ebpf_enabled {
+        //     // eBPF扩展可以通过span hook或其他机制实现
+        //     // 这里先返回基础tracer，eBPF功能待完善
+        //     tracing::debug!("eBPF profiling enabled, but Tracer-level integration not yet implemented");
+        // }
+        //
+        // Ok(Box::new(tracer))
     }
 }
 

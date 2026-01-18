@@ -7,7 +7,7 @@ use crate::simd::{CpuFeatures, Aggregator};
 
 /// 使用SIMD优化处理Span batch
 pub fn simd_optimize_batch(batch: Vec<SpanData>, cpu_features: &CpuFeatures) -> Vec<SpanData> {
-    if !cpu_features.has_avx2() && !cpu_features.has_sse2() {
+    if !cpu_features.avx2 && !cpu_features.sse2 {
         // 没有SIMD支持，直接返回
         return batch;
     }
@@ -48,6 +48,9 @@ pub fn simd_optimize_batch(batch: Vec<SpanData>, cpu_features: &CpuFeatures) -> 
 }
 
 /// SIMD优化的属性处理
+/// 
+/// 注意: 此函数目前未使用，保留用于将来SIMD属性优化功能
+#[allow(dead_code)]
 pub fn simd_optimize_attributes(batch: &mut Vec<SpanData>) {
     // 使用SIMD优化属性处理
     // 例如：批量比较attribute keys，批量编码values等
