@@ -181,7 +181,7 @@ impl<T: Send + 'static> ObjectPool<T> {
         pool
     }
 
-    /// 获取对象（需要传入Arc<Self>）
+    /// 获取对象（需要传入 `Arc<Self>`）
     pub async fn acquire(self: &Arc<Self>) -> Result<PooledObject<T>, ObjectPoolError> {
         if self.is_closed.load(Ordering::Acquire) != 0 {
             return Err(ObjectPoolError::PoolClosed);

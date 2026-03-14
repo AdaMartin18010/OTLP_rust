@@ -6,7 +6,7 @@
 //! ## Specification
 //!
 //! Based on OpenTelemetry Semantic Conventions v1.37+ for Generative AI:
-//! - https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/
+//! - <https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/>
 //!
 //! ## Features
 //!

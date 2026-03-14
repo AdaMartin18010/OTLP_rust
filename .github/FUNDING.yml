@@ -1,0 +1,33 @@
+# GitHub Sponsors and funding configuration
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# GitHub Sponsors (uncomment when enabled)
+# github: [luyan]
+
+# Patreon (optional)
+# patreon: username
+
+# Open Collective (optional)
+# open_collective: project-name
+
+# Ko-fi (optional)
+# ko_fi: username
+
+# Tidelift (for packages)
+# tidelift: cargo/otlp
+
+# Community Bridge (optional)
+# community_bridge: project-name
+
+# Liberapay (optional)
+# liberapay: username
+
+# IssueHunt (optional)
+# issuehunt: username
+
+# Otechie (optional)
+# otechie: username
+
+# Custom funding URLs
+custom: []
+  # - "https://example.com/sponsor"

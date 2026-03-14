@@ -3,7 +3,7 @@
 //! This module provides functionality to encode profiling data in pprof format.
 //! The pprof format is a compact binary format for representing profiles.
 //!
-//! Reference: https://github.com/google/pprof/tree/main/proto
+//! Reference: <https://github.com/google/pprof/tree/main/proto>
 //!
 //! ## Rust 1.92 特性应用
 //!
@@ -217,7 +217,7 @@ impl PprofEncoder {
     ///
     /// This is a simplified JSON encoding for development and debugging.
     /// For production use with pprof tools, you should implement protobuf encoding
-    /// using the official pprof.proto definition from https://github.com/google/pprof
+    /// using the official pprof.proto definition from <https://github.com/google/pprof>
     pub fn encode_json(profile: &PprofProfile) -> Result<Vec<u8>, String> {
         serde_json::to_vec_pretty(profile)
             .map_err(|e| format!("Failed to encode profile to JSON: {}", e))

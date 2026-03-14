@@ -6,8 +6,8 @@
 //! ## Specification
 //!
 //! Based on OpenTelemetry Configuration v1.0:
-//! - https://opentelemetry.io/docs/specs/otel/configuration/
-//! - https://github.com/open-telemetry/opentelemetry-configuration
+//! - <https://opentelemetry.io/docs/specs/otel/configuration/>
+//! - <https://github.com/open-telemetry/opentelemetry-configuration>
 //!
 //! ## Features
 //!

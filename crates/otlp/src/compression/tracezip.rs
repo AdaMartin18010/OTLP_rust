@@ -27,7 +27,7 @@
 //! ## Reference
 //!
 //! Based on "Tracezip: A Trace Archive Format for Efficient Compression and Retrieval"
-//! https://research.google/pubs/pub49484/
+//! <https://research.google/pubs/pub49484/>
 
 use std::collections::HashMap;
 use std::time::SystemTime;

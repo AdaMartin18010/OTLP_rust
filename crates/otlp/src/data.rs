@@ -535,8 +535,8 @@ impl std::fmt::Display for AttributeValue {
 }
 
 impl AttributeValue {
-    /// 转换为字符串
-    pub fn to_string(&self) -> String {
+    /// 转换为格式化字符串（避免与 Display::to_string 冲突）
+    pub fn to_formatted_string(&self) -> String {
         match self {
             AttributeValue::Double(v) => format!("{:.2}", v),
             _ => format!("{}", self),
@@ -595,19 +595,19 @@ mod tests {
     #[test]
     fn test_attribute_value_conversion() {
         let string_attr = AttributeValue::String("test".to_string());
-        assert_eq!(string_attr.to_string(), "test");
+        assert_eq!(string_attr.to_formatted_string(), "test");
         assert_eq!(string_attr.type_name(), "string");
 
         let bool_attr = AttributeValue::Bool(true);
-        assert_eq!(bool_attr.to_string(), "true");
+        assert_eq!(bool_attr.to_formatted_string(), "true");
         assert_eq!(bool_attr.type_name(), "bool");
 
         let int_attr = AttributeValue::Int(42);
-        assert_eq!(int_attr.to_string(), "42");
+        assert_eq!(int_attr.to_formatted_string(), "42");
         assert_eq!(int_attr.type_name(), "int");
 
         let double_attr = AttributeValue::Double(std::f64::consts::PI);
-        assert_eq!(double_attr.to_string(), "3.14");
+        assert_eq!(double_attr.to_formatted_string(), "3.14");
         assert_eq!(double_attr.type_name(), "double");
     }
 

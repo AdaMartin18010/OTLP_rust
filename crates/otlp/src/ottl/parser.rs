@@ -57,7 +57,7 @@ pub enum Path {
     /// 嵌套路径: path.subpath
     Nested { base: Box<Path>, subpath: String },
 
-    /// 索引路径: path[index]
+    /// 索引路径: `path[index]`
     Indexed { base: Box<Path>, index: Expression },
 }
 

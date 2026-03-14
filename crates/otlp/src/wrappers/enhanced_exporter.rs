@@ -14,7 +14,7 @@ use opentelemetry_sdk::trace::SpanExporter;
 /// 增强的Exporter构建器
 ///
 /// 注意: 由于 opentelemetry_sdk 0.31 中 SpanExporter 不是 dyn 兼容的，
-/// 此构建器需要重构为使用泛型而不是 Box<dyn SpanExporter>。
+/// 此构建器需要重构为使用泛型而不是 `Box<dyn SpanExporter>`。
 pub struct EnhancedExporter {
     // 注意: SpanExporter 不是 dyn 兼容的，这里暂时注释掉
     // exporter: Option<Box<dyn SpanExporter>>,

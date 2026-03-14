@@ -1,0 +1,49 @@
+# OTLP Rust - Code Owners
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners - 默认审查者
+* @luyan
+
+# Core OTLP crate
+/crates/otlp/src/ @luyan
+/crates/otlp/src/semantic_conventions/ @luyan
+/crates/otlp/src/config/ @luyan
+
+# Reliability crate
+/crates/reliability/ @luyan
+
+# CI/CD workflows
+/.github/workflows/ @luyan
+/.github/ @luyan
+
+# Documentation
+/docs/ @luyan
+*.md @luyan
+
+# Configuration files
+Cargo.toml @luyan
+rust-toolchain.toml @luyan
+.cargo/ @luyan
+
+# Scripts
+/scripts/ @luyan
+
+# --------------------------------------------------------
+# 特定模块代码所有者（未来扩展）
+# --------------------------------------------------------
+
+# eBPF 模块 (需要专业知识)
+#/crates/otlp/src/ebpf/ @ebpf-maintainer
+
+# SIMD 优化模块
+#/crates/otlp/src/simd/ @performance-maintainer
+
+# GenAI 语义约定
+#/crates/otlp/src/semantic_conventions/gen_ai/ @ai-maintainer
+
+# --------------------------------------------------------
+# 自动审查规则
+# --------------------------------------------------------
+
+# 所有 PR 都需要至少一个审查者
+# 这是通过 GitHub 分支保护规则配置的，不是 CODEOWNERS 功能

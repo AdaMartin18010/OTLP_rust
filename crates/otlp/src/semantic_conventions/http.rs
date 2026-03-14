@@ -1,7 +1,7 @@
 //! # HTTP Semantic Conventions
 //!
 //! Implementation of OpenTelemetry HTTP Semantic Conventions v1.29.0
-//! https://opentelemetry.io/docs/specs/semconv/http/
+//! <https://opentelemetry.io/docs/specs/semconv/http/>
 //!
 //! ## Rust 1.92 特性应用
 //!

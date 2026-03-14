@@ -118,12 +118,12 @@ mod tests {
     #[test]
     fn test_attribute_value_display() {
         assert_eq!(
-            AttributeValue::String("test".to_string()).to_string(),
+            AttributeValue::String("test".to_string()).to_formatted_string(),
             "test"
         );
-        assert_eq!(AttributeValue::Int(42).to_string(), "42");
-        assert_eq!(AttributeValue::Double(3.14).to_string(), "3.14");
-        assert_eq!(AttributeValue::Bool(true).to_string(), "true");
+        assert_eq!(AttributeValue::Int(42).to_formatted_string(), "42");
+        assert_eq!(AttributeValue::Double(3.14).to_formatted_string(), "3.14");
+        assert_eq!(AttributeValue::Bool(true).to_formatted_string(), "true");
     }
 
     #[test]

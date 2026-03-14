@@ -149,7 +149,7 @@ pub mod array_window_algorithms {
 /// 使用 element_offset 的内存优化
 pub mod memory_optimizations {
     /// 计算数组元素偏移量
-    /// Rust 1.94: [T]::element_offset 稳定
+    /// Rust 1.94: `[T]::element_offset` 稳定
     /// 返回 Some(index) 如果元素在数组中，否则返回 None
     pub fn calculate_offset<T>(arr: &[T], element: &T) -> Option<usize> {
         // element_offset 返回 Option<usize>

@@ -4,8 +4,8 @@
 //! Based on OpenTelemetry Profiling specification v0.1
 //!
 //! References:
-//! - https://opentelemetry.io/docs/specs/otel/logs/data-model/
-//! - https://github.com/open-telemetry/opentelemetry-proto/tree/main/opentelemetry/proto/profiles/v1experimental
+//! - <https://opentelemetry.io/docs/specs/otel/logs/data-model/>
+//! - <https://github.com/open-telemetry/opentelemetry-proto/tree/main/opentelemetry/proto/profiles/v1experimental>
 //!
 //! ## Rust 1.92 特性应用
 //!
@@ -109,7 +109,7 @@ pub enum ProfileData {
 }
 
 /// PprofProfile represents profile data in pprof format
-/// Based on https://github.com/google/pprof/tree/main/proto
+/// Based on <https://github.com/google/pprof/tree/main/proto>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PprofProfile {
     /// Sample type descriptions

@@ -43,10 +43,10 @@
 //! ## Standards
 //!
 //! Based on OpenTelemetry Semantic Conventions v1.38.0:
-//! - https://opentelemetry.io/docs/specs/semconv/
+//! - <https://opentelemetry.io/docs/specs/semconv/>
 //! 
 //! OTLP Protocol v1.9.0:
-//! - https://opentelemetry.io/docs/specs/otlp/
+//! - <https://opentelemetry.io/docs/specs/otlp/>
 
 pub mod common;
 pub mod database;

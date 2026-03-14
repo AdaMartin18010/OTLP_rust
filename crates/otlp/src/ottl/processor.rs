@@ -6,7 +6,7 @@
 //! ## Specification
 //!
 //! Based on OTTL v1.0 specification:
-//! - https://opentelemetry.io/docs/specs/otel/ottl/
+//! - <https://opentelemetry.io/docs/specs/otel/ottl/>
 //!
 //! ## Features
 //!
@@ -44,7 +44,7 @@ pub enum OttlStatement {
     /// Delete key statement: delete_key(map, key)
     DeleteKey { map: OttlPath, key: String },
     
-    /// Keep keys statement: keep_keys(map, [keys])
+    /// Keep keys statement: `keep_keys(map, [keys])`
     KeepKeys { map: OttlPath, keys: Vec<String> },
     
     /// Function call statement

@@ -456,6 +456,9 @@ pub use client::{LogBuilder, MetricBuilder, OtlpClient, OtlpClientBuilder, Trace
 pub use config::{
     BatchConfig, Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol,
     ServiceConfig, AggregationConfig, GlobalBatchConfig,
+    // Rust 1.94: 新增常量和验证函数
+    DEFAULT_BATCH_SIZE, MAX_BATCH_SIZE, MIN_BATCH_SIZE, DEFAULT_TIMEOUT,
+    validate_batch_size, validate_timeout,
 };
 pub use data::{
     AttributeValue, DataPoint, DataPointValue, LogData, LogSeverity, MetricData, MetricType,
