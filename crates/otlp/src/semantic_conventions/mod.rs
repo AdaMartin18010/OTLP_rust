@@ -42,11 +42,15 @@
 //!
 //! ## Standards
 //!
-//! Based on OpenTelemetry Semantic Conventions v1.29.0:
+//! Based on OpenTelemetry Semantic Conventions v1.38.0:
 //! - https://opentelemetry.io/docs/specs/semconv/
+//! 
+//! OTLP Protocol v1.9.0:
+//! - https://opentelemetry.io/docs/specs/otlp/
 
 pub mod common;
 pub mod database;
+pub mod gen_ai;
 pub mod http;
 pub mod k8s;
 pub mod messaging;
@@ -56,6 +60,10 @@ pub use common::{AttributeKey, AttributeValue, SemanticConventionError};
 pub use database::{
     DatabaseAttributes, DatabaseAttributesBuilder, DatabaseOperation, DatabaseSystem,
 };
+pub use gen_ai::{
+    GenAiAttributes, GenAiAttributesBuilder, GenAiFinishReason, GenAiOperation, GenAiSystem,
+    GENAI_SEMCONV_STATUS, GENAI_SEMCONV_VERSION,
+};
 pub use http::{HttpAttributes, HttpAttributesBuilder, HttpMethod, HttpScheme};
 pub use k8s::{K8sAttributes, K8sAttributesBuilder, K8sResourceType};
 pub use messaging::{
@@ -64,7 +72,11 @@ pub use messaging::{
 };
 
 /// Version of the OpenTelemetry Semantic Conventions implemented
-pub const SEMCONV_VERSION: &str = "1.29.0";
+/// Updated to v1.38.0 (March 2026)
+pub const SEMCONV_VERSION: &str = "1.38.0";
+
+/// OTLP Protocol version
+pub const OTLP_PROTOCOL_VERSION: &str = "1.9.0";
 
 /// Semantic convention status levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

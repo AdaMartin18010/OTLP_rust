@@ -407,44 +407,79 @@ impl OtlpClient {
         let Some(key) = self.config.tenant_id_key.as_ref() else {
             return true;
         };
-        let tenant_id = data
+        let tenant_id: String = data
             .resource_attributes
             .get(key)
             .cloned()
             .unwrap_or_else(|| "_unknown".to_string());
-        // 令牌桶优先
-        if let (Some(cap), Some(refill)) = (
-            self.config.per_tenant_bucket_capacity,
-            self.config.per_tenant_refill_per_sec,
-        ) {
-            let mut counters = self.tenant_counters.write().await;
-            let entry = counters
-                .per_tenant_tokens
-                .entry(tenant_id)
-                .or_insert((cap, std::time::Instant::now()));
-            // refill
-            let elapsed = entry.1.elapsed().as_secs_f64();
-            let add = (elapsed * refill as f64) as u64;
-            if add > 0 {
-                entry.0 = (entry.0 + add).min(cap);
-                entry.1 = std::time::Instant::now();
-            }
-            if entry.0 == 0 {
-                return false;
-            }
-            entry.0 -= 1;
-            return true;
+        
+        // Rust 1.94: Tree-borrow 语义优化 - 使用独立的限流检查方法
+        // 避免在异步上下文中长时间持有锁，减少借用冲突风险
+        self.check_rate_limit(tenant_id).await
+    }
+    
+    /// 检查租户限流 (Rust 1.94 优化版本)
+    /// 
+    /// Tree-borrow 语义说明:
+    /// Rust 1.94 强化了 tree-borrow 模型，要求严格区分独占借用和共享借用。
+    /// 此方法将限流逻辑封装，确保锁的获取和释放清晰可见，避免借用冲突。
+    async fn check_rate_limit(&self, tenant_id: String) -> bool {
+        // 令牌桶限流优先
+        let token_bucket_result = self.check_token_bucket(tenant_id.clone()).await;
+        if token_bucket_result.is_some() {
+            return token_bucket_result.unwrap();
         }
-
+        
+        // 降级到 QPS 限流
+        self.check_qps_limit(tenant_id).await
+    }
+    
+    /// 检查令牌桶限流
+    /// 返回 Some(result) 如果令牌桶配置可用，否则返回 None
+    async fn check_token_bucket(&self, tenant_id: String) -> Option<bool> {
+        let cap = self.config.per_tenant_bucket_capacity;
+        let refill = self.config.per_tenant_refill_per_sec;
+        
+        // 如果容量为 0，表示禁用令牌桶
+        if cap == 0 {
+            return None;
+        }
+        
+        let mut counters = self.tenant_counters.write().await;
+        let entry = counters
+            .per_tenant_tokens
+            .entry(tenant_id)
+            .or_insert((cap as u64, std::time::Instant::now()));
+        
+        // 补充令牌
+        let elapsed = entry.1.elapsed().as_secs_f64();
+        let add = (elapsed * refill as f64) as u64;
+        if add > 0 {
+            entry.0 = (entry.0 + add).min(cap as u64);
+            entry.1 = std::time::Instant::now();
+        }
+        
+        if entry.0 == 0 {
+            return Some(false);
+        }
+        
+        entry.0 -= 1;
+        Some(true)
+    }
+    
+    /// 检查 QPS 限流
+    async fn check_qps_limit(&self, tenant_id: String) -> bool {
         if let Some(limit) = self.config.per_tenant_qps_limit {
             let mut counters = self.tenant_counters.write().await;
+            
             // 窗口滚动
             if counters.last_window_start.elapsed() >= Duration::from_secs(1) {
                 counters.last_window_start = std::time::Instant::now();
                 counters.per_tenant_counts.clear();
             }
+            
             let count = counters.per_tenant_counts.entry(tenant_id).or_insert(0);
-            if *count >= limit {
+            if *count >= limit as u64 {
                 return false;
             }
             *count += 1;

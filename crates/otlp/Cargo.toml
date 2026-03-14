@@ -42,6 +42,7 @@ reqwest = { workspace = true, optional = true }
 # 序列化和反序列化
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 prost-types = { workspace = true }
 bincode = { workspace = true }     # 使用工作区版本
 
@@ -79,6 +80,9 @@ config = { workspace = true }
 
 # 时间处理
 chrono = { workspace = true }
+
+# 目录操作 (用于声明式配置)
+dirs = { workspace = true }
 
 # 其他常用库
 uuid = { workspace = true }

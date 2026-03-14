@@ -399,8 +399,8 @@ impl OtlpExporter {
                     last_error = Some(e);
 
                     if !RetryUtils::should_retry(
-                        attempt,
-                        self.config.retry_config.max_retries,
+                        attempt as usize,
+                        self.config.retry_config.max_retries as usize,
                         last_error
                             .as_ref()
                             .expect("Error should exist when checking retry"),
@@ -410,7 +410,7 @@ impl OtlpExporter {
 
                     // 计算重试延迟
                     let delay = RetryUtils::calculate_retry_delay(
-                        attempt,
+                        attempt as usize,
                         self.config.retry_config.initial_retry_delay,
                         self.config.retry_config.max_retry_delay,
                         self.config.retry_config.retry_delay_multiplier,

@@ -356,6 +356,12 @@ pub mod microservices;
 pub mod opamp;
 pub mod ottl;
 
+// OTTL 导出
+pub use ottl::processor::{
+    OttlProcessor, OttlParser, OttlStatement, OttlContext, 
+    OttlCondition, OttlValue, OttlPath
+};
+
 // 优化和调优
 pub mod optimization;
 
@@ -447,7 +453,10 @@ pub use opentelemetry::{
 // ============================================================================
 
 pub use client::{LogBuilder, MetricBuilder, OtlpClient, OtlpClientBuilder, TraceBuilder};
-pub use config::{BatchConfig, Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol};
+pub use config::{
+    BatchConfig, Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol,
+    ServiceConfig, AggregationConfig, GlobalBatchConfig,
+};
 pub use data::{
     AttributeValue, DataPoint, DataPointValue, LogData, LogSeverity, MetricData, MetricType,
     SpanKind, SpanStatus, StatusCode, TelemetryContent, TelemetryData, TelemetryDataType,

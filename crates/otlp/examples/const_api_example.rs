@@ -57,7 +57,7 @@ impl OtlpConfigBuilder {
     fn new() -> Self {
         Self {
             batch_size: DEFAULT_BATCH_SIZE,
-            timeout: DEFAULT_TIMEOUT,
+            timeout: std::time::Duration::from_millis(DEFAULT_TIMEOUT),
         }
     }
 

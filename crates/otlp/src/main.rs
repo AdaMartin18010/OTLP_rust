@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   协议: {}", config.protocol);
     println!(
         "   服务: {} v{}",
-        config.service_name, config.service_version
+        config.service.name, config.service.version
     );
     println!("   超时: {:?}", config.request_timeout);
     println!();

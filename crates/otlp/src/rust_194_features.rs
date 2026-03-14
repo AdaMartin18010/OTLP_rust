@@ -276,7 +276,8 @@ mod tests {
     fn test_array_windows_anomalies() {
         let data = [1.0, 2.0, 10.0, 4.0, 5.0];
         let anomalies = array_window_algorithms::detect_anomalies(&data, 5.0);
-        assert_eq!(anomalies, vec![1]); // 在索引 1 处 (2.0 -> 10.0)
+        // 两个异常点: 2.0->10.0 (索引1) 和 10.0->4.0 (索引2)
+        assert_eq!(anomalies, vec![1, 2]);
     }
 
     #[test]
@@ -312,7 +313,10 @@ mod tests {
 
     #[test]
     fn test_lazy_lock_get() {
-        // 测试 LazyLock::get (Rust 1.94)
+        // Rust 1.94: LazyLock::get 返回 Option<&T>
+        // 注意: 如果 LazyLock 未初始化，get() 返回 None
+        // 使用 deref 强制初始化
+        let _ = &*GLOBAL_CONFIG; // 强制初始化
         let config = LazyLock::get(&GLOBAL_CONFIG);
         assert!(config.is_some());
         assert_eq!(config.unwrap().endpoint, "http://localhost:4317");
@@ -323,11 +327,11 @@ mod tests {
         let arr = [10, 20, 30, 40, 50];
         // element_offset 直接返回 usize
         let offset = arr.element_offset(&arr[2]);
-        assert_eq!(offset, 2);
+        assert_eq!(offset, Some(2));
         
         // 验证第一个和最后一个元素
-        assert_eq!(arr.element_offset(&arr[0]), 0);
-        assert_eq!(arr.element_offset(&arr[4]), 4);
+        assert_eq!(arr.element_offset(&arr[0]), Some(0));
+        assert_eq!(arr.element_offset(&arr[4]), Some(4));
     }
 
     #[test]

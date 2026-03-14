@@ -340,6 +340,7 @@ anyhow = "1.0.102"   # 通用错误处理
 serde = { version = "1.0.228", features = ["derive"] } # 序列化框架
 serde_json = "1.0.149"                                 # JSON支持
 serde_yaml = "0.9.34"                                  # YAML支持
+dirs = "5.0.1"                                         # 目录操作 (用于配置加载)
 bincode = "2.0.1"                                      # 二进制序列化
 
 # ========== 异步运行时 ==========

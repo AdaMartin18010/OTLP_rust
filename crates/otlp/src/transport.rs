@@ -366,22 +366,28 @@ impl TransportFactory {
     pub async fn create(config: OtlpConfig) -> Result<Box<dyn Transport>> {
         tracing::debug!("创建传输实例，协议: {:?}", config.protocol);
 
-        match config.protocol {
-            TransportProtocol::Grpc => {
+        match config.protocol.as_str() {
+            "grpc" => {
                 let transport = GrpcTransport::new(config).await?;
                 tracing::debug!("gRPC 传输实例创建成功");
                 Ok(Box::new(transport))
             }
-            TransportProtocol::Http => {
+            "http" => {
                 let transport = HttpTransport::new(config).await?;
                 tracing::debug!("HTTP 传输实例创建成功");
                 Ok(Box::new(transport))
             }
-            TransportProtocol::HttpProtobuf => {
+            "http_protobuf" | "http/protobuf" => {
                 // 注意: HTTP/Protobuf 使用 HTTP 传输，但使用 protobuf 序列化
                 // 当前简化实现，使用HTTP传输
                 tracing::debug!("HTTP/Protobuf 传输实例创建（使用 HTTP 传输）");
                 let transport = HttpTransport::new(config).await?;
+                Ok(Box::new(transport))
+            }
+            _ => {
+                // 默认使用 gRPC
+                tracing::warn!("未知的传输协议, 使用默认 gRPC");
+                let transport = GrpcTransport::new(config).await?;
                 Ok(Box::new(transport))
             }
         }
@@ -543,7 +549,7 @@ mod tests {
     async fn test_grpc_transport_creation() {
         let config = OtlpConfig::default()
             .with_endpoint("http://localhost:4317")
-            .with_protocol(TransportProtocol::Grpc);
+            .with_protocol("grpc");
 
         let transport = GrpcTransport::new(config).await;
         assert!(transport.is_ok());
@@ -563,7 +569,7 @@ mod tests {
     async fn test_transport_factory() {
         let config = OtlpConfig::default()
             .with_endpoint("http://localhost:4317")
-            .with_protocol(TransportProtocol::Grpc);
+            .with_protocol("grpc");
 
         let transport = TransportFactory::create(config).await;
         assert!(transport.is_ok());
@@ -576,7 +582,7 @@ mod tests {
 
         let config = OtlpConfig::default()
             .with_endpoint("http://localhost:4317")
-            .with_protocol(TransportProtocol::Grpc);
+            .with_protocol("grpc");
 
         let transport = GrpcTransport::new(config)
             .await

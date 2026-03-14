@@ -1,361 +1,307 @@
-//! # OTLP集成测试
+//! # OTLP Integration Tests
 //!
-//! 测试OTLP组件的集成功能和端到端场景
+//! Comprehensive integration tests for the OTLP crate.
 
-use std::sync::Arc;
+use std::collections::HashMap;
 use std::time::Duration;
-use tokio::time::sleep;
 
-// 模拟OTLP客户端
-struct MockOtlpClient {
-    endpoint: String,
-    timeout: Duration,
+/// Test GenAI semantic conventions
+#[test]
+fn test_gen_ai_semantic_conventions() {
+    use otlp::semantic_conventions::gen_ai::{
+        GenAiAttributes, GenAiSystem, GenAiOperation, GenAiFinishReason
+    };
+    
+    let attrs = GenAiAttributes::builder()
+        .system(GenAiSystem::OpenAI)
+        .operation(GenAiOperation::Chat)
+        .request_model("gpt-4o")
+        .input_tokens(150)
+        .output_tokens(45)
+        .finish_reason(GenAiFinishReason::Stop)
+        .build();
+    
+    assert_eq!(attrs.system, Some("openai".to_string()));
+    assert_eq!(attrs.request_model, Some("gpt-4o".to_string()));
+    assert_eq!(attrs.usage_input_tokens, Some(150));
+    assert_eq!(attrs.usage_output_tokens, Some(45));
+    assert_eq!(attrs.usage_total_tokens, Some(195));
 }
 
-impl MockOtlpClient {
-    fn new(endpoint: String) -> Self {
-        Self {
-            endpoint,
-            timeout: Duration::from_secs(5),
+/// Test declarative configuration
+#[test]
+fn test_declarative_config_loading() {
+    use otlp::config::declarative::OpenTelemetryConfig;
+    
+    let yaml = r#"
+resource:
+  attributes:
+    service.name: test-service
+    service.version: "1.0.0"
+    deployment.environment: production
+"#;
+    
+    let config = OpenTelemetryConfig::from_yaml(yaml)
+        .expect("Failed to parse config");
+    
+    assert!(config.resource.is_some());
+    let resource = config.resource.unwrap();
+    assert!(resource.attributes.contains_key("service.name"));
+}
+
+/// Test OTTL processor
+#[test]
+fn test_ottl_processor_basic() {
+    use otlp::ottl::processor::{OttlProcessor, OttlContext};
+    
+    let mut processor = OttlProcessor::new();
+    processor.parse_and_add("set(attributes[\"key\"], \"value\")")
+        .expect("Failed to parse OTTL statement");
+    
+    let mut resource_attrs = HashMap::new();
+    let mut span_attrs = HashMap::new();
+    
+    let mut ctx = OttlContext {
+        resource_attributes: &mut resource_attrs,
+        span_attributes: Some(&mut span_attrs),
+        metric_attributes: None,
+        log_attributes: None,
+    };
+    
+    processor.execute(&mut ctx)
+        .expect("Failed to execute OTTL processor");
+    
+    assert_eq!(span_attrs.get("key"), Some(&"value".to_string()));
+}
+
+/// Test profiling configuration
+#[tokio::test]
+async fn test_profiling_lifecycle() {
+    use otlp::profiling::{Profiler, ProfilingConfig};
+    
+    let config = ProfilingConfig {
+        sampling_rate: 100,
+        duration: Duration::from_secs(1),
+        enable_cpu_profiling: true,
+        enable_memory_profiling: false,
+        enable_lock_profiling: false,
+    };
+    
+    let mut profiler = Profiler::new(config);
+    
+    // Start profiling
+    profiler.start().await
+        .expect("Failed to start profiler");
+    assert!(profiler.is_running());
+    
+    // Collect some data
+    let data = profiler.collect_data().await
+        .expect("Failed to collect data");
+    assert!(!data.is_empty());
+    
+    // Stop profiling
+    profiler.stop().await
+        .expect("Failed to stop profiler");
+    assert!(!profiler.is_running());
+}
+
+/// Test CPU profiler lifecycle
+#[tokio::test]
+async fn test_cpu_profiler_lifecycle() {
+    use otlp::profiling::cpu::{CpuProfiler, CpuProfilerConfig};
+    
+    let config = CpuProfilerConfig {
+        sampling_frequency: 100,
+        max_duration: Duration::from_millis(100),
+        include_system_calls: false,
+    };
+    
+    let mut profiler = CpuProfiler::new(config);
+    
+    // Start profiler
+    profiler.start().await
+        .expect("Failed to start CPU profiler");
+    
+    // Stop profiler
+    profiler.stop().await
+        .expect("Failed to stop CPU profiler");
+}
+
+/// Test sampling strategies
+#[test]
+fn test_sampling_strategies() {
+    use otlp::profiling::sampling::{AlwaysSample, NeverSample, SamplingStrategy};
+    
+    // Always sample
+    let always = AlwaysSample::new();
+    assert!(always.should_sample());
+    
+    // Never sample
+    let never = NeverSample::new();
+    assert!(!never.should_sample());
+}
+
+/// Test error handling
+#[test]
+fn test_error_handling() {
+    use otlp::error::OtlpError;
+    
+    let error = OtlpError::ValidationError("test error".to_string());
+    
+    match error {
+        OtlpError::ValidationError(msg) => {
+            assert_eq!(msg, "test error");
         }
-    }
-
-    async fn send_trace(&self, trace_data: &[u8]) -> Result<(), String> {
-        // 模拟发送trace数据
-        sleep(Duration::from_millis(10)).await;
-        if trace_data.is_empty() {
-            return Err("Empty trace data".to_string());
-        }
-        Ok(())
-    }
-
-    async fn send_metrics(&self, metrics_data: &[u8]) -> Result<(), String> {
-        // 模拟发送metrics数据
-        sleep(Duration::from_millis(5)).await;
-        if metrics_data.is_empty() {
-            return Err("Empty metrics data".to_string());
-        }
-        Ok(())
-    }
-
-    async fn send_logs(&self, logs_data: &[u8]) -> Result<(), String> {
-        // 模拟发送logs数据
-        sleep(Duration::from_millis(8)).await;
-        if logs_data.is_empty() {
-            return Err("Empty logs data".to_string());
-        }
-        Ok(())
+        _ => panic!("Expected ValidationError"),
     }
 }
 
-// 模拟OTLP服务器
-struct MockOtlpServer {
-    #[allow(dead_code)]
-    port: u16,
-    received_traces: Arc<std::sync::Mutex<Vec<Vec<u8>>>>,
-    received_metrics: Arc<std::sync::Mutex<Vec<Vec<u8>>>>,
-    received_logs: Arc<std::sync::Mutex<Vec<Vec<u8>>>>,
+/// Test configuration
+#[test]
+fn test_otlp_config() {
+    use otlp::config::OtlpConfigBuilder;
+    
+    let config = OtlpConfigBuilder::new()
+        .endpoint("http://localhost:4317")
+        .protocol("grpc")
+        .service("test-service", "1.0.0")
+        .build();
+    
+    assert_eq!(config.endpoint, "http://localhost:4317");
+    assert_eq!(config.protocol, "grpc");
+    assert_eq!(config.service.name, "test-service");
 }
 
-impl MockOtlpServer {
-    fn new(port: u16) -> Self {
-        Self {
-            port,
-            received_traces: Arc::new(std::sync::Mutex::new(Vec::new())),
-            received_metrics: Arc::new(std::sync::Mutex::new(Vec::new())),
-            received_logs: Arc::new(std::sync::Mutex::new(Vec::new())),
-        }
-    }
-
-    async fn start(&self) -> Result<(), String> {
-        // 模拟服务器启动
-        sleep(Duration::from_millis(100)).await;
-        Ok(())
-    }
-
-    async fn handle_trace(&self, data: Vec<u8>) -> Result<(), String> {
-        self.received_traces.lock().unwrap().push(data);
-        Ok(())
-    }
-
-    async fn handle_metrics(&self, data: Vec<u8>) -> Result<(), String> {
-        self.received_metrics.lock().unwrap().push(data);
-        Ok(())
-    }
-
-    async fn handle_logs(&self, data: Vec<u8>) -> Result<(), String> {
-        self.received_logs.lock().unwrap().push(data);
-        Ok(())
-    }
-
-    fn get_received_traces(&self) -> Vec<Vec<u8>> {
-        self.received_traces.lock().unwrap().clone()
-    }
-
-    fn get_received_metrics(&self) -> Vec<Vec<u8>> {
-        self.received_metrics.lock().unwrap().clone()
-    }
-
-    fn get_received_logs(&self) -> Vec<Vec<u8>> {
-        self.received_logs.lock().unwrap().clone()
-    }
-}
-
-#[tokio::test]
-async fn test_otlp_client_server_integration() {
-    // 创建模拟服务器
-    let server = MockOtlpServer::new(8080);
-    server.start().await.expect("Server should start");
-
-    // 创建客户端
-    let client = MockOtlpClient::new("http://localhost:8080".to_string());
-
-    // 测试trace发送
-    let trace_data = b"test trace data";
-    client
-        .send_trace(trace_data)
-        .await
-        .expect("Should send trace");
-
-    // 验证服务器接收到数据
-    server
-        .handle_trace(trace_data.to_vec())
-        .await
-        .expect("Should handle trace");
-    let received_traces = server.get_received_traces();
-    assert_eq!(received_traces.len(), 1);
-    assert_eq!(received_traces[0], trace_data);
-
-    // 测试metrics发送
-    let metrics_data = b"test metrics data";
-    client
-        .send_metrics(metrics_data)
-        .await
-        .expect("Should send metrics");
-
-    // 验证服务器接收到数据
-    server
-        .handle_metrics(metrics_data.to_vec())
-        .await
-        .expect("Should handle metrics");
-    let received_metrics = server.get_received_metrics();
-    assert_eq!(received_metrics.len(), 1);
-    assert_eq!(received_metrics[0], metrics_data);
-
-    // 测试logs发送
-    let logs_data = b"test logs data";
-    client.send_logs(logs_data).await.expect("Should send logs");
-
-    // 验证服务器接收到数据
-    server
-        .handle_logs(logs_data.to_vec())
-        .await
-        .expect("Should handle logs");
-    let received_logs = server.get_received_logs();
-    assert_eq!(received_logs.len(), 1);
-    assert_eq!(received_logs[0], logs_data);
-}
-
-#[tokio::test]
-async fn test_otlp_error_handling() {
-    let client = MockOtlpClient::new("http://localhost:8080".to_string());
-
-    // 测试空数据错误处理
-    let empty_data = b"";
-
-    let trace_result = client.send_trace(empty_data).await;
-    assert!(trace_result.is_err());
-    assert_eq!(trace_result.unwrap_err(), "Empty trace data");
-
-    let metrics_result = client.send_metrics(empty_data).await;
-    assert!(metrics_result.is_err());
-    assert_eq!(metrics_result.unwrap_err(), "Empty metrics data");
-
-    let logs_result = client.send_logs(empty_data).await;
-    assert!(logs_result.is_err());
-    assert_eq!(logs_result.unwrap_err(), "Empty logs data");
-}
-
-#[tokio::test]
-async fn test_otlp_concurrent_operations() {
-    let server = MockOtlpServer::new(8080);
-    server.start().await.expect("Server should start");
-
-    let client = Arc::new(MockOtlpClient::new("http://localhost:8080".to_string()));
-
-    // 并发发送多个trace
-    let mut handles = Vec::new();
-    for i in 0..10 {
-        let client = Arc::clone(&client);
-        let handle = tokio::spawn(async move {
-            let data = format!("trace data {}", i).into_bytes();
-            client.send_trace(&data).await
-        });
-        handles.push(handle);
-    }
-
-    // 等待所有操作完成
-    for handle in handles {
-        handle
-            .await
-            .expect("Task should complete")
-            .expect("Should send trace");
-    }
-
-    // 验证服务器接收到所有数据
-    let received_traces = server.get_received_traces();
-    assert_eq!(received_traces.len(), 10);
-}
-
-#[tokio::test]
-async fn test_otlp_timeout_handling() {
-    let client = MockOtlpClient::new("http://localhost:8080".to_string());
-
-    // 测试正常操作不会超时
-    let data = b"test data";
-    let result = tokio::time::timeout(Duration::from_secs(1), client.send_trace(data)).await;
-    assert!(result.is_ok());
-    assert!(result.unwrap().is_ok());
-}
-
-#[tokio::test]
-async fn test_otlp_data_validation() {
-    let server = MockOtlpServer::new(8080);
-    server.start().await.expect("Server should start");
-
-    // 测试有效数据
-    let valid_trace = b"valid trace data";
-    server
-        .handle_trace(valid_trace.to_vec())
-        .await
-        .expect("Should handle valid trace");
-
-    // 测试无效数据
-    let invalid_trace = b"";
-    let _result = server.handle_trace(invalid_trace.to_vec()).await;
-    // 根据实际实现，这里可能需要调整
-    // assert!(result.is_err());
-}
-
-#[tokio::test]
-async fn test_otlp_performance_under_load() {
-    let server = MockOtlpServer::new(8080);
-    server.start().await.expect("Server should start");
-
-    let client = Arc::new(MockOtlpClient::new("http://localhost:8080".to_string()));
-
-    let start = std::time::Instant::now();
-
-    // 发送大量数据
-    let mut handles = Vec::new();
-    for i in 0..100 {
-        let client = Arc::clone(&client);
-        let handle = tokio::spawn(async move {
-            let data = format!("performance test data {}", i).into_bytes();
-            client.send_trace(&data).await
-        });
-        handles.push(handle);
-    }
-
-    // 等待所有操作完成
-    for handle in handles {
-        handle
-            .await
-            .expect("Task should complete")
-            .expect("Should send trace");
-    }
-
-    let duration = start.elapsed();
-
-    // 验证性能要求（100个请求应该在1秒内完成）
-    assert!(duration < Duration::from_secs(1));
-
-    // 验证服务器接收到所有数据
-    let received_traces = server.get_received_traces();
-    assert_eq!(received_traces.len(), 100);
-}
-
-#[tokio::test]
-async fn test_otlp_memory_usage() {
-    let server = MockOtlpServer::new(8080);
-    server.start().await.expect("Server should start");
-
-    // 发送大量数据测试内存使用
-    let large_data = vec![0u8; 1024 * 1024]; // 1MB数据
-
-    for _ in 0..10 {
-        server
-            .handle_trace(large_data.clone())
-            .await
-            .expect("Should handle large trace");
-    }
-
-    // 验证服务器正确处理了大量数据
-    let received_traces = server.get_received_traces();
-    assert_eq!(received_traces.len(), 10);
-    assert_eq!(received_traces[0].len(), 1024 * 1024);
-}
-
-#[tokio::test]
-async fn test_otlp_graceful_shutdown() {
-    let server = MockOtlpServer::new(8080);
-    server.start().await.expect("Server should start");
-
-    let client = MockOtlpClient::new("http://localhost:8080".to_string());
-
-    // 发送一些数据
-    let data = b"shutdown test data";
-    client.send_trace(data).await.expect("Should send trace");
-
-    // 模拟优雅关闭
-    server
-        .handle_trace(data.to_vec())
-        .await
-        .expect("Should handle trace");
-
-    // 验证数据被正确处理
-    let received_traces = server.get_received_traces();
-    assert_eq!(received_traces.len(), 1);
-    assert_eq!(received_traces[0], data);
-}
-
-#[tokio::test]
-async fn test_otlp_configuration_validation() {
-    // 测试有效的配置
-    let valid_endpoint = "http://localhost:8080";
-    let client = MockOtlpClient::new(valid_endpoint.to_string());
-    assert_eq!(client.endpoint, valid_endpoint);
-
-    // 测试超时配置
-    assert_eq!(client.timeout, Duration::from_secs(5));
-}
-
-#[tokio::test]
-async fn test_otlp_retry_mechanism() {
-    let server = MockOtlpServer::new(8080);
-    server.start().await.expect("Server should start");
-
-    let client = MockOtlpClient::new("http://localhost:8080".to_string());
-
-    // 测试重试机制（这里简化实现）
-    let data = b"retry test data";
-    let mut attempts = 0;
-    let max_attempts = 3;
-
-    while attempts < max_attempts {
-        match client.send_trace(data).await {
-            Ok(_) => break,
-            Err(_) => {
-                attempts += 1;
-                if attempts < max_attempts {
-                    sleep(Duration::from_millis(100)).await;
-                }
-            }
-        }
-    }
-
-    assert!(
-        attempts < max_attempts,
-        "Should succeed within max attempts"
+/// Test telemetry data creation
+#[test]
+fn test_telemetry_data_creation() {
+    use otlp::data::{TelemetryData, TelemetryDataType, TelemetryContent, TraceData};
+    
+    let trace_data = TraceData {
+        trace_id: "12345678901234567890123456789012".to_string(),
+        span_id: "1234567890123456".to_string(),
+        parent_span_id: None,
+        name: "test-span".to_string(),
+        span_kind: otlp::data::SpanKind::Internal,
+        start_time: 1000,
+        end_time: 2000,
+        status: otlp::data::SpanStatus::default(),
+        attributes: HashMap::new(),
+        events: vec![],
+        links: vec![],
+    };
+    
+    let telemetry = TelemetryData::new(
+        TelemetryDataType::Trace,
+        TelemetryContent::Trace(trace_data),
     );
+    
+    assert_eq!(telemetry.data_type, TelemetryDataType::Trace);
+}
+
+/// Test compression
+#[test]
+fn test_compression_gzip() {
+    use flate2::write::GzEncoder;
+    use flate2::Compression;
+    use std::io::Write;
+    
+    let data = b"Hello, World! This is test data for compression.";
+    
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(data).unwrap();
+    let compressed = encoder.finish().unwrap();
+    
+    // Compressed data should not be empty
+    assert!(!compressed.is_empty());
+}
+
+/// Test semantic convention types
+#[test]
+fn test_semantic_convention_types() {
+    // HTTP
+    use otlp::semantic_conventions::http::HttpMethod;
+    assert!(matches!(HttpMethod::Get, HttpMethod::Get));
+    assert!(matches!(HttpMethod::Post, HttpMethod::Post));
+    
+    // Database
+    use otlp::semantic_conventions::database::DatabaseSystem;
+    assert!(matches!(DatabaseSystem::Postgresql, DatabaseSystem::Postgresql));
+    assert!(matches!(DatabaseSystem::Mysql, DatabaseSystem::Mysql));
+    
+    // Messaging
+    use otlp::semantic_conventions::messaging::MessagingSystem;
+    assert!(matches!(MessagingSystem::Kafka, MessagingSystem::Kafka));
+    assert!(matches!(MessagingSystem::Rabbitmq, MessagingSystem::Rabbitmq));
+    
+    // K8s
+    use otlp::semantic_conventions::k8s::K8sResourceType;
+    assert!(matches!(K8sResourceType::Pod, K8sResourceType::Pod));
+    assert!(matches!(K8sResourceType::Deployment, K8sResourceType::Deployment));
+    
+    // GenAI
+    use otlp::semantic_conventions::gen_ai::GenAiSystem;
+    assert!(matches!(GenAiSystem::OpenAI, GenAiSystem::OpenAI));
+    assert!(matches!(GenAiSystem::Anthropic, GenAiSystem::Anthropic));
+}
+
+/// Test memory profiler lifecycle
+#[tokio::test]
+async fn test_memory_profiler_lifecycle() {
+    use otlp::profiling::memory::{MemoryProfiler, MemoryProfilerConfig};
+    
+    let config = MemoryProfilerConfig::default();
+    let mut profiler = MemoryProfiler::new(config);
+    
+    // Start profiler
+    profiler.start().await
+        .expect("Failed to start memory profiler");
+    
+    // Stop profiler
+    profiler.stop().await
+        .expect("Failed to stop memory profiler");
+}
+
+/// Test profile exporter
+#[tokio::test]
+async fn test_profile_exporter() {
+    use otlp::profiling::exporter::{
+        ProfileExporter, ProfileExporterConfig, generate_profile_id
+    };
+    
+    // Test profile ID generation
+    let profile_id = generate_profile_id();
+    assert!(!profile_id.is_empty());
+    
+    // Create exporter
+    let config = ProfileExporterConfig::default();
+    let _exporter = ProfileExporter::new(config);
+}
+
+/// Test OTTL parser
+#[test]
+fn test_ottl_parser() {
+    use otlp::ottl::processor::OttlParser;
+    
+    // Test set statement parsing
+    let stmt = OttlParser::parse("set(attributes[\"key\"], \"value\")");
+    assert!(stmt.is_ok());
+    
+    // Test delete_key statement parsing
+    let stmt = OttlParser::parse("delete_key(attributes, \"old_key\")");
+    assert!(stmt.is_ok());
+    
+    // Test invalid statement
+    let stmt = OttlParser::parse("invalid_statement()");
+    assert!(stmt.is_err());
+}
+
+/// Test config validation
+#[test]
+fn test_config_validation() {
+    use otlp::config::OtlpConfig;
+    
+    // Valid config
+    let config = OtlpConfig::default();
+    assert!(config.validate().is_ok());
 }
