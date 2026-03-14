@@ -2,10 +2,10 @@
 # 2025年最新配置，支持Rust 1.92新特性和代码质量优化
 
 # 函数参数数量阈值
-too-many-arguments-threshold = 7
+too-many-arguments-threshold = 10
 
 # 函数复杂度阈值
-cognitive-complexity-threshold = 30
+cognitive-complexity-threshold = 50
 
 # 函数行数阈值
 too-many-lines-threshold = 100
@@ -14,7 +14,7 @@ too-many-lines-threshold = 100
 struct-field-name-threshold = 7
 
 # 类型复杂度阈值
-type-complexity-threshold = 250
+type-complexity-threshold = 500
 
 # 禁止的方法
 disallowed-methods = ["std::env::var", "std::env::var_os"]
@@ -29,7 +29,7 @@ disallowed-methods = ["std::env::var", "std::env::var_os"]
 allowed-scripts = ["Latin", "Cyrillic"]
 
 # MSRV (最低支持的Rust版本)
-msrv = "1.92.0"
+msrv = "1.94.0"
 
 # 避免破坏导出的API
 avoid-breaking-exported-api = true

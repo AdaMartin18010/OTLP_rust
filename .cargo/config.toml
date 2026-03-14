@@ -1,75 +1,67 @@
-# Cargo 配置文件 - Rust 1.94 特性
-# 参考: https://doc.rust-lang.org/cargo/reference/config.html
-
-# Rust 1.94: Config 包含功能
-# 可以包含其他配置文件，支持 optional 标记
-# include = [
-#     { path = "common.toml" },
-#     { path = "local.toml", required = false },
-# ]
+# Cargo 配置 - Edition 2024 优化
+# https://doc.rust-lang.org/cargo/reference/config.html
 
 [build]
 # 默认目标平台
 target = "x86_64-pc-windows-msvc"
 
-# 使用所有 CPU 核心进行编译 (0 表示自动，但在 config 中需要指定具体值或省略)
-# jobs = 4
+# 传递给 rustc 的标志
+rustflags = [
+    "-C", "target-cpu=native",
+    "-C", "opt-level=3",
+    "-D", "warnings",  # 将警告视为错误
+]
 
-[profile.release]
-# 优化级别
-opt-level = 3
-# 链接时优化
-lto = "fat"
-# 代码生成单元
-codegen-units = 1
-# 去除调试符号
-strip = "symbols"
-# Panic 时立即终止
-panic = "abort"
+[term]
+# 彩色输出
+quiet = false
+verbose = false
+color = "auto"
+
+[net]
+# 网络重试设置
+retry = 3
+git-fetch-with-cli = true
+
+[registries.crates-io]
+protocol = "sparse"
+
+[resolver]
+# Edition 2024: MSRV-aware resolver
+# Falls back to older versions if rust-version is incompatible
+incompatible-rust-versions = "fallback"
 
 [profile.dev]
-# 开发环境优化
+# 开发构建优化
 opt-level = 0
 debug = true
 debug-assertions = true
 overflow-checks = true
+lto = false
+panic = "unwind"
 incremental = true
 codegen-units = 256
 
-# Rust 1.94: TOML v1.1 支持
-# 可以使用多行内联表和尾随逗号
-[registries.crates-io]
-protocol = "sparse"
+[profile.release]
+# 发布构建优化 - 最大化性能
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = "fat"
+panic = "abort"
+codegen-units = 1
+strip = "symbols"
 
-[net]
-# 重试次数
-retry = 3
-# 使用 git 协议
-git-fetch-with-cli = true
+[profile.test]
+# 测试构建优化
+opt-level = 1
+debug = true
+debug-assertions = true
+overflow-checks = true
 
-[env]
-# 环境变量设置
-RUST_BACKTRACE = "1"
-RUST_LOG = "info"
-
-# 工具链配置
-[toolchain]
-channel = "stable"
-components = ["rustfmt", "clippy", "rust-src"]
-
-# 针对特定目标的配置
-[target.x86_64-pc-windows-msvc]
-# Windows 特定链接器参数
-linker = "rust-lld.exe"
-rustflags = ["-C", "link-arg=/NOLOGO"]
-
-[target.x86_64-unknown-linux-gnu]
-# Linux 特定配置
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
-
-# Rust 1.94: 使用 include 共享配置
-# 可以取消下面的注释来使用
-# include = [
-#     { path = "../shared-cargo-config.toml", required = false },
-# ]
+[profile.bench]
+# 基准测试优化
+opt-level = 3
+debug = false
+lto = "thin"

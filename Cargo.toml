@@ -1,12 +1,32 @@
 [workspace]
 
+# Edition 2024: Resolver v3 - Rust-version aware dependency resolution
+# Automatically selects dependency versions compatible with rust-version
 resolver = "3"
 
 members = ["crates/otlp", "crates/reliability"]
 
 [workspace.package]
+# Rust Edition 2024 - Released with Rust 1.85.0
+# Major features:
+# - Async closures: async || {}
+# - Lifetime capture rules: impl Trait + use<..>
+# - Match ergonomics improvements
+# - Unsafe extern blocks
+# - gen keyword reserved for generators
 edition = "2024"
-rust-version = "1.94" # 使用最新稳定版本 (Rust 1.94.0)
+
+# Minimum Supported Rust Version (MSRV)
+# Edition 2024 requires Rust >= 1.85.0
+# We use 1.94 for latest features
+rust-version = "1.94"
+
+# Authors and metadata
+authors = ["OTLP Rust Team"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/luyan/OTLP_rust"
+homepage = "https://github.com/luyan/OTLP_rust"
+documentation = "https://docs.rs/otlp"
 
 [profile.release]
 

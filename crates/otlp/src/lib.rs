@@ -370,6 +370,7 @@ pub mod rust_1_92_optimizations; // Rust 1.92 特性优化实现
 
 // Rust 1.94 特性展示与应用
 pub mod rust_194_features; // Rust 1.94 新特性完整展示
+pub mod rust_2024_features; // Rust Edition 2024 新特性 (Rust 1.85+)
 
 // 客户端增强功能
 #[cfg(feature = "client-enhancements")]

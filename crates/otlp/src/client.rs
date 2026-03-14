@@ -425,9 +425,8 @@ impl OtlpClient {
     /// 此方法将限流逻辑封装，确保锁的获取和释放清晰可见，避免借用冲突。
     async fn check_rate_limit(&self, tenant_id: String) -> bool {
         // 令牌桶限流优先
-        let token_bucket_result = self.check_token_bucket(tenant_id.clone()).await;
-        if token_bucket_result.is_some() {
-            return token_bucket_result.unwrap();
+        if let Some(result) = self.check_token_bucket(tenant_id.clone()).await {
+            return result;
         }
         
         // 降级到 QPS 限流
