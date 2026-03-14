@@ -76,7 +76,7 @@ url = { workspace = true }
 rand = { workspace = true }
 
 # 日志记录 - 2025年9月27日最新版本
-env_logger = { version = "0.11.8", optional = true }
+env_logger = { version = "0.11.9", optional = true }
 
 # 属性测试
 proptest = { workspace = true, optional = true }

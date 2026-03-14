@@ -51,7 +51,7 @@ crossbeam = { workspace = true }
 dashmap = { workspace = true }     # 使用工作区版本
 
 # 压缩算法（使用稳定版本 - 2025-01更新）
-flate2 = "1.1.8"    # gzip压缩 (更新: 1.1.5 -> 1.1.8, 2025-01)
+flate2 = "1.1.9"    # gzip压缩 (更新: 1.1.8 -> 1.1.9, 2025-03)
 brotli = "8.0.2"    # Brotli压缩
 zstd = "0.13.3"     # Zstandard压缩
 lz4_flex = "0.11.5" # LZ4压缩
@@ -85,7 +85,7 @@ uuid = { workspace = true }
 url = { workspace = true }
 bytes = { workspace = true }
 hex = { workspace = true } # 使用工作区版本
-async-compression = { version = "0.4.37", features = [
+async-compression = { version = "0.4.41", features = [
   "tokio",
   "zstd",
   "gzip",
