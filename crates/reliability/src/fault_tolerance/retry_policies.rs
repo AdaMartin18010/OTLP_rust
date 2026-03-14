@@ -246,15 +246,15 @@ impl RetryPolicy {
                 increment,
                 max_delay,
             } => {
-                let delay = *initial_delay + *increment * (attempt - 1) as u32;
+                let delay = *initial_delay + *increment * (attempt - 1);
                 delay.min(*max_delay)
             }
             RetryStrategy::Jittered {
                 base_delay,
                 jitter_range,
             } => {
-                let jittered_ms = self.add_jitter(*base_delay, *jitter_range);
-                jittered_ms
+                
+                self.add_jitter(*base_delay, *jitter_range)
             }
             RetryStrategy::Custom { name, parameters } => {
                 debug!("使用自定义重试策略: {}, 参数: {:?}", name, parameters);

@@ -84,11 +84,10 @@ impl ContainerEnvironmentAdapter {
         // 尝试从多个位置获取容器ID
         if let Ok(id) = fs::read_to_string("/proc/self/cgroup") {
             for line in id.lines() {
-                if line.contains("docker") {
-                    if let Some(id) = line.split('/').last() {
+                if line.contains("docker")
+                    && let Some(id) = line.split('/').next_back() {
                         return Some(id.to_string());
                     }
-                }
             }
         }
 
@@ -140,28 +139,21 @@ impl ContainerEnvironmentAdapter {
         };
 
         // 尝试从cgroup获取内存限制
-        if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/memory/memory.limit_in_bytes") {
-            if let Ok(limit) = content.trim().parse::<u64>() {
-                if limit < u64::MAX {
+        if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/memory/memory.limit_in_bytes")
+            && let Ok(limit) = content.trim().parse::<u64>()
+                && limit < u64::MAX {
                     limits.memory_limit = Some(limit);
                 }
-            }
-        }
 
         // 尝试从cgroup获取CPU限制
-        if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/cpu/cpu.cfs_quota_us") {
-            if let Ok(quota) = content.trim().parse::<i64>() {
-                if quota > 0 {
-                    if let Ok(period) = fs::read_to_string("/sys/fs/cgroup/cpu/cpu.cfs_period_us") {
-                        if let Ok(period) = period.trim().parse::<i64>() {
-                            if period > 0 {
+        if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
+            && let Ok(quota) = content.trim().parse::<i64>()
+                && quota > 0
+                    && let Ok(period) = fs::read_to_string("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
+                        && let Ok(period) = period.trim().parse::<i64>()
+                            && period > 0 {
                                 limits.cpu_limit = Some(quota as f64 / period as f64);
                             }
-                        }
-                    }
-                }
-            }
-        }
 
         limits
     }
@@ -169,45 +161,39 @@ impl ContainerEnvironmentAdapter {
     /// 更新资源使用情况
     fn update_resource_usage(&mut self) -> Result<(), UnifiedError> {
         // 更新内存使用情况
-        if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/memory/memory.usage_in_bytes") {
-            if let Ok(usage) = content.trim().parse::<u64>() {
+        if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/memory/memory.usage_in_bytes")
+            && let Ok(usage) = content.trim().parse::<u64>() {
                 self.current_usage.memory_usage = usage;
             }
-        }
 
         // 更新CPU使用情况
-        if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/cpu/cpuacct.usage") {
-            if let Ok(usage) = content.trim().parse::<u64>() {
+        if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/cpu/cpuacct.usage")
+            && let Ok(usage) = content.trim().parse::<u64>() {
                 // 这里需要计算CPU使用率，简化实现
                 self.current_usage.cpu_usage = (usage % 100) as f64;
             }
-        }
 
         // 更新磁盘使用情况
         if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/blkio/blkio.io_service_bytes") {
             for line in content.lines() {
-                if line.contains("Read") {
-                    if let Some(bytes) = line.split_whitespace().nth(2) {
-                        if let Ok(usage) = bytes.parse::<u64>() {
+                if line.contains("Read")
+                    && let Some(bytes) = line.split_whitespace().nth(2)
+                        && let Ok(usage) = bytes.parse::<u64>() {
                             self.current_usage.disk_usage = usage;
                         }
-                    }
-                }
             }
         }
 
         // 更新网络使用情况
-        if let Ok(content) = fs::read_to_string("/sys/class/net/eth0/statistics/rx_bytes") {
-            if let Ok(rx) = content.trim().parse::<u64>() {
+        if let Ok(content) = fs::read_to_string("/sys/class/net/eth0/statistics/rx_bytes")
+            && let Ok(rx) = content.trim().parse::<u64>() {
                 self.current_usage.network_rx = rx;
             }
-        }
 
-        if let Ok(content) = fs::read_to_string("/sys/class/net/eth0/statistics/tx_bytes") {
-            if let Ok(tx) = content.trim().parse::<u64>() {
+        if let Ok(content) = fs::read_to_string("/sys/class/net/eth0/statistics/tx_bytes")
+            && let Ok(tx) = content.trim().parse::<u64>() {
                 self.current_usage.network_tx = tx;
             }
-        }
 
         Ok(())
     }
@@ -255,7 +241,7 @@ impl ContainerEnvironmentAdapter {
         // 3. 触发垃圾回收
 
         // 模拟内存清理
-        self.current_usage.memory_usage = self.current_usage.memory_usage / 2;
+        self.current_usage.memory_usage /= 2;
 
         Ok(())
     }

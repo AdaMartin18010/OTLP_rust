@@ -47,6 +47,12 @@ pub struct ConfigRepository {
     configs: Arc<DashMap<String, ConfigItem>>,
 }
 
+impl Default for ConfigRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConfigRepository {
     pub fn new() -> Self {
         Self {

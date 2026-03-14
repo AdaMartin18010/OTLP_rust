@@ -427,13 +427,13 @@ impl ResourceMonitorHandler for CpuResourceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let usage_percent;
+            
 
             // 检查CPU使用情况
             let mut sys = sysinfo::System::new_all();
             sys.refresh_cpu_all();
             let cpu = sys.global_cpu_usage();
-            usage_percent = cpu as f64;
+            let usage_percent = cpu as f64;
             details.insert(
                 "cpu_usage_percent".to_string(),
                 format!("{:.2}", usage_percent),
@@ -477,7 +477,7 @@ impl ResourceMonitorHandler for MemoryResourceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let usage_percent;
+            
 
             // 检查内存使用情况
             let mut sys = sysinfo::System::new_all();
@@ -485,7 +485,7 @@ impl ResourceMonitorHandler for MemoryResourceMonitorHandler {
             let total = sys.total_memory();
             let used = sys.used_memory();
             let free = sys.free_memory();
-            usage_percent = (used as f64 / total as f64) * 100.0;
+            let usage_percent = (used as f64 / total as f64) * 100.0;
 
             details.insert("total_memory".to_string(), total.to_string());
             details.insert("used_memory".to_string(), used.to_string());
@@ -526,13 +526,13 @@ impl ResourceMonitorHandler for DiskResourceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let state = MonitoringState::Healthy;
-            let usage_percent;
+            
 
             // 检查磁盘使用情况 - 暂时使用模拟数据（sysinfo 0.30 API变化）
             let total_space = 500u64 * 1024 * 1024 * 1024; // 假设500GB
             let used_space = 200u64 * 1024 * 1024 * 1024; // 假设200GB
             let disk_count = 2;
-            usage_percent = (used_space as f64 / total_space as f64) * 100.0;
+            let usage_percent = (used_space as f64 / total_space as f64) * 100.0;
 
             details.insert("total_space".to_string(), total_space.to_string());
             details.insert("used_space".to_string(), used_space.to_string());

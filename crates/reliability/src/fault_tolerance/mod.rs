@@ -46,6 +46,7 @@ pub use circuit_breaker_enhanced::{
 
 /// 容错配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct FaultToleranceConfig {
     /// 断路器配置
     pub circuit_breaker: CircuitBreakerConfig,
@@ -59,17 +60,6 @@ pub struct FaultToleranceConfig {
     pub fallback: FallbackConfig,
 }
 
-impl Default for FaultToleranceConfig {
-    fn default() -> Self {
-        Self {
-            circuit_breaker: CircuitBreakerConfig::default(),
-            retry: RetryConfig::default(),
-            bulkhead: BulkheadConfig::default(),
-            timeout: TimeoutConfig::default(),
-            fallback: FallbackConfig::default(),
-        }
-    }
-}
 
 /// 容错构建器
 pub struct ResilienceBuilder {
@@ -167,7 +157,7 @@ impl FaultToleranceExecutor {
         // 3. 执行带超时的操作
         let result = self
             .timeout
-            .execute(|| self.retry_policy.execute(|| operation()))
+            .execute(|| self.retry_policy.execute(&operation))
             .await;
 
         // 4. 处理结果

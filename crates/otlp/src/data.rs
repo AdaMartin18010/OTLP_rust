@@ -81,8 +81,10 @@ pub struct TraceData {
 
 /// 跨度类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum SpanKind {
     /// 内部跨度
+    #[default]
     Internal,
     /// 服务器跨度
     Server,
@@ -94,11 +96,6 @@ pub enum SpanKind {
     Consumer,
 }
 
-impl Default for SpanKind {
-    fn default() -> Self {
-        Self::Internal
-    }
-}
 
 /// 跨度状态
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -286,12 +283,14 @@ pub struct LogData {
 
 /// 日志严重程度
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum LogSeverity {
     /// 跟踪
     Trace = 1,
     /// 调试
     Debug = 5,
     /// 信息
+    #[default]
     Info = 9,
     /// 警告
     Warn = 13,
@@ -301,11 +300,6 @@ pub enum LogSeverity {
     Fatal = 21,
 }
 
-impl Default for LogSeverity {
-    fn default() -> Self {
-        Self::Info
-    }
-}
 
 impl TelemetryData {
     /// 创建新的遥测数据

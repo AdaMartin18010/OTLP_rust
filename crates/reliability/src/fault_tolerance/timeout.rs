@@ -170,7 +170,7 @@ impl Timeout {
         );
 
         UnifiedError::new(
-            &format!(
+            format!(
                 "操作 {} 超时，超时时间: {:?}",
                 self.config.name, self.config.duration
             ),

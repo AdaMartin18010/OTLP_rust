@@ -75,6 +75,7 @@ impl Default for FallbackConfig {
 
 /// 错误恢复策略
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum RecoveryStrategy {
     /// 重试策略
     Retry(RetryConfig),
@@ -83,6 +84,7 @@ pub enum RecoveryStrategy {
     /// 忽略错误
     Ignore,
     /// 传播错误
+    #[default]
     Propagate,
     /// 自定义策略
     Custom {
@@ -91,11 +93,6 @@ pub enum RecoveryStrategy {
     },
 }
 
-impl Default for RecoveryStrategy {
-    fn default() -> Self {
-        RecoveryStrategy::Propagate
-    }
-}
 
 /// 错误恢复器
 pub struct ErrorRecovery {
@@ -224,7 +221,7 @@ impl ErrorRecovery {
                 // 这里需要根据具体类型实现降级逻辑
                 // 由于泛型限制，这里返回一个通用的降级错误
                 Err(UnifiedError::new(
-                    &format!("降级处理: {}", error),
+                    format!("降级处理: {}", error),
                     ErrorSeverity::Medium,
                     "fallback_used",
                     ErrorContext::new(

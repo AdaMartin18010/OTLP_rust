@@ -291,6 +291,12 @@ pub struct EmbeddedTestFramework {
     name: String,
 }
 
+impl Default for EmbeddedTestFramework {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EmbeddedTestFramework {
     pub fn new() -> Self {
         Self {
@@ -415,6 +421,12 @@ impl EnvironmentTestFramework for EmbeddedTestFramework {
 /// 容器环境测试框架
 pub struct ContainerTestFramework {
     name: String,
+}
+
+impl Default for ContainerTestFramework {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ContainerTestFramework {

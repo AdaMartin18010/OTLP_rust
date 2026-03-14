@@ -45,12 +45,7 @@ impl<E> SpanExporter for MultiTenantExporter<E>
 where
     E: SpanExporter + std::fmt::Debug + Send + Sync,
 {
-    fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
-        // 注意: 这里不能直接捕获self，需要先克隆字段
-        // 由于tenant_id和inner都在&self中，我们需要在async move之前克隆它们
-        // 但inner是泛型，不能直接克隆，所以我们需要重新设计
-        // 暂时保持这个实现，看是否有生命周期错误
-        async move {
+    async fn export(&self, batch: Vec<SpanData>) -> Result<(), OTelSdkError> {
             // 添加租户ID到span attributes
             let enriched_batch = batch;
 
@@ -64,8 +59,7 @@ where
             //     // }
             // }
 
-            self.inner.export(enriched_batch).await
-        }
+        self.inner.export(enriched_batch).await
     }
 
     fn shutdown(&mut self) -> Result<(), OTelSdkError> {

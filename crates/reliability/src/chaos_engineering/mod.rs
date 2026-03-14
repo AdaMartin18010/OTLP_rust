@@ -26,6 +26,7 @@ pub use resilience_testing::*;
 
 /// 混沌工程配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ChaosEngineeringConfig {
     /// 是否启用混沌工程
     pub enabled: bool,
@@ -39,17 +40,6 @@ pub struct ChaosEngineeringConfig {
     pub recovery_testing: RecoveryTestingConfig,
 }
 
-impl Default for ChaosEngineeringConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false, // 默认禁用，需要显式启用
-            fault_injection: FaultInjectionConfig::default(),
-            chaos_scenarios: ChaosScenariosConfig::default(),
-            resilience_testing: ResilienceTestingConfig::default(),
-            recovery_testing: RecoveryTestingConfig::default(),
-        }
-    }
-}
 
 /// 混沌工程状态
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

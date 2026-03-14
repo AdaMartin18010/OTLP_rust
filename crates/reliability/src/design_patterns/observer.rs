@@ -250,8 +250,7 @@ impl Subject for EventBus {
         // 获取订阅了此事件类型的观察者
         let subscriber_ids = {
             let subs = self.subscriptions.read().await;
-            subs.get(&event.event_type)
-                .map(|ids| ids.clone())
+            subs.get(&event.event_type).cloned()
                 .unwrap_or_default()
         };
 

@@ -390,11 +390,10 @@ impl RaftNode {
             let index = request.prev_log_index + i as u64 + 1;
 
             // 如果存在冲突，删除冲突及之后的所有条目
-            if let Some(existing) = state.log.get(index as usize - 1) {
-                if existing.term != entry.term {
+            if let Some(existing) = state.log.get(index as usize - 1)
+                && existing.term != entry.term {
                     state.log.truncate(index as usize - 1);
                 }
-            }
 
             // 添加新条目
             if index as usize > state.log.len() {

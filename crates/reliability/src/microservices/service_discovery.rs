@@ -327,7 +327,7 @@ impl ServiceRegistry {
 
         self.instances
             .entry(service_name.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(health);
 
         tracing::info!(

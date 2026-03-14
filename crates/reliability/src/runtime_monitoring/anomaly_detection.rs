@@ -438,7 +438,7 @@ impl AnomalyDetectorHandler for StatisticalAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let anomaly_score;
+            
             let mut anomaly_detected = false;
 
             // 模拟统计异常检测
@@ -456,7 +456,7 @@ impl AnomalyDetectorHandler for StatisticalAnomalyDetectorHandler {
             details.insert("std_dev".to_string(), format!("{:.2}", std_dev));
             details.insert("z_score".to_string(), format!("{:.2}", z_score));
 
-            anomaly_score = z_score.abs();
+            let anomaly_score = z_score.abs();
 
             // 判断是否为异常（3个标准差规则）
             if z_score.abs() > 3.0 {
@@ -495,7 +495,7 @@ impl AnomalyDetectorHandler for ThresholdAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let anomaly_score;
+            
             let mut anomaly_detected = false;
 
             // 模拟阈值异常检测
@@ -506,7 +506,7 @@ impl AnomalyDetectorHandler for ThresholdAnomalyDetectorHandler {
             details.insert("current_value".to_string(), format!("{:.2}", current_value));
             details.insert("threshold".to_string(), "0.8".to_string());
 
-            anomaly_score = current_value;
+            let anomaly_score = current_value;
 
             // 判断是否超过阈值
             if current_value > 0.8 {
@@ -774,7 +774,7 @@ impl AnomalyDetectorHandler for TimeSeriesAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let anomaly_score;
+            
             let mut anomaly_detected = false;
 
             // 模拟时间序列检测
@@ -800,7 +800,7 @@ impl AnomalyDetectorHandler for TimeSeriesAnomalyDetectorHandler {
                 },
             );
 
-            anomaly_score = (trend_value + seasonality_value) / 2.0;
+            let anomaly_score = (trend_value + seasonality_value) / 2.0;
 
             // 判断是否检测到异常
             if anomaly_score > 0.75 {
@@ -843,7 +843,7 @@ impl AnomalyDetectorHandler for PatternMatchingAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let anomaly_score;
+            
             let mut anomaly_detected = false;
 
             // 模拟模式匹配检测
@@ -864,7 +864,7 @@ impl AnomalyDetectorHandler for PatternMatchingAnomalyDetectorHandler {
             );
             details.insert("confidence".to_string(), format!("{:.2}", confidence));
 
-            anomaly_score = (pattern_score + confidence) / 2.0;
+            let anomaly_score = (pattern_score + confidence) / 2.0;
 
             // 判断是否检测到异常模式
             if anomaly_score > 0.6 {
@@ -904,7 +904,7 @@ impl AnomalyDetectorHandler for NetworkTrafficAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let anomaly_score;
+            
             let mut anomaly_detected = false;
 
             // 模拟网络流量检测
@@ -929,7 +929,7 @@ impl AnomalyDetectorHandler for NetworkTrafficAnomalyDetectorHandler {
             );
 
             let raw_score = bandwidth_usage + packet_loss * 10.0;
-            anomaly_score = if raw_score > 1.0 { 1.0 } else { raw_score };
+            let anomaly_score = if raw_score > 1.0 { 1.0 } else { raw_score };
 
             // 判断是否检测到网络异常
             if anomaly_score > 0.85 {
@@ -969,7 +969,7 @@ impl AnomalyDetectorHandler for ResourceUsageAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let anomaly_score;
+            
             let mut anomaly_detected = false;
 
             // 模拟资源使用检测
@@ -992,7 +992,7 @@ impl AnomalyDetectorHandler for ResourceUsageAnomalyDetectorHandler {
                 format!("{:.0}%", disk_usage * 100.0),
             );
 
-            anomaly_score = (cpu_usage + memory_usage + disk_usage) / 3.0;
+            let anomaly_score = (cpu_usage + memory_usage + disk_usage) / 3.0;
 
             // 判断是否检测到资源异常
             if anomaly_score > 0.9 {

@@ -365,8 +365,8 @@ tracing-attributes = "0.1.31" # 追踪属性宏
 tracing-core = "0.1.36" # 追踪核心库
 log = "0.4.29" # 标准日志库
 env_logger = "0.11.9" # 环境变量日志配置
-# OpenTelemetry: 可观测性标准（统一使用 v0.31.0 - 最新稳定版本 2025年10月23日）
-tracing-opentelemetry = "0.32.1"                                       # 追踪集成 (更新: 0.32.0 -> 0.32.1, 2025-01)
+# OpenTelemetry: 可观测性标准（统一使用 v0.31.0 - 最新稳定版本 2025年10月）
+tracing-opentelemetry = "0.32.1"                                       # 追踪集成
 opentelemetry = "0.31.0"                                               # 核心API
 opentelemetry_sdk = { version = "0.31.0", features = ["rt-tokio"] }    # SDK实现
 opentelemetry-otlp = { version = "0.31.0", features = ["http-json"] }  # OTLP协议
@@ -477,9 +477,9 @@ proptest = "1.10.0" # 属性测试框架 (更新: 2025-10-27)
 # ========== AI 和机器学习 ==========
 # AI 和机器学习 - 2025年10月最新稳定版本，支持现代ML/AI应用
 # Candle: 纯Rust ML框架
-candle-core = "0.9.2"         # 核心组件
-candle-nn = "0.9.2"           # 神经网络
-candle-transformers = "0.9.2" # Transformer模型
+candle-core = "0.12.0"        # 核心组件 (升级: 0.9.2 -> 0.12.0)
+candle-nn = "0.12.0"          # 神经网络 (升级: 0.9.2 -> 0.12.0)
+candle-transformers = "0.12.0" # Transformer模型 (升级: 0.9.2 -> 0.12.0)
 # PyTorch绑定
 tch = "0.17.1" # PyTorch Rust绑定
 # 图算法

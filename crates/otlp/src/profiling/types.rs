@@ -32,6 +32,7 @@ pub struct ProfileContainer {
 
 /// Resource represents the entity producing telemetry
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct Resource {
     /// Set of attributes describing the resource
     pub attributes: HashMap<String, AttributeValue>,
@@ -334,14 +335,6 @@ impl ProfileType {
     }
 }
 
-impl Default for Resource {
-    fn default() -> Self {
-        Self {
-            attributes: HashMap::new(),
-            dropped_attributes_count: 0,
-        }
-    }
-}
 
 impl Default for InstrumentationScope {
     fn default() -> Self {

@@ -214,7 +214,7 @@ impl Bulkhead {
         );
 
         UnifiedError::new(
-            &format!("舱壁 {} 请求被拒绝，资源不足", self.config.name),
+            format!("舱壁 {} 请求被拒绝，资源不足", self.config.name),
             ErrorSeverity::High,
             "bulkhead_rejected",
             context,

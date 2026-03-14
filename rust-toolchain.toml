@@ -1,18 +1,19 @@
-# Rust 工具链配置文件 - 2025年1月最新设置
-# 支持Rust 1.92新特性和性能优化
-# 更新日志: 升级到 Rust 1.92.0
+# Rust 工具链配置文件 - 2026年3月更新
+# 支持Rust 1.94新特性和性能优化
+# 更新日志: 升级到 Rust 1.94.0
 
 [toolchain]
-# 使用最新的稳定版本 (Rust 1.92)
+# 使用最新的稳定版本 (Rust 1.94)
 channel = "stable"
-# 或者指定具体版本: channel = "1.92.0"
+# 更新日期: 2026-03-14
+# 注意: 当前系统 rustc 版本为 1.94.0
 
 # 目标平台配置
 targets = [
   "x86_64-pc-windows-msvc", # Windows 64位
 ]
 
-# 组件配置 - Rust 1.92 兼容
+# 组件配置 - Rust 1.94 兼容
 components = [
   "rustfmt",       # 代码格式化
   "clippy",        # 代码检查

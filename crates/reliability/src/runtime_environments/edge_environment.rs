@@ -10,6 +10,12 @@ use std::collections::HashMap;
 
 pub struct EdgeComputingEnvironmentAdapter;
 
+impl Default for EdgeComputingEnvironmentAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EdgeComputingEnvironmentAdapter {
     pub fn new() -> Self {
         Self

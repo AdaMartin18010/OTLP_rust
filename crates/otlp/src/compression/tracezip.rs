@@ -210,6 +210,7 @@ impl StringTable {
 
 /// Delta encoder for timestamps and IDs
 #[derive(Debug, Clone)]
+#[derive(Default)]
 struct DeltaEncoder {
     /// Last timestamp (nanoseconds)
     last_timestamp: u64,
@@ -221,16 +222,6 @@ struct DeltaEncoder {
     last_span_id: u64,
 }
 
-impl Default for DeltaEncoder {
-    fn default() -> Self {
-        Self {
-            last_timestamp: 0,
-            last_trace_id_high: 0,
-            last_trace_id_low: 0,
-            last_span_id: 0,
-        }
-    }
-}
 
 impl DeltaEncoder {
     fn new() -> Self {
@@ -307,11 +298,11 @@ impl SpanDeduplicator {
     fn is_duplicate(&mut self, span_name: &str, trace_id: (u64, u64), span_id: u64) -> bool {
         let hash = self.hash_span(span_name, trace_id, span_id);
 
-        if self.seen_hashes.contains_key(&hash) {
-            true
-        } else {
-            self.seen_hashes.insert(hash, ());
+        if let std::collections::hash_map::Entry::Vacant(e) = self.seen_hashes.entry(hash) {
+            e.insert(());
             false
+        } else {
+            true
         }
     }
 

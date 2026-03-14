@@ -77,6 +77,12 @@ pub struct OperatingSystemMonitoringStrategy {
     config: MonitoringConfig,
 }
 
+impl Default for OperatingSystemMonitoringStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OperatingSystemMonitoringStrategy {
     pub fn new() -> Self {
         Self {
@@ -142,6 +148,12 @@ impl MonitoringStrategy for OperatingSystemMonitoringStrategy {
 /// 嵌入式裸机环境监控策略
 pub struct EmbeddedBareMetalMonitoringStrategy {
     config: MonitoringConfig,
+}
+
+impl Default for EmbeddedBareMetalMonitoringStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EmbeddedBareMetalMonitoringStrategy {
@@ -211,6 +223,12 @@ pub struct ContainerMonitoringStrategy {
     config: MonitoringConfig,
 }
 
+impl Default for ContainerMonitoringStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ContainerMonitoringStrategy {
     pub fn new() -> Self {
         Self {
@@ -278,6 +296,12 @@ pub struct WebAssemblyMonitoringStrategy {
     config: MonitoringConfig,
 }
 
+impl Default for WebAssemblyMonitoringStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WebAssemblyMonitoringStrategy {
     pub fn new() -> Self {
         Self {
@@ -343,6 +367,12 @@ impl MonitoringStrategy for WebAssemblyMonitoringStrategy {
 /// 函数即服务环境监控策略
 pub struct FaaSMonitoringStrategy {
     config: MonitoringConfig,
+}
+
+impl Default for FaaSMonitoringStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FaaSMonitoringStrategy {

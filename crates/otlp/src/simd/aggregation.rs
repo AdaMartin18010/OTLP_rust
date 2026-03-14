@@ -2,10 +2,11 @@
 //!
 //! Provides vectorized implementations for common metric aggregations.
 //!
-//! ## Rust 1.92 特性应用
+//! ## Rust 1.94 特性应用
 //!
 //! - **常量泛型**: 使用常量泛型优化 SIMD 向量大小和批处理
-//! - **改进的 SIMD 支持**: 利用 Rust 1.92 的 SIMD 特性提升性能
+//! - **改进的 SIMD 支持**: 利用 Rust 1.94 的 SIMD 特性提升性能
+//! - **array_windows**: 使用 Rust 1.94 的 `array_windows` 优化滑动窗口操作
 //! - **元组收集**: 使用 `collect()` 直接收集统计结果到元组
 
 use super::CpuFeatures;

@@ -21,6 +21,7 @@ use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
 
 /// 可靠性配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ReliabilityConfig {
     /// 错误处理配置
     pub error_handling: ErrorHandlingConfig,
@@ -34,17 +35,6 @@ pub struct ReliabilityConfig {
     pub global: GlobalConfig,
 }
 
-impl Default for ReliabilityConfig {
-    fn default() -> Self {
-        Self {
-            error_handling: ErrorHandlingConfig::default(),
-            fault_tolerance: FaultToleranceConfig::default(),
-            runtime_monitoring: RuntimeMonitoringConfig::default(),
-            chaos_engineering: ChaosEngineeringConfig::default(),
-            global: GlobalConfig::default(),
-        }
-    }
-}
 
 /// 错误处理配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -381,6 +371,7 @@ impl Default for AutoRecoveryConfig {
 
 /// 混沌工程配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ChaosEngineeringConfig {
     /// 是否启用混沌工程
     pub enabled: bool,
@@ -394,17 +385,6 @@ pub struct ChaosEngineeringConfig {
     pub recovery_testing: RecoveryTestingConfig,
 }
 
-impl Default for ChaosEngineeringConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            fault_injection: FaultInjectionConfig::default(),
-            chaos_scenarios: ChaosScenariosConfig::default(),
-            resilience_testing: ResilienceTestingConfig::default(),
-            recovery_testing: RecoveryTestingConfig::default(),
-        }
-    }
-}
 
 /// 故障注入配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -601,7 +581,7 @@ impl ConfigManager {
     pub async fn load_from_file(&mut self, path: &str) -> Result<(), UnifiedError> {
         let content = tokio::fs::read_to_string(path).await.map_err(|e| {
             UnifiedError::new(
-                &format!("无法读取配置文件: {}", e),
+                format!("无法读取配置文件: {}", e),
                 ErrorSeverity::High,
                 "config",
                 ErrorContext::new(
@@ -617,7 +597,7 @@ impl ConfigManager {
 
         let config: ReliabilityConfig = toml::from_str(&content).map_err(|e| {
             UnifiedError::new(
-                &format!("无法解析配置文件: {}", e),
+                format!("无法解析配置文件: {}", e),
                 ErrorSeverity::High,
                 "config",
                 ErrorContext::new(
@@ -635,11 +615,10 @@ impl ConfigManager {
         self.config_path = Some(path.to_string());
 
         // 记录文件修改时间
-        if let Ok(metadata) = tokio::fs::metadata(path).await {
-            if let Ok(modified) = metadata.modified() {
+        if let Ok(metadata) = tokio::fs::metadata(path).await
+            && let Ok(modified) = metadata.modified() {
                 *self.last_modified.lock().unwrap() = Some(modified);
             }
-        }
 
         info!("配置文件加载成功: {}", path);
         Ok(())
@@ -649,7 +628,7 @@ impl ConfigManager {
     pub async fn save_to_file(&self, path: &str) -> Result<(), UnifiedError> {
         let content = toml::to_string_pretty(&*self.config).map_err(|e| {
             UnifiedError::new(
-                &format!("无法序列化配置: {}", e),
+                format!("无法序列化配置: {}", e),
                 ErrorSeverity::High,
                 "config",
                 ErrorContext::new(
@@ -665,7 +644,7 @@ impl ConfigManager {
 
         tokio::fs::write(path, content).await.map_err(|e| {
             UnifiedError::new(
-                &format!("无法保存配置文件: {}", e),
+                format!("无法保存配置文件: {}", e),
                 ErrorSeverity::High,
                 "config",
                 ErrorContext::new(
@@ -695,20 +674,17 @@ impl ConfigManager {
 
     /// 检查配置是否需要重新加载
     pub async fn check_reload(&mut self) -> Result<bool, UnifiedError> {
-        if let Some(path) = self.config_path.clone() {
-            if let Ok(metadata) = tokio::fs::metadata(&path).await {
-                if let Ok(modified) = metadata.modified() {
+        if let Some(path) = self.config_path.clone()
+            && let Ok(metadata) = tokio::fs::metadata(&path).await
+                && let Ok(modified) = metadata.modified() {
                     let last_modified = *self.last_modified.lock().unwrap();
-                    if let Some(last) = last_modified {
-                        if modified > last {
+                    if let Some(last) = last_modified
+                        && modified > last {
                             // 配置文件已修改，需要重新加载
                             self.load_from_file(&path).await?;
                             return Ok(true);
                         }
-                    }
                 }
-            }
-        }
         Ok(false)
     }
 

@@ -114,7 +114,7 @@ impl EmbeddedEnvironmentAdapter {
         // 3. 重置内存分配器
 
         // 模拟内存清理
-        self.current_memory_usage = self.current_memory_usage / 2;
+        self.current_memory_usage /= 2;
 
         Ok(())
     }

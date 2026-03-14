@@ -462,7 +462,7 @@ fn is_micro_vm() -> bool {
     std::env::var("FIRECRACKER_SOCKET").is_ok()
         || std::env::var("KATA_CONTAINERS").is_ok()
         || std::path::Path::new("/proc/1/environ").exists()
-            && std::fs::read_to_string("/proc/1/environ").map_or(false, |content| {
+            && std::fs::read_to_string("/proc/1/environ").is_ok_and(|content| {
                 content.contains("firecracker") || content.contains("kata")
             })
 }

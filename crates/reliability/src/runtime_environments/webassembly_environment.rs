@@ -110,7 +110,7 @@ impl WebAssemblyEnvironmentAdapter {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            return false;
+            false
         }
     }
 

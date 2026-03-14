@@ -1,6 +1,6 @@
 # OTLP Rust 项目概览
 
-[![Rust 1.92+](https://img.shields.io/badge/rust-1.92%2B-orange.svg)](https://www.rust-lang.org/)
+[![Rust 1.94+](https://img.shields.io/badge/rust-1.94%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-Perfect-brightgreen.svg)](MILESTONE_100_PERCENT_COMPLETE_2025_10_28.md)
 [![Docs](https://img.shields.io/badge/docs-100%25-brightgreen.svg)](DOCUMENTATION_ULTIMATE_ACHIEVEMENT_2025_10_28.md)
@@ -313,23 +313,24 @@ OTLP_rust/
 
 ### 1. 环境准备
 
-确保使用 Rust 1.92+ 版本：
+确保使用 Rust 1.94+ 版本：
 
 ```bash
 rustup update stable
-rustc --version  # 应显示 1.92.0 或更高版本
+rustc --version  # 应显示 1.94.0 或更高版本
 ```
 
 ### 2. 添加依赖
 
 **Cargo.toml**:
+
 ```toml
 [dependencies]
 otlp = { path = "crates/otlp" }
 opentelemetry = "0.31"
 opentelemetry-sdk = "0.31"
 opentelemetry-otlp = "0.31"
-tokio = { version = "1.49", features = ["full"] }
+tokio = { version = "1.50", features = ["full"] }
 ```
 
 ### 3. 使用增强API（推荐）
@@ -627,7 +628,7 @@ data_compression = "high"
 
 ### 核心依赖
 
-- **Rust 1.92+**: 最新语言特性支持（`!` 类型稳定化、异步闭包、展开表默认启用等）
+- **Rust 1.94+**: 最新语言特性支持（`array_windows`、TOML v1.1、Config 包含等）
 - **Tokio**: 异步运行时和工具
 - **OpenTelemetry 0.31**: 可观测性标准
 - **Tonic**: gRPC 客户端/服务器

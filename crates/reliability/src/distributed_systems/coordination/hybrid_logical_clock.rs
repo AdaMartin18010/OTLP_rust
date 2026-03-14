@@ -55,7 +55,7 @@ impl HLCTimestamp {
     pub fn to_datetime(&self) -> DateTime<Utc> {
         let secs = self.physical / 1_000_000;
         let nsecs = (self.physical % 1_000_000) * 1000;
-        DateTime::from_timestamp(secs as i64, nsecs as u32).unwrap_or_else(|| Utc::now())
+        DateTime::from_timestamp(secs as i64, nsecs as u32).unwrap_or_else(Utc::now)
     }
 
     /// Get the physical time component in milliseconds

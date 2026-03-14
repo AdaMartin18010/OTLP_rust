@@ -285,7 +285,7 @@ impl PerformanceMonitor {
     /// 更新指标历史
     fn update_metrics(&self, name: &str, value: f64) {
         let mut metrics = self.metrics.lock().unwrap();
-        let entry = metrics.entry(name.to_string()).or_insert_with(Vec::new);
+        let entry = metrics.entry(name.to_string()).or_default();
 
         entry.push(value);
 
@@ -435,7 +435,7 @@ impl PerformanceMonitorHandler for ResponseTimePerformanceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let current_value;
+            
 
             // 模拟响应时间监控
             let start_time = std::time::Instant::now();
@@ -444,7 +444,7 @@ impl PerformanceMonitorHandler for ResponseTimePerformanceMonitorHandler {
             // 简化实现，使用随机值
             use rand::Rng;
             let mut rng = rand::rng();
-            current_value = rng.random_range(10.0..2000.0); // 10ms到2s
+            let current_value = rng.random_range(10.0..2000.0); // 10ms到2s
 
             let measurement_time = start_time.elapsed();
             details.insert(
@@ -493,12 +493,12 @@ impl PerformanceMonitorHandler for ThroughputPerformanceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let current_value;
+            
 
             // 模拟吞吐量监控
             use rand::Rng;
             let mut rng = rand::rng();
-            current_value = rng.random_range(100.0..2000.0); // 100到2000请求/秒
+            let current_value = rng.random_range(100.0..2000.0); // 100到2000请求/秒
 
             details.insert(
                 "current_throughput_rps".to_string(),
@@ -542,12 +542,12 @@ impl PerformanceMonitorHandler for ErrorRatePerformanceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            let current_value;
+            
 
             // 模拟错误率监控
             use rand::Rng;
             let mut rng = rand::rng();
-            current_value = rng.random_range(0.0..10.0); // 0%到10%
+            let current_value = rng.random_range(0.0..10.0); // 0%到10%
 
             details.insert(
                 "current_error_rate_percent".to_string(),

@@ -10,6 +10,12 @@ use std::collections::HashMap;
 
 pub struct RealTimeOSEnvironmentAdapter;
 
+impl Default for RealTimeOSEnvironmentAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RealTimeOSEnvironmentAdapter {
     pub fn new() -> Self {
         Self

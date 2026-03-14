@@ -424,13 +424,13 @@ impl MaglevHash {
         if n == 2 {
             return true;
         }
-        if n % 2 == 0 {
+        if n.is_multiple_of(2) {
             return false;
         }
 
         let limit = (n as f64).sqrt() as usize;
         for i in (3..=limit).step_by(2) {
-            if n % i == 0 {
+            if n.is_multiple_of(i) {
                 return false;
             }
         }

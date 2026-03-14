@@ -157,7 +157,7 @@ impl GraduationStrategy {
 
     /// 设置权重
     pub fn with_weight(mut self, weight: f64) -> Self {
-        assert!(weight >= 0.0 && weight <= 1.0, "权重必须在0.0-1.0之间");
+        assert!((0.0..=1.0).contains(&weight), "权重必须在0.0-1.0之间");
         self.weight = weight;
         self
     }

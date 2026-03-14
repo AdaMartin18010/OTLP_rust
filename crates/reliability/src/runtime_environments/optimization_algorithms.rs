@@ -248,6 +248,12 @@ pub struct EmbeddedOptimizationAlgorithm {
     description: String,
 }
 
+impl Default for EmbeddedOptimizationAlgorithm {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EmbeddedOptimizationAlgorithm {
     pub fn new() -> Self {
         Self {
@@ -364,6 +370,12 @@ pub struct ContainerOptimizationAlgorithm {
     description: String,
 }
 
+impl Default for ContainerOptimizationAlgorithm {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ContainerOptimizationAlgorithm {
     pub fn new() -> Self {
         Self {
@@ -478,6 +490,12 @@ impl OptimizationAlgorithm for ContainerOptimizationAlgorithm {
 pub struct WebAssemblyOptimizationAlgorithm {
     name: String,
     description: String,
+}
+
+impl Default for WebAssemblyOptimizationAlgorithm {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl WebAssemblyOptimizationAlgorithm {

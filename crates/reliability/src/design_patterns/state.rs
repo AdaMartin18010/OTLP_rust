@@ -341,6 +341,12 @@ pub struct OpenState {
     timeout: Duration,
 }
 
+impl Default for OpenState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OpenState {
     pub fn new() -> Self {
         Self {
@@ -360,14 +366,10 @@ impl OpenState {
 #[async_trait::async_trait]
 impl State for OpenState {
     async fn handle(&self, _context: &mut StateContext, event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
-        match event.event_type.as_str() {
-            "timeout" => {
-                if self.opened_at.elapsed() >= self.timeout {
-                    return Ok(Some(Arc::new(HalfOpenState::new())));
-                }
+        if event.event_type.as_str() == "timeout"
+            && self.opened_at.elapsed() >= self.timeout {
+                return Ok(Some(Arc::new(HalfOpenState::new())));
             }
-            _ => {}
-        }
         Ok(None)
     }
 
@@ -380,6 +382,12 @@ impl State for OpenState {
 pub struct HalfOpenState {
     success_count: Arc<tokio::sync::RwLock<u32>>,
     success_threshold: u32,
+}
+
+impl Default for HalfOpenState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HalfOpenState {

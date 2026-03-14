@@ -362,7 +362,8 @@ impl DataUtils {
             return Vec::new();
         }
 
-        data.windows(2).map(|w| w[1] - w[0]).collect()
+        // Rust 1.94: 使用 array_windows 获得更好的性能和类型安全
+        data.array_windows().map(|[a, b]| b - a).collect()
     }
 
     /// 数据去重

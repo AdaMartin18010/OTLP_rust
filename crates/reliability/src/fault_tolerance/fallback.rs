@@ -233,7 +233,7 @@ impl Fallback {
         );
 
         UnifiedError::new(
-            &format!("降级策略 {} 失败: {}", self.config.name, message),
+            format!("降级策略 {} 失败: {}", self.config.name, message),
             ErrorSeverity::High,
             "fallback_failed",
             context,

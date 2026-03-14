@@ -27,6 +27,12 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TransactionId(pub String);
 
+impl Default for TransactionId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransactionId {
     pub fn new() -> Self {
         Self(uuid::Uuid::new_v4().to_string())

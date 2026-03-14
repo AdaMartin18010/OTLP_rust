@@ -156,7 +156,7 @@ impl CallChainTracker {
         let root_id = parent_id.unwrap_or_else(|| call_id.clone());
         self.active_chains
             .entry(root_id)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(entry);
 
         call_id

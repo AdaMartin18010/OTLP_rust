@@ -244,18 +244,16 @@ impl Transaction {
         let mut log = self.log.lock().await;
 
         // 检查是否已在写入集合中
-        if let Some(entry) = log.write_set.get(&tvar.id) {
-            if let Some(value) = entry.value.downcast_ref::<T>() {
+        if let Some(entry) = log.write_set.get(&tvar.id)
+            && let Some(value) = entry.value.downcast_ref::<T>() {
                 return Ok(value.clone());
             }
-        }
 
         // 检查是否已在读取集合中
-        if let Some(entry) = log.read_set.get(&tvar.id) {
-            if let Some(value) = entry.value.downcast_ref::<T>() {
+        if let Some(entry) = log.read_set.get(&tvar.id)
+            && let Some(value) = entry.value.downcast_ref::<T>() {
                 return Ok(value.clone());
             }
-        }
 
         // 从存储中读取
         let storage = tvar.storage.read().await;

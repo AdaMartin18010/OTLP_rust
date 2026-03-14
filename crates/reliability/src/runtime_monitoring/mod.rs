@@ -30,6 +30,7 @@ pub use resource_monitor::*;
 
 /// 监控配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct MonitoringConfig {
     /// 健康检查配置
     pub health_check: HealthCheckConfig,
@@ -43,17 +44,6 @@ pub struct MonitoringConfig {
     pub auto_recovery: AutoRecoveryConfig,
 }
 
-impl Default for MonitoringConfig {
-    fn default() -> Self {
-        Self {
-            health_check: HealthCheckConfig::default(),
-            resource_monitor: ResourceMonitorConfig::default(),
-            performance_monitor: PerformanceMonitorConfig::default(),
-            anomaly_detection: AnomalyDetectionConfig::default(),
-            auto_recovery: AutoRecoveryConfig::default(),
-        }
-    }
-}
 
 /// 监控状态
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -250,13 +240,11 @@ impl MonitoringManager {
         anomaly_detection: &AnomalyDetectionResult,
         auto_recovery: &AutoRecoveryResult,
     ) -> MonitoringState {
-        let states = vec![
-            health_check.state.clone(),
+        let states = [health_check.state.clone(),
             resource_monitor.state.clone(),
             performance_monitor.state.clone(),
             anomaly_detection.state.clone(),
-            auto_recovery.state.clone(),
-        ];
+            auto_recovery.state.clone()];
 
         // 返回最严重的状态
         if states.contains(&MonitoringState::Critical) {

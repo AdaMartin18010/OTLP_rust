@@ -589,7 +589,7 @@ impl FaultToleranceConfigManager {
         );
 
         UnifiedError::new(
-            &format!("文件操作失败: {} - {}", path, error),
+            format!("文件操作失败: {} - {}", path, error),
             ErrorSeverity::High,
             "file_io",
             context,
@@ -610,7 +610,7 @@ impl FaultToleranceConfigManager {
         );
 
         UnifiedError::new(
-            &format!("配置解析失败: {} - {}", path, error),
+            format!("配置解析失败: {} - {}", path, error),
             ErrorSeverity::High,
             "config_parse",
             context,
@@ -631,7 +631,7 @@ impl FaultToleranceConfigManager {
         );
 
         UnifiedError::new(
-            &format!("配置序列化失败: {}", error),
+            format!("配置序列化失败: {}", error),
             ErrorSeverity::High,
             "config_serialize",
             context,

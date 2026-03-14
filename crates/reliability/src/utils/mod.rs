@@ -183,7 +183,7 @@ where
             Ok(value) => Ok(value),
             Err(error) => {
                 let unified_error = UnifiedError::new(
-                    &format!("{}: {}", context, error),
+                    format!("{}: {}", context, error),
                     ErrorSeverity::Medium,
                     "operation",
                     ErrorContext::new(

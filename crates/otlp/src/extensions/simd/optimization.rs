@@ -51,7 +51,7 @@ pub fn simd_optimize_batch(batch: Vec<SpanData>, cpu_features: &CpuFeatures) -> 
 /// 
 /// 注意: 此函数目前未使用，保留用于将来SIMD属性优化功能
 #[allow(dead_code)]
-pub fn simd_optimize_attributes(batch: &mut Vec<SpanData>) {
+pub fn simd_optimize_attributes(batch: &mut [SpanData]) {
     // 使用SIMD优化属性处理
     // 例如：批量比较attribute keys，批量编码values等
 

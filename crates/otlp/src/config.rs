@@ -43,8 +43,10 @@ pub fn validate_timeout(timeout: Duration) -> bool {
 
 /// OTLP传输协议类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum TransportProtocol {
     /// gRPC协议
+    #[default]
     Grpc,
     /// HTTP/JSON协议
     Http,
@@ -52,11 +54,6 @@ pub enum TransportProtocol {
     HttpProtobuf,
 }
 
-impl Default for TransportProtocol {
-    fn default() -> Self {
-        Self::Grpc
-    }
-}
 
 impl std::fmt::Display for TransportProtocol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -70,8 +67,10 @@ impl std::fmt::Display for TransportProtocol {
 
 /// OTLP压缩算法
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum Compression {
     /// 无压缩
+    #[default]
     None,
     /// Gzip压缩
     Gzip,
@@ -81,11 +80,6 @@ pub enum Compression {
     Zstd,
 }
 
-impl Default for Compression {
-    fn default() -> Self {
-        Self::None
-    }
-}
 
 /// 批处理配置
 #[derive(Debug, Clone, Serialize, Deserialize)]

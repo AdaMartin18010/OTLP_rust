@@ -219,6 +219,7 @@ pub struct DataEntry {
 
 /// 写入选项
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct WriteOptions {
     /// 一致性级别（覆盖默认配置）
     pub consistency_level: Option<ConsistencyLevel>,
@@ -228,18 +229,10 @@ pub struct WriteOptions {
     pub vector_clock: Option<VectorClock>,
 }
 
-impl Default for WriteOptions {
-    fn default() -> Self {
-        Self {
-            consistency_level: None,
-            timeout: None,
-            vector_clock: None,
-        }
-    }
-}
 
 /// 读取选项
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct ReadOptions {
     /// 一致性级别
     pub consistency_level: Option<ConsistencyLevel>,
@@ -249,15 +242,6 @@ pub struct ReadOptions {
     pub read_all_versions: bool,
 }
 
-impl Default for ReadOptions {
-    fn default() -> Self {
-        Self {
-            consistency_level: None,
-            timeout: None,
-            read_all_versions: false,
-        }
-    }
-}
 
 /// 复制统计信息
 #[derive(Debug, Clone, Default)]
