@@ -1,126 +1,75 @@
-# Cargo 配置文件 - Rust 1.90 优化设置
-# 2025年10月20日最新配置，支持Rust 1.90新特性和性能优化
-# 更新日志: bitflags v2.10.0, syn v2.0.107
+# Cargo 配置文件 - Rust 1.94 特性
+# 参考: https://doc.rust-lang.org/cargo/reference/config.html
+
+# Rust 1.94: Config 包含功能
+# 可以包含其他配置文件，支持 optional 标记
+# include = [
+#     { path = "common.toml" },
+#     { path = "local.toml", required = false },
+# ]
 
 [build]
-# 构建优化设置 - Release构建专用
-# 注意: 这些设置会影响所有构建，包括开发构建
-# 如果需要更快的开发构建，请使用 cargo build 而不添加 --release
-rustflags = [
-  # CPU指令集优化 - 2025年最新设置
-  "-C",
-  "target-cpu=native", # 针对当前CPU优化
-  # "-C", "target-feature=+crt-static",  # 静态链接C运行时（Windows MSVC默认）
+# 默认目标平台
+target = "x86_64-pc-windows-msvc"
 
-  # Rust 1.90 新特性优化 - SIMD指令集
-  # 注意: 这些指令集在现代CPU上广泛支持，但会影响可移植性
-  # "-C", "target-feature=+avx2,+fma",   # 启用AVX2和FMA指令
-  # "-C", "target-feature=+bmi2,+popcnt", # 启用BMI2和POPCNT指令
-  # "-C", "target-feature=+sse4.2",      # 启用SSE4.2指令集（已包含在native中）
-]
+# 使用所有 CPU 核心进行编译 (0 表示自动，但在 config 中需要指定具体值或省略)
+# jobs = 4
 
-# 网络配置
-[net]
-retry = 2
-git-fetch-with-cli = true
+[profile.release]
+# 优化级别
+opt-level = 3
+# 链接时优化
+lto = "fat"
+# 代码生成单元
+codegen-units = 1
+# 去除调试符号
+strip = "symbols"
+# Panic 时立即终止
+panic = "abort"
 
-# 注册表配置
+[profile.dev]
+# 开发环境优化
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+incremental = true
+codegen-units = 256
+
+# Rust 1.94: TOML v1.1 支持
+# 可以使用多行内联表和尾随逗号
 [registries.crates-io]
 protocol = "sparse"
 
-# 源配置 - 使用默认的 sparse 协议
-# [source.crates-io] 配置已移除，使用默认设置
+[net]
+# 重试次数
+retry = 3
+# 使用 git 协议
+git-fetch-with-cli = true
 
-# 环境变量
 [env]
-# Rust 1.90 优化环境变量
+# 环境变量设置
+RUST_BACKTRACE = "1"
 RUST_LOG = "info"
-CARGO_INCREMENTAL = "1"
-CARGO_NET_RETRY = "2"
 
-# 目标配置 - Windows MSVC
+# 工具链配置
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy", "rust-src"]
+
+# 针对特定目标的配置
 [target.x86_64-pc-windows-msvc]
-rustflags = [
-  "-C",
-  "target-cpu=native", # 针对当前CPU优化
-  # Windows MSVC默认使用动态链接，无需强制静态链接
-]
+# Windows 特定链接器参数
+linker = "rust-lld.exe"
+rustflags = ["-C", "link-arg=/NOLOGO"]
 
-# Linux x86_64 目标配置
 [target.x86_64-unknown-linux-gnu]
-rustflags = [
-  "-C",
-  "target-cpu=native", # 针对当前CPU优化
-  # "-C", "target-feature=+crt-static",  # 静态链接（可选）
-  # "-C", "link-arg=-static",            # 完全静态链接（可选，需要musl）
-]
+# Linux 特定配置
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
-# Linux ARM64 目标配置
-[target.aarch64-unknown-linux-gnu]
-rustflags = [
-  "-C",
-  "target-cpu=native", # 针对当前CPU优化
-  # "-C", "target-feature=+crt-static",  # 静态链接（可选）
-  # "-C", "link-arg=-static",            # 完全静态链接（可选）
-]
-
-# 别名配置 - 精简版，保留最常用的别名
-[alias]
-# 开发别名
-dev = "run --bin"
-test-lib = "test --lib"
-check-all = "check --all-targets"
-build-release = "build --release"
-
-# 性能测试别名
-bench-all = "bench --all"
-profile = "build --release --profile=bench"
-
-# 清理别名
-clean-all = "clean && cargo clean --target-dir"
-
-# 更新别名
-update-all = "update && cargo update --workspace"
-
-# 安全检查别名
-audit = "audit --deny warnings"
-security = "audit --deny warnings && cargo deny check"
-
-# 文档生成别名
-docs = "doc --all --no-deps --open"
-docs-all = "doc --all --no-deps --document-private-items --open"
-
-# 格式化别名
-fmt-all = "fmt --all"
-fmt-check = "fmt --all -- --check"
-
-# 代码检查别名
-clippy-all = "clippy --all-targets --all-features -- -D warnings"
-clippy-pedantic = "clippy --all-targets --all-features -- -W clippy::pedantic -W clippy::nursery -W clippy::cargo"
-
-# 测试别名
-test-all = "test --all --all-features"
-test-integration = "test --test"
-test-unit = "test --lib --bins"
-
-# 发布别名
-publish-check = "publish --all --dry-run"
-release = "build --release && cargo test --release"
-
-# 工作区别名
-ws-build = "build --workspace"
-ws-test = "test --workspace"
-ws-check = "check --workspace"
-ws-clippy = "clippy --workspace --all-targets --all-features -- -D warnings"
-
-# 依赖管理别名
-deps = "tree --duplicates"
-deps-update = "update --workspace"
-deps-outdated = "outdated --workspace"
-
-# 性能分析别名
-perf = "build --release --profile=bench && cargo bench"
-
-# 跨平台编译别名
-cross-build = "build --target"
-cross-test = "test --target"
+# Rust 1.94: 使用 include 共享配置
+# 可以取消下面的注释来使用
+# include = [
+#     { path = "../shared-cargo-config.toml", required = false },
+# ]

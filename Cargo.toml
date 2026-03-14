@@ -6,7 +6,7 @@ members = ["crates/otlp", "crates/reliability"]
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.92" # 使用最新稳定版本 (Rust 1.92.0)
+rust-version = "1.94" # 使用最新稳定版本 (Rust 1.94.0)
 
 [profile.release]
 

@@ -17,10 +17,20 @@
 #![allow(clippy::overly_complex_bool_expr)]
 #![allow(clippy::const_is_empty)]
 #![allow(clippy::assertions_on_constants)]
-//! # OpenTelemetry Protocol (OTLP) Implementation for Rust 1.92
+//! # OpenTelemetry Protocol (OTLP) Implementation for Rust 1.94
 //!
-//! 本库提供了基于Rust 1.92语言特性的OpenTelemetry协议(OTLP)完整实现，
+//! 本库提供了基于Rust 1.94语言特性的OpenTelemetry协议(OTLP)完整实现，
 //! 支持同步和异步结合的遥测数据收集、处理和传输。
+//!
+//! ## Rust 1.94 特性应用
+//!
+//! - **array_windows**: 用于序列差分和异常检测算法
+//! - **LazyLock/LazyCell**: 用于全局配置和注册表延迟初始化
+//! - **element_offset**: 用于内存优化和批处理
+//! - **数学常量**: EULER_GAMMA, GOLDEN_RATIO 用于采样率调整
+//! - **const mul_add**: 用于编译时数学计算
+//! - **AVX-512 FP16**: 用于高性能向量化计算（x86_64）
+//! - **NEON FP16**: 用于ARM高性能计算（aarch64）
 //!
 //! ## 设计理念
 //!
@@ -351,6 +361,9 @@ pub mod optimization;
 
 // Rust 1.92 特性优化
 pub mod rust_1_92_optimizations; // Rust 1.92 特性优化实现
+
+// Rust 1.94 特性展示与应用
+pub mod rust_194_features; // Rust 1.94 新特性完整展示
 
 // 客户端增强功能
 #[cfg(feature = "client-enhancements")]
