@@ -1,7 +1,7 @@
 # OTLP Collector自动伸缩策略指南
 
-> **版本**: 2.0  
-> **日期**: 2025年10月17日  
+> **版本**: 2.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -70,10 +70,10 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: otel-collector
-  
+
   minReplicas: 2
   maxReplicas: 10
-  
+
   metrics:
   - type: Resource
     resource:
@@ -81,7 +81,7 @@ spec:
       target:
         type: Utilization
         averageUtilization: 70  # 目标70% CPU使用率
-  
+
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 60  # 1分钟稳定期
@@ -93,7 +93,7 @@ spec:
         value: 2  # 或增加2个Pod
         periodSeconds: 60
       selectPolicy: Max  # 选择最激进的策略
-    
+
     scaleDown:
       stabilizationWindowSeconds: 300  # 5分钟稳定期
       policies:
@@ -119,10 +119,10 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: otel-collector
-  
+
   minReplicas: 2
   maxReplicas: 20
-  
+
   metrics:
   # CPU基线
   - type: Resource
@@ -131,7 +131,7 @@ spec:
       target:
         type: Utilization
         averageUtilization: 70
-  
+
   # 自定义指标：接收速率
   - type: Pods
     pods:
@@ -140,7 +140,7 @@ spec:
       target:
         type: AverageValue
         averageValue: "10000"  # 每Pod处理10k spans/s
-  
+
   # 自定义指标：队列使用率
   - type: Pods
     pods:
@@ -180,7 +180,7 @@ rules:
       matches: "^(.*)$"
       as: "otelcol_receiver_accepted_spans_rate"
     metricsQuery: 'sum(rate(<<.Series>>{<<.LabelMatchers>>}[1m])) by (<<.GroupBy>>)'
-  
+
   # 队列使用率
   - seriesQuery: 'otelcol_exporter_queue_size'
     resources:
@@ -226,7 +226,7 @@ behavior:
       periodSeconds: 60
     # 选择最大值（更激进）
     selectPolicy: Max
-  
+
   scaleDown:
     policies:
     # 策略1: 每分钟最多减少10%

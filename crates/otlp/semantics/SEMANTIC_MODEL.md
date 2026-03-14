@@ -11,13 +11,13 @@
 
 ## 📝 Resource 語義（核心屬性）
 
-- service.*、deployment.*、k8s.*、cloud.*、host.*、process.*、telemetry.*
+- service._、deployment._、k8s._、cloud._、host._、process._、telemetry.*
 - 要求：四支柱共用同一 Resource 標籤，確保跨信號關聯
 
 ## 💡 Traces 語義
 
 - 因果鏈：TraceId → SpanId → ParentId；跨進程/跨主機關聯
-- 常用屬性：net.*、http.*、db.*、messaging.*、rpc.* 等語義約定
+- 常用屬性：net._、http._、db._、messaging._、rpc.* 等語義約定
 
 ## 🔧 Metrics 語義
 

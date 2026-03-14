@@ -1,7 +1,7 @@
 # OTLP Collector 运维手册
 
-> **版本**: 2.0  
-> **日期**: 2025年10月17日  
+> **版本**: 2.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -259,7 +259,7 @@ processors:
     timeout: 10s
     send_batch_size: 1000
     send_batch_max_size: 1500
-  
+
   # 简化OTTL规则
   transform:
     error_mode: ignore  # 忽略非关键错误

@@ -20,6 +20,7 @@
 - ✅ 创建 `.github/workflows/dependencies.yml` 依赖检查工作流
 
 **文件**:
+
 - `coverage.toml` ✅
 - `.github/workflows/ci.yml` ✅
 - `.github/workflows/coverage.yml` ✅
@@ -89,6 +90,7 @@
 **预计完成**: 2025-01-20
 
 **任务清单**:
+
 - [ ] 创建 `tests/integration/ebpf_e2e_test.rs`
 - [ ] 创建 `tests/integration/otlp_export_test.rs`
 - [ ] 创建 `tests/integration/scenario_test.rs`
@@ -99,6 +101,7 @@
 **预计完成**: 2025-01-20
 
 **任务清单**:
+
 - [ ] 完善 `benches/ebpf_performance.rs` 中的TODO项
 - [ ] 创建 `benches/comprehensive_benchmarks.rs`
 - [ ] 生成性能对比报告
@@ -110,18 +113,21 @@
 ### eBPF功能实现
 
 #### Phase 2: 基础实现
+
 - [ ] 实现 `loader.rs` 实际加载逻辑
 - [ ] 实现 `probes.rs` 探针附加逻辑
 - [ ] 实现 `events.rs` 事件处理逻辑
 - [ ] 实现 `maps.rs` Maps读写逻辑
 
 #### Phase 3: 核心功能
+
 - [ ] 实现 CPU 性能分析完整功能
 - [ ] 实现网络追踪完整功能
 - [ ] 实现系统调用追踪完整功能
 - [ ] 实现内存追踪完整功能
 
 #### Phase 4: 集成和测试
+
 - [ ] OpenTelemetry 集成
 - [ ] OTLP 导出
 - [ ] 完整测试套件

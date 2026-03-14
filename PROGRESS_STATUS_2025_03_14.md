@@ -44,6 +44,7 @@
 ### 1. 代码优化
 
 #### array_windows 应用
+
 ```rust
 // 优化前
 data.windows(2).map(|w| w[1] - w[0]).collect()
@@ -55,6 +56,7 @@ data.array_windows().map(|[a, b]| b - a).collect()
 **位置**: `crates/model/src/utils.rs:365`
 
 #### SIMD 文档更新
+
 - 更新 SIMD 模块文档，添加 Rust 1.94 特性说明
 
 ### 2. Clippy 修复统计
@@ -78,11 +80,13 @@ data.array_windows().map(|[a, b]| b - a).collect()
 ## 遇到的阻塞
 
 ### 1. 测试执行 - 权限问题
+
 **问题**: `rust-lld: error: failed to write output: permission denied`
 **原因**: 之前的测试进程可能仍在运行，占用文件
 **解决**: 需要清理进程或重启后重试
 
 ### 2. OpenTelemetry 版本
+
 **问题**: crates.io 上 0.32/0.33 未发布
 **状态**: 已确认 0.31.0 是当前最新可用版本
 **决策**: 保持当前版本，等待上游发布
@@ -159,6 +163,6 @@ data.array_windows().map(|[a, b]| b - a).collect()
 
 ---
 
-**报告时间**: 2026-03-14  
-**推进状态**: 🔄 持续推进中  
+**报告时间**: 2026-03-14
+**推进状态**: 🔄 持续推进中
 **预计完成**: 2026-03-15

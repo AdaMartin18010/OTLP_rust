@@ -1,7 +1,7 @@
 # 安全与合规完整指南
 
-> **版本**: 1.0  
-> **日期**: 2025年10月17日  
+> **版本**: 1.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -120,28 +120,28 @@ security_principles:
       - 传输加密 + 存储加密
       - 认证 + 授权 + 审计
       - 网络隔离 + 应用隔离
-  
+
   2_least_privilege:
     description: "最小权限,只授予必要的权限"
     examples:
       - Collector只读配置
       - 应用只能写入Traces
       - 查询用户只读后端
-  
+
   3_zero_trust:
     description: "零信任,不信任任何来源"
     examples:
       - 内部流量也加密
       - 每次请求都认证
       - 持续验证
-  
+
   4_secure_by_default:
     description: "默认安全,安全配置为默认"
     examples:
       - 默认启用TLS
       - 默认脱敏PII
       - 默认最小权限
-  
+
   5_privacy_by_design:
     description: "隐私设计,从设计开始保护隐私"
     examples:
@@ -235,17 +235,17 @@ receivers:
           cert_file: /certs/server.crt
           key_file: /certs/server.key
           client_ca_file: /certs/ca.crt  # mTLS
-          
+
           # TLS版本
           min_version: "1.3"
           max_version: "1.3"
-          
+
           # 加密套件
           cipher_suites:
             - TLS_AES_128_GCM_SHA256
             - TLS_AES_256_GCM_SHA384
             - TLS_CHACHA20_POLY1305_SHA256
-          
+
           # 客户端认证
           client_auth_type: RequireAndVerifyClientCert
 
@@ -298,12 +298,12 @@ elasticsearch:
   xpack.security.transport.ssl.key: /certs/node.key
   xpack.security.transport.ssl.certificate: /certs/node.crt
   xpack.security.transport.ssl.certificate_authorities: ["/certs/ca.crt"]
-  
+
   # HTTP加密
   xpack.security.http.ssl.enabled: true
   xpack.security.http.ssl.key: /certs/node.key
   xpack.security.http.ssl.certificate: /certs/node.crt
-  
+
   # 索引加密(需要企业版)
   xpack.security.encryption.enabled: true
   xpack.security.encryption.key: "your-encryption-key"
@@ -331,7 +331,7 @@ s3_storage:
   server_side_encryption:
     type: AES256  # 或 aws:kms
     kms_key_id: arn:aws:kms:region:account:key/key-id
-  
+
   # Bucket策略强制加密
   bucket_policy:
     effect: Deny
@@ -415,10 +415,10 @@ extensions:
   oidc:
     issuer_url: https://idp.example.com
     audience: otel-collector
-    
+
     # JWT验证
     jwks_url: https://idp.example.com/.well-known/jwks.json
-    
+
     # Claim映射
     username_claim: email
     groups_claim: groups
@@ -498,7 +498,7 @@ spec:
             - --http-address=0.0.0.0:4180
           ports:
             - containerPort: 4180
-        
+
         # Jaeger Query
         - name: jaeger-query
           image: jaegertracing/jaeger-query:latest
@@ -536,22 +536,22 @@ pii_types:
     - 护照号
     - 驾照号
     - 社保号
-  
+
   financial:
     - 信用卡号
     - 银行账号
     - 交易记录
-  
+
   health:
     - 病历号
     - 诊断信息
     - 药物信息
-  
+
   location:
     - 精确GPS坐标
     - 家庭地址
     - IP地址(某些场景)
-  
+
   biometric:
     - 指纹
     - 面部识别数据
@@ -573,29 +573,29 @@ processors:
           - delete_key(attributes, "user.email")
           - delete_key(attributes, "user.phone")
           - delete_key(attributes, "credit_card")
-          
+
           # 2. 正则匹配删除
           - delete_matching_keys(attributes, ".*password.*")
           - delete_matching_keys(attributes, ".*token.*")
           - delete_matching_keys(attributes, ".*secret.*")
-          
+
           # 3. 哈希化
           - set(attributes["user.id"], SHA256(attributes["user.id"]))
             where attributes["user.id"] != nil
-          
+
           # 4. 掩码(保留部分)
-          - set(attributes["phone"], 
+          - set(attributes["phone"],
                 Concat("***-****-", Substring(attributes["phone"], -4, 4)))
             where attributes["phone"] != nil
-          
+
           # 5. 泛化(降低精度)
-          - set(attributes["age_group"], 
+          - set(attributes["age_group"],
                 Int(attributes["age"]) / 10 * 10)
             where attributes["age"] != nil
           - delete_key(attributes, "age")
-          
+
           # 6. SQL脱敏(截断)
-          - set(attributes["db.statement"], 
+          - set(attributes["db.statement"],
                 Substring(attributes["db.statement"], 0, 1000))
             where Len(attributes["db.statement"]) > 1000
 
@@ -628,20 +628,20 @@ impl SensitiveDataFilter {
             credit_card_regex: Regex::new(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b").unwrap(),
         }
     }
-    
+
     // 脱敏字符串
     pub fn sanitize(&self, input: &str) -> String {
         let mut output = input.to_string();
-        
+
         // 脱敏邮箱
         output = self.email_regex.replace_all(&output, "[EMAIL]").to_string();
-        
+
         // 脱敏电话
         output = self.phone_regex.replace_all(&output, "[PHONE]").to_string();
-        
+
         // 脱敏信用卡
         output = self.credit_card_regex.replace_all(&output, "[CARD]").to_string();
-        
+
         output
     }
 }
@@ -657,7 +657,7 @@ impl opentelemetry::sdk::trace::SpanProcessor for SanitizingSpanProcessor {
         // 脱敏Span名称
         let sanitized_name = self.filter.sanitize(span.name());
         span.update_name(sanitized_name);
-        
+
         // 脱敏属性
         for (key, value) in span.attributes_mut() {
             if let Some(string_value) = value.as_str() {
@@ -665,18 +665,18 @@ impl opentelemetry::sdk::trace::SpanProcessor for SanitizingSpanProcessor {
                 *value = opentelemetry::Value::String(sanitized.into());
             }
         }
-        
+
         self.inner.on_start(span, cx);
     }
-    
+
     fn on_end(&self, span: opentelemetry::sdk::trace::SpanData) {
         self.inner.on_end(span);
     }
-    
+
     fn force_flush(&self) -> opentelemetry::trace::TraceResult<()> {
         self.inner.force_flush()
     }
-    
+
     fn shutdown(&mut self) -> opentelemetry::trace::TraceResult<()> {
         self.inner.shutdown()
     }
@@ -699,7 +699,7 @@ attribute_whitelist:
     - db.system
     - db.operation
     - error.type
-  
+
   # 禁止的属性
   denied_attributes:
     - user.email
@@ -738,22 +738,22 @@ audit_log_contents:
     - 登录成功/失败
     - Token颁发/撤销
     - 证书验证结果
-  
+
   authorization:
     - 权限检查结果
     - 访问拒绝事件
     - 权限变更
-  
+
   data_access:
     - Traces查询(who, when, what)
     - 配置读取/修改
     - 敏感数据访问
-  
+
   configuration:
     - Collector配置变更
     - 采样率调整
     - 路由规则修改
-  
+
   security_events:
     - 异常访问模式
     - 暴力破解尝试
@@ -835,13 +835,13 @@ impl AuditLogger {
                 user_agent: user.user_agent.clone(),
             },
         };
-        
+
         info!("AUDIT: {}", serde_json::to_string(&audit_log).unwrap());
-        
+
         // 发送到审计日志系统(如Elasticsearch)
         self.send_to_audit_system(&audit_log);
     }
-    
+
     pub fn log_security_event(&self, event_type: &str, details: &str) {
         warn!("SECURITY_EVENT: type={} details={}", event_type, details);
         // 触发告警
@@ -859,19 +859,19 @@ security_alerts:
       rate(audit_log_authentication_failures[5m]) > 10
     severity: warning
     description: "认证失败次数激增"
-  
+
   - name: UnauthorizedAccessAttempt
     condition: |
       audit_log_authorization_denied > 0
     severity: critical
     description: "未授权访问尝试"
-  
+
   - name: SensitiveDataAccess
     condition: |
       audit_log_sensitive_data_access{user_role!="admin"} > 0
     severity: high
     description: "非管理员访问敏感数据"
-  
+
   - name: ConfigurationChanged
     condition: |
       audit_log_configuration_changes > 0
@@ -891,28 +891,28 @@ gdpr_requirements:
     - 只采集必要的遥测数据
     - 避免采集不必要的PII
     - 定期审查数据采集范围
-  
+
   purpose_limitation:
     - 明确数据使用目的(可观测性)
     - 不得用于其他目的
     - 文档化数据处理流程
-  
+
   storage_limitation:
     - 定义数据保留期(如30天)
     - 自动删除过期数据
     - 例外情况(如审计)需文档化
-  
+
   data_subject_rights:
     - 访问权: 提供数据导出功能
     - 删除权: 支持数据删除请求
     - 更正权: 支持数据更正(如果适用)
-  
+
   security:
     - 传输加密(TLS 1.3)
     - 存储加密(AES-256)
     - 访问控制(RBAC)
     - 审计日志
-  
+
   data_breach:
     - 72小时内报告
     - 事件响应计划
@@ -957,7 +957,7 @@ pub async fn handle_deletion_request(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 1. 验证请求
     verify_deletion_request(user_id).await?;
-    
+
     // 2. 查询相关数据
     let query = json!({
         "query": {
@@ -966,27 +966,27 @@ pub async fn handle_deletion_request(
             }
         }
     });
-    
+
     // 3. 删除Traces
     es_client
         .delete_by_query(DeleteByQueryParts::Index(&["jaeger-span-*"]))
         .body(query.clone())
         .send()
         .await?;
-    
+
     // 4. 删除Logs
     es_client
         .delete_by_query(DeleteByQueryParts::Index(&["logs-*"]))
         .body(query)
         .send()
         .await?;
-    
+
     // 5. 记录审计日志
     audit_logger.log_deletion(user_id);
-    
+
     // 6. 通知用户
     notify_user_deletion_complete(user_id).await?;
-    
+
     Ok(())
 }
 ```
@@ -999,20 +999,20 @@ hipaa_requirements:
     - 唯一用户ID
     - 自动登出
     - 加密和解密控制
-  
+
   audit_controls:
     - 记录所有PHI访问
     - 审计日志不可篡改
     - 定期审查
-  
+
   integrity:
     - 数据完整性验证
     - 防篡改机制
-  
+
   transmission_security:
     - 传输加密(TLS 1.3)
     - 完整性检查
-  
+
   phi_minimization:
     - 脱敏PHI数据
     - 最小化PHI采集
@@ -1027,22 +1027,22 @@ soc2_requirements:
     - 加密
     - 漏洞管理
     - 事件响应
-  
+
   availability:
     - 高可用架构
     - 备份和恢复
     - 监控和告警
-  
+
   processing_integrity:
     - 数据验证
     - 错误处理
     - 质量保证
-  
+
   confidentiality:
     - 数据分类
     - 加密
     - 访问限制
-  
+
   privacy:
     - PII保护
     - 同意管理
@@ -1066,11 +1066,11 @@ spec:
   podSelector:
     matchLabels:
       app: otel-collector
-  
+
   policyTypes:
     - Ingress
     - Egress
-  
+
   ingress:
     # 只允许应用命名空间访问
     - from:
@@ -1082,7 +1082,7 @@ spec:
           port: 4317
         - protocol: TCP
           port: 4318
-    
+
     # 允许Prometheus监控
     - from:
         - namespaceSelector:
@@ -1091,7 +1091,7 @@ spec:
       ports:
         - protocol: TCP
           port: 8888
-  
+
   egress:
     # 只允许访问后端存储
     - to:
@@ -1104,7 +1104,7 @@ spec:
       ports:
         - protocol: TCP
           port: 4317
-    
+
     # 允许DNS
     - to:
         - namespaceSelector:
@@ -1134,11 +1134,11 @@ spec:
         runAsNonRoot: true
         runAsUser: 65534  # nobody
         fsGroup: 65534
-      
+
       containers:
         - name: collector
           image: otel/opentelemetry-collector-contrib:0.89.0
-          
+
           # 安全上下文
           securityContext:
             allowPrivilegeEscalation: false
@@ -1150,7 +1150,7 @@ spec:
                 - ALL
             seccompProfile:
               type: RuntimeDefault
-          
+
           # 只读根文件系统,需要挂载可写目录
           volumeMounts:
             - name: config
@@ -1160,7 +1160,7 @@ spec:
               mountPath: /tmp
             - name: cache
               mountPath: /var/cache
-      
+
       volumes:
         - name: config
           configMap:
@@ -1193,7 +1193,7 @@ image_scanning:
     - Trivy
     - Clair
     - Snyk
-  
+
   policy:
     - 阻止CRITICAL漏洞
     - 警告HIGH漏洞
@@ -1208,13 +1208,13 @@ vulnerability_management:
     frequency: daily
     tools: [Trivy, Dependabot]
     scope: [images, dependencies]
-  
+
   patching:
     critical: 24h
     high: 7d
     medium: 30d
     low: 90d
-  
+
   exceptions:
     - 需要批准
     - 有缓解措施
@@ -1283,19 +1283,19 @@ data_breach_response:
     - 禁用泄露的凭证
     - 收集证据
     - 通知安全团队
-  
+
   short_term_24h:
     - 评估泄露范围
     - 确定根因
     - 通知受影响用户
     - 监管机构报告(GDPR: 72h)
-  
+
   medium_term_1week:
     - 修复漏洞
     - 强化安全措施
     - 公开声明(如需要)
     - 法律咨询
-  
+
   long_term:
     - 事后分析
     - 流程改进
@@ -1315,12 +1315,12 @@ drill_schedule:
       - 数据泄露
       - 勒索软件
       - 内部威胁
-  
+
   red_team_exercise:
     frequency: annually
     scope: 模拟真实攻击
     follow_up: 修复发现的问题
-  
+
   disaster_recovery:
     frequency: semi-annually
     scenarios:

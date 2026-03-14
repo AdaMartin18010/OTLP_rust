@@ -1,6 +1,6 @@
 # 增强API快速开始指南
 
-**版本**: v0.6.0  
+**版本**: v0.6.0
 **日期**: 2025年1月13日
 
 ---
@@ -10,6 +10,7 @@
 ### 步骤1: 添加依赖
 
 **Cargo.toml**:
+
 ```toml
 [dependencies]
 otlp = { path = "crates/otlp" }
@@ -37,10 +38,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建span
     let span = tracer.start("my-operation");
     span.set_attribute("key".into(), "value".into());
-    
+
     // 业务逻辑
     println!("Operation executed");
-    
+
     drop(span);
     Ok(())
 }

@@ -24,6 +24,7 @@
 ### 1. 测试覆盖率工具配置
 
 **文件创建**:
+
 - ✅ `coverage.toml` - Tarpaulin配置文件
 - ✅ `.github/workflows/ci.yml` - CI工作流
 - ✅ `.github/workflows/coverage.yml` - 覆盖率工作流
@@ -31,6 +32,7 @@
 - ✅ `.github/workflows/dependencies.yml` - 依赖检查工作流
 
 **功能**:
+
 - 自动化测试运行
 - 测试覆盖率报告生成
 - 安全审计自动化
@@ -39,6 +41,7 @@
 ### 2. eBPF模块单元测试
 
 **测试文件**:
+
 - ✅ `tests/ebpf/loader_test.rs` - 10个测试
 - ✅ `tests/ebpf/probes_test.rs` - 10个测试
 - ✅ `tests/ebpf/maps_test.rs` - 10个测试
@@ -46,6 +49,7 @@
 - ✅ `tests/ebpf/profiling_test.rs` - 6个测试
 
 **覆盖功能**:
+
 - Loader: 创建、加载、验证、系统支持检查
 - Probes: KProbe、UProbe、Tracepoint附加/分离
 - Maps: 注册、读写、删除、信息查询
@@ -55,11 +59,13 @@
 ### 3. 性能模块单元测试
 
 **测试文件**:
+
 - ✅ `tests/performance/simd_test.rs` - 6个测试
 - ✅ `tests/performance/compression_test.rs` - 6个测试
 - ✅ `tests/performance/memory_pool_test.rs` - 6个测试
 
 **覆盖功能**:
+
 - SIMD: CPU特性检测、优化器创建、聚合操作
 - 压缩: Gzip、Brotli、Zstd压缩/解压
 - 内存池: 分配、释放、统计、重用
@@ -67,10 +73,12 @@
 ### 4. Profiling模块单元测试
 
 **测试文件**:
+
 - ✅ `tests/profiling/cpu_profiler_test.rs` - 6个测试
 - ✅ `tests/profiling/pprof_test.rs` - 6个测试
 
 **覆盖功能**:
+
 - CPU Profiler: 启动、停止、采样、开销统计
 - pprof: 编码/解码、添加样本/位置/函数
 
@@ -111,7 +119,7 @@
 
 ### 中优先级 (下周)
 
-3. **eBPF Phase 2实现** (1周)
+1. **eBPF Phase 2实现** (1周)
    - [ ] loader实际加载逻辑
    - [ ] probes探针附加逻辑
    - [ ] events事件处理逻辑
@@ -119,12 +127,12 @@
 
 ### 低优先级 (下月)
 
-4. **文档和示例** (2周)
+1. **文档和示例** (2周)
    - [ ] 端到端示例
    - [ ] API文档改进
    - [ ] 使用指南完善
 
-5. **代码质量** (1周)
+2. **代码质量** (1周)
    - [ ] OpenTelemetry版本冲突解决
    - [ ] 依赖清理
    - [ ] 代码重构

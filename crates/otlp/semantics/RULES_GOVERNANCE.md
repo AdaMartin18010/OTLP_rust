@@ -1,7 +1,7 @@
 # OTTL规则治理完整指南
 
-> **版本**: 2.0  
-> **日期**: 2025年10月17日  
+> **版本**: 2.0
+> **日期**: 2025年10月17日
 > **状态**: ✅ 完整版
 
 ---
@@ -68,7 +68,7 @@ processors:
     trace_statements:
       - context: span
         statements:
-          - set(attributes["user.email"], SHA256(attributes["user.email"])) 
+          - set(attributes["user.email"], SHA256(attributes["user.email"]))
             where attributes["user.email"] != nil
 
 # 预期影响
@@ -76,7 +76,7 @@ impact:
   cardinality_change: none
   cpu_overhead: low  # <2%
   latency_overhead: low  # <5ms
-  
+
 # 测试用例
 test_cases:
   - input:
@@ -204,7 +204,7 @@ low_risk:
 # 分析规则中使用的属性键
 grep -oP 'attributes\["\K[^"]+' rule-001.yaml | while read key; do
   echo "Checking cardinality of: $key"
-  
+
   # 从Prometheus查询历史基数
   curl -s "http://prometheus:9090/api/v1/query" \
     --data-urlencode "query=count(count by (__name__) ({__name__=~\".*${key}.*\"}))" | \
@@ -235,7 +235,7 @@ def calculate_complexity(rule):
         if 'matches' in statement: score += 10
         if statement.count('where') > 2: score += 8
         if 'replace_pattern' in statement: score += 7
-    
+
     if score < 20: return 'LOW'
     elif score < 50: return 'MEDIUM'
     else: return 'HIGH'
@@ -300,13 +300,13 @@ reviews:
     status: approved
     timestamp: 2025-10-17T10:00:00Z
     comments: "性能影响可接受，测试充分"
-    
+
   - reviewer: security-team@company.com
     role: Security
     status: approved
     timestamp: 2025-10-17T10:30:00Z
     comments: "符合GDPR要求"
-    
+
   - reviewer: compliance@company.com
     role: Compliance
     status: approved
@@ -346,14 +346,14 @@ phases:
       - failure_rate < 0.1%
       - cpu_increase < 5%
       - latency_p95 < 50ms
-  
+
   - name: staged
     weight: 30%
     duration: 30m
     success_criteria:
       - failure_rate < 0.1%
       - cpu_increase < 5%
-  
+
   - name: production
     weight: 100%
     duration: 60m
@@ -373,7 +373,7 @@ agent_config:
     processors:
       transform/new_rule:
         # 新规则配置
-        
+
 rollout:
   target_selector:
     labels:
@@ -431,21 +431,21 @@ metrics:
     - name: export_failure_rate
       query: rate(otelcol_exporter_send_failed_spans[5m])
       threshold: 0.001  # 0.1%
-      
+
   performance:
     - name: cpu_usage
       query: rate(process_cpu_seconds_total[5m])
       threshold_increase: 0.05  # +5%
-      
+
     - name: latency_p95
       query: histogram_quantile(0.95, rate(otelcol_exporter_send_latency_bucket[5m]))
       threshold: 50  # 50ms
-      
+
   functional:
     - name: rule_execution_rate
       query: rate(otelcol_processor_transform_statements_executed[1m])
       expected: "> 0"
-      
+
     - name: rule_error_rate
       query: rate(otelcol_processor_transform_statement_errors[1m])
       threshold: 0
@@ -467,28 +467,28 @@ end_time=$((start_time + DURATION * 60))
 
 while [ $(date +%s) -lt $end_time ]; do
   echo "$(date): 检查指标..."
-  
+
   # 1. 失败率
   failure_rate=$(curl -s 'http://prometheus:9090/api/v1/query?query=rate(otelcol_exporter_send_failed_spans[5m])' | \
     jq -r '.data.result[0].value[1] // 0')
-  
+
   if (( $(echo "$failure_rate > 0.001" | bc -l) )); then
     echo "✗ 失败率过高: $failure_rate"
     exit 1
   fi
-  
+
   # 2. CPU增长
   current_cpu=$(curl -s 'http://prometheus:9090/api/v1/query?query=rate(process_cpu_seconds_total[5m])' | \
     jq -r '.data.result[0].value[1]')
   cpu_increase=$(echo "scale=2; ($current_cpu - $baseline_cpu) / $baseline_cpu" | bc)
-  
+
   if (( $(echo "$cpu_increase > 0.05" | bc -l) )); then
     echo "✗ CPU增长过多: $cpu_increase"
     exit 1
   fi
-  
+
   echo "✓ 指标正常 (失败率: $failure_rate, CPU增长: $cpu_increase)"
-  
+
   sleep 60  # 每分钟检查一次
 done
 
@@ -530,17 +530,17 @@ triggers:
     threshold: "> 0.1%"
     window: 5m
     action: rollback
-    
+
   - condition: cpu_increase
     threshold: "> 10%"
     window: 5m
     action: rollback
-    
+
   - condition: error_spike
     threshold: "> 100 errors/min"
     window: 3m
     action: rollback
-    
+
   - condition: latency_spike
     threshold: "p95 > 100ms"
     window: 5m
@@ -644,15 +644,15 @@ version: 1.0.0
 lifecycle:
   created: 2025-10-17T09:00:00Z
   created_by: developer@company.com
-  
+
   reviewed: 2025-10-17T11:00:00Z
   reviewers:
     - sre-team@company.com
     - security-team@company.com
-    
+
   deployed: 2025-10-17T14:00:00Z
   deployed_by: release-manager@company.com
-  
+
   verified: 2025-10-17T15:00:00Z
   verification_status: passed
 
@@ -665,12 +665,12 @@ rollout_history:
       failure_rate: 0.0001
       cpu_increase: 0.02
       latency_p95: 35ms
-      
+
   - phase: staged
     started: 2025-10-17T14:15:00Z
     completed: 2025-10-17T14:45:00Z
     status: success
-    
+
   - phase: production
     started: 2025-10-17T14:45:00Z
     completed: 2025-10-17T15:45:00Z
@@ -712,18 +712,18 @@ summary:
   active_rules: 42
   deprecated_rules: 3
   new_this_month: 5
-  
+
 findings:
   high_priority:
     - rule_id: dimension-003
       issue: "性能影响超过预期"
       action: "优化或禁用"
-      
+
   medium_priority:
     - rule_id: route-007
       issue: "文档过时"
       action: "更新文档"
-      
+
   low_priority: []
 
 recommendations:
@@ -750,49 +750,49 @@ def lint_rule(rule_file):
     """OTTL规则静态检查"""
     with open(rule_file) as f:
         config = yaml.safe_load(f)
-    
+
     errors = []
     warnings = []
-    
+
     # 检查禁止函数
     forbidden = ['Exec', 'ReadFile', 'WriteFile']
     content = str(config)
     for func in forbidden:
         if func in content:
             errors.append(f"禁止使用函数: {func}")
-    
+
     # 检查高基数键
     high_cardinality = ['user.id', 'request.id', 'trace.id', 'ip.address']
     for key in high_cardinality:
         if key in content and 'set(' in content:
             warnings.append(f"警告: 设置高基数键 {key}")
-    
+
     # 检查属性命名
     attrs = re.findall(r'attributes\["([^"]+)"\]', content)
     for attr in attrs:
         if not re.match(r'^[a-z][a-z0-9._]*$', attr):
             warnings.append(f"属性命名不规范: {attr}")
-    
+
     # 检查错误处理
     if 'error_mode' not in content:
         warnings.append("缺少error_mode配置")
-    
+
     return errors, warnings
 
 if __name__ == '__main__':
     errors, warnings = lint_rule(sys.argv[1])
-    
+
     if errors:
         print("❌ 错误:")
         for e in errors:
             print(f"  - {e}")
         sys.exit(1)
-    
+
     if warnings:
         print("⚠️  警告:")
         for w in warnings:
             print(f"  - {w}")
-    
+
     print("✓ 检查通过")
 ```
 
@@ -826,17 +826,17 @@ echo "[3/6] 发布前检查..."
 # 4. 灰度阶段
 for phase in canary staged production; do
     echo "[4/6] 灰度阶段: $phase"
-    
+
     # 应用配置
     kubectl apply -f $RULE_FILE
-    
+
     # 验证
     ./validate-rollout.sh $phase 15 || {
         echo "✗ 验证失败，自动回滚"
         ./rollback.sh $RULE_FILE "validation failed in $phase"
         exit 1
     }
-    
+
     echo "✓ $phase 阶段完成"
 done
 
