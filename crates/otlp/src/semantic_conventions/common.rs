@@ -52,6 +52,13 @@ impl fmt::Display for AttributeValue {
     }
 }
 
+impl AttributeValue {
+    /// 转换为格式化字符串（避免与 Display::to_string 冲突）
+    pub fn to_formatted_string(&self) -> String {
+        format!("{}", self)
+    }
+}
+
 /// Attribute map type
 pub type AttributeMap = HashMap<AttributeKey, AttributeValue>;
 
