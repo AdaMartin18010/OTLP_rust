@@ -5,8 +5,10 @@
 //! ## Rust 1.94 特性应用
 //!
 //! - **常量泛型**: 使用常量泛型优化 SIMD 向量大小和批处理
-//! - **改进的 SIMD 支持**: 利用 Rust 1.94 的 SIMD 特性提升性能
-//! - **array_windows**: 使用 Rust 1.94 的 `array_windows` 优化滑动窗口操作
+//! - **array_windows**: 使用 Rust 1.94 的 `array_windows` 优化滑动窗口聚合
+//! - **element_offset**: 内存布局优化，用于零拷贝批处理
+//! - **AVX-512 FP16**: x86_64 高性能向量化（Sapphire Rapids+）
+//! - **NEON FP16**: ARM 高性能计算（aarch64）
 //! - **元组收集**: 使用 `collect()` 直接收集统计结果到元组
 
 use super::CpuFeatures;

@@ -40,6 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 验证 TelemetryData 的格式和内容。
 
 **验证项**:
+
 - 数据类型正确性
 - 必需字段存在
 - 字段值范围
