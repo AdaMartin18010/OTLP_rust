@@ -159,7 +159,7 @@ pub enum StatusCode {
 }
 
 /// 属性值
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AttributeValue {
     /// 字符串值
     String(String),
@@ -334,47 +334,434 @@ pub struct Quantile {
     pub value: f64,
 }
 
-/// 日志数据
+/// Complete Log data structure per OTLP 1.10
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogData {
-    /// 时间戳
+    /// Timestamp when the log was emitted (nanoseconds since Unix epoch)
     pub timestamp: u64,
-    /// 严重程度
-    pub severity: LogSeverity,
-    /// 严重程度文本
-    pub severity_text: String,
-    /// 消息
-    pub message: String,
-    /// 属性
+    /// Timestamp when the log was observed (nanoseconds since Unix epoch)
+    pub observed_timestamp: u64,
+    /// Severity level
+    pub severity: SeverityLevel,
+    /// Severity text (optional custom text)
+    pub severity_text: Option<String>,
+    /// Body of the log (string or structured)
+    pub body: LogBody,
+    /// Attributes
     pub attributes: HashMap<String, AttributeValue>,
-    /// 资源属性
+    /// Resource attributes (inherited from TelemetryData context)
     pub resource_attributes: HashMap<String, AttributeValue>,
-    /// 追踪ID
-    pub trace_id: Option<String>,
-    /// 跨度ID
-    pub span_id: Option<String>,
+    /// Trace context (for correlation)
+    pub trace_context: Option<LogTraceContext>,
+    /// Dropped attributes count
+    pub dropped_attributes_count: u32,
+    /// Flags
+    pub flags: u32,
 }
 
-/// 日志严重程度
-/// 
-/// 遵循 OpenTelemetry 日志数据模型规范
+impl Default for LogData {
+    fn default() -> Self {
+        Self {
+            timestamp: 0,
+            observed_timestamp: 0,
+            severity: SeverityLevel::Info,
+            severity_text: None,
+            body: LogBody::Empty,
+            attributes: HashMap::new(),
+            resource_attributes: HashMap::new(),
+            trace_context: None,
+            dropped_attributes_count: 0,
+            flags: 0,
+        }
+    }
+}
+
+impl LogData {
+    /// Create a new log with the current timestamp
+    pub fn new() -> Self {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64;
+        
+        Self {
+            timestamp: now,
+            observed_timestamp: now,
+            severity: SeverityLevel::Info,
+            severity_text: None,
+            body: LogBody::Empty,
+            attributes: HashMap::new(),
+            resource_attributes: HashMap::new(),
+            trace_context: None,
+            dropped_attributes_count: 0,
+            flags: 0,
+        }
+    }
+
+    /// Create a log with a string body
+    pub fn with_message(mut self, message: impl Into<String>) -> Self {
+        self.body = LogBody::String(message.into());
+        self
+    }
+
+    /// Set severity level
+    pub fn with_severity(mut self, severity: SeverityLevel) -> Self {
+        self.severity = severity;
+        self.severity_text = Some(severity.as_str().to_string());
+        self
+    }
+
+    /// Set severity with custom text
+    pub fn with_severity_text(mut self, severity: SeverityLevel, text: impl Into<String>) -> Self {
+        self.severity = severity;
+        self.severity_text = Some(text.into());
+        self
+    }
+
+    /// Set structured body
+    pub fn with_structured_body(mut self, body: HashMap<String, AttributeValue>) -> Self {
+        self.body = LogBody::Structured(body);
+        self
+    }
+
+    /// Set array body
+    pub fn with_array_body(mut self, body: Vec<AttributeValue>) -> Self {
+        self.body = LogBody::Array(body);
+        self
+    }
+
+    /// Add an attribute
+    pub fn with_attribute(mut self, key: impl Into<String>, value: AttributeValue) -> Self {
+        self.attributes.insert(key.into(), value);
+        self
+    }
+
+    /// Add a string attribute
+    pub fn with_string_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.attributes.insert(key.into(), AttributeValue::String(value.into()));
+        self
+    }
+
+    /// Add resource attribute
+    pub fn with_resource_attribute(mut self, key: impl Into<String>, value: AttributeValue) -> Self {
+        self.resource_attributes.insert(key.into(), value);
+        self
+    }
+
+    /// Set trace context for correlation
+    pub fn with_trace_context(mut self, trace_id: impl Into<String>, span_id: impl Into<String>) -> Self {
+        self.trace_context = Some(LogTraceContext {
+            trace_id: trace_id.into(),
+            span_id: span_id.into(),
+            trace_flags: 0,
+        });
+        self
+    }
+
+    /// Set trace context with flags
+    pub fn with_trace_context_full(
+        mut self,
+        trace_id: impl Into<String>,
+        span_id: impl Into<String>,
+        trace_flags: u8,
+    ) -> Self {
+        self.trace_context = Some(LogTraceContext {
+            trace_id: trace_id.into(),
+            span_id: span_id.into(),
+            trace_flags,
+        });
+        self
+    }
+
+    /// Get the log message as a string (if body is a string)
+    pub fn message(&self) -> Option<&str> {
+        match &self.body {
+            LogBody::String(s) => Some(s.as_str()),
+            _ => None,
+        }
+    }
+
+    /// Check if severity is at least the given level
+    pub fn is_at_least(&self, level: SeverityLevel) -> bool {
+        self.severity as u8 >= level as u8
+    }
+
+    /// Get severity as numeric value
+    pub fn severity_number(&self) -> u8 {
+        self.severity as u8
+    }
+}
+
+/// Severity levels following OpenTelemetry spec
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[derive(Default)]
-pub enum LogSeverity {
-    /// 跟踪
+pub enum SeverityLevel {
+    /// TRACE level (1)
     Trace = 1,
-    /// 调试
+    /// TRACE2 level (2)
+    Trace2 = 2,
+    /// TRACE3 level (3)
+    Trace3 = 3,
+    /// TRACE4 level (4)
+    Trace4 = 4,
+    /// DEBUG level (5)
     Debug = 5,
-    /// 信息
+    /// DEBUG2 level (6)
+    Debug2 = 6,
+    /// DEBUG3 level (7)
+    Debug3 = 7,
+    /// DEBUG4 level (8)
+    Debug4 = 8,
+    /// INFO level (9)
     #[default]
     Info = 9,
-    /// 警告
+    /// INFO2 level (10)
+    Info2 = 10,
+    /// INFO3 level (11)
+    Info3 = 11,
+    /// INFO4 level (12)
+    Info4 = 12,
+    /// WARN level (13)
     Warn = 13,
-    /// 错误
+    /// WARN2 level (14)
+    Warn2 = 14,
+    /// WARN3 level (15)
+    Warn3 = 15,
+    /// WARN4 level (16)
+    Warn4 = 16,
+    /// ERROR level (17)
     Error = 17,
-    /// 致命
+    /// ERROR2 level (18)
+    Error2 = 18,
+    /// ERROR3 level (19)
+    Error3 = 19,
+    /// ERROR4 level (20)
+    Error4 = 20,
+    /// FATAL level (21)
     Fatal = 21,
+    /// FATAL2 level (22)
+    Fatal2 = 22,
+    /// FATAL3 level (23)
+    Fatal3 = 23,
+    /// FATAL4 level (24)
+    Fatal4 = 24,
 }
+
+impl SeverityLevel {
+    /// Get severity level as string
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Trace => "TRACE",
+            Self::Trace2 => "TRACE2",
+            Self::Trace3 => "TRACE3",
+            Self::Trace4 => "TRACE4",
+            Self::Debug => "DEBUG",
+            Self::Debug2 => "DEBUG2",
+            Self::Debug3 => "DEBUG3",
+            Self::Debug4 => "DEBUG4",
+            Self::Info => "INFO",
+            Self::Info2 => "INFO2",
+            Self::Info3 => "INFO3",
+            Self::Info4 => "INFO4",
+            Self::Warn => "WARN",
+            Self::Warn2 => "WARN2",
+            Self::Warn3 => "WARN3",
+            Self::Warn4 => "WARN4",
+            Self::Error => "ERROR",
+            Self::Error2 => "ERROR2",
+            Self::Error3 => "ERROR3",
+            Self::Error4 => "ERROR4",
+            Self::Fatal => "FATAL",
+            Self::Fatal2 => "FATAL2",
+            Self::Fatal3 => "FATAL3",
+            Self::Fatal4 => "FATAL4",
+        }
+    }
+
+    /// Get short severity name (for compact logging)
+    pub fn short_name(&self) -> &'static str {
+        match self {
+            Self::Trace | Self::Trace2 | Self::Trace3 | Self::Trace4 => "TRC",
+            Self::Debug | Self::Debug2 | Self::Debug3 | Self::Debug4 => "DBG",
+            Self::Info | Self::Info2 | Self::Info3 | Self::Info4 => "INF",
+            Self::Warn | Self::Warn2 | Self::Warn3 | Self::Warn4 => "WRN",
+            Self::Error | Self::Error2 | Self::Error3 | Self::Error4 => "ERR",
+            Self::Fatal | Self::Fatal2 | Self::Fatal3 | Self::Fatal4 => "FTL",
+        }
+    }
+
+    /// Parse severity from string (case-insensitive)
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_uppercase().as_str() {
+            "TRACE" | "TRC" => Some(Self::Trace),
+            "TRACE2" => Some(Self::Trace2),
+            "TRACE3" => Some(Self::Trace3),
+            "TRACE4" => Some(Self::Trace4),
+            "DEBUG" | "DBG" => Some(Self::Debug),
+            "DEBUG2" => Some(Self::Debug2),
+            "DEBUG3" => Some(Self::Debug3),
+            "DEBUG4" => Some(Self::Debug4),
+            "INFO" | "INF" => Some(Self::Info),
+            "INFO2" => Some(Self::Info2),
+            "INFO3" => Some(Self::Info3),
+            "INFO4" => Some(Self::Info4),
+            "WARN" | "WARNING" | "WRN" => Some(Self::Warn),
+            "WARN2" => Some(Self::Warn2),
+            "WARN3" => Some(Self::Warn3),
+            "WARN4" => Some(Self::Warn4),
+            "ERROR" | "ERR" => Some(Self::Error),
+            "ERROR2" => Some(Self::Error2),
+            "ERROR3" => Some(Self::Error3),
+            "ERROR4" => Some(Self::Error4),
+            "FATAL" | "FTL" => Some(Self::Fatal),
+            "FATAL2" => Some(Self::Fatal2),
+            "FATAL3" => Some(Self::Fatal3),
+            "FATAL4" => Some(Self::Fatal4),
+            _ => None,
+        }
+    }
+
+    /// Check if this is an error level or higher
+    pub fn is_error(&self) -> bool {
+        *self as u8 >= Self::Error as u8
+    }
+
+    /// Check if this is a warning level or higher
+    pub fn is_warn(&self) -> bool {
+        *self as u8 >= Self::Warn as u8
+    }
+}
+
+/// Log body types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum LogBody {
+    /// Empty body
+    Empty,
+    /// String body (plain text message)
+    String(String),
+    /// Structured body (key-value pairs)
+    Structured(HashMap<String, AttributeValue>),
+    /// Array body (list of values)
+    Array(Vec<AttributeValue>),
+}
+
+impl LogBody {
+    /// Check if body is empty
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Self::Empty)
+    }
+
+    /// Get as string if it's a string body
+    pub fn as_string(&self) -> Option<&str> {
+        match self {
+            Self::String(s) => Some(s.as_str()),
+            _ => None,
+        }
+    }
+
+    /// Get as structured if it's a structured body
+    pub fn as_structured(&self) -> Option<&HashMap<String, AttributeValue>> {
+        match self {
+            Self::Structured(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    /// Get as array if it's an array body
+    pub fn as_array(&self) -> Option<&Vec<AttributeValue>> {
+        match self {
+            Self::Array(arr) => Some(arr),
+            _ => None,
+        }
+    }
+
+    /// Convert to a display string
+    pub fn to_display_string(&self) -> String {
+        match self {
+            Self::Empty => String::new(),
+            Self::String(s) => s.clone(),
+            Self::Structured(map) => {
+                serde_json::to_string(map).unwrap_or_default()
+            }
+            Self::Array(arr) => {
+                serde_json::to_string(arr).unwrap_or_default()
+            }
+        }
+    }
+
+    /// Get the size of the body in bytes (estimate)
+    pub fn size(&self) -> usize {
+        match self {
+            Self::Empty => 0,
+            Self::String(s) => s.len(),
+            Self::Structured(map) => map.len() * 32, // rough estimate
+            Self::Array(arr) => arr.len() * 16, // rough estimate
+        }
+    }
+}
+
+impl Default for LogBody {
+    fn default() -> Self {
+        Self::Empty
+    }
+}
+
+impl From<String> for LogBody {
+    fn from(s: String) -> Self {
+        Self::String(s)
+    }
+}
+
+impl From<&str> for LogBody {
+    fn from(s: &str) -> Self {
+        Self::String(s.to_string())
+    }
+}
+
+impl From<HashMap<String, AttributeValue>> for LogBody {
+    fn from(map: HashMap<String, AttributeValue>) -> Self {
+        Self::Structured(map)
+    }
+}
+
+/// Trace context for log correlation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogTraceContext {
+    /// Trace ID (16 bytes hex encoded)
+    pub trace_id: String,
+    /// Span ID (8 bytes hex encoded)
+    pub span_id: String,
+    /// Trace flags (e.g., sampled flag)
+    pub trace_flags: u8,
+}
+
+impl LogTraceContext {
+    /// Check if this trace is sampled
+    pub fn is_sampled(&self) -> bool {
+        (self.trace_flags & 0x01) != 0
+    }
+
+    /// Create a new trace context
+    pub fn new(trace_id: impl Into<String>, span_id: impl Into<String>) -> Self {
+        Self {
+            trace_id: trace_id.into(),
+            span_id: span_id.into(),
+            trace_flags: 0,
+        }
+    }
+
+    /// Create a new trace context with sampling flag
+    pub fn with_sampling(trace_id: impl Into<String>, span_id: impl Into<String>, sampled: bool) -> Self {
+        Self {
+            trace_id: trace_id.into(),
+            span_id: span_id.into(),
+            trace_flags: if sampled { 0x01 } else { 0x00 },
+        }
+    }
+}
+
+/// Legacy LogSeverity alias for backward compatibility
+pub type LogSeverity = SeverityLevel;
 
 /// 性能分析数据 (OTLP Profiles Signal - Development)
 /// 
@@ -555,13 +942,18 @@ impl TelemetryData {
                 .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_nanos() as u64,
+            observed_timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos() as u64,
             severity,
-            severity_text: format!("{:?}", severity),
-            message: message.into(),
+            severity_text: Some(format!("{:?}", severity)),
+            body: LogBody::String(message.into()),
             attributes: HashMap::new(),
             resource_attributes: HashMap::new(),
-            trace_id: None,
-            span_id: None,
+            trace_context: None,
+            dropped_attributes_count: 0,
+            flags: 0,
         };
 
         Self::new(TelemetryDataType::Log, TelemetryContent::Log(log_data))
@@ -705,10 +1097,10 @@ impl TelemetryData {
                 size += metric.data_points.len() * 64;
             }
             TelemetryContent::Log(log) => {
-                size += log.message.len();
-                size += log.severity_text.len();
+                size += log.body.size();
+                size += log.severity_text.as_ref().map(|s| s.len()).unwrap_or(0);
                 size += log.attributes.len() * 32;
-                size += log.resource_attributes.len() * 32;
+                size += 8; // dropped_attributes_count + flags
             }
             TelemetryContent::Profile(profile) => {
                 size += profile.sample_types.len() * 32;
@@ -730,7 +1122,7 @@ impl TelemetryData {
             TelemetryContent::Metric(metric) => {
                 !metric.name.is_empty() && !metric.data_points.is_empty()
             }
-            TelemetryContent::Log(log) => !log.message.is_empty(),
+            TelemetryContent::Log(log) => !log.body.is_empty(),
             TelemetryContent::Profile(profile) => {
                 !profile.sample_types.is_empty() && !profile.samples.is_empty()
             }
@@ -774,6 +1166,73 @@ impl AttributeValue {
             AttributeValue::IntArray(_) => "int_array",
             AttributeValue::DoubleArray(_) => "double_array",
         }
+    }
+}
+
+// From implementations for convenient conversion
+impl From<String> for AttributeValue {
+    fn from(s: String) -> Self {
+        Self::String(s)
+    }
+}
+
+impl From<&str> for AttributeValue {
+    fn from(s: &str) -> Self {
+        Self::String(s.to_string())
+    }
+}
+
+impl From<bool> for AttributeValue {
+    fn from(b: bool) -> Self {
+        Self::Bool(b)
+    }
+}
+
+impl From<i64> for AttributeValue {
+    fn from(i: i64) -> Self {
+        Self::Int(i)
+    }
+}
+
+impl From<i32> for AttributeValue {
+    fn from(i: i32) -> Self {
+        Self::Int(i as i64)
+    }
+}
+
+impl From<f64> for AttributeValue {
+    fn from(f: f64) -> Self {
+        Self::Double(f)
+    }
+}
+
+impl From<f32> for AttributeValue {
+    fn from(f: f32) -> Self {
+        Self::Double(f as f64)
+    }
+}
+
+impl From<Vec<String>> for AttributeValue {
+    fn from(v: Vec<String>) -> Self {
+        Self::StringArray(v)
+    }
+}
+
+impl From<Vec<bool>> for AttributeValue {
+    fn from(v: Vec<bool>) -> Self {
+        Self::BoolArray(v)
+    }
+}
+
+impl From<Vec<i64>> for AttributeValue {
+    fn from(v: Vec<i64>) -> Self {
+        Self::IntArray(v)
+    }
+}
+
+impl From<Vec<f64>> for AttributeValue {
+    fn from(v: Vec<f64>) -> Self {
+        Self::DoubleArray(v)
     }
 }
 

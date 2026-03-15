@@ -120,7 +120,7 @@ impl DataValidator {
 
     /// 验证日志数据
     fn validate_log_data(&self, log: &LogData) -> Result<()> {
-        if log.message.is_empty() {
+        if log.message().map(|m| m.is_empty()).unwrap_or(true) {
             return Err(OtlpError::ValidationError(
                 "log message 不能为空".to_string(),
             ));
@@ -162,13 +162,16 @@ impl DataValidator {
 
     /// 验证严重程度
     fn validate_severity(&self, severity: crate::data::LogSeverity) -> Result<()> {
-        match severity {
-            crate::data::LogSeverity::Trace => Ok(()),
-            crate::data::LogSeverity::Debug => Ok(()),
-            crate::data::LogSeverity::Info => Ok(()),
-            crate::data::LogSeverity::Warn => Ok(()),
-            crate::data::LogSeverity::Error => Ok(()),
-            crate::data::LogSeverity::Fatal => Ok(()),
+        // All severity levels are valid in OpenTelemetry
+        // Just check that it's within valid range (1-24)
+        let severity_num = severity as u8;
+        if severity_num >= 1 && severity_num <= 24 {
+            Ok(())
+        } else {
+            Err(OtlpError::ValidationError(format!(
+                "Invalid severity level: {}",
+                severity_num
+            )))
         }
     }
 

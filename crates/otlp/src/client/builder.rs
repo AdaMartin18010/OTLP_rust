@@ -366,14 +366,7 @@ impl LogBuilder {
     pub async fn send(self) -> OtlpResult<()> {
         use crate::data::LogData;
         
-        let severity_str = match self.severity {
-            LogSeverity::Trace => "TRACE",
-            LogSeverity::Debug => "DEBUG",
-            LogSeverity::Info => "INFO",
-            LogSeverity::Warn => "WARN",
-            LogSeverity::Error => "ERROR",
-            LogSeverity::Fatal => "FATAL",
-        };
+        let severity_str = format!("{:?}", self.severity).to_uppercase();
         tracing::debug!(
             "Sending log: [{}] {} with {} attributes",
             severity_str,
@@ -387,15 +380,20 @@ impl LogBuilder {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_millis() as u64,
+            observed_timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
             severity: self.severity,
-            severity_text: severity_str.to_string(),
-            message: self.message,
+            severity_text: Some(severity_str.to_string()),
+            body: crate::data::LogBody::String(self.message),
             attributes: self.attributes.into_iter()
                 .map(|(k, v)| (k, crate::data::AttributeValue::String(v)))
                 .collect(),
             resource_attributes: HashMap::new(),
-            trace_id: None,
-            span_id: None,
+            trace_context: None,
+            dropped_attributes_count: 0,
+            flags: 0,
         };
         
         let log_data = TelemetryData {

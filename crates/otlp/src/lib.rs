@@ -383,12 +383,16 @@ pub mod wrappers;
 pub mod client;
 pub mod config;
 pub mod data;
+pub mod metrics;
 pub mod error;
 pub mod exporter;
 pub mod processor;
 pub mod transport;
 pub mod utils;
 pub mod validation;
+
+// Logs模块 (OTLP Logs信号完整实现 - OTLP 1.10)
+pub mod logs;
 
 // 依赖注入和插件系统
 pub mod di;
@@ -471,6 +475,9 @@ pub mod resilience;
 // 监控和可观测性
 pub mod monitoring;
 pub mod monitoring_integration;
+
+// Response handling module (OTLP 1.10 Partial Success support)
+pub mod response;
 
 // 高级功能 (可选)
 pub mod advanced_features;
@@ -744,6 +751,22 @@ pub use data::{
     ProfileData, SampleType, Sample, Label, Mapping, Location, Line, Function,
     ExponentialHistogramData, ExponentialHistogramBuckets, HistogramData, HistogramBucket,
     SummaryData, Quantile,
+    // Logs信号增强类型 (OTLP 1.10)
+    SeverityLevel, LogBody, LogTraceContext,
+};
+
+// Logs模块公开API
+pub use logs::{
+    // 核心类型
+    LogRecord, LogRecordBuilder, SourceLocation,
+    // 处理器
+    LogProcessor, SimpleLogProcessor, BatchLogProcessor, FilterLogProcessor, 
+    // 导出器
+    LogExporter, LogExporterBuilder, LogExportResult,
+    // Appender
+    LogAppender, LogAppenderBuilder,
+    // 过滤器
+    SeverityFilter,
 };
 pub use error::{ErrorCategory, ErrorContext, ErrorSeverity, OtlpError, Result};
 pub use exporter::{ExportResult, ExporterMetrics, OtlpExporter, PartialSuccess};
@@ -831,6 +854,14 @@ pub use enterprise_features::{
     EnterpriseResponse, FindingStatus, HealthCheck, HealthCheckType, HighAvailabilityManager,
     HighAvailabilityStatsSnapshot, ImplementationStatus, MultiTenantManager,
     MultiTenantStatsSnapshot, Node, NodeStatus, Tenant, TenantQuota, TenantSettings, TenantStatus,
+};
+
+// Response handling types (OTLP 1.10 Partial Success)
+pub use response::{
+    ExportLogsPartialSuccess, ExportMetricsPartialSuccess, ExportProfilesPartialSuccess,
+    ExportTracePartialSuccess, PartialSuccessHandler, ResponseClassification,
+    ResponseHandler, ResponseHandlerBuilder, ResponseMetricsCollector, ResponseType,
+    RetryDecision, SignalType, ResponseMetadata, ResponseAggregator, AggregationSummary,
 };
 
 // 重新导出微服务相关类型
