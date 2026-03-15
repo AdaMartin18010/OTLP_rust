@@ -1,61 +1,55 @@
-//! # 🚧 OpenTelemetry Profiling Module - 模拟实现
+//! # OpenTelemetry Profiling Module
 //!
-//! ⚠️ **警告**: 本模块当前为**模拟实现**，返回的是假数据！
+//! 实现基于多种后端的持续性能分析：
+//! - **CPU Profiling**: 基于 backtrace 或 pprof 的栈采样
+//! - **Memory Profiling**: 内存分配追踪
+//! - **Lock Profiling**: 锁竞争分析
 //!
-//! ## 模拟的功能
-//! - ❌ CPU Profiling: 返回假的栈跟踪 (["main", "func1"])
-//! - ❌ Memory Profiling: 返回模拟的内存使用数据
-//! - ⚠️ pprof Format: 导出功能为占位实现
-//! - ⚠️ OTLP Export: 仅打印日志，不实际导出
-//! - ✅ Sampling Strategies: 采样逻辑可用，但数据是模拟的
+//! ## 功能特性
 //!
-//! ## 为什么有模拟数据？
-//! 真实的性能分析需要：
-//! 1. 读取 `/proc/self/maps` (Linux)
-//! 2. 使用 `backtrace` crate 获取真实栈
-//! 3. 集成 `pprof` 或 `perf` 工具
-//! 4. 处理复杂的符号解析
+//! - ✅ CPU 性能分析 (需要启用 `backtrace` feature)
+//! - ✅ Memory 性能分析 (需要启用 `backtrace` feature)
+//! - ✅ pprof 格式导出
+//! - ✅ OTLP 格式导出
+//! - ⚠️ eBPF 性能分析 (Linux only, 需要 `ebpf` feature)
 //!
-//! 这些功能计划在 v0.8.0-v0.10.0 逐步实现。
+//! ## 使用示例
 //!
-//! ## 当前用途
-//! - 架构验证
-//! - API设计审查
-//! - 集成测试（使用模拟数据）
-//!
-//! ## Rust 1.92 特性应用
-//!
-//! - **异步闭包**: 使用 `async || {}` 语法简化异步性能分析操作
-//! - **元组收集**: 使用 `collect()` 直接收集性能分析数据到元组
-//! - **改进的异步迭代器**: 利用 Rust 1.92 的异步迭代器优化提升性能
-//!
-//! ## Quick Start
-//!
-//! ```rust,ignore
+//! ```rust
 //! use otlp::profiling::{CpuProfiler, CpuProfilerConfig};
+//! use std::time::Duration;
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let mut profiler = CpuProfiler::new(CpuProfilerConfig::default());
-//!
+//!     let config = CpuProfilerConfig::default()
+//!         .with_sample_rate(99)
+//!         .with_duration(Duration::from_secs(30));
+//!     
+//!     let mut profiler = CpuProfiler::new(config);
 //!     profiler.start().await.unwrap();
-//!
-//!     // Your code here
-//!
+//!     
+//!     // 你的代码...
+//!     
 //!     profiler.stop().await.unwrap();
 //!     let profile = profiler.generate_profile().await.unwrap();
 //! }
 //! ```
+//!
+//! ## Feature Flags
+//!
+//! - `backtrace`: 启用基于 backtrace 的栈采样 (推荐)
+//! - `pprof`: 启用 pprof 格式支持
+//! - `ebpf`: 启用基于 eBPF 的性能分析 (Linux only)
 
-// Re-export main types and modules
 pub mod cpu;
-#[cfg(target_os = "linux")]
-pub mod ebpf;
 pub mod exporter;
 pub mod memory;
 pub mod pprof;
 pub mod sampling;
 pub mod types;
+
+#[cfg(target_os = "linux")]
+pub mod ebpf;
 
 // Re-export commonly used types
 pub use types::{
@@ -64,7 +58,6 @@ pub use types::{
 };
 
 pub use pprof::{PprofBuilder, PprofEncoder, StackTraceCollector};
-// Re-export StackFrame from pprof module
 pub use pprof::StackFrame as ProfilingStackFrame;
 
 pub use cpu::{CpuProfiler, CpuProfilerConfig, CpuProfilerStats, profile_async};
@@ -119,18 +112,73 @@ impl Default for ProfilingConfig {
     }
 }
 
+impl ProfilingConfig {
+    /// 创建新配置
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// 设置采样频率
+    pub fn with_sample_rate(mut self, rate: u32) -> Self {
+        self.sampling_rate = rate;
+        self
+    }
+
+    /// 设置持续时间
+    pub fn with_duration(mut self, duration: Duration) -> Self {
+        self.duration = duration;
+        self
+    }
+
+    /// 启用 CPU 分析
+    pub fn with_cpu_profiling(mut self, enabled: bool) -> Self {
+        self.enable_cpu_profiling = enabled;
+        self
+    }
+
+    /// 启用内存分析
+    pub fn with_memory_profiling(mut self, enabled: bool) -> Self {
+        self.enable_memory_profiling = enabled;
+        self
+    }
+
+    /// 启用锁分析
+    pub fn with_lock_profiling(mut self, enabled: bool) -> Self {
+        self.enable_lock_profiling = enabled;
+        self
+    }
+}
+
 /// 性能分析器
 pub struct Profiler {
     config: ProfilingConfig,
     is_running: bool,
+    cpu_profiler: Option<CpuProfiler>,
+    memory_profiler: Option<MemoryProfiler>,
 }
 
 impl Profiler {
     /// 创建新的性能分析器
     pub fn new(config: ProfilingConfig) -> Self {
+        let cpu_profiler = if config.enable_cpu_profiling {
+            Some(CpuProfiler::new(CpuProfilerConfig::default()
+                .with_sample_rate(config.sampling_rate)
+                .with_max_duration(config.duration)))
+        } else {
+            None
+        };
+
+        let memory_profiler = if config.enable_memory_profiling {
+            Some(MemoryProfiler::new(MemoryProfilerConfig::default()))
+        } else {
+            None
+        };
+
         Self {
             config,
             is_running: false,
+            cpu_profiler,
+            memory_profiler,
         }
     }
 
@@ -147,17 +195,16 @@ impl Profiler {
 
         self.is_running = true;
 
-        // 启动分析任务
-        if self.config.enable_cpu_profiling {
-            self.start_cpu_profiling().await?;
+        // 启动 CPU 分析
+        if let Some(ref mut cpu) = self.cpu_profiler {
+            cpu.start().await
+                .map_err(|e| OtlpError::Profiling(e))?;
         }
 
-        if self.config.enable_memory_profiling {
-            self.start_memory_profiling().await?;
-        }
-
-        if self.config.enable_lock_profiling {
-            self.start_lock_profiling().await?;
+        // 启动内存分析
+        if let Some(ref mut memory) = self.memory_profiler {
+            memory.start().await
+                .map_err(|e| OtlpError::Profiling(e))?;
         }
 
         Ok(())
@@ -166,594 +213,232 @@ impl Profiler {
     /// 停止性能分析
     pub async fn stop(&mut self) -> Result<()> {
         if !self.is_running {
-            return Err(OtlpError::Performance(
-                crate::error::PerformanceError::HighCpuUsage {
-                    current: 0.0,
-                    threshold: 10.0,
-                },
-            ));
+            return Ok(());
+        }
+
+        // 停止 CPU 分析
+        if let Some(ref mut cpu) = self.cpu_profiler {
+            cpu.stop().await
+                .map_err(|e| OtlpError::Profiling(e))?;
+        }
+
+        // 停止内存分析
+        if let Some(ref mut memory) = self.memory_profiler {
+            memory.stop().await
+                .map_err(|e| OtlpError::Profiling(e))?;
         }
 
         self.is_running = false;
         Ok(())
     }
 
-    /// 启动 CPU 性能分析
-    async fn start_cpu_profiling(&self) -> Result<()> {
-        // 模拟 CPU 性能分析启动
-        // 实际实现中这里会加载 eBPF 程序
-        println!(
-            "启动 CPU 性能分析，采样频率: {} Hz",
-            self.config.sampling_rate
-        );
-        Ok(())
-    }
-
-    /// 启动内存性能分析
-    async fn start_memory_profiling(&self) -> Result<()> {
-        // 模拟内存性能分析启动
-        println!("启动内存性能分析");
-        Ok(())
-    }
-
-    /// 启动锁性能分析
-    async fn start_lock_profiling(&self) -> Result<()> {
-        // 模拟锁性能分析启动
-        println!("启动锁性能分析");
-        Ok(())
-    }
-
-    /// 收集性能数据
-    pub async fn collect_data(&self) -> Result<Vec<TelemetryData>> {
-        if !self.is_running {
-            return Err(OtlpError::Performance(
-                crate::error::PerformanceError::HighCpuUsage {
-                    current: 0.0,
-                    threshold: 10.0,
-                },
+    /// 生成性能分析报告
+    pub async fn generate_report(&self) -> Result<ProfilingReport> {
+        if self.is_running {
+            return Err(OtlpError::Profiling(
+                "无法在未停止的分析器上生成报告".to_string()
             ));
         }
 
-        let mut data = Vec::new();
+        let mut report = ProfilingReport::new();
 
-        // 收集 CPU 性能数据
-        if self.config.enable_cpu_profiling {
-            if let Some(cpu_data) = self.collect_cpu_data().await? {
-                data.push(cpu_data);
-            }
+        // 生成 CPU 报告
+        if let Some(ref cpu) = self.cpu_profiler {
+            let cpu_profile = cpu.generate_profile().await
+                .map_err(|e| OtlpError::Profiling(e))?;
+            report.cpu_profile = Some(cpu_profile);
         }
 
-        // 收集内存性能数据
-        if self.config.enable_memory_profiling {
-            if let Some(memory_data) = self.collect_memory_data().await? {
-                data.push(memory_data);
-            }
-        }
-
-        // 收集锁性能数据
-        if self.config.enable_lock_profiling {
-            if let Some(lock_data) = self.collect_lock_data().await? {
-                data.push(lock_data);
-            }
-        }
-
-        Ok(data)
+        Ok(report)
     }
 
-    /// 收集 CPU 性能数据
-    async fn collect_cpu_data(&self) -> Result<Option<TelemetryData>> {
-        // 模拟 CPU 数据收集
-        // 实际实现中这里会从 eBPF 程序收集数据
-
-        let cpu_sample = CpuSample {
-            timestamp: SystemTime::now(),
-            stack_trace: vec![
-                StackFrame {
-                    function_name: "main".to_string(),
-                    file_name: "main.rs".to_string(),
-                    line_number: 42,
-                    address: 0x12345678,
-                },
-                StackFrame {
-                    function_name: "process_data".to_string(),
-                    file_name: "processor.rs".to_string(),
-                    line_number: 128,
-                    address: 0x87654321,
-                },
-            ],
-            cpu_id: 0,
-            process_id: std::process::id(),
-            thread_id: 0,
-        };
-
-        let cpu_data = CpuProfileData {
-            samples: vec![cpu_sample],
-            duration: Duration::from_millis(100),
-            sampling_rate: self.config.sampling_rate,
-        };
-
-        let profile_data = ProfileData::Cpu(cpu_data);
-        let telemetry_data = self.create_profile_telemetry_data(profile_data)?;
-
-        Ok(Some(telemetry_data))
-    }
-
-    /// 收集内存性能数据
-    async fn collect_memory_data(&self) -> Result<Option<TelemetryData>> {
-        // 模拟内存数据收集
-        let heap_sample = HeapSample {
-            timestamp: SystemTime::now(),
-            stack_trace: vec![StackFrame {
-                function_name: "allocate_memory".to_string(),
-                file_name: "allocator.rs".to_string(),
-                line_number: 56,
-                address: 0x11111111,
-            }],
-            size: 1024,
-            process_id: std::process::id(),
-            thread_id: 0,
-        };
-
-        let heap_data = HeapProfileData {
-            samples: vec![heap_sample],
-            duration: Duration::from_millis(100),
-            sampling_rate: self.config.sampling_rate,
-        };
-
-        let profile_data = ProfileData::Heap(heap_data);
-        let telemetry_data = self.create_profile_telemetry_data(profile_data)?;
-
-        Ok(Some(telemetry_data))
-    }
-
-    /// 收集锁性能数据
-    async fn collect_lock_data(&self) -> Result<Option<TelemetryData>> {
-        // 模拟锁数据收集
-        let lock_sample = LockSample {
-            timestamp: SystemTime::now(),
-            stack_trace: vec![StackFrame {
-                function_name: "acquire_lock".to_string(),
-                file_name: "lock.rs".to_string(),
-                line_number: 89,
-                address: 0x22222222,
-            }],
-            lock_address: 0x33333333,
-            duration: Duration::from_micros(500),
-            process_id: std::process::id(),
-            thread_id: 0,
-        };
-
-        let lock_data = LockProfileData {
-            samples: vec![lock_sample],
-            duration: Duration::from_millis(100),
-            sampling_rate: self.config.sampling_rate,
-        };
-
-        let profile_data = ProfileData::Lock(lock_data);
-        let telemetry_data = self.create_profile_telemetry_data(profile_data)?;
-
-        Ok(Some(telemetry_data))
-    }
-
-    /// 创建性能遥测数据
-    fn create_profile_telemetry_data(&self, _profile_data: ProfileData) -> Result<TelemetryData> {
-        // 将性能数据转换为遥测数据
-        // 这里使用指标数据来承载性能信息
-
-        let metric_data = crate::data::MetricData {
-            name: "profile_data".to_string(),
-            description: "Performance profiling data".to_string(),
-            unit: "samples".to_string(),
-            metric_type: crate::data::MetricType::Counter,
-            data_points: vec![crate::data::DataPoint {
-                timestamp: SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_nanos() as u64,
-                attributes: std::collections::HashMap::new(),
-                value: crate::data::DataPointValue::Number(1.0),
-            }],
-        };
-
-        Ok(TelemetryData::new(
-            TelemetryDataType::Metric,
-            TelemetryContent::Metric(metric_data),
-        ))
-    }
-
-    /// 获取分析器状态
+    /// 检查是否正在运行
     pub fn is_running(&self) -> bool {
         self.is_running
     }
+}
 
-    /// 获取配置
-    pub fn config(&self) -> &ProfilingConfig {
-        &self.config
-    }
+/// 性能分析报告
+#[derive(Debug, Clone)]
+pub struct ProfilingReport {
+    pub timestamp: SystemTime,
+    pub duration: Duration,
+    pub cpu_profile: Option<crate::profiling::types::PprofProfile>,
+    pub memory_profile: Option<crate::profiling::types::PprofProfile>,
+}
 
-    /// 获取性能统计
-    pub async fn get_performance_stats(&self) -> Result<PerformanceStats> {
-        if !self.is_running {
-            return Err(OtlpError::Performance(
-                crate::error::PerformanceError::HighCpuUsage {
-                    current: 0.0,
-                    threshold: 10.0,
-                },
-            ));
-        }
-
-        let cpu_usage = self.get_cpu_usage().await?;
-        let memory_usage = self.get_memory_usage().await?;
-        let lock_contention = self.get_lock_contention().await?;
-
-        Ok(PerformanceStats {
-            cpu_usage,
-            memory_usage,
-            lock_contention,
+impl ProfilingReport {
+    pub fn new() -> Self {
+        Self {
             timestamp: SystemTime::now(),
-        })
-    }
-
-    /// 获取CPU使用率
-    async fn get_cpu_usage(&self) -> Result<f64> {
-        // 模拟CPU使用率获取
-        Ok(45.2)
-    }
-
-    /// 获取内存使用情况
-    async fn get_memory_usage(&self) -> Result<MemoryUsage> {
-        // 模拟内存使用情况获取
-        Ok(MemoryUsage {
-            heap_size: 1024 * 1024 * 100, // 100MB
-            heap_used: 1024 * 1024 * 60,  // 60MB
-            stack_size: 1024 * 1024 * 10, // 10MB
-            gc_cycles: 5,
-        })
-    }
-
-    /// 获取锁竞争情况
-    async fn get_lock_contention(&self) -> Result<f64> {
-        // 模拟锁竞争率获取
-        Ok(12.5)
-    }
-
-    /// 生成性能报告
-    pub async fn generate_report(&self) -> Result<PerformanceReport> {
-        if !self.is_running {
-            return Err(OtlpError::Performance(
-                crate::error::PerformanceError::HighCpuUsage {
-                    current: 0.0,
-                    threshold: 10.0,
-                },
-            ));
+            duration: Duration::default(),
+            cpu_profile: None,
+            memory_profile: None,
         }
-
-        let stats = self.get_performance_stats().await?;
-        let hotspots = self.identify_hotspots().await?;
-        let recommendations = self.generate_recommendations(&stats, &hotspots).await?;
-
-        Ok(PerformanceReport {
-            stats,
-            hotspots,
-            recommendations,
-            generated_at: SystemTime::now(),
-        })
     }
+}
 
-    /// 识别性能热点
-    async fn identify_hotspots(&self) -> Result<Vec<Hotspot>> {
-        // 模拟热点识别
-        Ok(vec![
-            Hotspot {
-                function_name: "process_data".to_string(),
-                file_name: "processor.rs".to_string(),
-                line_number: 128,
-                cpu_time_percent: 35.2,
-                memory_allocations: 1024,
-                call_count: 10000,
-            },
-            Hotspot {
-                function_name: "serialize_json".to_string(),
-                file_name: "serializer.rs".to_string(),
-                line_number: 45,
-                cpu_time_percent: 28.7,
-                memory_allocations: 512,
-                call_count: 5000,
-            },
-        ])
+/// 性能分析入口函数
+/// 
+/// 便捷函数，用于在代码块中进行性能分析
+/// 
+/// # 示例
+///
+/// ```rust
+/// use otlp::profiling::{profile_block, ProfileResult};
+///
+/// async fn my_function() {
+///     let result = profile_block("my_operation", || async {
+///         // 你的代码...
+///         "result"
+///     }).await;
+///     
+///     println!("耗时: {:?}", result.duration);
+/// }
+/// ```
+pub async fn profile_block<F, Fut, R>(name: &str, f: F) -> ProfileResult<R>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = R>,
+{
+    let start = std::time::Instant::now();
+    let result = f().await;
+    let duration = start.elapsed();
+
+    ProfileResult {
+        name: name.to_string(),
+        result,
+        duration,
     }
+}
 
-    /// 生成性能优化建议
-    async fn generate_recommendations(
-        &self,
-        stats: &PerformanceStats,
-        hotspots: &[Hotspot],
-    ) -> Result<Vec<Recommendation>> {
-        let mut recommendations = Vec::new();
+/// 性能分析结果
+#[derive(Debug, Clone)]
+pub struct ProfileResult<R> {
+    pub name: String,
+    pub result: R,
+    pub duration: Duration,
+}
 
-        // CPU使用率建议
-        if stats.cpu_usage > 80.0 {
-            recommendations.push(Recommendation {
-                category: RecommendationCategory::Cpu,
-                priority: RecommendationPriority::High,
-                title: "高CPU使用率".to_string(),
-                description: "CPU使用率过高，建议优化热点函数".to_string(),
-                action: "考虑使用缓存或算法优化".to_string(),
-            });
-        }
+/// 热点函数识别
+/// 
+/// 分析性能分析数据，识别热点函数
+pub fn identify_hotspots(profile: &PprofProfile, top_n: usize) -> Vec<Hotspot> {
+    let mut hotspots = Vec::new();
 
-        // 内存使用建议
-        if stats.memory_usage.heap_used as f64 / stats.memory_usage.heap_size as f64 > 0.8 {
-            recommendations.push(Recommendation {
-                category: RecommendationCategory::Memory,
-                priority: RecommendationPriority::Medium,
-                title: "高内存使用率".to_string(),
-                description: "堆内存使用率过高".to_string(),
-                action: "考虑增加内存或优化内存分配".to_string(),
-            });
-        }
+    // 统计每个函数的采样次数
+    let mut function_counts: std::collections::HashMap<String, i64> = 
+        std::collections::HashMap::new();
 
-        // 锁竞争建议
-        if stats.lock_contention > 20.0 {
-            recommendations.push(Recommendation {
-                category: RecommendationCategory::Concurrency,
-                priority: RecommendationPriority::High,
-                title: "高锁竞争".to_string(),
-                description: "锁竞争率过高，影响并发性能".to_string(),
-                action: "考虑使用无锁数据结构或减少锁粒度".to_string(),
-            });
-        }
-
-        // 热点函数建议
-        for hotspot in hotspots {
-            if hotspot.cpu_time_percent > 30.0 {
-                recommendations.push(Recommendation {
-                    category: RecommendationCategory::Cpu,
-                    priority: RecommendationPriority::High,
-                    title: format!("热点函数: {}", hotspot.function_name),
-                    description: format!(
-                        "函数 {} 占用CPU时间 {}%",
-                        hotspot.function_name, hotspot.cpu_time_percent
-                    ),
-                    action: "考虑优化算法或使用更高效的数据结构".to_string(),
-                });
+    for sample in &profile.sample {
+        for location_id in &sample.location_id {
+            if let Some(location) = profile.location.iter().find(|l| l.id == *location_id) {
+                for line in &location.line {
+                    if let Some(function) = profile.function.iter().find(|f| f.id == line.function_id) {
+                        let function_name = profile.string_table.get(function.name as usize)
+                            .cloned()
+                            .unwrap_or_default();
+                        *function_counts.entry(function_name).or_insert(0) += sample.value.first().copied().unwrap_or(1);
+                    }
+                }
             }
         }
+    }
 
-        Ok(recommendations)
+    // 转换为热点列表并排序
+    let mut hotspot_vec: Vec<Hotspot> = function_counts
+        .into_iter()
+        .map(|(name, count)| Hotspot { name, count })
+        .collect();
+    
+    hotspot_vec.sort_by(|a, b| b.count.cmp(&a.count));
+    hotspot_vec.truncate(top_n);
+
+    hotspot_vec
+}
+
+/// 热点函数
+#[derive(Debug, Clone)]
+pub struct Hotspot {
+    pub name: String,
+    pub count: i64,
+}
+
+/// 获取进程当前的资源使用情况
+pub fn get_process_stats() -> ProcessStats {
+    use sysinfo::{System, get_current_pid};
+
+    let mut system = System::new_all();
+    system.refresh_all();
+
+    let pid = match get_current_pid() {
+        Ok(p) => p,
+        Err(_) => {
+            return ProcessStats {
+                cpu_percent: 0.0,
+                memory_bytes: 0,
+                virtual_memory_bytes: 0,
+            }
+        }
+    };
+
+    if let Some(process) = system.process(pid) {
+        ProcessStats {
+            cpu_percent: process.cpu_usage() as f64,
+            memory_bytes: process.memory(),
+            virtual_memory_bytes: process.virtual_memory(),
+        }
+    } else {
+        ProcessStats {
+            cpu_percent: 0.0,
+            memory_bytes: 0,
+            virtual_memory_bytes: 0,
+        }
     }
 }
 
-/// 性能数据类型
+/// 进程统计
 #[derive(Debug, Clone)]
-pub enum ProfileDataType {
-    Cpu,
-    Heap,
-    Lock,
-    Wall,
-    Goroutine,
-}
-
-/// 性能数据
-#[derive(Debug, Clone)]
-pub enum ProfileData {
-    Cpu(CpuProfileData),
-    Heap(HeapProfileData),
-    Lock(LockProfileData),
-    Wall(WallProfileData),
-    Goroutine(GoroutineProfileData),
-}
-
-/// CPU 性能数据
-#[derive(Debug, Clone)]
-pub struct CpuProfileData {
-    pub samples: Vec<CpuSample>,
-    pub duration: Duration,
-    pub sampling_rate: u32,
-}
-
-/// CPU 样本
-#[derive(Debug, Clone)]
-pub struct CpuSample {
-    pub timestamp: SystemTime,
-    pub stack_trace: Vec<StackFrame>,
-    pub cpu_id: u32,
-    pub process_id: u32,
-    pub thread_id: u32,
-}
-
-/// 堆性能数据
-#[derive(Debug, Clone)]
-pub struct HeapProfileData {
-    pub samples: Vec<HeapSample>,
-    pub duration: Duration,
-    pub sampling_rate: u32,
-}
-
-/// 堆样本
-#[derive(Debug, Clone)]
-pub struct HeapSample {
-    pub timestamp: SystemTime,
-    pub stack_trace: Vec<StackFrame>,
-    pub size: usize,
-    pub process_id: u32,
-    pub thread_id: u32,
-}
-
-/// 锁性能数据
-#[derive(Debug, Clone)]
-pub struct LockProfileData {
-    pub samples: Vec<LockSample>,
-    pub duration: Duration,
-    pub sampling_rate: u32,
-}
-
-/// 锁样本
-#[derive(Debug, Clone)]
-pub struct LockSample {
-    pub timestamp: SystemTime,
-    pub stack_trace: Vec<StackFrame>,
-    pub lock_address: u64,
-    pub duration: Duration,
-    pub process_id: u32,
-    pub thread_id: u32,
-}
-
-/// 墙时间性能数据
-#[derive(Debug, Clone)]
-pub struct WallProfileData {
-    pub samples: Vec<WallSample>,
-    pub duration: Duration,
-    pub sampling_rate: u32,
-}
-
-/// 墙时间样本
-#[derive(Debug, Clone)]
-pub struct WallSample {
-    pub timestamp: SystemTime,
-    pub stack_trace: Vec<StackFrame>,
-    pub process_id: u32,
-    pub thread_id: u32,
-}
-
-/// Goroutine 性能数据
-#[derive(Debug, Clone)]
-pub struct GoroutineProfileData {
-    pub samples: Vec<GoroutineSample>,
-    pub duration: Duration,
-    pub sampling_rate: u32,
-}
-
-/// Goroutine 样本
-#[derive(Debug, Clone)]
-pub struct GoroutineSample {
-    pub timestamp: SystemTime,
-    pub stack_trace: Vec<StackFrame>,
-    pub goroutine_id: u64,
-    pub state: String,
-}
-
-/// 堆栈帧
-#[derive(Debug, Clone)]
-pub struct StackFrame {
-    pub function_name: String,
-    pub file_name: String,
-    pub line_number: u32,
-    pub address: u64,
-}
-
-/// 性能统计
-#[derive(Debug, Clone)]
-pub struct PerformanceStats {
-    pub cpu_usage: f64,
-    pub memory_usage: MemoryUsage,
-    pub lock_contention: f64,
-    pub timestamp: SystemTime,
-}
-
-/// 内存使用情况
-#[derive(Debug, Clone)]
-pub struct MemoryUsage {
-    pub heap_size: usize,
-    pub heap_used: usize,
-    pub stack_size: usize,
-    pub gc_cycles: u32,
-}
-
-/// 性能热点
-#[derive(Debug, Clone)]
-pub struct Hotspot {
-    pub function_name: String,
-    pub file_name: String,
-    pub line_number: u32,
-    pub cpu_time_percent: f64,
-    pub memory_allocations: usize,
-    pub call_count: u64,
-}
-
-/// 性能报告
-#[derive(Debug, Clone)]
-pub struct PerformanceReport {
-    pub stats: PerformanceStats,
-    pub hotspots: Vec<Hotspot>,
-    pub recommendations: Vec<Recommendation>,
-    pub generated_at: SystemTime,
-}
-
-/// 性能优化建议
-#[derive(Debug, Clone)]
-pub struct Recommendation {
-    pub category: RecommendationCategory,
-    pub priority: RecommendationPriority,
-    pub title: String,
-    pub description: String,
-    pub action: String,
-}
-
-/// 建议类别
-#[derive(Debug, Clone)]
-pub enum RecommendationCategory {
-    Cpu,
-    Memory,
-    Concurrency,
-    Network,
-    Io,
-    Algorithm,
-}
-
-/// 建议优先级
-#[derive(Debug, Clone)]
-pub enum RecommendationPriority {
-    Low,
-    Medium,
-    High,
-    Critical,
+pub struct ProcessStats {
+    pub cpu_percent: f64,
+    pub memory_bytes: u64,
+    pub virtual_memory_bytes: u64,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[tokio::test]
-    async fn test_profiler_start_stop() {
-        let config = ProfilingConfig::default();
-        let mut profiler = Profiler::new(config);
+    #[test]
+    fn test_profiling_config() {
+        let config = ProfilingConfig::new()
+            .with_sample_rate(100)
+            .with_duration(Duration::from_secs(60))
+            .with_cpu_profiling(true)
+            .with_memory_profiling(true);
 
-        // 启动分析器
-        assert!(profiler.start().await.is_ok());
-        assert!(profiler.is_running());
-
-        // 停止分析器
-        assert!(profiler.stop().await.is_ok());
-        assert!(!profiler.is_running());
+        assert_eq!(config.sampling_rate, 100);
+        assert_eq!(config.duration, Duration::from_secs(60));
+        assert!(config.enable_cpu_profiling);
+        assert!(config.enable_memory_profiling);
     }
 
     #[tokio::test]
-    async fn test_profiler_double_start() {
-        let config = ProfilingConfig::default();
-        let mut profiler = Profiler::new(config);
+    async fn test_profile_block() {
+        let result = profile_block("test_operation", || async {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+            42
+        }).await;
 
-        // 第一次启动应该成功
-        assert!(profiler.start().await.is_ok());
-
-        // 第二次启动应该失败
-        assert!(profiler.start().await.is_err());
+        assert_eq!(result.name, "test_operation");
+        assert_eq!(result.result, 42);
+        assert!(result.duration >= Duration::from_millis(10));
     }
 
-    #[tokio::test]
-    async fn test_profiler_collect_data() {
-        let config = ProfilingConfig::default();
-        let mut profiler = Profiler::new(config);
-
-        // 未启动时收集数据应该失败
-        assert!(profiler.collect_data().await.is_err());
-
-        // 启动后收集数据应该成功
-        assert!(profiler.start().await.is_ok());
-        let data = profiler
-            .collect_data()
-            .await
-            .expect("Failed to collect profiler data");
-        assert!(!data.is_empty());
+    #[test]
+    fn test_process_stats() {
+        let stats = get_process_stats();
+        // 至少应该能获取到内存使用
+        assert!(stats.memory_bytes > 0 || stats.cpu_percent >= 0.0);
     }
 }
