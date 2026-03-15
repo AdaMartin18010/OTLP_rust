@@ -77,7 +77,7 @@ impl SimdOptimizer {
     }
 
     /// 创建默认配置的优化器
-    pub fn default() -> Self {
+    pub fn new_default() -> Self {
         Self::new(SimdConfig::default())
     }
 

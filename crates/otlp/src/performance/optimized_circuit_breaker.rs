@@ -163,12 +163,8 @@ impl OptimizedCircuitBreaker {
             }
             Err(error) => {
                 self.on_failure().await;
-                // 检查熔断器是否已经打开
-                if self.get_state() == CircuitBreakerState::Open {
-                    Err(CircuitBreakerError::CircuitBreakerOpen)
-                } else {
-                    Err(CircuitBreakerError::CircuitBreakerOpen)
-                }
+                // 熔断器已触发
+                Err(CircuitBreakerError::CircuitBreakerOpen)
             }
         }
     }

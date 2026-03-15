@@ -45,6 +45,7 @@ impl<E> SpanExporter for ComplianceExporter<E>
 where
     E: SpanExporter + std::fmt::Debug + Send + Sync,
 {
+    #[allow(clippy::manual_async_fn)]
     fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
         async move {
             if self.compliance_enabled {

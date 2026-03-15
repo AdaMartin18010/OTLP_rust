@@ -105,6 +105,7 @@ impl Default for ZeroCopyConfig {
 /// 性能优化管理器
 ///
 /// 统一管理所有性能优化组件
+#[allow(clippy::type_complexity)]
 pub struct PerformanceManager {
     config: PerformanceConfig,
     circuit_breaker: Option<OptimizedCircuitBreaker>,
@@ -225,6 +226,7 @@ impl PerformanceManager {
     }
 
     /// 获取批处理器
+    #[allow(clippy::type_complexity)]
     pub fn get_batch_processor(
         &self,
     ) -> Option<

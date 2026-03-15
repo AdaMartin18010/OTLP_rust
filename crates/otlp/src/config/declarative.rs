@@ -127,6 +127,7 @@ impl OpenTelemetryConfig {
     }
     
     /// Load configuration with default file discovery
+    #[allow(clippy::disallowed_methods)]
     pub fn load_default() -> ConfigResult<Self> {
         // Check environment variable first
         if let Ok(config_file) = std::env::var("OTEL_CONFIG_FILE") {

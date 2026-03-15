@@ -32,8 +32,9 @@ pub const fn validate_timeout(timeout_ms: u64) -> bool {
 }
 
 // 压缩类型
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Compression {
+    #[default]
     None,
     Gzip,
     Deflate,
@@ -41,25 +42,14 @@ pub enum Compression {
     Zstd,
 }
 
-impl Default for Compression {
-    fn default() -> Self {
-        Compression::None
-    }
-}
-
 // 传输协议
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransportProtocol {
+    #[default]
     Grpc,
     Http,
     HttpBinary,
     HttpProtobuf,
-}
-
-impl Default for TransportProtocol {
-    fn default() -> Self {
-        TransportProtocol::Grpc
-    }
 }
 
 impl TransportProtocol {

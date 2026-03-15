@@ -21,7 +21,7 @@ keywords = [
 ]
 categories = ["science", "algorithms", "mathematics", "simulation"]
 readme = "README.md"
-rust-version = "1.92"
+rust-version = "1.94"
 
 # Rust 1.92 新特性配置
 # Profile configurations are managed at workspace root level

@@ -46,6 +46,7 @@ impl<E> SpanExporter for ConnectionPoolExporter<E>
 where
     E: SpanExporter + std::fmt::Debug + Send + Sync,
 {
+    #[allow(clippy::manual_async_fn)]
     fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
         async move {
             // 连接池优化通常在底层网络层实现

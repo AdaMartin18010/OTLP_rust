@@ -369,24 +369,13 @@ pub mod optimization;
 pub mod rust_1_92_optimizations; // Rust 1.92 特性优化实现
 
 // Rust 1.94 特性展示与应用
-pub mod rust_194_features; // Rust 1.94 新特性完整展示
-pub mod rust_2024_features; // Rust Edition 2024 新特性 (Rust 1.85+)
-
-// 客户端增强功能
-#[cfg(feature = "client-enhancements")]
-pub mod client_enhancements;
+pub mod rust_1_94_features;      // Rust 1.94 完整特性展示
 
 // 基准测试
 pub mod benchmarks;
 
-// 简化的客户端接口
-pub mod simple_client;
-
 // 优化的处理器
 pub mod optimized_processor;
-
-// 高级性能优化
-pub mod performance_optimization_advanced;
 
 // 已迁移到备份的模块 (注释掉)
 // pub mod advanced_performance;  // 已备份到 backup_2025_01/duplicate_modules/
@@ -395,10 +384,10 @@ pub mod performance_optimization_advanced;
 // pub mod edge_computing;        // 已备份到 backup_2025_01/unused_features/
 // pub mod performance_enhancements;        // 已备份到 backup_2025_01/duplicate_modules/
 // pub mod performance_monitoring;          // 已备份到 backup_2025_01/duplicate_modules/
-// pub mod performance_optimization_advanced; // 已备份到 backup_2025_01/duplicate_modules/
+// pub mod performance_optimization_advanced; // 已归档到 ARCHIVE/reports/
 // pub mod performance_optimizer;           // 已备份到 backup_2025_01/duplicate_modules/
 // pub mod security_enhancer;     // 已备份到 backup_2025_01/duplicate_modules/
-// pub mod simple_client;         // 已备份到 backup_2025_01/duplicate_modules/
+// pub mod simple_client;         // 已归档到 ARCHIVE/reports/
 // pub mod optimized_processor;   // 已备份到 backup_2025_01/duplicate_modules/
 // pub mod profiling;             // 已备份到 backup_2025_01/duplicate_modules/
 // pub mod protobuf;              // 已备份到 backup_2025_01/duplicate_modules/
@@ -508,11 +497,6 @@ pub use rust_1_92_optimizations::{
     AsyncBatchProcessor, AsyncClosureOptimizer, TupleCollectionOptimizer, ZeroCopyOptimizer,
 };
 
-// 客户端增强功能重新导出
-#[cfg(feature = "client-enhancements")]
-pub use client_enhancements::{
-    ClientPerformanceAnalyzer, ClientStatus, PerformanceAnalysis,
-};
 // 安全相关类型从advanced_security模块导出 (简化版本)
 pub use advanced_security::{
     AuditEntry, AuditEvent, AuditFilter, DifferentialPrivacyManager,
@@ -592,11 +576,6 @@ pub use microservices::{
     WeightedRoundRobinLoadBalancer,
 };
 
-// 重新导出简化客户端相关类型
-pub use simple_client::{
-    BatchSendResult, HealthStatus, LogLevel, SimpleClientBuilder, SimpleOperation, SimpleOtlpClient,
-};
-
 // 重新导出2025年新增的OTTL字节码功能
 pub use ottl::{BytecodeCompiler, BytecodeProgram, Opcode};
 
@@ -610,13 +589,6 @@ pub use opamp::{
 pub use optimized_processor::{
     OptimizedOtlpProcessor, OptimizedProcessorConfig, OtlpDataItem, PerformanceMetrics,
     PerformanceMonitor, PerformanceReport,
-};
-
-// 重新导出高级性能优化相关类型
-pub use performance_optimization_advanced::{
-    AdvancedMemoryPoolOptimizer, AdvancedSimdOptimizer, CacheOptimizationManager,
-    CachePerformanceMetrics, ComprehensiveBenchmarkResults, ComprehensivePerformanceOptimizer,
-    SimdIntOperation, SimdOperation,
 };
 
 // ============================================================================

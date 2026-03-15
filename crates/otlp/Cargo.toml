@@ -3,9 +3,9 @@ name = "otlp"
 version = "0.1.0"
 edition = "2024"
 resolver = "3"
-rust-version = "1.92"
+rust-version = "1.94"
 authors = ["Rust OTLP Team"]
-description = "OpenTelemetry Protocol (OTLP) implementation with Rust 1.92+ features"
+description = "OpenTelemetry Protocol (OTLP) implementation with Rust 1.94+ features"
 license = "MIT OR Apache-2.0"
 keywords = [
   "opentelemetry",

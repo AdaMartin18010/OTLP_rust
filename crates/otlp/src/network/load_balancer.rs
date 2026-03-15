@@ -167,13 +167,21 @@ impl LoadBalancer {
 
     /// 移除后端服务器
     pub async fn remove_backend(&self, backend_id: &str) -> Result<()> {
-        let mut backends = self.backends.lock().unwrap();
-        if backends.remove(backend_id).is_some() {
-            self.stats.active_backends.fetch_sub(1, Ordering::Relaxed);
-        }
+        // 先释放第一个锁
+        {
+            let mut backends = self.backends.lock().unwrap();
+            if backends.remove(backend_id).is_some() {
+                self.stats.active_backends.fetch_sub(1, Ordering::Relaxed);
+            }
+        } // 锁在这里释放
 
-        let mut pools = self.connection_pools.lock().unwrap();
-        if let Some(pool) = pools.remove(backend_id) {
+        // 获取第二个锁并在 await 前释放
+        let pool_to_close = {
+            let mut pools = self.connection_pools.lock().unwrap();
+            pools.remove(backend_id)
+        };
+        
+        if let Some(pool) = pool_to_close {
             pool.close_all().await;
         }
 
