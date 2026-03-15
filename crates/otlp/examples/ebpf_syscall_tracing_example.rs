@@ -3,10 +3,7 @@
 //! 演示如何使用 eBPF 进行系统调用追踪
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
-use otlp::ebpf::{
-    EbpfConfig, EbpfSyscallTracer,
-    validate_config, create_recommended_config,
-};
+use otlp::ebpf::{EbpfConfig, EbpfSyscallTracer, create_recommended_config, validate_config};
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 #[tokio::main]
@@ -57,7 +54,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // 5. 模拟系统调用活动
-    println!("\n⏳ 执行系统调用活动 (持续 {} 秒)...", config.duration.as_secs());
+    println!(
+        "\n⏳ 执行系统调用活动 (持续 {} 秒)...",
+        config.duration.as_secs()
+    );
     println!("💡 提示: 在此期间可以执行系统操作，例如:");
     println!("   - 文件读写操作");
     println!("   - 网络连接");
@@ -89,8 +89,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !events.is_empty() {
         println!("\n📋 事件详情 (前10个):");
         for (i, event) in events.iter().take(10).enumerate() {
-            println!("  [{}] 类型: {:?}, PID: {}, TID: {}, 时间戳: {:?}",
-                i + 1, event.event_type, event.pid, event.tid, event.timestamp);
+            println!(
+                "  [{}] 类型: {:?}, PID: {}, TID: {}, 时间戳: {:?}",
+                i + 1,
+                event.event_type,
+                event.pid,
+                event.tid,
+                event.timestamp
+            );
         }
         if events.len() > 10 {
             println!("  ... 还有 {} 个事件未显示", events.len() - 10);

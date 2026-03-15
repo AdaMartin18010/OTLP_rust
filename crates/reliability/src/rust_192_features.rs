@@ -13,14 +13,12 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 /// 异步闭包类型别名：无参数的异步闭包
-type AsyncClosure<T> = Box<
-    dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>> + Send,
->;
+type AsyncClosure<T> =
+    Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>> + Send>;
 
 /// 异步闭包类型别名：带参数的异步闭包
-type AsyncClosureWithArg<T> = Box<
-    dyn FnOnce(T) -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>> + Send,
->;
+type AsyncClosureWithArg<T> =
+    Box<dyn FnOnce(T) -> Pin<Box<dyn Future<Output = Result<T, UnifiedError>> + Send>> + Send>;
 
 /// 异步闭包示例
 ///

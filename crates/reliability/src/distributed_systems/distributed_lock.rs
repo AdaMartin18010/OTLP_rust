@@ -310,9 +310,10 @@ impl RedlockLock {
 
         // 检查是否已存在且未过期
         if let Some((_, expires_at)) = storage.get(resource)
-            && *expires_at > now {
-                return Ok(false); // 锁已被持有
-            }
+            && *expires_at > now
+        {
+            return Ok(false); // 锁已被持有
+        }
 
         // 设置锁
         storage.insert(resource.to_string(), (value.to_string(), now + ttl));
@@ -326,10 +327,11 @@ impl RedlockLock {
 
         // 只有持有者才能释放锁
         if let Some((holder, _)) = storage.get(resource)
-            && holder == value {
-                storage.remove(resource);
-                return Ok(true);
-            }
+            && holder == value
+        {
+            storage.remove(resource);
+            return Ok(true);
+        }
 
         Ok(false)
     }
@@ -447,14 +449,15 @@ impl DistributedLock for RedlockLock {
         let storage = self.simulated_storage.lock().await;
 
         if let Some((current_holder, _)) = storage.get(resource)
-            && current_holder == holder_id {
-                drop(storage);
-                // 重新获取锁以更新TTL
-                return self
-                    .lock_instance(resource, holder_id, ttl)
-                    .await
-                    .map(|_| ());
-            }
+            && current_holder == holder_id
+        {
+            drop(storage);
+            // 重新获取锁以更新TTL
+            return self
+                .lock_instance(resource, holder_id, ttl)
+                .await
+                .map(|_| ());
+        }
 
         Err(UnifiedError::state_error(format!(
             "Cannot renew lock not held by this holder: {}",
@@ -498,10 +501,11 @@ impl LockReleaser for RedlockReleaser {
         let mut storage = storage_arc.lock().await;
 
         if let Some((current_holder, _)) = storage.get(lock_id)
-            && current_holder == holder_id {
-                storage.remove(lock_id);
-                return Ok(());
-            }
+            && current_holder == holder_id
+        {
+            storage.remove(lock_id);
+            return Ok(());
+        }
 
         Err(UnifiedError::state_error(format!(
             "Cannot release lock not held by this holder: {}",
@@ -601,11 +605,12 @@ impl DistributedLock for LocalDistributedLock {
             if options.fair {
                 let queues = self.fair_queues.lock().await;
                 if let Some(queue) = queues.get(resource)
-                    && queue.front() != Some(&holder_id) {
-                        drop(queues);
-                        tokio::time::sleep(options.retry_delay).await;
-                        continue;
-                    }
+                    && queue.front() != Some(&holder_id)
+                {
+                    drop(queues);
+                    tokio::time::sleep(options.retry_delay).await;
+                    continue;
+                }
             }
 
             // 尝试获取锁
@@ -665,14 +670,15 @@ impl DistributedLock for LocalDistributedLock {
         let mut locks = self.locks.write().await;
 
         if let Some(state) = locks.get_mut(resource)
-            && state.holder_id == holder_id {
-                if state.reentrant_count > 1 {
-                    state.reentrant_count -= 1;
-                } else {
-                    locks.remove(resource);
-                }
-                return Ok(());
+            && state.holder_id == holder_id
+        {
+            if state.reentrant_count > 1 {
+                state.reentrant_count -= 1;
+            } else {
+                locks.remove(resource);
             }
+            return Ok(());
+        }
 
         Err(UnifiedError::state_error(format!(
             "Cannot release lock not held by this holder: {}",
@@ -684,10 +690,11 @@ impl DistributedLock for LocalDistributedLock {
         let mut locks = self.locks.write().await;
 
         if let Some(state) = locks.get_mut(resource)
-            && state.holder_id == holder_id {
-                state.expires_at = SystemTime::now() + ttl;
-                return Ok(());
-            }
+            && state.holder_id == holder_id
+        {
+            state.expires_at = SystemTime::now() + ttl;
+            return Ok(());
+        }
 
         Err(UnifiedError::state_error(format!(
             "Cannot renew lock not held by this holder: {}",
@@ -732,14 +739,15 @@ impl LockReleaser for LocalLockReleaser {
         let mut locks = self.locks.write().await;
 
         if let Some(state) = locks.get_mut(lock_id)
-            && state.holder_id == holder_id {
-                if state.reentrant_count > 1 {
-                    state.reentrant_count -= 1;
-                } else {
-                    locks.remove(lock_id);
-                }
-                return Ok(());
+            && state.holder_id == holder_id
+        {
+            if state.reentrant_count > 1 {
+                state.reentrant_count -= 1;
+            } else {
+                locks.remove(lock_id);
             }
+            return Ok(());
+        }
 
         Ok(())
     }

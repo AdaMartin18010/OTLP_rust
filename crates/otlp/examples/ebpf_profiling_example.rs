@@ -12,8 +12,7 @@
 
 #[cfg(target_os = "linux")]
 use otlp::ebpf::{
-    EbpfConfig, EbpfCpuProfiler, EbpfLoader,
-    create_recommended_config, validate_config,
+    EbpfConfig, EbpfCpuProfiler, EbpfLoader, create_recommended_config, validate_config,
 };
 #[cfg(target_os = "linux")]
 use std::time::Duration;

@@ -179,12 +179,7 @@ impl SimdOptimizer {
         // 处理对齐的部分
         while i + 4 <= len && (data.as_ptr() as usize + i * 8) % 32 == 0 {
             let chunk = &data[i..i + 4];
-            let a = unsafe { _mm256_load_pd(chunk.as_ptr()) };
-            let sum_vec = unsafe { _mm256_hadd_pd(a, a) };
-            let sum_scalar = unsafe { _mm256_extractf128_pd(sum_vec, 0) };
-            let sum_low = unsafe { _mm_cvtsd_f64(sum_scalar) };
-            let sum_high = unsafe { _mm_cvtsd_f64(_mm_unpackhi_pd(sum_scalar, sum_scalar)) };
-            sum += sum_low + sum_high;
+            sum += unsafe { Self::sum_aligned_chunk(chunk) };
             i += 4;
         }
 
@@ -195,6 +190,19 @@ impl SimdOptimizer {
         }
 
         sum
+    }
+
+    #[target_feature(enable = "avx2")]
+    #[allow(unused_unsafe)]
+    unsafe fn sum_aligned_chunk(chunk: &[f64]) -> f64 {
+        unsafe {
+            let a = _mm256_load_pd(chunk.as_ptr());
+            let sum_vec = _mm256_hadd_pd(a, a);
+            let sum_scalar = _mm256_extractf128_pd(sum_vec, 0);
+            let sum_low = _mm_cvtsd_f64(sum_scalar);
+            let sum_high = _mm_cvtsd_f64(_mm_unpackhi_pd(sum_scalar, sum_scalar));
+            sum_low + sum_high
+        }
     }
 
     /// AVX2实现点积
@@ -210,16 +218,7 @@ impl SimdOptimizer {
 
         // 处理对齐的部分
         while i + 4 <= len && (a.as_ptr() as usize + i * 8) % 32 == 0 {
-            let a_chunk = &a[i..i + 4];
-            let b_chunk = &b[i..i + 4];
-            let a_vec = unsafe { _mm256_load_pd(a_chunk.as_ptr()) };
-            let b_vec = unsafe { _mm256_load_pd(b_chunk.as_ptr()) };
-            let product = unsafe { _mm256_mul_pd(a_vec, b_vec) };
-            let sum_vec = unsafe { _mm256_hadd_pd(product, product) };
-            let sum_scalar = unsafe { _mm256_extractf128_pd(sum_vec, 0) };
-            let sum_low = unsafe { _mm_cvtsd_f64(sum_scalar) };
-            let sum_high = unsafe { _mm_cvtsd_f64(_mm_unpackhi_pd(sum_scalar, sum_scalar)) };
-            sum += sum_low + sum_high;
+            sum += unsafe { Self::dot_aligned_chunk(&a[i..i + 4], &b[i..i + 4]) };
             i += 4;
         }
 
@@ -230,6 +229,21 @@ impl SimdOptimizer {
         }
 
         sum
+    }
+
+    #[target_feature(enable = "avx2")]
+    #[allow(unused_unsafe)]
+    unsafe fn dot_aligned_chunk(a_chunk: &[f64], b_chunk: &[f64]) -> f64 {
+        unsafe {
+            let a_vec = _mm256_load_pd(a_chunk.as_ptr());
+            let b_vec = _mm256_load_pd(b_chunk.as_ptr());
+            let product = _mm256_mul_pd(a_vec, b_vec);
+            let sum_vec = _mm256_hadd_pd(product, product);
+            let sum_scalar = _mm256_extractf128_pd(sum_vec, 0);
+            let sum_low = _mm_cvtsd_f64(sum_scalar);
+            let sum_high = _mm_cvtsd_f64(_mm_unpackhi_pd(sum_scalar, sum_scalar));
+            sum_low + sum_high
+        }
     }
 
     /// AVX2实现排序
@@ -343,25 +357,21 @@ impl SimdOptimizer {
         }
 
         if pattern.len() == 1 {
-            let target = pattern[0];
-            for (i, &byte) in data.iter().enumerate() {
-                if byte == target {
-                    return Some(i);
-                }
-            }
-            return None;
+            return self.find_single_byte(data, pattern[0]);
         }
 
-        // 使用SSE4.2的字符串比较指令
+        self.find_pattern(data, pattern)
+    }
+
+    /// 查找单字节
+    fn find_single_byte(&self, data: &[u8], target: u8) -> Option<usize> {
+        data.iter().position(|&byte| byte == target)
+    }
+
+    /// 查找模式
+    fn find_pattern(&self, data: &[u8], pattern: &[u8]) -> Option<usize> {
         let pattern_len = pattern.len();
-        for i in 0..=data.len() - pattern_len {
-            let chunk = &data[i..i + pattern_len];
-            if chunk == pattern {
-                return Some(i);
-            }
-        }
-
-        None
+        data.windows(pattern_len).position(|chunk| chunk == pattern)
     }
 
     /// SSE4.2实现内存拷贝

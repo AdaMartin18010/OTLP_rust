@@ -74,8 +74,7 @@ impl Default for FallbackConfig {
 }
 
 /// 错误恢复策略
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum RecoveryStrategy {
     /// 重试策略
     Retry(RetryConfig),
@@ -92,7 +91,6 @@ pub enum RecoveryStrategy {
         parameters: HashMap<String, String>,
     },
 }
-
 
 /// 错误恢复器
 pub struct ErrorRecovery {

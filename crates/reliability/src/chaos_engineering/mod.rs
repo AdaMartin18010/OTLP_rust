@@ -25,8 +25,7 @@ pub use recovery_testing::*;
 pub use resilience_testing::*;
 
 /// 混沌工程配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChaosEngineeringConfig {
     /// 是否启用混沌工程
     pub enabled: bool,
@@ -39,7 +38,6 @@ pub struct ChaosEngineeringConfig {
     /// 恢复测试配置
     pub recovery_testing: RecoveryTestingConfig,
 }
-
 
 /// 混沌工程状态
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

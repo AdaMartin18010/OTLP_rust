@@ -333,10 +333,7 @@ impl RateLimitingHandler {
 #[async_trait::async_trait]
 impl Handler for RateLimitingHandler {
     async fn handle(&self, request: &Request) -> Result<Option<Response>> {
-        let client_id = request
-            .metadata
-            .get("client_id")
-            .unwrap_or(&request.id);
+        let client_id = request.metadata.get("client_id").unwrap_or(&request.id);
 
         let can_proceed = {
             let mut limiter = self.rate_limiter.write().await;
@@ -508,15 +505,15 @@ mod tests {
         let business_handler = BusinessLogicHandler::new();
         auth_handler.set_next(Arc::new(business_handler));
 
-        let valid_request = Request::new("req-1", serde_json::json!({}))
-            .with_metadata("token", "valid-token");
+        let valid_request =
+            Request::new("req-1", serde_json::json!({})).with_metadata("token", "valid-token");
 
         let response = auth_handler.handle(&valid_request).await.unwrap();
         assert!(response.is_some());
         assert!(response.unwrap().success);
 
-        let invalid_request = Request::new("req-2", serde_json::json!({}))
-            .with_metadata("token", "invalid-token");
+        let invalid_request =
+            Request::new("req-2", serde_json::json!({})).with_metadata("token", "invalid-token");
 
         let response = auth_handler.handle(&invalid_request).await.unwrap();
         assert!(response.is_some());
@@ -557,19 +554,19 @@ mod tests {
         let business_handler = BusinessLogicHandler::new();
         rate_limiter.set_next(Arc::new(business_handler));
 
-        let request1 = Request::new("req-1", serde_json::json!({}))
-            .with_metadata("client_id", "client1");
+        let request1 =
+            Request::new("req-1", serde_json::json!({})).with_metadata("client_id", "client1");
         let response1 = rate_limiter.handle(&request1).await.unwrap();
         assert!(response1.is_some());
 
-        let request2 = Request::new("req-2", serde_json::json!({}))
-            .with_metadata("client_id", "client1");
+        let request2 =
+            Request::new("req-2", serde_json::json!({})).with_metadata("client_id", "client1");
         let response2 = rate_limiter.handle(&request2).await.unwrap();
         assert!(response2.is_some());
 
         // 第三次应该被限流
-        let request3 = Request::new("req-3", serde_json::json!({}))
-            .with_metadata("client_id", "client1");
+        let request3 =
+            Request::new("req-3", serde_json::json!({})).with_metadata("client_id", "client1");
         let response3 = rate_limiter.handle(&request3).await.unwrap();
         assert!(response3.is_some());
         assert!(!response3.unwrap().success);

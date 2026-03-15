@@ -4,7 +4,7 @@
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use otlp::{
-    OtlpClient, OtlpConfig, TelemetryData, OtlpExporter,
+    OtlpClient, OtlpConfig, OtlpExporter, TelemetryData,
     config::TransportProtocol,
     data::{LogSeverity, MetricType, StatusCode},
 };

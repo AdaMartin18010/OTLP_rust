@@ -1036,10 +1036,7 @@ impl AlertManager {
         if update.name != metric {
             return Ok(false);
         }
-        match update.value {
-            MetricValue::Gauge(value) => Ok(value > threshold),
-            _ => Ok(false),
-        }
+        Ok(matches!(update.value, MetricValue::Gauge(v) if v > threshold))
     }
 
     /// 评估小于条件
@@ -1052,10 +1049,7 @@ impl AlertManager {
         if update.name != metric {
             return Ok(false);
         }
-        match update.value {
-            MetricValue::Gauge(value) => Ok(value < threshold),
-            _ => Ok(false),
-        }
+        Ok(matches!(update.value, MetricValue::Gauge(v) if v < threshold))
     }
 
     /// 评估等于条件
@@ -1068,10 +1062,7 @@ impl AlertManager {
         if update.name != metric {
             return Ok(false);
         }
-        match update.value {
-            MetricValue::Gauge(metric_value) => Ok((metric_value - value).abs() < f64::EPSILON),
-            _ => Ok(false),
-        }
+        Ok(matches!(update.value, MetricValue::Gauge(v) if (v - value).abs() < f64::EPSILON))
     }
 
     /// 评估不等于条件
@@ -1084,10 +1075,7 @@ impl AlertManager {
         if update.name != metric {
             return Ok(false);
         }
-        match update.value {
-            MetricValue::Gauge(metric_value) => Ok((metric_value - value).abs() >= f64::EPSILON),
-            _ => Ok(false),
-        }
+        Ok(matches!(update.value, MetricValue::Gauge(v) if (v - value).abs() >= f64::EPSILON))
     }
 
     /// 触发告警

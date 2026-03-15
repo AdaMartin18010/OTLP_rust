@@ -279,40 +279,57 @@ impl RollbackManager {
 
     /// 检查是否需要回滚
     pub fn should_rollback(&self, current_health: &HealthStatus) -> Option<String> {
-        if let Some(latest) = self.config_history.last() {
-            // 如果健康状态下降，且在回滚窗口内
-            if current_health.is_worse_than(&latest.health_status) {
-                let elapsed = latest.timestamp.elapsed().unwrap_or_default();
-                if elapsed < self.rollback_window {
-                    // 查找上一个健康的配置
-                    for snapshot in self.config_history.iter().rev().skip(1) {
-                        if snapshot.health_status == HealthStatus::Healthy {
-                            return Some(snapshot.config_hash.clone());
-                        }
-                    }
-                }
-            }
+        let latest = self.config_history.last()?;
+        
+        if !current_health.is_worse_than(&latest.health_status) {
+            return None;
         }
-        None
+        
+        let elapsed = latest.timestamp.elapsed().unwrap_or_default();
+        if elapsed >= self.rollback_window {
+            return None;
+        }
+        
+        self.find_last_healthy_config()
+    }
+
+    /// 查找上一个健康的配置
+    fn find_last_healthy_config(&self) -> Option<String> {
+        self.config_history
+            .iter()
+            .rev()
+            .skip(1)
+            .find(|s| s.health_status == HealthStatus::Healthy)
+            .map(|s| s.config_hash.clone())
     }
 
     /// 执行回滚
     pub fn rollback(&mut self) -> Option<String> {
-        // 移除当前不健康的配置
-        if let Some(latest) = self.config_history.last() {
-            if latest.health_status != HealthStatus::Healthy {
-                self.config_history.pop();
-            }
-        }
+        self.remove_unhealthy_config();
+        self.find_healthy_config()
+    }
 
-        // 查找上一个健康的配置
-        for snapshot in self.config_history.iter().rev() {
-            if snapshot.health_status == HealthStatus::Healthy {
-                return Some(snapshot.config_hash.clone());
-            }
+    /// 移除当前不健康的配置
+    fn remove_unhealthy_config(&mut self) {
+        if self.is_latest_unhealthy() {
+            self.config_history.pop();
         }
+    }
 
-        None
+    /// 检查最新配置是否不健康
+    fn is_latest_unhealthy(&self) -> bool {
+        self.config_history
+            .last()
+            .is_some_and(|latest| latest.health_status != HealthStatus::Healthy)
+    }
+
+    /// 查找健康的配置
+    fn find_healthy_config(&self) -> Option<String> {
+        self.config_history
+            .iter()
+            .rev()
+            .find(|s| s.health_status == HealthStatus::Healthy)
+            .map(|s| s.config_hash.clone())
     }
 
     /// 清理超出回滚窗口的历史记录

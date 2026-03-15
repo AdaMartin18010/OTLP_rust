@@ -250,17 +250,17 @@ impl AlertManager {
 
     async fn is_in_cooldown(&self, rule_id: &str) -> bool {
         let history = self.alert_history.read().await;
-        if let Some(last_alert) = history.iter().rev().find(|a| a.rule_id == rule_id) {
-            let elapsed = last_alert
-                .timestamp
-                .elapsed()
-                .unwrap_or(Duration::from_secs(0));
-            let rules = self.rules.read().await;
-            if let Some(rule) = rules.iter().find(|r| r.id == rule_id) {
-                return elapsed < rule.cooldown_period;
-            }
-        }
-        false
+        let last_alert = match history.iter().rev().find(|a| a.rule_id == rule_id) {
+            Some(alert) => alert,
+            None => return false,
+        };
+        
+        let elapsed = last_alert.timestamp.elapsed().unwrap_or(Duration::from_secs(0));
+        let rules = self.rules.read().await;
+        
+        rules.iter()
+            .find(|r| r.id == rule_id)
+            .map_or(false, |rule| elapsed < rule.cooldown_period)
     }
 
     async fn send_notifications(&self, alert: &Alert, channels: &[String]) -> Result<()> {

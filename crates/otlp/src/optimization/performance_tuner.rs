@@ -437,40 +437,52 @@ impl PerformanceTuner {
         let mut suggestions = Vec::new();
 
         // 分析CPU趋势
-        if let Some(trend) = self.calculate_trend(historical, |m| m.cpu_usage) {
-            if trend > 5.0 {
-                // CPU使用率上升趋势
-                suggestions.push(OptimizationSuggestion {
-                    id: format!("cpu_trend_opt_{}", Instant::now().elapsed().as_millis()),
-                    category: OptimizationCategory::Cpu,
-                    priority: OptimizationPriority::Medium,
-                    description: "CPU使用率呈上升趋势，建议提前优化".to_string(),
-                    expected_improvement: 20.0,
-                    implementation_effort: ImplementationEffort::Medium,
-                    risk_level: RiskLevel::Low,
-                    parameters: HashMap::new(),
-                });
-            }
+        if let Some(suggestion) = self.check_cpu_trend(historical) {
+            suggestions.push(suggestion);
         }
 
         // 分析内存趋势
-        if let Some(trend) = self.calculate_trend(historical, |m| m.memory_usage) {
-            if trend > 3.0 {
-                // 内存使用率上升趋势
-                suggestions.push(OptimizationSuggestion {
-                    id: format!("memory_trend_opt_{}", Instant::now().elapsed().as_millis()),
-                    category: OptimizationCategory::Memory,
-                    priority: OptimizationPriority::Medium,
-                    description: "内存使用率呈上升趋势，建议提前优化".to_string(),
-                    expected_improvement: 25.0,
-                    implementation_effort: ImplementationEffort::Medium,
-                    risk_level: RiskLevel::Low,
-                    parameters: HashMap::new(),
-                });
-            }
+        if let Some(suggestion) = self.check_memory_trend(historical) {
+            suggestions.push(suggestion);
         }
 
         Ok(suggestions)
+    }
+
+    /// 检查CPU趋势
+    fn check_cpu_trend(&self, historical: &[(Instant, PerformanceMetrics)]) -> Option<OptimizationSuggestion> {
+        let trend = self.calculate_trend(historical, |m| m.cpu_usage)?;
+        if trend <= 5.0 {
+            return None;
+        }
+        Some(OptimizationSuggestion {
+            id: format!("cpu_trend_opt_{}", Instant::now().elapsed().as_millis()),
+            category: OptimizationCategory::Cpu,
+            priority: OptimizationPriority::Medium,
+            description: "CPU使用率呈上升趋势，建议提前优化".to_string(),
+            expected_improvement: 20.0,
+            implementation_effort: ImplementationEffort::Medium,
+            risk_level: RiskLevel::Low,
+            parameters: HashMap::new(),
+        })
+    }
+
+    /// 检查内存趋势
+    fn check_memory_trend(&self, historical: &[(Instant, PerformanceMetrics)]) -> Option<OptimizationSuggestion> {
+        let trend = self.calculate_trend(historical, |m| m.memory_usage)?;
+        if trend <= 3.0 {
+            return None;
+        }
+        Some(OptimizationSuggestion {
+            id: format!("memory_trend_opt_{}", Instant::now().elapsed().as_millis()),
+            category: OptimizationCategory::Memory,
+            priority: OptimizationPriority::Medium,
+            description: "内存使用率呈上升趋势，建议提前优化".to_string(),
+            expected_improvement: 25.0,
+            implementation_effort: ImplementationEffort::Medium,
+            risk_level: RiskLevel::Low,
+            parameters: HashMap::new(),
+        })
     }
 
     /// 计算趋势

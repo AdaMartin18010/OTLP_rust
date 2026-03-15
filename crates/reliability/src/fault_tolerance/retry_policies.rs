@@ -252,10 +252,7 @@ impl RetryPolicy {
             RetryStrategy::Jittered {
                 base_delay,
                 jitter_range,
-            } => {
-                
-                self.add_jitter(*base_delay, *jitter_range)
-            }
+            } => self.add_jitter(*base_delay, *jitter_range),
             RetryStrategy::Custom { name, parameters } => {
                 debug!("使用自定义重试策略: {}, 参数: {:?}", name, parameters);
                 Duration::from_millis(100) // 默认延迟

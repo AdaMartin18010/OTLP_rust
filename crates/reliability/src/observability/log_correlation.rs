@@ -197,38 +197,44 @@ impl LogCorrelator {
             .filter(|entry| {
                 // 追踪ID过滤
                 if let Some(ref trace_id) = query.trace_id
-                    && &entry.context.trace_id != trace_id {
-                        return false;
-                    }
+                    && &entry.context.trace_id != trace_id
+                {
+                    return false;
+                }
 
                 // 请求ID过滤
                 if let Some(ref request_id) = query.request_id
-                    && &entry.context.request_id != request_id {
-                        return false;
-                    }
+                    && &entry.context.request_id != request_id
+                {
+                    return false;
+                }
 
                 // 服务名称过滤
                 if let Some(ref service_name) = query.service_name
-                    && &entry.context.service_name != service_name {
-                        return false;
-                    }
+                    && &entry.context.service_name != service_name
+                {
+                    return false;
+                }
 
                 // 日志级别过滤
                 if let Some(min_level) = query.min_level
-                    && entry.level < min_level {
-                        return false;
-                    }
+                    && entry.level < min_level
+                {
+                    return false;
+                }
 
                 // 时间范围过滤
                 if let Some(start_time) = query.start_time
-                    && entry.timestamp < start_time {
-                        return false;
-                    }
+                    && entry.timestamp < start_time
+                {
+                    return false;
+                }
 
                 if let Some(end_time) = query.end_time
-                    && entry.timestamp > end_time {
-                        return false;
-                    }
+                    && entry.timestamp > end_time
+                {
+                    return false;
+                }
 
                 true
             })

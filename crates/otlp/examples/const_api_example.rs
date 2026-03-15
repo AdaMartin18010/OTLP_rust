@@ -3,8 +3,8 @@
 //! 演示如何使用const API实现编译时优化
 
 use otlp::config::{
-    validate_batch_size, validate_timeout, DEFAULT_BATCH_SIZE, DEFAULT_TIMEOUT, MAX_BATCH_SIZE,
-    MIN_BATCH_SIZE,
+    DEFAULT_BATCH_SIZE, DEFAULT_TIMEOUT, MAX_BATCH_SIZE, MIN_BATCH_SIZE, validate_batch_size,
+    validate_timeout,
 };
 use std::time::Duration;
 
@@ -44,7 +44,10 @@ fn main() {
         .timeout(Duration::from_secs(5))
         .build();
     println!("\n配置构建器示例已创建");
-    println!("批处理大小: {}, 超时: {:?}", config.batch_size, config.timeout);
+    println!(
+        "批处理大小: {}, 超时: {:?}",
+        config.batch_size, config.timeout
+    );
 }
 
 // 示例配置构建器 (简化版)

@@ -143,14 +143,16 @@ impl FaaSEnvironmentAdapter {
     /// 检测超时时间
     fn detect_timeout() -> Duration {
         if let Ok(timeout_str) = std::env::var("AWS_LAMBDA_TIMEOUT")
-            && let Ok(timeout_secs) = timeout_str.parse::<u64>() {
-                return Duration::from_secs(timeout_secs);
-            }
+            && let Ok(timeout_secs) = timeout_str.parse::<u64>()
+        {
+            return Duration::from_secs(timeout_secs);
+        }
 
         if let Ok(timeout_str) = std::env::var("FUNCTION_TIMEOUT")
-            && let Ok(timeout_secs) = timeout_str.parse::<u64>() {
-                return Duration::from_secs(timeout_secs);
-            }
+            && let Ok(timeout_secs) = timeout_str.parse::<u64>()
+        {
+            return Duration::from_secs(timeout_secs);
+        }
 
         Duration::from_secs(30) // 默认30秒超时
     }
@@ -158,14 +160,16 @@ impl FaaSEnvironmentAdapter {
     /// 检测内存限制
     fn detect_memory_limit() -> u64 {
         if let Ok(memory_str) = std::env::var("AWS_LAMBDA_MEMORY_SIZE")
-            && let Ok(memory_mb) = memory_str.parse::<u64>() {
-                return memory_mb * 1024 * 1024; // 转换为字节
-            }
+            && let Ok(memory_mb) = memory_str.parse::<u64>()
+        {
+            return memory_mb * 1024 * 1024; // 转换为字节
+        }
 
         if let Ok(memory_str) = std::env::var("FUNCTION_MEMORY")
-            && let Ok(memory_mb) = memory_str.parse::<u64>() {
-                return memory_mb * 1024 * 1024; // 转换为字节
-            }
+            && let Ok(memory_mb) = memory_str.parse::<u64>()
+        {
+            return memory_mb * 1024 * 1024; // 转换为字节
+        }
 
         1024 * 1024 * 1024 // 默认1GB
     }

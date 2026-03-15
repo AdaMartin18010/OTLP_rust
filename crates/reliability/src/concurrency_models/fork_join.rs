@@ -86,7 +86,7 @@ pub trait ForkJoinTask: Send + Sync {
         //         f(results)
         //     }
         // }
-        // 
+        //
         // 当前实现：返回第一个结果作为占位
         if results.is_empty() {
             Err(UnifiedError::state_error("No results to join"))
@@ -412,12 +412,14 @@ impl ForkJoinPool {
     /// 执行work-stealing
     async fn try_steal_task(&self, worker_id: usize) -> Option<TaskId> {
         for (idx, worker) in self.workers.iter().enumerate() {
-            if idx != worker_id && !worker.is_idle()
-                && let Some(task_id) = self.workers[worker_id].try_steal_from(worker).await {
-                    let mut stats = self.stats.lock().await;
-                    stats.total_steals += 1;
-                    return Some(task_id);
-                }
+            if idx != worker_id
+                && !worker.is_idle()
+                && let Some(task_id) = self.workers[worker_id].try_steal_from(worker).await
+            {
+                let mut stats = self.stats.lock().await;
+                stats.total_steals += 1;
+                return Some(task_id);
+            }
         }
         None
     }

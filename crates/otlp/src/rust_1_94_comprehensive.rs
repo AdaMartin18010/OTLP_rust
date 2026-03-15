@@ -334,10 +334,14 @@ pub mod const_generics {
         }
 
         pub fn get(&self, key: &K) -> Option<&V> {
+            self.find_key_index(key).map(|idx| &self.values[idx])
+        }
+
+        fn find_key_index(&self, key: &K) -> Option<usize> {
             let mut i = 0;
             while i < N {
                 if self.keys[i] == *key {
-                    return Some(&self.values[i]);
+                    return Some(i);
                 }
                 i += 1;
             }
@@ -560,12 +564,9 @@ pub mod pattern_matching {
         a: Option<i32>,
         b: Option<i32>,
     ) -> Option<i32> {
-        // Rust 1.94: let chains
-        if let Some(x) = a && let Some(y) = b {
-            Some(x + y)
-        } else {
-            None
-        }
+        let x = a?;
+        let y = b?;
+        Some(x + y)
     }
 
     /// while let chains
@@ -1078,9 +1079,10 @@ pub mod performance {
     /// # 开源实践
     /// 矩阵乘法、图像处理
     pub fn cache_friendly_sum(matrix: &[Vec<f64>]) -> f64 {
+        if matrix.is_empty() { return 0.0; }
+        
         let mut sum = 0.0;
         let rows = matrix.len();
-        if rows == 0 { return 0.0; }
         let cols = matrix[0].len();
         
         // 按列优先访问，更好的缓存局部性
@@ -1099,20 +1101,29 @@ pub mod performance {
     pub fn prefetch_example(data: &[i32]) -> i32 {
         let mut sum = 0;
         for i in 0..data.len() {
-            // 预取下一块数据
-            if i + 64 < data.len() {
-                #[cfg(target_arch = "x86_64")]
-                unsafe {
-                    std::arch::x86_64::_mm_prefetch(
-                        &data[i + 64] as *const i32 as *const i8,
-                        std::arch::x86_64::_MM_HINT_T0,
-                    );
-                }
-            }
+            prefetch_if_needed(data, i);
             sum += data[i];
         }
         sum
     }
+
+    /// 根据需要预取数据
+    #[cfg(target_arch = "x86_64")]
+    fn prefetch_if_needed(data: &[i32], index: usize) {
+        if index + 64 >= data.len() {
+            return;
+        }
+        unsafe {
+            std::arch::x86_64::_mm_prefetch(
+                &data[index + 64] as *const i32 as *const i8,
+                std::arch::x86_64::_MM_HINT_T0,
+            );
+        }
+    }
+
+    /// 非x86_64架构的预取占位符
+    #[cfg(not(target_arch = "x86_64"))]
+    fn prefetch_if_needed(_data: &[i32], _index: usize) {}
 
     #[cfg(test)]
     mod tests {
@@ -1205,14 +1216,14 @@ pub mod error_handling {
 
     impl<T> Context<T, io::Error> for io::Result<T> {
         fn context(self, msg: impl Into<String>) -> Result<T, AppError> {
-            self.map_err(AppError::Io)
-                .map_err(|e| match e {
-                    AppError::Io(_) => AppError::Validation {
-                        field: msg.into(),
-                        message: e.to_string(),
-                    },
-                    _ => e,
-                })
+            self.map_err(|e| create_validation_error(e, msg))
+        }
+    }
+
+    fn create_validation_error(err: io::Error, msg: impl Into<String>) -> AppError {
+        AppError::Validation {
+            field: msg.into(),
+            message: err.to_string(),
         }
     }
 

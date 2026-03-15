@@ -4,8 +4,7 @@
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 use otlp::ebpf::{
-    EbpfConfig, EbpfEvent, EbpfEventType, EbpfLoader,
-    create_recommended_config, validate_config,
+    EbpfConfig, EbpfEvent, EbpfEventType, EbpfLoader, create_recommended_config, validate_config,
 };
 use std::time::Duration;
 
@@ -39,8 +38,8 @@ pub fn create_development_test_config() -> EbpfConfig {
 pub fn create_test_ebpf_event(event_type: EbpfEventType) -> EbpfEvent {
     EbpfEvent::new(
         event_type,
-        1000,  // pid
-        2000,  // tid
+        1000, // pid
+        2000, // tid
         vec![0x01, 0x02, 0x03, 0x04],
     )
 }
@@ -154,13 +153,25 @@ mod tests {
     fn test_create_test_ebpf_events_variety() {
         let events = create_test_ebpf_events(12);
         assert_eq!(events.len(), 12);
-        
+
         // 验证事件类型分布
-        let cpu_count = events.iter().filter(|e| e.event_type == EbpfEventType::CpuSample).count();
-        let network_count = events.iter().filter(|e| e.event_type == EbpfEventType::NetworkPacket).count();
-        let syscall_count = events.iter().filter(|e| e.event_type == EbpfEventType::Syscall).count();
-        let memory_count = events.iter().filter(|e| e.event_type == EbpfEventType::MemoryAlloc).count();
-        
+        let cpu_count = events
+            .iter()
+            .filter(|e| e.event_type == EbpfEventType::CpuSample)
+            .count();
+        let network_count = events
+            .iter()
+            .filter(|e| e.event_type == EbpfEventType::NetworkPacket)
+            .count();
+        let syscall_count = events
+            .iter()
+            .filter(|e| e.event_type == EbpfEventType::Syscall)
+            .count();
+        let memory_count = events
+            .iter()
+            .filter(|e| e.event_type == EbpfEventType::MemoryAlloc)
+            .count();
+
         assert_eq!(cpu_count, 3);
         assert_eq!(network_count, 3);
         assert_eq!(syscall_count, 3);

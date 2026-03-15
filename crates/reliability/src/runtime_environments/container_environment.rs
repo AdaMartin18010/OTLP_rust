@@ -85,9 +85,10 @@ impl ContainerEnvironmentAdapter {
         if let Ok(id) = fs::read_to_string("/proc/self/cgroup") {
             for line in id.lines() {
                 if line.contains("docker")
-                    && let Some(id) = line.split('/').next_back() {
-                        return Some(id.to_string());
-                    }
+                    && let Some(id) = line.split('/').next_back()
+                {
+                    return Some(id.to_string());
+                }
             }
         }
 
@@ -141,19 +142,21 @@ impl ContainerEnvironmentAdapter {
         // 尝试从cgroup获取内存限制
         if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/memory/memory.limit_in_bytes")
             && let Ok(limit) = content.trim().parse::<u64>()
-                && limit < u64::MAX {
-                    limits.memory_limit = Some(limit);
-                }
+            && limit < u64::MAX
+        {
+            limits.memory_limit = Some(limit);
+        }
 
         // 尝试从cgroup获取CPU限制
         if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
             && let Ok(quota) = content.trim().parse::<i64>()
-                && quota > 0
-                    && let Ok(period) = fs::read_to_string("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
-                        && let Ok(period) = period.trim().parse::<i64>()
-                            && period > 0 {
-                                limits.cpu_limit = Some(quota as f64 / period as f64);
-                            }
+            && quota > 0
+            && let Ok(period) = fs::read_to_string("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
+            && let Ok(period) = period.trim().parse::<i64>()
+            && period > 0
+        {
+            limits.cpu_limit = Some(quota as f64 / period as f64);
+        }
 
         limits
     }
@@ -162,38 +165,43 @@ impl ContainerEnvironmentAdapter {
     fn update_resource_usage(&mut self) -> Result<(), UnifiedError> {
         // 更新内存使用情况
         if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/memory/memory.usage_in_bytes")
-            && let Ok(usage) = content.trim().parse::<u64>() {
-                self.current_usage.memory_usage = usage;
-            }
+            && let Ok(usage) = content.trim().parse::<u64>()
+        {
+            self.current_usage.memory_usage = usage;
+        }
 
         // 更新CPU使用情况
         if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/cpu/cpuacct.usage")
-            && let Ok(usage) = content.trim().parse::<u64>() {
-                // 这里需要计算CPU使用率，简化实现
-                self.current_usage.cpu_usage = (usage % 100) as f64;
-            }
+            && let Ok(usage) = content.trim().parse::<u64>()
+        {
+            // 这里需要计算CPU使用率，简化实现
+            self.current_usage.cpu_usage = (usage % 100) as f64;
+        }
 
         // 更新磁盘使用情况
         if let Ok(content) = fs::read_to_string("/sys/fs/cgroup/blkio/blkio.io_service_bytes") {
             for line in content.lines() {
                 if line.contains("Read")
                     && let Some(bytes) = line.split_whitespace().nth(2)
-                        && let Ok(usage) = bytes.parse::<u64>() {
-                            self.current_usage.disk_usage = usage;
-                        }
+                    && let Ok(usage) = bytes.parse::<u64>()
+                {
+                    self.current_usage.disk_usage = usage;
+                }
             }
         }
 
         // 更新网络使用情况
         if let Ok(content) = fs::read_to_string("/sys/class/net/eth0/statistics/rx_bytes")
-            && let Ok(rx) = content.trim().parse::<u64>() {
-                self.current_usage.network_rx = rx;
-            }
+            && let Ok(rx) = content.trim().parse::<u64>()
+        {
+            self.current_usage.network_rx = rx;
+        }
 
         if let Ok(content) = fs::read_to_string("/sys/class/net/eth0/statistics/tx_bytes")
-            && let Ok(tx) = content.trim().parse::<u64>() {
-                self.current_usage.network_tx = tx;
-            }
+            && let Ok(tx) = content.trim().parse::<u64>()
+        {
+            self.current_usage.network_tx = tx;
+        }
 
         Ok(())
     }

@@ -48,11 +48,11 @@
 // 注意: eBPF 模块需要 feature = "ebpf" 才能使用
 // 如果编译时没有启用该 feature，这些导入会失败
 #[cfg(feature = "ebpf")]
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
+#[cfg(feature = "ebpf")]
+use otlp::ebpf::{EbpfConfig, EbpfLoader, recommended_sample_rate, validate_config};
 #[cfg(feature = "ebpf")]
 use std::hint::black_box;
-#[cfg(feature = "ebpf")]
-use otlp::ebpf::{EbpfConfig, EbpfLoader, validate_config, recommended_sample_rate};
 
 #[cfg(feature = "ebpf")]
 fn bench_ebpf_config_creation(c: &mut Criterion) {
@@ -81,7 +81,7 @@ fn bench_ebpf_config_builder(c: &mut Criterion) {
                 EbpfConfig::default()
                     .with_sample_rate(99)
                     .with_cpu_profiling(true)
-                    .with_network_tracing(true)
+                    .with_network_tracing(true),
             );
         });
     });
@@ -178,7 +178,7 @@ fn bench_ebpf_program_load(c: &mut Criterion) {
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 fn bench_ebpf_map_read_write(c: &mut Criterion) {
-    use otlp::ebpf::{MapsManager, MapType};
+    use otlp::ebpf::{MapType, MapsManager};
 
     let mut manager = MapsManager::new();
     manager.register_map("test_map".to_string(), MapType::Hash, 4, 8);
@@ -200,7 +200,7 @@ fn bench_ebpf_map_read_write(c: &mut Criterion) {
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 fn bench_ebpf_event_processing(c: &mut Criterion) {
-    use otlp::ebpf::{EventProcessor, EbpfEvent, EbpfEventType};
+    use otlp::ebpf::{EbpfEvent, EbpfEventType, EventProcessor};
 
     let mut processor = EventProcessor::new(1000);
     let event = EbpfEvent {
@@ -246,7 +246,7 @@ fn bench_ebpf_event_processing(c: &mut Criterion) {
 
 #[cfg(feature = "ebpf")]
 fn bench_ebpf_event_batch_processing(c: &mut Criterion) {
-    use otlp::ebpf::{EventProcessor, EbpfEvent, EbpfEventType};
+    use otlp::ebpf::{EbpfEvent, EbpfEventType, EventProcessor};
 
     let mut events = Vec::new();
     for i in 0..100 {
@@ -269,7 +269,7 @@ fn bench_ebpf_event_batch_processing(c: &mut Criterion) {
 
 #[cfg(feature = "ebpf")]
 fn bench_ebpf_event_filtering(c: &mut Criterion) {
-    use otlp::ebpf::{EventProcessor, EbpfEvent, EbpfEventType};
+    use otlp::ebpf::{EbpfEvent, EbpfEventType, EventProcessor};
 
     let mut processor = EventProcessor::new(1000);
     // 添加混合类型的事件
@@ -279,13 +279,15 @@ fn bench_ebpf_event_filtering(c: &mut Criterion) {
         } else {
             EbpfEventType::NetworkPacket
         };
-        processor.process_event(EbpfEvent {
-            event_type,
-            pid: 1000 + (i % 10),
-            tid: 2000 + i,
-            timestamp: std::time::SystemTime::now(),
-            data: vec![],
-        }).unwrap();
+        processor
+            .process_event(EbpfEvent {
+                event_type,
+                pid: 1000 + (i % 10),
+                tid: 2000 + i,
+                timestamp: std::time::SystemTime::now(),
+                data: vec![],
+            })
+            .unwrap();
     }
 
     c.bench_function("ebpf_event_filter_by_type", |b| {
@@ -321,7 +323,7 @@ fn bench_ebpf_probe_manager(c: &mut Criterion) {
 
 #[cfg(feature = "ebpf")]
 fn bench_ebpf_maps_manager(c: &mut Criterion) {
-    use otlp::ebpf::{MapsManager, MapType};
+    use otlp::ebpf::{MapType, MapsManager};
 
     c.bench_function("ebpf_maps_manager_new", |b| {
         b.iter(|| {
@@ -379,14 +381,20 @@ fn bench_ebpf_probe_operations(c: &mut Criterion) {
     group.bench_function("attach_uprobe", |b| {
         b.iter(|| {
             let mut manager = ProbeManager::new();
-            let _ = black_box(manager.attach_uprobe("test_uprobe", "/usr/bin/test", "malloc", None));
+            let _ =
+                black_box(manager.attach_uprobe("test_uprobe", "/usr/bin/test", "malloc", None));
         });
     });
 
     group.bench_function("attach_tracepoint", |b| {
         b.iter(|| {
             let mut manager = ProbeManager::new();
-            let _ = black_box(manager.attach_tracepoint("test_tracepoint", "syscalls", "sys_enter_open", None));
+            let _ = black_box(manager.attach_tracepoint(
+                "test_tracepoint",
+                "syscalls",
+                "sys_enter_open",
+                None,
+            ));
         });
     });
 
@@ -415,20 +423,20 @@ fn bench_ebpf_probe_operations(c: &mut Criterion) {
 
 #[cfg(feature = "ebpf")]
 fn bench_ebpf_event_batch_sizes(c: &mut Criterion) {
-    use otlp::ebpf::{EventProcessor, EbpfEvent, EbpfEventType};
+    use otlp::ebpf::{EbpfEvent, EbpfEventType, EventProcessor};
 
     let mut group = c.benchmark_group("ebpf_event_batch_processing_sizes");
 
     for size in [10, 100, 1000, 10000].iter() {
-        let events: Vec<EbpfEvent> = (0..*size).map(|i| {
-            EbpfEvent {
+        let events: Vec<EbpfEvent> = (0..*size)
+            .map(|i| EbpfEvent {
                 event_type: EbpfEventType::CpuSample,
                 pid: 1000 + (i % 10),
                 tid: 2000 + i,
                 timestamp: std::time::SystemTime::now(),
                 data: vec![0; 50],
-            }
-        }).collect();
+            })
+            .collect();
 
         group.bench_with_input(
             BenchmarkId::from_parameter(format!("batch_size_{}", size)),

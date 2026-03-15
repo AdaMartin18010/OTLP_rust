@@ -391,9 +391,10 @@ impl RaftNode {
 
             // 如果存在冲突，删除冲突及之后的所有条目
             if let Some(existing) = state.log.get(index as usize - 1)
-                && existing.term != entry.term {
-                    state.log.truncate(index as usize - 1);
-                }
+                && existing.term != entry.term
+            {
+                state.log.truncate(index as usize - 1);
+            }
 
             // 添加新条目
             if index as usize > state.log.len() {
@@ -515,7 +516,7 @@ impl ConsensusAlgorithm for RaftNode {
         // 5. 清理资源（移除等待器）
         //    示例:
         //       self.commit_notifiers.write().remove(&index);
-        
+
         // 简化实现：等待提交
         tokio::time::sleep(Duration::from_millis(100)).await;
 

@@ -218,8 +218,7 @@ pub struct DataEntry {
 }
 
 /// 写入选项
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct WriteOptions {
     /// 一致性级别（覆盖默认配置）
     pub consistency_level: Option<ConsistencyLevel>,
@@ -229,10 +228,8 @@ pub struct WriteOptions {
     pub vector_clock: Option<VectorClock>,
 }
 
-
 /// 读取选项
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct ReadOptions {
     /// 一致性级别
     pub consistency_level: Option<ConsistencyLevel>,
@@ -241,7 +238,6 @@ pub struct ReadOptions {
     /// 是否读取所有版本（用于冲突检测）
     pub read_all_versions: bool,
 }
-
 
 /// 复制统计信息
 #[derive(Debug, Clone, Default)]

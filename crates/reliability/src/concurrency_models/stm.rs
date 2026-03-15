@@ -245,15 +245,17 @@ impl Transaction {
 
         // 检查是否已在写入集合中
         if let Some(entry) = log.write_set.get(&tvar.id)
-            && let Some(value) = entry.value.downcast_ref::<T>() {
-                return Ok(value.clone());
-            }
+            && let Some(value) = entry.value.downcast_ref::<T>()
+        {
+            return Ok(value.clone());
+        }
 
         // 检查是否已在读取集合中
         if let Some(entry) = log.read_set.get(&tvar.id)
-            && let Some(value) = entry.value.downcast_ref::<T>() {
-                return Ok(value.clone());
-            }
+            && let Some(value) = entry.value.downcast_ref::<T>()
+        {
+            return Ok(value.clone());
+        }
 
         // 从存储中读取
         let storage = tvar.storage.read().await;

@@ -881,9 +881,10 @@ impl ResilienceTester {
 
         // 根据参数调整测试行为
         if let Some(duration) = parameters.get("duration")
-            && let Ok(duration_ms) = duration.parse::<u64>() {
-                tokio::time::sleep(Duration::from_millis(duration_ms)).await;
-            }
+            && let Ok(duration_ms) = duration.parse::<u64>()
+        {
+            tokio::time::sleep(Duration::from_millis(duration_ms)).await;
+        }
     }
 
     /// 清理所有测试

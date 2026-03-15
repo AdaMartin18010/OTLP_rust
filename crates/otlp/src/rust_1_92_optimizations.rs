@@ -104,7 +104,6 @@ impl AsyncClosureOptimizer {
     }
 
     async fn check_circuit_state(&self) -> CircuitState {
-        // 模拟状态检查
         CircuitState::Closed
     }
 
@@ -524,23 +523,65 @@ impl SimdOptimizer {
 
         for ii in (0..n).step_by(BLOCK_SIZE) {
             for jj in (0..n).step_by(BLOCK_SIZE) {
-                for kk in (0..n).step_by(BLOCK_SIZE) {
-                    // 分块处理，提高缓存命中率
-                    let i_end = (ii + BLOCK_SIZE).min(n);
-                    let j_end = (jj + BLOCK_SIZE).min(n);
-                    let k_end = (kk + BLOCK_SIZE).min(n);
-
-                    for i in ii..i_end {
-                        for j in jj..j_end {
-                            let mut sum = 0.0;
-                            for k in kk..k_end {
-                                sum += a[i * n + k] * b[k * n + j];
-                            }
-                            c[i * n + j] += sum;
-                        }
-                    }
-                }
+                self.process_block_column(a, b, c, n, ii, jj, BLOCK_SIZE);
             }
+        }
+    }
+
+    /// 处理块列
+    fn process_block_column(
+        &self,
+        a: &[f64],
+        b: &[f64],
+        c: &mut [f64],
+        n: usize,
+        ii: usize,
+        jj: usize,
+        block_size: usize,
+    ) {
+        for kk in (0..n).step_by(block_size) {
+            self.process_block(a, b, c, n, ii, jj, kk, block_size);
+        }
+    }
+
+    /// 处理单个块
+    fn process_block(
+        &self,
+        a: &[f64],
+        b: &[f64],
+        c: &mut [f64],
+        n: usize,
+        ii: usize,
+        jj: usize,
+        kk: usize,
+        block_size: usize,
+    ) {
+        let i_end = (ii + block_size).min(n);
+        let _j_end = (jj + block_size).min(n);
+        let k_end = (kk + block_size).min(n);
+
+        for i in ii..i_end {
+            self.compute_row(a, b, c, n, i, jj, k_end);
+        }
+    }
+
+    /// 计算行
+    fn compute_row(
+        &self,
+        a: &[f64],
+        b: &[f64],
+        c: &mut [f64],
+        n: usize,
+        i: usize,
+        jj: usize,
+        k_end: usize,
+    ) {
+        for j in jj..k_end {
+            let mut sum = 0.0;
+            for k in jj..k_end {
+                sum += a[i * n + k] * b[k * n + j];
+            }
+            c[i * n + j] += sum;
         }
     }
 
@@ -599,8 +640,10 @@ impl CacheOptimizer {
     #[allow(dead_code)]
     pub fn allocate_aligned(&self, size: usize) -> Result<*mut u8> {
         let aligned_size = (size + self.cache_alignment - 1) & !(self.cache_alignment - 1);
+        self.alloc_aligned_memory(aligned_size)
+    }
 
-        // 简化的内存分配，实际应用中应该使用更安全的方法
+    fn alloc_aligned_memory(&self, aligned_size: usize) -> Result<*mut u8> {
         unsafe {
             let layout = std::alloc::Layout::from_size_align(aligned_size, self.cache_alignment)
                 .expect("Cache alignment must be a power of two");
@@ -709,37 +752,56 @@ impl MemoryPoolOptimizer {
 
     /// 将内存返回到内存池
     pub fn return_memory(&mut self, size: usize, ptr: *mut u8) {
+        let should_deallocate = self.check_should_deallocate(size);
+        
+        if should_deallocate {
+            Self::deallocate_memory(ptr);
+            return;
+        }
+        
+        self.insert_into_pool(size, ptr);
+    }
+
+    /// 检查是否应该释放内存
+    fn check_should_deallocate(&self, size: usize) -> bool {
+        match self.pools.get(&size) {
+            Some(pool) => pool.len() >= self.max_pool_size,
+            None => false,
+        }
+    }
+
+    /// 插入到池中
+    fn insert_into_pool(&mut self, size: usize, ptr: *mut u8) {
         if let Some(pool) = self.pools.get_mut(&size) {
-            if pool.len() < self.max_pool_size {
-                pool.push(ptr);
-            } else {
-                // 简化的内存释放，实际应用中应该使用更安全的方法
-                unsafe {
-                    let layout = std::alloc::Layout::from_size_align(1024, 64)
-                        .expect("Memory alignment must be valid (64 is a power of two)");
-                    std::alloc::dealloc(ptr, layout);
-                }
-            }
-        } else {
-            let mut pool = Vec::new();
             pool.push(ptr);
+        } else {
+            let pool = vec![ptr];
             self.pools.insert(size, pool);
+        }
+    }
+
+    /// 释放内存
+    fn deallocate_memory(ptr: *mut u8) {
+        unsafe {
+            let layout = std::alloc::Layout::from_size_align(1024, 64)
+                .expect("Memory alignment must be valid (64 is a power of two)");
+            std::alloc::dealloc(ptr, layout);
         }
     }
 
     /// 清理内存池
     pub fn cleanup(&mut self) {
-        for (_, pool) in self.pools.iter_mut() {
-            for &ptr in pool.iter() {
-                // 简化的内存释放，实际应用中应该使用更安全的方法
-                unsafe {
-                    let layout = std::alloc::Layout::from_size_align(1024, 64)
-                        .expect("Memory alignment must be valid (64 is a power of two)");
-                    std::alloc::dealloc(ptr, layout);
-                }
-            }
-            pool.clear();
+        for pool in self.pools.values_mut() {
+            Self::deallocate_pool(pool);
         }
+    }
+
+    /// 释放池中的内存
+    fn deallocate_pool(pool: &mut Vec<*mut u8>) {
+        for &ptr in pool.iter() {
+            Self::deallocate_memory(ptr);
+        }
+        pool.clear();
     }
 }
 

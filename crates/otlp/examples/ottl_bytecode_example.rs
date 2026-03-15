@@ -17,12 +17,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for statement in statements {
         let program = compiler.compile(&statement)?;
-        
+
         println!("编译成功:");
         println!("  指令数: {}", program.instructions.len());
         println!("  字符串表大小: {}", program.string_table.len());
         println!("  常量池大小: {}", program.constants.len());
-        
+
         programs.push(program);
     }
 

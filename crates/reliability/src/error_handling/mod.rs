@@ -144,8 +144,7 @@ impl ErrorContext {
 }
 
 /// 错误恢复策略
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum ErrorRecoveryStrategy {
     /// 重试策略
     Retry {
@@ -170,7 +169,6 @@ pub enum ErrorRecoveryStrategy {
         parameters: HashMap<String, String>,
     },
 }
-
 
 /// 错误恢复器
 pub struct ErrorRecovery {

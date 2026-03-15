@@ -29,8 +29,7 @@ pub use performance_monitor::*;
 pub use resource_monitor::*;
 
 /// 监控配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MonitoringConfig {
     /// 健康检查配置
     pub health_check: HealthCheckConfig,
@@ -43,7 +42,6 @@ pub struct MonitoringConfig {
     /// 自动恢复配置
     pub auto_recovery: AutoRecoveryConfig,
 }
-
 
 /// 监控状态
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -240,11 +238,13 @@ impl MonitoringManager {
         anomaly_detection: &AnomalyDetectionResult,
         auto_recovery: &AutoRecoveryResult,
     ) -> MonitoringState {
-        let states = [health_check.state.clone(),
+        let states = [
+            health_check.state.clone(),
             resource_monitor.state.clone(),
             performance_monitor.state.clone(),
             anomaly_detection.state.clone(),
-            auto_recovery.state.clone()];
+            auto_recovery.state.clone(),
+        ];
 
         // 返回最严重的状态
         if states.contains(&MonitoringState::Critical) {

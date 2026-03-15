@@ -2,7 +2,7 @@
 //!
 //! 测试OTTL解析器的性能，目标达到300k span/s (10×提升)
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use otlp::ottl::bytecode::BytecodeCompiler;
 use otlp::ottl::parser::OttlParser;
 

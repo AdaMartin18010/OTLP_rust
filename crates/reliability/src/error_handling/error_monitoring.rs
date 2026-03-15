@@ -176,9 +176,10 @@ impl ErrorMonitor {
 
         // 检查告警间隔
         if let Some(last) = *last_alert
-            && now.duration_since(last) < self.alert_config.alert_interval {
-                return;
-            }
+            && now.duration_since(last) < self.alert_config.alert_interval
+        {
+            return;
+        }
 
         let stats = self.error_stats.lock().unwrap();
         let mut should_alert = false;

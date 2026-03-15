@@ -250,8 +250,7 @@ impl Subject for EventBus {
         // 获取订阅了此事件类型的观察者
         let subscriber_ids = {
             let subs = self.subscriptions.read().await;
-            subs.get(&event.event_type).cloned()
-                .unwrap_or_default()
+            subs.get(&event.event_type).cloned().unwrap_or_default()
         };
 
         // 获取观察者并按优先级排序
@@ -303,10 +302,7 @@ impl Observer for LogObserver {
     async fn on_event(&self, event: &Event) -> Result<()> {
         println!(
             "[{}] {:?} event from {}: {:?}",
-            self.id,
-            event.event_type,
-            event.source,
-            event.data
+            self.id, event.event_type, event.source, event.data
         );
         Ok(())
     }

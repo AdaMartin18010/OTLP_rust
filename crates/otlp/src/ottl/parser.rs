@@ -522,24 +522,16 @@ impl OttlParser {
     /// 解析资源路径
     fn parse_resource_path(&mut self) -> Result<Path, ParseError> {
         self.expect(Token::Dot)?;
-        let token = self.peek().clone();
-        match token {
-            Token::Identifier(name) => {
-                self.advance();
-                if name == "attributes" {
-                    self.expect(Token::LeftBracket)?;
-                    let key = self.parse_string_literal()?;
-                    self.expect(Token::RightBracket)?;
-                    Ok(Path::ResourceAttribute { key: key.clone() })
-                } else {
-                    Err(ParseError::InvalidPath { path: name.clone() })
-                }
-            }
-            _ => Err(ParseError::SyntaxError {
-                message: "期望 attributes".to_string(),
-                position: self.position,
-            }),
+        let name = self.extract_identifier()?;
+        
+        if name != "attributes" {
+            return Err(ParseError::InvalidPath { path: name });
         }
+        
+        self.expect(Token::LeftBracket)?;
+        let key = self.parse_string_literal()?;
+        self.expect(Token::RightBracket)?;
+        Ok(Path::ResourceAttribute { key })
     }
 
     /// 解析作用域路径
@@ -572,18 +564,25 @@ impl OttlParser {
         F: FnOnce(String) -> Path,
     {
         self.expect(Token::Dot)?;
-        let token = self.peek().clone();
-        match token {
+        let name = self.extract_identifier()?;
+        
+        if name != "attributes" {
+            return Err(ParseError::InvalidPath { path: name });
+        }
+        
+        self.expect(Token::LeftBracket)?;
+        let key = self.parse_string_literal()?;
+        self.expect(Token::RightBracket)?;
+        Ok(path_creator(key))
+    }
+
+    /// 提取标识符
+    fn extract_identifier(&mut self) -> Result<String, ParseError> {
+        match self.peek() {
             Token::Identifier(name) => {
+                let name = name.clone();
                 self.advance();
-                if name == "attributes" {
-                    self.expect(Token::LeftBracket)?;
-                    let key = self.parse_string_literal()?;
-                    self.expect(Token::RightBracket)?;
-                    Ok(path_creator(key))
-                } else {
-                    Err(ParseError::InvalidPath { path: name })
-                }
+                Ok(name)
             }
             _ => Err(ParseError::SyntaxError {
                 message: "期望 attributes".to_string(),
@@ -753,23 +752,15 @@ impl OttlParser {
         let token = self.tokens[self.position].clone();
         self.position += 1;
 
+        self.handle_primary_token(token)
+    }
+
+    fn handle_primary_token(&mut self, token: Token) -> Result<Expression, ParseError> {
         match token {
             Token::String(s) => Ok(Expression::Literal(Literal::String(s))),
             Token::Number(n) => Ok(Expression::Literal(Literal::Float(n))),
             Token::Boolean(b) => Ok(Expression::Literal(Literal::Bool(b))),
-            Token::Identifier(name) => {
-                if self.position < self.tokens.len()
-                    && matches!(self.tokens[self.position], Token::LeftParen)
-                {
-                    // 函数调用
-                    self.parse_function_call(name)
-                } else {
-                    // 路径引用
-                    Ok(Expression::Path(Box::new(
-                        self.parse_path_from_identifier(name)?,
-                    )))
-                }
-            }
+            Token::Identifier(name) => self.handle_identifier_expression(name),
             Token::LeftParen => {
                 let expr = self.parse_expression()?;
                 self.expect(Token::RightParen)?;
@@ -780,6 +771,21 @@ impl OttlParser {
                 position: self.position,
             }),
         }
+    }
+
+    fn handle_identifier_expression(&mut self, name: String) -> Result<Expression, ParseError> {
+        if self.is_function_call() {
+            self.parse_function_call(name)
+        } else {
+            Ok(Expression::Path(Box::new(
+                self.parse_path_from_identifier(name)?,
+            )))
+        }
+    }
+
+    fn is_function_call(&self) -> bool {
+        self.position < self.tokens.len()
+            && matches!(self.tokens[self.position], Token::LeftParen)
     }
 
     /// 解析函数调用

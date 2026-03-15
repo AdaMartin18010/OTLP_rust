@@ -166,9 +166,7 @@ impl Component for RetryDecorator {
             }
         }
 
-        Err(last_error.unwrap_or_else(|| {
-            validation_error("All retry attempts failed")
-        }))
+        Err(last_error.unwrap_or_else(|| validation_error("All retry attempts failed")))
     }
 
     fn name(&self) -> &str {

@@ -74,7 +74,11 @@ pub enum ResponseStatus {
 }
 
 impl ServiceResponse {
-    pub fn success(request_id: impl Into<String>, data: serde_json::Value, duration_ms: u64) -> Self {
+    pub fn success(
+        request_id: impl Into<String>,
+        data: serde_json::Value,
+        duration_ms: u64,
+    ) -> Self {
         Self {
             request_id: request_id.into(),
             data,
@@ -83,7 +87,11 @@ impl ServiceResponse {
         }
     }
 
-    pub fn error(request_id: impl Into<String>, error: impl Into<String>, duration_ms: u64) -> Self {
+    pub fn error(
+        request_id: impl Into<String>,
+        error: impl Into<String>,
+        duration_ms: u64,
+    ) -> Self {
         Self {
             request_id: request_id.into(),
             data: serde_json::Value::Null,
@@ -212,7 +220,8 @@ pub struct CachingProxy {
     service: Arc<dyn Service>,
     cache: Arc<tokio::sync::RwLock<std::collections::HashMap<String, ServiceResponse>>>,
     ttl_ms: Option<u64>,
-    cache_timestamps: Arc<tokio::sync::RwLock<std::collections::HashMap<String, std::time::Instant>>>,
+    cache_timestamps:
+        Arc<tokio::sync::RwLock<std::collections::HashMap<String, std::time::Instant>>>,
 }
 
 impl CachingProxy {
@@ -461,13 +470,13 @@ mod tests {
 
         proxy.allow_user("user1").await;
 
-        let allowed_request = ServiceRequest::new("req-1", serde_json::json!({}))
-            .with_metadata("user", "user1");
+        let allowed_request =
+            ServiceRequest::new("req-1", serde_json::json!({})).with_metadata("user", "user1");
         let response1 = proxy.execute(&allowed_request).await.unwrap();
         assert_eq!(response1.status, ResponseStatus::Success);
 
-        let denied_request = ServiceRequest::new("req-2", serde_json::json!({}))
-            .with_metadata("user", "user2");
+        let denied_request =
+            ServiceRequest::new("req-2", serde_json::json!({})).with_metadata("user", "user2");
         let response2 = proxy.execute(&denied_request).await.unwrap();
         match response2.status {
             ResponseStatus::Error(_) => {}

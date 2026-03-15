@@ -395,35 +395,31 @@ impl OttlProcessor {
     
     fn execute_set(&self, path: &OttlPath, value: &OttlValue, ctx: &mut OttlContext) -> Result<()> {
         let value_str = self.value_to_string(value, ctx)?;
-        
+        self.apply_set_value(path, value_str, ctx);
+        Ok(())
+    }
+
+    fn apply_set_value(&self, path: &OttlPath, value_str: String, ctx: &mut OttlContext) {
         match path {
             OttlPath::Identifier(name) => {
                 ctx.resource_attributes.insert(name.clone(), value_str);
             }
             OttlPath::MapAccess { base, key } => {
-                self.set_map_access(base, key, value_str, ctx);
+                self.set_span_attribute(base, key, value_str, ctx);
             }
             _ => {}
         }
-        
-        Ok(())
     }
 
-    fn set_map_access(
+    fn set_span_attribute(
         &self,
         base: &OttlPath,
         key: &str,
         value_str: String,
         ctx: &mut OttlContext,
     ) {
-        let base_name = match base {
-            OttlPath::Identifier(name) => name,
-            _ => return,
-        };
-        
-        if base_name != "attributes" {
-            return;
-        }
+        let OttlPath::Identifier(base_name) = base else { return };
+        if base_name != "attributes" { return }
         
         if let Some(ref mut attrs) = ctx.span_attributes {
             attrs.insert(key.to_string(), value_str);
@@ -461,15 +457,9 @@ impl OttlProcessor {
             OttlCondition::Comparison { left, op, right } => {
                 self.evaluate_comparison(left, op, right, ctx)
             }
-            OttlCondition::And(left, right) => {
-                self.evaluate_and(left, right, ctx)
-            }
-            OttlCondition::Or(left, right) => {
-                self.evaluate_or(left, right, ctx)
-            }
-            OttlCondition::Not(cond) => {
-                self.evaluate_not(cond, ctx)
-            }
+            OttlCondition::And(left, right) => self.evaluate_and(left, right, ctx),
+            OttlCondition::Or(left, right) => self.evaluate_or(left, right, ctx),
+            OttlCondition::Not(cond) => self.evaluate_not(cond, ctx),
         }
     }
 

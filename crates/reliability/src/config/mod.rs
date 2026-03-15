@@ -20,8 +20,7 @@ use tracing::{
 use crate::error_handling::{ErrorContext, ErrorSeverity, UnifiedError};
 
 /// 可靠性配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ReliabilityConfig {
     /// 错误处理配置
     pub error_handling: ErrorHandlingConfig,
@@ -34,7 +33,6 @@ pub struct ReliabilityConfig {
     /// 全局配置
     pub global: GlobalConfig,
 }
-
 
 /// 错误处理配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -370,8 +368,7 @@ impl Default for AutoRecoveryConfig {
 }
 
 /// 混沌工程配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChaosEngineeringConfig {
     /// 是否启用混沌工程
     pub enabled: bool,
@@ -384,7 +381,6 @@ pub struct ChaosEngineeringConfig {
     /// 恢复测试配置
     pub recovery_testing: RecoveryTestingConfig,
 }
-
 
 /// 故障注入配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -616,9 +612,10 @@ impl ConfigManager {
 
         // 记录文件修改时间
         if let Ok(metadata) = tokio::fs::metadata(path).await
-            && let Ok(modified) = metadata.modified() {
-                *self.last_modified.lock().unwrap() = Some(modified);
-            }
+            && let Ok(modified) = metadata.modified()
+        {
+            *self.last_modified.lock().unwrap() = Some(modified);
+        }
 
         info!("配置文件加载成功: {}", path);
         Ok(())
@@ -676,15 +673,17 @@ impl ConfigManager {
     pub async fn check_reload(&mut self) -> Result<bool, UnifiedError> {
         if let Some(path) = self.config_path.clone()
             && let Ok(metadata) = tokio::fs::metadata(&path).await
-                && let Ok(modified) = metadata.modified() {
-                    let last_modified = *self.last_modified.lock().unwrap();
-                    if let Some(last) = last_modified
-                        && modified > last {
-                            // 配置文件已修改，需要重新加载
-                            self.load_from_file(&path).await?;
-                            return Ok(true);
-                        }
-                }
+            && let Ok(modified) = metadata.modified()
+        {
+            let last_modified = *self.last_modified.lock().unwrap();
+            if let Some(last) = last_modified
+                && modified > last
+            {
+                // 配置文件已修改，需要重新加载
+                self.load_from_file(&path).await?;
+                return Ok(true);
+            }
+        }
         Ok(false)
     }
 
@@ -734,7 +733,7 @@ impl GlobalConfigManager {
     }
 
     /// 加载配置
-    #[allow(clippy::await_holding_lock)]  // 暂时允许，需要重构为 async-aware 锁
+    #[allow(clippy::await_holding_lock)] // 暂时允许，需要重构为 async-aware 锁
     pub async fn load_config(&self, path: &str) -> Result<(), UnifiedError> {
         let mut manager = self.manager.lock().unwrap();
         manager.load_from_file(path).await

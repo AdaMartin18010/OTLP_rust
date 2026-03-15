@@ -427,7 +427,6 @@ impl ResourceMonitorHandler for CpuResourceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
 
             // 检查CPU使用情况
             let mut sys = sysinfo::System::new_all();
@@ -477,7 +476,6 @@ impl ResourceMonitorHandler for MemoryResourceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
 
             // 检查内存使用情况
             let mut sys = sysinfo::System::new_all();
@@ -526,7 +524,6 @@ impl ResourceMonitorHandler for DiskResourceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let state = MonitoringState::Healthy;
-            
 
             // 检查磁盘使用情况 - 暂时使用模拟数据（sysinfo 0.30 API变化）
             let total_space = 500u64 * 1024 * 1024 * 1024; // 假设500GB

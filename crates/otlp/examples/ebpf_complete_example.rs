@@ -4,8 +4,7 @@
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 use otlp::ebpf::{
-    EbpfConfig, EbpfLoader, EbpfCpuProfiler, EbpfNetworkTracer,
-    EbpfSyscallTracer, EbpfMemoryTracer,
+    EbpfConfig, EbpfCpuProfiler, EbpfLoader, EbpfMemoryTracer, EbpfNetworkTracer, EbpfSyscallTracer,
 };
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 use std::time::Duration;

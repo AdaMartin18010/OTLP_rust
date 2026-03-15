@@ -2,7 +2,7 @@
 //!
 //! 测试 OTLP 模块的整体性能特征
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
 // 性能模块基准测试
@@ -36,7 +36,7 @@ mod performance_benchmarks {
 // Profiling模块基准测试
 mod profiling_benchmarks {
     use super::*;
-    use otlp::profiling::{PprofProfile, Sample, PprofEncoder};
+    use otlp::profiling::{PprofEncoder, PprofProfile, Sample};
 
     pub fn profile_creation_benchmark(c: &mut Criterion) {
         c.bench_function("profile_creation", |b| {
@@ -86,7 +86,10 @@ mod profiling_benchmarks {
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 mod ebpf_benchmarks {
     use super::*;
-    use otlp::ebpf::{EbpfConfig, EbpfLoader, ProbeManager, MapsManager, EventProcessor, EbpfEvent, EbpfEventType, MapType};
+    use otlp::ebpf::{
+        EbpfConfig, EbpfEvent, EbpfEventType, EbpfLoader, EventProcessor, MapType, MapsManager,
+        ProbeManager,
+    };
 
     pub fn probe_attach_detach_benchmark(c: &mut Criterion) {
         let mut group = c.benchmark_group("probe_operations");

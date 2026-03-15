@@ -214,44 +214,75 @@ impl BenchmarkRunner {
         let iterations_failed = Arc::new(Mutex::new(0));
         let test_start = Instant::now();
 
-        // 根据配置选择执行模式
-        if self.config.duration > Duration::ZERO {
-            // 基于时间的测试
-            self.run_duration_based_test(
-                benchmark_fn,
-                latencies.clone(),
-                errors.clone(),
-                iterations_completed.clone(),
-                iterations_failed.clone(),
-                test_start,
-            )
-            .await;
-        } else {
-            // 基于迭代次数的测试
-            self.run_iteration_based_test(
-                benchmark_fn,
-                latencies.clone(),
-                errors.clone(),
-                iterations_completed.clone(),
-                iterations_failed.clone(),
-            )
-            .await;
-        }
+        self.run_test_by_mode(
+            &benchmark_fn,
+            latencies.clone(),
+            errors.clone(),
+            iterations_completed.clone(),
+            iterations_failed.clone(),
+            test_start,
+        ).await;
 
+        self.build_test_result(
+            test_start,
+            iterations_completed,
+            iterations_failed,
+            latencies,
+            errors,
+        ).await
+    }
+
+    async fn run_test_by_mode<F, Fut, R>(
+        &self,
+        benchmark_fn: &F,
+        latencies: Arc<Mutex<Vec<Duration>>>,
+        errors: Arc<Mutex<Vec<BenchmarkError>>>,
+        iterations_completed: Arc<Mutex<u32>>,
+        iterations_failed: Arc<Mutex<u32>>,
+        test_start: Instant,
+    ) where
+        F: Fn(u32) -> Fut + Send + Sync + 'static + Clone,
+        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>>
+            + Send,
+        R: Send,
+    {
+        if self.config.duration > Duration::ZERO {
+            self.run_duration_based_test(
+                benchmark_fn.clone(),
+                latencies,
+                errors,
+                iterations_completed,
+                iterations_failed,
+                test_start,
+            ).await;
+        } else {
+            self.run_iteration_based_test(
+                benchmark_fn.clone(),
+                latencies,
+                errors,
+                iterations_completed,
+                iterations_failed,
+            ).await;
+        }
+    }
+
+    async fn build_test_result(
+        &self,
+        test_start: Instant,
+        iterations_completed: Arc<Mutex<u32>>,
+        iterations_failed: Arc<Mutex<u32>>,
+        latencies: Arc<Mutex<Vec<Duration>>>,
+        errors: Arc<Mutex<Vec<BenchmarkError>>>,
+    ) -> Result<MainTestResult, BenchmarkError> {
         let test_duration = test_start.elapsed();
         let completed = *iterations_completed.lock().await;
         let failed = *iterations_failed.lock().await;
         let throughput = completed as f64 / test_duration.as_secs_f64();
 
-        // 计算延迟统计
         let latencies_vec = latencies.lock().await.clone();
         let latency_stats = self.calculate_latency_stats(&latencies_vec);
-
-        // 计算内存和CPU统计
         let memory_stats = self.get_memory_stats().await;
         let cpu_stats = self.get_cpu_stats().await;
-
-        // 获取错误列表
         let errors_vec = errors.lock().await.clone();
 
         Ok(MainTestResult {
@@ -286,38 +317,16 @@ impl BenchmarkRunner {
         let mut iteration = 0;
 
         while test_start.elapsed() < self.config.duration {
-            let permit = semaphore
-                .clone()
-                .acquire_owned()
-                .await
-                .expect("Failed to acquire semaphore permit for benchmark");
-            let iteration_clone = iteration;
-            let latencies = latencies.clone();
-            let errors = errors.clone();
-            let iterations_completed = iterations_completed.clone();
-            let iterations_failed = iterations_failed.clone();
-            let benchmark_fn_clone = benchmark_fn.clone();
-
-            tokio::spawn(async move {
-                let _permit = permit;
-                let start = Instant::now();
-
-                match benchmark_fn_clone(iteration_clone).await {
-                    Ok(_) => {
-                        let latency = start.elapsed();
-                        *iterations_completed.lock().await += 1;
-                        latencies.lock().await.push(latency);
-                    }
-                    Err(e) => {
-                        *iterations_failed.lock().await += 1;
-                        errors
-                            .lock()
-                            .await
-                            .push(BenchmarkError::RuntimeError(e.to_string()));
-                    }
-                }
-            });
-
+            self.spawn_benchmark_task(
+                &semaphore,
+                &benchmark_fn,
+                iteration,
+                latencies.clone(),
+                errors.clone(),
+                iterations_completed.clone(),
+                iterations_failed.clone(),
+            )
+            .await;
             iteration += 1;
         }
 
@@ -344,40 +353,61 @@ impl BenchmarkRunner {
         ));
 
         for iteration in 0..self.config.iterations {
-            let permit = semaphore
-                .clone()
-                .acquire_owned()
-                .await
-                .expect("Failed to acquire semaphore permit for benchmark iteration");
-            let latencies = latencies.clone();
-            let errors = errors.clone();
-            let iterations_completed = iterations_completed.clone();
-            let iterations_failed = iterations_failed.clone();
-            let benchmark_fn_clone = benchmark_fn.clone();
-
-            tokio::spawn(async move {
-                let _permit = permit;
-                let start = Instant::now();
-
-                match benchmark_fn_clone(iteration).await {
-                    Ok(_) => {
-                        let latency = start.elapsed();
-                        *iterations_completed.lock().await += 1;
-                        latencies.lock().await.push(latency);
-                    }
-                    Err(e) => {
-                        *iterations_failed.lock().await += 1;
-                        errors
-                            .lock()
-                            .await
-                            .push(BenchmarkError::RuntimeError(e.to_string()));
-                    }
-                }
-            });
+            self.spawn_benchmark_task(
+                &semaphore,
+                &benchmark_fn,
+                iteration,
+                latencies.clone(),
+                errors.clone(),
+                iterations_completed.clone(),
+                iterations_failed.clone(),
+            )
+            .await;
         }
 
         // 等待所有任务完成
         tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+
+    /// 生成基准测试任务
+    async fn spawn_benchmark_task<F, Fut, R>(
+        &self,
+        semaphore: &Arc<tokio::sync::Semaphore>,
+        benchmark_fn: &F,
+        iteration: u32,
+        latencies: Arc<Mutex<Vec<Duration>>>,
+        errors: Arc<Mutex<Vec<BenchmarkError>>>,
+        iterations_completed: Arc<Mutex<u32>>,
+        iterations_failed: Arc<Mutex<u32>>,
+    ) where
+        F: Fn(u32) -> Fut + Send + Sync + 'static + Clone,
+        Fut: std::future::Future<Output = Result<R, Box<dyn std::error::Error + Send + Sync>>>
+            + Send,
+        R: Send,
+    {
+        let permit = semaphore
+            .clone()
+            .acquire_owned()
+            .await
+            .expect("Failed to acquire semaphore permit for benchmark");
+        let benchmark_fn_clone = benchmark_fn.clone();
+
+        tokio::spawn(async move {
+            let _permit = permit;
+            let start = Instant::now();
+
+            match benchmark_fn_clone(iteration).await {
+                Ok(_) => {
+                    let latency = start.elapsed();
+                    *iterations_completed.lock().await += 1;
+                    latencies.lock().await.push(latency);
+                }
+                Err(e) => {
+                    *iterations_failed.lock().await += 1;
+                    errors.lock().await.push(BenchmarkError::RuntimeError(e.to_string()));
+                }
+            }
+        });
     }
 
     /// 计算延迟统计
@@ -467,31 +497,26 @@ impl BenchmarkRunner {
         system.refresh_all();
         
         let pid: Pid = get_current_pid().ok()?;
-        if let Some(process) = system.process(pid) {
-            let memory_bytes = process.memory();
-            
-            Some(MemoryStats {
-                peak_memory: memory_bytes,
-                avg_memory: memory_bytes,
-                memory_growth: 0,
-                allocations: 0,
-                deallocations: 0,
-            })
-        } else {
-            None
-        }
+        let process = system.process(pid)?;
+        let memory_bytes = process.memory();
+        
+        Some(MemoryStats {
+            peak_memory: memory_bytes,
+            avg_memory: memory_bytes,
+            memory_growth: 0,
+            allocations: 0,
+            deallocations: 0,
+        })
     }
 
     /// 获取进程内存使用量
     fn get_process_memory_usage(&self) -> u64 {
-        // 使用 sysinfo 获取进程内存
         use sysinfo::{System, get_current_pid, Pid};
         let mut system = System::new_all();
         system.refresh_all();
         
-        let pid: Pid = match get_current_pid() {
-            Ok(p) => p,
-            Err(_) => return 0,
+        let Ok(pid): Result<Pid, _> = get_current_pid() else {
+            return 0;
         };
         system.process(pid).map(|p| p.memory()).unwrap_or(0)
     }
@@ -503,32 +528,27 @@ impl BenchmarkRunner {
         let mut system = System::new_all();
         system.refresh_all();
         
-        let pid: Pid = match get_current_pid() {
-            Ok(p) => p,
-            Err(_) => {
-                return CpuStats {
-                    avg_cpu_usage: 0.0,
-                    peak_cpu_usage: 0.0,
-                    cpu_time: Duration::ZERO,
-                    context_switches: 0,
-                }
-            }
+        let Ok(pid): Result<Pid, _> = get_current_pid() else {
+            return Self::empty_cpu_stats();
         };
         
-        if let Some(process) = system.process(pid) {
-            CpuStats {
+        system.process(pid).map_or_else(
+            Self::empty_cpu_stats,
+            |process| CpuStats {
                 avg_cpu_usage: process.cpu_usage() as f64,
                 peak_cpu_usage: process.cpu_usage() as f64,
                 cpu_time: Duration::from_secs(process.run_time()),
                 context_switches: 0,
             }
-        } else {
-            CpuStats {
-                avg_cpu_usage: 0.0,
-                peak_cpu_usage: 0.0,
-                cpu_time: Duration::ZERO,
-                context_switches: 0,
-            }
+        )
+    }
+
+    fn empty_cpu_stats() -> CpuStats {
+        CpuStats {
+            avg_cpu_usage: 0.0,
+            peak_cpu_usage: 0.0,
+            cpu_time: Duration::ZERO,
+            context_switches: 0,
         }
     }
 

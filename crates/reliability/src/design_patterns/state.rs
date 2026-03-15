@@ -28,7 +28,11 @@ fn validation_error(msg: impl Into<String>) -> anyhow::Error {
 #[async_trait::async_trait]
 pub trait State: Send + Sync {
     /// 处理事件
-    async fn handle(&self, context: &mut StateContext, event: &StateEvent) -> Result<Option<Arc<dyn State>>>;
+    async fn handle(
+        &self,
+        context: &mut StateContext,
+        event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>>;
 
     /// 状态名称
     fn name(&self) -> &str;
@@ -153,7 +157,11 @@ pub struct PendingPaymentState;
 
 #[async_trait::async_trait]
 impl State for PendingPaymentState {
-    async fn handle(&self, context: &mut StateContext, event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
+    async fn handle(
+        &self,
+        context: &mut StateContext,
+        event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
         match event.event_type.as_str() {
             "pay" => {
                 context.add_history("Payment received");
@@ -182,7 +190,11 @@ pub struct PaidState;
 
 #[async_trait::async_trait]
 impl State for PaidState {
-    async fn handle(&self, context: &mut StateContext, event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
+    async fn handle(
+        &self,
+        context: &mut StateContext,
+        event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
         match event.event_type.as_str() {
             "ship" => {
                 context.add_history("Order shipped");
@@ -211,7 +223,11 @@ pub struct ShippedState;
 
 #[async_trait::async_trait]
 impl State for ShippedState {
-    async fn handle(&self, context: &mut StateContext, event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
+    async fn handle(
+        &self,
+        context: &mut StateContext,
+        event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
         match event.event_type.as_str() {
             "deliver" => {
                 context.add_history("Order delivered");
@@ -236,7 +252,11 @@ pub struct DeliveredState;
 
 #[async_trait::async_trait]
 impl State for DeliveredState {
-    async fn handle(&self, _context: &mut StateContext, _event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
+    async fn handle(
+        &self,
+        _context: &mut StateContext,
+        _event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
         // 最终状态，不接受任何转换
         Ok(None)
     }
@@ -256,7 +276,11 @@ pub struct CancelledState;
 
 #[async_trait::async_trait]
 impl State for CancelledState {
-    async fn handle(&self, _context: &mut StateContext, _event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
+    async fn handle(
+        &self,
+        _context: &mut StateContext,
+        _event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
         // 最终状态
         Ok(None)
     }
@@ -276,7 +300,11 @@ pub struct RefundedState;
 
 #[async_trait::async_trait]
 impl State for RefundedState {
-    async fn handle(&self, _context: &mut StateContext, _event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
+    async fn handle(
+        &self,
+        _context: &mut StateContext,
+        _event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
         // 最终状态
         Ok(None)
     }
@@ -312,7 +340,11 @@ impl ClosedState {
 
 #[async_trait::async_trait]
 impl State for ClosedState {
-    async fn handle(&self, _context: &mut StateContext, event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
+    async fn handle(
+        &self,
+        _context: &mut StateContext,
+        event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
         match event.event_type.as_str() {
             "failure" => {
                 let mut count = self.failure_count.write().await;
@@ -365,11 +397,14 @@ impl OpenState {
 
 #[async_trait::async_trait]
 impl State for OpenState {
-    async fn handle(&self, _context: &mut StateContext, event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
-        if event.event_type.as_str() == "timeout"
-            && self.opened_at.elapsed() >= self.timeout {
-                return Ok(Some(Arc::new(HalfOpenState::new())));
-            }
+    async fn handle(
+        &self,
+        _context: &mut StateContext,
+        event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
+        if event.event_type.as_str() == "timeout" && self.opened_at.elapsed() >= self.timeout {
+            return Ok(Some(Arc::new(HalfOpenState::new())));
+        }
         Ok(None)
     }
 
@@ -401,7 +436,11 @@ impl HalfOpenState {
 
 #[async_trait::async_trait]
 impl State for HalfOpenState {
-    async fn handle(&self, _context: &mut StateContext, event: &StateEvent) -> Result<Option<Arc<dyn State>>> {
+    async fn handle(
+        &self,
+        _context: &mut StateContext,
+        event: &StateEvent,
+    ) -> Result<Option<Arc<dyn State>>> {
         match event.event_type.as_str() {
             "success" => {
                 let mut count = self.success_count.write().await;
@@ -443,7 +482,10 @@ mod tests {
         assert_eq!(machine.current_state_name(), "Shipped");
 
         // 送达
-        machine.handle_event(StateEvent::new("deliver")).await.unwrap();
+        machine
+            .handle_event(StateEvent::new("deliver"))
+            .await
+            .unwrap();
         assert_eq!(machine.current_state_name(), "Delivered");
 
         let context = machine.get_context().await;
@@ -459,7 +501,10 @@ mod tests {
 
         // 模拟3次失败
         for _ in 0..3 {
-            machine.handle_event(StateEvent::new("failure")).await.unwrap();
+            machine
+                .handle_event(StateEvent::new("failure"))
+                .await
+                .unwrap();
         }
 
         // 应该转换到Open状态

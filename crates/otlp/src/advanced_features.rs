@@ -562,23 +562,31 @@ impl AIAnomalyDetector {
     /// 计算异常分数
     fn calculate_anomaly_score(&self, features: &[f64], model: &AnomalyModel) -> f64 {
         match model.model_type {
-            ModelType::Statistical => {
-                let mut score = 0.0;
-                for (i, &feature) in features.iter().enumerate() {
-                    if let Some(&mean) = model.parameters.get(&format!("mean_{}", i)) {
-                        if let Some(&variance) = model.parameters.get(&format!("variance_{}", i)) {
-                            let deviation = (feature - mean).abs() / variance.sqrt();
-                            score += deviation;
-                        }
-                    }
-                }
-                score / features.len() as f64
-            }
-            _ => {
-                // 其他模型类型的实现
-                0.5 // 模拟分数
-            }
+            ModelType::Statistical => self.calculate_statistical_score(features, model),
+            _ => 0.5, // 其他模型类型的模拟分数
         }
+    }
+
+    /// 计算统计分数
+    fn calculate_statistical_score(&self, features: &[f64], model: &AnomalyModel) -> f64 {
+        let total_deviation: f64 = features
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &feature)| self.calculate_feature_deviation(feature, i, model))
+            .sum();
+        total_deviation / features.len() as f64
+    }
+
+    /// 计算特征偏差
+    fn calculate_feature_deviation(
+        &self,
+        feature: f64,
+        index: usize,
+        model: &AnomalyModel,
+    ) -> Option<f64> {
+        let mean = *model.parameters.get(&format!("mean_{}", index))?;
+        let variance = *model.parameters.get(&format!("variance_{}", index))?;
+        Some((feature - mean).abs() / variance.sqrt())
     }
 }
 

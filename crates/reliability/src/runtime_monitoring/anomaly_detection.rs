@@ -438,7 +438,7 @@ impl AnomalyDetectorHandler for StatisticalAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
+
             let mut anomaly_detected = false;
 
             // 模拟统计异常检测
@@ -495,7 +495,7 @@ impl AnomalyDetectorHandler for ThresholdAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
+
             let mut anomaly_detected = false;
 
             // 模拟阈值异常检测
@@ -774,7 +774,7 @@ impl AnomalyDetectorHandler for TimeSeriesAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
+
             let mut anomaly_detected = false;
 
             // 模拟时间序列检测
@@ -843,7 +843,7 @@ impl AnomalyDetectorHandler for PatternMatchingAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
+
             let mut anomaly_detected = false;
 
             // 模拟模式匹配检测
@@ -904,7 +904,7 @@ impl AnomalyDetectorHandler for NetworkTrafficAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
+
             let mut anomaly_detected = false;
 
             // 模拟网络流量检测
@@ -969,7 +969,7 @@ impl AnomalyDetectorHandler for ResourceUsageAnomalyDetectorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
+
             let mut anomaly_detected = false;
 
             // 模拟资源使用检测

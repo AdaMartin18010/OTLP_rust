@@ -435,7 +435,6 @@ impl PerformanceMonitorHandler for ResponseTimePerformanceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
 
             // 模拟响应时间监控
             let start_time = std::time::Instant::now();
@@ -493,7 +492,6 @@ impl PerformanceMonitorHandler for ThroughputPerformanceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
 
             // 模拟吞吐量监控
             use rand::Rng;
@@ -542,7 +540,6 @@ impl PerformanceMonitorHandler for ErrorRatePerformanceMonitorHandler {
         Box::pin(async move {
             let mut details = HashMap::new();
             let mut state = MonitoringState::Healthy;
-            
 
             // 模拟错误率监控
             use rand::Rng;

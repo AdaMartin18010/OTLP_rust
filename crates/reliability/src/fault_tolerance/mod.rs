@@ -45,8 +45,7 @@ pub use circuit_breaker_enhanced::{
 };
 
 /// 容错配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FaultToleranceConfig {
     /// 断路器配置
     pub circuit_breaker: CircuitBreakerConfig,
@@ -59,7 +58,6 @@ pub struct FaultToleranceConfig {
     /// 降级配置
     pub fallback: FallbackConfig,
 }
-
 
 /// 容错构建器
 pub struct ResilienceBuilder {

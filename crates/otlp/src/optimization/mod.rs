@@ -112,53 +112,62 @@ impl OptimizationManager {
         let mut failed_count = 0;
         let mut total_improvement = 0.0;
 
-        // 应用性能调优建议
-        for suggestion in &report.performance_suggestions {
-            match self.performance_tuner.apply_optimization(suggestion).await {
-                Ok(success) => {
-                    if success {
-                        applied_count += 1;
-                        total_improvement += suggestion.expected_improvement;
-                    } else {
-                        failed_count += 1;
-                    }
-                }
-                Err(_) => failed_count += 1,
-            }
-        }
-
-        // 应用配置优化建议
-        for optimization in &report.config_optimizations {
-            match self
-                .smart_config_manager
-                .apply_optimization(optimization)
-                .await
-            {
-                Ok(success) => {
-                    if success {
-                        applied_count += 1;
-                        total_improvement += optimization.expected_improvement;
-                    } else {
-                        failed_count += 1;
-                    }
-                }
-                Err(_) => failed_count += 1,
-            }
-        }
+        self.apply_performance_suggestions(&report.performance_suggestions, &mut applied_count, &mut failed_count, &mut total_improvement).await;
+        self.apply_config_optimizations(&report.config_optimizations, &mut applied_count, &mut failed_count, &mut total_improvement).await;
 
         let result = OptimizationResult {
             timestamp: std::time::Instant::now(),
             applied_optimizations: applied_count,
             failed_optimizations: failed_count,
             total_improvement,
-            success_rate: if applied_count + failed_count > 0 {
-                applied_count as f64 / (applied_count + failed_count) as f64
-            } else {
-                0.0
-            },
+            success_rate: self.calculate_success_rate(applied_count, failed_count),
         };
 
         Ok(result)
+    }
+
+    async fn apply_performance_suggestions(
+        &self,
+        suggestions: &[OptimizationSuggestion],
+        applied_count: &mut usize,
+        failed_count: &mut usize,
+        total_improvement: &mut f64,
+    ) {
+        for suggestion in suggestions {
+            match self.performance_tuner.apply_optimization(suggestion).await {
+                Ok(true) => {
+                    *applied_count += 1;
+                    *total_improvement += suggestion.expected_improvement;
+                }
+                _ => *failed_count += 1,
+            }
+        }
+    }
+
+    async fn apply_config_optimizations(
+        &self,
+        optimizations: &[ConfigOptimization],
+        applied_count: &mut usize,
+        failed_count: &mut usize,
+        total_improvement: &mut f64,
+    ) {
+        for optimization in optimizations {
+            match self.smart_config_manager.apply_optimization(optimization).await {
+                Ok(true) => {
+                    *applied_count += 1;
+                    *total_improvement += optimization.expected_improvement;
+                }
+                _ => *failed_count += 1,
+            }
+        }
+    }
+
+    fn calculate_success_rate(&self, applied: usize, failed: usize) -> f64 {
+        if applied + failed > 0 {
+            applied as f64 / (applied + failed) as f64
+        } else {
+            0.0
+        }
     }
 
     /// 计算关键问题数量
@@ -238,58 +247,54 @@ pub struct OptimizationResult {
 
 /// 优化建议优先级排序
 pub fn sort_optimizations_by_priority(optimizations: &mut [OptimizationSuggestion]) {
-    optimizations.sort_by(|a, b| match (&a.priority, &b.priority) {
-        (OptimizationPriority::Critical, OptimizationPriority::Critical) => b
-            .expected_improvement
-            .partial_cmp(&a.expected_improvement)
-            .unwrap_or(std::cmp::Ordering::Equal),
+    optimizations.sort_by(compare_by_priority);
+}
+
+fn compare_by_priority(a: &OptimizationSuggestion, b: &OptimizationSuggestion) -> std::cmp::Ordering {
+    match (&a.priority, &b.priority) {
+        (OptimizationPriority::Critical, OptimizationPriority::Critical) => compare_improvement(b, a),
         (OptimizationPriority::Critical, _) => std::cmp::Ordering::Less,
         (_, OptimizationPriority::Critical) => std::cmp::Ordering::Greater,
-        (OptimizationPriority::High, OptimizationPriority::High) => b
-            .expected_improvement
-            .partial_cmp(&a.expected_improvement)
-            .unwrap_or(std::cmp::Ordering::Equal),
+        (OptimizationPriority::High, OptimizationPriority::High) => compare_improvement(b, a),
         (OptimizationPriority::High, _) => std::cmp::Ordering::Less,
         (_, OptimizationPriority::High) => std::cmp::Ordering::Greater,
-        (OptimizationPriority::Medium, OptimizationPriority::Medium) => b
-            .expected_improvement
-            .partial_cmp(&a.expected_improvement)
-            .unwrap_or(std::cmp::Ordering::Equal),
+        (OptimizationPriority::Medium, OptimizationPriority::Medium) => compare_improvement(b, a),
         (OptimizationPriority::Medium, _) => std::cmp::Ordering::Less,
         (_, OptimizationPriority::Medium) => std::cmp::Ordering::Greater,
-        (OptimizationPriority::Low, OptimizationPriority::Low) => b
-            .expected_improvement
-            .partial_cmp(&a.expected_improvement)
-            .unwrap_or(std::cmp::Ordering::Equal),
-    });
+        (OptimizationPriority::Low, OptimizationPriority::Low) => compare_improvement(b, a),
+    }
+}
+
+fn compare_improvement(a: &OptimizationSuggestion, b: &OptimizationSuggestion) -> std::cmp::Ordering {
+    a.expected_improvement
+        .partial_cmp(&b.expected_improvement)
+        .unwrap_or(std::cmp::Ordering::Equal)
 }
 
 /// 配置优化优先级排序
 pub fn sort_config_optimizations_by_priority(optimizations: &mut [ConfigOptimization]) {
-    optimizations.sort_by(|a, b| match (&a.risk_level, &b.risk_level) {
-        (ConfigRiskLevel::Low, ConfigRiskLevel::Low) => b
-            .expected_improvement
-            .partial_cmp(&a.expected_improvement)
-            .unwrap_or(std::cmp::Ordering::Equal),
+    optimizations.sort_by(compare_config_by_priority);
+}
+
+fn compare_config_by_priority(a: &ConfigOptimization, b: &ConfigOptimization) -> std::cmp::Ordering {
+    match (&a.risk_level, &b.risk_level) {
+        (ConfigRiskLevel::Low, ConfigRiskLevel::Low) => compare_config_improvement(b, a),
         (ConfigRiskLevel::Low, _) => std::cmp::Ordering::Less,
         (_, ConfigRiskLevel::Low) => std::cmp::Ordering::Greater,
-        (ConfigRiskLevel::Medium, ConfigRiskLevel::Medium) => b
-            .expected_improvement
-            .partial_cmp(&a.expected_improvement)
-            .unwrap_or(std::cmp::Ordering::Equal),
+        (ConfigRiskLevel::Medium, ConfigRiskLevel::Medium) => compare_config_improvement(b, a),
         (ConfigRiskLevel::Medium, _) => std::cmp::Ordering::Less,
         (_, ConfigRiskLevel::Medium) => std::cmp::Ordering::Greater,
-        (ConfigRiskLevel::High, ConfigRiskLevel::High) => b
-            .expected_improvement
-            .partial_cmp(&a.expected_improvement)
-            .unwrap_or(std::cmp::Ordering::Equal),
+        (ConfigRiskLevel::High, ConfigRiskLevel::High) => compare_config_improvement(b, a),
         (ConfigRiskLevel::High, _) => std::cmp::Ordering::Less,
         (_, ConfigRiskLevel::High) => std::cmp::Ordering::Greater,
-        (ConfigRiskLevel::VeryHigh, ConfigRiskLevel::VeryHigh) => b
-            .expected_improvement
-            .partial_cmp(&a.expected_improvement)
-            .unwrap_or(std::cmp::Ordering::Equal),
-    });
+        (ConfigRiskLevel::VeryHigh, ConfigRiskLevel::VeryHigh) => compare_config_improvement(b, a),
+    }
+}
+
+fn compare_config_improvement(a: &ConfigOptimization, b: &ConfigOptimization) -> std::cmp::Ordering {
+    a.expected_improvement
+        .partial_cmp(&b.expected_improvement)
+        .unwrap_or(std::cmp::Ordering::Equal)
 }
 
 #[cfg(test)]

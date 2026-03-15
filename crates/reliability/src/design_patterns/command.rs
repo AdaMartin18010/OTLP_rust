@@ -357,7 +357,8 @@ impl CommandQueue {
 
     /// 启动队列处理
     pub async fn start(&self) {
-        self.running.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.running
+            .store(true, std::sync::atomic::Ordering::Relaxed);
         let queue = self.queue.clone();
         let invoker = self.invoker.clone();
         let running = self.running.clone();
@@ -381,7 +382,8 @@ impl CommandQueue {
 
     /// 停止队列处理
     pub fn stop(&self) {
-        self.running.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.running
+            .store(false, std::sync::atomic::Ordering::Relaxed);
     }
 
     /// 获取队列长度

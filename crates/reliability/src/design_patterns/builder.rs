@@ -118,14 +118,16 @@ impl Builder for RetryConfigBuilder {
 
     fn validate(&self) -> Result<()> {
         if let Some(max_attempts) = self.max_attempts
-            && max_attempts == 0 {
-                return Err(validation_error("max_attempts must be > 0"));
-            }
+            && max_attempts == 0
+        {
+            return Err(validation_error("max_attempts must be > 0"));
+        }
 
         if let Some(multiplier) = self.backoff_multiplier
-            && multiplier <= 0.0 {
-                return Err(validation_error("backoff_multiplier must be > 0"));
-            }
+            && multiplier <= 0.0
+        {
+            return Err(validation_error("backoff_multiplier must be > 0"));
+        }
 
         Ok(())
     }
@@ -224,11 +226,12 @@ impl Builder for CircuitBreakerConfigBuilder {
 
     fn validate(&self) -> Result<()> {
         if let Some(rate) = self.error_rate_threshold
-            && !(0.0..=1.0).contains(&rate) {
-                return Err(validation_error(
-                    "error_rate_threshold must be between 0 and 1",
-                ));
-            }
+            && !(0.0..=1.0).contains(&rate)
+        {
+            return Err(validation_error(
+                "error_rate_threshold must be between 0 and 1",
+            ));
+        }
 
         Ok(())
     }
