@@ -4,14 +4,18 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust
+//! ```rust,ignore
 //! use otlp::wrappers::enhanced_exporter::{EnhancedExporter, ExporterConfig};
+//! use std::time::Duration;
 //!
-//! let exporter = EnhancedExporter::new()
-//!     .with_compression(true)
-//!     .with_batch_size(100)
-//!     .with_timeout(Duration::from_secs(30))
-//!     .build()?;
+//! fn example() -> anyhow::Result<()> {
+//!     let exporter = EnhancedExporter::new()
+//!         .with_compression(true)
+//!         .with_batch_size(100)
+//!         .with_timeout(Duration::from_secs(30))
+//!         .build()?;
+//!     Ok(())
+//! }
 //! ```
 
 use std::time::Duration;

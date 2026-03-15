@@ -46,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 错误监控系统，用于监控和分析错误。
 
 **方法**:
+
 - `new(config: ErrorMonitoringConfig) -> Self` - 创建系统
 - `start() -> Result<()>` - 启动系统
 - `record_error(event: ErrorEvent) -> Result<()>` - 记录错误
@@ -56,6 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 指标收集器，用于收集和聚合指标。
 
 **方法**:
+
 - `new(config: MetricsCollectorConfig) -> Self` - 创建收集器
 - `record_metric(metric: MetricDataPoint) -> Result<()>` - 记录指标
 - `get_stats() -> MetricsCollectorStats` - 获取统计信息
@@ -65,6 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 Prometheus 导出器，用于导出指标到 Prometheus。
 
 **方法**:
+
 - `new(config: PrometheusExporterConfig) -> Self` - 创建导出器
 - `export() -> Result<String>` - 导出指标
 - `get_stats() -> PrometheusExporterStats` - 获取统计信息

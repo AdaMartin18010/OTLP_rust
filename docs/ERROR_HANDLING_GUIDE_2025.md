@@ -43,6 +43,7 @@ match process_data() {
 主要的错误类型，包含所有 OTLP 相关的错误。
 
 **变体**:
+
 - `ValidationError(String)` - 校验错误
 - `Configuration(ConfigurationError)` - 配置错误
 - `Transport(TransportError)` - 传输错误

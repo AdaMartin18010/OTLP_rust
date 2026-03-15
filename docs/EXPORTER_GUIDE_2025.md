@@ -49,6 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 主要的导出器结构体，负责数据的导出。
 
 **主要方法**:
+
 - `new(config: OtlpConfig) -> Self` - 创建导出器
 - `initialize() -> Result<()>` - 初始化导出器
 - `export(data: Vec<TelemetryData>) -> Result<ExportResult>` - 导出数据
@@ -62,12 +63,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 导出结果，包含成功/失败统计。
 
 **字段**:
+
 - `success_count: usize` - 成功数量
 - `failure_count: usize` - 失败数量
 - `duration: Duration` - 导出耗时
 - `errors: Vec<String>` - 错误信息
 
 **方法**:
+
 - `is_success() -> bool` - 是否完全成功
 - `is_failure() -> bool` - 是否完全失败
 - `total_count() -> usize` - 总数量
@@ -78,6 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 导出器指标，用于监控导出性能。
 
 **字段**:
+
 - `total_exports: u64` - 总导出次数
 - `successful_exports: u64` - 成功次数
 - `failed_exports: u64` - 失败次数

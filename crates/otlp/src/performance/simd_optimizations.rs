@@ -165,7 +165,10 @@ impl SimdOptimizer {
         &self.config
     }
 
-    // AVX2实现
+    /// AVX2实现求和
+    ///
+    /// # Safety
+    /// 调用者必须确保AVX2指令集可用
     #[target_feature(enable = "avx2")]
     #[allow(unused_unsafe)]
     unsafe fn avx2_sum(&self, data: &[f64]) -> f64 {
@@ -194,6 +197,10 @@ impl SimdOptimizer {
         sum
     }
 
+    /// AVX2实现点积
+    ///
+    /// # Safety
+    /// 调用者必须确保AVX2指令集可用
     #[target_feature(enable = "avx2")]
     #[allow(unused_unsafe)]
     unsafe fn avx2_dot_product(&self, a: &[f64], b: &[f64]) -> f64 {
@@ -225,6 +232,10 @@ impl SimdOptimizer {
         sum
     }
 
+    /// AVX2实现排序
+    ///
+    /// # Safety
+    /// 调用者必须确保AVX2指令集可用
     #[target_feature(enable = "avx2")]
     unsafe fn avx2_sort(&self, data: &mut [f64]) {
         // 简化的AVX2排序实现
@@ -232,6 +243,10 @@ impl SimdOptimizer {
         data.sort_by(|a, b| a.partial_cmp(b).unwrap());
     }
 
+    /// AVX2实现内存拷贝
+    ///
+    /// # Safety
+    /// 调用者必须确保AVX2指令集可用，且dst有足够空间
     #[target_feature(enable = "avx2")]
     #[allow(unused_unsafe)]
     unsafe fn avx2_copy(&self, src: &[u8], dst: &mut [u8]) -> usize {
@@ -256,7 +271,10 @@ impl SimdOptimizer {
         copied
     }
 
-    // SSE4.2实现
+    /// SSE4.2实现求和
+    ///
+    /// # Safety
+    /// 调用者必须确保SSE4.2指令集可用
     #[target_feature(enable = "sse4.2")]
     #[allow(unused_unsafe)]
     unsafe fn sse42_sum(&self, data: &[f64]) -> f64 {
@@ -282,6 +300,10 @@ impl SimdOptimizer {
         sum
     }
 
+    /// SSE4.2实现点积
+    ///
+    /// # Safety
+    /// 调用者必须确保SSE4.2指令集可用
     #[target_feature(enable = "sse4.2")]
     #[allow(unused_unsafe)]
     unsafe fn sse42_dot_product(&self, a: &[f64], b: &[f64]) -> f64 {
@@ -310,6 +332,10 @@ impl SimdOptimizer {
         sum
     }
 
+    /// SSE4.2实现字符串查找
+    ///
+    /// # Safety
+    /// 调用者必须确保SSE4.2指令集可用
     #[target_feature(enable = "sse4.2")]
     unsafe fn sse42_find(&self, data: &[u8], pattern: &[u8]) -> Option<usize> {
         if pattern.is_empty() {
@@ -338,6 +364,10 @@ impl SimdOptimizer {
         None
     }
 
+    /// SSE4.2实现内存拷贝
+    ///
+    /// # Safety
+    /// 调用者必须确保SSE4.2指令集可用，且dst有足够空间
     #[target_feature(enable = "sse4.2")]
     #[allow(unused_unsafe)]
     unsafe fn sse42_copy(&self, src: &[u8], dst: &mut [u8]) -> usize {

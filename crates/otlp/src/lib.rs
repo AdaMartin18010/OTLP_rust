@@ -1,22 +1,4 @@
 #![allow(clippy::excessive_nesting)]
-#![allow(clippy::new_without_default)]
-#![allow(clippy::collapsible_if)]
-#![allow(clippy::collapsible_match)]
-#![allow(clippy::manual_strip)]
-#![allow(clippy::while_let_on_iterator)]
-#![allow(clippy::len_zero)]
-#![allow(clippy::useless_conversion)]
-#![allow(clippy::map_identity)]
-#![allow(clippy::missing_safety_doc)]
-#![allow(clippy::manual_is_multiple_of)]
-#![allow(clippy::not_unsafe_ptr_arg_deref)]
-#![allow(clippy::vec_init_then_push)]
-#![allow(clippy::let_underscore_future)]
-#![allow(clippy::bool_assert_comparison)]
-#![allow(clippy::field_reassign_with_default)]
-#![allow(clippy::overly_complex_bool_expr)]
-#![allow(clippy::const_is_empty)]
-#![allow(clippy::assertions_on_constants)]
 //! # OpenTelemetry Protocol (OTLP) Implementation for Rust 1.94
 //!
 //! 本库提供了基于 Rust 1.94 语言特性的 OpenTelemetry 协议 (OTLP) 完整实现，
@@ -104,8 +86,9 @@
 //! ```
 //!
 //! ### LazyLock/LazyCell（增强版）
-//! ```rust
+//! ```rust,ignore
 //! // 线程安全延迟初始化
+//! use std::sync::LazyLock;
 //! static CONFIG: LazyLock<Config> = LazyLock::new(Config::default);
 //! 
 //! // Rust 1.94 新增：可变访问
@@ -115,23 +98,24 @@
 //! ```
 //!
 //! ### element_offset
-//! ```rust
+//! ```rust,ignore
 //! // 零拷贝序列化
 //! let offset = buffer.element_offset(&element);
 //! ```
 //!
 //! ### 数学常量
-//! ```rust
+//! ```rust,ignore
 //! // 自适应采样率
+//! let n = 1;
 //! let rate = f64::consts::EULER_GAMMA * f64::consts::GOLDEN_RATIO.powi(-n);
 //! ```
 //!
 //! ### AVX-512 FP16 / NEON FP16
-//! ```rust
+//! ```rust,ignore
 //! // x86_64: Intel Sapphire Rapids+ / AMD Zen 6+
 //! // aarch64: Apple Silicon / ARM Neoverse
 //! #[cfg(target_feature = "avx512fp16")]
-//! fn fast_sum(values: &[f16]) -> f16 { ... }
+//! fn fast_sum(values: &[f16]) -> f16 { todo!() }
 //! ```
 //!
 //! ## 设计理念

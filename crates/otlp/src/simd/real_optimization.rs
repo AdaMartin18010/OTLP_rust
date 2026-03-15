@@ -42,6 +42,8 @@ impl SimdFeatures {
 ///
 /// # 示例
 /// ```
+/// use otlp::simd::real_simd_sum_i64;
+///
 /// let values = vec![1i64, 2, 3, 4, 5, 6, 7, 8];
 /// let sum = real_simd_sum_i64(&values);
 /// assert_eq!(sum, 36);
@@ -64,6 +66,11 @@ pub fn real_simd_sum_i64(values: &[i64]) -> i64 {
     }
 }
 
+/// AVX2实现i64求和
+///
+/// # Safety
+///
+/// 调用者必须确保AVX2指令集可用（通过 [`SimdFeatures::detect`] 检测）
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 unsafe fn sum_i64_avx2(values: &[i64]) -> i64 {
@@ -95,6 +102,11 @@ unsafe fn sum_i64_avx2(values: &[i64]) -> i64 {
     sum
 }
 
+/// SSE2实现i64求和
+///
+/// # Safety
+///
+/// 调用者必须确保SSE2指令集可用（通过 [`SimdFeatures::detect`] 检测）
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse2")]
 unsafe fn sum_i64_sse2(values: &[i64]) -> i64 {
@@ -125,11 +137,13 @@ unsafe fn sum_i64_sse2(values: &[i64]) -> i64 {
     sum
 }
 
+/// 非x86_64平台的占位实现
 #[cfg(not(target_arch = "x86_64"))]
 unsafe fn sum_i64_avx2(values: &[i64]) -> i64 {
     values.iter().sum()
 }
 
+/// 非x86_64平台的占位实现
 #[cfg(not(target_arch = "x86_64"))]
 unsafe fn sum_i64_sse2(values: &[i64]) -> i64 {
     values.iter().sum()
@@ -152,6 +166,11 @@ pub fn real_simd_sum_f64(values: &[f64]) -> f64 {
     }
 }
 
+/// AVX2实现f64求和
+///
+/// # Safety
+///
+/// 调用者必须确保AVX2指令集可用（通过 [`SimdFeatures::detect`] 检测）
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 unsafe fn sum_f64_avx2(values: &[f64]) -> f64 {
@@ -181,6 +200,11 @@ unsafe fn sum_f64_avx2(values: &[f64]) -> f64 {
     sum
 }
 
+/// SSE2实现f64求和
+///
+/// # Safety
+///
+/// 调用者必须确保SSE2指令集可用（通过 [`SimdFeatures::detect`] 检测）
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse2")]
 unsafe fn sum_f64_sse2(values: &[f64]) -> f64 {
@@ -210,11 +234,13 @@ unsafe fn sum_f64_sse2(values: &[f64]) -> f64 {
     sum
 }
 
+/// 非x86_64平台的占位实现
 #[cfg(not(target_arch = "x86_64"))]
 unsafe fn sum_f64_avx2(values: &[f64]) -> f64 {
     values.iter().sum()
 }
 
+/// 非x86_64平台的占位实现
 #[cfg(not(target_arch = "x86_64"))]
 unsafe fn sum_f64_sse2(values: &[f64]) -> f64 {
     values.iter().sum()

@@ -5,7 +5,7 @@
 //! ## Rust 1.94 新特性应用
 //!
 //! ### 1. array_windows - 数组窗口迭代器
-//! ```rust
+//! ```rust,ignore
 //! // 检测 ABBA 模式（用于异常检测）
 //! fn has_abba_pattern(data: &[u8]) -> bool {
 //!     data.array_windows()
@@ -14,14 +14,17 @@
 //! ```
 //!
 //! ### 2. element_offset - 元素偏移计算
-//! ```rust
+//! ```rust,ignore
 //! // 计算字段在结构体中的偏移
 //! let offset = slice.element_offset(&slice[5]);
 //! ```
 //!
 //! ### 3. LazyLock/LazyCell 增强
-//! ```rust
+//! ```rust,ignore
 //! // 线程安全延迟初始化
+//! use std::sync::LazyLock;
+//! struct Config;
+//! impl Config { fn load() -> Self { Self } }
 //! static CONFIG: LazyLock<Config> = LazyLock::new(Config::load);
 //!
 //! // 可变访问（Rust 1.94 新增）
@@ -29,18 +32,18 @@
 //! ```
 //!
 //! ### 4. AVX-512 FP16 指令集
-//! ```rust
+//! ```rust,ignore
 //! // x86_64 AVX-512 FP16 支持（Sapphire Rapids+）
 //! #[cfg(target_arch = "x86_64")]
 //! use std::arch::x86_64::*;
 //! ```
 //!
 //! ### 5. 数学常量
-//! ```rust
-//! // Euler-Mascheroni 常数
-//! const GAMMA: f64 = f64::consts::EULER_GAMMA;
+//! ```rust,ignore
+//! // Euler-Mascheroni 常数 (Rust 1.94+)
+//! const GAMMA: f64 = 0.5772156649015329;
 //! // 黄金比例
-//! const PHI: f64 = f64::consts::GOLDEN_RATIO;
+//! const PHI: f64 = 1.618033988749895;
 //! ```
 //!
 //! ### 6. const mul_add

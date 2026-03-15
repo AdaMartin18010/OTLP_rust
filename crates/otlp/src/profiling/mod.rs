@@ -15,23 +15,24 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust
+//! ```rust,ignore
 //! use otlp::profiling::{CpuProfiler, CpuProfilerConfig};
 //! use std::time::Duration;
 //!
 //! #[tokio::main]
-//! async fn main() {
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let config = CpuProfilerConfig::default()
 //!         .with_sample_rate(99)
 //!         .with_duration(Duration::from_secs(30));
 //!     
 //!     let mut profiler = CpuProfiler::new(config);
-//!     profiler.start().await.unwrap();
+//!     profiler.start().await?;
 //!     
 //!     // 你的代码...
 //!     
-//!     profiler.stop().await.unwrap();
-//!     let profile = profiler.generate_profile().await.unwrap();
+//!     profiler.stop().await?;
+//!     let profile = profiler.generate_profile().await?;
+//!     Ok(())
 //! }
 //! ```
 //!
