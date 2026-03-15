@@ -208,6 +208,9 @@ impl Plugin for ValidationPlugin {
             crate::data::TelemetryContent::Log(_) => {
                 // 验证log数据
             }
+            crate::data::TelemetryContent::Profile(_) => {
+                // 验证profile数据 (Development)
+            }
         }
         Ok(())
     }

@@ -3,6 +3,7 @@
 [![Rust 1.94+](https://img.shields.io/badge/rust-1.94%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen.svg)](PROJECT_STATUS.md)
+[![OTLP 1.10](https://img.shields.io/badge/OTLP-1.10%20Compatible-success.svg)](https://opentelemetry.io/docs/specs/otlp/)
 
 > ⚠️ **重要诚实声明**
 >
@@ -10,6 +11,31 @@
 >
 > **生产可用功能**: OTLP传输、基础导出、批处理
 > **模拟功能**: 高级加密、eBPF分析、AI采样等
+
+## 🎯 OTLP 1.10 规范兼容
+
+本实现遵循 **[OTLP 1.10 规范](https://opentelemetry.io/docs/specs/otlp/)**，完整支持以下特性：
+
+| 信号类型 | 状态 | 说明 |
+|---------|------|------|
+| **Traces** | ✅ Stable | 分布式追踪，支持所有跨度类型和事件 |
+| **Metrics** | ✅ Stable | 完整指标支持，包括 ExponentialHistogram |
+| **Logs** | ✅ Stable | 结构化日志，严重级别映射 |
+| **Profiles** | 🔄 Development | 性能分析数据（实验性） |
+
+### 传输协议支持
+
+- **gRPC**: 端口 4317，二进制 Protobuf
+- **HTTP/Protobuf**: 端口 4318，二进制编码
+- **HTTP/JSON**: 端口 4318，JSON 编码
+
+### OTLP 1.10 关键特性
+
+- ✅ **Full Success / Partial Success / Failure** 完整响应处理
+- ✅ **ExponentialHistogram** 指数直方图指标类型
+- ✅ **gzip 压缩** 传输压缩支持
+- ✅ **符合规范的 gRPC/HTTP 错误码映射**
+- ✅ **多信号批量导出** 高效数据传输
 
 > **🚀 New User?** Start with **[Quick Reference Index](QUICK_REFERENCE_INDEX.md)** - Find what you need in 5 seconds!
 >

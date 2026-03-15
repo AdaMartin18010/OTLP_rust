@@ -9,15 +9,21 @@ use std::time::{SystemTime, UNIX_EPOCH};
 //use opentelemetry::KeyValue;
 
 /// 遥测数据类型
+/// 
+/// 遵循 OTLP 1.10 规范
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TelemetryDataType {
-    /// 追踪数据
+    /// 追踪数据 (Stable)
     #[default]
     Trace,
-    /// 指标数据
+    /// 指标数据 (Stable)
     Metric,
-    /// 日志数据
+    /// 日志数据 (Stable)
     Log,
+    /// 性能分析数据 (Development)
+    /// 
+    /// 注意：Profiles 信号目前处于开发阶段，API 可能会变化
+    Profile,
 }
 
 /// 遥测数据基类
@@ -36,6 +42,8 @@ pub struct TelemetryData {
 }
 
 /// 遥测数据内容
+/// 
+/// 遵循 OTLP 1.10 规范，支持所有信号类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TelemetryContent {
     /// 追踪数据
@@ -44,11 +52,35 @@ pub enum TelemetryContent {
     Metric(MetricData),
     /// 日志数据
     Log(LogData),
+    /// 性能分析数据 (Development)
+    Profile(ProfileData),
 }
 
 impl Default for TelemetryContent {
     fn default() -> Self {
         Self::Trace(TraceData::default())
+    }
+}
+
+impl TelemetryContent {
+    /// 获取内容类型
+    pub fn content_type(&self) -> &'static str {
+        match self {
+            Self::Trace(_) => "trace",
+            Self::Metric(_) => "metric",
+            Self::Log(_) => "log",
+            Self::Profile(_) => "profile",
+        }
+    }
+    
+    /// 获取数据点数量估算
+    pub fn data_point_count(&self) -> usize {
+        match self {
+            Self::Trace(t) => 1 + t.events.len(),
+            Self::Metric(m) => m.data_points.len(),
+            Self::Log(_) => 1,
+            Self::Profile(p) => p.samples.len(),
+        }
     }
 }
 
@@ -185,16 +217,20 @@ pub struct MetricData {
 }
 
 /// 指标类型
+/// 
+/// 遵循 OTLP 1.10 规范，包含所有标准指标类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum MetricType {
-    /// 计数器
+    /// 计数器 - 单调递增的累积值
     #[default]
     Counter,
-    /// 仪表
+    /// 仪表 - 可增可减的瞬时值
     Gauge,
-    /// 直方图
+    /// 直方图 - 值的分布统计
     Histogram,
-    /// 摘要
+    /// 指数直方图 - 使用指数桶的直方图 (OTLP 1.10+)
+    ExponentialHistogram,
+    /// 摘要 - 分位数摘要
     Summary,
 }
 
@@ -210,12 +246,18 @@ pub struct DataPoint {
 }
 
 /// 数据点值
+/// 
+/// 支持所有 OTLP 指标类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DataPointValue {
     /// 数值
     Number(f64),
+    /// 整数 (用于某些特定的计数器)
+    Int(i64),
     /// 直方图
     Histogram(HistogramData),
+    /// 指数直方图 (OTLP 1.10+)
+    ExponentialHistogram(ExponentialHistogramData),
     /// 摘要
     Summary(SummaryData),
 }
@@ -251,6 +293,38 @@ pub struct SummaryData {
     pub quantiles: Vec<Quantile>,
 }
 
+/// 指数直方图数据 (OTLP 1.10+)
+/// 
+/// 使用指数桶分布的直方图，更高效地表示大范围数值分布
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExponentialHistogramData {
+    /// 计数
+    pub count: u64,
+    /// 总和
+    pub sum: f64,
+    /// 最小值（可选）
+    pub min: Option<f64>,
+    /// 最大值（可选）
+    pub max: Option<f64>,
+    /// 桶的规模因子（决定桶的边界）
+    pub scale: i32,
+    /// 零计数（值恰好为零的计数）
+    pub zero_count: u64,
+    /// 正值桶
+    pub positive_buckets: ExponentialHistogramBuckets,
+    /// 负值桶
+    pub negative_buckets: ExponentialHistogramBuckets,
+}
+
+/// 指数直方图桶
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExponentialHistogramBuckets {
+    /// 偏移量
+    pub offset: i32,
+    /// 桶计数
+    pub bucket_counts: Vec<u64>,
+}
+
 /// 分位数
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Quantile {
@@ -282,6 +356,8 @@ pub struct LogData {
 }
 
 /// 日志严重程度
+/// 
+/// 遵循 OpenTelemetry 日志数据模型规范
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[derive(Default)]
 pub enum LogSeverity {
@@ -300,6 +376,118 @@ pub enum LogSeverity {
     Fatal = 21,
 }
 
+/// 性能分析数据 (OTLP Profiles Signal - Development)
+/// 
+/// 注意：Profiles 信号目前处于开发阶段，API 可能会变化
+/// 参考：https://opentelemetry.io/docs/specs/otlp/
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ProfileData {
+    /// 采样类型（如 CPU、内存、锁等）
+    pub sample_types: Vec<SampleType>,
+    /// 采样数据
+    pub samples: Vec<Sample>,
+    /// 映射信息（库、可执行文件等）
+    pub mappings: Vec<Mapping>,
+    /// 位置信息（函数调用位置）
+    pub locations: Vec<Location>,
+    /// 函数信息
+    pub functions: Vec<Function>,
+    /// 时间戳
+    pub timestamp: u64,
+    /// 采样持续时间（纳秒）
+    pub duration_nanos: u64,
+    /// 周期类型（如 CPU 周期、内存字节等）
+    pub period_type: Option<SampleType>,
+    /// 周期值
+    pub period: i64,
+}
+
+/// 采样类型
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SampleType {
+    /// 类型名称（如 "cpu", "memory", "lock"）
+    pub r#type: String,
+    /// 单位（如 "nanoseconds", "bytes", "count"）
+    pub unit: String,
+}
+
+/// 采样数据
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Sample {
+    /// 位置 ID 列表（指向位置表）
+    pub location_ids: Vec<u64>,
+    /// 采样值（与 sample_types 对应）
+    pub values: Vec<i64>,
+    /// 标签属性
+    pub labels: Vec<Label>,
+}
+
+/// 标签
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Label {
+    /// 键
+    pub key: String,
+    /// 字符串值
+    pub str_value: Option<String>,
+    /// 数值
+    pub num_value: Option<i64>,
+}
+
+/// 映射信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Mapping {
+    /// 映射 ID
+    pub id: u64,
+    /// 内存起始地址
+    pub memory_start: u64,
+    /// 内存限制
+    pub memory_limit: u64,
+    /// 文件偏移
+    pub file_offset: u64,
+    /// 文件名
+    pub filename: String,
+    /// 构建 ID
+    pub build_id: String,
+}
+
+/// 位置信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Location {
+    /// 位置 ID
+    pub id: u64,
+    /// 映射 ID
+    pub mapping_id: u64,
+    /// 地址
+    pub address: u64,
+    /// 行号信息
+    pub lines: Vec<Line>,
+}
+
+/// 行信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Line {
+    /// 函数 ID
+    pub function_id: u64,
+    /// 行号
+    pub line: i64,
+    /// 列号
+    pub column: i64,
+}
+
+/// 函数信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Function {
+    /// 函数 ID
+    pub id: u64,
+    /// 函数名
+    pub name: String,
+    /// 系统名称（如 C++ 修饰名）
+    pub system_name: String,
+    /// 文件名
+    pub filename: String,
+    /// 起始行号
+    pub start_line: i64,
+}
 
 impl TelemetryData {
     /// 创建新的遥测数据
@@ -377,6 +565,28 @@ impl TelemetryData {
         };
 
         Self::new(TelemetryDataType::Log, TelemetryContent::Log(log_data))
+    }
+
+    /// 创建性能分析数据 (Development)
+    /// 
+    /// 注意：Profiles 信号目前处于开发阶段
+    pub fn profile(sample_type: SampleType) -> Self {
+        let profile_data = ProfileData {
+            sample_types: vec![sample_type],
+            samples: Vec::new(),
+            mappings: Vec::new(),
+            locations: Vec::new(),
+            functions: Vec::new(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos() as u64,
+            duration_nanos: 0,
+            period_type: None,
+            period: 0,
+        };
+
+        Self::new(TelemetryDataType::Profile, TelemetryContent::Profile(profile_data))
     }
 
     /// 添加资源属性
@@ -500,6 +710,12 @@ impl TelemetryData {
                 size += log.attributes.len() * 32;
                 size += log.resource_attributes.len() * 32;
             }
+            TelemetryContent::Profile(profile) => {
+                size += profile.sample_types.len() * 32;
+                size += profile.samples.len() * 128;
+                size += profile.functions.len() * 64;
+                size += profile.locations.len() * 48;
+            }
         }
 
         size
@@ -515,6 +731,9 @@ impl TelemetryData {
                 !metric.name.is_empty() && !metric.data_points.is_empty()
             }
             TelemetryContent::Log(log) => !log.message.is_empty(),
+            TelemetryContent::Profile(profile) => {
+                !profile.sample_types.is_empty() && !profile.samples.is_empty()
+            }
         }
     }
 }

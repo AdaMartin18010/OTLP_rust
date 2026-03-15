@@ -22,6 +22,24 @@
 //! 本库提供了基于Rust 1.94语言特性的OpenTelemetry协议(OTLP)完整实现，
 //! 支持同步和异步结合的遥测数据收集、处理和传输。
 //!
+//! ## OTLP 1.10 规范兼容
+//!
+//! 本实现遵循 [OTLP 1.10 规范](https://opentelemetry.io/docs/specs/otlp/)，支持以下特性：
+//!
+//! - **全信号支持**: Traces (Stable)、Metrics (Stable)、Logs (Stable)、Profiles (Development)
+//! - **传输协议**: gRPC (端口 4317)、HTTP/Protobuf (端口 4318)、HTTP/JSON
+//! - **压缩**: gzip 压缩支持
+//! - **响应类型**: Full Success、Partial Success、Failure 完整处理
+//! - **指标类型**: Counter、Gauge、Histogram、ExponentialHistogram、Summary
+//! - **数据格式**: Protobuf 二进制、JSON 编码
+//!
+//! ### OTLP 1.10 新增特性
+//!
+//! - **Partial Success 响应**: 服务器部分接受数据时的详细处理
+//! - **Exponential Histogram**: 指数直方图指标类型支持
+//! - **Profiles 信号**: 性能分析数据支持（Development 阶段）
+//! - **改进的错误处理**: 符合规范的 gRPC 和 HTTP 错误码映射
+//!
 //! ## Rust 1.94 特性应用
 //!
 //! - **array_windows**: 用于序列差分和异常检测算法
@@ -460,10 +478,14 @@ pub use config::{
 pub use data::{
     AttributeValue, DataPoint, DataPointValue, LogData, LogSeverity, MetricData, MetricType,
     SpanKind, SpanStatus, StatusCode, TelemetryContent, TelemetryData, TelemetryDataType,
-    TraceData,
+    TraceData, 
+    // OTLP 1.10+ 新增类型
+    ProfileData, SampleType, Sample, Label, Mapping, Location, Line, Function,
+    ExponentialHistogramData, ExponentialHistogramBuckets, HistogramData, HistogramBucket,
+    SummaryData, Quantile,
 };
 pub use error::{ErrorCategory, ErrorContext, ErrorSeverity, OtlpError, Result};
-pub use exporter::{ExportResult, ExporterMetrics, OtlpExporter};
+pub use exporter::{ExportResult, ExporterMetrics, OtlpExporter, PartialSuccess};
 pub use monitoring::{
     AlertCondition, AlertRule, ErrorEvent, ErrorMonitoringMetrics, ErrorMonitoringSystem,
     MonitoringConfig,

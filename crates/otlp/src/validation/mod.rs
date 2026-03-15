@@ -35,9 +35,27 @@ impl DataValidator {
             crate::data::TelemetryContent::Log(log) => {
                 self.validate_log_data(log)?;
             }
+            crate::data::TelemetryContent::Profile(profile) => {
+                self.validate_profile_data(profile)?;
+            }
         }
 
         self.validate_common_fields(data)?;
+        Ok(())
+    }
+
+    /// 验证性能分析数据 (Development)
+    fn validate_profile_data(&self, profile: &crate::data::ProfileData) -> Result<()> {
+        if profile.sample_types.is_empty() {
+            return Err(OtlpError::Data(DataError::Validation {
+                reason: "sample_types 不能为空".to_string(),
+            }));
+        }
+        if profile.samples.is_empty() {
+            return Err(OtlpError::Data(DataError::Validation {
+                reason: "samples 不能为空".to_string(),
+            }));
+        }
         Ok(())
     }
 

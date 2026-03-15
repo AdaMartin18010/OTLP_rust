@@ -84,26 +84,75 @@ use tokio::sync::{RwLock, mpsc};
 use tokio::time::sleep;
 
 /// 导出结果
+/// 
+/// 遵循 OTLP 1.10 规范，支持 Full Success、Partial Success 和 Failure 三种响应类型
 #[derive(Debug, Clone)]
 pub struct ExportResult {
     /// 成功导出的数据数量
     pub success_count: usize,
-    /// 失败的数据数量
+    /// 失败的数据数量（被拒绝的数据点）
     pub failure_count: usize,
     /// 导出耗时
     pub duration: Duration,
     /// 错误信息
     pub errors: Vec<String>,
+    /// 部分成功信息（OTLP 1.10+）
+    /// 
+    /// 当服务器部分接受数据时，包含被拒绝的数据点数量和错误信息
+    pub partial_success: Option<PartialSuccess>,
+}
+
+/// 部分成功信息 (OTLP 1.10+)
+/// 
+/// 参考：https://opentelemetry.io/docs/specs/otlp/#partial-success
+#[derive(Debug, Clone)]
+pub struct PartialSuccess {
+    /// 被拒绝的追踪跨度数量（针对 Traces）
+    pub rejected_spans: u64,
+    /// 被拒绝的指标数据点数量（针对 Metrics）
+    pub rejected_data_points: u64,
+    /// 被拒绝的日志记录数量（针对 Logs）
+    pub rejected_log_records: u64,
+    /// 被拒绝的性能分析样本数量（针对 Profiles）
+    pub rejected_profiles: u64,
+    /// 错误信息（人类可读）
+    pub error_message: String,
+}
+
+impl PartialSuccess {
+    /// 创建新的部分成功信息
+    pub fn new(error_message: impl Into<String>) -> Self {
+        Self {
+            rejected_spans: 0,
+            rejected_data_points: 0,
+            rejected_log_records: 0,
+            rejected_profiles: 0,
+            error_message: error_message.into(),
+        }
+    }
+    
+    /// 获取被拒绝的总数量
+    pub fn total_rejected(&self) -> u64 {
+        self.rejected_spans + self.rejected_data_points + self.rejected_log_records + self.rejected_profiles
+    }
+    
+    /// 是否有被拒绝的数据
+    pub fn has_rejections(&self) -> bool {
+        self.total_rejected() > 0
+    }
 }
 
 impl ExportResult {
-    /// 创建成功结果
+    /// 创建成功结果 (Full Success - OTLP 1.10)
+    /// 
+    /// 服务器完全接受数据，partial_success 字段为空
     pub fn success(count: usize, duration: Duration) -> Self {
         Self {
             success_count: count,
             failure_count: 0,
             duration,
             errors: Vec::new(),
+            partial_success: None,
         }
     }
 
@@ -114,32 +163,69 @@ impl ExportResult {
             failure_count: count,
             duration,
             errors,
+            partial_success: None,
         }
     }
 
-    /// 创建部分成功结果
+    /// 创建部分成功结果 (Partial Success - OTLP 1.10)
+    /// 
+    /// 服务器部分接受数据，客户端不应重试
     pub fn partial(
         success_count: usize,
         failure_count: usize,
         duration: Duration,
         errors: Vec<String>,
     ) -> Self {
+        let partial_success = if failure_count > 0 {
+            Some(PartialSuccess {
+                rejected_spans: 0,
+                rejected_data_points: 0,
+                rejected_log_records: 0,
+                rejected_profiles: 0,
+                error_message: errors.join("; "),
+            })
+        } else {
+            None
+        };
+        
         Self {
             success_count,
             failure_count,
             duration,
             errors,
+            partial_success,
+        }
+    }
+    
+    /// 创建带部分成功信息的结果 (OTLP 1.10+)
+    pub fn with_partial_success(partial: PartialSuccess, duration: Duration) -> Self {
+        let failure_count = partial.total_rejected() as usize;
+        Self {
+            success_count: 0, // 将由具体场景填充
+            failure_count,
+            duration,
+            errors: vec![partial.error_message.clone()],
+            partial_success: Some(partial),
         }
     }
 
-    /// 是否完全成功
+    /// 是否完全成功 (Full Success)
+    /// 
+    /// OTLP 1.10: partial_success 字段为空表示完全成功
     pub fn is_success(&self) -> bool {
-        self.failure_count == 0
+        self.failure_count == 0 && self.partial_success.is_none()
+    }
+
+    /// 是否部分成功 (Partial Success)
+    /// 
+    /// OTLP 1.10: partial_success 字段存在表示部分成功
+    pub fn is_partial_success(&self) -> bool {
+        self.partial_success.is_some()
     }
 
     /// 是否完全失败
     pub fn is_failure(&self) -> bool {
-        self.success_count == 0
+        self.success_count == 0 && !self.is_partial_success()
     }
 
     /// 总数据数量
@@ -153,6 +239,21 @@ impl ExportResult {
             return 1.0;
         }
         self.success_count as f64 / self.total_count() as f64
+    }
+    
+    /// 根据数据类型设置被拒绝的数量
+    /// 
+    /// OTLP 1.10: 根据信号类型设置相应的拒绝计数
+    pub fn with_rejected_count(mut self, data_type: crate::data::TelemetryDataType, count: u64) -> Self {
+        if let Some(ref mut partial) = self.partial_success {
+            match data_type {
+                crate::data::TelemetryDataType::Trace => partial.rejected_spans = count,
+                crate::data::TelemetryDataType::Metric => partial.rejected_data_points = count,
+                crate::data::TelemetryDataType::Log => partial.rejected_log_records = count,
+                crate::data::TelemetryDataType::Profile => partial.rejected_profiles = count,
+            }
+        }
+        self
     }
 }
 
