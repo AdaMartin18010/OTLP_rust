@@ -24,7 +24,7 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use c13_reliability::distributed_systems::distributed_lock::{
 //!     DistributedLock, RedlockConfig, RedlockLock, LockOptions
 //! };

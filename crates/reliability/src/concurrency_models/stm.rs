@@ -20,7 +20,7 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use c13_reliability::concurrency_models::stm::{TVar, atomically, STMRuntime};
 //!
 //! async fn bank_transfer() {

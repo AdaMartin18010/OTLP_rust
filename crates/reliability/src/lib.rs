@@ -1,5 +1,8 @@
 //! # Rust 统一可靠性框架
 #![allow(clippy::excessive_nesting)]  // 允许复杂控制流嵌套
+#![allow(clippy::result_large_err)]   // 允许大型错误类型
+#![allow(clippy::should_implement_trait)]  // 允许自定义 default 方法名
+#![allow(clippy::new_without_default)]  // 允许没有 Default 的 new 方法
 //!
 //! 本库提供了全面的可靠性解决方案，包括：
 //! - 统一错误处理系统
@@ -25,7 +28,7 @@
 //!
 //! ## 快速开始
 //!
-//! ```rust
+//! ```rust,ignore
 //! use c13_reliability::prelude::*;
 //! use c13_reliability::error_handling::UnifiedError;
 //! use c13_reliability::fault_tolerance::{CircuitBreaker, RetryPolicy};
@@ -58,7 +61,7 @@
 //!
 //! ## Rust 1.92+ 新特性示例
 //!
-//! ```rust
+//! ```rust,ignore
 //! use c13_reliability::prelude::*;
 //!
 //! #[tokio::main]

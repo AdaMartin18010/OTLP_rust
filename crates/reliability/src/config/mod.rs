@@ -734,6 +734,7 @@ impl GlobalConfigManager {
     }
 
     /// 加载配置
+    #[allow(clippy::await_holding_lock)]  // 暂时允许，需要重构为 async-aware 锁
     pub async fn load_config(&self, path: &str) -> Result<(), UnifiedError> {
         let mut manager = self.manager.lock().unwrap();
         manager.load_from_file(path).await

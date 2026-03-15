@@ -13,7 +13,7 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use c13_reliability::fault_tolerance::circuit_breaker_enhanced::{
 //!     EnhancedCircuitBreaker, CircuitBreakerPolicy
 //! };

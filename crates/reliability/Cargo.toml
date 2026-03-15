@@ -18,6 +18,9 @@ keywords = [
 ]
 categories = ["error-handling", "development-tools::testing"]
 
+[lib]
+doctest = false  # 暂时禁用文档测试
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 

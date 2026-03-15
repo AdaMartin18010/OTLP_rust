@@ -567,17 +567,15 @@ impl OptimizationAlgorithm for WebAssemblyOptimizationAlgorithm {
         &self,
         context: &OptimizationContext,
     ) -> Result<Vec<OptimizationSuggestion>, UnifiedError> {
-        let mut suggestions = Vec::new();
-
         // WASM特定建议
-        suggestions.push(OptimizationSuggestion {
+        let suggestions = vec![OptimizationSuggestion {
             suggestion_type: SuggestionType::ConfigurationOptimization,
             description: "优化WASM模块加载和初始化".to_string(),
             expected_benefit: 15.0,
             implementation_cost: ImplementationCost::Low,
             priority: Priority::Medium,
             parameters: HashMap::new(),
-        });
+        }];
 
         Ok(suggestions)
     }

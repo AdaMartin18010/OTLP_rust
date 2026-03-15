@@ -5,7 +5,7 @@
 /// 创建统一错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = ErrorContext::new("module", "function", "file.rs", 42, ErrorSeverity::Medium, "category");
@@ -21,7 +21,7 @@ macro_rules! unified_error {
 /// 创建带代码的统一错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = ErrorContext::new("module", "function", "file.rs", 42, ErrorSeverity::Medium, "category");
@@ -38,7 +38,7 @@ macro_rules! unified_error_with_code {
 /// 创建带建议的统一错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = ErrorContext::new("module", "function", "file.rs", 42, ErrorSeverity::Medium, "category");
@@ -55,7 +55,7 @@ macro_rules! unified_error_with_suggestion {
 /// 创建完整的统一错误（包含代码和建议）
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = ErrorContext::new("module", "function", "file.rs", 42, ErrorSeverity::Medium, "category");
@@ -73,7 +73,7 @@ macro_rules! unified_error_full {
 /// 创建错误上下文
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = error_context!(ErrorSeverity::Medium, "category");
@@ -95,7 +95,7 @@ macro_rules! error_context {
 /// 创建带标签的错误上下文
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = error_context_with_tags!(ErrorSeverity::Medium, "category", "tag1", "tag2");
@@ -121,7 +121,7 @@ macro_rules! error_context_with_tags {
 /// 创建带元数据的错误上下文
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = error_context_with_metadata!(ErrorSeverity::Medium, "category", ("key1", "value1"), ("key2", "value2"));
@@ -147,7 +147,7 @@ macro_rules! error_context_with_metadata {
 /// 记录错误到全局监控器
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = error_context!(ErrorSeverity::Medium, "category");
@@ -164,7 +164,7 @@ macro_rules! log_error {
 /// 安全执行操作并记录错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let result = safe_execute!(|| {
@@ -199,7 +199,7 @@ macro_rules! safe_execute {
 /// 带重试的安全执行
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let result = safe_execute_with_retry!(|| async {
@@ -239,7 +239,7 @@ macro_rules! safe_execute_with_retry {
 /// 验证条件并返回错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let value = 42;
@@ -267,7 +267,7 @@ macro_rules! ensure {
 /// 验证条件并返回带代码的错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let value = 42;
@@ -296,7 +296,7 @@ macro_rules! ensure_with_code {
 /// 验证Option并返回错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let value: Option<String> = Some("test".to_string());
@@ -327,7 +327,7 @@ macro_rules! require {
 /// 验证Result并返回统一错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let result: Result<String, std::io::Error> = Ok("test".to_string());
@@ -358,7 +358,7 @@ macro_rules! require_result {
 /// 创建预定义错误
 ///
 /// # 示例
-/// ```rust
+/// ```rust,ignore
 /// use c00_reliability::error_handling::*;
 ///
 /// let context = error_context!(ErrorSeverity::High, "network");

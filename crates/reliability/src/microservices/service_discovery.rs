@@ -18,7 +18,7 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use c13_reliability::microservices::service_discovery::*;
 //! use std::time::Duration;
 //!

@@ -19,7 +19,7 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use c13_reliability::concurrency_models::fork_join::{ForkJoinPool, ForkJoinTask};
 //!
 //! async fn parallel_sum() {

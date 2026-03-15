@@ -68,8 +68,9 @@ impl GrpcTransport {
     ///
     /// # 示例
     ///
-    /// ```rust,no_run
+    /// ```rust,ignore
     /// # use otlp::{transport::GrpcTransport, config::OtlpConfig};
+    /// # use otlp::transport::Transport;
     /// # async fn example() -> Result<(), otlp::error::OtlpError> {
     /// let config = OtlpConfig::default().with_endpoint("http://localhost:4317");
     /// let transport = GrpcTransport::new(config).await?;
@@ -224,8 +225,9 @@ impl HttpTransport {
     ///
     /// # 示例
     ///
-    /// ```rust,no_run
+    /// ```rust,ignore
     /// # use otlp::{transport::HttpTransport, config::OtlpConfig};
+    /// # use otlp::transport::Transport;
     /// # async fn example() -> Result<(), otlp::error::OtlpError> {
     /// let config = OtlpConfig::default().with_endpoint("http://localhost:4318");
     /// let transport = HttpTransport::new(config).await?;

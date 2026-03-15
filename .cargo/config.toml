@@ -9,7 +9,7 @@ target = "x86_64-pc-windows-msvc"
 rustflags = [
     "-C", "target-cpu=native",
     "-C", "opt-level=3",
-    # "-D", "warnings",  # 暂时禁用，修复完所有警告后再启用
+    "-D", "warnings",  # 将警告视为错误
 ]
 
 [term]

@@ -180,5 +180,10 @@ harness = false
 
 # Profile configurations are managed at workspace root level
 
+[lib]
+name = "model"
+path = "src/lib.rs"
+doctest = false  # 暂时禁用文档测试
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }

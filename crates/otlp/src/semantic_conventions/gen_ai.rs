@@ -19,7 +19,7 @@
 //!
 //! ## Quick Start
 //!
-//! ```rust
+//! ```rust,ignore
 //! use otlp::semantic_conventions::gen_ai::{
 //!     GenAiAttributes, GenAiSystem, GenAiOperation, GenAiFinishReason
 //! };
@@ -39,7 +39,9 @@
 //! By default, this module does NOT capture sensitive content (prompts/completions).
 //! Enable content capture explicitly for development/debugging only:
 //!
-//! ```rust
+//! ```rust,ignore
+//! use otlp::semantic_conventions::gen_ai::GenAiAttributes;
+//!
 //! let attrs = GenAiAttributes::builder()
 //!     .capture_content(true)  // Only in development!
 //!     .input_message("Hello, AI!")

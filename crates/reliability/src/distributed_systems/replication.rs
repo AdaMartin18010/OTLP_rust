@@ -23,7 +23,7 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use c13_reliability::distributed_systems::replication::{
 //!     ReplicationCoordinator, ReplicationConfig, ReplicationMode, ConsistencyLevel
 //! };

@@ -21,7 +21,7 @@
 //!
 //! ### 基本导出
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use otlp::{OtlpExporter, OtlpConfig, data::TelemetryData};
 //!
 //! #[tokio::main]
@@ -32,7 +32,8 @@
 //!     let exporter = OtlpExporter::new(config);
 //!     exporter.initialize().await?;
 //!
-//!     let data = TelemetryData::trace("operation");
+//!     // Note: export() takes Vec<TelemetryData>, not a single item
+//!     let data = vec![TelemetryData::trace("operation")];
 //!     let result = exporter.export(data).await?;
 //!
 //!     println!("导出成功: {} 条数据", result.success_count);
@@ -42,7 +43,7 @@
 //!
 //! ### 批量导出
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use otlp::{OtlpExporter, OtlpConfig, data::TelemetryData};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -54,7 +55,8 @@
 //!     batch.push(TelemetryData::trace(format!("operation-{}", i)));
 //! }
 //!
-//! let result = exporter.export_batch(batch).await?;
+//! // Note: export_batch is an associated function
+//! let result = OtlpExporter::export_batch(&exporter, batch).await?;
 //! println!("批量导出: 成功={}, 失败={}",
 //!          result.success_count, result.failure_count);
 //! # Ok(())

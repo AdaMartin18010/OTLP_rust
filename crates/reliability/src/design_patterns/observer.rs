@@ -302,9 +302,9 @@ impl LogObserver {
 impl Observer for LogObserver {
     async fn on_event(&self, event: &Event) -> Result<()> {
         println!(
-            "[{}] {} event from {}: {:?}",
+            "[{}] {:?} event from {}: {:?}",
             self.id,
-            format!("{:?}", event.event_type),
+            event.event_type,
             event.source,
             event.data
         );

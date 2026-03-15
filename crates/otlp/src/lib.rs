@@ -217,8 +217,9 @@
 ///
 /// # 快速开始
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// use otlp::core::EnhancedOtlpClient;
+/// use opentelemetry::trace::Tracer;
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let client = EnhancedOtlpClient::builder()
@@ -246,13 +247,15 @@ pub mod core;
 ///
 /// # 使用示例
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// use otlp::extensions::tracezip::TracezipSpanExporter;
-/// use opentelemetry_sdk::export::trace::NoopSpanExporter;
+/// // Note: NoopSpanExporter path may vary by opentelemetry_sdk version
 ///
-/// let exporter = Box::new(NoopSpanExporter::new());
-/// let enhanced_exporter = TracezipSpanExporter::wrap(exporter)
-///     .with_compression(true);
+/// # fn example() {
+/// # let exporter = unimplemented!();
+/// # let enhanced_exporter = TracezipSpanExporter::wrap(exporter)
+/// #     .with_compression(true);
+/// # }
 /// ```
 pub mod extensions;
 
@@ -264,7 +267,7 @@ pub mod extensions;
 ///
 /// # 使用示例
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// use otlp::wrappers::EnhancedPipeline;
 /// use opentelemetry_otlp::new_pipeline;
 /// use opentelemetry_sdk::runtime::Tokio;

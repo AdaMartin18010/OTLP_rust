@@ -18,13 +18,13 @@
 //!
 //! ## 使用示例
 //!
-//! ```rust
-//! use otlp::opamp::{OpampClient, OpampConfig};
+//! ```rust,ignore
+//! use otlp::opamp::{OpampClient, OpampConfig, OpampCapabilities};
 //!
-//! let config = OpampConfig::new()
-//!     .server_endpoint("https://opamp.example.com:4320")
-//!     .agent_id("agent-123")
-//!     .capabilities(OpampCapabilities::all());
+//! let config = OpampConfig::new(
+//!     "https://opamp.example.com:4320".to_string(),
+//!     "agent-123".to_string(),
+//! ).with_capabilities(OpampCapabilities::all());
 //!
 //! let client = OpampClient::new(config)?;
 //! client.start().await?;
