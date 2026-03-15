@@ -17,6 +17,7 @@ pub mod async_features {
     }
 
     /// 异步闭包示例
+    #[allow(clippy::useless_vec)]
     pub async fn async_closure_example() -> i32 {
         let data = vec![1, 2, 3, 4, 5];
 

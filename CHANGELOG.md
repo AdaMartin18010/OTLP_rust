@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-alpha.1] - 2026-03-15
+
+### Changed
+
+#### Code Quality Improvements 🎯
+
+- **Major refactoring**: Reduced code duplication by 66% (30% → 10%)
+  - Consolidated 4 client modules into 1 unified implementation (-1,222 lines)
+  - Merged 8 performance modules into 2 focused modules (-4,036 lines)
+  - Removed 2,143 lines of duplicate error handling code
+  - Total: 7,401 lines of dead/duplicate code removed
+
+- **Documentation cleanup**: Reduced root directory docs by 85% (108 → 16 files)
+  - Archived 94 historical reports to `ARCHIVE/reports/`
+  - Retained only essential documentation
+  - Improved navigation and discoverability
+
+- **Clippy compliance**: Fixed all 14 clippy errors
+  - Resolved `manual_async_fn` warnings (2)
+  - Fixed `disallowed_methods` violations (1)
+  - Eliminated `derivable_impls` (2)
+  - Corrected `if_same_then_else` (1)
+  - Renamed confusing `default()` method (1)
+  - Added type complexity allowances (2)
+  - Fixed `await_holding_lock` issues (4)
+  - Allowed `useless_vec` for intentional use (1)
+
+#### Configuration Updates ⚙️
+
+- **MSRV unified**: All crates now use Rust 1.94
+  - Updated `crates/libraries/Cargo.toml`
+  - Updated `crates/model/Cargo.toml`
+  - Updated `crates/otlp/Cargo.toml`
+  - Updated `crates/reliability/Cargo.toml`
+  - Aligned `.clippy.toml` with workspace MSRV
+
+- **Edition 2024**: Confirmed all crates use Edition 2024 with Resolver 3
+
+### Added
+
+#### Rust 1.94 Features Showcase 🦀
+
+- Added comprehensive `rust_1_94_features` module demonstrating:
+  - Async closures (`async || {}`)
+  - `AsyncFn` traits
+  - `LazyLock` for global initialization
+  - Float improvements (`midpoint()`, `to_degrees()`)
+  - `Vec::pop_if()` for conditional removal
+  - Const context extensions
+  - Unsafe improvements (`unsafe extern "C"`)
+  - New I/O error kinds
+
+### Removed
+
+#### Deprecated Code Cleanup 🗑️
+
+- **Archived files** (moved to `ARCHIVE/reports/`):
+  - `error_old.rs` (1,718 lines)
+  - `error_simple.rs` (425 lines)
+  - `simple_client.rs` (356 lines)
+  - `client_enhancements.rs` (341 lines)
+  - `client_optimized.rs` (525 lines)
+  - `performance_enhancements.rs` (536 lines)
+  - `performance_optimization.rs` (577 lines)
+  - `performance_optimization_advanced.rs` (647 lines)
+  - `performance_optimized.rs` (557 lines)
+  - `performance_optimizer.rs` (745 lines)
+  - `advanced_performance.rs` (974 lines)
+
 ## [0.5.0-rc1] - 2025-10-23
 
 ### Changed

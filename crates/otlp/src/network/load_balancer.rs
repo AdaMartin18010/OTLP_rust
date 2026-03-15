@@ -229,8 +229,13 @@ impl LoadBalancer {
 
     /// 获取连接
     pub async fn get_connection(&self, backend_id: &str) -> Result<()> {
-        let pools = self.connection_pools.lock().unwrap();
-        if let Some(pool) = pools.get(backend_id) {
+        // 在 await 前获取需要的值
+        let pool_result = {
+            let pools = self.connection_pools.lock().unwrap();
+            pools.get(backend_id).cloned()
+        };
+        
+        if let Some(pool) = pool_result {
             let _connection = pool.get_connection().await?;
             // 更新活跃连接数
             self.update_backend_connections(backend_id, 1).await;
@@ -391,11 +396,15 @@ impl HealthChecker {
     /// 执行健康检查
     pub async fn check_all(&self) -> HashMap<String, bool> {
         let mut results = HashMap::new();
-        let backends = self.backends.lock().unwrap();
+        // 在 await 前收集所有后端 ID
+        let backend_ids: Vec<String> = {
+            let backends = self.backends.lock().unwrap();
+            backends.keys().cloned().collect()
+        };
 
-        for (id, _backend) in backends.iter() {
-            let is_healthy = Self::check_single_backend(id, &self.config).await;
-            results.insert(id.clone(), is_healthy);
+        for id in backend_ids {
+            let is_healthy = Self::check_single_backend(&id, &self.config).await;
+            results.insert(id, is_healthy);
         }
 
         results

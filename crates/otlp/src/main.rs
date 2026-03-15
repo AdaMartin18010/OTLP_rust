@@ -2,6 +2,8 @@
 //!
 //! 演示如何使用OTLP客户端发送遥测数据
 
+#![allow(clippy::excessive_nesting)]
+
 use otlp::config::TransportProtocol;
 use otlp::data::{
     LogSeverity,
