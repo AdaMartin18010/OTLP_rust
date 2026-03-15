@@ -115,14 +115,14 @@ impl Retrier {
             attempt += 1;
 
             // 检查总超时
-            if let Some(total_timeout) = self.config.total_timeout
-                && start_time.elapsed() >= total_timeout
-            {
-                return Err(RetryError::Timeout {
-                    total_timeout,
-                    elapsed: start_time.elapsed(),
-                    last_error,
-                });
+            if let Some(total_timeout) = self.config.total_timeout {
+                if start_time.elapsed() >= total_timeout {
+                    return Err(RetryError::Timeout {
+                        total_timeout,
+                        elapsed: start_time.elapsed(),
+                        last_error,
+                    });
+                }
             }
 
             // 检查最大重试次数
@@ -134,9 +134,7 @@ impl Retrier {
             }
 
             // 执行操作
-            let result = operation().await;
-
-            match result {
+            match operation().await {
                 Ok(value) => {
                     // 成功，更新统计信息
                     self.update_stats_on_success(attempt).await;
@@ -185,14 +183,14 @@ impl Retrier {
             attempt += 1;
 
             // 检查总超时
-            if let Some(total_timeout) = self.config.total_timeout
-                && start_time.elapsed() >= total_timeout
-            {
-                return Err(RetryError::Timeout {
-                    total_timeout,
-                    elapsed: start_time.elapsed(),
-                    last_error,
-                });
+            if let Some(total_timeout) = self.config.total_timeout {
+                if start_time.elapsed() >= total_timeout {
+                    return Err(RetryError::Timeout {
+                        total_timeout,
+                        elapsed: start_time.elapsed(),
+                        last_error,
+                    });
+                }
             }
 
             // 检查最大重试次数
@@ -204,9 +202,7 @@ impl Retrier {
             }
 
             // 执行带超时的操作
-            let result = timeout(operation_timeout, operation()).await;
-
-            match result {
+            match timeout(operation_timeout, operation()).await {
                 Ok(Ok(value)) => {
                     // 成功，更新统计信息
                     self.update_stats_on_success(attempt).await;

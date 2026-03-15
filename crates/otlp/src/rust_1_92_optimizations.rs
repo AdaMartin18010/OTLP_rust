@@ -15,9 +15,7 @@ use tokio::sync::Mutex;
 /// 异步闭包优化示例
 ///
 /// 展示如何使用Rust 1.92的新异步闭包特性替代BoxFuture
-pub struct AsyncClosureOptimizer {
-    // 使用新的异步闭包特性，不再需要BoxFuture
-}
+pub struct AsyncClosureOptimizer;
 
 impl AsyncClosureOptimizer {
     /// 优化前：使用BoxFuture的版本
@@ -29,12 +27,7 @@ impl AsyncClosureOptimizer {
         f().await.map_err(|e| e.into())
     }
 
-    /// 优化后：使用Rust 1.92异步闭包特性的版本（Rust 1.92 新特性）
-    ///
-    /// 优势：
-    /// 1. 更简洁的类型签名
-    /// 2. 更好的类型推导
-    /// 3. 减少堆分配
+    /// 优化后：使用Rust 1.92异步闭包特性的版本
     pub async fn call_with_async_closure<F, Fut, R>(&self, f: F) -> Result<R>
     where
         F: FnOnce() -> Fut,
@@ -107,17 +100,9 @@ impl AsyncClosureOptimizer {
         CircuitState::Closed
     }
 
-    async fn record_success(&self) {
-        // 模拟成功记录
-    }
-
-    async fn record_failure(&self) {
-        // 模拟失败记录
-    }
-
-    async fn record_half_open_call(&self) {
-        // 模拟半开状态调用记录
-    }
+    async fn record_success(&self) {}
+    async fn record_failure(&self) {}
+    async fn record_half_open_call(&self) {}
 }
 
 #[derive(Debug)]
@@ -152,11 +137,6 @@ impl TupleCollectionOptimizer {
     }
 
     /// 优化后：使用Rust 1.92的元组收集特性
-    ///
-    /// 优势：
-    /// 1. 单次迭代完成收集
-    /// 2. 更简洁的代码
-    /// 3. 更好的性能
     pub fn collect_to_tuple(&self, data: Vec<Result<i32, String>>) -> (Vec<i32>, Vec<String>) {
         let (ok_results, err_results): (Vec<_>, Vec<_>) = data.into_iter().partition(|r| r.is_ok());
         let successful: Vec<i32> = ok_results
@@ -167,12 +147,11 @@ impl TupleCollectionOptimizer {
         (successful, failed)
     }
 
-    /// 更高级的元组收集：同时收集到多个不同类型的集合
+    /// 更高级的元组收集
     pub fn advanced_tuple_collection(
         &self,
         data: Vec<(String, i32, bool)>,
     ) -> (HashMap<String, i32>, Vec<bool>, Vec<String>) {
-        // 使用Rust 1.92的元组收集特性，同时收集到三个不同的集合
         let (names, values, flags): (Vec<_>, Vec<_>, Vec<_>) = data
             .into_iter()
             .map(|(name, value, flag)| (name, value, flag))
@@ -196,37 +175,37 @@ impl ZeroCopyOptimizer {
     /// 优化前：总是克隆数据
     #[allow(dead_code)]
     pub fn process_with_clone(&self, data: &[u8]) -> Result<Vec<u8>> {
-        let processed_data = data.to_vec(); // 不必要的克隆
+        let processed_data = data.to_vec();
         self.process_data_internal(processed_data)
     }
 
-    /// 优化后：使用Cow类型，只在需要时克隆
+    /// 优化后：使用Cow类型
     pub fn process_with_cow(&self, data: Cow<'_, [u8]>) -> Result<Vec<u8>> {
-        let data_vec = match data {
+        let data_vec = self.cow_to_vec(data);
+        self.process_data_internal(data_vec)
+    }
+
+    fn cow_to_vec(&self, data: Cow<'_, [u8]>) -> Vec<u8> {
+        match data {
             Cow::Borrowed(borrowed) => borrowed.to_vec(),
             Cow::Owned(owned) => owned,
-        };
-        self.process_data_internal(data_vec)
+        }
     }
 
     /// 更智能的零拷贝处理
     pub fn smart_process<'a>(&self, data: Cow<'a, [u8]>) -> Result<Cow<'a, [u8]>> {
-        if self.needs_processing(&data) {
-            let processed = self.process_data_internal(data.into_owned())?;
-            Ok(Cow::Owned(processed))
-        } else {
-            // 数据不需要处理，直接返回
-            Ok(data)
+        if !self.needs_processing(&data) {
+            return Ok(data);
         }
+        let processed = self.process_data_internal(data.into_owned())?;
+        Ok(Cow::Owned(processed))
     }
 
     fn needs_processing(&self, _data: &[u8]) -> bool {
-        // 模拟判断是否需要处理
         true
     }
 
     fn process_data_internal(&self, data: Vec<u8>) -> Result<Vec<u8>> {
-        // 模拟数据处理
         Ok(data)
     }
 }
@@ -250,7 +229,6 @@ pub struct PoolStats {
 }
 
 impl<T: Send + Sync + Clone + 'static> OptimizedMemoryPool<T> {
-    /// 创建新的优化内存池
     pub fn new<F>(factory: F, max_size: usize) -> Self
     where
         F: Fn() -> T + Send + Sync + 'static,
@@ -263,22 +241,24 @@ impl<T: Send + Sync + Clone + 'static> OptimizedMemoryPool<T> {
         }
     }
 
-    /// 从池中获取对象
     pub async fn acquire(&self) -> PooledObject<T> {
         let mut pool = self.pool.lock().await;
-        let mut stats = self.stats.lock().await;
-
-        if let Some(obj) = pool.pop() {
+        
+        let obj = if let Some(obj) = pool.pop() {
+            drop(pool);
+            let mut stats = self.stats.lock().await;
             stats.total_reused += 1;
-            PooledObject::new(obj, Arc::clone(&self.pool), Arc::clone(&self.stats))
+            obj
         } else {
+            drop(pool);
+            let mut stats = self.stats.lock().await;
             stats.total_created += 1;
-            let obj = (self.factory)();
-            PooledObject::new(obj, Arc::clone(&self.pool), Arc::clone(&self.stats))
-        }
+            (self.factory)()
+        };
+
+        PooledObject::new(obj, Arc::clone(&self.pool), Arc::clone(&self.stats))
     }
 
-    /// 获取池统计信息
     pub async fn get_stats(&self) -> PoolStats {
         let stats = self.stats.lock().await;
         PoolStats {
@@ -289,7 +269,6 @@ impl<T: Send + Sync + Clone + 'static> OptimizedMemoryPool<T> {
     }
 }
 
-/// 池化对象包装器
 pub struct PooledObject<T: Clone + Send + 'static> {
     object: Option<T>,
     pool: Arc<Mutex<Vec<T>>>,
@@ -303,18 +282,16 @@ impl<T: Clone + Send + 'static> PooledObject<T> {
             object: Some(object),
             pool,
             stats,
-            max_size: 100, // 默认大小
+            max_size: 100,
         }
     }
 
-    /// 获取对象的引用
     pub fn get(&self) -> &T {
         self.object
             .as_ref()
             .expect("PooledObject should always contain an object")
     }
 
-    /// 获取对象的可变引用
     pub fn get_mut(&mut self) -> &mut T {
         self.object
             .as_mut()
@@ -324,27 +301,26 @@ impl<T: Clone + Send + 'static> PooledObject<T> {
 
 impl<T: Clone + Send + 'static> Drop for PooledObject<T> {
     fn drop(&mut self) {
-        if let Some(obj) = self.object.take() {
-            let pool = self.pool.clone();
-            let stats = self.stats.clone();
-            let max_size = self.max_size;
+        let Some(obj) = self.object.take() else {
+            return;
+        };
+        let pool = self.pool.clone();
+        let stats = self.stats.clone();
+        let max_size = self.max_size;
 
-            tokio::spawn(async move {
-                let mut pool = pool.lock().await;
-                if pool.len() < max_size {
-                    pool.push(obj);
-                } else {
-                    let mut stats = stats.lock().await;
-                    stats.total_dropped += 1;
-                }
-            });
-        }
+        tokio::spawn(async move {
+            let mut pool = pool.lock().await;
+            if pool.len() < max_size {
+                pool.push(obj);
+            } else {
+                let mut stats = stats.lock().await;
+                stats.total_dropped += 1;
+            }
+        });
     }
 }
 
 /// 异步批处理优化
-///
-/// 使用Rust 1.92的新特性优化批处理逻辑
 pub struct AsyncBatchProcessor {
     batch_size: usize,
     #[allow(dead_code)]
@@ -359,7 +335,6 @@ impl AsyncBatchProcessor {
         }
     }
 
-    /// 使用异步闭包优化批处理
     pub async fn process_batch<T, F, Fut, R>(&self, items: Vec<T>, processor: F) -> Result<Vec<R>>
     where
         F: Fn(Vec<T>) -> Fut,
@@ -372,7 +347,6 @@ impl AsyncBatchProcessor {
             .map(|chunk| chunk.to_vec())
             .collect();
 
-        // 使用元组收集特性同时处理成功和失败的结果
         let (successful, failed): (Vec<_>, Vec<_>) =
             futures::future::join_all(chunks.into_iter().map(processor))
                 .await
@@ -401,9 +375,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_async_closure_optimization() {
-        let optimizer = AsyncClosureOptimizer {};
+        let optimizer = AsyncClosureOptimizer;
 
-        // 测试异步闭包
         let result = optimizer
             .call_with_async_closure::<_, _, i32>(|| async { Ok::<i32, anyhow::Error>(42) })
             .await;
@@ -433,11 +406,9 @@ mod tests {
         let optimizer = ZeroCopyOptimizer;
         let data = b"hello world";
 
-        // 测试借用的数据
         let result1 = optimizer.process_with_cow(Cow::Borrowed(data));
         assert!(result1.is_ok());
 
-        // 测试拥有的数据
         let result2 = optimizer.process_with_cow(Cow::Owned(data.to_vec()));
         assert!(result2.is_ok());
     }
@@ -450,8 +421,6 @@ mod tests {
         assert_eq!(obj1.get().capacity(), 1024);
 
         drop(obj1);
-
-        // 等待异步任务完成
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 
         let obj2 = pool.acquire().await;
@@ -459,8 +428,6 @@ mod tests {
 
         let stats = pool.get_stats().await;
         assert_eq!(stats.total_created, 1);
-        // 由于异步回收，可能还没有被重用
-        //assert!(stats.total_reused >= 0);
     }
 
     #[tokio::test]
@@ -488,38 +455,40 @@ pub struct SimdOptimizer {
 impl SimdOptimizer {
     pub fn new() -> Self {
         Self {
-            cache_line_size: 64,  // 现代CPU的缓存行大小
-            prefetch_distance: 2, // 预取距离
+            cache_line_size: 64,
+            prefetch_distance: 2,
         }
     }
 
-    /// SIMD加速的数据处理
-    /// 使用AVX2指令集进行并行计算
     #[target_feature(enable = "avx2")]
     pub unsafe fn process_data_simd(&self, data: &[f64], result: &mut [f64]) {
         let len = data.len();
-        let simd_len = len - (len % 4); // 处理4个元素一组
+        let simd_len = len - (len % 4);
 
-        for i in (0..simd_len).step_by(4) {
-            // 加载4个f64值到AVX2寄存器
-            let data_vec = unsafe { _mm256_loadu_pd(data.as_ptr().add(i)) };
-
-            // 执行SIMD运算（这里示例为平方运算）
-            let result_vec = _mm256_mul_pd(data_vec, data_vec);
-
-            // 存储结果
-            unsafe { _mm256_storeu_pd(result.as_mut_ptr().add(i), result_vec) };
+        unsafe {
+            self.process_simd_chunk(data, result, simd_len);
         }
+        self.process_remaining(data, result, simd_len, len);
+    }
 
-        // 处理剩余元素
-        for i in simd_len..len {
+    unsafe fn process_simd_chunk(&self, data: &[f64], result: &mut [f64], simd_len: usize) {
+        for i in (0..simd_len).step_by(4) {
+            unsafe {
+                let data_vec = _mm256_loadu_pd(data.as_ptr().add(i));
+                let result_vec = _mm256_mul_pd(data_vec, data_vec);
+                _mm256_storeu_pd(result.as_mut_ptr().add(i), result_vec);
+            }
+        }
+    }
+
+    fn process_remaining(&self, data: &[f64], result: &mut [f64], start: usize, end: usize) {
+        for i in start..end {
             result[i] = data[i] * data[i];
         }
     }
 
-    /// 缓存友好的矩阵乘法
     pub fn matrix_multiply_optimized(&self, a: &[f64], b: &[f64], c: &mut [f64], n: usize) {
-        const BLOCK_SIZE: usize = 64; // 缓存块大小
+        const BLOCK_SIZE: usize = 64;
 
         for ii in (0..n).step_by(BLOCK_SIZE) {
             for jj in (0..n).step_by(BLOCK_SIZE) {
@@ -528,7 +497,6 @@ impl SimdOptimizer {
         }
     }
 
-    /// 处理块列
     fn process_block_column(
         &self,
         a: &[f64],
@@ -544,7 +512,6 @@ impl SimdOptimizer {
         }
     }
 
-    /// 处理单个块
     fn process_block(
         &self,
         a: &[f64],
@@ -557,7 +524,6 @@ impl SimdOptimizer {
         block_size: usize,
     ) {
         let i_end = (ii + block_size).min(n);
-        let _j_end = (jj + block_size).min(n);
         let k_end = (kk + block_size).min(n);
 
         for i in ii..i_end {
@@ -565,7 +531,6 @@ impl SimdOptimizer {
         }
     }
 
-    /// 计算行
     fn compute_row(
         &self,
         a: &[f64],
@@ -585,7 +550,6 @@ impl SimdOptimizer {
         }
     }
 
-    /// 内存预取优化
     pub fn prefetch_data(&self, data: &[u8]) {
         let len = data.len();
         let prefetch_step = self.cache_line_size * self.prefetch_distance;
@@ -593,27 +557,31 @@ impl SimdOptimizer {
         for i in (0..len).step_by(prefetch_step) {
             if i + self.cache_line_size < len {
                 unsafe {
-                    // 预取数据到缓存
                     ptr::read_volatile(&data[i]);
                 }
             }
         }
     }
 
-    /// 零拷贝字符串处理
     pub fn process_strings_zero_copy<'a>(&self, strings: &[&'a str]) -> Vec<Cow<'a, str>> {
         strings
             .iter()
-            .map(|&s| {
-                if s.len() > 100 {
-                    // 长字符串进行优化处理
-                    Cow::Owned(s.to_uppercase())
-                } else {
-                    // 短字符串直接使用引用
-                    Cow::Borrowed(s)
-                }
-            })
+            .map(|&s| self.process_single_string(s))
             .collect()
+    }
+
+    fn process_single_string<'a>(&self, s: &'a str) -> Cow<'a, str> {
+        if s.len() > 100 {
+            Cow::Owned(s.to_uppercase())
+        } else {
+            Cow::Borrowed(s)
+        }
+    }
+}
+
+impl Default for SimdOptimizer {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -629,14 +597,13 @@ pub struct CacheOptimizer {
 impl CacheOptimizer {
     pub fn new() -> Self {
         Self {
-            l1_cache_size: 32 * 1024,       // 32KB L1缓存
-            l2_cache_size: 256 * 1024,      // 256KB L2缓存
-            l3_cache_size: 8 * 1024 * 1024, // 8MB L3缓存
-            cache_alignment: 64,            // 64字节对齐
+            l1_cache_size: 32 * 1024,
+            l2_cache_size: 256 * 1024,
+            l3_cache_size: 8 * 1024 * 1024,
+            cache_alignment: 64,
         }
     }
 
-    /// 缓存行对齐的内存分配
     #[allow(dead_code)]
     pub fn allocate_aligned(&self, size: usize) -> Result<*mut u8> {
         let aligned_size = (size + self.cache_alignment - 1) & !(self.cache_alignment - 1);
@@ -655,24 +622,19 @@ impl CacheOptimizer {
         }
     }
 
-    /// 缓存友好的数据结构布局
     #[allow(dead_code)]
     pub fn optimize_data_layout<T>(&self, data: &mut [T]) {
-        // 确保数据按缓存行对齐
         let ptr = data.as_mut_ptr() as usize;
         if ptr % self.cache_alignment != 0 {
             // 如果不对齐，需要重新分配
-            // 这里简化处理，实际应用中需要更复杂的逻辑
         }
     }
 
-    /// 缓存预热
     #[allow(dead_code)]
     pub fn warm_cache(&self, data: &[u8]) {
         let len = data.len();
         let step = self.cache_alignment;
 
-        // 顺序访问预热L1缓存
         for i in (0..len).step_by(step) {
             unsafe {
                 ptr::read_volatile(&data[i]);
@@ -680,43 +642,57 @@ impl CacheOptimizer {
         }
     }
 
-    /// 缓存性能分析
     #[allow(dead_code)]
     pub fn analyze_cache_performance(&self, data: &[u8]) -> CachePerformanceMetrics {
-        let start = std::time::Instant::now();
-
-        // 顺序访问测试
-        let mut _sum = 0u64;
-        for &byte in data {
-            _sum += byte as u64;
-        }
-
-        let sequential_time = start.elapsed();
-
-        // 随机访问测试
-        let start = std::time::Instant::now();
-        let mut _sum2 = 0u64;
-        for i in 0..data.len() {
-            let idx = (i * 7) % data.len(); // 伪随机访问
-            _sum2 += data[idx] as u64;
-        }
-
-        let random_time = start.elapsed();
+        let sequential_time = self.measure_sequential_access(data);
+        let random_time = self.measure_random_access(data);
 
         CachePerformanceMetrics {
             sequential_access_time: sequential_time,
             random_access_time: random_time,
-            cache_hit_ratio: if random_time > sequential_time {
-                sequential_time.as_nanos() as f64 / random_time.as_nanos() as f64
-            } else {
-                1.0
-            },
+            cache_hit_ratio: self.calculate_hit_ratio(sequential_time, random_time),
             data_size: data.len(),
+        }
+    }
+
+    fn measure_sequential_access(&self, data: &[u8]) -> std::time::Duration {
+        let start = std::time::Instant::now();
+        let mut _sum = 0u64;
+        for &byte in data {
+            _sum += byte as u64;
+        }
+        start.elapsed()
+    }
+
+    fn measure_random_access(&self, data: &[u8]) -> std::time::Duration {
+        let start = std::time::Instant::now();
+        let mut _sum = 0u64;
+        for i in 0..data.len() {
+            let idx = (i * 7) % data.len();
+            _sum += data[idx] as u64;
+        }
+        start.elapsed()
+    }
+
+    fn calculate_hit_ratio(
+        &self,
+        sequential_time: std::time::Duration,
+        random_time: std::time::Duration,
+    ) -> f64 {
+        if random_time > sequential_time {
+            sequential_time.as_nanos() as f64 / random_time.as_nanos() as f64
+        } else {
+            1.0
         }
     }
 }
 
-/// 缓存性能指标
+impl Default for CacheOptimizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CachePerformanceMetrics {
     pub sequential_access_time: std::time::Duration,
@@ -740,68 +716,58 @@ impl MemoryPoolOptimizer {
         }
     }
 
-    /// 从内存池获取内存
     #[allow(dead_code)]
     pub fn get_memory(&mut self, size: usize) -> Option<*mut u8> {
-        if let Some(pool) = self.pools.get_mut(&size) {
-            pool.pop()
-        } else {
-            None
-        }
+        self.pools.get_mut(&size).and_then(|pool| pool.pop())
     }
 
-    /// 将内存返回到内存池
     pub fn return_memory(&mut self, size: usize, ptr: *mut u8) {
-        let should_deallocate = self.check_should_deallocate(size);
-        
-        if should_deallocate {
+        if self.should_deallocate(size) {
             Self::deallocate_memory(ptr);
             return;
         }
-        
         self.insert_into_pool(size, ptr);
     }
 
-    /// 检查是否应该释放内存
-    fn check_should_deallocate(&self, size: usize) -> bool {
+    fn should_deallocate(&self, size: usize) -> bool {
         match self.pools.get(&size) {
             Some(pool) => pool.len() >= self.max_pool_size,
             None => false,
         }
     }
 
-    /// 插入到池中
     fn insert_into_pool(&mut self, size: usize, ptr: *mut u8) {
-        if let Some(pool) = self.pools.get_mut(&size) {
-            pool.push(ptr);
-        } else {
-            let pool = vec![ptr];
-            self.pools.insert(size, pool);
-        }
+        self.pools
+            .entry(size)
+            .or_insert_with(Vec::new)
+            .push(ptr);
     }
 
-    /// 释放内存
     fn deallocate_memory(ptr: *mut u8) {
         unsafe {
             let layout = std::alloc::Layout::from_size_align(1024, 64)
-                .expect("Memory alignment must be valid (64 is a power of two)");
+                .expect("Memory alignment must be valid");
             std::alloc::dealloc(ptr, layout);
         }
     }
 
-    /// 清理内存池
     pub fn cleanup(&mut self) {
         for pool in self.pools.values_mut() {
             Self::deallocate_pool(pool);
         }
     }
 
-    /// 释放池中的内存
     fn deallocate_pool(pool: &mut Vec<*mut u8>) {
         for &ptr in pool.iter() {
             Self::deallocate_memory(ptr);
         }
         pool.clear();
+    }
+}
+
+impl Default for MemoryPoolOptimizer {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -827,11 +793,17 @@ impl PerformanceBenchmark {
         }
     }
 
-    /// 运行综合性能测试
     pub async fn run_comprehensive_benchmark(&mut self) -> BenchmarkResults {
         let mut results = BenchmarkResults::new();
 
-        // SIMD性能测试
+        self.run_simd_benchmark(&mut results);
+        self.run_cache_benchmark(&mut results);
+        self.run_memory_pool_benchmark(&mut results);
+
+        results
+    }
+
+    fn run_simd_benchmark(&mut self, results: &mut BenchmarkResults) {
         let data = vec![1.0f64; 1000000];
         let mut result = vec![0.0f64; 1000000];
 
@@ -840,12 +812,14 @@ impl PerformanceBenchmark {
             self.simd_optimizer.process_data_simd(&data, &mut result);
         }
         results.simd_processing_time = start.elapsed();
+    }
 
-        // 缓存性能测试
-        let test_data = vec![0u8; 1024 * 1024]; // 1MB测试数据
+    fn run_cache_benchmark(&mut self, results: &mut BenchmarkResults) {
+        let test_data = vec![0u8; 1024 * 1024];
         results.cache_metrics = self.cache_optimizer.analyze_cache_performance(&test_data);
+    }
 
-        // 内存池性能测试
+    fn run_memory_pool_benchmark(&mut self, results: &mut BenchmarkResults) {
         let start = std::time::Instant::now();
         for _ in 0..1000 {
             if let Some(ptr) = self.memory_pool.get_memory(1024) {
@@ -853,12 +827,15 @@ impl PerformanceBenchmark {
             }
         }
         results.memory_pool_time = start.elapsed();
-
-        results
     }
 }
 
-/// 基准测试结果
+impl Default for PerformanceBenchmark {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct BenchmarkResults {
     pub simd_processing_time: std::time::Duration,
@@ -878,5 +855,11 @@ impl BenchmarkResults {
             },
             memory_pool_time: std::time::Duration::ZERO,
         }
+    }
+}
+
+impl Default for BenchmarkResults {
+    fn default() -> Self {
+        Self::new()
     }
 }

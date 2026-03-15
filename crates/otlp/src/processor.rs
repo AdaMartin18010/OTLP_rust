@@ -7,28 +7,12 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{RwLock, mpsc};
-use tokio::time::{
-    interval,
-    //sleep,
-};
-//use futures::stream::{StreamExt, FuturesUnordered};
-//use futures::FutureExt;
-use crate::data::{
-    TelemetryData,
-    //TelemetryDataType,
-};
-use crate::error::{
-    ProcessingError,
-    //OtlpError,
-    Result,
-};
+use tokio::time::interval;
+use crate::data::TelemetryData;
+use crate::error::{ProcessingError, Result};
 use crate::resilience::ResilienceManager;
-use crate::rust_1_92_optimizations::AsyncBatchProcessor; // 使用 Rust 1.92 特性
-use crate::utils::{
-    PerformanceUtils,
-    //BatchUtils,
-    TimeUtils,
-};
+use crate::rust_1_92_optimizations::AsyncBatchProcessor;
+use crate::utils::PerformanceUtils;
 
 /// 处理配置
 #[derive(Debug, Clone)]
@@ -108,31 +92,38 @@ impl AttributeFilter {
         self.excluded_attributes.insert(key.into(), value.into());
         self
     }
+
+    fn check_required_attributes(&self, data: &TelemetryData) -> bool {
+        for (key, expected_value) in &self.required_attributes {
+            let Some(actual_value) = data.resource_attributes.get(key) else {
+                return false;
+            };
+            if actual_value != expected_value {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn check_excluded_attributes(&self, data: &TelemetryData) -> bool {
+        for (key, excluded_value) in &self.excluded_attributes {
+            let Some(actual_value) = data.resource_attributes.get(key) else {
+                continue;
+            };
+            if actual_value == excluded_value {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 impl DataFilter for AttributeFilter {
     fn filter(&self, data: &TelemetryData) -> bool {
-        // 检查必需的属性
-        for (key, expected_value) in &self.required_attributes {
-            if let Some(actual_value) = data.resource_attributes.get(key) {
-                if actual_value != expected_value {
-                    return false;
-                }
-            } else {
-                return false;
-            }
+        if !self.check_required_attributes(data) {
+            return false;
         }
-
-        // 检查排除的属性
-        for (key, excluded_value) in &self.excluded_attributes {
-            if let Some(actual_value) = data.resource_attributes.get(key) {
-                if actual_value == excluded_value {
-                    return false;
-                }
-            }
-        }
-
-        true
+        self.check_excluded_attributes(data)
     }
 
     fn name(&self) -> &str {
@@ -160,9 +151,7 @@ impl DataFilter for SamplingFilter {
     fn filter(&self, _data: &TelemetryData) -> bool {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        use std::time::{
-            SystemTime, //UNIX_EPOCH,
-        };
+        use std::time::SystemTime;
 
         let mut hasher = DefaultHasher::new();
         SystemTime::now().hash(&mut hasher);
@@ -203,11 +192,12 @@ impl MetricAggregator {
             metrics: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-}
 
-impl DataAggregator for MetricAggregator {
-    fn aggregate(&self, data: Vec<TelemetryData>) -> Result<Vec<TelemetryData>> {
-        let mut aggregated_data = Vec::new();
+    fn process_metric_data(&self, telemetry_data: &TelemetryData) -> Result<()> {
+        let crate::data::TelemetryContent::Metric(metric_data) = &telemetry_data.content else {
+            return Ok(());
+        };
+
         let mut metrics = self
             .metrics
             .try_write()
@@ -215,16 +205,24 @@ impl DataAggregator for MetricAggregator {
                 reason: "Failed to acquire write lock".to_string(),
             })?;
 
+        for data_point in &metric_data.data_points {
+            let crate::data::DataPointValue::Number(value) = &data_point.value else {
+                continue;
+            };
+            let key = format!("{}_{}", metric_data.name, data_point.timestamp);
+            let current_value = *metrics.get(&key).unwrap_or(&0.0);
+            metrics.insert(key, current_value + value);
+        }
+        Ok(())
+    }
+}
+
+impl DataAggregator for MetricAggregator {
+    fn aggregate(&self, data: Vec<TelemetryData>) -> Result<Vec<TelemetryData>> {
+        let mut aggregated_data = Vec::new();
+
         for telemetry_data in data {
-            if let crate::data::TelemetryContent::Metric(metric_data) = &telemetry_data.content {
-                for data_point in &metric_data.data_points {
-                    if let crate::data::DataPointValue::Number(value) = &data_point.value {
-                        let key = format!("{}_{}", metric_data.name, data_point.timestamp);
-                        let current_value = *metrics.get(&key).unwrap_or(&0.0);
-                        metrics.insert(key, current_value + value);
-                    }
-                }
-            }
+            self.process_metric_data(&telemetry_data)?;
             aggregated_data.push(telemetry_data);
         }
 
@@ -249,7 +247,6 @@ pub struct OtlpProcessor {
     is_running: Arc<RwLock<bool>>,
     metrics: Arc<RwLock<ProcessorMetrics>>,
     resilience_manager: Arc<ResilienceManager>,
-    // 集成Rust 1.92优化的异步批处理器
     async_batch_processor: Arc<AsyncBatchProcessor>,
 }
 
@@ -279,10 +276,7 @@ impl OtlpProcessor {
         let (input_tx, input_rx) = mpsc::unbounded_channel();
         let (output_tx, output_rx) = mpsc::unbounded_channel();
 
-        // 创建弹性管理器
         let resilience_manager = Arc::new(ResilienceManager::new());
-
-        // 创建Rust 1.92优化的异步批处理器
         let async_batch_processor = Arc::new(AsyncBatchProcessor::new(
             config.batch_size,
             config.batch_timeout,
@@ -325,9 +319,7 @@ impl OtlpProcessor {
         *is_running = true;
         drop(is_running);
 
-        // 启动处理任务
         let config = self.config.clone();
-        // 简化：暂不从 self.filters 克隆，使用空过滤器集合
         let filters: Vec<Box<dyn DataFilter>> = Vec::new();
         let aggregators: Vec<Box<dyn DataAggregator>> = Vec::new();
         let metrics = self.metrics.clone();
@@ -366,11 +358,9 @@ impl OtlpProcessor {
 
     /// 处理数据
     pub async fn process(&self, data: TelemetryData) -> Result<()> {
-        self.input_queue
-            .send(data)
-            .map_err(|_| ProcessingError::Batch {
-                reason: "Failed to send data to processing queue".to_string(),
-            })?;
+        self.input_queue.send(data).map_err(|_| ProcessingError::Batch {
+            reason: "Failed to send data to processing queue".to_string(),
+        })?;
         Ok(())
     }
 
@@ -396,67 +386,83 @@ impl OtlpProcessor {
     ) {
         let mut batch = Vec::with_capacity(config.batch_size);
         let mut batch_timer = interval(config.batch_timeout);
-        let mut _last_batch_time = TimeUtils::current_timestamp_nanos();
 
         loop {
-            // 检查是否应该停止
-            {
-                let running = is_running.read().await;
-                if !*running {
-                    break;
-                }
+            if Self::should_stop(&is_running).await {
+                break;
             }
 
             tokio::select! {
-                // 定时触发批次发送
                 _ = batch_timer.tick() => {
-                    if !batch.is_empty() {
-                        let (processed_batch, processing_time) = PerformanceUtils::measure_time(async {
-                            Self::process_batch(batch.clone(), &filters, &aggregators).await
-                        }).await;
-
-                        if let Ok(processed) = processed_batch {
-                            let _ = output_tx.send(processed);
-                            let mut metrics_guard = metrics.write().await;
-                            metrics_guard.total_processed += batch.len() as u64;
-                            metrics_guard.batch_count += 1;
-                            metrics_guard.processing_latency = processing_time;
-                            metrics_guard.average_batch_size =
-                                (metrics_guard.average_batch_size * (metrics_guard.batch_count - 1) as f64 + batch.len() as f64)
-                                / metrics_guard.batch_count as f64;
-                        }
-
-                        batch.clear();
-                    }
+                    Self::process_and_send_batch(
+                        &mut batch,
+                        &filters,
+                        &aggregators,
+                        &output_tx,
+                        &metrics,
+                    ).await;
                 }
-                // 输入数据累积
                 maybe_item = input_rx.recv() => {
                     if let Some(item) = maybe_item {
                         batch.push(item);
                         if batch.len() >= config.batch_size {
-                            let (processed_batch, processing_time) = PerformanceUtils::measure_time(async {
-                                Self::process_batch(batch.clone(), &filters, &aggregators).await
-                            }).await;
-
-                            if let Ok(processed) = processed_batch {
-                                let _ = output_tx.send(processed);
-                                let mut metrics_guard = metrics.write().await;
-                                metrics_guard.total_processed += batch.len() as u64;
-                                metrics_guard.batch_count += 1;
-                                metrics_guard.processing_latency = processing_time;
-                                metrics_guard.average_batch_size =
-                                    (metrics_guard.average_batch_size * (metrics_guard.batch_count - 1) as f64 + batch.len() as f64)
-                                    / metrics_guard.batch_count as f64;
-                            }
-                            batch.clear();
+                            Self::process_and_send_batch(
+                                &mut batch,
+                                &filters,
+                                &aggregators,
+                                &output_tx,
+                                &metrics,
+                            ).await;
                         }
                     } else {
-                        // 通道关闭
                         break;
                     }
                 }
             }
         }
+    }
+
+    async fn should_stop(is_running: &Arc<RwLock<bool>>) -> bool {
+        let running = is_running.read().await;
+        !*running
+    }
+
+    async fn process_and_send_batch(
+        batch: &mut Vec<TelemetryData>,
+        filters: &[Box<dyn DataFilter>],
+        aggregators: &[Box<dyn DataAggregator>],
+        output_tx: &mpsc::UnboundedSender<Vec<TelemetryData>>,
+        metrics: &Arc<RwLock<ProcessorMetrics>>,
+    ) {
+        if batch.is_empty() {
+            return;
+        }
+
+        let batch_size = batch.len();
+        let (processed_batch, processing_time) = PerformanceUtils::measure_time(async {
+            Self::process_batch(batch.clone(), filters, aggregators).await
+        }).await;
+
+        if let Ok(processed) = processed_batch {
+            let _ = output_tx.send(processed);
+            Self::update_metrics(metrics, batch_size, processing_time).await;
+        }
+
+        batch.clear();
+    }
+
+    async fn update_metrics(
+        metrics: &Arc<RwLock<ProcessorMetrics>>,
+        batch_size: usize,
+        processing_time: Duration,
+    ) {
+        let mut metrics_guard = metrics.write().await;
+        metrics_guard.total_processed += batch_size as u64;
+        metrics_guard.batch_count += 1;
+        metrics_guard.processing_latency = processing_time;
+        metrics_guard.average_batch_size =
+            (metrics_guard.average_batch_size * (metrics_guard.batch_count - 1) as f64 + batch_size as f64)
+            / metrics_guard.batch_count as f64;
     }
 
     /// 处理批次数据
@@ -465,12 +471,10 @@ impl OtlpProcessor {
         filters: &[Box<dyn DataFilter>],
         aggregators: &[Box<dyn DataAggregator>],
     ) -> Result<Vec<TelemetryData>> {
-        // 应用过滤器
         if !filters.is_empty() {
             batch.retain(|data| filters.iter().all(|filter| filter.filter(data)));
         }
 
-        // 应用聚合器
         for aggregator in aggregators {
             batch = aggregator.aggregate(batch)?;
         }
@@ -519,16 +523,13 @@ impl BatchManager {
         let mut batches = self.batches.write().await;
         let mut timers = self.batch_timers.write().await;
 
-        // 获取或创建批次
         let batch = batches.entry(key.clone()).or_insert_with(Vec::new);
         batch.push(data);
 
-        // 设置或更新定时器
         timers
             .entry(key.clone())
             .or_insert_with(tokio::time::Instant::now);
 
-        // 检查是否达到批处理大小
         if batch.len() >= self.config.batch_size {
             let completed_batch = batches.remove(&key).unwrap_or_default();
             timers.remove(&key);
@@ -545,13 +546,11 @@ impl BatchManager {
         let mut expired_batches = Vec::new();
 
         let now = tokio::time::Instant::now();
-        let mut expired_keys = Vec::new();
-
-        for (key, timer) in timers.iter() {
-            if now.duration_since(*timer) >= self.config.batch_timeout {
-                expired_keys.push(key.clone());
-            }
-        }
+        let expired_keys: Vec<String> = timers
+            .iter()
+            .filter(|(_, timer)| now.duration_since(**timer) >= self.config.batch_timeout)
+            .map(|(key, _)| key.clone())
+            .collect();
 
         for key in expired_keys {
             if let Some(batch) = batches.remove(&key) {
@@ -576,14 +575,8 @@ impl BatchManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::{
-        //MetricData,
-        MetricType,
-        //TelemetryDataType,
-        TelemetryContent,
-        TelemetryData,
-    };
-    use crate::utils::BatchUtils;
+    use crate::data::{MetricType, TelemetryContent, TelemetryData};
+    use crate::utils::{BatchUtils, TimeUtils};
 
     #[test]
     fn test_attribute_filter() {
@@ -607,8 +600,6 @@ mod tests {
     #[test]
     fn test_sampling_filter() {
         let filter = SamplingFilter::new("test_sampling", 0.5);
-
-        // 由于是随机采样，我们只测试过滤器名称
         assert_eq!(filter.name(), "test_sampling");
     }
 
@@ -634,11 +625,9 @@ mod tests {
         let config = ProcessingConfig::default();
         let mut processor = OtlpProcessor::new(config);
 
-        // 测试添加过滤器
         let filter = AttributeFilter::new("test_filter");
         processor.add_filter(Box::new(filter));
 
-        // 测试添加聚合器
         let aggregator = MetricAggregator::new("test_aggregator", Duration::from_secs(60));
         processor.add_aggregator(Box::new(aggregator));
     }

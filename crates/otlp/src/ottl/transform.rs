@@ -618,18 +618,18 @@ impl OtlpTransform {
     async fn exists_attribute(&self, data: &TelemetryData, path: &Path) -> Result<bool> {
         match path {
             Path::ResourceAttribute { key } => {
-                if let Some(value) = data.resource_attributes.get(key) {
-                    Ok(!value.to_string().is_empty())
-                } else {
-                    Ok(false)
-                }
+                let value = match data.resource_attributes.get(key) {
+                    Some(v) => v,
+                    None => return Ok(false),
+                };
+                Ok(!value.to_string().is_empty())
             }
             Path::ScopeAttribute { key } => {
-                if let Some(value) = data.scope_attributes.get(key) {
-                    Ok(!value.to_string().is_empty())
-                } else {
-                    Ok(false)
-                }
+                let value = match data.scope_attributes.get(key) {
+                    Some(v) => v,
+                    None => return Ok(false),
+                };
+                Ok(!value.to_string().is_empty())
             }
             _ => Ok(false),
         }
@@ -658,13 +658,15 @@ impl OtlpTransform {
         let mut match_idx = 0;
 
         while value_idx < value_chars.len() {
-            if pattern_idx < pattern_chars.len()
-                && (pattern_chars[pattern_idx] == '?'
-                    || pattern_chars[pattern_idx] == value_chars[value_idx])
-            {
+            let pattern_available = pattern_idx < pattern_chars.len();
+            let chars_match = pattern_available && 
+                (pattern_chars[pattern_idx] == '?' || pattern_chars[pattern_idx] == value_chars[value_idx]);
+            let is_star = pattern_available && pattern_chars[pattern_idx] == '*';
+
+            if chars_match {
                 pattern_idx += 1;
                 value_idx += 1;
-            } else if pattern_idx < pattern_chars.len() && pattern_chars[pattern_idx] == '*' {
+            } else if is_star {
                 star_idx = Some(pattern_idx);
                 match_idx = value_idx;
                 pattern_idx += 1;

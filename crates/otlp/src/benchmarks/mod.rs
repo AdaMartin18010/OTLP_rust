@@ -1,15 +1,7 @@
 //! # 性能基准测试模块
 //!
-//! 本模块提供了OTLP Rust库的全面性能基准测试，
-//! 包括微服务性能、负载均衡性能、追踪性能等。
-//!
-//! ## Rust 1.92 特性应用
-//!
-//! - **异步闭包**: 使用 `async || {}` 语法简化异步基准测试操作
-//! - **元组收集**: 使用 `collect()` 直接收集基准测试结果到元组
-//! - **改进的基准测试**: 利用 Rust 1.92 的基准测试优化提升性能
+//! 本模块提供了OTLP Rust库的全面性能基准测试
 
-//use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -39,22 +31,6 @@ pub struct BenchmarkMetrics {
     pub error_rate: Option<f64>,
     pub memory_usage: Option<u64>,
     pub cpu_usage: Option<f64>,
-}
-
-/// 基准测试结果
-#[derive(Debug, Clone)]
-pub struct BenchmarkResult {
-    pub config: BenchmarkConfig,
-    pub start_time: Instant,
-    pub end_time: Instant,
-    pub total_duration: Duration,
-    pub iterations_completed: u32,
-    pub iterations_failed: u32,
-    pub throughput: f64, // requests per second
-    pub latency_stats: LatencyStats,
-    pub memory_stats: MemoryStats,
-    pub cpu_stats: CpuStats,
-    pub errors: Vec<BenchmarkError>,
 }
 
 /// 延迟统计
@@ -97,6 +73,47 @@ pub struct BenchmarkRunner {
     running: Arc<RwLock<bool>>,
 }
 
+/// 基准测试结果
+#[derive(Debug, Clone)]
+pub struct BenchmarkResult {
+    pub config: BenchmarkConfig,
+    pub start_time: Instant,
+    pub end_time: Instant,
+    pub total_duration: Duration,
+    pub iterations_completed: u32,
+    pub iterations_failed: u32,
+    pub throughput: f64,
+    pub latency_stats: LatencyStats,
+    pub memory_stats: MemoryStats,
+    pub cpu_stats: CpuStats,
+    pub errors: Vec<BenchmarkError>,
+}
+
+/// 主要测试结果
+#[derive(Debug)]
+struct MainTestResult {
+    iterations_completed: u32,
+    iterations_failed: u32,
+    throughput: f64,
+    latency_stats: LatencyStats,
+    memory_stats: MemoryStats,
+    cpu_stats: CpuStats,
+    errors: Vec<BenchmarkError>,
+}
+
+/// 基准测试错误
+#[derive(Debug, thiserror::Error, Clone)]
+pub enum BenchmarkError {
+    #[error("基准测试运行错误: {0}")]
+    RuntimeError(String),
+    #[error("配置错误: {0}")]
+    ConfigError(String),
+    #[error("内存不足")]
+    OutOfMemory,
+    #[error("超时")]
+    Timeout,
+}
+
 impl BenchmarkRunner {
     pub fn new(config: BenchmarkConfig) -> Self {
         Self {
@@ -106,7 +123,6 @@ impl BenchmarkRunner {
         }
     }
 
-    /// 运行基准测试
     pub async fn run<F, Fut, R>(&self, benchmark_fn: F) -> Result<BenchmarkResult, BenchmarkError>
     where
         F: Fn(u32) -> Fut + Send + Sync + 'static + Clone,
@@ -117,23 +133,16 @@ impl BenchmarkRunner {
         let start_time = Instant::now();
         info!("🚀 开始基准测试: {}", self.config.name);
 
-        // 设置运行状态
-        {
-            let mut running = self.running.write().await;
-            *running = true;
-        }
+        self.set_running(true).await;
 
-        // 预热阶段
         if self.config.warmup_duration > Duration::ZERO {
             info!("🔥 预热阶段: {:?}", self.config.warmup_duration);
             self.warmup(&benchmark_fn).await?;
         }
 
-        // 主要测试阶段
         info!("📊 主要测试阶段开始");
         let main_result = self.run_main_test(benchmark_fn).await?;
 
-        // 冷却阶段
         if self.config.cooldown_duration > Duration::ZERO {
             info!("❄️ 冷却阶段: {:?}", self.config.cooldown_duration);
             tokio::time::sleep(self.config.cooldown_duration).await;
@@ -142,8 +151,30 @@ impl BenchmarkRunner {
         let end_time = Instant::now();
         let total_duration = end_time.duration_since(start_time);
 
-        // 构建结果
-        let result = BenchmarkResult {
+        let result = self.build_result(start_time, end_time, total_duration, main_result);
+
+        self.save_result(result.clone()).await;
+        self.set_running(false).await;
+
+        info!("✅ 基准测试完成: {}", self.config.name);
+        self.print_summary(&result);
+
+        Ok(result)
+    }
+
+    async fn set_running(&self, value: bool) {
+        let mut running = self.running.write().await;
+        *running = value;
+    }
+
+    fn build_result(
+        &self,
+        start_time: Instant,
+        end_time: Instant,
+        total_duration: Duration,
+        main_result: MainTestResult,
+    ) -> BenchmarkResult {
+        BenchmarkResult {
             config: self.config.clone(),
             start_time,
             end_time,
@@ -155,27 +186,14 @@ impl BenchmarkRunner {
             memory_stats: main_result.memory_stats,
             cpu_stats: main_result.cpu_stats,
             errors: main_result.errors,
-        };
-
-        // 保存结果
-        {
-            let mut results = self.results.write().await;
-            results.push(result.clone());
         }
-
-        // 清除运行状态
-        {
-            let mut running = self.running.write().await;
-            *running = false;
-        }
-
-        info!("✅ 基准测试完成: {}", self.config.name);
-        self.print_summary(&result);
-
-        Ok(result)
     }
 
-    /// 预热阶段
+    async fn save_result(&self, result: BenchmarkResult) {
+        let mut results = self.results.write().await;
+        results.push(result);
+    }
+
     async fn warmup<F, Fut, R>(&self, benchmark_fn: &F) -> Result<(), BenchmarkError>
     where
         F: Fn(u32) -> Fut + Send + Sync + 'static,
@@ -197,7 +215,6 @@ impl BenchmarkRunner {
         Ok(())
     }
 
-    /// 主要测试阶段
     async fn run_main_test<F, Fut, R>(
         &self,
         benchmark_fn: F,
@@ -296,7 +313,6 @@ impl BenchmarkRunner {
         })
     }
 
-    /// 基于时间的测试
     async fn run_duration_based_test<F, Fut, R>(
         &self,
         benchmark_fn: F,
@@ -330,11 +346,9 @@ impl BenchmarkRunner {
             iteration += 1;
         }
 
-        // 等待所有任务完成
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
 
-    /// 基于迭代次数的测试
     async fn run_iteration_based_test<F, Fut, R>(
         &self,
         benchmark_fn: F,
@@ -365,11 +379,9 @@ impl BenchmarkRunner {
             .await;
         }
 
-        // 等待所有任务完成
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
 
-    /// 生成基准测试任务
     async fn spawn_benchmark_task<F, Fut, R>(
         &self,
         semaphore: &Arc<tokio::sync::Semaphore>,
@@ -410,20 +422,9 @@ impl BenchmarkRunner {
         });
     }
 
-    /// 计算延迟统计
     fn calculate_latency_stats(&self, latencies: &[Duration]) -> LatencyStats {
         if latencies.is_empty() {
-            return LatencyStats {
-                min: Duration::ZERO,
-                max: Duration::ZERO,
-                mean: Duration::ZERO,
-                p50: Duration::ZERO,
-                p90: Duration::ZERO,
-                p95: Duration::ZERO,
-                p99: Duration::ZERO,
-                p999: Duration::ZERO,
-                std_dev: Duration::ZERO,
-            };
+            return self.empty_latency_stats();
         }
 
         let mut sorted_latencies = latencies.to_vec();
@@ -435,28 +436,13 @@ impl BenchmarkRunner {
         let mean_nanos: u128 = latencies.iter().map(|d| d.as_nanos()).sum();
         let mean = Duration::from_nanos((mean_nanos / latencies.len() as u128) as u64);
 
-        let p50_idx = (latencies.len() as f64 * 0.50) as usize;
-        let p90_idx = (latencies.len() as f64 * 0.90) as usize;
-        let p95_idx = (latencies.len() as f64 * 0.95) as usize;
-        let p99_idx = (latencies.len() as f64 * 0.99) as usize;
-        let p999_idx = (latencies.len() as f64 * 0.999) as usize;
+        let p50 = self.percentile(&sorted_latencies, 0.50);
+        let p90 = self.percentile(&sorted_latencies, 0.90);
+        let p95 = self.percentile(&sorted_latencies, 0.95);
+        let p99 = self.percentile(&sorted_latencies, 0.99);
+        let p999 = self.percentile(&sorted_latencies, 0.999);
 
-        let p50 = sorted_latencies[p50_idx.min(sorted_latencies.len() - 1)];
-        let p90 = sorted_latencies[p90_idx.min(sorted_latencies.len() - 1)];
-        let p95 = sorted_latencies[p95_idx.min(sorted_latencies.len() - 1)];
-        let p99 = sorted_latencies[p99_idx.min(sorted_latencies.len() - 1)];
-        let p999 = sorted_latencies[p999_idx.min(sorted_latencies.len() - 1)];
-
-        // 计算标准差
-        let variance: u128 = latencies
-            .iter()
-            .map(|d| {
-                let diff = d.as_nanos() as i128 - mean.as_nanos() as i128;
-                (diff * diff) as u128
-            })
-            .sum();
-        let std_dev_nanos = (variance / latencies.len() as u128) as f64;
-        let std_dev = Duration::from_nanos(std_dev_nanos.sqrt() as u64);
+        let std_dev = self.calculate_std_dev(latencies, mean);
 
         LatencyStats {
             min,
@@ -471,25 +457,44 @@ impl BenchmarkRunner {
         }
     }
 
-    /// 获取内存统计
-    async fn get_memory_stats(&self) -> MemoryStats {
-        // 使用 sysinfo 获取实际内存统计
-        match self.get_system_memory_stats().await {
-            Some(stats) => stats,
-            None => {
-                // 如果无法获取系统统计，返回基于进程的信息
-                MemoryStats {
-                    peak_memory: self.get_process_memory_usage(),
-                    avg_memory: 0,
-                    memory_growth: 0,
-                    allocations: 0,
-                    deallocations: 0,
-                }
-            }
+    fn empty_latency_stats(&self) -> LatencyStats {
+        LatencyStats {
+            min: Duration::ZERO,
+            max: Duration::ZERO,
+            mean: Duration::ZERO,
+            p50: Duration::ZERO,
+            p90: Duration::ZERO,
+            p95: Duration::ZERO,
+            p99: Duration::ZERO,
+            p999: Duration::ZERO,
+            std_dev: Duration::ZERO,
         }
     }
 
-    /// 获取系统内存统计
+    fn percentile(&self, sorted: &[Duration], p: f64) -> Duration {
+        let idx = (sorted.len() as f64 * p) as usize;
+        sorted[idx.min(sorted.len() - 1)]
+    }
+
+    fn calculate_std_dev(&self, latencies: &[Duration], mean: Duration) -> Duration {
+        let variance: u128 = latencies
+            .iter()
+            .map(|d| {
+                let diff = d.as_nanos() as i128 - mean.as_nanos() as i128;
+                (diff * diff) as u128
+            })
+            .sum();
+        let std_dev_nanos = (variance / latencies.len() as u128) as f64;
+        Duration::from_nanos(std_dev_nanos.sqrt() as u64)
+    }
+
+    async fn get_memory_stats(&self) -> MemoryStats {
+        match self.get_system_memory_stats().await {
+            Some(stats) => stats,
+            None => self.get_process_memory_stats(),
+        }
+    }
+
     async fn get_system_memory_stats(&self) -> Option<MemoryStats> {
         use sysinfo::{System, get_current_pid, Pid};
         
@@ -509,19 +514,35 @@ impl BenchmarkRunner {
         })
     }
 
-    /// 获取进程内存使用量
-    fn get_process_memory_usage(&self) -> u64 {
+    fn get_process_memory_stats(&self) -> MemoryStats {
         use sysinfo::{System, get_current_pid, Pid};
         let mut system = System::new_all();
         system.refresh_all();
         
         let Ok(pid): Result<Pid, _> = get_current_pid() else {
-            return 0;
+            return self.empty_memory_stats();
         };
-        system.process(pid).map(|p| p.memory()).unwrap_or(0)
+        let memory = system.process(pid).map(|p| p.memory()).unwrap_or(0);
+        
+        MemoryStats {
+            peak_memory: memory,
+            avg_memory: 0,
+            memory_growth: 0,
+            allocations: 0,
+            deallocations: 0,
+        }
     }
 
-    /// 获取CPU统计
+    fn empty_memory_stats(&self) -> MemoryStats {
+        MemoryStats {
+            peak_memory: 0,
+            avg_memory: 0,
+            memory_growth: 0,
+            allocations: 0,
+            deallocations: 0,
+        }
+    }
+
     async fn get_cpu_stats(&self) -> CpuStats {
         use sysinfo::{System, get_current_pid, Pid};
         
@@ -529,11 +550,11 @@ impl BenchmarkRunner {
         system.refresh_all();
         
         let Ok(pid): Result<Pid, _> = get_current_pid() else {
-            return Self::empty_cpu_stats();
+            return self.empty_cpu_stats();
         };
         
         system.process(pid).map_or_else(
-            Self::empty_cpu_stats,
+            || self.empty_cpu_stats(),
             |process| CpuStats {
                 avg_cpu_usage: process.cpu_usage() as f64,
                 peak_cpu_usage: process.cpu_usage() as f64,
@@ -543,7 +564,7 @@ impl BenchmarkRunner {
         )
     }
 
-    fn empty_cpu_stats() -> CpuStats {
+    fn empty_cpu_stats(&self) -> CpuStats {
         CpuStats {
             avg_cpu_usage: 0.0,
             peak_cpu_usage: 0.0,
@@ -552,7 +573,6 @@ impl BenchmarkRunner {
         }
     }
 
-    /// 打印测试摘要
     fn print_summary(&self, result: &BenchmarkResult) {
         info!("📊 基准测试摘要: {}", result.config.name);
         info!("  总持续时间: {:?}", result.total_duration);
@@ -572,69 +592,43 @@ impl BenchmarkRunner {
         );
     }
 
-    /// 获取所有结果
     pub async fn get_results(&self) -> Vec<BenchmarkResult> {
         let results = self.results.read().await;
         results.clone()
     }
 
-    /// 导出结果为JSON
     pub async fn export_results(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let results = self.get_results().await;
-        // 由于 Instant 不能序列化，我们创建一个简化的结果用于序列化
         let simplified_results: Vec<_> = results
             .iter()
-            .map(|r| {
-                serde_json::json!({
-                    "config_name": r.config.name,
-                    "total_duration": r.total_duration.as_secs_f64(),
-                    "iterations_completed": r.iterations_completed,
-                    "iterations_failed": r.iterations_failed,
-                    "throughput": r.throughput,
-                    "latency_stats": {
-                        "min": r.latency_stats.min.as_secs_f64(),
-                        "max": r.latency_stats.max.as_secs_f64(),
-                        "mean": r.latency_stats.mean.as_secs_f64(),
-                        "p50": r.latency_stats.p50.as_secs_f64(),
-                        "p95": r.latency_stats.p95.as_secs_f64(),
-                        "p99": r.latency_stats.p99.as_secs_f64(),
-                    },
-                    "memory_stats": r.memory_stats,
-                    "cpu_stats": r.cpu_stats,
-                    "error_count": r.errors.len()
-                })
-            })
+            .map(|r| self.simplify_result(r))
             .collect();
         let json = serde_json::to_string_pretty(&simplified_results)?;
         tokio::fs::write(file_path, json).await?;
         info!("📁 基准测试结果已导出到: {}", file_path);
         Ok(())
     }
-}
 
-/// 主要测试结果
-#[derive(Debug)]
-struct MainTestResult {
-    iterations_completed: u32,
-    iterations_failed: u32,
-    throughput: f64,
-    latency_stats: LatencyStats,
-    memory_stats: MemoryStats,
-    cpu_stats: CpuStats,
-    errors: Vec<BenchmarkError>,
-}
-
-/// 基准测试错误
-#[derive(Debug, thiserror::Error, Clone)]
-pub enum BenchmarkError {
-    #[error("基准测试运行错误: {0}")]
-    RuntimeError(String),
-    #[error("配置错误: {0}")]
-    ConfigError(String),
-    #[error("内存不足")]
-    OutOfMemory,
-    #[error("超时")]
-    Timeout,
+    fn simplify_result(&self, r: &BenchmarkResult) -> serde_json::Value {
+        serde_json::json!({
+            "config_name": r.config.name,
+            "total_duration": r.total_duration.as_secs_f64(),
+            "iterations_completed": r.iterations_completed,
+            "iterations_failed": r.iterations_failed,
+            "throughput": r.throughput,
+            "latency_stats": {
+                "min": r.latency_stats.min.as_secs_f64(),
+                "max": r.latency_stats.max.as_secs_f64(),
+                "mean": r.latency_stats.mean.as_secs_f64(),
+                "p50": r.latency_stats.p50.as_secs_f64(),
+                "p95": r.latency_stats.p95.as_secs_f64(),
+                "p99": r.latency_stats.p99.as_secs_f64(),
+            },
+            "memory_stats": r.memory_stats,
+            "cpu_stats": r.cpu_stats,
+            "error_count": r.errors.len()
+        })
+    }
 }
 
 /// 微服务性能基准测试
@@ -653,7 +647,7 @@ impl MicroserviceBenchmark {
         let config = BenchmarkConfig {
             name: "microservice-performance".to_string(),
             description: "微服务性能基准测试".to_string(),
-            iterations: 0, // 使用基于时间的测试
+            iterations: 0,
             concurrency: 100,
             duration: Duration::from_secs(60),
             warmup_duration: Duration::from_secs(10),
@@ -664,7 +658,7 @@ impl MicroserviceBenchmark {
                 latency_p95: Some(Duration::from_millis(50)),
                 latency_p99: Some(Duration::from_millis(100)),
                 error_rate: Some(0.01),
-                memory_usage: Some(1024 * 1024 * 100), // 100MB
+                memory_usage: Some(1024 * 1024 * 100),
                 cpu_usage: Some(50.0),
             },
         };
@@ -674,22 +668,15 @@ impl MicroserviceBenchmark {
         }
     }
 
-    /// 运行微服务基准测试
     pub async fn run(&self) -> Result<BenchmarkResult, BenchmarkError> {
         self.runner
             .run(|iteration| async move {
-                // 模拟微服务调用
-                let _start = Instant::now();
-
-                // 模拟网络延迟
                 let delay = Duration::from_millis((1 + (iteration % 10)).into());
                 tokio::time::sleep(delay).await;
 
-                // 模拟处理时间
                 let processing_time = Duration::from_micros((100 + (iteration % 500)).into());
                 tokio::time::sleep(processing_time).await;
 
-                // 模拟偶尔的错误
                 if iteration % 1000 == 0 {
                     return Err("模拟错误".into());
                 }
@@ -712,7 +699,7 @@ impl LoadBalancerBenchmark {
             description: "负载均衡器性能基准测试".to_string(),
             iterations: 10000,
             concurrency: 50,
-            duration: Duration::ZERO, // 使用基于迭代次数的测试
+            duration: Duration::ZERO,
             warmup_duration: Duration::from_secs(5),
             cooldown_duration: Duration::from_secs(2),
             metrics: BenchmarkMetrics {
@@ -721,7 +708,7 @@ impl LoadBalancerBenchmark {
                 latency_p95: Some(Duration::from_micros(50)),
                 latency_p99: Some(Duration::from_micros(100)),
                 error_rate: Some(0.001),
-                memory_usage: Some(1024 * 1024 * 10), // 10MB
+                memory_usage: Some(1024 * 1024 * 10),
                 cpu_usage: Some(20.0),
             },
         };
@@ -731,17 +718,11 @@ impl LoadBalancerBenchmark {
         }
     }
 
-    /// 运行负载均衡器基准测试
     pub async fn run(&self) -> Result<BenchmarkResult, BenchmarkError> {
         self.runner
             .run(|iteration| async move {
-                // 模拟负载均衡器选择
-                let _start = Instant::now();
-
-                // 模拟端点选择算法
                 let selection_time = Duration::from_nanos((100 + (iteration % 1000)).into());
                 tokio::time::sleep(selection_time).await;
-
                 Ok(())
             })
             .await
@@ -769,7 +750,7 @@ impl TracingBenchmark {
                 latency_p95: Some(Duration::from_micros(20)),
                 latency_p99: Some(Duration::from_micros(50)),
                 error_rate: Some(0.0001),
-                memory_usage: Some(1024 * 1024 * 50), // 50MB
+                memory_usage: Some(1024 * 1024 * 50),
                 cpu_usage: Some(30.0),
             },
         };
@@ -779,22 +760,15 @@ impl TracingBenchmark {
         }
     }
 
-    /// 运行追踪基准测试
     pub async fn run(&self) -> Result<BenchmarkResult, BenchmarkError> {
         self.runner
             .run(|iteration| async move {
-                // 模拟span创建和记录
-                let _start = Instant::now();
-
-                // 模拟span创建
                 let span_creation_time = Duration::from_nanos((50 + (iteration % 500)).into());
                 tokio::time::sleep(span_creation_time).await;
 
-                // 模拟属性设置
                 let attribute_time = Duration::from_nanos((10 + (iteration % 100)).into());
                 tokio::time::sleep(attribute_time).await;
 
-                // 模拟span结束
                 let span_end_time = Duration::from_nanos((20 + (iteration % 200)).into());
                 tokio::time::sleep(span_end_time).await;
 
@@ -842,7 +816,6 @@ mod tests {
             })
             .await;
 
-        // 基准测试可能因为各种原因失败，我们检查结果
         match result {
             Ok(result) => {
                 assert_eq!(result.iterations_completed, 90);
@@ -850,7 +823,6 @@ mod tests {
             }
             Err(e) => {
                 println!("基准测试失败: {:?}", e);
-                // 在测试环境中，基准测试失败是可以接受的
             }
         }
     }
@@ -860,14 +832,12 @@ mod tests {
         let benchmark = MicroserviceBenchmark::new();
         let result = benchmark.run().await;
 
-        // 微服务基准测试可能因为资源限制失败
         match result {
             Ok(_) => {
                 println!("微服务基准测试成功");
             }
             Err(e) => {
                 println!("微服务基准测试失败: {:?}", e);
-                // 在测试环境中，这是可以接受的
             }
         }
     }

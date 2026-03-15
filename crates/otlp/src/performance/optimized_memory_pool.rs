@@ -1,12 +1,6 @@
 //! # 优化的内存池实现
 //!
 //! 使用Rust 1.92的新特性进行性能优化，包括零拷贝、对象复用和智能内存管理。
-//!
-//! ## Rust 1.92 特性应用
-//!
-//! - **异步闭包**: 使用 `async || {}` 语法简化异步内存池操作
-//! - **元组收集**: 使用 `collect()` 直接收集内存池统计到元组
-//! - **改进的内存管理**: 利用 Rust 1.92 的内存管理优化提升性能
 
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
@@ -30,15 +24,10 @@ pub enum MemoryPoolError {
 /// 内存池配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryPoolConfig {
-    /// 最大池大小
     pub max_size: usize,
-    /// 初始池大小
     pub initial_size: usize,
-    /// 对象过期时间
     pub object_ttl: Duration,
-    /// 清理间隔
     pub cleanup_interval: Duration,
-    /// 是否启用统计
     pub enable_stats: bool,
 }
 
@@ -47,8 +36,8 @@ impl Default for MemoryPoolConfig {
         Self {
             max_size: 100,
             initial_size: 10,
-            object_ttl: Duration::from_secs(300),      // 5分钟
-            cleanup_interval: Duration::from_secs(60), // 1分钟
+            object_ttl: Duration::from_secs(300),
+            cleanup_interval: Duration::from_secs(60),
             enable_stats: true,
         }
     }
@@ -65,22 +54,18 @@ where
 }
 
 impl<T: Send + Sync + Default + 'static> PooledObject<T> {
-    /// 获取对象引用
     pub fn get(&self) -> &T {
         &self.object
     }
 
-    /// 获取对象可变引用
     pub fn get_mut(&mut self) -> &mut T {
         &mut self.object
     }
 
-    /// 获取对象创建时间
     pub fn created_at(&self) -> Instant {
         self.created_at
     }
 
-    /// 检查对象是否过期
     pub fn is_expired(&self, ttl: Duration) -> bool {
         self.created_at.elapsed() > ttl
     }
@@ -88,7 +73,6 @@ impl<T: Send + Sync + Default + 'static> PooledObject<T> {
 
 impl<T: Send + Sync + Default + 'static> Drop for PooledObject<T> {
     fn drop(&mut self) {
-        // 异步回收到池中
         let pool = Arc::clone(&self.pool);
         let object = std::mem::take(&mut self.object);
         let created_at = self.created_at;
@@ -124,8 +108,6 @@ struct PooledObjectMeta<T> {
 }
 
 /// 优化的内存池实现
-///
-/// 使用零拷贝和智能对象管理，性能提升60-80%
 pub struct OptimizedMemoryPool<T> {
     config: MemoryPoolConfig,
     pool: Arc<Mutex<VecDeque<PooledObjectMeta<T>>>>,
@@ -138,7 +120,6 @@ pub struct OptimizedMemoryPool<T> {
 }
 
 impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
-    /// 创建新的内存池
     pub async fn new<F>(factory: F, config: MemoryPoolConfig) -> Result<Self, MemoryPoolError>
     where
         F: Fn() -> T + Send + Sync + 'static,
@@ -174,32 +155,12 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
             total_destroyed,
         };
 
-        // 同步初始化池
-        {
-            let mut pool = memory_pool.pool.lock().await;
-            for _ in 0..memory_pool.config.initial_size {
-                let object = (memory_pool.factory)();
-                let meta = PooledObjectMeta {
-                    object,
-                    created_at: Instant::now(),
-                    last_used: Instant::now(),
-                };
-                pool.push_back(meta);
-            }
-        }
-        memory_pool
-            .total_created
-            .fetch_add(memory_pool.config.initial_size, Ordering::AcqRel);
-
+        memory_pool.initialize().await;
         Ok(memory_pool)
     }
 
-    /// 初始化内存池
-    #[allow(dead_code)]
-    #[allow(unused_variables)]
-    async fn initialize_pool(&self) -> Result<(), MemoryPoolError> {
+    async fn initialize(&self) {
         let mut pool = self.pool.lock().await;
-
         for _ in 0..self.config.initial_size {
             let object = (self.factory)();
             let meta = PooledObjectMeta {
@@ -209,15 +170,11 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
             };
             pool.push_back(meta);
         }
-
         self.total_created
             .fetch_add(self.config.initial_size, Ordering::AcqRel);
-        Ok(())
     }
 
-    /// 获取对象
     pub async fn acquire(&self) -> Result<PooledObject<T>, MemoryPoolError> {
-        // 获取信号量许可
         let _permit = self
             .semaphore
             .acquire()
@@ -226,9 +183,7 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
 
         let mut pool = self.pool.lock().await;
 
-        // 尝试从池中获取对象
-        if let Some(mut meta) = pool.pop_front() {
-            // 检查对象是否过期
+        while let Some(mut meta) = pool.pop_front() {
             if meta.created_at.elapsed() <= self.config.object_ttl {
                 meta.last_used = Instant::now();
                 self.total_reused.fetch_add(1, Ordering::AcqRel);
@@ -239,14 +194,11 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
                     created_at: meta.created_at,
                     pool: Arc::new(self.clone()),
                 });
-            } else {
-                // 对象过期，销毁
-                self.total_destroyed.fetch_add(1, Ordering::AcqRel);
             }
+            self.total_destroyed.fetch_add(1, Ordering::AcqRel);
         }
 
-        // 池中没有可用对象，创建新对象
-        drop(pool); // 释放锁
+        drop(pool);
 
         let object = (self.factory)();
         let created_at = Instant::now();
@@ -261,27 +213,19 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
         })
     }
 
-    /// 返回对象到池中
-    #[allow(dead_code)]
-    #[allow(unused_variables)]
     async fn return_object(&self, object: T, created_at: Instant) -> Result<(), MemoryPoolError> {
         let mut pool = self.pool.lock().await;
 
-        // 检查池是否已满
         if pool.len() >= self.config.max_size {
-            // 池已满，销毁对象
             self.total_destroyed.fetch_add(1, Ordering::AcqRel);
             return Ok(());
         }
 
-        // 检查对象是否过期
         if created_at.elapsed() > self.config.object_ttl {
-            // 对象过期，销毁
             self.total_destroyed.fetch_add(1, Ordering::AcqRel);
             return Ok(());
         }
 
-        // 将对象返回池中
         let meta = PooledObjectMeta {
             object,
             created_at,
@@ -294,9 +238,6 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
         Ok(())
     }
 
-    /// 更新统计信息
-    #[allow(dead_code)]
-    #[allow(unused_variables)]
     async fn update_stats(&self) {
         if !self.config.enable_stats {
             return;
@@ -317,21 +258,16 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
         }
     }
 
-    /// 获取统计信息
     pub async fn get_stats(&self) -> MemoryPoolStats {
         self.update_stats().await;
         self.stats.lock().await.clone()
     }
 
-    /// 清理过期对象
-    #[allow(dead_code)]
-    #[allow(unused_variables)]
     pub async fn cleanup_expired(&self) -> usize {
         let mut pool = self.pool.lock().await;
         let mut removed_count = 0;
-
-        // 从后往前遍历，移除过期对象
         let mut i = pool.len();
+
         while i > 0 {
             i -= 1;
             if let Some(meta) = pool.get(i) {
@@ -352,9 +288,6 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
         removed_count
     }
 
-    /// 启动自动清理任务
-    #[allow(dead_code)]
-    #[allow(unused_variables)]
     pub fn start_cleanup_task(&self) {
         let pool = Arc::new(self.clone());
         let cleanup_interval = self.config.cleanup_interval;
@@ -371,20 +304,10 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
         });
     }
 
-    /// 获取当前池大小
-    #[allow(dead_code)]
-    #[allow(unused_variables)]
-    pub async fn current_size(&self) -> usize {
-        let pool = self.pool.lock().await;
-        pool.len()
-    }
-
-    /// 获取配置
     pub fn get_config(&self) -> &MemoryPoolConfig {
         &self.config
     }
 
-    /// 更新配置
     pub fn update_config(&mut self, config: MemoryPoolConfig) -> Result<(), MemoryPoolError> {
         if config.max_size == 0 {
             return Err(MemoryPoolError::ConfigurationError(
@@ -402,7 +325,6 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
         Ok(())
     }
 
-    /// 清空池
     pub async fn clear(&self) {
         let mut pool = self.pool.lock().await;
         let count = pool.len();
@@ -456,28 +378,23 @@ mod tests {
         .await
         .expect("Failed to create memory pool");
 
-        // 获取对象
         let obj1 = pool
             .acquire()
             .await
             .expect("Failed to acquire first object");
         assert_eq!(obj1.get().capacity(), 1024);
 
-        // 获取第二个对象
         let obj2 = pool
             .acquire()
             .await
             .expect("Failed to acquire second object");
         assert_eq!(obj2.get().capacity(), 1024);
 
-        // 释放对象
         drop(obj1);
         drop(obj2);
 
-        // 等待异步回收（减少等待时间，避免超时）
         tokio::time::sleep(Duration::from_millis(10)).await;
 
-        // 再次获取对象，应该重用
         let obj3 = pool
             .acquire()
             .await
@@ -485,12 +402,9 @@ mod tests {
         assert_eq!(obj3.get().capacity(), 1024);
 
         let stats = pool.get_stats().await;
-        // 放宽检查条件，因为重用可能还没完成
         assert!(stats.total_created >= 2);
     }
 
-    #[allow(dead_code)]
-    #[allow(unused_variables)]
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn test_memory_pool_expiration() {
         let config = MemoryPoolConfig {
@@ -505,28 +419,23 @@ mod tests {
             .await
             .expect("Failed to create memory pool for expiration test");
 
-        // 获取对象
         let obj = pool
             .acquire()
             .await
             .expect("Failed to acquire object for expiration test");
         drop(obj);
 
-        // 等待对象过期（减少等待时间，避免超时）
         tokio::time::sleep(Duration::from_millis(50)).await;
 
-        // 清理过期对象
-        let removed = pool.cleanup_expired().await;
-        // 注意：清理可能已经自动进行，所以不严格要求>0
+        let _removed = pool.cleanup_expired().await;
         let stats = pool.get_stats().await;
-        // 只验证池子在运行
         assert!(stats.total_created > 0);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn test_memory_pool_full() {
         let config = MemoryPoolConfig {
-            max_size: 3, // 增加到3以避免死锁
+            max_size: 3,
             initial_size: 0,
             object_ttl: Duration::from_secs(60),
             cleanup_interval: Duration::from_secs(10),
@@ -537,7 +446,6 @@ mod tests {
             .await
             .expect("Failed to create memory pool for full test");
 
-        // 获取最大数量的对象
         let obj1 = pool
             .acquire()
             .await
@@ -551,22 +459,17 @@ mod tests {
             .await
             .expect("Failed to acquire third object in full test");
 
-        // 尝试获取第四个对象应该失败或超时
         let result = tokio::time::timeout(Duration::from_millis(100), pool.acquire()).await;
         assert!(result.is_err() || result.unwrap().is_err());
 
-        // 释放一个对象
         drop(obj1);
-
-        // 等待异步回收
         tokio::time::sleep(Duration::from_millis(10)).await;
 
-        // 现在应该能够获取对象
         let obj4 = pool
             .acquire()
             .await
             .expect("Failed to acquire object after release");
-        assert!(obj4.get().capacity() == 256);
+        assert_eq!(obj4.get().capacity(), 256);
 
         drop(obj2);
         drop(obj3);
@@ -576,7 +479,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn test_memory_pool_concurrent() {
         let config = MemoryPoolConfig {
-            max_size: 20, // 增加到20以支持并发测试
+            max_size: 20,
             initial_size: 5,
             object_ttl: Duration::from_secs(60),
             cleanup_interval: Duration::from_secs(10),
@@ -587,16 +490,12 @@ mod tests {
             .await
             .expect("Failed to create memory pool for concurrent test");
 
-        // 并发获取和释放对象（减少数量以避免超时）
         let mut handles = Vec::new();
         for i in 0..10 {
-            // 从20减少到10
             let pool_clone = pool.clone();
             let handle = tokio::spawn(async move {
-                // 添加超时保护
                 match tokio::time::timeout(Duration::from_secs(5), pool_clone.acquire()).await {
                     Ok(Ok(obj)) => {
-                        // 模拟使用对象
                         tokio::time::sleep(Duration::from_millis(5)).await;
                         drop(obj);
                         Ok(i)
@@ -608,7 +507,6 @@ mod tests {
             handles.push(handle);
         }
 
-        // 等待所有任务完成
         for handle in handles {
             handle
                 .await

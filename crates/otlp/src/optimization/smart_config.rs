@@ -1,12 +1,6 @@
 //! # 智能配置管理模块
 //!
 //! 提供基于机器学习的智能配置优化
-//!
-//! ## Rust 1.92 特性应用
-//!
-//! - **异步闭包**: 使用 `async || {}` 语法简化异步配置优化操作
-//! - **元组收集**: 使用 `collect()` 直接收集配置优化结果到元组
-//! - **改进的配置管理**: 利用 Rust 1.92 的配置管理优化提升性能
 
 use anyhow::{Result, anyhow};
 use std::collections::HashMap;
@@ -14,15 +8,14 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-/// 智能配置统计信息
 #[derive(Debug, Default)]
 pub struct SmartConfigStats {
     pub total_configurations: AtomicUsize,
     pub successful_configurations: AtomicUsize,
     pub failed_configurations: AtomicUsize,
-    pub performance_improvements: AtomicU64, // 百分比
-    pub average_improvement: AtomicU64,      // 百分比
-    pub configuration_time: AtomicU64,       // 微秒
+    pub performance_improvements: AtomicU64,
+    pub average_improvement: AtomicU64,
+    pub configuration_time: AtomicU64,
 }
 
 impl Clone for SmartConfigStats {
@@ -46,7 +39,6 @@ impl Clone for SmartConfigStats {
     }
 }
 
-/// 配置项
 #[derive(Debug, Clone)]
 pub struct ConfigItem {
     pub key: String,
@@ -101,15 +93,14 @@ pub enum ConstraintType {
     Custom,
 }
 
-/// 配置优化建议
 #[derive(Debug, Clone)]
 pub struct ConfigOptimization {
     pub id: String,
     pub config_item: ConfigItem,
     pub current_value: ConfigValue,
     pub suggested_value: ConfigValue,
-    pub expected_improvement: f64, // 百分比
-    pub confidence: f64,           // 0.0 - 1.0
+    pub expected_improvement: f64,
+    pub confidence: f64,
     pub reasoning: String,
     pub risk_level: RiskLevel,
 }
@@ -122,7 +113,6 @@ pub enum RiskLevel {
     VeryHigh,
 }
 
-/// 智能配置管理器
 #[allow(dead_code)]
 pub struct SmartConfigManager {
     stats: Arc<SmartConfigStats>,
@@ -132,7 +122,6 @@ pub struct SmartConfigManager {
     config_templates: Arc<Mutex<HashMap<String, ConfigTemplate>>>,
 }
 
-/// 性能快照
 #[derive(Debug, Clone)]
 pub struct PerformanceSnapshot {
     pub timestamp: Instant,
@@ -144,7 +133,6 @@ pub struct PerformanceSnapshot {
     pub config_hash: String,
 }
 
-/// 配置模板
 #[derive(Debug, Clone)]
 pub struct ConfigTemplate {
     pub name: String,
@@ -164,7 +152,6 @@ pub struct PerformanceProfile {
 }
 
 impl SmartConfigManager {
-    /// 创建新的智能配置管理器
     pub fn new() -> Self {
         Self {
             stats: Arc::new(SmartConfigStats::default()),
@@ -175,73 +162,79 @@ impl SmartConfigManager {
         }
     }
 
-    /// 初始化默认配置
     pub fn initialize_default_config(&self) -> Result<()> {
         let mut config = self.current_config.lock().unwrap();
 
-        // 性能相关配置
         config.insert(
             "max_workers".to_string(),
-            ConfigItem {
-                key: "max_workers".to_string(),
-                value: ConfigValue::Integer(4),
-                category: ConfigCategory::Concurrency,
-                impact: ConfigImpact::High,
-                dependencies: vec!["cpu_count".to_string()],
-                constraints: vec![ConfigConstraint {
-                    constraint_type: ConstraintType::Range,
-                    min_value: Some(ConfigValue::Integer(1)),
-                    max_value: Some(ConfigValue::Integer(64)),
-                    allowed_values: None,
-                }],
-            },
+            Self::create_workers_config(),
         );
 
-        // 内存相关配置
         config.insert(
             "memory_pool_size".to_string(),
-            ConfigItem {
-                key: "memory_pool_size".to_string(),
-                value: ConfigValue::Integer(1024),
-                category: ConfigCategory::Memory,
-                impact: ConfigImpact::High,
-                dependencies: vec!["available_memory".to_string()],
-                constraints: vec![ConfigConstraint {
-                    constraint_type: ConstraintType::Range,
-                    min_value: Some(ConfigValue::Integer(256)),
-                    max_value: Some(ConfigValue::Integer(8192)),
-                    allowed_values: None,
-                }],
-            },
+            Self::create_memory_pool_config(),
         );
 
-        // 网络相关配置
         config.insert(
             "connection_pool_size".to_string(),
-            ConfigItem {
-                key: "connection_pool_size".to_string(),
-                value: ConfigValue::Integer(100),
-                category: ConfigCategory::Network,
-                impact: ConfigImpact::Medium,
-                dependencies: vec!["max_connections".to_string()],
-                constraints: vec![ConfigConstraint {
-                    constraint_type: ConstraintType::Range,
-                    min_value: Some(ConfigValue::Integer(10)),
-                    max_value: Some(ConfigValue::Integer(1000)),
-                    allowed_values: None,
-                }],
-            },
+            Self::create_connection_pool_config(),
         );
 
         Ok(())
     }
 
-    /// 记录性能数据
+    fn create_workers_config() -> ConfigItem {
+        ConfigItem {
+            key: "max_workers".to_string(),
+            value: ConfigValue::Integer(4),
+            category: ConfigCategory::Concurrency,
+            impact: ConfigImpact::High,
+            dependencies: vec!["cpu_count".to_string()],
+            constraints: vec![ConfigConstraint {
+                constraint_type: ConstraintType::Range,
+                min_value: Some(ConfigValue::Integer(1)),
+                max_value: Some(ConfigValue::Integer(64)),
+                allowed_values: None,
+            }],
+        }
+    }
+
+    fn create_memory_pool_config() -> ConfigItem {
+        ConfigItem {
+            key: "memory_pool_size".to_string(),
+            value: ConfigValue::Integer(1024),
+            category: ConfigCategory::Memory,
+            impact: ConfigImpact::High,
+            dependencies: vec!["available_memory".to_string()],
+            constraints: vec![ConfigConstraint {
+                constraint_type: ConstraintType::Range,
+                min_value: Some(ConfigValue::Integer(256)),
+                max_value: Some(ConfigValue::Integer(8192)),
+                allowed_values: None,
+            }],
+        }
+    }
+
+    fn create_connection_pool_config() -> ConfigItem {
+        ConfigItem {
+            key: "connection_pool_size".to_string(),
+            value: ConfigValue::Integer(100),
+            category: ConfigCategory::Network,
+            impact: ConfigImpact::Medium,
+            dependencies: vec!["max_connections".to_string()],
+            constraints: vec![ConfigConstraint {
+                constraint_type: ConstraintType::Range,
+                min_value: Some(ConfigValue::Integer(10)),
+                max_value: Some(ConfigValue::Integer(1000)),
+                allowed_values: None,
+            }],
+        }
+    }
+
     pub fn record_performance(&self, snapshot: PerformanceSnapshot) -> Result<()> {
         let mut data = self.performance_data.lock().unwrap();
         data.push(snapshot);
 
-        // 保持最近1000条记录
         if data.len() > 1000 {
             data.remove(0);
         }
@@ -249,7 +242,6 @@ impl SmartConfigManager {
         Ok(())
     }
 
-    /// 分析配置并生成优化建议
     pub async fn analyze_and_optimize(&self) -> Result<Vec<ConfigOptimization>> {
         let current_config = self.current_config.lock().unwrap().clone();
         let performance_data = self.performance_data.lock().unwrap().clone();
@@ -269,7 +261,6 @@ impl SmartConfigManager {
         history.extend(optimizations.iter().cloned());
     }
 
-    /// 分析性能指标并生成优化建议
     async fn analyze_performance_metrics(
         &self,
         current_config: &HashMap<String, ConfigItem>,
@@ -291,10 +282,11 @@ impl SmartConfigManager {
         current_config: &HashMap<String, ConfigItem>,
         optimizations: &mut Vec<ConfigOptimization>,
     ) -> Result<()> {
-        if let Some(avg_cpu) = self.calculate_average_cpu(performance_data) {
-            if avg_cpu > 80.0 {
-                optimizations.extend(self.optimize_cpu_config(current_config, avg_cpu).await?);
-            }
+        let Some(avg_cpu) = self.calculate_average_cpu(performance_data) else {
+            return Ok(());
+        };
+        if avg_cpu > 80.0 {
+            optimizations.extend(self.optimize_cpu_config(current_config, avg_cpu).await?);
         }
         Ok(())
     }
@@ -305,10 +297,11 @@ impl SmartConfigManager {
         current_config: &HashMap<String, ConfigItem>,
         optimizations: &mut Vec<ConfigOptimization>,
     ) -> Result<()> {
-        if let Some(avg_memory) = self.calculate_average_memory(performance_data) {
-            if avg_memory > 85.0 {
-                optimizations.extend(self.optimize_memory_config(current_config, avg_memory).await?);
-            }
+        let Some(avg_memory) = self.calculate_average_memory(performance_data) else {
+            return Ok(());
+        };
+        if avg_memory > 85.0 {
+            optimizations.extend(self.optimize_memory_config(current_config, avg_memory).await?);
         }
         Ok(())
     }
@@ -319,10 +312,11 @@ impl SmartConfigManager {
         current_config: &HashMap<String, ConfigItem>,
         optimizations: &mut Vec<ConfigOptimization>,
     ) -> Result<()> {
-        if let Some(avg_throughput) = self.calculate_average_throughput(performance_data) {
-            if avg_throughput < 1000 {
-                optimizations.extend(self.optimize_throughput_config(current_config, avg_throughput).await?);
-            }
+        let Some(avg_throughput) = self.calculate_average_throughput(performance_data) else {
+            return Ok(());
+        };
+        if avg_throughput < 1000 {
+            optimizations.extend(self.optimize_throughput_config(current_config, avg_throughput).await?);
         }
         Ok(())
     }
@@ -333,28 +327,25 @@ impl SmartConfigManager {
         current_config: &HashMap<String, ConfigItem>,
         optimizations: &mut Vec<ConfigOptimization>,
     ) -> Result<()> {
-        if let Some(avg_latency) = self.calculate_average_latency(performance_data) {
-            if avg_latency > Duration::from_millis(100) {
-                optimizations.extend(self.optimize_latency_config(current_config, avg_latency).await?);
-            }
+        let Some(avg_latency) = self.calculate_average_latency(performance_data) else {
+            return Ok(());
+        };
+        if avg_latency > Duration::from_millis(100) {
+            optimizations.extend(self.optimize_latency_config(current_config, avg_latency).await?);
         }
         Ok(())
     }
 
-    /// 优化CPU配置
     async fn optimize_cpu_config(
         &self,
         config: &HashMap<String, ConfigItem>,
         avg_cpu: f64,
     ) -> Result<Vec<ConfigOptimization>> {
-        let workers_config = match self.get_workers_config(config) {
-            Some(cfg) => cfg,
-            None => return Ok(Vec::new()),
+        let Some(workers_config) = self.get_workers_config(config) else {
+            return Ok(Vec::new());
         };
-
-        let current_workers = match self.extract_integer_value(&workers_config.value) {
-            Some(n) => n,
-            None => return Ok(Vec::new()),
+        let Some(current_workers) = self.extract_integer_value(&workers_config.value) else {
+            return Ok(Vec::new());
         };
 
         let suggested_workers = self.calculate_suggested_workers(current_workers, avg_cpu);
@@ -363,12 +354,10 @@ impl SmartConfigManager {
         Ok(vec![optimization])
     }
 
-    /// 获取工作线程配置
     fn get_workers_config(&self, config: &HashMap<String, ConfigItem>) -> Option<ConfigItem> {
         config.get("max_workers").cloned()
     }
 
-    /// 提取整数值
     fn extract_integer_value(&self, value: &ConfigValue) -> Option<i64> {
         match value {
             ConfigValue::Integer(n) => Some(*n),
@@ -376,7 +365,6 @@ impl SmartConfigManager {
         }
     }
 
-    /// 创建CPU优化配置
     fn create_cpu_optimization(
         &self,
         workers_config: ConfigItem,
@@ -396,7 +384,6 @@ impl SmartConfigManager {
         }
     }
 
-    /// 计算建议的工作线程数
     fn calculate_suggested_workers(&self, current_workers: i64, avg_cpu: f64) -> i64 {
         if avg_cpu > 95.0 {
             (current_workers * 2).min(32)
@@ -407,20 +394,16 @@ impl SmartConfigManager {
         }
     }
 
-    /// 优化内存配置
     async fn optimize_memory_config(
         &self,
         config: &HashMap<String, ConfigItem>,
         avg_memory: f64,
     ) -> Result<Vec<ConfigOptimization>> {
-        let memory_pool_config = match self.get_memory_pool_config(config) {
-            Some(cfg) => cfg,
-            None => return Ok(Vec::new()),
+        let Some(memory_pool_config) = self.get_memory_pool_config(config) else {
+            return Ok(Vec::new());
         };
-
-        let current_size = match self.extract_integer_value(&memory_pool_config.value) {
-            Some(n) => n,
-            None => return Ok(Vec::new()),
+        let Some(current_size) = self.extract_integer_value(&memory_pool_config.value) else {
+            return Ok(Vec::new());
         };
 
         let suggested_size = self.calculate_suggested_memory(current_size, avg_memory);
@@ -429,12 +412,10 @@ impl SmartConfigManager {
         Ok(vec![optimization])
     }
 
-    /// 获取内存池配置
     fn get_memory_pool_config(&self, config: &HashMap<String, ConfigItem>) -> Option<ConfigItem> {
         config.get("memory_pool_size").cloned()
     }
 
-    /// 创建内存优化配置
     fn create_memory_optimization(
         &self,
         memory_pool_config: ConfigItem,
@@ -454,7 +435,6 @@ impl SmartConfigManager {
         }
     }
 
-    /// 计算建议的内存大小
     fn calculate_suggested_memory(&self, current_size: i64, avg_memory: f64) -> i64 {
         if avg_memory > 95.0 {
             current_size * 2
@@ -465,20 +445,16 @@ impl SmartConfigManager {
         }
     }
 
-    /// 优化吞吐量配置
     async fn optimize_throughput_config(
         &self,
         config: &HashMap<String, ConfigItem>,
         avg_throughput: u64,
     ) -> Result<Vec<ConfigOptimization>> {
-        let connection_pool_config = match self.get_connection_pool_config(config) {
-            Some(cfg) => cfg,
-            None => return Ok(Vec::new()),
+        let Some(connection_pool_config) = self.get_connection_pool_config(config) else {
+            return Ok(Vec::new());
         };
-
-        let current_size = match self.extract_integer_value(&connection_pool_config.value) {
-            Some(n) => n,
-            None => return Ok(Vec::new()),
+        let Some(current_size) = self.extract_integer_value(&connection_pool_config.value) else {
+            return Ok(Vec::new());
         };
 
         let suggested_size = self.calculate_suggested_pool_size(current_size, avg_throughput);
@@ -487,12 +463,10 @@ impl SmartConfigManager {
         Ok(vec![optimization])
     }
 
-    /// 获取连接池配置
     fn get_connection_pool_config(&self, config: &HashMap<String, ConfigItem>) -> Option<ConfigItem> {
         config.get("connection_pool_size").cloned()
     }
 
-    /// 创建吞吐量优化配置
     fn create_throughput_optimization(
         &self,
         connection_pool_config: ConfigItem,
@@ -512,7 +486,6 @@ impl SmartConfigManager {
         }
     }
 
-    /// 计算建议的连接池大小
     fn calculate_suggested_pool_size(&self, current_size: i64, avg_throughput: u64) -> i64 {
         if avg_throughput < 500 {
             current_size * 2
@@ -523,20 +496,16 @@ impl SmartConfigManager {
         }
     }
 
-    /// 优化延迟配置
     async fn optimize_latency_config(
         &self,
         config: &HashMap<String, ConfigItem>,
         avg_latency: Duration,
     ) -> Result<Vec<ConfigOptimization>> {
-        let batch_size_config = match self.get_batch_size_config(config) {
-            Some(cfg) => cfg,
-            None => return Ok(Vec::new()),
+        let Some(batch_size_config) = self.get_batch_size_config(config) else {
+            return Ok(Vec::new());
         };
-
-        let current_size = match self.extract_integer_value(&batch_size_config.value) {
-            Some(n) => n,
-            None => return Ok(Vec::new()),
+        let Some(current_size) = self.extract_integer_value(&batch_size_config.value) else {
+            return Ok(Vec::new());
         };
 
         let suggested_size = self.calculate_suggested_batch_size(current_size, avg_latency);
@@ -545,12 +514,10 @@ impl SmartConfigManager {
         Ok(vec![optimization])
     }
 
-    /// 获取批处理大小配置
     fn get_batch_size_config(&self, config: &HashMap<String, ConfigItem>) -> Option<ConfigItem> {
         config.get("batch_size").cloned()
     }
 
-    /// 创建延迟优化配置
     fn create_latency_optimization(
         &self,
         batch_size_config: ConfigItem,
@@ -573,7 +540,6 @@ impl SmartConfigManager {
         }
     }
 
-    /// 计算建议的批处理大小
     fn calculate_suggested_batch_size(&self, current_size: i64, avg_latency: Duration) -> i64 {
         if avg_latency > Duration::from_millis(500) {
             current_size / 2
@@ -584,7 +550,6 @@ impl SmartConfigManager {
         }
     }
 
-    /// 应用配置优化
     pub async fn apply_optimization(&self, optimization: &ConfigOptimization) -> Result<bool> {
         let start = Instant::now();
 
@@ -618,7 +583,6 @@ impl SmartConfigManager {
         self.stats.configuration_time.fetch_add(duration.as_micros() as u64, Ordering::Relaxed);
     }
 
-    /// 验证配置约束
     fn validate_config_constraints(&self, config_item: &ConfigItem, value: &ConfigValue) -> bool {
         for constraint in &config_item.constraints {
             if !self.validate_single_constraint(constraint, value) {
@@ -628,25 +592,21 @@ impl SmartConfigManager {
         true
     }
 
-    /// 验证单个约束
     fn validate_single_constraint(&self, constraint: &ConfigConstraint, value: &ConfigValue) -> bool {
         match constraint.constraint_type {
             ConstraintType::Range => self.validate_range_constraint(constraint, value),
             ConstraintType::Enum => self.validate_enum_constraint(constraint, value),
-            ConstraintType::Custom => true, // 自定义约束验证逻辑
+            ConstraintType::Custom => true,
         }
     }
 
-    /// 验证范围约束
     fn validate_range_constraint(&self, constraint: &ConfigConstraint, value: &ConfigValue) -> bool {
-        let (min, max) = match (&constraint.min_value, &constraint.max_value) {
-            (Some(min), Some(max)) => (min, max),
-            _ => return true,
+        let (Some(min), Some(max)) = (&constraint.min_value, &constraint.max_value) else {
+            return true;
         };
         self.is_value_in_range(value, min, max)
     }
 
-    /// 验证枚举约束
     fn validate_enum_constraint(&self, constraint: &ConfigConstraint, value: &ConfigValue) -> bool {
         match &constraint.allowed_values {
             Some(allowed) => allowed.contains(value),
@@ -654,31 +614,25 @@ impl SmartConfigManager {
         }
     }
 
-    /// 检查值是否在范围内
     fn is_value_in_range(&self, value: &ConfigValue, min: &ConfigValue, max: &ConfigValue) -> bool {
         self.check_integer_range(value, min, max)
             || self.check_float_range(value, min, max)
     }
 
     fn check_integer_range(&self, value: &ConfigValue, min: &ConfigValue, max: &ConfigValue) -> bool {
-        match (value, min, max) {
-            (ConfigValue::Integer(v), ConfigValue::Integer(min_val), ConfigValue::Integer(max_val)) => {
-                *v >= *min_val && *v <= *max_val
-            }
-            _ => false,
-        }
+        let (ConfigValue::Integer(v), ConfigValue::Integer(min_val), ConfigValue::Integer(max_val)) = (value, min, max) else {
+            return false;
+        };
+        *v >= *min_val && *v <= *max_val
     }
 
     fn check_float_range(&self, value: &ConfigValue, min: &ConfigValue, max: &ConfigValue) -> bool {
-        match (value, min, max) {
-            (ConfigValue::Float(v), ConfigValue::Float(min_val), ConfigValue::Float(max_val)) => {
-                *v >= *min_val && *v <= *max_val
-            }
-            _ => false,
-        }
+        let (ConfigValue::Float(v), ConfigValue::Float(min_val), ConfigValue::Float(max_val)) = (value, min, max) else {
+            return false;
+        };
+        *v >= *min_val && *v <= *max_val
     }
 
-    /// 计算平均CPU使用率
     fn calculate_average_cpu(&self, data: &[PerformanceSnapshot]) -> Option<f64> {
         if data.is_empty() {
             return None;
@@ -686,7 +640,6 @@ impl SmartConfigManager {
         Some(data.iter().map(|s| s.cpu_usage).sum::<f64>() / data.len() as f64)
     }
 
-    /// 计算平均内存使用率
     fn calculate_average_memory(&self, data: &[PerformanceSnapshot]) -> Option<f64> {
         if data.is_empty() {
             return None;
@@ -694,7 +647,6 @@ impl SmartConfigManager {
         Some(data.iter().map(|s| s.memory_usage).sum::<f64>() / data.len() as f64)
     }
 
-    /// 计算平均吞吐量
     fn calculate_average_throughput(&self, data: &[PerformanceSnapshot]) -> Option<u64> {
         if data.is_empty() {
             return None;
@@ -702,7 +654,6 @@ impl SmartConfigManager {
         Some(data.iter().map(|s| s.throughput).sum::<u64>() / data.len() as u64)
     }
 
-    /// 计算平均延迟
     fn calculate_average_latency(&self, data: &[PerformanceSnapshot]) -> Option<Duration> {
         if data.is_empty() {
             return None;
@@ -713,17 +664,14 @@ impl SmartConfigManager {
         ))
     }
 
-    /// 获取统计信息
     pub fn get_stats(&self) -> SmartConfigStats {
         (*self.stats).clone()
     }
 
-    /// 获取当前配置
     pub fn get_current_config(&self) -> HashMap<String, ConfigItem> {
         self.current_config.lock().unwrap().clone()
     }
 
-    /// 获取优化历史
     pub fn get_optimization_history(&self) -> Vec<ConfigOptimization> {
         self.optimization_history.lock().unwrap().clone()
     }
@@ -773,14 +721,13 @@ mod tests {
         let manager = SmartConfigManager::new();
         manager.initialize_default_config().unwrap();
 
-        // 记录一些性能数据
         for i in 0..20 {
             let snapshot = PerformanceSnapshot {
                 timestamp: Instant::now(),
-                cpu_usage: 90.0 + (i as f64 * 0.1), // 高CPU使用率
+                cpu_usage: 90.0 + (i as f64 * 0.1),
                 memory_usage: 60.0,
-                throughput: 500,                     // 低吞吐量
-                latency: Duration::from_millis(200), // 高延迟
+                throughput: 500,
+                latency: Duration::from_millis(200),
                 error_rate: 0.1,
                 config_hash: "test_hash".to_string(),
             };

@@ -119,24 +119,23 @@ impl MultiTenantManager {
         let tenants = self.tenants.read().await;
         let quotas = self.tenant_quotas.read().await;
 
-        if let (Some(tenant), Some(quota)) = (tenants.get(tenant_id), quotas.get(tenant_id)) {
-            match resource_type {
-                "requests_per_second" => {
-                    if quota.requests_per_second_used + amount
-                        > tenant.settings.max_requests_per_second
-                    {
-                        self.stats.quota_violations.fetch_add(1, Ordering::Relaxed);
-                        return Ok(false);
-                    }
-                }
-                "storage_gb" => {
-                    if quota.storage_used_gb + amount > tenant.settings.max_storage_gb {
-                        self.stats.quota_violations.fetch_add(1, Ordering::Relaxed);
-                        return Ok(false);
-                    }
-                }
-                _ => return Err(anyhow!("不支持的资源类型: {}", resource_type)),
+        let (tenant, quota) = match (tenants.get(tenant_id), quotas.get(tenant_id)) {
+            (Some(t), Some(q)) => (t, q),
+            _ => return Ok(true),
+        };
+
+        if resource_type == "requests_per_second" {
+            if quota.requests_per_second_used + amount > tenant.settings.max_requests_per_second {
+                self.stats.quota_violations.fetch_add(1, Ordering::Relaxed);
+                return Ok(false);
             }
+        } else if resource_type == "storage_gb" {
+            if quota.storage_used_gb + amount > tenant.settings.max_storage_gb {
+                self.stats.quota_violations.fetch_add(1, Ordering::Relaxed);
+                return Ok(false);
+            }
+        } else {
+            return Err(anyhow!("不支持的资源类型: {}", resource_type));
         }
 
         Ok(true)
@@ -151,16 +150,17 @@ impl MultiTenantManager {
     ) -> Result<()> {
         let mut quotas = self.tenant_quotas.write().await;
 
-        if let Some(quota) = quotas.get_mut(tenant_id) {
-            match resource_type {
-                "requests_per_second" => {
-                    quota.requests_per_second_used += amount;
-                }
-                "storage_gb" => {
-                    quota.storage_used_gb += amount;
-                }
-                _ => return Err(anyhow!("不支持的资源类型: {}", resource_type)),
-            }
+        let quota = match quotas.get_mut(tenant_id) {
+            Some(q) => q,
+            None => return Ok(()),
+        };
+
+        if resource_type == "requests_per_second" {
+            quota.requests_per_second_used += amount;
+        } else if resource_type == "storage_gb" {
+            quota.storage_used_gb += amount;
+        } else {
+            return Err(anyhow!("不支持的资源类型: {}", resource_type));
         }
 
         Ok(())
@@ -295,16 +295,24 @@ impl DataGovernanceManager {
                 continue;
             }
 
-            for rule in &policy.rules {
-                if self.evaluate_condition(&rule.condition, data)? {
-                    actions.push(rule.action.clone());
-                    self.stats.actions_taken.fetch_add(1, Ordering::Relaxed);
-                }
-                self.stats.rules_evaluated.fetch_add(1, Ordering::Relaxed);
-            }
+            self.evaluate_policy_rules(policy, data, &mut actions)?;
         }
 
         Ok(actions)
+    }
+    
+    fn evaluate_policy_rules(&self, policy: &DataPolicy, data: &DataItem, actions: &mut Vec<DataAction>) -> Result<()> {
+        for rule in &policy.rules {
+            if !self.evaluate_condition(&rule.condition, data)? {
+                self.stats.rules_evaluated.fetch_add(1, Ordering::Relaxed);
+                continue;
+            }
+            
+            actions.push(rule.action.clone());
+            self.stats.actions_taken.fetch_add(1, Ordering::Relaxed);
+            self.stats.rules_evaluated.fetch_add(1, Ordering::Relaxed);
+        }
+        Ok(())
     }
 
     /// 评估数据条件
@@ -494,27 +502,7 @@ impl ComplianceManager {
         let mut findings = Vec::new();
 
         for requirement in &framework.requirements {
-            let mut requirement_met = true;
-
-            for control in &requirement.controls {
-                match control.implementation_status {
-                    ImplementationStatus::FullyImplemented | ImplementationStatus::Verified => {
-                        // 控制已实现
-                    }
-                    _ => {
-                        requirement_met = false;
-                        findings.push(ComplianceFinding {
-                            requirement_id: requirement.id.clone(),
-                            severity: requirement.severity.clone(),
-                            description: format!("控制未完全实现: {}", control.name),
-                            recommendation: format!("实现控制: {}", control.name),
-                            status: FindingStatus::Open,
-                        });
-                    }
-                }
-            }
-
-            if requirement_met {
+            if self.evaluate_requirement(requirement, &mut findings) {
                 requirements_met += 1;
             }
         }
@@ -548,6 +536,32 @@ impl ComplianceManager {
             .fetch_add(assessment.findings.len() as u64, Ordering::Relaxed);
 
         Ok(assessment)
+    }
+
+    fn evaluate_requirement(&self, requirement: &ComplianceRequirement, findings: &mut Vec<ComplianceFinding>) -> bool {
+        let mut requirement_met = true;
+
+        for control in &requirement.controls {
+            if Self::is_control_implemented(control) {
+                continue;
+            }
+            
+            requirement_met = false;
+            findings.push(ComplianceFinding {
+                requirement_id: requirement.id.clone(),
+                severity: requirement.severity.clone(),
+                description: format!("控制未完全实现: {}", control.name),
+                recommendation: format!("实现控制: {}", control.name),
+                status: FindingStatus::Open,
+            });
+        }
+
+        requirement_met
+    }
+    
+    fn is_control_implemented(control: &ComplianceControl) -> bool {
+        matches!(control.implementation_status, 
+            ImplementationStatus::FullyImplemented | ImplementationStatus::Verified)
     }
 
     /// 获取统计信息
@@ -591,7 +605,7 @@ pub struct Node {
     pub capabilities: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NodeStatus {
     Healthy,
     Unhealthy,
@@ -672,24 +686,16 @@ impl HighAvailabilityManager {
             node.last_heartbeat = SystemTime::now();
 
             // 更新统计信息
-            match old_status {
-                NodeStatus::Healthy => {
-                    self.stats.healthy_nodes.fetch_sub(1, Ordering::Relaxed);
-                }
-                NodeStatus::Unhealthy => {
-                    self.stats.unhealthy_nodes.fetch_sub(1, Ordering::Relaxed);
-                }
-                _ => {}
+            if old_status == NodeStatus::Healthy {
+                self.stats.healthy_nodes.fetch_sub(1, Ordering::Relaxed);
+            } else if old_status == NodeStatus::Unhealthy {
+                self.stats.unhealthy_nodes.fetch_sub(1, Ordering::Relaxed);
             }
 
-            match status {
-                NodeStatus::Healthy => {
-                    self.stats.healthy_nodes.fetch_add(1, Ordering::Relaxed);
-                }
-                NodeStatus::Unhealthy => {
-                    self.stats.unhealthy_nodes.fetch_add(1, Ordering::Relaxed);
-                }
-                _ => {}
+            if status == NodeStatus::Healthy {
+                self.stats.healthy_nodes.fetch_add(1, Ordering::Relaxed);
+            } else if status == NodeStatus::Unhealthy {
+                self.stats.unhealthy_nodes.fetch_add(1, Ordering::Relaxed);
             }
         }
 
@@ -867,12 +873,16 @@ impl ComprehensiveEnterpriseManager {
             .add_node(default_node)
             .await?;
 
+        self.record_initialization();
+
+        Ok(())
+    }
+    
+    fn record_initialization(&self) {
         self.stats
             .enterprise_features_used
             .fetch_add(1, Ordering::Relaxed);
         println!("企业功能管理器初始化完成");
-
-        Ok(())
     }
 
     /// 处理企业级请求

@@ -55,7 +55,6 @@ pub mod async_features {
     pub async fn async_stream_processing() -> Vec<i32> {
         let data: Vec<i32> = (1..=100).collect();
         
-        // Rust 1.94: 异步闭包语法
         let processor = async |x: i32| -> i32 {
             tokio::time::sleep(std::time::Duration::from_millis(1)).await;
             x * x
@@ -102,13 +101,16 @@ pub mod async_features {
         }
 
         pub async fn next(&mut self) -> Option<T> {
-            if self.index < self.items.len() {
-                let item = self.items[self.index].clone();
-                self.index += 1;
-                Some(item)
-            } else {
-                None
+            self.get_next_item()
+        }
+
+        fn get_next_item(&mut self) -> Option<T> {
+            if self.index >= self.items.len() {
+                return None;
             }
+            let item = self.items[self.index].clone();
+            self.index += 1;
+            Some(item)
         }
     }
 
@@ -264,7 +266,6 @@ pub mod const_generics {
             }
         }
 
-        /// 编译时常量计算
         pub const fn size() -> usize {
             N
         }
@@ -429,7 +430,6 @@ pub mod std_lib_features {
     pub fn process_events(events: &mut Vec<i32>) -> Vec<i32> {
         let mut processed = Vec::new();
         
-        // 只处理偶数事件
         while let Some(event) = events.pop_if(|x| *x % 2 == 0) {
             processed.push(event);
         }
@@ -701,21 +701,19 @@ pub mod memory_management {
         }
 
         pub fn push(&mut self, value: T) -> Result<(), T> {
-            if self.initialized < N {
-                self.data[self.initialized].write(value);
-                self.initialized += 1;
-                Ok(())
-            } else {
-                Err(value)
+            if self.initialized >= N {
+                return Err(value);
             }
+            self.data[self.initialized].write(value);
+            self.initialized += 1;
+            Ok(())
         }
 
         pub fn get(&self, index: usize) -> Option<&T> {
-            if index < self.initialized {
-                Some(unsafe { self.data[index].assume_init_ref() })
-            } else {
-                None
+            if index >= self.initialized {
+                return None;
             }
+            Some(unsafe { self.data[index].assume_init_ref() })
         }
 
         pub fn into_array(mut self) -> [T; N] {
@@ -886,6 +884,12 @@ pub mod concurrency {
         }
     }
 
+    impl Default for AtomicCounter {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     /// 并行处理迭代器
     /// 
     /// # 开源实践
@@ -1045,7 +1049,6 @@ pub mod metaprogramming {
 /// # 开源实践
 /// simd-json、packed_simd、wide 等 SIMD 库的技术
 pub mod performance {
-    // 注意：std::simd 需要 nightly，这里使用标量实现作为演示
 
     /// SIMD 向量加法
     /// 
@@ -1054,8 +1057,8 @@ pub mod performance {
     /// 
     /// 注意：完整 SIMD 支持需要 nightly 和 std::simd
     pub fn simd_add(a: &[f32], b: &[f32], result: &mut [f32]) {
-        // Stable Rust 中的标量回退实现
-        for i in 0..a.len().min(b.len()).min(result.len()) {
+        let len = a.len().min(b.len()).min(result.len());
+        for i in 0..len {
             result[i] = a[i] + b[i];
         }
     }
@@ -1066,12 +1069,12 @@ pub mod performance {
     /// 热路径优化、关键代码路径
     #[inline(always)]
     pub fn likely(b: bool) -> bool {
-        b  // likely intrinsic 需要 nightly
+        b
     }
 
     #[inline(always)]
     pub fn unlikely(b: bool) -> bool {
-        b  // unlikely intrinsic 需要 nightly
+        b
     }
 
     /// 缓存友好性优化
@@ -1079,13 +1082,14 @@ pub mod performance {
     /// # 开源实践
     /// 矩阵乘法、图像处理
     pub fn cache_friendly_sum(matrix: &[Vec<f64>]) -> f64 {
-        if matrix.is_empty() { return 0.0; }
+        if matrix.is_empty() { 
+            return 0.0; 
+        }
         
         let mut sum = 0.0;
         let rows = matrix.len();
         let cols = matrix[0].len();
         
-        // 按列优先访问，更好的缓存局部性
         for col in matrix.iter().take(cols) {
             for item in col.iter().take(rows) {
                 sum += *item;
@@ -1293,7 +1297,7 @@ pub mod error_handling {
             assert_eq!(strategy.delay(0), 100);
             assert_eq!(strategy.delay(1), 200);
             assert_eq!(strategy.delay(2), 400);
-            assert_eq!(strategy.delay(10), 1000); // capped at max_ms
+            assert_eq!(strategy.delay(10), 1000);
         }
     }
 }
@@ -1309,21 +1313,16 @@ mod comprehensive_tests {
     /// 集成测试：使用多个 Rust 1.94 特性
     #[tokio::test]
     async fn test_rust_194_features_integration() {
-        // 1. 异步闭包
         let processor = async |x: i32| -> i32 { x * 2 };
         assert_eq!(processor(21).await, 42);
 
-        // 2. LazyLock
         assert_eq!(std_lib_features::GLOBAL_CONFIG.get("name").unwrap(), "otlp-rust");
 
-        // 3. 常量泛型
         let _arr: const_generics::FixedArray<i32, 10> = const_generics::FixedArray::new();
         assert_eq!(const_generics::FixedArray::<i32, 10>::size(), 10);
 
-        // 4. 模式匹配
         assert_eq!(pattern_matching::classify_number(50), "medium");
 
-        // 5. SIMD
         let a = vec![1.0, 2.0, 3.0, 4.0];
         let b = vec![1.0, 1.0, 1.0, 1.0];
         let mut result = vec![0.0; 4];
@@ -1334,7 +1333,6 @@ mod comprehensive_tests {
     /// 性能测试
     #[test]
     fn test_performance_characteristics() {
-        // 测试 SIMD 性能
         let size = 1024 * 1024;
         let a: Vec<f32> = (0..size).map(|i| i as f32).collect();
         let b: Vec<f32> = (0..size).map(|i| (size - i) as f32).collect();
@@ -1345,8 +1343,6 @@ mod comprehensive_tests {
         let duration = start.elapsed();
 
         println!("SIMD add of {} elements took: {:?}", size, duration);
-        
-        // 验证结果
         assert!((result[0] - (0.0 + size as f32)).abs() < 0.001);
     }
 }

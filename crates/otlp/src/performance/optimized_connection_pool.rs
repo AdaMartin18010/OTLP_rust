@@ -173,27 +173,33 @@ where
         let total_connections = Arc::clone(&self.total_connections);
 
         tokio::spawn(async move {
-            for _ in 0..config.min_connections {
-                match factory() {
-                    Ok(connection) => {
-                        let meta = ConnectionMeta {
-                            connection,
-                            created_at: Instant::now(),
-                            last_used: Instant::now(),
-                            request_count: 0,
-                            is_healthy: true,
-                        };
-
-                        let mut pool_guard = pool.lock().await;
-                        pool_guard.push_back(meta);
-                        total_connections.fetch_add(1, Ordering::AcqRel);
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to create initial connection: {}", e);
-                    }
-                }
-            }
+            Self::create_initial_connections(config, factory, pool, total_connections).await;
         });
+    }
+    
+    async fn create_initial_connections(
+        config: ConnectionPoolConfig,
+        factory: Arc<F>,
+        pool: Arc<Mutex<VecDeque<ConnectionMeta<T>>>>,
+        total_connections: Arc<AtomicUsize>,
+    ) {
+        for _ in 0..config.min_connections {
+            let Ok(connection) = factory() else {
+                continue;
+            };
+            
+            let meta = ConnectionMeta {
+                connection,
+                created_at: Instant::now(),
+                last_used: Instant::now(),
+                request_count: 0,
+                is_healthy: true,
+            };
+
+            let mut pool_guard = pool.lock().await;
+            pool_guard.push_back(meta);
+            total_connections.fetch_add(1, Ordering::AcqRel);
+        }
     }
 
     /// 获取连接
@@ -205,33 +211,12 @@ where
             .await
             .map_err(|_| ConnectionPoolError::PoolFull)?;
 
-        let mut pool = self.pool.lock().await;
-
         // 尝试从池中获取连接
-        if let Some(mut meta) = pool.pop_front() {
-            // 检查连接是否健康
-            if meta.is_healthy && self.is_connection_valid(&meta) {
-                meta.last_used = Instant::now();
-                meta.request_count += 1;
-                self.active_connections.fetch_add(1, Ordering::AcqRel);
-                self.total_requests.fetch_add(1, Ordering::AcqRel);
-                self.update_stats().await;
-
-                return Ok(PooledConnection {
-                    connection: Some(meta.connection),
-                    created_at: meta.created_at,
-                    request_count: meta.request_count,
-                    pool: Arc::new(self.clone()),
-                });
-            } else {
-                // 连接不健康，销毁
-                self.total_connections.fetch_sub(1, Ordering::AcqRel);
-            }
+        if let Some(connection) = self.try_get_pooled_connection().await {
+            return Ok(connection);
         }
 
         // 池中没有可用连接，创建新连接
-        drop(pool); // 释放锁
-
         let connection = (self.factory)()?;
         let created_at = Instant::now();
 
@@ -244,6 +229,32 @@ where
             connection: Some(connection),
             created_at,
             request_count: 1,
+            pool: Arc::new(self.clone()),
+        })
+    }
+    
+    async fn try_get_pooled_connection(&self) -> Option<PooledConnection<T, F>> {
+        let mut pool = self.pool.lock().await;
+        
+        let mut meta = pool.pop_front()?;
+        
+        // 检查连接是否健康
+        if !meta.is_healthy || !self.is_connection_valid(&meta) {
+            // 连接不健康，销毁
+            self.total_connections.fetch_sub(1, Ordering::AcqRel);
+            return None;
+        }
+        
+        meta.last_used = Instant::now();
+        meta.request_count += 1;
+        self.active_connections.fetch_add(1, Ordering::AcqRel);
+        self.total_requests.fetch_add(1, Ordering::AcqRel);
+        self.update_stats().await;
+
+        Some(PooledConnection {
+            connection: Some(meta.connection),
+            created_at: meta.created_at,
+            request_count: meta.request_count,
             pool: Arc::new(self.clone()),
         })
     }
@@ -330,20 +341,8 @@ where
     /// 清理过期连接
     pub async fn cleanup_expired(&self) -> usize {
         let mut pool = self.pool.lock().await;
-        let mut removed_count = 0;
-
-        // 从后往前遍历，移除过期连接
-        let mut i = pool.len();
-        while i > 0 {
-            i -= 1;
-            if let Some(meta) = pool.get(i) {
-                if !self.is_connection_valid(meta) {
-                    pool.remove(i);
-                    removed_count += 1;
-                    self.total_connections.fetch_sub(1, Ordering::AcqRel);
-                }
-            }
-        }
+        let removed_count = Self::remove_invalid_connections(&mut pool, &self.total_connections);
+        drop(pool);
 
         if removed_count > 0 {
             let mut stats = self.stats.lock().await;
@@ -353,6 +352,22 @@ where
 
         removed_count
     }
+    
+    fn remove_invalid_connections(
+        pool: &mut VecDeque<ConnectionMeta<T>>,
+        total_connections: &Arc<AtomicUsize>,
+    ) -> usize {
+        let mut removed_count = 0;
+        pool.retain(|meta| {
+            let valid = meta.is_healthy;
+            if !valid {
+                removed_count += 1;
+                total_connections.fetch_sub(1, Ordering::AcqRel);
+            }
+            valid
+        });
+        removed_count
+    }
 
     /// 启动健康检查任务
     pub fn start_health_check(&self) {
@@ -360,15 +375,19 @@ where
         let health_check_interval = self.config.health_check_interval;
 
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(health_check_interval);
-            loop {
-                interval.tick().await;
-                let removed = pool.cleanup_expired().await;
-                if removed > 0 {
-                    println!("Cleaned up {} expired connections", removed);
-                }
-            }
+            Self::run_health_check(pool, health_check_interval).await;
         });
+    }
+    
+    async fn run_health_check(pool: Arc<OptimizedConnectionPool<T, F>>, interval_duration: Duration) {
+        let mut interval = tokio::time::interval(interval_duration);
+        loop {
+            interval.tick().await;
+            let removed = pool.cleanup_expired().await;
+            if removed > 0 {
+                println!("Cleaned up {} expired connections", removed);
+            }
+        }
     }
 
     /// 获取当前池大小
@@ -489,21 +508,24 @@ where
     F: Fn() -> Result<T, ConnectionPoolError> + Send + Sync + 'static,
 {
     fn drop(&mut self) {
-        if let Some(connection) = self.connection.take() {
-            // 异步回收到池中
-            let pool = Arc::clone(&self.pool);
-            let created_at = self.created_at;
-            let request_count = self.request_count;
+        let connection = match self.connection.take() {
+            Some(c) => c,
+            None => return,
+        };
+        
+        // 异步回收到池中
+        let pool = Arc::clone(&self.pool);
+        let created_at = self.created_at;
+        let request_count = self.request_count;
 
-            tokio::spawn(async move {
-                if let Err(e) = pool
-                    .return_connection(connection, created_at, request_count)
-                    .await
-                {
-                    eprintln!("Failed to return connection to pool: {}", e);
-                }
-            });
-        }
+        tokio::spawn(async move {
+            if let Err(e) = pool
+                .return_connection(connection, created_at, request_count)
+                .await
+            {
+                eprintln!("Failed to return connection to pool: {}", e);
+            }
+        });
     }
 }
 

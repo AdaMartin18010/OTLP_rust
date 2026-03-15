@@ -344,38 +344,27 @@ impl OtlpExporter {
         }
 
         // 检查是否已关闭
-        {
-            let is_shutdown = self.is_shutdown.read().await;
-            if *is_shutdown {
-                return Err(ExportError::Failed {
-                    reason: "exporter shutdown".to_string(),
-                }
-                .into());
+        if self.check_shutdown().await {
+            return Err(ExportError::Failed {
+                reason: "exporter shutdown".to_string(),
             }
+            .into());
         }
 
         // 检查是否已初始化
-        {
-            let is_initialized = self.is_initialized.read().await;
-            if !*is_initialized {
-                return Err(ExportError::Failed {
-                    reason: "exporter not initialized".to_string(),
-                }
-                .into());
+        if !self.check_initialized().await {
+            return Err(ExportError::Failed {
+                reason: "exporter not initialized".to_string(),
             }
+            .into());
         }
 
         let (result, duration) =
             PerformanceUtils::measure_time(async { self.export_with_retry(data).await }).await;
 
         // 更新指标
-        match &result {
-            Ok(export_result) => {
-                self.update_metrics(export_result, duration).await;
-            }
-            Err(_) => {
-                // 处理错误情况
-            }
+        if let Ok(export_result) = &result {
+            self.update_metrics(export_result, duration).await;
         }
 
         result
@@ -446,6 +435,18 @@ impl OtlpExporter {
         self.metrics.read().await.clone()
     }
 
+    /// 检查是否已关闭
+    async fn check_shutdown(&self) -> bool {
+        let is_shutdown = self.is_shutdown.read().await;
+        *is_shutdown
+    }
+    
+    /// 检查是否已初始化
+    async fn check_initialized(&self) -> bool {
+        let is_initialized = self.is_initialized.read().await;
+        *is_initialized
+    }
+
     /// 启动导出任务
     async fn start_export_task(&self) {
         let transport_pool = self.transport_pool.clone();
@@ -457,31 +458,46 @@ impl OtlpExporter {
         if receiver_opt.is_none() {
             return;
         }
-        let mut rx = receiver_opt
+        let rx = receiver_opt
             .take()
             .expect("Receiver should exist after None check");
 
         tokio::spawn(async move {
-            loop {
-                // 如果已关闭则退出
-                if *is_shutdown.read().await {
-                    break;
-                }
-
-                match rx.recv().await {
-                    Some(batch) => {
-                        if let Some(pool) = transport_pool.write().await.as_mut() {
-                            let _ = OtlpExporter::export_batch(pool, batch.clone()).await;
-                            let mut m = metrics.write().await;
-                            m.total_exports += 1;
-                            m.total_data_exported += batch.len() as u64;
-                            m.current_queue_size = m.current_queue_size.saturating_sub(1);
-                        }
-                    }
-                    None => break,
-                }
-            }
+            Self::export_task_loop(rx, transport_pool, metrics, is_shutdown).await;
         });
+    }
+    
+    async fn export_task_loop(
+        mut rx: mpsc::Receiver<Vec<TelemetryData>>,
+        transport_pool: Arc<RwLock<Option<TransportPool>>>,
+        metrics: Arc<RwLock<ExporterMetrics>>,
+        is_shutdown: Arc<RwLock<bool>>,
+    ) {
+        loop {
+            // 如果已关闭则退出
+            if *is_shutdown.read().await {
+                break;
+            }
+
+            let batch = match rx.recv().await {
+                Some(b) => b,
+                None => break,
+            };
+            
+            let pool_opt = transport_pool.write().await;
+            if pool_opt.is_none() {
+                continue;
+            }
+            drop(pool_opt);
+            
+            if let Some(pool) = transport_pool.write().await.as_mut() {
+                let _ = OtlpExporter::export_batch(pool, batch.clone()).await;
+                let mut m = metrics.write().await;
+                m.total_exports += 1;
+                m.total_data_exported += batch.len() as u64;
+                m.current_queue_size = m.current_queue_size.saturating_sub(1);
+            }
+        }
     }
 
     /// 带重试的导出

@@ -212,120 +212,126 @@ where
         let stats = Arc::clone(&self.stats);
         let is_running = Arc::clone(&self.is_running);
         let current_memory = Arc::clone(&self.current_memory);
-        let _semaphore = Arc::clone(&self.semaphore);
         let total_batches = Arc::clone(&self.total_batches);
         let total_items = Arc::clone(&self.total_items);
         let total_processed = Arc::clone(&self.total_processed);
         let total_failed = Arc::clone(&self.total_failed);
 
         tokio::spawn(async move {
-            let mut batch = Vec::with_capacity(config.max_batch_size);
-            let mut batch_start_time = Instant::now();
-            let mut last_batch_time = Instant::now();
+            Self::batch_processing_loop(
+                config,
+                processor,
+                receiver,
+                stats,
+                is_running,
+                current_memory,
+                total_batches,
+                total_items,
+                total_processed,
+                total_failed,
+            )
+            .await;
+        });
+    }
+    
+    async fn batch_processing_loop(
+        config: BatchProcessorConfig,
+        processor: Arc<F>,
+        receiver: Arc<Mutex<mpsc::UnboundedReceiver<BatchItem<T>>>>,
+        stats: Arc<Mutex<BatchProcessorStats>>,
+        is_running: Arc<AtomicBool>,
+        current_memory: Arc<AtomicUsize>,
+        total_batches: Arc<AtomicUsize>,
+        total_items: Arc<AtomicUsize>,
+        total_processed: Arc<AtomicUsize>,
+        total_failed: Arc<AtomicUsize>,
+    ) {
+        let mut batch = Vec::with_capacity(config.max_batch_size);
+        let mut batch_start_time = Instant::now();
+        let mut last_batch_time = Instant::now();
 
-            loop {
-                if !is_running.load(Ordering::Acquire) {
+        loop {
+            if !is_running.load(Ordering::Acquire) {
+                break;
+            }
+
+            // 尝试获取新项
+            let mut receiver_guard = receiver.lock().await;
+            let item = timeout(config.batch_timeout, receiver_guard.recv()).await;
+
+            match item {
+                Ok(Some(item)) => {
+                    // 检查内存限制
+                    if current_memory.load(Ordering::Acquire) + item.size > config.memory_limit {
+                        // 内存不足，强制处理当前批次
+                        if !batch.is_empty() {
+                            Self::process_batch(
+                                &batch,
+                                &processor,
+                                &stats,
+                                &current_memory,
+                                &total_batches,
+                                &total_items,
+                                &total_processed,
+                                &total_failed,
+                                &config,
+                            )
+                            .await;
+                            batch.clear();
+                            batch_start_time = Instant::now();
+                        }
+                    }
+
+                    // 添加项到批次
+                    let item_size = item.size;
+                    batch.push(item);
+                    current_memory.fetch_add(item_size, Ordering::AcqRel);
+
+                    // 检查是否达到最大批大小
+                    if batch.len() >= config.max_batch_size {
+                        Self::process_batch(
+                            &batch,
+                            &processor,
+                            &stats,
+                            &current_memory,
+                            &total_batches,
+                            &total_items,
+                            &total_processed,
+                            &total_failed,
+                            &config,
+                        )
+                        .await;
+                        batch.clear();
+                        batch_start_time = Instant::now();
+                    }
+                }
+                Ok(None) => {
+                    // 通道关闭
                     break;
                 }
-
-                // 尝试获取新项
-                let mut receiver_guard = receiver.lock().await;
-                let item = timeout(config.batch_timeout, receiver_guard.recv()).await;
-
-                match item {
-                    Ok(Some(item)) => {
-                        // 检查内存限制
-                        if current_memory.load(Ordering::Acquire) + item.size > config.memory_limit
-                        {
-                            // 内存不足，强制处理当前批次
-                            if !batch.is_empty() {
-                                Self::process_batch(
-                                    &batch,
-                                    &processor,
-                                    &stats,
-                                    &current_memory,
-                                    &total_batches,
-                                    &total_items,
-                                    &total_processed,
-                                    &total_failed,
-                                    &config,
-                                )
-                                .await;
-                                batch.clear();
-                                batch_start_time = Instant::now();
-                            }
-                        }
-
-                        // 添加项到批次
-                        let item_size = item.size;
-                        batch.push(item);
-                        current_memory.fetch_add(item_size, Ordering::AcqRel);
-
-                        // 检查是否达到最大批大小
-                        if batch.len() >= config.max_batch_size {
-                            Self::process_batch(
-                                &batch,
-                                &processor,
-                                &stats,
-                                &current_memory,
-                                &total_batches,
-                                &total_items,
-                                &total_processed,
-                                &total_failed,
-                                &config,
-                            )
-                            .await;
-                            batch.clear();
-                            batch_start_time = Instant::now();
-                        }
+                Err(_) => {
+                    // 超时，检查是否需要处理批次
+                    if !batch.is_empty() && batch_start_time.elapsed() >= config.batch_timeout {
+                        Self::process_batch(
+                            &batch,
+                            &processor,
+                            &stats,
+                            &current_memory,
+                            &total_batches,
+                            &total_items,
+                            &total_processed,
+                            &total_failed,
+                            &config,
+                        )
+                        .await;
+                        batch.clear();
+                        batch_start_time = Instant::now();
                     }
-                    Ok(None) => {
-                        // 通道关闭
-                        break;
-                    }
-                    Err(_) => {
-                        // 超时，检查是否需要处理批次
-                        if !batch.is_empty() && batch_start_time.elapsed() >= config.batch_timeout {
-                            Self::process_batch(
-                                &batch,
-                                &processor,
-                                &stats,
-                                &current_memory,
-                                &total_batches,
-                                &total_items,
-                                &total_processed,
-                                &total_failed,
-                                &config,
-                            )
-                            .await;
-                            batch.clear();
-                            batch_start_time = Instant::now();
-                        }
-                    }
-                }
-
-                // 检查最大等待时间
-                if !batch.is_empty() && last_batch_time.elapsed() >= config.max_wait_time {
-                    Self::process_batch(
-                        &batch,
-                        &processor,
-                        &stats,
-                        &current_memory,
-                        &total_batches,
-                        &total_items,
-                        &total_processed,
-                        &total_failed,
-                        &config,
-                    )
-                    .await;
-                    batch.clear();
-                    batch_start_time = Instant::now();
-                    last_batch_time = Instant::now();
                 }
             }
 
-            // 处理剩余的批次
-            if !batch.is_empty() {
+            // 检查最大等待时间
+            if !batch.is_empty() && last_batch_time.elapsed() >= config.max_wait_time {
                 Self::process_batch(
                     &batch,
                     &processor,
@@ -338,8 +344,27 @@ where
                     &config,
                 )
                 .await;
+                batch.clear();
+                batch_start_time = Instant::now();
+                last_batch_time = Instant::now();
             }
-        });
+        }
+
+        // 处理剩余的批次
+        if !batch.is_empty() {
+            Self::process_batch(
+                &batch,
+                &processor,
+                &stats,
+                &current_memory,
+                &total_batches,
+                &total_items,
+                &total_processed,
+                &total_failed,
+                &config,
+            )
+            .await;
+        }
     }
 
     /// 处理批次
@@ -369,33 +394,39 @@ where
         let data: Vec<T> = batch.iter().map(|item| item.data.clone()).collect();
 
         // 处理批次
-        match processor(data) {
-            Ok(result) => {
-                total_processed.fetch_add(batch_size, Ordering::AcqRel);
-                total_batches.fetch_add(1, Ordering::AcqRel);
-                total_items.fetch_add(batch_size, Ordering::AcqRel);
+        if let Ok(result) = processor(data) {
+            total_processed.fetch_add(batch_size, Ordering::AcqRel);
+            total_batches.fetch_add(1, Ordering::AcqRel);
+            total_items.fetch_add(batch_size, Ordering::AcqRel);
+            Self::update_batch_stats(stats, config, batch_size, &start_time, &result).await;
+        } else {
+            total_failed.fetch_add(batch_size, Ordering::AcqRel);
+        }
+    }
+    
+    async fn update_batch_stats(
+        stats: &Arc<Mutex<BatchProcessorStats>>,
+        config: &BatchProcessorConfig,
+        batch_size: usize,
+        start_time: &Instant,
+        result: &BatchResult<T>,
+    ) {
+        if !config.enable_stats {
+            return;
+        }
+        
+        let mut stats_guard = stats.lock().await;
+        stats_guard.total_batches += 1;
+        stats_guard.total_items += batch_size;
+        stats_guard.total_processed += batch_size;
+        stats_guard.average_batch_size =
+            stats_guard.total_items as f64 / stats_guard.total_batches as f64;
+        stats_guard.average_processing_time = start_time.elapsed();
+        stats_guard.last_batch_time = Some(Instant::now());
 
-                // 更新统计信息
-                if config.enable_stats {
-                    let mut stats_guard = stats.lock().await;
-                    stats_guard.total_batches += 1;
-                    stats_guard.total_items += batch_size;
-                    stats_guard.total_processed += batch_size;
-                    stats_guard.average_batch_size =
-                        stats_guard.total_items as f64 / stats_guard.total_batches as f64;
-                    stats_guard.average_processing_time = start_time.elapsed();
-                    stats_guard.last_batch_time = Some(Instant::now());
-
-                    if let Some(compressed_size) = result.compressed_size {
-                        stats_guard.compression_ratio =
-                            compressed_size as f64 / result.original_size as f64;
-                    }
-                }
-            }
-            Err(e) => {
-                total_failed.fetch_add(batch_size, Ordering::AcqRel);
-                eprintln!("Batch processing failed: {}", e);
-            }
+        if let Some(compressed_size) = result.compressed_size {
+            stats_guard.compression_ratio =
+                compressed_size as f64 / result.original_size as f64;
         }
     }
 

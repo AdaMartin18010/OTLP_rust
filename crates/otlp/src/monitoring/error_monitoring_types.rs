@@ -93,6 +93,8 @@ impl RealTimeDashboard {
         if metrics.recent_errors.len() > self.config.max_recent_errors {
             metrics.recent_errors.pop_front();
         }
+        
+        drop(metrics);
 
         // 广播更新到所有连接的客户端
         self.broadcast_update(DashboardUpdate::ErrorAdded(error.clone()))
@@ -161,9 +163,11 @@ impl AlertManager {
                 continue;
             }
 
-            if self.evaluate_condition(&rule.condition, error).await? {
-                self.trigger_alert(rule, error).await?;
+            if !self.evaluate_condition(&rule.condition, error).await? {
+                continue;
             }
+            
+            self.trigger_alert(rule, error).await?;
         }
 
         Ok(())
@@ -209,6 +213,12 @@ impl AlertManager {
     }
 
     async fn trigger_alert(&self, rule: &AlertRule, error: &ErrorEvent) -> Result<()> {
+        // 检查冷却期
+        if self.is_in_cooldown(&rule.id).await {
+            debug!("告警 {} 仍在冷却期，跳过", rule.id);
+            return Ok(());
+        }
+        
         let alert = Alert {
             id: Uuid::new_v4().to_string(),
             rule_id: rule.id.clone(),
@@ -218,12 +228,6 @@ impl AlertManager {
             source_error: error.clone(),
             status: AlertStatus::Active,
         };
-
-        // 检查冷却期
-        if self.is_in_cooldown(&rule.id).await {
-            debug!("告警 {} 仍在冷却期，跳过", rule.id);
-            return Ok(());
-        }
 
         // 添加到活跃告警
         {
@@ -564,16 +568,18 @@ impl ErrorHotspotDetector {
         let mut hotspots = Vec::new();
 
         for (key, pattern) in patterns.iter() {
-            if pattern.is_hotspot {
-                let hotspot = ErrorHotspot {
-                    pattern: key.clone(),
-                    error_rate: pattern.occurrences.len() as f64,
-                    affected_services: vec![pattern.source.clone()],
-                    recommended_actions: self.generate_recommendations(pattern),
-                    predicted_escalation: false,
-                };
-                hotspots.push(hotspot);
+            if !pattern.is_hotspot {
+                continue;
             }
+            
+            let hotspot = ErrorHotspot {
+                pattern: key.clone(),
+                error_rate: pattern.occurrences.len() as f64,
+                affected_services: vec![pattern.source.clone()],
+                recommended_actions: self.generate_recommendations(pattern),
+                predicted_escalation: false,
+            };
+            hotspots.push(hotspot);
         }
 
         Ok(hotspots)
@@ -687,24 +693,34 @@ impl AnomalyDetector {
         let mut anomalies = Vec::new();
 
         for (metric_name, value) in metrics {
-            if let Some(baseline) = self.baseline_metrics.get(metric_name) {
-                if let Some(threshold) = self.anomaly_thresholds.get(metric_name) {
-                    let deviation = (value - baseline).abs() / baseline;
-                    if deviation > *threshold {
-                        anomalies.push(Anomaly {
-                            metric_name: metric_name.clone(),
-                            value: *value,
-                            baseline: *baseline,
-                            deviation,
-                            severity: if deviation > *threshold * 2.0 {
-                                ErrorSeverity::High
-                            } else {
-                                ErrorSeverity::Medium
-                            },
-                        });
-                    }
-                }
+            let baseline = match self.baseline_metrics.get(metric_name) {
+                Some(b) => b,
+                None => continue,
+            };
+            
+            let threshold = match self.anomaly_thresholds.get(metric_name) {
+                Some(t) => t,
+                None => continue,
+            };
+            
+            let deviation = (value - baseline).abs() / baseline;
+            if deviation <= *threshold {
+                continue;
             }
+            
+            let severity = if deviation > *threshold * 2.0 {
+                ErrorSeverity::High
+            } else {
+                ErrorSeverity::Medium
+            };
+            
+            anomalies.push(Anomaly {
+                metric_name: metric_name.clone(),
+                value: *value,
+                baseline: *baseline,
+                deviation,
+                severity,
+            });
         }
 
         Ok(anomalies)
@@ -746,15 +762,17 @@ impl CorrelationEngine {
         // 实现关联分析逻辑
         for i in 0..events.len() {
             for j in (i + 1)..events.len() {
-                if self.are_events_correlated(&events[i], &events[j]) {
-                    correlations.push(Correlation {
-                        event1_id: events[i].id.clone(),
-                        event2_id: events[j].id.clone(),
-                        correlation_type: CorrelationType::Temporal,
-                        strength: 0.8,
-                        confidence: 0.9,
-                    });
+                if !self.are_events_correlated(&events[i], &events[j]) {
+                    continue;
                 }
+                
+                correlations.push(Correlation {
+                    event1_id: events[i].id.clone(),
+                    event2_id: events[j].id.clone(),
+                    correlation_type: CorrelationType::Temporal,
+                    strength: 0.8,
+                    confidence: 0.9,
+                });
             }
         }
 
@@ -1461,16 +1479,20 @@ impl ErrorMonitoringSystem {
         let health_check_interval = Duration::from_secs(30);
         let dashboard = self.real_time_dashboard.clone();
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(health_check_interval);
-            loop {
-                interval.tick().await;
-                if let Err(e) = dashboard.perform_health_check().await {
-                    error!("健康检查失败: {}", e);
-                }
-            }
+            Self::run_health_check_loop(dashboard, health_check_interval).await;
         });
 
         Ok(())
+    }
+    
+    async fn run_health_check_loop(dashboard: Arc<RealTimeDashboard>, interval_duration: Duration) {
+        let mut interval = tokio::time::interval(interval_duration);
+        loop {
+            interval.tick().await;
+            if let Err(e) = dashboard.perform_health_check().await {
+                error!("健康检查失败: {}", e);
+            }
+        }
     }
 
     async fn setup_notification_channels(&self) -> Result<()> {
@@ -1499,31 +1521,39 @@ impl ErrorMonitoringSystem {
     async fn start_trend_analysis(&self) -> Result<()> {
         let analyzer = self.trend_analyzer.clone();
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(60));
-            loop {
-                interval.tick().await;
-                if let Err(e) = analyzer.analyze_trends().await {
-                    error!("趋势分析失败: {}", e);
-                }
-            }
+            Self::run_trend_analysis_loop(analyzer).await;
         });
 
         Ok(())
+    }
+    
+    async fn run_trend_analysis_loop(analyzer: Arc<ErrorTrendAnalyzer>) {
+        let mut interval = tokio::time::interval(Duration::from_secs(60));
+        loop {
+            interval.tick().await;
+            if let Err(e) = analyzer.analyze_trends().await {
+                error!("趋势分析失败: {}", e);
+            }
+        }
     }
 
     async fn start_hotspot_detection(&self) -> Result<()> {
         let detector = self.hotspot_detector.clone();
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(30));
-            loop {
-                interval.tick().await;
-                if let Err(e) = detector.detect_hotspots().await {
-                    error!("热点检测失败: {}", e);
-                }
-            }
+            Self::run_hotspot_detection_loop(detector).await;
         });
 
         Ok(())
+    }
+    
+    async fn run_hotspot_detection_loop(detector: Arc<ErrorHotspotDetector>) {
+        let mut interval = tokio::time::interval(Duration::from_secs(30));
+        loop {
+            interval.tick().await;
+            if let Err(e) = detector.detect_hotspots().await {
+                error!("热点检测失败: {}", e);
+            }
+        }
     }
 
     fn create_default_alert_rules(&self) -> Vec<AlertRule> {

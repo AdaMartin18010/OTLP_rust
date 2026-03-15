@@ -29,158 +29,145 @@ impl CompressionUtils {
     /// Gzip压缩
     pub async fn gzip_compress(&self, data: &[u8]) -> Result<Vec<u8>> {
         let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            use flate2::Compression;
-            use flate2::write::GzEncoder;
-            use std::io::Write;
+        let result = tokio::task::spawn_blocking(move || Self::gzip_compress_sync(&data)).await;
+        Self::handle_task_result(result, "Gzip compression")
+    }
 
-            let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-            encoder.write_all(&data).map_err(|e| {
-                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                    "Gzip compression failed: {}",
-                    e
-                ))
-            })?;
-            encoder.finish().map_err(|e| {
-                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                    "Gzip compression finish failed: {}",
-                    e
-                ))
-            })
-        })
-        .await
-        .map_err(|e| {
+    fn gzip_compress_sync(data: &[u8]) -> Result<Vec<u8>> {
+        use flate2::Compression;
+        use flate2::write::GzEncoder;
+        use std::io::Write;
+
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(data).map_err(|e| {
             crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                "Gzip compression task failed: {}",
+                "Gzip compression failed: {}",
                 e
             ))
-        })?
+        })?;
+        encoder.finish().map_err(|e| {
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                "Gzip compression finish failed: {}",
+                e
+            ))
+        })
     }
 
     /// Gzip解压缩
     pub async fn gzip_decompress(&self, data: &[u8]) -> Result<Vec<u8>> {
         let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            use flate2::read::GzDecoder;
-            use std::io::Read;
+        let result = tokio::task::spawn_blocking(move || Self::gzip_decompress_sync(&data)).await;
+        Self::handle_task_result(result, "Gzip decompression")
+    }
 
-            let mut decoder = GzDecoder::new(data.as_slice());
-            let mut result = Vec::new();
-            decoder.read_to_end(&mut result).map_err(|e| {
-                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                    "Gzip decompression failed: {}",
-                    e
-                ))
-            })?;
-            Ok(result)
-        })
-        .await
-        .map_err(|e| {
+    fn gzip_decompress_sync(data: &[u8]) -> Result<Vec<u8>> {
+        use flate2::read::GzDecoder;
+        use std::io::Read;
+
+        let mut decoder = GzDecoder::new(data);
+        let mut result = Vec::new();
+        decoder.read_to_end(&mut result).map_err(|e| {
             crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                "Gzip decompression task failed: {}",
+                "Gzip decompression failed: {}",
                 e
             ))
-        })?
+        })?;
+        Ok(result)
     }
 
     /// Brotli压缩
     pub async fn brotli_compress(&self, data: &[u8]) -> Result<Vec<u8>> {
         let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            use brotli::enc::BrotliEncoderParams;
-            //use std::io::Write;
+        let result = tokio::task::spawn_blocking(move || Self::brotli_compress_sync(&data)).await;
+        Self::handle_task_result(result, "Brotli compression")
+    }
 
-            let params = BrotliEncoderParams {
-                quality: 6,
-                ..Default::default()
-            };
+    fn brotli_compress_sync(data: &[u8]) -> Result<Vec<u8>> {
+        use brotli::enc::BrotliEncoderParams;
 
-            let mut result = Vec::new();
-            let mut data_mut = std::io::Cursor::new(data);
-            brotli::BrotliCompress(&mut data_mut, &mut result, &params).map_err(|e| {
-                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                    "Brotli compression failed: {}",
-                    e
-                ))
-            })?;
-            Ok(result)
-        })
-        .await
-        .map_err(|e| {
+        let params = BrotliEncoderParams {
+            quality: 6,
+            ..Default::default()
+        };
+
+        let mut result = Vec::new();
+        let mut data_mut = std::io::Cursor::new(data.to_vec());
+        brotli::BrotliCompress(&mut data_mut, &mut result, &params).map_err(|e| {
             crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                "Brotli compression task failed: {}",
+                "Brotli compression failed: {}",
                 e
             ))
-        })?
+        })?;
+        Ok(result)
     }
 
     /// Brotli解压缩
     pub async fn brotli_decompress(&self, data: &[u8]) -> Result<Vec<u8>> {
         let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            //use std::io::Read;
+        let result = tokio::task::spawn_blocking(move || Self::brotli_decompress_sync(&data)).await;
+        Self::handle_task_result(result, "Brotli decompression")
+    }
 
-            let mut result = Vec::new();
-            let mut data_mut = std::io::Cursor::new(data);
-            brotli::BrotliDecompress(&mut data_mut, &mut result).map_err(|e| {
-                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                    "Brotli decompression failed: {}",
-                    e
-                ))
-            })?;
-            Ok(result)
-        })
-        .await
-        .map_err(|e| {
+    fn brotli_decompress_sync(data: &[u8]) -> Result<Vec<u8>> {
+        let mut result = Vec::new();
+        let mut data_mut = std::io::Cursor::new(data.to_vec());
+        brotli::BrotliDecompress(&mut data_mut, &mut result).map_err(|e| {
             crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                "Brotli decompression task failed: {}",
+                "Brotli decompression failed: {}",
                 e
             ))
-        })?
+        })?;
+        Ok(result)
     }
 
     /// Zstd压缩
     pub async fn zstd_compress(&self, data: &[u8]) -> Result<Vec<u8>> {
         let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            use zstd::encode_all;
+        let result = tokio::task::spawn_blocking(move || Self::zstd_compress_sync(&data)).await;
+        Self::handle_task_result(result, "Zstd compression")
+    }
 
-            encode_all(data.as_slice(), 3).map_err(|e| {
-                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                    "Zstd compression failed: {}",
-                    e
-                ))
-            })
-        })
-        .await
-        .map_err(|e| {
+    fn zstd_compress_sync(data: &[u8]) -> Result<Vec<u8>> {
+        use zstd::encode_all;
+
+        encode_all(data, 3).map_err(|e| {
             crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                "Zstd compression task failed: {}",
+                "Zstd compression failed: {}",
                 e
             ))
-        })?
+        })
     }
 
     /// Zstd解压缩
     pub async fn zstd_decompress(&self, data: &[u8]) -> Result<Vec<u8>> {
         let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            use zstd::decode_all;
+        let result = tokio::task::spawn_blocking(move || Self::zstd_decompress_sync(&data)).await;
+        Self::handle_task_result(result, "Zstd decompression")
+    }
 
-            decode_all(data.as_slice()).map_err(|e| {
-                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                    "Zstd decompression failed: {}",
-                    e
-                ))
-            })
-        })
-        .await
-        .map_err(|e| {
+    fn zstd_decompress_sync(data: &[u8]) -> Result<Vec<u8>> {
+        use zstd::decode_all;
+
+        decode_all(data).map_err(|e| {
             crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                "Zstd decompression task failed: {}",
+                "Zstd decompression failed: {}",
                 e
             ))
-        })?
+        })
+    }
+
+    fn handle_task_result<T>(
+        result: std::result::Result<std::result::Result<T, crate::error::OtlpError>, tokio::task::JoinError>,
+        operation: &str,
+    ) -> Result<T> {
+        result
+            .map_err(|e| {
+                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                    "{} task failed: {}",
+                    operation,
+                    e
+                ))
+            })?
     }
 }
 
@@ -294,10 +281,7 @@ impl StringUtils {
     pub fn random_string(length: usize) -> String {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        use std::time::{
-            SystemTime,
-            //UNIX_EPOCH,
-        };
+        use std::time::SystemTime;
 
         let mut hasher = DefaultHasher::new();
         SystemTime::now().hash(&mut hasher);
@@ -347,10 +331,7 @@ impl HashUtils {
     pub fn generate_trace_id() -> String {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        use std::time::{
-            SystemTime,
-            //UNIX_EPOCH,
-        };
+        use std::time::SystemTime;
 
         let mut hasher = DefaultHasher::new();
         SystemTime::now().hash(&mut hasher);
@@ -363,10 +344,7 @@ impl HashUtils {
     pub fn generate_span_id() -> String {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        use std::time::{
-            SystemTime,
-            //UNIX_EPOCH,
-        };
+        use std::time::SystemTime;
 
         let mut hasher = DefaultHasher::new();
         SystemTime::now().hash(&mut hasher);
@@ -447,21 +425,22 @@ impl RetryUtils {
 
         // 随机化延迟
         if randomize {
-            use std::collections::hash_map::DefaultHasher;
-            use std::hash::{Hash, Hasher};
-            use std::time::{
-                SystemTime,
-                //UNIX_EPOCH,
-            };
-
-            let mut hasher = DefaultHasher::new();
-            SystemTime::now().hash(&mut hasher);
-            let random_factor = (hasher.finish() % 1000) as f64 / 1000.0;
-
-            delay *= 0.5 + random_factor * 0.5; // 0.5 到 1.0 之间的随机因子
+            delay = Self::apply_random_factor(delay);
         }
 
         Duration::from_nanos(delay as u64)
+    }
+
+    fn apply_random_factor(delay: f64) -> f64 {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        use std::time::SystemTime;
+
+        let mut hasher = DefaultHasher::new();
+        SystemTime::now().hash(&mut hasher);
+        let random_factor = (hasher.finish() % 1000) as f64 / 1000.0;
+
+        delay * (0.5 + random_factor * 0.5) // 0.5 到 1.0 之间的随机因子
     }
 
     /// 判断是否应该重试
