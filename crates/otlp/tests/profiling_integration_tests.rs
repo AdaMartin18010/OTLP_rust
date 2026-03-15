@@ -84,12 +84,9 @@ async fn test_cpu_profiler_generate_profile() {
 
 #[tokio::test]
 async fn test_memory_profiler_lifecycle() {
-    let config = MemoryProfilerConfig {
-        sampling_rate: 1, // Sample every allocation
-        min_allocation_size: 0,
-        max_duration: Duration::from_secs(1),
-        track_deallocations: true,
-    };
+    let config = MemoryProfilerConfig::new()
+        .with_sampling_interval(Duration::from_millis(100))
+        .with_max_duration(Duration::from_secs(1));
 
     let mut profiler = MemoryProfiler::new(config);
 
@@ -111,18 +108,15 @@ async fn test_memory_profiler_lifecycle() {
     // Check stats
     let stats = profiler.get_stats().await;
     assert_eq!(stats.total_allocated, 3072);
-    assert_eq!(stats.total_deallocated, 512);
+    assert_eq!(stats.total_freed, 512);
     assert_eq!(stats.current_usage, 2560);
 }
 
 #[tokio::test]
 async fn test_memory_profiler_sampling() {
-    let config = MemoryProfilerConfig {
-        sampling_rate: 2, // Sample every 2nd allocation
-        min_allocation_size: 0,
-        max_duration: Duration::from_secs(1),
-        track_deallocations: false,
-    };
+    let config = MemoryProfilerConfig::new()
+        .with_sampling_interval(Duration::from_millis(100))
+        .with_max_duration(Duration::from_secs(1));
 
     let mut profiler = MemoryProfiler::new(config);
 
@@ -323,12 +317,9 @@ async fn test_profiler_stats() {
 
 #[tokio::test]
 async fn test_memory_profiler_stats_calculations() {
-    let config = MemoryProfilerConfig {
-        sampling_rate: 1,
-        min_allocation_size: 0,
-        max_duration: Duration::from_secs(1),
-        track_deallocations: true,
-    };
+    let config = MemoryProfilerConfig::new()
+        .with_sampling_interval(Duration::from_millis(100))
+        .with_max_duration(Duration::from_secs(1));
 
     let mut profiler = MemoryProfiler::new(config);
 
@@ -370,12 +361,9 @@ async fn test_concurrent_profilers() {
         include_system_calls: false,
     };
 
-    let mem_config = MemoryProfilerConfig {
-        sampling_rate: 1,
-        min_allocation_size: 0,
-        max_duration: Duration::from_secs(1),
-        track_deallocations: false,
-    };
+    let mem_config = MemoryProfilerConfig::new()
+        .with_sampling_interval(Duration::from_millis(100))
+        .with_max_duration(Duration::from_secs(1));
 
     let mut cpu_profiler = CpuProfiler::new(cpu_config);
     let mut mem_profiler = MemoryProfiler::new(mem_config);

@@ -291,6 +291,9 @@ pub enum ProfileType {
     /// Heap memory profiling
     Heap,
 
+    /// General memory profiling
+    Memory,
+
     /// Lock contention profiling
     Mutex,
 
@@ -313,6 +316,7 @@ impl ProfileType {
         match self {
             Self::Cpu => "cpu",
             Self::Heap => "heap",
+            Self::Memory => "memory",
             Self::Mutex => "mutex",
             Self::Goroutine => "goroutine",
             Self::Wall => "wall",
@@ -326,6 +330,7 @@ impl ProfileType {
         match self {
             Self::Cpu => "nanoseconds",
             Self::Heap => "bytes",
+            Self::Memory => "bytes",
             Self::Mutex => "nanoseconds",
             Self::Goroutine => "count",
             Self::Wall => "nanoseconds",

@@ -33,6 +33,9 @@ pub enum OtlpError {
     #[error("性能错误: {0}")]
     Performance(#[from] PerformanceError),
 
+    #[error("性能分析错误: {0}")]
+    Profiling(String),
+
     #[error("并发错误: {0}")]
     Concurrency(#[from] ConcurrencyError),
 
@@ -303,6 +306,7 @@ impl OtlpError {
             OtlpError::Compatibility(_) => ErrorSeverity::Medium,
             OtlpError::System(_) => ErrorSeverity::Critical,
             OtlpError::Io(_) => ErrorSeverity::High,
+            OtlpError::Profiling(_) => ErrorSeverity::Medium,
         }
     }
 
@@ -321,6 +325,7 @@ impl OtlpError {
             OtlpError::Compatibility(_) => ErrorCategory::Compatibility,
             OtlpError::System(_) => ErrorCategory::System,
             OtlpError::Io(_) => ErrorCategory::System,
+            OtlpError::Profiling(_) => ErrorCategory::Processing,
         }
     }
 
@@ -338,6 +343,7 @@ impl OtlpError {
             OtlpError::Resource(ResourceError::InsufficientSpace { .. }) => false,
             OtlpError::Concurrency(_) => false,
             OtlpError::System(_) => false,
+            OtlpError::Profiling(_) => false,
             _ => false,
         }
     }

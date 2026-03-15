@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use tokio::sync::RwLock;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -19,8 +20,8 @@ use serde::{Deserialize, Serialize};
 /// GDPR合规性管理器
 #[allow(dead_code)]
 pub struct GDPRComplianceManager {
-    data_subjects: Arc<HashMap<String, DataSubject>>,
-    processing_records: Arc<Vec<ProcessingRecord>>,
+    data_subjects: Arc<RwLock<HashMap<String, DataSubject>>>,
+    processing_records: Arc<RwLock<Vec<ProcessingRecord>>>,
     stats: Arc<GDPRStats>,
 }
 
@@ -28,19 +29,20 @@ impl GDPRComplianceManager {
     /// 创建新的GDPR合规性管理器
     pub fn new() -> Self {
         Self {
-            data_subjects: Arc::new(HashMap::new()),
-            processing_records: Arc::new(Vec::new()),
+            data_subjects: Arc::new(RwLock::new(HashMap::new())),
+            processing_records: Arc::new(RwLock::new(Vec::new())),
             stats: Arc::new(GDPRStats::new()),
         }
     }
 
     /// 注册数据主体
-    pub async fn register_data_subject(&self, _subject: DataSubject) -> Result<()> {
+    pub async fn register_data_subject(&self, subject: DataSubject) -> Result<()> {
         let start_time = Instant::now();
 
-        // 注册数据主体
-        // 注意：Arc<HashMap> 不支持直接插入，这里仅作演示
-        // 实际实现中应该使用 Arc<RwLock<HashMap>> 或 Arc<Mutex<HashMap>>
+        // 注册数据主体 - 使用 RwLock 实现线程安全
+        let mut subjects = self.data_subjects.write().await;
+        subjects.insert(subject.id.clone(), subject);
+        drop(subjects); // 显式释放锁
 
         // 更新统计信息
         self.stats
@@ -50,17 +52,36 @@ impl GDPRComplianceManager {
     }
 
     /// 记录数据处理活动
-    pub async fn record_processing_activity(&self, _record: ProcessingRecord) -> Result<()> {
+    pub async fn record_processing_activity(&self, record: ProcessingRecord) -> Result<()> {
         let start_time = Instant::now();
 
-        // 记录数据处理活动
-        // 注意：Arc<Vec> 不支持直接插入，这里仅作演示
-        // 实际实现中应该使用 Arc<RwLock<Vec>> 或 Arc<Mutex<Vec>>
+        // 记录数据处理活动 - 使用 RwLock 实现线程安全
+        let mut records = self.processing_records.write().await;
+        records.push(record);
+        drop(records); // 显式释放锁
 
         // 更新统计信息
         self.stats.record_processing_activity(start_time.elapsed());
 
         Ok(())
+    }
+
+    /// 获取数据主体数量
+    pub async fn data_subject_count(&self) -> usize {
+        let subjects = self.data_subjects.read().await;
+        subjects.len()
+    }
+
+    /// 获取处理记录数量
+    pub async fn processing_record_count(&self) -> usize {
+        let records = self.processing_records.read().await;
+        records.len()
+    }
+
+    /// 根据ID获取数据主体
+    pub async fn get_data_subject(&self, id: &str) -> Option<DataSubject> {
+        let subjects = self.data_subjects.read().await;
+        subjects.get(id).cloned()
     }
 
     /// 处理数据主体权利请求

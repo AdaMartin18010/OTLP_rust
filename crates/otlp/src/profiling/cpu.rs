@@ -40,6 +40,31 @@ impl Default for CpuProfilerConfig {
     }
 }
 
+impl CpuProfilerConfig {
+    /// Create a new configuration
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set sampling frequency
+    pub fn with_sample_rate(mut self, rate: u32) -> Self {
+        self.sampling_frequency = rate;
+        self
+    }
+
+    /// Set max duration
+    pub fn with_max_duration(mut self, duration: Duration) -> Self {
+        self.max_duration = duration;
+        self
+    }
+
+    /// Include system calls
+    pub fn with_system_calls(mut self, enabled: bool) -> Self {
+        self.include_system_calls = enabled;
+        self
+    }
+}
+
 /// CPU Profiler
 pub struct CpuProfiler {
     config: CpuProfilerConfig,

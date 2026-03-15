@@ -77,7 +77,7 @@ pub use sampling::{
     SamplingStrategy,
 };
 
-use crate::data::{TelemetryContent, TelemetryData, TelemetryDataType};
+// use crate::data::{TelemetryContent, TelemetryData, TelemetryDataType};
 use crate::error::{OtlpError, Result};
 use std::time::{Duration, SystemTime};
 
@@ -150,6 +150,7 @@ impl ProfilingConfig {
 }
 
 /// 性能分析器
+#[allow(dead_code)]
 pub struct Profiler {
     config: ProfilingConfig,
     is_running: bool,
@@ -324,8 +325,6 @@ pub struct ProfileResult<R> {
 /// 
 /// 分析性能分析数据，识别热点函数
 pub fn identify_hotspots(profile: &PprofProfile, top_n: usize) -> Vec<Hotspot> {
-    let mut hotspots = Vec::new();
-
     // 统计每个函数的采样次数
     let mut function_counts: std::collections::HashMap<String, i64> = 
         std::collections::HashMap::new();
@@ -348,7 +347,7 @@ pub fn identify_hotspots(profile: &PprofProfile, top_n: usize) -> Vec<Hotspot> {
     // 转换为热点列表并排序
     let mut hotspot_vec: Vec<Hotspot> = function_counts
         .into_iter()
-        .map(|(name, count)| Hotspot { name, count })
+        .map(|(name, count): (String, i64)| Hotspot { name, count })
         .collect();
     
     hotspot_vec.sort_by(|a, b| b.count.cmp(&a.count));
