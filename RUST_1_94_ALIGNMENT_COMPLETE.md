@@ -217,12 +217,13 @@ if features.has_avx512fp16() {
 ## 📞 技术支持
 
 如有问题，请参考:
+
 - [Rust 1.94 Release Notes](https://blog.rust-lang.org/2026/03/05/Rust-1.94.0.html)
 - [OpenTelemetry Rust](https://github.com/open-telemetry/opentelemetry-rust)
 - 项目文档: `docs/` 目录
 
 ---
 
-**完成日期**: 2026-03-16  
-**对齐版本**: Rust 1.94.0 + OpenTelemetry 0.31.0  
+**完成日期**: 2026-03-16
+**对齐版本**: Rust 1.94.0 + OpenTelemetry 0.31.0
 **状态**: ✅ 100% 完成

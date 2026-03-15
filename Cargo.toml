@@ -436,6 +436,9 @@ regex-automata = "0.4.14" # 正则表达式自动机
 # 集合和迭代
 itertools = "0.14.0" # 迭代器工具（统一到最新版本）
 
+# FP16 half-precision floating-point support (for Rust 1.94+ SIMD examples)
+half = "2.4.1" # FP16 type support
+
 # ========== 国际化组件 (ICU) ==========
 # ICU - 2025年10月28日最新稳定版本，Unicode和国际化支持
 # 注: 这些主要是传递依赖，由regex、idna等库使用

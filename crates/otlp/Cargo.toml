@@ -118,6 +118,7 @@ tempfile = { workspace = true }
 proptest = { workspace = true }
 mockall = { workspace = true }
 warp = { version = "0.4.2", features = ["server"] }
+half = { workspace = true }  # FP16 support for Rust 1.94 examples
 
 # Kubernetes dependencies for examples
 kube = { version = "0.97", features = ["client", "runtime", "derive"] }
@@ -214,3 +215,20 @@ simd-optimized = []
 # name = "ebpf_syscall_tracing"
 # path = "../../examples/ebpf_syscall_tracing_example.rs"
 # required-features = ["ebpf"]
+
+# Rust 1.94 Feature Examples
+[[example]]
+name = "rust_1_94_array_windows_demo"
+path = "../../examples/rust_1_94_array_windows_demo.rs"
+
+[[example]]
+name = "rust_1_94_lazy_lock_demo"
+path = "../../examples/rust_1_94_lazy_lock_demo.rs"
+
+[[example]]
+name = "rust_1_94_math_constants_demo"
+path = "../../examples/rust_1_94_math_constants_demo.rs"
+
+[[example]]
+name = "rust_1_94_simd_fp16_demo"
+path = "../../examples/rust_1_94_simd_fp16_demo.rs"
