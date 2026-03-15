@@ -109,6 +109,12 @@ pub trait MetricCollector {
     fn get_name(&self) -> &str;
 }
 
+impl Default for PrometheusCollector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PrometheusCollector {
     /// 创建新的Prometheus收集器
     pub fn new() -> Self {
@@ -231,6 +237,12 @@ pub struct PerformanceMetricCollector {
     performance_stats: Arc<RwLock<Option<ComprehensivePerformanceStats>>>,
 }
 
+impl Default for PerformanceMetricCollector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PerformanceMetricCollector {
     pub fn new() -> Self {
         Self {
@@ -323,6 +335,12 @@ impl MetricCollector for PerformanceMetricCollector {
 #[derive(Debug)]
 pub struct SecurityMetricCollector {
     security_stats: Arc<RwLock<Option<ComprehensiveSecurityStats>>>,
+}
+
+impl Default for SecurityMetricCollector {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SecurityMetricCollector {
@@ -510,6 +528,12 @@ pub struct GrafanaStats {
     pub dashboards_updated: AtomicU64,
     pub panels_created: AtomicU64,
     pub datasources_created: AtomicU64,
+}
+
+impl Default for GrafanaDashboardManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl GrafanaDashboardManager {
@@ -790,6 +814,12 @@ pub struct MonitoringStats {
     pub monitoring_errors: AtomicU64,
 }
 
+impl Default for RealtimeMonitoringSystem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RealtimeMonitoringSystem {
     /// 创建新的实时监控系统
     pub fn new() -> Self {
@@ -922,6 +952,12 @@ pub struct AlertStats {
     pub false_positives: AtomicU64,
 }
 
+impl Default for AlertManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AlertManager {
     /// 创建新的告警管理器
     pub fn new() -> Self {
@@ -945,13 +981,24 @@ impl AlertManager {
         let rules = self.rules.read().await;
 
         for rule in rules.iter() {
-            if !rule.is_enabled {
-                continue;
-            }
+            self.check_single_alert(rule, update).await?;
+        }
 
-            if self.evaluate_condition(&rule.condition, update)? {
-                self.trigger_alert(rule, update).await?;
-            }
+        Ok(())
+    }
+
+    /// 检查单个告警规则
+    async fn check_single_alert(
+        &self,
+        rule: &AlertRule,
+        update: &MetricUpdate,
+    ) -> Result<()> {
+        if !rule.is_enabled {
+            return Ok(());
+        }
+
+        if self.evaluate_condition(&rule.condition, update)? {
+            self.trigger_alert(rule, update).await?;
         }
 
         Ok(())
@@ -965,36 +1012,82 @@ impl AlertManager {
     ) -> Result<bool> {
         match condition {
             AlertCondition::GreaterThan { metric, threshold } => {
-                if update.name == *metric {
-                    if let MetricValue::Gauge(value) = update.value {
-                        return Ok(value > *threshold);
-                    }
-                }
+                self.evaluate_greater_than(update, metric, *threshold)
             }
             AlertCondition::LessThan { metric, threshold } => {
-                if update.name == *metric {
-                    if let MetricValue::Gauge(value) = update.value {
-                        return Ok(value < *threshold);
-                    }
-                }
+                self.evaluate_less_than(update, metric, *threshold)
             }
             AlertCondition::Equal { metric, value } => {
-                if update.name == *metric {
-                    if let MetricValue::Gauge(metric_value) = update.value {
-                        return Ok((metric_value - value).abs() < f64::EPSILON);
-                    }
-                }
+                self.evaluate_equal(update, metric, *value)
             }
             AlertCondition::NotEqual { metric, value } => {
-                if update.name == *metric {
-                    if let MetricValue::Gauge(metric_value) = update.value {
-                        return Ok((metric_value - value).abs() >= f64::EPSILON);
-                    }
-                }
+                self.evaluate_not_equal(update, metric, *value)
             }
         }
+    }
 
-        Ok(false)
+    /// 评估大于条件
+    fn evaluate_greater_than(
+        &self,
+        update: &MetricUpdate,
+        metric: &str,
+        threshold: f64,
+    ) -> Result<bool> {
+        if update.name != metric {
+            return Ok(false);
+        }
+        match update.value {
+            MetricValue::Gauge(value) => Ok(value > threshold),
+            _ => Ok(false),
+        }
+    }
+
+    /// 评估小于条件
+    fn evaluate_less_than(
+        &self,
+        update: &MetricUpdate,
+        metric: &str,
+        threshold: f64,
+    ) -> Result<bool> {
+        if update.name != metric {
+            return Ok(false);
+        }
+        match update.value {
+            MetricValue::Gauge(value) => Ok(value < threshold),
+            _ => Ok(false),
+        }
+    }
+
+    /// 评估等于条件
+    fn evaluate_equal(
+        &self,
+        update: &MetricUpdate,
+        metric: &str,
+        value: f64,
+    ) -> Result<bool> {
+        if update.name != metric {
+            return Ok(false);
+        }
+        match update.value {
+            MetricValue::Gauge(metric_value) => Ok((metric_value - value).abs() < f64::EPSILON),
+            _ => Ok(false),
+        }
+    }
+
+    /// 评估不等于条件
+    fn evaluate_not_equal(
+        &self,
+        update: &MetricUpdate,
+        metric: &str,
+        value: f64,
+    ) -> Result<bool> {
+        if update.name != metric {
+            return Ok(false);
+        }
+        match update.value {
+            MetricValue::Gauge(metric_value) => Ok((metric_value - value).abs() >= f64::EPSILON),
+            _ => Ok(false),
+        }
     }
 
     /// 触发告警

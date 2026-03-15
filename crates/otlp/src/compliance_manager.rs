@@ -25,6 +25,12 @@ pub struct GDPRComplianceManager {
     stats: Arc<GDPRStats>,
 }
 
+impl Default for GDPRComplianceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GDPRComplianceManager {
     /// 创建新的GDPR合规性管理器
     pub fn new() -> Self {
@@ -92,25 +98,33 @@ impl GDPRComplianceManager {
         let start_time = Instant::now();
 
         // 处理数据主体权利请求
-        let response = match request.request_type {
-            DataSubjectRequestType::Access => self.handle_access_request(&request).await?,
-            DataSubjectRequestType::Rectification => {
-                self.handle_rectification_request(&request).await?
-            }
-            DataSubjectRequestType::Erasure => self.handle_erasure_request(&request).await?,
-            DataSubjectRequestType::Portability => {
-                self.handle_portability_request(&request).await?
-            }
-            DataSubjectRequestType::Restriction => {
-                self.handle_restriction_request(&request).await?
-            }
-            DataSubjectRequestType::Objection => self.handle_objection_request(&request).await?,
-        };
+        let response = self.process_request_by_type(&request).await?;
 
         // 更新统计信息
         self.stats.record_data_subject_request(start_time.elapsed());
 
         Ok(response)
+    }
+
+    /// 根据请求类型处理数据主体请求
+    async fn process_request_by_type(
+        &self,
+        request: &DataSubjectRequest,
+    ) -> Result<DataSubjectResponse> {
+        match request.request_type {
+            DataSubjectRequestType::Access => self.handle_access_request(request).await,
+            DataSubjectRequestType::Rectification => {
+                self.handle_rectification_request(request).await
+            }
+            DataSubjectRequestType::Erasure => self.handle_erasure_request(request).await,
+            DataSubjectRequestType::Portability => {
+                self.handle_portability_request(request).await
+            }
+            DataSubjectRequestType::Restriction => {
+                self.handle_restriction_request(request).await
+            }
+            DataSubjectRequestType::Objection => self.handle_objection_request(request).await,
+        }
     }
 
     /// 处理访问请求
@@ -211,6 +225,12 @@ pub struct SOXComplianceManager {
     stats: Arc<SOXStats>,
 }
 
+impl Default for SOXComplianceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SOXComplianceManager {
     /// 创建新的SOX合规性管理器
     pub fn new() -> Self {
@@ -295,6 +315,12 @@ pub struct HIPAAComplianceManager {
     stats: Arc<HIPAAStats>,
 }
 
+impl Default for HIPAAComplianceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HIPAAComplianceManager {
     /// 创建新的HIPAA合规性管理器
     pub fn new() -> Self {
@@ -366,6 +392,12 @@ pub struct PCIDSSComplianceManager {
     card_data: Arc<Vec<CardData>>,
     security_tests: Arc<Vec<SecurityTest>>,
     stats: Arc<PCIDSSStats>,
+}
+
+impl Default for PCIDSSComplianceManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PCIDSSComplianceManager {
@@ -588,6 +620,12 @@ pub struct GDPRStats {
     total_time: AtomicU64,
 }
 
+impl Default for GDPRStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GDPRStats {
     pub fn new() -> Self {
         Self {
@@ -645,6 +683,12 @@ pub struct SOXStats {
     total_control_tests: AtomicUsize,
     total_compliance_reports: AtomicUsize,
     total_time: AtomicU64,
+}
+
+impl Default for SOXStats {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SOXStats {
@@ -705,6 +749,12 @@ pub struct HIPAAStats {
     total_time: AtomicU64,
 }
 
+impl Default for HIPAAStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HIPAAStats {
     pub fn new() -> Self {
         Self {
@@ -759,6 +809,12 @@ pub struct PCIDSSStats {
     total_card_data_processing: AtomicUsize,
     total_security_tests: AtomicUsize,
     total_time: AtomicU64,
+}
+
+impl Default for PCIDSSStats {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PCIDSSStats {

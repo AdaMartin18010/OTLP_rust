@@ -29,6 +29,12 @@ pub struct ZeroKnowledgeProofManager {
     stats: Arc<ZeroKnowledgeStats>,
 }
 
+impl Default for ZeroKnowledgeProofManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ZeroKnowledgeProofManager {
     /// 创建新的零知识证明管理器
     pub fn new() -> Self {
@@ -67,6 +73,12 @@ impl ZeroKnowledgeProofManager {
 pub struct HomomorphicEncryptionManager {
     encryption_cache: Arc<HashMap<String, EncryptedData>>,
     stats: Arc<HomomorphicEncryptionStats>,
+}
+
+impl Default for HomomorphicEncryptionManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HomomorphicEncryptionManager {
@@ -111,6 +123,12 @@ impl HomomorphicEncryptionManager {
 pub struct SecureMultiPartyComputationManager {
     computation_cache: Arc<HashMap<String, ComputationResult>>,
     stats: Arc<SecureMultiPartyStats>,
+}
+
+impl Default for SecureMultiPartyComputationManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SecureMultiPartyComputationManager {
@@ -175,6 +193,12 @@ pub struct DifferentialPrivacyManager {
     stats: Arc<DifferentialPrivacyStats>,
 }
 
+impl Default for DifferentialPrivacyManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DifferentialPrivacyManager {
     /// 创建新的差分隐私管理器
     pub fn new() -> Self {
@@ -234,6 +258,12 @@ pub struct SecurityAuditManager {
     stats: Arc<SecurityAuditStats>,
 }
 
+impl Default for SecurityAuditManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SecurityAuditManager {
     /// 创建新的安全审计管理器
     pub fn new() -> Self {
@@ -290,28 +320,49 @@ impl SecurityAuditManager {
 
     /// 检查过滤条件
     fn matches_filter(&self, entry: &AuditEntry, filter: &AuditFilter) -> bool {
-        if let Some(user_id) = &filter.user_id {
-            if entry.user_id != *user_id {
-                return false;
-            }
+        if !self.matches_user_id(entry, filter) {
+            return false;
         }
 
-        if let Some(event_type) = &filter.event_type {
-            if entry.event_type != *event_type {
-                return false;
-            }
+        if !self.matches_event_type(entry, filter) {
+            return false;
         }
 
-        if let Some(start_time) = filter.start_time {
-            if entry.timestamp < start_time {
-                return false;
-            }
+        if !self.matches_time_range(entry, filter) {
+            return false;
         }
 
-        if let Some(end_time) = filter.end_time {
-            if entry.timestamp > end_time {
-                return false;
-            }
+        true
+    }
+
+    /// 检查用户ID是否匹配
+    fn matches_user_id(&self, entry: &AuditEntry, filter: &AuditFilter) -> bool {
+        match &filter.user_id {
+            Some(user_id) => entry.user_id == *user_id,
+            None => true,
+        }
+    }
+
+    /// 检查事件类型是否匹配
+    fn matches_event_type(&self, entry: &AuditEntry, filter: &AuditFilter) -> bool {
+        match &filter.event_type {
+            Some(event_type) => entry.event_type == *event_type,
+            None => true,
+        }
+    }
+
+    /// 检查时间范围是否匹配
+    fn matches_time_range(&self, entry: &AuditEntry, filter: &AuditFilter) -> bool {
+        if let Some(start_time) = filter.start_time
+            && entry.timestamp < start_time
+        {
+            return false;
+        }
+
+        if let Some(end_time) = filter.end_time
+            && entry.timestamp > end_time
+        {
+            return false;
         }
 
         true
@@ -328,6 +379,12 @@ impl SecurityAuditManager {
 pub struct ThreatDetectionManager {
     threat_cache: Arc<HashMap<String, Threat>>,
     stats: Arc<ThreatDetectionStats>,
+}
+
+impl Default for ThreatDetectionManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ThreatDetectionManager {
@@ -384,13 +441,13 @@ impl ThreatDetectionManager {
     /// 检查异常数据
     async fn is_anomalous_data(&self, data: &TelemetryData) -> Result<bool> {
         // 模拟异常检测
-        Ok(data.timestamp % 1000 == 0)
+        Ok(data.timestamp.is_multiple_of(1000))
     }
 
     /// 检查恶意模式
     async fn is_malicious_pattern(&self, data: &TelemetryData) -> Result<bool> {
         // 模拟恶意模式检测
-        Ok(data.timestamp % 2000 == 0)
+        Ok(data.timestamp.is_multiple_of(2000))
     }
 
     /// 获取统计信息
@@ -493,6 +550,12 @@ pub struct ZeroKnowledgeStats {
     total_time: AtomicU64,
 }
 
+impl Default for ZeroKnowledgeStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ZeroKnowledgeStats {
     pub fn new() -> Self {
         Self {
@@ -536,6 +599,12 @@ pub struct HomomorphicEncryptionStats {
     total_encryptions: AtomicUsize,
     total_computations: AtomicUsize,
     total_time: AtomicU64,
+}
+
+impl Default for HomomorphicEncryptionStats {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HomomorphicEncryptionStats {
@@ -583,6 +652,12 @@ pub struct SecureMultiPartyStats {
     total_time: AtomicU64,
 }
 
+impl Default for SecureMultiPartyStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SecureMultiPartyStats {
     pub fn new() -> Self {
         Self {
@@ -626,6 +701,12 @@ pub struct DifferentialPrivacyStats {
     total_privacy_applications: AtomicUsize,
     total_privacy_verifications: AtomicUsize,
     total_time: AtomicU64,
+}
+
+impl Default for DifferentialPrivacyStats {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DifferentialPrivacyStats {
@@ -675,6 +756,12 @@ pub struct SecurityAuditStats {
     total_time: AtomicU64,
 }
 
+impl Default for SecurityAuditStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SecurityAuditStats {
     pub fn new() -> Self {
         Self {
@@ -718,6 +805,12 @@ pub struct ThreatDetectionStats {
     total_threats_detected: AtomicUsize,
     total_detections: AtomicUsize,
     total_time: AtomicU64,
+}
+
+impl Default for ThreatDetectionStats {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ThreatDetectionStats {

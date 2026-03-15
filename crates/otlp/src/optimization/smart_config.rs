@@ -258,49 +258,60 @@ impl SmartConfigManager {
             return Err(anyhow!("需要更多性能数据进行分析"));
         }
 
+        let optimizations = self.analyze_performance_metrics(&current_config, &performance_data).await?;
+
+        // 记录优化建议
+        {
+            let mut history = self.optimization_history.lock().unwrap();
+            history.extend(optimizations.clone());
+        }
+
+        Ok(optimizations)
+    }
+
+    /// 分析性能指标并生成优化建议
+    async fn analyze_performance_metrics(
+        &self,
+        current_config: &HashMap<String, ConfigItem>,
+        performance_data: &[PerformanceSnapshot],
+    ) -> Result<Vec<ConfigOptimization>> {
         let mut optimizations = Vec::new();
 
         // 分析CPU使用率
-        if let Some(avg_cpu) = self.calculate_average_cpu(&performance_data) {
+        if let Some(avg_cpu) = self.calculate_average_cpu(performance_data) {
             if avg_cpu > 80.0 {
-                optimizations.extend(self.optimize_cpu_config(&current_config, avg_cpu).await?);
+                optimizations.extend(self.optimize_cpu_config(current_config, avg_cpu).await?);
             }
         }
 
         // 分析内存使用率
-        if let Some(avg_memory) = self.calculate_average_memory(&performance_data) {
+        if let Some(avg_memory) = self.calculate_average_memory(performance_data) {
             if avg_memory > 85.0 {
                 optimizations.extend(
-                    self.optimize_memory_config(&current_config, avg_memory)
+                    self.optimize_memory_config(current_config, avg_memory)
                         .await?,
                 );
             }
         }
 
         // 分析吞吐量
-        if let Some(avg_throughput) = self.calculate_average_throughput(&performance_data) {
+        if let Some(avg_throughput) = self.calculate_average_throughput(performance_data) {
             if avg_throughput < 1000 {
                 optimizations.extend(
-                    self.optimize_throughput_config(&current_config, avg_throughput)
+                    self.optimize_throughput_config(current_config, avg_throughput)
                         .await?,
                 );
             }
         }
 
         // 分析延迟
-        if let Some(avg_latency) = self.calculate_average_latency(&performance_data) {
+        if let Some(avg_latency) = self.calculate_average_latency(performance_data) {
             if avg_latency > Duration::from_millis(100) {
                 optimizations.extend(
-                    self.optimize_latency_config(&current_config, avg_latency)
+                    self.optimize_latency_config(current_config, avg_latency)
                         .await?,
                 );
             }
-        }
-
-        // 记录优化建议
-        {
-            let mut history = self.optimization_history.lock().unwrap();
-            history.extend(optimizations.clone());
         }
 
         Ok(optimizations)
@@ -315,33 +326,41 @@ impl SmartConfigManager {
         let mut optimizations = Vec::new();
 
         // 优化工作线程数
-        if let Some(workers_config) = config.get("max_workers") {
-            let current_workers = match &workers_config.value {
-                ConfigValue::Integer(n) => *n,
-                _ => return Ok(optimizations),
-            };
+        let workers_config = match config.get("max_workers") {
+            Some(config) => config,
+            None => return Ok(optimizations),
+        };
 
-            let suggested_workers = if avg_cpu > 95.0 {
-                (current_workers * 2).min(32)
-            } else if avg_cpu > 90.0 {
-                (current_workers as f64 * 1.5) as i64
-            } else {
-                current_workers + 2
-            };
+        let current_workers = match &workers_config.value {
+            ConfigValue::Integer(n) => *n,
+            _ => return Ok(optimizations),
+        };
 
-            optimizations.push(ConfigOptimization {
-                id: format!("cpu_workers_{}", Instant::now().elapsed().as_millis()),
-                config_item: workers_config.clone(),
-                current_value: ConfigValue::Integer(current_workers),
-                suggested_value: ConfigValue::Integer(suggested_workers),
-                expected_improvement: 20.0,
-                confidence: 0.8,
-                reasoning: format!("CPU使用率过高 ({}%), 建议增加工作线程数", avg_cpu),
-                risk_level: RiskLevel::Low,
-            });
-        }
+        let suggested_workers = self.calculate_suggested_workers(current_workers, avg_cpu);
+
+        optimizations.push(ConfigOptimization {
+            id: format!("cpu_workers_{}", Instant::now().elapsed().as_millis()),
+            config_item: workers_config.clone(),
+            current_value: ConfigValue::Integer(current_workers),
+            suggested_value: ConfigValue::Integer(suggested_workers),
+            expected_improvement: 20.0,
+            confidence: 0.8,
+            reasoning: format!("CPU使用率过高 ({}%), 建议增加工作线程数", avg_cpu),
+            risk_level: RiskLevel::Low,
+        });
 
         Ok(optimizations)
+    }
+
+    /// 计算建议的工作线程数
+    fn calculate_suggested_workers(&self, current_workers: i64, avg_cpu: f64) -> i64 {
+        if avg_cpu > 95.0 {
+            (current_workers * 2).min(32)
+        } else if avg_cpu > 90.0 {
+            (current_workers as f64 * 1.5) as i64
+        } else {
+            current_workers + 2
+        }
     }
 
     /// 优化内存配置
@@ -353,33 +372,41 @@ impl SmartConfigManager {
         let mut optimizations = Vec::new();
 
         // 优化内存池大小
-        if let Some(memory_pool_config) = config.get("memory_pool_size") {
-            let current_size = match &memory_pool_config.value {
-                ConfigValue::Integer(n) => *n,
-                _ => return Ok(optimizations),
-            };
+        let memory_pool_config = match config.get("memory_pool_size") {
+            Some(config) => config,
+            None => return Ok(optimizations),
+        };
 
-            let suggested_size = if avg_memory > 95.0 {
-                current_size * 2
-            } else if avg_memory > 90.0 {
-                (current_size as f64 * 1.5) as i64
-            } else {
-                current_size + 512
-            };
+        let current_size = match &memory_pool_config.value {
+            ConfigValue::Integer(n) => *n,
+            _ => return Ok(optimizations),
+        };
 
-            optimizations.push(ConfigOptimization {
-                id: format!("memory_pool_{}", Instant::now().elapsed().as_millis()),
-                config_item: memory_pool_config.clone(),
-                current_value: ConfigValue::Integer(current_size),
-                suggested_value: ConfigValue::Integer(suggested_size),
-                expected_improvement: 25.0,
-                confidence: 0.7,
-                reasoning: format!("内存使用率过高 ({}%), 建议增加内存池大小", avg_memory),
-                risk_level: RiskLevel::Medium,
-            });
-        }
+        let suggested_size = self.calculate_suggested_memory(current_size, avg_memory);
+
+        optimizations.push(ConfigOptimization {
+            id: format!("memory_pool_{}", Instant::now().elapsed().as_millis()),
+            config_item: memory_pool_config.clone(),
+            current_value: ConfigValue::Integer(current_size),
+            suggested_value: ConfigValue::Integer(suggested_size),
+            expected_improvement: 25.0,
+            confidence: 0.7,
+            reasoning: format!("内存使用率过高 ({}%), 建议增加内存池大小", avg_memory),
+            risk_level: RiskLevel::Medium,
+        });
 
         Ok(optimizations)
+    }
+
+    /// 计算建议的内存大小
+    fn calculate_suggested_memory(&self, current_size: i64, avg_memory: f64) -> i64 {
+        if avg_memory > 95.0 {
+            current_size * 2
+        } else if avg_memory > 90.0 {
+            (current_size as f64 * 1.5) as i64
+        } else {
+            current_size + 512
+        }
     }
 
     /// 优化吞吐量配置
@@ -391,33 +418,41 @@ impl SmartConfigManager {
         let mut optimizations = Vec::new();
 
         // 优化连接池大小
-        if let Some(connection_pool_config) = config.get("connection_pool_size") {
-            let current_size = match &connection_pool_config.value {
-                ConfigValue::Integer(n) => *n,
-                _ => return Ok(optimizations),
-            };
+        let connection_pool_config = match config.get("connection_pool_size") {
+            Some(config) => config,
+            None => return Ok(optimizations),
+        };
 
-            let suggested_size = if avg_throughput < 500 {
-                current_size * 2
-            } else if avg_throughput < 800 {
-                (current_size as f64 * 1.5) as i64
-            } else {
-                current_size + 50
-            };
+        let current_size = match &connection_pool_config.value {
+            ConfigValue::Integer(n) => *n,
+            _ => return Ok(optimizations),
+        };
 
-            optimizations.push(ConfigOptimization {
-                id: format!("throughput_pool_{}", Instant::now().elapsed().as_millis()),
-                config_item: connection_pool_config.clone(),
-                current_value: ConfigValue::Integer(current_size),
-                suggested_value: ConfigValue::Integer(suggested_size),
-                expected_improvement: 40.0,
-                confidence: 0.6,
-                reasoning: format!("吞吐量过低 ({} ops/s), 建议增加连接池大小", avg_throughput),
-                risk_level: RiskLevel::Low,
-            });
-        }
+        let suggested_size = self.calculate_suggested_pool_size(current_size, avg_throughput);
+
+        optimizations.push(ConfigOptimization {
+            id: format!("throughput_pool_{}", Instant::now().elapsed().as_millis()),
+            config_item: connection_pool_config.clone(),
+            current_value: ConfigValue::Integer(current_size),
+            suggested_value: ConfigValue::Integer(suggested_size),
+            expected_improvement: 40.0,
+            confidence: 0.6,
+            reasoning: format!("吞吐量过低 ({} ops/s), 建议增加连接池大小", avg_throughput),
+            risk_level: RiskLevel::Low,
+        });
 
         Ok(optimizations)
+    }
+
+    /// 计算建议的连接池大小
+    fn calculate_suggested_pool_size(&self, current_size: i64, avg_throughput: u64) -> i64 {
+        if avg_throughput < 500 {
+            current_size * 2
+        } else if avg_throughput < 800 {
+            (current_size as f64 * 1.5) as i64
+        } else {
+            current_size + 50
+        }
     }
 
     /// 优化延迟配置
@@ -429,36 +464,44 @@ impl SmartConfigManager {
         let mut optimizations = Vec::new();
 
         // 优化批处理大小
-        if let Some(batch_size_config) = config.get("batch_size") {
-            let current_size = match &batch_size_config.value {
-                ConfigValue::Integer(n) => *n,
-                _ => return Ok(optimizations),
-            };
+        let batch_size_config = match config.get("batch_size") {
+            Some(config) => config,
+            None => return Ok(optimizations),
+        };
 
-            let suggested_size = if avg_latency > Duration::from_millis(500) {
-                current_size / 2
-            } else if avg_latency > Duration::from_millis(200) {
-                (current_size as f64 * 0.8) as i64
-            } else {
-                current_size
-            };
+        let current_size = match &batch_size_config.value {
+            ConfigValue::Integer(n) => *n,
+            _ => return Ok(optimizations),
+        };
 
-            optimizations.push(ConfigOptimization {
-                id: format!("latency_batch_{}", Instant::now().elapsed().as_millis()),
-                config_item: batch_size_config.clone(),
-                current_value: ConfigValue::Integer(current_size),
-                suggested_value: ConfigValue::Integer(suggested_size),
-                expected_improvement: 30.0,
-                confidence: 0.7,
-                reasoning: format!(
-                    "延迟过高 ({}ms), 建议减少批处理大小",
-                    avg_latency.as_millis()
-                ),
-                risk_level: RiskLevel::Medium,
-            });
-        }
+        let suggested_size = self.calculate_suggested_batch_size(current_size, avg_latency);
+
+        optimizations.push(ConfigOptimization {
+            id: format!("latency_batch_{}", Instant::now().elapsed().as_millis()),
+            config_item: batch_size_config.clone(),
+            current_value: ConfigValue::Integer(current_size),
+            suggested_value: ConfigValue::Integer(suggested_size),
+            expected_improvement: 30.0,
+            confidence: 0.7,
+            reasoning: format!(
+                "延迟过高 ({}ms), 建议减少批处理大小",
+                avg_latency.as_millis()
+            ),
+            risk_level: RiskLevel::Medium,
+        });
 
         Ok(optimizations)
+    }
+
+    /// 计算建议的批处理大小
+    fn calculate_suggested_batch_size(&self, current_size: i64, avg_latency: Duration) -> i64 {
+        if avg_latency > Duration::from_millis(500) {
+            current_size / 2
+        } else if avg_latency > Duration::from_millis(200) {
+            (current_size as f64 * 0.8) as i64
+        } else {
+            current_size
+        }
     }
 
     /// 应用配置优化
@@ -504,27 +547,37 @@ impl SmartConfigManager {
     /// 验证配置约束
     fn validate_config_constraints(&self, config_item: &ConfigItem, value: &ConfigValue) -> bool {
         for constraint in &config_item.constraints {
-            match constraint.constraint_type {
-                ConstraintType::Range => {
-                    if let (Some(min), Some(max)) = (&constraint.min_value, &constraint.max_value) {
-                        if !self.is_value_in_range(value, min, max) {
-                            return false;
-                        }
-                    }
-                }
-                ConstraintType::Enum => {
-                    if let Some(allowed) = &constraint.allowed_values {
-                        if !allowed.contains(value) {
-                            return false;
-                        }
-                    }
-                }
-                ConstraintType::Custom => {
-                    // 自定义约束验证逻辑
-                }
+            if !self.validate_single_constraint(constraint, value) {
+                return false;
             }
         }
         true
+    }
+
+    /// 验证单个约束
+    fn validate_single_constraint(&self, constraint: &ConfigConstraint, value: &ConfigValue) -> bool {
+        match constraint.constraint_type {
+            ConstraintType::Range => self.validate_range_constraint(constraint, value),
+            ConstraintType::Enum => self.validate_enum_constraint(constraint, value),
+            ConstraintType::Custom => true, // 自定义约束验证逻辑
+        }
+    }
+
+    /// 验证范围约束
+    fn validate_range_constraint(&self, constraint: &ConfigConstraint, value: &ConfigValue) -> bool {
+        let (min, max) = match (&constraint.min_value, &constraint.max_value) {
+            (Some(min), Some(max)) => (min, max),
+            _ => return true,
+        };
+        self.is_value_in_range(value, min, max)
+    }
+
+    /// 验证枚举约束
+    fn validate_enum_constraint(&self, constraint: &ConfigConstraint, value: &ConfigValue) -> bool {
+        match &constraint.allowed_values {
+            Some(allowed) => allowed.contains(value),
+            None => true,
+        }
     }
 
     /// 检查值是否在范围内

@@ -249,8 +249,7 @@ impl OttlParser {
             ));
         }
         
-        if trimmed.starts_with("not ") {
-            let inner = &trimmed[4..];
+        if let Some(inner) = trimmed.strip_prefix("not ") {
             return Ok(OttlCondition::Not(Box::new(Self::parse_condition(inner)?)));
         }
         
@@ -355,17 +354,24 @@ impl OttlProcessor {
     /// Execute all statements in the context
     pub fn execute(&self, ctx: &mut OttlContext) -> Result<()> {
         for (statement, condition) in &self.statements {
-            // Check condition if present
-            if let Some(cond) = condition {
-                if !self.evaluate_condition(cond, ctx)? {
-                    continue;
-                }
-            }
-            
-            self.execute_statement(statement, ctx)?;
+            self.execute_statement_with_condition(statement, condition, ctx)?;
         }
-        
         Ok(())
+    }
+
+    /// Execute a single statement with optional condition
+    fn execute_statement_with_condition(
+        &self,
+        statement: &OttlStatement,
+        condition: &Option<OttlCondition>,
+        ctx: &mut OttlContext,
+    ) -> Result<()> {
+        if let Some(cond) = condition {
+            if !self.evaluate_condition(cond, ctx)? {
+                return Ok(());
+            }
+        }
+        self.execute_statement(statement, ctx)
     }
     
     fn execute_statement(&self, statement: &OttlStatement, ctx: &mut OttlContext) -> Result<()> {
@@ -395,27 +401,47 @@ impl OttlProcessor {
                 ctx.resource_attributes.insert(name.clone(), value_str);
             }
             OttlPath::MapAccess { base, key } => {
-                if let OttlPath::Identifier(base_name) = base.as_ref() {
-                    if base_name == "attributes" {
-                        if let Some(ref mut attrs) = ctx.span_attributes {
-                            attrs.insert(key.clone(), value_str);
-                        }
-                    }
-                }
+                self.set_map_access(base, key, value_str, ctx);
             }
             _ => {}
         }
         
         Ok(())
     }
+
+    fn set_map_access(
+        &self,
+        base: &OttlPath,
+        key: &str,
+        value_str: String,
+        ctx: &mut OttlContext,
+    ) {
+        let base_name = match base {
+            OttlPath::Identifier(name) => name,
+            _ => return,
+        };
+        
+        if base_name != "attributes" {
+            return;
+        }
+        
+        if let Some(ref mut attrs) = ctx.span_attributes {
+            attrs.insert(key.to_string(), value_str);
+        }
+    }
     
     fn execute_delete_key(&self, map: &OttlPath, key: &str, ctx: &mut OttlContext) -> Result<()> {
-        if let OttlPath::Identifier(name) = map {
-            if name == "attributes" {
-                if let Some(ref mut attrs) = ctx.span_attributes {
-                    attrs.remove(key);
-                }
-            }
+        let name = match map {
+            OttlPath::Identifier(name) => name,
+            _ => return Ok(()),
+        };
+        
+        if name != "attributes" {
+            return Ok(());
+        }
+        
+        if let Some(ref mut attrs) = ctx.span_attributes {
+            attrs.remove(key);
         }
         Ok(())
     }
@@ -433,41 +459,81 @@ impl OttlProcessor {
     fn evaluate_condition(&self, condition: &OttlCondition, ctx: &OttlContext) -> Result<bool> {
         match condition {
             OttlCondition::Comparison { left, op, right } => {
-                let left_val = self.value_to_string(left, ctx)?;
-                let right_val = self.value_to_string(right, ctx)?;
-                
-                // 尝试数值比较
-                if let (Ok(left_num), Ok(right_num)) = (left_val.parse::<f64>(), right_val.parse::<f64>()) {
-                    match op {
-                        ComparisonOp::Eq => Ok((left_num - right_num).abs() < f64::EPSILON),
-                        ComparisonOp::Ne => Ok((left_num - right_num).abs() >= f64::EPSILON),
-                        ComparisonOp::Lt => Ok(left_num < right_num),
-                        ComparisonOp::Gt => Ok(left_num > right_num),
-                        ComparisonOp::Le => Ok(left_num <= right_num),
-                        ComparisonOp::Ge => Ok(left_num >= right_num),
-                    }
-                } else {
-                    // 字符串比较
-                    match op {
-                        ComparisonOp::Eq => Ok(left_val == right_val),
-                        ComparisonOp::Ne => Ok(left_val != right_val),
-                        ComparisonOp::Lt => Ok(left_val < right_val),
-                        ComparisonOp::Gt => Ok(left_val > right_val),
-                        ComparisonOp::Le => Ok(left_val <= right_val),
-                        ComparisonOp::Ge => Ok(left_val >= right_val),
-                    }
-                }
+                self.evaluate_comparison(left, op, right, ctx)
             }
             OttlCondition::And(left, right) => {
-                Ok(self.evaluate_condition(left, ctx)? && self.evaluate_condition(right, ctx)?)
+                self.evaluate_and(left, right, ctx)
             }
             OttlCondition::Or(left, right) => {
-                Ok(self.evaluate_condition(left, ctx)? || self.evaluate_condition(right, ctx)?)
+                self.evaluate_or(left, right, ctx)
             }
             OttlCondition::Not(cond) => {
-                Ok(!self.evaluate_condition(cond, ctx)?)
+                self.evaluate_not(cond, ctx)
             }
         }
+    }
+
+    fn evaluate_comparison(
+        &self,
+        left: &OttlValue,
+        op: &ComparisonOp,
+        right: &OttlValue,
+        ctx: &OttlContext,
+    ) -> Result<bool> {
+        let left_val = self.value_to_string(left, ctx)?;
+        let right_val = self.value_to_string(right, ctx)?;
+        
+        // 尝试数值比较
+        if let (Ok(left_num), Ok(right_num)) = (left_val.parse::<f64>(), right_val.parse::<f64>()) {
+            return self.compare_numeric(left_num, op, right_num);
+        }
+        
+        // 字符串比较
+        self.compare_string(&left_val, op, &right_val)
+    }
+
+    fn compare_numeric(&self, left: f64, op: &ComparisonOp, right: f64) -> Result<bool> {
+        match op {
+            ComparisonOp::Eq => Ok((left - right).abs() < f64::EPSILON),
+            ComparisonOp::Ne => Ok((left - right).abs() >= f64::EPSILON),
+            ComparisonOp::Lt => Ok(left < right),
+            ComparisonOp::Gt => Ok(left > right),
+            ComparisonOp::Le => Ok(left <= right),
+            ComparisonOp::Ge => Ok(left >= right),
+        }
+    }
+
+    fn compare_string(&self, left: &str, op: &ComparisonOp, right: &str) -> Result<bool> {
+        match op {
+            ComparisonOp::Eq => Ok(left == right),
+            ComparisonOp::Ne => Ok(left != right),
+            ComparisonOp::Lt => Ok(left < right),
+            ComparisonOp::Gt => Ok(left > right),
+            ComparisonOp::Le => Ok(left <= right),
+            ComparisonOp::Ge => Ok(left >= right),
+        }
+    }
+
+    fn evaluate_and(
+        &self,
+        left: &OttlCondition,
+        right: &OttlCondition,
+        ctx: &OttlContext,
+    ) -> Result<bool> {
+        Ok(self.evaluate_condition(left, ctx)? && self.evaluate_condition(right, ctx)?)
+    }
+
+    fn evaluate_or(
+        &self,
+        left: &OttlCondition,
+        right: &OttlCondition,
+        ctx: &OttlContext,
+    ) -> Result<bool> {
+        Ok(self.evaluate_condition(left, ctx)? || self.evaluate_condition(right, ctx)?)
+    }
+
+    fn evaluate_not(&self, cond: &OttlCondition, ctx: &OttlContext) -> Result<bool> {
+        Ok(!self.evaluate_condition(cond, ctx)?)
     }
     
     fn value_to_string(&self, value: &OttlValue, _ctx: &OttlContext) -> Result<String> {

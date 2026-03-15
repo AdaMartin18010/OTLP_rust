@@ -60,6 +60,12 @@ pub struct RoundRobinLoadBalancer {
     endpoints: Arc<RwLock<Vec<ServiceEndpoint>>>,
 }
 
+impl Default for RoundRobinLoadBalancer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RoundRobinLoadBalancer {
     pub fn new() -> Self {
         Self {
@@ -95,6 +101,12 @@ impl LoadBalancer for RoundRobinLoadBalancer {
 pub struct WeightedRoundRobinLoadBalancer {
     current_weights: Arc<Mutex<HashMap<String, u32>>>,
     endpoints: Arc<RwLock<Vec<ServiceEndpoint>>>,
+}
+
+impl Default for WeightedRoundRobinLoadBalancer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl WeightedRoundRobinLoadBalancer {
@@ -273,12 +285,12 @@ impl CircuitBreaker {
 
     async fn check_recovery_time(&self) -> Result<(), CircuitBreakerError> {
         let last_failure_time = self.last_failure_time.lock().await;
-        if let Some(last_failure) = *last_failure_time {
-            if last_failure.elapsed() >= self.config.recovery_timeout {
-                drop(last_failure_time);
-                self.transition_to_half_open().await;
-                return Ok(());
-            }
+        if let Some(last_failure) = *last_failure_time
+            && last_failure.elapsed() >= self.config.recovery_timeout
+        {
+            drop(last_failure_time);
+            self.transition_to_half_open().await;
+            return Ok(());
         }
         Err(CircuitBreakerError::CircuitBreakerOpen)
     }
@@ -597,6 +609,12 @@ impl MicroserviceClient {
 #[allow(dead_code)]
 pub struct MockConsulClient {
     services: Arc<RwLock<HashMap<String, Vec<ServiceEndpoint>>>>,
+}
+
+impl Default for MockConsulClient {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MockConsulClient {

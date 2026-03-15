@@ -199,7 +199,7 @@ impl RateSampler {
 impl SamplingStrategy for RateSampler {
     fn should_sample(&self) -> bool {
         let count = self.counter.fetch_add(1, Ordering::Relaxed);
-        let should_sample = count % self.rate == 0;
+        let should_sample = count.is_multiple_of(self.rate);
 
         if should_sample {
             self.sampled_counter.fetch_add(1, Ordering::Relaxed);
@@ -287,7 +287,7 @@ impl SamplingStrategy for AdaptiveSampler {
 
         let rate = self.current_rate.load(Ordering::Relaxed);
         let count = self.counter.load(Ordering::Relaxed);
-        let should_sample = count % rate == 0;
+        let should_sample = count.is_multiple_of(rate);
 
         if should_sample {
             self.sampled_counter.fetch_add(1, Ordering::Relaxed);

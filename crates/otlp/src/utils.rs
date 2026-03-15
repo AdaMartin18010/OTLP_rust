@@ -90,8 +90,10 @@ impl CompressionUtils {
             use brotli::enc::BrotliEncoderParams;
             //use std::io::Write;
 
-            let mut params = BrotliEncoderParams::default();
-            params.quality = 6;
+            let params = BrotliEncoderParams {
+                quality: 6,
+                ..Default::default()
+            };
 
             let mut result = Vec::new();
             let mut data_mut = std::io::Cursor::new(data);

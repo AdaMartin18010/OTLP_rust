@@ -176,25 +176,33 @@ impl OtlpTransform {
     ) -> Result<bool> {
         match condition {
             Expression::Binary { left, op, right } => {
-                let left_val = self.evaluate_expression(left, data).await?;
-                let right_val = self.evaluate_expression(right, data).await?;
+                self.evaluate_binary_condition(left, op, right, data).await
+            }
+            _ => self.evaluate_expression(condition, data).await,
+        }
+    }
 
-                match op {
-                    super::parser::BinaryOp::Eq => Ok(left_val == right_val),
-                    super::parser::BinaryOp::Ne => Ok(left_val != right_val),
-                    super::parser::BinaryOp::Lt => Ok(!left_val & right_val),
-                    super::parser::BinaryOp::Le => Ok(left_val <= right_val),
-                    super::parser::BinaryOp::Gt => Ok(left_val & !right_val),
-                    super::parser::BinaryOp::Ge => Ok(left_val >= right_val),
-                    super::parser::BinaryOp::And => Ok(left_val && right_val),
-                    super::parser::BinaryOp::Or => Ok(left_val || right_val),
-                    _ => Err(OtlpError::ValidationError("不支持的比较操作".to_string())),
-                }
-            }
-            _ => {
-                let result = self.evaluate_expression(condition, data).await?;
-                Ok(result)
-            }
+    /// 评估二元条件
+    async fn evaluate_binary_condition(
+        &self,
+        left: &Expression,
+        op: &super::parser::BinaryOp,
+        right: &Expression,
+        data: &TelemetryData,
+    ) -> Result<bool> {
+        let left_val = self.evaluate_expression(left, data).await?;
+        let right_val = self.evaluate_expression(right, data).await?;
+
+        match op {
+            super::parser::BinaryOp::Eq => Ok(left_val == right_val),
+            super::parser::BinaryOp::Ne => Ok(left_val != right_val),
+            super::parser::BinaryOp::Lt => Ok(!left_val & right_val),
+            super::parser::BinaryOp::Le => Ok(left_val <= right_val),
+            super::parser::BinaryOp::Gt => Ok(left_val & !right_val),
+            super::parser::BinaryOp::Ge => Ok(left_val >= right_val),
+            super::parser::BinaryOp::And => Ok(left_val && right_val),
+            super::parser::BinaryOp::Or => Ok(left_val || right_val),
+            _ => Err(OtlpError::ValidationError("不支持的比较操作".to_string())),
         }
     }
 
@@ -328,252 +336,272 @@ impl OtlpTransform {
         data: &TelemetryData,
     ) -> Result<bool> {
         match name {
-            "has" => {
-                if let Some(path_expr) = args.first() {
-                    if let Expression::Path(path) = path_expr {
-                        self.has_attribute(data, path).await
-                    } else {
-                        Ok(false)
-                    }
-                } else {
-                    Ok(false)
-                }
-            }
-            "exists" => {
-                if let Some(path_expr) = args.first() {
-                    if let Expression::Path(path) = path_expr {
-                        self.exists_attribute(data, path).await
-                    } else {
-                        Ok(false)
-                    }
-                } else {
-                    Ok(false)
-                }
-            }
-            "match" => {
-                if args.len() >= 2 {
-                    let value = self.evaluate_value_expression(&args[0], data).await?;
-                    let pattern = self.evaluate_value_expression(&args[1], data).await?;
-                    Ok(self.match_pattern(&value, &pattern))
-                } else {
-                    Ok(false)
-                }
-            }
-            "contains" => {
-                if args.len() >= 2 {
-                    let haystack = self.evaluate_value_expression(&args[0], data).await?;
-                    let needle = self.evaluate_value_expression(&args[1], data).await?;
-                    Ok(haystack.contains(&needle))
-                } else {
-                    Ok(false)
-                }
-            }
-            "starts_with" => {
-                if args.len() >= 2 {
-                    let text = self.evaluate_value_expression(&args[0], data).await?;
-                    let prefix = self.evaluate_value_expression(&args[1], data).await?;
-                    Ok(text.starts_with(&prefix))
-                } else {
-                    Ok(false)
-                }
-            }
-            "ends_with" => {
-                if args.len() >= 2 {
-                    let text = self.evaluate_value_expression(&args[0], data).await?;
-                    let suffix = self.evaluate_value_expression(&args[1], data).await?;
-                    Ok(text.ends_with(&suffix))
-                } else {
-                    Ok(false)
-                }
-            }
-            "is_int" => {
-                if let Some(value_expr) = args.first() {
-                    let value = self.evaluate_value_expression(value_expr, data).await?;
-                    Ok(value.parse::<i64>().is_ok())
-                } else {
-                    Ok(false)
-                }
-            }
-            "is_double" => {
-                if let Some(value_expr) = args.first() {
-                    let value = self.evaluate_value_expression(value_expr, data).await?;
-                    Ok(value.parse::<f64>().is_ok())
-                } else {
-                    Ok(false)
-                }
-            }
-            "is_bool" => {
-                if let Some(value_expr) = args.first() {
-                    let value = self.evaluate_value_expression(value_expr, data).await?;
-                    Ok(value.parse::<bool>().is_ok())
-                } else {
-                    Ok(false)
-                }
-            }
-            "is_string" => {
-                if let Some(value_expr) = args.first() {
-                    let value = self.evaluate_value_expression(value_expr, data).await?;
-                    Ok(!value.is_empty())
-                } else {
-                    Ok(false)
-                }
-            }
-            "len" => {
-                if let Some(value_expr) = args.first() {
-                    let value = self.evaluate_value_expression(value_expr, data).await?;
-                    Ok(value.len() > 0)
-                } else {
-                    Ok(false)
-                }
-            }
-            "truncate" => {
-                if args.len() >= 2 {
-                    let text = self.evaluate_value_expression(&args[0], data).await?;
-                    let length = self.evaluate_value_expression(&args[1], data).await?;
-                    if let Ok(len) = length.parse::<usize>() {
-                        Ok(text.len() > len)
-                    } else {
-                        Ok(false)
-                    }
-                } else {
-                    Ok(false)
-                }
-            }
-            "replace_all" => {
-                if args.len() >= 3 {
-                    let text = self.evaluate_value_expression(&args[0], data).await?;
-                    let old = self.evaluate_value_expression(&args[1], data).await?;
-                    let new = self.evaluate_value_expression(&args[2], data).await?;
-                    Ok(text.contains(&old) && !new.is_empty())
-                } else {
-                    Ok(false)
-                }
-            }
-            "split" => {
-                if args.len() >= 2 {
-                    let text = self.evaluate_value_expression(&args[0], data).await?;
-                    let delimiter = self.evaluate_value_expression(&args[1], data).await?;
-                    Ok(text.contains(&delimiter))
-                } else {
-                    Ok(false)
-                }
-            }
-            "join" => {
-                if args.len() >= 2 {
-                    let delimiter = self.evaluate_value_expression(&args[0], data).await?;
-                    Ok(!delimiter.is_empty())
-                } else {
-                    Ok(false)
-                }
-            }
-            "substring" => {
-                if args.len() >= 2 {
-                    let text = self.evaluate_value_expression(&args[0], data).await?;
-                    let start = self.evaluate_value_expression(&args[1], data).await?;
-                    if let Ok(start_idx) = start.parse::<usize>() {
-                        Ok(text.len() > start_idx)
-                    } else {
-                        Ok(false)
-                    }
-                } else {
-                    Ok(false)
-                }
-            }
-            "to_lower" => {
-                if let Some(value_expr) = args.first() {
-                    let value = self.evaluate_value_expression(value_expr, data).await?;
-                    Ok(!value.is_empty())
-                } else {
-                    Ok(false)
-                }
-            }
-            "to_upper" => {
-                if let Some(value_expr) = args.first() {
-                    let value = self.evaluate_value_expression(value_expr, data).await?;
-                    Ok(!value.is_empty())
-                } else {
-                    Ok(false)
-                }
-            }
-            "trim" => {
-                if let Some(value_expr) = args.first() {
-                    let value = self.evaluate_value_expression(value_expr, data).await?;
-                    Ok(!value.is_empty())
-                } else {
-                    Ok(false)
-                }
-            }
-            "now" => Ok(true),       // 当前时间总是存在
-            "timestamp" => Ok(true), // 时间戳总是存在
-            "time" => Ok(true),      // 时间总是存在
-            "duration" => {
-                if args.len() >= 2 {
-                    let start = self.evaluate_value_expression(&args[0], data).await?;
-                    let end = self.evaluate_value_expression(&args[1], data).await?;
-                    Ok(!start.is_empty() && !end.is_empty())
-                } else {
-                    Ok(false)
-                }
-            }
-            "format" => {
-                if let Some(format_expr) = args.first() {
-                    let format_str = self.evaluate_value_expression(format_expr, data).await?;
-                    Ok(!format_str.is_empty())
-                } else {
-                    Ok(false)
-                }
-            }
-            "concat" => {
-                Ok(args.len() >= 2) // 至少需要两个参数
-            }
-            "coalesce" => {
-                Ok(args.len() >= 2) // 至少需要两个参数
-            }
-            "merge" => {
-                Ok(args.len() >= 2) // 至少需要两个参数
-            }
-            "delete" => {
-                if let Some(path_expr) = args.first() {
-                    if let Expression::Path(_) = path_expr {
-                        Ok(true)
-                    } else {
-                        Ok(false)
-                    }
-                } else {
-                    Ok(false)
-                }
-            }
-            "copy" => {
-                if args.len() >= 2 {
-                    if let Expression::Path(_) = &args[0] {
-                        if let Expression::Path(_) = &args[1] {
-                            Ok(true)
-                        } else {
-                            Ok(false)
-                        }
-                    } else {
-                        Ok(false)
-                    }
-                } else {
-                    Ok(false)
-                }
-            }
-            "move" => {
-                if args.len() >= 2 {
-                    if let Expression::Path(_) = &args[0] {
-                        if let Expression::Path(_) = &args[1] {
-                            Ok(true)
-                        } else {
-                            Ok(false)
-                        }
-                    } else {
-                        Ok(false)
-                    }
-                } else {
-                    Ok(false)
-                }
-            }
+            "has" => self.call_has(args, data).await,
+            "exists" => self.call_exists(args, data).await,
+            "match" => self.call_match(args, data).await,
+            "contains" => self.call_contains(args, data).await,
+            "starts_with" => self.call_starts_with(args, data).await,
+            "ends_with" => self.call_ends_with(args, data).await,
+            "is_int" => self.call_is_int(args, data).await,
+            "is_double" => self.call_is_double(args, data).await,
+            "is_bool" => self.call_is_bool(args, data).await,
+            "is_string" => self.call_is_string(args, data).await,
+            "len" => self.call_len(args, data).await,
+            "truncate" => self.call_truncate(args, data).await,
+            "replace_all" => self.call_replace_all(args, data).await,
+            "split" => self.call_split(args, data).await,
+            "join" => self.call_join(args, data).await,
+            "substring" => self.call_substring(args, data).await,
+            "to_lower" => self.call_to_lower(args, data).await,
+            "to_upper" => self.call_to_upper(args, data).await,
+            "trim" => self.call_trim(args, data).await,
+            "now" => Ok(true),
+            "timestamp" => Ok(true),
+            "time" => Ok(true),
+            "duration" => self.call_duration(args, data).await,
+            "format" => self.call_format(args, data).await,
+            "concat" => Ok(args.len() >= 2),
+            "coalesce" => Ok(args.len() >= 2),
+            "merge" => Ok(args.len() >= 2),
+            "delete" => self.call_delete(args),
+            "copy" => self.call_copy(args),
+            "move" => self.call_move(args),
             _ => Err(OtlpError::ValidationError(format!("未知函数: {}", name))),
+        }
+    }
+
+    /// 调用 has 函数
+    async fn call_has(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let path = match args.first() {
+            Some(Expression::Path(path)) => path,
+            _ => return Ok(false),
+        };
+        self.has_attribute(data, path).await
+    }
+
+    /// 调用 exists 函数
+    async fn call_exists(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let path = match args.first() {
+            Some(Expression::Path(path)) => path,
+            _ => return Ok(false),
+        };
+        self.exists_attribute(data, path).await
+    }
+
+    /// 调用 match 函数
+    async fn call_match(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let value = self.evaluate_value_expression(&args[0], data).await?;
+        let pattern = self.evaluate_value_expression(&args[1], data).await?;
+        Ok(self.match_pattern(&value, &pattern))
+    }
+
+    /// 调用 contains 函数
+    async fn call_contains(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let haystack = self.evaluate_value_expression(&args[0], data).await?;
+        let needle = self.evaluate_value_expression(&args[1], data).await?;
+        Ok(haystack.contains(&needle))
+    }
+
+    /// 调用 starts_with 函数
+    async fn call_starts_with(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let text = self.evaluate_value_expression(&args[0], data).await?;
+        let prefix = self.evaluate_value_expression(&args[1], data).await?;
+        Ok(text.starts_with(&prefix))
+    }
+
+    /// 调用 ends_with 函数
+    async fn call_ends_with(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let text = self.evaluate_value_expression(&args[0], data).await?;
+        let suffix = self.evaluate_value_expression(&args[1], data).await?;
+        Ok(text.ends_with(&suffix))
+    }
+
+    /// 调用 is_int 函数
+    async fn call_is_int(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let value = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(value.parse::<i64>().is_ok())
+    }
+
+    /// 调用 is_double 函数
+    async fn call_is_double(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let value = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(value.parse::<f64>().is_ok())
+    }
+
+    /// 调用 is_bool 函数
+    async fn call_is_bool(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let value = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(value.parse::<bool>().is_ok())
+    }
+
+    /// 调用 is_string 函数
+    async fn call_is_string(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let value = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(!value.is_empty())
+    }
+
+    /// 调用 len 函数
+    async fn call_len(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let value = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(value.len() > 0)
+    }
+
+    /// 调用 truncate 函数
+    async fn call_truncate(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let text = self.evaluate_value_expression(&args[0], data).await?;
+        let length = self.evaluate_value_expression(&args[1], data).await?;
+        match length.parse::<usize>() {
+            Ok(len) => Ok(text.len() > len),
+            Err(_) => Ok(false),
+        }
+    }
+
+    /// 调用 replace_all 函数
+    async fn call_replace_all(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 3 {
+            return Ok(false);
+        }
+        let text = self.evaluate_value_expression(&args[0], data).await?;
+        let old = self.evaluate_value_expression(&args[1], data).await?;
+        let new = self.evaluate_value_expression(&args[2], data).await?;
+        Ok(text.contains(&old) && !new.is_empty())
+    }
+
+    /// 调用 split 函数
+    async fn call_split(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let text = self.evaluate_value_expression(&args[0], data).await?;
+        let delimiter = self.evaluate_value_expression(&args[1], data).await?;
+        Ok(text.contains(&delimiter))
+    }
+
+    /// 调用 join 函数
+    async fn call_join(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let delimiter = self.evaluate_value_expression(&args[0], data).await?;
+        Ok(!delimiter.is_empty())
+    }
+
+    /// 调用 substring 函数
+    async fn call_substring(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let text = self.evaluate_value_expression(&args[0], data).await?;
+        let start = self.evaluate_value_expression(&args[1], data).await?;
+        match start.parse::<usize>() {
+            Ok(start_idx) => Ok(text.len() > start_idx),
+            Err(_) => Ok(false),
+        }
+    }
+
+    /// 调用 to_lower 函数
+    async fn call_to_lower(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let value = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(!value.is_empty())
+    }
+
+    /// 调用 to_upper 函数
+    async fn call_to_upper(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let value = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(!value.is_empty())
+    }
+
+    /// 调用 trim 函数
+    async fn call_trim(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let value = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(!value.is_empty())
+    }
+
+    /// 调用 duration 函数
+    async fn call_duration(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        let start = self.evaluate_value_expression(&args[0], data).await?;
+        let end = self.evaluate_value_expression(&args[1], data).await?;
+        Ok(!start.is_empty() && !end.is_empty())
+    }
+
+    /// 调用 format 函数
+    async fn call_format(&self, args: &[Expression], data: &TelemetryData) -> Result<bool> {
+        let format_str = match args.first() {
+            Some(expr) => self.evaluate_value_expression(expr, data).await?,
+            None => return Ok(false),
+        };
+        Ok(!format_str.is_empty())
+    }
+
+    /// 调用 delete 函数
+    fn call_delete(&self, args: &[Expression]) -> Result<bool> {
+        match args.first() {
+            Some(Expression::Path(_)) => Ok(true),
+            _ => Ok(false),
+        }
+    }
+
+    /// 调用 copy 函数
+    fn call_copy(&self, args: &[Expression]) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        match (&args[0], &args[1]) {
+            (Expression::Path(_), Expression::Path(_)) => Ok(true),
+            _ => Ok(false),
+        }
+    }
+
+    /// 调用 move 函数
+    fn call_move(&self, args: &[Expression]) -> Result<bool> {
+        if args.len() < 2 {
+            return Ok(false);
+        }
+        match (&args[0], &args[1]) {
+            (Expression::Path(_), Expression::Path(_)) => Ok(true),
+            _ => Ok(false),
         }
     }
 

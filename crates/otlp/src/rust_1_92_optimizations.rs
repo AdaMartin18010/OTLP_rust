@@ -51,25 +51,56 @@ impl AsyncClosureOptimizer {
         Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
         R: Send,
     {
-        // 模拟熔断器逻辑
-        match self.check_circuit_state().await {
-            CircuitState::Closed => match f().await {
-                Ok(result) => {
-                    self.record_success().await;
-                    Ok(result)
-                }
-                Err(e) => {
-                    self.record_failure().await;
-                    Err(e.into())
-                }
-            },
+        let state = self.check_circuit_state().await;
+        self.handle_circuit_state(state, f).await
+    }
+
+    /// 处理熔断器状态
+    async fn handle_circuit_state<F, Fut, R>(
+        &self,
+        state: CircuitState,
+        f: F,
+    ) -> Result<R>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
+    {
+        match state {
+            CircuitState::Closed => self.handle_closed_state(f).await,
             CircuitState::Open => Err(anyhow::anyhow!("Circuit breaker is open")),
-            CircuitState::HalfOpen => {
-                // 半开状态的逻辑
-                self.record_half_open_call().await;
-                f().await.map_err(|e| e.into())
+            CircuitState::HalfOpen => self.handle_half_open_state(f).await,
+        }
+    }
+
+    /// 处理关闭状态
+    async fn handle_closed_state<F, Fut, R>(&self, f: F) -> Result<R>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
+    {
+        match f().await {
+            Ok(result) => {
+                self.record_success().await;
+                Ok(result)
+            }
+            Err(e) => {
+                self.record_failure().await;
+                Err(e.into())
             }
         }
+    }
+
+    /// 处理半开状态
+    async fn handle_half_open_state<F, Fut, R>(&self, f: F) -> Result<R>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
+        R: Send,
+    {
+        self.record_half_open_call().await;
+        f().await.map_err(|e| e.into())
     }
 
     async fn check_circuit_state(&self) -> CircuitState {
@@ -172,16 +203,11 @@ impl ZeroCopyOptimizer {
 
     /// 优化后：使用Cow类型，只在需要时克隆
     pub fn process_with_cow(&self, data: Cow<'_, [u8]>) -> Result<Vec<u8>> {
-        match data {
-            Cow::Borrowed(borrowed) => {
-                // 如果数据已经是借用的，直接处理
-                self.process_data_internal(borrowed.to_vec())
-            }
-            Cow::Owned(owned) => {
-                // 如果数据已经是拥有的，直接处理
-                self.process_data_internal(owned)
-            }
-        }
+        let data_vec = match data {
+            Cow::Borrowed(borrowed) => borrowed.to_vec(),
+            Cow::Owned(owned) => owned,
+        };
+        self.process_data_internal(data_vec)
     }
 
     /// 更智能的零拷贝处理

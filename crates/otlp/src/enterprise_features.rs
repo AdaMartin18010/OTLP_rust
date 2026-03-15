@@ -65,6 +65,12 @@ pub struct MultiTenantStats {
     pub quota_violations: AtomicU64,
 }
 
+impl Default for MultiTenantManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MultiTenantManager {
     /// 创建新的多租户管理器
     pub fn new() -> Self {
@@ -253,6 +259,12 @@ pub struct DataGovernanceStats {
     pub rules_evaluated: AtomicU64,
     pub actions_taken: AtomicU64,
     pub violations_detected: AtomicU64,
+}
+
+impl Default for DataGovernanceManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DataGovernanceManager {
@@ -444,6 +456,12 @@ pub struct ComplianceStats {
     pub findings_identified: AtomicU64,
 }
 
+impl Default for ComplianceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ComplianceManager {
     /// 创建新的合规性管理器
     pub fn new() -> Self {
@@ -614,6 +632,12 @@ pub struct HighAvailabilityStats {
     pub failovers_triggered: AtomicU64,
 }
 
+impl Default for HighAvailabilityManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HighAvailabilityManager {
     /// 创建新的高可用性管理器
     pub fn new() -> Self {
@@ -734,6 +758,12 @@ pub struct EnterpriseStats {
     pub tenant_operations: AtomicU64,
     pub governance_actions: AtomicU64,
     pub compliance_checks: AtomicU64,
+}
+
+impl Default for ComprehensiveEnterpriseManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ComprehensiveEnterpriseManager {

@@ -1,3 +1,4 @@
+// excessive_nesting警告需要大规模重构，分阶段处理
 #![allow(clippy::excessive_nesting)]
 //! # OpenTelemetry Protocol (OTLP) Implementation for Rust 1.94
 //!

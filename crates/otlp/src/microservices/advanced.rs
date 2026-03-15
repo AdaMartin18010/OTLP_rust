@@ -122,6 +122,12 @@ pub struct TrafficManager {
     load_balancer: Arc<dyn super::LoadBalancer + Send + Sync>,
 }
 
+impl Default for TrafficManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TrafficManager {
     pub fn new() -> Self {
         Self {
@@ -144,6 +150,12 @@ impl TrafficManager {
 #[allow(dead_code)]
 pub struct HealthChecker {
     check_interval: Duration,
+}
+
+impl Default for HealthChecker {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HealthChecker {
@@ -358,32 +370,55 @@ impl IntelligentRouter {
     fn matches_rule(&self, rule: &RoutingRule, request: &RouteRequest) -> bool {
         rule.match_conditions
             .iter()
-            .all(|condition| match condition {
-                MatchCondition::Header { name, value } => request
-                    .headers
-                    .get(name)
-                    .map(|v| v == value)
-                    .unwrap_or(false),
-                MatchCondition::Path { pattern } => {
-                    self.path_matches(request.path.as_str(), pattern)
-                }
-                MatchCondition::Method { methods } => methods.contains(&request.method),
-                MatchCondition::Query { key, value } => request
-                    .query_params
-                    .get(key)
-                    .map(|v| v == value)
-                    .unwrap_or(false),
-                MatchCondition::Source { service, namespace } => {
-                    request.source_service == *service && request.source_namespace == *namespace
-                }
-            })
+            .all(|condition| self.matches_condition(condition, request))
+    }
+
+    /// 检查单个匹配条件
+    fn matches_condition(&self, condition: &MatchCondition, request: &RouteRequest) -> bool {
+        match condition {
+            MatchCondition::Header { name, value } => {
+                self.matches_header(request, name, value)
+            }
+            MatchCondition::Path { pattern } => {
+                self.path_matches(&request.path, pattern)
+            }
+            MatchCondition::Method { methods } => methods.contains(&request.method),
+            MatchCondition::Query { key, value } => {
+                self.matches_query(request, key, value)
+            }
+            MatchCondition::Source { service, namespace } => {
+                self.matches_source(request, service, namespace)
+            }
+        }
+    }
+
+    /// 检查Header是否匹配
+    fn matches_header(&self, request: &RouteRequest, name: &str, value: &str) -> bool {
+        request
+            .headers
+            .get(name)
+            .map(|v| v == value)
+            .unwrap_or(false)
+    }
+
+    /// 检查Query参数是否匹配
+    fn matches_query(&self, request: &RouteRequest, key: &str, value: &str) -> bool {
+        request
+            .query_params
+            .get(key)
+            .map(|v| v == value)
+            .unwrap_or(false)
+    }
+
+    /// 检查Source是否匹配
+    fn matches_source(&self, request: &RouteRequest, service: &str, namespace: &str) -> bool {
+        request.source_service == service && request.source_namespace == namespace
     }
 
     /// 路径匹配
     fn path_matches(&self, path: &str, pattern: &str) -> bool {
         // 简单的通配符匹配实现
-        if pattern.ends_with('*') {
-            let prefix = &pattern[..pattern.len() - 1];
+        if let Some(prefix) = pattern.strip_suffix('*') {
             path.starts_with(prefix)
         } else {
             path == pattern
@@ -483,6 +518,12 @@ pub struct LoadBalancerMetrics {
     pub algorithm_switches: Counter<u64>,
     pub selection_latency: Histogram<f64>,
     pub algorithm_performance: Gauge<f64>,
+}
+
+impl Default for AdaptiveLoadBalancer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AdaptiveLoadBalancer {
@@ -677,6 +718,12 @@ pub struct LeastConnectionsLoadBalancer {
     endpoints: Arc<RwLock<Vec<super::ServiceEndpoint>>>,
 }
 
+impl Default for LeastConnectionsLoadBalancer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LeastConnectionsLoadBalancer {
     pub fn new() -> Self {
         Self {
@@ -754,6 +801,12 @@ pub struct FaultInjectorMetrics {
     pub faults_injected: Counter<u64>,
     pub fault_errors: Counter<u64>,
     pub fault_delays: Counter<u64>,
+}
+
+impl Default for FaultInjector {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FaultInjector {
