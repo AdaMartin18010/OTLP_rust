@@ -76,7 +76,7 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             BenchmarkId::new("vectorized_sum", size),
             &data,
             |b, data| {
-                let optimizer = SimdOptimizer::default();
+                let optimizer = SimdOptimizer::new_default();
                 b.iter(|| {
                     let result = optimizer.vectorized_sum(data);
                     let _ = black_box(result);
@@ -88,7 +88,7 @@ fn bench_simd_optimizations(c: &mut Criterion) {
             BenchmarkId::new("vectorized_dot_product", size),
             &(data.clone(), data2.clone()),
             |b, (a, b_vec)| {
-                let optimizer = SimdOptimizer::default();
+                let optimizer = SimdOptimizer::new_default();
                 b.iter(|| {
                     let result = optimizer.vectorized_dot_product(a, b_vec);
                     let _ = black_box(result);
@@ -216,7 +216,7 @@ fn bench_memory_alignment(c: &mut Criterion) {
             BenchmarkId::new("aligned_data", size),
             &aligned_data,
             |b, data| {
-                let optimizer = SimdOptimizer::default();
+                let optimizer = SimdOptimizer::new_default();
                 b.iter(|| {
                     let result = optimizer.vectorized_sum(data);
                     let _ = black_box(result);
@@ -228,7 +228,7 @@ fn bench_memory_alignment(c: &mut Criterion) {
             BenchmarkId::new("unaligned_data", size),
             &unaligned_slice,
             |b, data| {
-                let optimizer = SimdOptimizer::default();
+                let optimizer = SimdOptimizer::new_default();
                 b.iter(|| {
                     let result = optimizer.vectorized_sum(data);
                     let _ = black_box(result);
@@ -305,7 +305,7 @@ fn bench_concurrent_performance(c: &mut Criterion) {
             thread_count,
             |b, &thread_count| {
                 let data: Vec<f64> = (0..10000).map(|i| (i as f64) * 0.1).collect();
-                let optimizer = Arc::new(SimdOptimizer::default());
+                let optimizer = Arc::new(SimdOptimizer::new_default());
 
                 b.iter(|| {
                     let handles: Vec<_> = (0..thread_count)
@@ -421,7 +421,7 @@ fn bench_cache_friendliness(c: &mut Criterion) {
             BenchmarkId::new("continuous_access", size),
             &continuous_data,
             |b, data| {
-                let optimizer = SimdOptimizer::default();
+                let optimizer = SimdOptimizer::new_default();
                 b.iter(|| {
                     let result = optimizer.vectorized_sum(data);
                     let _ = black_box(result);
@@ -433,7 +433,7 @@ fn bench_cache_friendliness(c: &mut Criterion) {
             BenchmarkId::new("random_access", size),
             &random_data,
             |b, data| {
-                let optimizer = SimdOptimizer::default();
+                let optimizer = SimdOptimizer::new_default();
                 b.iter(|| {
                     let result = optimizer.vectorized_sum(data);
                     let _ = black_box(result);

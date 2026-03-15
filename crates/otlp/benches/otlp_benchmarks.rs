@@ -4,7 +4,7 @@
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use otlp::{
-    OtlpClient, OtlpConfig, TelemetryData,
+    OtlpClient, OtlpConfig, TelemetryData, OtlpExporter,
     config::TransportProtocol,
     data::{LogSeverity, MetricType, StatusCode},
 };
@@ -97,8 +97,11 @@ fn benchmark_batch_trace_send(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("size", size), size, |b, _| {
             b.iter(|| {
                 rt.block_on(async {
-                    let result = client.send_batch(data.clone()).await;
-                    black_box(result)
+                    // Note: send_batch not available, using send_trace in loop
+                    for _item in data.clone() {
+                        let _ = client.send_trace("batch-op").await;
+                    }
+                    black_box(())
                 })
             })
         });
@@ -127,7 +130,7 @@ fn benchmark_concurrent_trace_send(c: &mut Criterion) {
                             let client_clone = client.clone();
                             let handle = tokio::spawn(async move {
                                 let result = client_clone
-                                    .send_trace(format!("concurrent-{}", i))
+                                    .send_trace(&format!("concurrent-{}", i))
                                     .await
                                     .unwrap()
                                     .with_attribute("worker.id", i.to_string())
@@ -307,7 +310,7 @@ fn benchmark_metrics_collection(c: &mut Criterion) {
     rt.block_on(async {
         for i in 0..100 {
             let _ = client
-                .send_trace(format!("metrics-test-{}", i))
+                .send_trace(&format!("metrics-test-{}", i))
                 .await
                 .unwrap()
                 .finish()
@@ -318,7 +321,7 @@ fn benchmark_metrics_collection(c: &mut Criterion) {
     c.bench_function("metrics_collection", |b| {
         b.iter(|| {
             rt.block_on(async {
-                let metrics = client.get_metrics().await;
+                let metrics = client.metrics().await;
                 black_box(metrics)
             })
         })
@@ -340,9 +343,12 @@ fn benchmark_protocol_comparison(c: &mut Criterion) {
                     .with_endpoint("http://localhost:4317")
                     .with_protocol(TransportProtocol::Http);
 
-                let client = OtlpClient::new(config).await.unwrap();
+                let client = OtlpClient::new(config.clone()).await.unwrap();
                 let _ = client.initialize().await;
-                let result = client.send_batch(data.clone()).await;
+                // Note: send_batch not available, using export via exporter
+                let exporter = OtlpExporter::new(config);
+                let _ = exporter.initialize().await;
+                let result = exporter.export(data.clone()).await;
                 black_box(result)
             })
         })
@@ -356,9 +362,12 @@ fn benchmark_protocol_comparison(c: &mut Criterion) {
                     .with_endpoint("http://localhost:4317")
                     .with_protocol(TransportProtocol::Grpc);
 
-                let client = OtlpClient::new(config).await.unwrap();
+                let client = OtlpClient::new(config.clone()).await.unwrap();
                 let _ = client.initialize().await;
-                let result = client.send_batch(data.clone()).await;
+                // Note: send_batch not available, using export via exporter
+                let exporter = OtlpExporter::new(config);
+                let _ = exporter.initialize().await;
+                let result = exporter.export(data.clone()).await;
                 black_box(result)
             })
         })
