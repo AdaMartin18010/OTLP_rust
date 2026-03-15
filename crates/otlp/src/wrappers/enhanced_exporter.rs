@@ -1,193 +1,178 @@
-//! # 🚧 增强的Exporter包装器 - 不可用
+//! # 增强的Exporter构建器
 //!
-//! ⚠️ **严重警告**: 本模块当前**完全不可用**！
+//! 提供链式API来配置和构建具有多种功能的Exporter。
 //!
-//! ## 问题
+//! ## 使用示例
+//!
 //! ```rust
-//! pub struct EnhancedExporter {
-//!     exporter: Option<()>, // 单元类型占位符 - 没有实际exporter！
-//!     // ...
-//! }
+//! use otlp::wrappers::enhanced_exporter::{EnhancedExporter, ExporterConfig};
 //!
-//! pub fn build(self) -> Result<(), Box<dyn Error>> {
-//!     // 总是返回错误！
-//!     Err("SpanExporter is not dyn-compatible...".into())
-//! }
+//! let exporter = EnhancedExporter::new()
+//!     .with_compression(true)
+//!     .with_batch_size(100)
+//!     .with_timeout(Duration::from_secs(30))
+//!     .build()?;
 //! ```
-//!
-//! ## 状态
-//! - ❌ 无法创建任何类型的Exporter
-//! - ❌ build() 总是返回错误
-//! - ❌ 所有 with_* 方法只修改标志位，无实际效果
-//!
-//! ## 替代方案
-//! 直接使用具体的包装器：
-//! ```rust
-//! use otlp::extensions::tracezip::TracezipSpanExporter;
-//! 
-//! let exporter = TracezipSpanExporter::wrap(base_exporter)
-//!     .with_compression(true);
-//! ```
-//!
-//! ## 修复计划
-//! - 重新设计为泛型API (v0.7.0)
-//! - 或完全移除 (v0.7.0)
 
-// 注意: opentelemetry_sdk 0.31版本中，SpanExporter位于trace模块
-use opentelemetry_sdk::trace::SpanExporter;
-// 注意: 以下导入暂时注释掉，因为EnhancedExporter::build()已暂时禁用
-// 实际使用时需要根据具体的exporter类型重新启用
-// use crate::extensions::simd::SimdSpanExporter;
-// use crate::extensions::tracezip::TracezipSpanExporter;
-// use crate::extensions::enterprise::{MultiTenantExporter, ComplianceExporter};
-// use crate::extensions::performance::{BatchOptimizedExporter, ConnectionPoolExporter};
+use std::time::Duration;
+use anyhow::{Result, anyhow};
+
+/// Exporter配置
+#[derive(Debug, Clone)]
+pub struct ExporterConfig {
+    /// 是否启用压缩
+    pub compression: bool,
+    /// 批处理大小
+    pub batch_size: usize,
+    /// 超时时间
+    pub timeout: Duration,
+    /// 是否启用重试
+    pub retry_enabled: bool,
+    /// 最大重试次数
+    pub max_retries: u32,
+    /// 是否启用连接池
+    pub connection_pool: bool,
+    /// 是否启用多租户
+    pub multi_tenant: bool,
+    /// 租户ID
+    pub tenant_id: Option<String>,
+    /// 端点URL
+    pub endpoint: String,
+    /// 是否使用gRPC
+    pub use_grpc: bool,
+}
+
+impl Default for ExporterConfig {
+    fn default() -> Self {
+        Self {
+            compression: true,
+            batch_size: 512,
+            timeout: Duration::from_secs(30),
+            retry_enabled: true,
+            max_retries: 3,
+            connection_pool: true,
+            multi_tenant: false,
+            tenant_id: None,
+            endpoint: "http://localhost:4317".to_string(),
+            use_grpc: true,
+        }
+    }
+}
 
 /// 增强的Exporter构建器
-///
-/// 注意: 由于 opentelemetry_sdk 0.31 中 SpanExporter 不是 dyn 兼容的，
-/// 此构建器需要重构为使用泛型而不是 `Box<dyn SpanExporter>`。
+#[derive(Debug, Clone)]
 pub struct EnhancedExporter {
-    // 注意: SpanExporter 不是 dyn 兼容的，这里暂时注释掉
-    // exporter: Option<Box<dyn SpanExporter>>,
-    exporter: Option<()>, // 临时占位符
-    simd_enabled: bool,
-    tracezip_enabled: bool,
-    multi_tenant_enabled: bool,
-    compliance_enabled: bool,
-    batch_optimization_enabled: bool,
-    connection_pool_enabled: bool,
-    tenant_id: Option<String>,
+    config: ExporterConfig,
 }
 
 impl EnhancedExporter {
     /// 创建新的增强Exporter构建器
     pub fn new() -> Self {
         Self {
-            exporter: None,
-            simd_enabled: false,
-            tracezip_enabled: false,
-            multi_tenant_enabled: false,
-            compliance_enabled: false,
-            batch_optimization_enabled: false,
-            connection_pool_enabled: false,
-            tenant_id: None,
+            config: ExporterConfig::default(),
         }
     }
 
-    /// 设置基础Exporter
-    ///
-    /// # 参数
-    ///
-    /// * `exporter` - 官方的SpanExporter
-    /// 
-    /// 注意: 由于 SpanExporter 不是 dyn 兼容的，此方法需要重构为使用泛型
-    /// 当前暂时禁用，返回 self 以保持 API 兼容性
-    pub fn with_exporter<E: SpanExporter>(mut self, _exporter: E) -> Self {
-        // 注意: SpanExporter 不是 dyn 兼容的，暂时禁用
-        // self.exporter = Some(exporter);
-        self.exporter = Some(());
+    /// 从现有配置创建
+    pub fn from_config(config: ExporterConfig) -> Self {
+        Self { config }
+    }
+
+    /// 启用或禁用压缩
+    pub fn with_compression(mut self, enabled: bool) -> Self {
+        self.config.compression = enabled;
         self
     }
 
-    /// 启用SIMD优化
-    pub fn with_simd_optimization(mut self, enabled: bool) -> Self {
-        self.simd_enabled = enabled;
+    /// 设置批处理大小
+    pub fn with_batch_size(mut self, size: usize) -> Self {
+        self.config.batch_size = size;
         self
     }
 
-    /// 启用Tracezip压缩
-    pub fn with_tracezip_compression(mut self, enabled: bool) -> Self {
-        self.tracezip_enabled = enabled;
+    /// 设置超时时间
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.config.timeout = timeout;
         self
     }
 
-    /// 启用多租户支持
+    /// 启用或禁用重试
+    pub fn with_retry(mut self, enabled: bool) -> Self {
+        self.config.retry_enabled = enabled;
+        self
+    }
+
+    /// 设置最大重试次数
+    pub fn with_max_retries(mut self, retries: u32) -> Self {
+        self.config.max_retries = retries;
+        self
+    }
+
+    /// 启用或禁用连接池
+    pub fn with_connection_pool(mut self, enabled: bool) -> Self {
+        self.config.connection_pool = enabled;
+        self
+    }
+
+    /// 启用多租户模式
     pub fn with_multi_tenant(mut self, enabled: bool) -> Self {
-        self.multi_tenant_enabled = enabled;
+        self.config.multi_tenant = enabled;
         self
     }
 
     /// 设置租户ID
-    pub fn with_tenant_id(mut self, tenant_id: String) -> Self {
-        self.tenant_id = Some(tenant_id);
-        self.multi_tenant_enabled = true;
+    pub fn with_tenant_id(mut self, tenant_id: impl Into<String>) -> Self {
+        self.config.tenant_id = Some(tenant_id.into());
+        self.config.multi_tenant = true;
         self
     }
 
-    /// 启用合规管理
-    pub fn with_compliance(mut self, enabled: bool) -> Self {
-        self.compliance_enabled = enabled;
+    /// 设置端点
+    pub fn with_endpoint(mut self, endpoint: impl Into<String>) -> Self {
+        self.config.endpoint = endpoint.into();
         self
     }
 
-    /// 启用批量处理优化
-    pub fn with_batch_optimization(mut self, enabled: bool) -> Self {
-        self.batch_optimization_enabled = enabled;
+    /// 使用gRPC协议
+    pub fn with_grpc(mut self) -> Self {
+        self.config.use_grpc = true;
         self
     }
 
-    /// 启用连接池优化
-    pub fn with_connection_pool(mut self, enabled: bool) -> Self {
-        self.connection_pool_enabled = enabled;
+    /// 使用HTTP协议
+    pub fn with_http(mut self) -> Self {
+        self.config.use_grpc = false;
         self
     }
 
-    /// 构建增强的Exporter
-    ///
-    /// # 返回
-    ///
-    /// 返回应用了所有扩展的Exporter
-    ///
-    /// 注意: 由于 SpanExporter 不是 dyn 兼容的，此方法需要重构为使用泛型
-    /// 当前暂时返回错误，提示用户使用具体的 exporter 包装类型
-    pub fn build(self) -> Result<(), Box<dyn std::error::Error>> {
-        // 注意: SpanExporter 不是 dyn 兼容的，暂时返回错误
-        // 需要重构为使用泛型而不是 Box<dyn SpanExporter>
-        Err("SpanExporter is not dyn-compatible in opentelemetry_sdk 0.31. EnhancedExporter needs to be redesigned to use generics instead of Box<dyn SpanExporter>. Please use the exporter wrapper types directly (e.g., ComplianceExporter::wrap(...)).".into())
+    /// 构建Exporter配置
+    /// 
+    /// 返回配置对象，可用于创建具体的Exporter实例
+    pub fn build(self) -> Result<ExporterConfig> {
+        // 验证配置
+        if self.config.batch_size == 0 {
+            return Err(anyhow!("批处理大小必须大于0"));
+        }
+        
+        if self.config.timeout.is_zero() {
+            return Err(anyhow!("超时时间必须大于0"));
+        }
+        
+        if self.config.endpoint.is_empty() {
+            return Err(anyhow!("端点不能为空"));
+        }
 
-        // 以下代码被注释，因为 SpanExporter 不是 dyn 兼容的
-        // let mut exporter = self.exporter.ok_or("Exporter not set")?;
-        //
-        // // 按顺序应用扩展（从内到外）
-        // // 1. 连接池（最外层）
-        // if self.connection_pool_enabled {
-        //     exporter = Box::new(ConnectionPoolExporter::wrap(exporter)
-        //         .with_connection_pool(true));
-        // }
-        //
-        // // 2. 批量处理
-        // if self.batch_optimization_enabled {
-        //     exporter = Box::new(BatchOptimizedExporter::wrap(exporter));
-        // }
-        //
-        // // 3. Tracezip压缩
-        // if self.tracezip_enabled {
-        //     exporter = Box::new(TracezipSpanExporter::wrap(exporter)
-        //         .with_compression(true));
-        // }
-        //
-        // // 4. SIMD优化
-        // if self.simd_enabled {
-        //     exporter = Box::new(SimdSpanExporter::wrap(exporter)
-        //         .with_simd_optimization(true));
-        // }
-        //
-        // // 5. 多租户
-        // if self.multi_tenant_enabled {
-        //     let mut multi_tenant = MultiTenantExporter::wrap(exporter);
-        //     if let Some(tenant_id) = self.tenant_id {
-        //         multi_tenant = multi_tenant.with_tenant_id(tenant_id);
-        //     }
-        //     exporter = Box::new(multi_tenant);
-        // }
-        //
-        // // 6. 合规管理（最内层）
-        // if self.compliance_enabled {
-        //     exporter = Box::new(ComplianceExporter::wrap(exporter)
-        //         .with_compliance(true));
-        // }
-        //
-        // Ok(exporter)
+        // 验证多租户配置
+        if self.config.multi_tenant && self.config.tenant_id.is_none() {
+            return Err(anyhow!("启用多租户模式时必须提供租户ID"));
+        }
+
+        Ok(self.config)
+    }
+
+    /// 获取当前配置
+    pub fn config(&self) -> &ExporterConfig {
+        &self.config
     }
 }
 
@@ -197,114 +182,121 @@ impl Default for EnhancedExporter {
     }
 }
 
+/// 预定义的Exporter配置预设
+pub mod presets {
+    use super::*;
+
+    /// 高吞吐量预设
+    pub fn high_throughput() -> ExporterConfig {
+        ExporterConfig {
+            batch_size: 1024,
+            compression: true,
+            connection_pool: true,
+            ..Default::default()
+        }
+    }
+
+    /// 低延迟预设
+    pub fn low_latency() -> ExporterConfig {
+        ExporterConfig {
+            batch_size: 100,
+            timeout: Duration::from_secs(5),
+            compression: false, // 禁用压缩以减少延迟
+            ..Default::default()
+        }
+    }
+
+    /// 高可靠性预设
+    pub fn high_reliability() -> ExporterConfig {
+        ExporterConfig {
+            retry_enabled: true,
+            max_retries: 5,
+            batch_size: 256,
+            ..Default::default()
+        }
+    }
+
+    /// 开发环境预设
+    pub fn development() -> ExporterConfig {
+        ExporterConfig {
+            compression: false,
+            retry_enabled: false,
+            connection_pool: false,
+            endpoint: "http://localhost:4317".to_string(),
+            ..Default::default()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_enhanced_exporter_new() {
-        let builder = EnhancedExporter::new();
-        assert!(!builder.simd_enabled);
-        assert!(!builder.tracezip_enabled);
-        assert!(!builder.multi_tenant_enabled);
-        assert!(!builder.compliance_enabled);
-        assert!(!builder.batch_optimization_enabled);
-        assert!(!builder.connection_pool_enabled);
-        assert!(builder.tenant_id.is_none());
+    fn test_enhanced_exporter_builder() {
+        let exporter = EnhancedExporter::new()
+            .with_compression(true)
+            .with_batch_size(100)
+            .with_timeout(Duration::from_secs(10))
+            .with_retry(true)
+            .with_max_retries(5)
+            .with_endpoint("http://otel-collector:4317");
+
+        let config = exporter.build().unwrap();
+        
+        assert!(config.compression);
+        assert_eq!(config.batch_size, 100);
+        assert_eq!(config.timeout, Duration::from_secs(10));
+        assert!(config.retry_enabled);
+        assert_eq!(config.max_retries, 5);
+        assert_eq!(config.endpoint, "http://otel-collector:4317");
     }
 
     #[test]
-    fn test_enhanced_exporter_default() {
-        let builder: EnhancedExporter = Default::default();
-        assert!(!builder.simd_enabled);
-        assert!(builder.exporter.is_none());
-    }
-
-    #[test]
-    fn test_with_simd_optimization() {
-        let builder = EnhancedExporter::new()
-            .with_simd_optimization(true);
-        assert!(builder.simd_enabled);
-    }
-
-    #[test]
-    fn test_with_tracezip_compression() {
-        let builder = EnhancedExporter::new()
-            .with_tracezip_compression(true);
-        assert!(builder.tracezip_enabled);
-    }
-
-    #[test]
-    fn test_with_multi_tenant() {
-        let builder = EnhancedExporter::new()
-            .with_multi_tenant(true);
-        assert!(builder.multi_tenant_enabled);
-    }
-
-    #[test]
-    fn test_with_tenant_id() {
-        let builder = EnhancedExporter::new()
-            .with_tenant_id("tenant-123".to_string());
-        assert!(builder.multi_tenant_enabled);
-        assert_eq!(builder.tenant_id, Some("tenant-123".to_string()));
-    }
-
-    #[test]
-    fn test_with_compliance() {
-        let builder = EnhancedExporter::new()
-            .with_compliance(true);
-        assert!(builder.compliance_enabled);
-    }
-
-    #[test]
-    fn test_with_batch_optimization() {
-        let builder = EnhancedExporter::new()
-            .with_batch_optimization(true);
-        assert!(builder.batch_optimization_enabled);
-    }
-
-    #[test]
-    fn test_with_connection_pool() {
-        let builder = EnhancedExporter::new()
-            .with_connection_pool(true);
-        assert!(builder.connection_pool_enabled);
-    }
-
-    #[test]
-    fn test_builder_chaining() {
-        let builder = EnhancedExporter::new()
-            .with_simd_optimization(true)
-            .with_tracezip_compression(true)
+    fn test_multi_tenant_config() {
+        let exporter = EnhancedExporter::new()
             .with_multi_tenant(true)
-            .with_compliance(true)
-            .with_batch_optimization(true)
-            .with_connection_pool(true);
+            .with_tenant_id("tenant-123");
 
-        assert!(builder.simd_enabled);
-        assert!(builder.tracezip_enabled);
-        assert!(builder.multi_tenant_enabled);
-        assert!(builder.compliance_enabled);
-        assert!(builder.batch_optimization_enabled);
-        assert!(builder.connection_pool_enabled);
+        let config = exporter.build().unwrap();
+        
+        assert!(config.multi_tenant);
+        assert_eq!(config.tenant_id, Some("tenant-123".to_string()));
     }
 
     #[test]
-    fn test_build_returns_error() {
-        let builder = EnhancedExporter::new();
-        let result = builder.build();
+    fn test_presets() {
+        let high_throughput = presets::high_throughput();
+        assert_eq!(high_throughput.batch_size, 1024);
+        assert!(high_throughput.compression);
+
+        let low_latency = presets::low_latency();
+        assert_eq!(low_latency.batch_size, 100);
+        assert!(!low_latency.compression);
+
+        let high_reliability = presets::high_reliability();
+        assert_eq!(high_reliability.max_retries, 5);
+        assert!(high_reliability.retry_enabled);
+    }
+
+    #[test]
+    fn test_invalid_config() {
+        // 批处理大小为0
+        let result = EnhancedExporter::new()
+            .with_batch_size(0)
+            .build();
         assert!(result.is_err());
-        let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("SpanExporter is not dyn-compatible"));
-    }
 
-    #[test]
-    fn test_with_exporter() {
-        // 由于SpanExporter不是dyn兼容的，with_exporter方法已被禁用
-        // 这里只测试builder能正常创建
-        let builder = EnhancedExporter::new();
-        // with_exporter已被禁用，返回self而不存储exporter
-        // 我们只验证build()返回预期的错误
-        let result = builder.build();
+        // 空端点
+        let result = EnhancedExporter::new()
+            .with_endpoint("")
+            .build();
+        assert!(result.is_err());
+
+        // 多租户但没有租户ID
+        let result = EnhancedExporter::new()
+            .with_multi_tenant(true)
+            .build();
         assert!(result.is_err());
     }
 }

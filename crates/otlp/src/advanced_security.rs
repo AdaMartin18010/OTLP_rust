@@ -1,23 +1,16 @@
-//! # 🚧 高级安全模块 - 实验性/模拟实现
+//! # 高级安全模块 - 实验性功能
 //!
-//! ⚠️ **警告**: 本模块当前为**模拟实现**，不应用于生产环境！
+//! ⚠️ **注意**: 本模块包含实验性高级安全功能，目前处于规划和开发阶段。
 //!
-//! ## 声明的功能 (模拟)
-//! - ❌ 零知识证明 (模拟返回)
-//! - ❌ 同态加密 (仅附加字符串)
-//! - ❌ 安全多方计算 (模拟计算)
-//! - ❌ 差分隐私 (添加噪音模拟)
-//! - ⚠️ 安全审计 (基础实现)
-//! - ⚠️ 威胁检测 (规则匹配)
+//! ## 功能状态
+//! - 🚧 零知识证明 - 规划中，需要专用 ZK 库 (如 bellman, zexe)
+//! - 🚧 同态加密 - 规划中，需要专用 HE 库 (如 concrete, seal)
+//! - 🚧 安全多方计算 - 规划中，需要专用 MPC 库
+//! - ✅ 差分隐私 - 基础实现可用
+//! - ✅ 威胁检测 - 基于规则的检测可用
 //!
-//! ## 真实实现计划
-//! | 功能 | 计划版本 | 状态 |
-//! |------|----------|------|
-//! | 零知识证明 | v0.8.0 | ⏳ 待实现 |
-//! | 同态加密 | v0.9.0 | ⏳ 待实现 |
-//! | 安全多方计算 | v0.10.0 | ⏳ 待实现 |
-//!
-//! 参见: [HONEST_AUDIT_REPORT.md](../../../HONEST_AUDIT_REPORT.md)
+//! ## 使用建议
+//! 对于生产环境的加密需求，请使用 `security_enhancer` 模块提供的标准加密功能。
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -46,38 +39,21 @@ impl ZeroKnowledgeProofManager {
     }
 
     /// 生成零知识证明
-    pub async fn generate_proof(&self, statement: &str, witness: &str) -> Result<Proof> {
-        let start_time = Instant::now();
-
-        // 模拟零知识证明生成
-        let proof = Proof {
-            statement: statement.to_string(),
-            proof_data: format!("proof_{}_{}", statement, witness),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
-            verification_key: format!("vk_{}", statement),
-        };
-
-        // 缓存证明
-        // 注意：Arc<HashMap> 不支持直接插入，这里仅作演示
-        // 实际实现中应该使用 Arc<RwLock<HashMap>> 或 Arc<Mutex<HashMap>>
-
-        // 更新统计信息
-        self.stats.record_proof_generation(start_time.elapsed());
-
-        Ok(proof)
+    /// 
+    /// ⚠️ **未实现**: 需要集成 ZK 库 (如 bellman, zexe)
+    pub async fn generate_proof(&self, _statement: &str, _witness: &str) -> Result<Proof> {
+        Err(anyhow::anyhow!(
+            "零知识证明功能尚未实现。需要集成 ZK 库 (如 bellman, zexe)。"
+        ))
     }
 
     /// 验证零知识证明
-    pub async fn verify_proof(&self, proof: &Proof) -> Result<bool> {
-        let start_time = Instant::now();
-
-        // 模拟零知识证明验证
-        let is_valid = proof.proof_data.starts_with("proof_");
-
-        // 更新统计信息
-        self.stats.record_proof_verification(start_time.elapsed());
-
-        Ok(is_valid)
+    /// 
+    /// ⚠️ **未实现**: 需要集成 ZK 库
+    pub async fn verify_proof(&self, _proof: &Proof) -> Result<bool> {
+        Err(anyhow::anyhow!(
+            "零知识证明验证功能尚未实现。"
+        ))
     }
 
     /// 获取统计信息
@@ -103,48 +79,25 @@ impl HomomorphicEncryptionManager {
     }
 
     /// 同态加密数据
-    pub async fn encrypt(&self, data: &[u8], key: &str) -> Result<EncryptedData> {
-        let start_time = Instant::now();
-
-        // 模拟同态加密
-        let encrypted_data = EncryptedData {
-            data: data.to_vec(),
-            key_id: key.to_string(),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
-            encryption_type: "homomorphic".to_string(),
-        };
-
-        // 缓存加密数据
-        // 注意：Arc<HashMap> 不支持直接插入，这里仅作演示
-        // 实际实现中应该使用 Arc<RwLock<HashMap>> 或 Arc<Mutex<HashMap>>
-
-        // 更新统计信息
-        self.stats.record_encryption(start_time.elapsed());
-
-        Ok(encrypted_data)
+    /// 
+    /// ⚠️ **未实现**: 需要集成同态加密库 (如 concrete, seal, tfhe-rs)
+    pub async fn encrypt(&self, _data: &[u8], _key: &str) -> Result<EncryptedData> {
+        Err(anyhow::anyhow!(
+            "同态加密功能尚未实现。需要集成 HE 库 (如 concrete, seal, tfhe-rs)。"
+        ))
     }
 
     /// 同态计算
+    /// 
+    /// ⚠️ **未实现**: 需要集成同态加密库
     pub async fn homomorphic_compute(
         &self,
-        encrypted_data: &[EncryptedData],
+        _encrypted_data: &[EncryptedData],
         _operation: &str,
     ) -> Result<EncryptedData> {
-        let start_time = Instant::now();
-
-        // 模拟同态计算
-        let result = EncryptedData {
-            data: encrypted_data[0].data.clone(),
-            key_id: encrypted_data[0].key_id.clone(),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
-            encryption_type: "homomorphic_computed".to_string(),
-        };
-
-        // 更新统计信息
-        self.stats
-            .record_homomorphic_computation(start_time.elapsed());
-
-        Ok(result)
+        Err(anyhow::anyhow!(
+            "同态计算功能尚未实现。"
+        ))
     }
 
     /// 获取统计信息

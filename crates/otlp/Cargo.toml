@@ -62,6 +62,7 @@ async-trait = { workspace = true, optional = true }
 
 # 系统信息
 num_cpus = { workspace = true }
+sysinfo = "0.33"
 
 # 随机数生成
 rand = { workspace = true }

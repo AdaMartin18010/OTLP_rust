@@ -443,25 +443,92 @@ impl BenchmarkRunner {
 
     /// 获取内存统计
     async fn get_memory_stats(&self) -> MemoryStats {
-        // 这里应该集成实际的内存监控工具
-        // 例如：jemalloc、tcmalloc 或者系统的内存监控
-        MemoryStats {
-            peak_memory: 0,
-            avg_memory: 0,
-            memory_growth: 0,
-            allocations: 0,
-            deallocations: 0,
+        // 使用 sysinfo 获取实际内存统计
+        match self.get_system_memory_stats().await {
+            Some(stats) => stats,
+            None => {
+                // 如果无法获取系统统计，返回基于进程的信息
+                MemoryStats {
+                    peak_memory: self.get_process_memory_usage(),
+                    avg_memory: 0,
+                    memory_growth: 0,
+                    allocations: 0,
+                    deallocations: 0,
+                }
+            }
         }
+    }
+
+    /// 获取系统内存统计
+    async fn get_system_memory_stats(&self) -> Option<MemoryStats> {
+        use sysinfo::{System, get_current_pid, Pid};
+        
+        let mut system = System::new_all();
+        system.refresh_all();
+        
+        let pid: Pid = get_current_pid().ok()?;
+        if let Some(process) = system.process(pid) {
+            let memory_bytes = process.memory();
+            
+            Some(MemoryStats {
+                peak_memory: memory_bytes,
+                avg_memory: memory_bytes,
+                memory_growth: 0,
+                allocations: 0,
+                deallocations: 0,
+            })
+        } else {
+            None
+        }
+    }
+
+    /// 获取进程内存使用量
+    fn get_process_memory_usage(&self) -> u64 {
+        // 使用 sysinfo 获取进程内存
+        use sysinfo::{System, get_current_pid, Pid};
+        let mut system = System::new_all();
+        system.refresh_all();
+        
+        let pid: Pid = match get_current_pid() {
+            Ok(p) => p,
+            Err(_) => return 0,
+        };
+        system.process(pid).map(|p| p.memory()).unwrap_or(0)
     }
 
     /// 获取CPU统计
     async fn get_cpu_stats(&self) -> CpuStats {
-        // 这里应该集成实际的CPU监控工具
-        CpuStats {
-            avg_cpu_usage: 0.0,
-            peak_cpu_usage: 0.0,
-            cpu_time: Duration::ZERO,
-            context_switches: 0,
+        use sysinfo::{System, get_current_pid, Pid};
+        
+        let mut system = System::new_all();
+        system.refresh_all();
+        
+        let pid: Pid = match get_current_pid() {
+            Ok(p) => p,
+            Err(_) => {
+                return CpuStats {
+                    avg_cpu_usage: 0.0,
+                    peak_cpu_usage: 0.0,
+                    cpu_time: Duration::ZERO,
+                    context_switches: 0,
+                }
+            }
+        };
+        
+        if let Some(process) = system.process(pid) {
+            CpuStats {
+                avg_cpu_usage: process.cpu_usage() as f64,
+                peak_cpu_usage: process.cpu_usage() as f64,
+                cpu_time: Duration::from_secs(process.run_time()),
+                context_switches: 0,
+            }
+        } else {
+            CpuStats {
+                avg_cpu_usage: 0.0,
+                peak_cpu_usage: 0.0,
+                cpu_time: Duration::ZERO,
+                context_switches: 0,
+            }
         }
     }
 
