@@ -216,7 +216,7 @@ mod tests {
         let client = OtlpClient::new(config).await.unwrap();
         let metrics = client.metrics().await;
         // 验证返回的metrics是默认值
-        assert_eq!(metrics.total_requests, 0);
+        assert_eq!(metrics.total_requests.load(std::sync::atomic::Ordering::Relaxed), 0);
     }
 
     #[test]

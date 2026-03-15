@@ -58,7 +58,7 @@ mod tests {
         let provider = opentelemetry::trace::noop::NoopTracerProvider::new();
         let tracer = provider.tracer("test");
         
-        let enhanced = EnhancedTracer::new(tracer);
+        let _enhanced = EnhancedTracer::new(tracer);
         // 验证创建成功 (EnhancedTracer是单元结构体，主要验证不panic)
         assert!(true);
     }
@@ -68,7 +68,7 @@ mod tests {
         let provider = opentelemetry::trace::noop::NoopTracerProvider::new();
         let tracer = provider.tracer("test");
         
-        let enhanced = EnhancedTracer::new(tracer)
+        let _enhanced = EnhancedTracer::new(tracer)
             .with_ebpf_profiling(true);
         
         // 验证链式调用成功
@@ -80,7 +80,7 @@ mod tests {
         let provider = opentelemetry::trace::noop::NoopTracerProvider::new();
         let tracer = provider.tracer("test");
         
-        let enhanced = EnhancedTracer::new(tracer)
+        let _enhanced = EnhancedTracer::new(tracer)
             .with_ebpf_profiling(true)
             .with_ebpf_profiling(false);
         

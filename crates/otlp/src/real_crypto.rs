@@ -19,7 +19,12 @@
 //! - 常量时间操作 (防侧信道攻击)
 
 use anyhow::{Result, anyhow};
-use ring::aead::{self, Aad, Nonce, UnboundKey, AES_256_GCM, AES_128_GCM, CHACHA20_POLY1305};
+use ring::aead::{
+    Aad, Algorithm, Nonce, NonceSequence, Tag, UnboundKey, 
+    BoundKey, SealingKey, OpeningKey, AES_256_GCM, AES_128_GCM, CHACHA20_POLY1305,
+    MAX_TAG_LEN, NONCE_LEN
+};
+use ring::error::Unspecified;
 use ring::rand::{SecureRandom, SystemRandom};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -37,7 +42,7 @@ pub enum RealEncryptionAlgorithm {
 }
 
 impl RealEncryptionAlgorithm {
-    fn get_algorithm(&self) -> &'static aead::Algorithm {
+    fn get_algorithm(&self) -> &'static Algorithm {
         match self {
             RealEncryptionAlgorithm::Aes256Gcm => &AES_256_GCM,
             RealEncryptionAlgorithm::Aes128Gcm => &AES_128_GCM,
@@ -50,11 +55,33 @@ impl RealEncryptionAlgorithm {
     }
     
     fn nonce_len(&self) -> usize {
-        self.get_algorithm().nonce_len()
+        NONCE_LEN
     }
     
     fn tag_len(&self) -> usize {
-        self.get_algorithm().tag_len()
+        MAX_TAG_LEN
+    }
+}
+
+/// 一次性nonce序列（用于单次加密/解密操作）
+struct OneTimeNonceSequence {
+    nonce: Vec<u8>,
+    used: bool,
+}
+
+impl OneTimeNonceSequence {
+    fn new(nonce: Vec<u8>) -> Self {
+        Self { nonce, used: false }
+    }
+}
+
+impl NonceSequence for OneTimeNonceSequence {
+    fn advance(&mut self) -> Result<Nonce, Unspecified> {
+        if self.used {
+            return Err(Unspecified);
+        }
+        self.used = true;
+        Nonce::try_assume_unique_for_key(&self.nonce)
     }
 }
 
@@ -65,7 +92,7 @@ pub struct RealEncryptedData {
     pub algorithm: RealEncryptionAlgorithm,
     /// 密文 (包含认证标签)
     pub ciphertext: Vec<u8>,
-    ///  nonce (IV)
+    /// nonce (IV)
     pub nonce: Vec<u8>,
     /// 附加认证数据 (AAD)
     pub aad: Vec<u8>,
@@ -139,18 +166,17 @@ impl RealEncryptionManager {
         let mut nonce_bytes = vec![0u8; nonce_len];
         self.rng.fill(&mut nonce_bytes)
             .map_err(|_| anyhow!("Failed to generate nonce"))?;
-        let nonce = Nonce::try_assume_unique_for_key(&nonce_bytes)
-            .map_err(|_| anyhow!("Invalid nonce"))?;
         
         // 准备加密
         let unbound_key = UnboundKey::new(algorithm.get_algorithm(), &key)
             .map_err(|_| anyhow!("Failed to create encryption key"))?;
-        let sealing_key = aead::SealingKey::new(unbound_key, &nonce_bytes);
+        let nonce_sequence = OneTimeNonceSequence::new(nonce_bytes.clone());
+        let mut sealing_key = SealingKey::new(unbound_key, nonce_sequence);
         
         // 加密 (密文包含认证标签)
         let aad_data = Aad::from(aad.unwrap_or(b""));
         let mut ciphertext = plaintext.to_vec();
-        let tag = sealing_key.seal_in_place_separate_tag(aad_data, &mut ciphertext)
+        let tag: Tag = sealing_key.seal_in_place_separate_tag(aad_data, &mut ciphertext)
             .map_err(|_| anyhow!("Encryption failed"))?;
         
         // 将tag附加到密文
@@ -181,7 +207,8 @@ impl RealEncryptionManager {
         // 准备解密
         let unbound_key = UnboundKey::new(encrypted.algorithm.get_algorithm(), &key)
             .map_err(|_| anyhow!("Failed to create decryption key"))?;
-        let opening_key = aead::OpeningKey::new(unbound_key, &encrypted.nonce);
+        let nonce_sequence = OneTimeNonceSequence::new(encrypted.nonce.clone());
+        let mut opening_key = OpeningKey::new(unbound_key, nonce_sequence);
         
         // 分离密文和标签
         let tag_len = encrypted.algorithm.tag_len();
@@ -206,15 +233,31 @@ impl Default for RealEncryptionManager {
     }
 }
 
+/// 自定义输出长度的KeyType
+struct VariableLengthKeyType(usize);
+
+impl ring::hkdf::KeyType for VariableLengthKeyType {
+    fn len(&self) -> usize {
+        self.0
+    }
+}
+
 /// 真实密钥派生 (HKDF)
 pub fn derive_key(password: &[u8], salt: &[u8], algorithm: RealEncryptionAlgorithm) -> Result<Vec<u8>> {
-    use ring::hkdf::{self, Hkdf, HKDF_SHA256};
+    use ring::hkdf::HKDF_SHA256;
     
-    let hkdf = Hkdf::<HKDF_SHA256>::new(Some(salt), password);
+    let salt = ring::hkdf::Salt::new(HKDF_SHA256, salt);
+    let prk = salt.extract(password);
     
-    let mut okm = vec![0u8; algorithm.key_len()];
-    hkdf.expand(b"otlp encryption", &mut okm)
-        .map_err(|_| anyhow!("Key derivation failed"))?;
+    let key_len = algorithm.key_len();
+    let mut okm = vec![0u8; key_len];
+    
+    // 使用自定义KeyType来指定输出长度
+    let okm_result = prk.expand(&[b"otlp encryption"], VariableLengthKeyType(key_len))
+        .map_err(|_| anyhow!("Key derivation expand failed"))?;
+    
+    okm_result.fill(&mut okm)
+        .map_err(|_| anyhow!("Failed to fill key material"))?;
     
     Ok(okm)
 }
