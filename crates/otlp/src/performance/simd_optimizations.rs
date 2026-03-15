@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_vectorized_sum() {
-        let optimizer = SimdOptimizer::default();
+        let optimizer = SimdOptimizer::new_default();
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
         let result = optimizer.vectorized_sum(&data);
         let expected: f64 = data.iter().sum();
@@ -491,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_vectorized_dot_product() {
-        let optimizer = SimdOptimizer::default();
+        let optimizer = SimdOptimizer::new_default();
         let a = vec![1.0, 2.0, 3.0, 4.0];
         let b = vec![2.0, 3.0, 4.0, 5.0];
         let result = optimizer.vectorized_dot_product(&a, &b);
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn test_vectorized_find() {
-        let optimizer = SimdOptimizer::default();
+        let optimizer = SimdOptimizer::new_default();
         let data = b"hello world";
         let pattern = b"world";
         let result = optimizer.vectorized_find(data, pattern);
@@ -546,7 +546,7 @@ mod benchmarks {
 
     #[test]
     fn benchmark_simd_vs_scalar() {
-        let optimizer = SimdOptimizer::default();
+        let optimizer = SimdOptimizer::new_default();
         let data: Vec<f64> = (0..1000).map(|i| i as f64).collect();
 
         // 测试SIMD实现
