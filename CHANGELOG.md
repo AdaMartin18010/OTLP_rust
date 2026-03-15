@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-15
+
+### Added
+
+#### GenAI Semantic Conventions ⭐⭐⭐⭐⭐
+
+- Complete GenAI semantic conventions support (v1.37.0)
+- Support for OpenAI, Anthropic, Azure, AWS Bedrock, Google AI, Cohere, Mistral AI, Meta AI
+- Token usage tracking (input/output tokens)
+- Privacy-safe content capture with opt-in controls
+- Operation types: chat, embeddings, execute_tool, invoke_agent, create_agent, image_generation, audio
+
+#### Declarative Configuration Support ⭐⭐⭐⭐
+
+- YAML/JSON configuration parsing
+- OpenTelemetry Configuration v1.0 standard compliant
+- Environment variable override support
+- Configuration validation and defaults
+
+#### OTTL (OpenTelemetry Transformation Language) Processor ⭐⭐⭐⭐
+
+- Full OTTL statement parsing (set, delete_key, keep_keys, function calls)
+- Complete condition evaluation with comparison operators (==, !=, <, >, <=, >=)
+- Logical operators support (AND, OR, NOT)
+- Context-aware attribute access for traces, metrics, logs
+
+#### RPC Semantic Conventions ⭐⭐⭐
+
+- gRPC attribute coverage
+- General RPC framework-agnostic attributes
+- Message type, ID, size tracking
+- Type-safe builders for RPC attributes
+
+#### Enhanced Extensions ⭐⭐⭐⭐
+
+- **Tracezip Compression**: Fixed async export design, added compression stats
+- **SIMD Optimization**: Batch statistics computation, CPU feature detection
+- **eBPF Integration**: Linux platform support with complete tracing capabilities
+
+### Changed
+
+#### OTLP Protocol Alignment
+
+- Aligned with OTLP Protocol v1.9.0
+- Updated semantic conventions to v1.38.0
+- Full compliance with OpenTelemetry specification
+
+#### Code Quality Improvements
+
+- Extension logic completion: 60% → 90%
+- Added comprehensive test coverage for OTTL processor
+- Enhanced error handling in all extensions
+
 ## [0.2.0-alpha.1] - 2026-03-15
 
 ### Changed

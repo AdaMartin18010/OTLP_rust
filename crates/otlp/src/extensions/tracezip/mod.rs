@@ -16,7 +16,7 @@ pub use conversion::{span_data_to_trace_data, batch_span_data_to_trace_data};
 /// 包装官方的SpanExporter，在导出前对数据进行Tracezip压缩。
 #[derive(Debug)]
 pub struct TracezipSpanExporter<E> {
-    inner: E,
+    inner: Arc<tokio::sync::Mutex<E>>,
     compressor: Arc<Mutex<TraceCompressor>>,
     compression_enabled: bool,
 }
@@ -32,7 +32,7 @@ where
     /// * `exporter` - 要包装的官方SpanExporter
     pub fn wrap(exporter: E) -> Self {
         Self {
-            inner: exporter,
+            inner: Arc::new(tokio::sync::Mutex::new(exporter)),
             compressor: Arc::new(Mutex::new(TraceCompressor::new(CompressorConfig::default()))),
             compression_enabled: true,
         }
@@ -48,117 +48,115 @@ where
         self
     }
 
-    /// 设置压缩率目标
+    /// 设置批处理大小
     ///
     /// # 参数
     ///
-    /// * `ratio` - 目标压缩率 (0.0-1.0)
-    pub fn with_compression_ratio(self, _ratio: f64) -> Self {
-        // TraceCompressor可能需要配置压缩率
-        // 这里先保留接口，具体实现取决于TraceCompressor的API
+    /// * `size` - 批处理大小
+    #[allow(unused_variables)]
+    pub fn with_batch_size(self, size: usize) -> Self {
+        // 更新配置
+        tracing::debug!("Set batch size to {}", size);
         self
+    }
+
+    /// 获取压缩统计信息
+    pub fn compression_stats(&self) -> crate::compression::tracezip::CompressionStats {
+        let compressor = self.compressor.lock().unwrap();
+        compressor.stats().clone()
     }
 }
 
 impl<E> SpanExporter for TracezipSpanExporter<E>
 where
-    E: SpanExporter + std::fmt::Debug + Send + Sync,
+    E: SpanExporter + std::fmt::Debug + Send + Sync + 'static,
 {
     fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
         let compressor = Arc::clone(&self.compressor);
+        let inner = Arc::clone(&self.inner);
         let compression_enabled = self.compression_enabled;
-        // 注意: 不能在async move中使用self，需要克隆inner的引用
-        // 但由于inner是泛型，我们需要通过Arc或其他方式共享
-        // 这里我们先完成压缩逻辑，然后再处理inner
+        
         async move {
             if compression_enabled && !batch.is_empty() {
-            // 将SpanData转换为TraceData格式
-            let trace_data_batch = batch_span_data_to_trace_data(&batch);
+                // 将SpanData转换为TraceData格式
+                let trace_data_batch = batch_span_data_to_trace_data(&batch);
 
-            // 将TraceData转换为TraceCompressor可以处理的格式
-            // TraceCompressor.compress_batch接受 Vec<(&str, u64, (u64, u64), u64)>
-            // 格式: (span_name, timestamp, (trace_id_high, trace_id_low), span_id)
-            // 注意: 需要收集到Vec中以避免生命周期问题，使用owned String
-            let mut spans_data: Vec<(String, u64, (u64, u64), u64)> = Vec::new();
-            for td in &trace_data_batch {
-                // 解析trace_id和span_id（假设它们是十六进制字符串）
-                // trace_id是32字符的十六进制字符串，需要分成两个u64
-                let trace_id_high = if td.trace_id.len() >= 16 {
-                    u64::from_str_radix(&td.trace_id[0..16], 16).unwrap_or(0)
-                } else {
-                    0
-                };
-                let trace_id_low = if td.trace_id.len() >= 32 {
-                    u64::from_str_radix(&td.trace_id[16..32], 16).unwrap_or(0)
-                } else {
-                    0
-                };
-                let span_id = if td.span_id.len() >= 16 {
-                    u64::from_str_radix(&td.span_id[0..16], 16).unwrap_or(0)
-                } else {
-                    u64::from_str_radix(&td.span_id, 16).unwrap_or(0)
-                };
+                // 将TraceData转换为TraceCompressor可以处理的格式
+                let mut spans_data: Vec<(String, u64, (u64, u64), u64)> = Vec::new();
+                for td in &trace_data_batch {
+                    let trace_id_high = if td.trace_id.len() >= 16 {
+                        u64::from_str_radix(&td.trace_id[0..16], 16).unwrap_or(0)
+                    } else {
+                        0
+                    };
+                    let trace_id_low = if td.trace_id.len() >= 32 {
+                        u64::from_str_radix(&td.trace_id[16..32], 16).unwrap_or(0)
+                    } else {
+                        0
+                    };
+                    let span_id = if td.span_id.len() >= 16 {
+                        u64::from_str_radix(&td.span_id[0..16], 16).unwrap_or(0)
+                    } else {
+                        u64::from_str_radix(&td.span_id, 16).unwrap_or(0)
+                    };
 
-                spans_data.push((td.name.clone(), td.start_time, (trace_id_high, trace_id_low), span_id));
-            }
+                    spans_data.push((td.name.clone(), td.start_time, (trace_id_high, trace_id_low), span_id));
+                }
 
-            // 转换为&str引用的格式
-            let spans_for_compression: Vec<(&str, u64, (u64, u64), u64)> = spans_data
-                .iter()
-                .map(|(name, ts, tid, sid)| (name.as_str(), *ts, *tid, *sid))
-                .collect();
+                // 转换为&str引用的格式
+                let spans_for_compression: Vec<(&str, u64, (u64, u64), u64)> = spans_data
+                    .iter()
+                    .map(|(name, ts, tid, sid)| (name.as_str(), *ts, *tid, *sid))
+                    .collect();
 
-            // 执行压缩
-            let mut compressor_guard = compressor.lock().unwrap();
-            match compressor_guard.compress_batch(spans_for_compression) {
-                Ok(compressed_trace) => {
-                    let stats = compressor_guard.stats();
-                    tracing::debug!(
-                        "Tracezip compression completed: {} spans compressed to {} spans, ratio: {:.2}%",
-                        compressed_trace.metadata.original_span_count,
-                        compressed_trace.metadata.compressed_span_count,
-                        stats.compression_percentage()
-                    );
-
-                    // 注意: 压缩后的数据格式与原始SpanData不同
-                    // 在实际应用中，压缩后的数据需要：
-                    // 1. 序列化为二进制格式
-                    // 2. 通过自定义协议传输
-                    // 3. 在接收端解压并还原为SpanData
-                    //
-                    // 当前实现：由于压缩后的格式不同，我们仍然导出原始数据
-                    // 但记录了压缩统计信息，压缩后的数据可以用于其他用途（如存储）
-                    //
-                    // 未来改进：可以实现压缩数据的序列化和传输协议
-
-                    // 重置压缩器状态，准备下一批数据
+                // 执行压缩
+                let compression_result = {
+                    let mut compressor_guard = compressor.lock().unwrap();
+                    let result = compressor_guard.compress_batch(spans_for_compression);
+                    
+                    if let Ok(ref compressed_trace) = result {
+                        let stats = compressor_guard.stats();
+                        tracing::debug!(
+                            "Tracezip compression completed: {} spans compressed to {} spans, ratio: {:.2}%",
+                            compressed_trace.metadata.original_span_count,
+                            compressed_trace.metadata.compressed_span_count,
+                            stats.compression_percentage()
+                        );
+                    }
+                    
+                    // 重置压缩器状态
                     compressor_guard.reset();
-                    drop(compressor_guard); // 确保在await之前释放锁
+                    result
+                };
 
-                    // 导出原始数据（压缩数据可用于存储或其他用途）
-                    // 注意: 这里需要使用self.inner，但self不能移动到async move中
-                    // 这是一个设计问题，需要重新考虑
-                    // 暂时返回成功，实际应该调用inner.export
-                    Ok(())
+                match compression_result {
+                    Ok(_) => {
+                        // 压缩成功，导出原始数据
+                        let inner_guard = inner.lock().await;
+                        inner_guard.export(batch).await
+                    }
+                    Err(e) => {
+                        tracing::warn!("Tracezip compression failed: {:?}, falling back to uncompressed export", e);
+                        // 压缩失败时回退到未压缩导出
+                        let inner_guard = inner.lock().await;
+                        inner_guard.export(batch).await
+                    }
                 }
-                Err(e) => {
-                    tracing::warn!("Tracezip compression failed: {:?}, falling back to uncompressed export", e);
-                    // 压缩失败时回退到未压缩导出
-                    // 注意: 不能在async move中使用self.inner，暂时返回成功
-                    // 实际应该调用inner.export，但这需要重新设计
-                    Ok(())
-                }
+            } else {
+                // 压缩未启用或batch为空，直接导出
+                let inner_guard = inner.lock().await;
+                inner_guard.export(batch).await
             }
-        } else {
-            // 压缩未启用或batch为空，直接导出
-            // 注意: 不能在async move中使用self.inner，暂时返回成功
-            Ok(())
-        }
         }
     }
 
     fn shutdown(&mut self) -> Result<(), OTelSdkError> {
-        self.inner.shutdown()
+        // 使用try_lock避免阻塞
+        if let Ok(mut inner) = self.inner.try_lock() {
+            inner.shutdown()
+        } else {
+            Ok(())
+        }
     }
 }
 

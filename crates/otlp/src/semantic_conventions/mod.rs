@@ -54,6 +54,7 @@ pub mod gen_ai;
 pub mod http;
 pub mod k8s;
 pub mod messaging;
+pub mod rpc;
 
 // Re-export commonly used types
 pub use common::{AttributeKey, AttributeValue, SemanticConventionError};
@@ -69,6 +70,9 @@ pub use k8s::{K8sAttributes, K8sAttributesBuilder, K8sResourceType};
 pub use messaging::{
     DestinationKind, MessagingAttributes, MessagingAttributesBuilder, MessagingOperation,
     MessagingSystem,
+};
+pub use rpc::{
+    RpcAttributes, RpcAttributesBuilder, RpcMessageType, RpcSystem,
 };
 
 /// Version of the OpenTelemetry Semantic Conventions implemented

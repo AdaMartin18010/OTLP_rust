@@ -1,14 +1,14 @@
 # GitHub 配置项和规范指南
 
-**项目**: OTLP Rust  
-**版本**: 适配 Rust 1.94.0  
+**项目**: OTLP Rust
+**版本**: 适配 Rust 1.94.0
 **更新日期**: 2026-03-15
 
 ---
 
 ## 📁 GitHub 配置结构
 
-```
+```text
 .github/
 ├── workflows/                    # CI/CD 工作流
 │   ├── ci.yml                    # 基础 CI
@@ -47,7 +47,7 @@ CONTRIBUTING.md                   # 贡献指南
 
 **作用**: 定义代码审查责任人和自动分配规则
 
-```
+```text
 # 格式: 路径模式 @用户名或团队
 
 # 全局所有者
@@ -59,6 +59,7 @@ CONTRIBUTING.md                   # 贡献指南
 ```
 
 **更新指南**:
+
 - 添加新模块时，指定对应的维护者
 - 团队扩展时，更新代码所有者
 - 模块移交时，同步更新此文件
@@ -77,6 +78,7 @@ CONTRIBUTING.md                   # 贡献指南
 | 检查项 | fmt, check, clippy, test | 完整质量检查 |
 
 **关键配置**:
+
 ```yaml
 - uses: dtolnay/rust-toolchain@1.94  # Rust 版本
 - uses: Swatinem/rust-cache@v2       # 缓存加速
@@ -115,12 +117,14 @@ CONTRIBUTING.md                   # 贡献指南
 **文件**: `.github/ISSUE_TEMPLATE/bug_report.md`
 
 **必填项**:
+
 - Bug 描述
 - 复现步骤
 - 预期/实际行为
 - 环境信息（Rust 版本等）
 
 **更新指南**:
+
 - Rust 版本要求变化时更新模板
 - 新增诊断脚本时添加提示
 
@@ -129,6 +133,7 @@ CONTRIBUTING.md                   # 贡献指南
 **文件**: `.github/ISSUE_TEMPLATE/feature_request.md`
 
 **必填项**:
+
 - 功能描述
 - 用例场景
 - API 设计（如适用）
@@ -139,6 +144,7 @@ CONTRIBUTING.md                   # 贡献指南
 **文件**: `.github/PULL_REQUEST_TEMPLATE.md`
 
 **必填项**:
+
 - PR 类型
 - 变更描述
 - 测试覆盖
@@ -151,12 +157,14 @@ CONTRIBUTING.md                   # 贡献指南
 **文件**: `SECURITY.md`
 
 **内容**:
+
 - 支持的版本
 - 漏洞报告流程
 - 响应时间表
 - 安全最佳实践
 
 **更新指南**:
+
 - 新版本发布时更新支持版本表
 - 安全联系人变化时更新
 - 新增安全功能时补充
@@ -168,6 +176,7 @@ CONTRIBUTING.md                   # 贡献指南
 **文件**: `CONTRIBUTING.md`
 
 **关键章节**:
+
 - 开发环境设置
 - 代码规范
 - 测试要求
@@ -175,6 +184,7 @@ CONTRIBUTING.md                   # 贡献指南
 - Commit 规范
 
 **更新指南**:
+
 - Rust 版本要求变化时更新
 - 新工具引入时补充
 - 流程变化时同步
@@ -239,21 +249,25 @@ CONTRIBUTING.md                   # 贡献指南
 ### Workflow 编写
 
 1. **使用最新稳定 Action 版本**
+
    ```yaml
    - uses: actions/checkout@v4  # 不是 v3
    ```
 
 2. **启用缓存加速**
+
    ```yaml
    - uses: Swatinem/rust-cache@v2
    ```
 
 3. **固定 Rust 版本**
+
    ```yaml
    - uses: dtolnay/rust-toolchain@1.94
    ```
 
 4. **并行执行**
+
    ```yaml
    strategy:
      matrix:
@@ -261,6 +275,7 @@ CONTRIBUTING.md                   # 贡献指南
    ```
 
 5. **错误处理**
+
    ```yaml
    continue-on-error: true  # 非关键步骤
    ```
@@ -299,11 +314,13 @@ Actions > 选择 Workflow > Run workflow
 ### 调试失败的 CI
 
 1. 下载日志:
+
    ```bash
    gh run download <run-id>
    ```
 
 2. 本地复现:
+
    ```bash
    cargo check --workspace
    cargo test --workspace
@@ -347,5 +364,5 @@ gh run watch
 
 ---
 
-**维护**: @luyan  
+**维护**: @luyan
 **更新频率**: 每次 Rust 版本升级或 CI 工具变更

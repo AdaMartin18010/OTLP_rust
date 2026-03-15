@@ -625,7 +625,7 @@ pub fn new_enhanced_pipeline() -> wrappers::EnhancedPipeline {
     // use opentelemetry_otlp::new_pipeline;
     // let pipeline = new_pipeline().tracing();
     // let enhanced = wrappers::EnhancedPipeline::new(pipeline);
-    todo!("EnhancedPipeline requires TracingPipeline instance. Use new_enhanced_pipeline_v2() instead.")
+    panic!("EnhancedPipeline requires TracingPipeline instance. Use new_enhanced_pipeline_v2() instead.")
 }
 
 /// 创建增强的Pipeline (完整版，推荐)

@@ -146,7 +146,7 @@ impl EnhancedPipeline {
     ) -> Result<(), Box<dyn std::error::Error>> {
         // 注意: 由于opentelemetry_otlp的API限制，此方法主要用于概念展示
         // 推荐使用EnhancedPipelineV2来获得完整的扩展支持
-        todo!("EnhancedPipeline requires TracingPipeline instance. Use new_enhanced_pipeline_v2() instead.")
+        Err("EnhancedPipeline requires TracingPipeline instance. Use new_enhanced_pipeline_v2() instead.".into())
     }
 }
 

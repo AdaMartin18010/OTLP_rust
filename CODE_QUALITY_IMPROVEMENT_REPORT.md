@@ -1,7 +1,7 @@
 # 代码质量提升报告
 
-> **日期**: 2026-03-15  
-> **版本**: 0.2.0-alpha.1  
+> **日期**: 2026-03-15
+> **版本**: 0.2.0-alpha.1
 > **状态**: ✅ 代码质量提升完成
 
 ---
@@ -22,7 +22,8 @@
 ## 🏗️ Client 模块重构
 
 ### 重构前
-```
+
+```text
 crates/otlp/src/
 └── client.rs (1,010 行)
     ├── OtlpClient
@@ -35,7 +36,8 @@ crates/otlp/src/
 ```
 
 ### 重构后
-```
+
+```text
 crates/otlp/src/client/
 ├── mod.rs          (210 行) - 核心客户端逻辑
 ├── builder.rs      (315 行) - 构建器模式
@@ -106,11 +108,13 @@ rust_1_94_features::tests
 ### 1. 模块化设计
 
 **改进前:**
+
 - 单一文件 1,010 行
 - 职责混杂
 - 难以测试
 
 **改进后:**
+
 - 3 个专注模块
 - 平均 280 行/文件
 - 易于单独测试
@@ -146,6 +150,7 @@ let client = OtlpClientBuilder::new()
 ## 🧪 测试验证
 
 ### 构建状态
+
 ```bash
 ✅ cargo build --package otlp
    Finished dev [unoptimized + debuginfo]
@@ -158,7 +163,8 @@ let client = OtlpClientBuilder::new()
 ```
 
 ### 代码统计
-```
+
+```text
 新增代码:
 - client/mod.rs:        210 行 (+210)
 - client/builder.rs:    315 行 (+315)
@@ -239,5 +245,5 @@ let client = OtlpClientBuilder::new()
 
 ---
 
-**报告生成**: 2026-03-15  
+**报告生成**: 2026-03-15
 **下次评审**: 其他核心模块重构完成后

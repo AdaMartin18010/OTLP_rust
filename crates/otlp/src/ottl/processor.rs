@@ -220,6 +220,88 @@ impl OttlParser {
     fn parse_string(s: &str) -> Result<String> {
         Ok(s.trim().trim_matches('"').to_string())
     }
+    
+    /// Parse a WHERE condition
+    pub fn parse_condition(condition_str: &str) -> Result<OttlCondition> {
+        let trimmed = condition_str.trim();
+        
+        // 处理括号
+        if trimmed.starts_with('(') && trimmed.ends_with(')') {
+            return Self::parse_condition(&trimmed[1..trimmed.len()-1]);
+        }
+        
+        // 处理逻辑运算符
+        if let Some(pos) = Self::find_operator(trimmed, " and ") {
+            let left = &trimmed[..pos];
+            let right = &trimmed[pos + 5..];
+            return Ok(OttlCondition::And(
+                Box::new(Self::parse_condition(left)?),
+                Box::new(Self::parse_condition(right)?)
+            ));
+        }
+        
+        if let Some(pos) = Self::find_operator(trimmed, " or ") {
+            let left = &trimmed[..pos];
+            let right = &trimmed[pos + 4..];
+            return Ok(OttlCondition::Or(
+                Box::new(Self::parse_condition(left)?),
+                Box::new(Self::parse_condition(right)?)
+            ));
+        }
+        
+        if trimmed.starts_with("not ") {
+            let inner = &trimmed[4..];
+            return Ok(OttlCondition::Not(Box::new(Self::parse_condition(inner)?)));
+        }
+        
+        // 处理比较运算符
+        Self::parse_comparison(trimmed)
+    }
+    
+    fn find_operator(s: &str, op: &str) -> Option<usize> {
+        let mut depth = 0;
+        for (i, c) in s.char_indices() {
+            match c {
+                '(' => depth += 1,
+                ')' => depth -= 1,
+                _ if depth == 0 => {
+                    if s[i..].starts_with(op) {
+                        return Some(i);
+                    }
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+    
+    fn parse_comparison(s: &str) -> Result<OttlCondition> {
+        let ops = [
+            ("==", ComparisonOp::Eq),
+            ("!=", ComparisonOp::Ne),
+            ("<=", ComparisonOp::Le),
+            (">=", ComparisonOp::Ge),
+            ("<", ComparisonOp::Lt),
+            (">", ComparisonOp::Gt),
+        ];
+        
+        for (op_str, op) in &ops {
+            if let Some(pos) = s.find(op_str) {
+                let left = s[..pos].trim();
+                let right = &s[pos + op_str.len()..].trim();
+                
+                return Ok(OttlCondition::Comparison {
+                    left: Self::parse_value(left)?,
+                    op: *op,
+                    right: Self::parse_value(right)?,
+                });
+            }
+        }
+        
+        Err(crate::error::OtlpError::ValidationError(
+            format!("Invalid condition: {}", s)
+        ))
+    }
 }
 
 /// OTTL Execution Context
@@ -259,6 +341,14 @@ impl OttlProcessor {
     pub fn parse_and_add(&mut self, statement_str: &str) -> Result<()> {
         let statement = OttlParser::parse(statement_str)?;
         self.add_statement(statement, None);
+        Ok(())
+    }
+    
+    /// Parse and add a statement with WHERE condition
+    pub fn parse_and_add_with_condition(&mut self, statement_str: &str, condition_str: &str) -> Result<()> {
+        let statement = OttlParser::parse(statement_str)?;
+        let condition = OttlParser::parse_condition(condition_str)?;
+        self.add_statement(statement, Some(condition));
         Ok(())
     }
     
@@ -340,9 +430,44 @@ impl OttlProcessor {
         Ok(())
     }
     
-    fn evaluate_condition(&self, _condition: &OttlCondition, _ctx: &OttlContext) -> Result<bool> {
-        // Simplified implementation - always true
-        Ok(true)
+    fn evaluate_condition(&self, condition: &OttlCondition, ctx: &OttlContext) -> Result<bool> {
+        match condition {
+            OttlCondition::Comparison { left, op, right } => {
+                let left_val = self.value_to_string(left, ctx)?;
+                let right_val = self.value_to_string(right, ctx)?;
+                
+                // 尝试数值比较
+                if let (Ok(left_num), Ok(right_num)) = (left_val.parse::<f64>(), right_val.parse::<f64>()) {
+                    match op {
+                        ComparisonOp::Eq => Ok((left_num - right_num).abs() < f64::EPSILON),
+                        ComparisonOp::Ne => Ok((left_num - right_num).abs() >= f64::EPSILON),
+                        ComparisonOp::Lt => Ok(left_num < right_num),
+                        ComparisonOp::Gt => Ok(left_num > right_num),
+                        ComparisonOp::Le => Ok(left_num <= right_num),
+                        ComparisonOp::Ge => Ok(left_num >= right_num),
+                    }
+                } else {
+                    // 字符串比较
+                    match op {
+                        ComparisonOp::Eq => Ok(left_val == right_val),
+                        ComparisonOp::Ne => Ok(left_val != right_val),
+                        ComparisonOp::Lt => Ok(left_val < right_val),
+                        ComparisonOp::Gt => Ok(left_val > right_val),
+                        ComparisonOp::Le => Ok(left_val <= right_val),
+                        ComparisonOp::Ge => Ok(left_val >= right_val),
+                    }
+                }
+            }
+            OttlCondition::And(left, right) => {
+                Ok(self.evaluate_condition(left, ctx)? && self.evaluate_condition(right, ctx)?)
+            }
+            OttlCondition::Or(left, right) => {
+                Ok(self.evaluate_condition(left, ctx)? || self.evaluate_condition(right, ctx)?)
+            }
+            OttlCondition::Not(cond) => {
+                Ok(!self.evaluate_condition(cond, ctx)?)
+            }
+        }
     }
     
     fn value_to_string(&self, value: &OttlValue, _ctx: &OttlContext) -> Result<String> {
@@ -417,5 +542,226 @@ mod tests {
         processor.execute(&mut ctx).unwrap();
         
         assert_eq!(span_attrs.get("service"), Some(&"test".to_string()));
+    }
+    
+    #[test]
+    fn test_parse_condition_comparison() {
+        let condition = OttlParser::parse_condition("span.duration > 1000").unwrap();
+        
+        match condition {
+            OttlCondition::Comparison { left, op, right } => {
+                assert!(matches!(left, OttlValue::Path(_)));
+                assert_eq!(op, ComparisonOp::Gt);
+                assert!(matches!(right, OttlValue::Int(1000)));
+            }
+            _ => panic!("Expected Comparison condition"),
+        }
+    }
+    
+    #[test]
+    fn test_parse_condition_logical_and() {
+        let condition = OttlParser::parse_condition("span.duration > 1000 and span.status == \"error\"").unwrap();
+        
+        match condition {
+            OttlCondition::And(left, right) => {
+                assert!(matches!(left.as_ref(), OttlCondition::Comparison { .. }));
+                assert!(matches!(right.as_ref(), OttlCondition::Comparison { .. }));
+            }
+            _ => panic!("Expected And condition"),
+        }
+    }
+    
+    #[test]
+    fn test_parse_condition_logical_or() {
+        let condition = OttlParser::parse_condition("span.status == \"error\" or span.status == \"unset\"").unwrap();
+        
+        match condition {
+            OttlCondition::Or(left, right) => {
+                assert!(matches!(left.as_ref(), OttlCondition::Comparison { .. }));
+                assert!(matches!(right.as_ref(), OttlCondition::Comparison { .. }));
+            }
+            _ => panic!("Expected Or condition"),
+        }
+    }
+    
+    #[test]
+    fn test_parse_condition_not() {
+        let condition = OttlParser::parse_condition("not span.status == \"ok\"").unwrap();
+        
+        match condition {
+            OttlCondition::Not(inner) => {
+                assert!(matches!(inner.as_ref(), OttlCondition::Comparison { .. }));
+            }
+            _ => panic!("Expected Not condition"),
+        }
+    }
+    
+    #[test]
+    fn test_evaluate_condition_numeric() {
+        let processor = OttlProcessor::new();
+        let mut resource_attrs = HashMap::new();
+        let mut span_attrs = HashMap::new();
+        span_attrs.insert("duration".to_string(), "1500".to_string());
+        
+        let ctx = OttlContext {
+            resource_attributes: &mut resource_attrs,
+            span_attributes: Some(&mut span_attrs),
+            metric_attributes: None,
+            log_attributes: None,
+        };
+        
+        // Test numeric comparison
+        let condition = OttlCondition::Comparison {
+            left: OttlValue::Path(OttlPath::Identifier("duration".to_string())),
+            op: ComparisonOp::Gt,
+            right: OttlValue::Int(1000),
+        };
+        
+        let result = processor.evaluate_condition(&condition, &ctx).unwrap();
+        assert!(result);
+    }
+    
+    #[test]
+    fn test_evaluate_condition_string() {
+        let processor = OttlProcessor::new();
+        let mut resource_attrs = HashMap::new();
+        resource_attrs.insert("service.name".to_string(), "test-service".to_string());
+        
+        let ctx = OttlContext {
+            resource_attributes: &mut resource_attrs,
+            span_attributes: None,
+            metric_attributes: None,
+            log_attributes: None,
+        };
+        
+        let condition = OttlCondition::Comparison {
+            left: OttlValue::Path(OttlPath::Identifier("service.name".to_string())),
+            op: ComparisonOp::Eq,
+            right: OttlValue::String("test-service".to_string()),
+        };
+        
+        let result = processor.evaluate_condition(&condition, &ctx).unwrap();
+        assert!(result);
+    }
+    
+    #[test]
+    fn test_evaluate_condition_and() {
+        let processor = OttlProcessor::new();
+        let mut resource_attrs = HashMap::new();
+        let mut span_attrs = HashMap::new();
+        span_attrs.insert("duration".to_string(), "1500".to_string());
+        span_attrs.insert("status".to_string(), "error".to_string());
+        
+        let ctx = OttlContext {
+            resource_attributes: &mut resource_attrs,
+            span_attributes: Some(&mut span_attrs),
+            metric_attributes: None,
+            log_attributes: None,
+        };
+        
+        let condition = OttlCondition::And(
+            Box::new(OttlCondition::Comparison {
+                left: OttlValue::Path(OttlPath::Identifier("duration".to_string())),
+                op: ComparisonOp::Gt,
+                right: OttlValue::Int(1000),
+            }),
+            Box::new(OttlCondition::Comparison {
+                left: OttlValue::Path(OttlPath::Identifier("status".to_string())),
+                op: ComparisonOp::Eq,
+                right: OttlValue::String("error".to_string()),
+            }),
+        );
+        
+        let result = processor.evaluate_condition(&condition, &ctx).unwrap();
+        assert!(result);
+    }
+    
+    #[test]
+    fn test_processor_with_condition() {
+        let mut processor = OttlProcessor::new();
+        
+        // Add statement with condition
+        let statement = OttlParser::parse("set(attributes[\"high_latency\"], \"true\")").unwrap();
+        let condition = OttlParser::parse_condition("span.duration > 1000").unwrap();
+        processor.add_statement(statement, Some(condition));
+        
+        let mut resource_attrs = HashMap::new();
+        let mut span_attrs = HashMap::new();
+        span_attrs.insert("duration".to_string(), "1500".to_string());
+        
+        let mut ctx = OttlContext {
+            resource_attributes: &mut resource_attrs,
+            span_attributes: Some(&mut span_attrs),
+            metric_attributes: None,
+            log_attributes: None,
+        };
+        
+        processor.execute(&mut ctx).unwrap();
+        
+        // Should have set high_latency because duration > 1000
+        assert_eq!(span_attrs.get("high_latency"), Some(&"true".to_string()));
+    }
+    
+    #[test]
+    fn test_processor_with_false_condition() {
+        let mut processor = OttlProcessor::new();
+        
+        // Add statement with condition
+        let statement = OttlParser::parse("set(attributes[\"high_latency\"], \"true\")").unwrap();
+        let condition = OttlParser::parse_condition("span.duration > 1000").unwrap();
+        processor.add_statement(statement, Some(condition));
+        
+        let mut resource_attrs = HashMap::new();
+        let mut span_attrs = HashMap::new();
+        span_attrs.insert("duration".to_string(), "500".to_string());
+        
+        let mut ctx = OttlContext {
+            resource_attributes: &mut resource_attrs,
+            span_attributes: Some(&mut span_attrs),
+            metric_attributes: None,
+            log_attributes: None,
+        };
+        
+        processor.execute(&mut ctx).unwrap();
+        
+        // Should NOT have set high_latency because duration <= 1000
+        assert_eq!(span_attrs.get("high_latency"), None);
+    }
+    
+    #[test]
+    fn test_parse_value_types() {
+        // Test string
+        let val = OttlParser::parse_value("\"hello\"").unwrap();
+        assert!(matches!(val, OttlValue::String(s) if s == "hello"));
+        
+        // Test integer
+        let val = OttlParser::parse_value("42").unwrap();
+        assert!(matches!(val, OttlValue::Int(42)));
+        
+        // Test float
+        let val = OttlParser::parse_value("3.14").unwrap();
+        assert!(matches!(val, OttlValue::Float(f) if (f - 3.14).abs() < 0.001));
+        
+        // Test bool
+        let val = OttlParser::parse_value("true").unwrap();
+        assert!(matches!(val, OttlValue::Bool(true)));
+        
+        let val = OttlParser::parse_value("false").unwrap();
+        assert!(matches!(val, OttlValue::Bool(false)));
+    }
+    
+    #[test]
+    fn test_parse_path_variants() {
+        // Test simple identifier
+        let path = OttlParser::parse_path("span").unwrap();
+        assert!(matches!(path, OttlPath::Identifier(s) if s == "span"));
+        
+        // Test map access
+        let path = OttlParser::parse_path("attributes[\"key\"]").unwrap();
+        assert!(matches!(path, OttlPath::MapAccess { key, .. } if key == "key"));
+        
+        // Test field access
+        let path = OttlParser::parse_path("span.name").unwrap();
+        assert!(matches!(path, OttlPath::FieldAccess { field, .. } if field == "name"));
     }
 }

@@ -1,7 +1,7 @@
 # OTLP Rust 项目 - 持续改进路线图
 
-> **版本**: 1.0  
-> **日期**: 2026-03-15  
+> **版本**: 1.0
+> **日期**: 2026-03-15
 > **状态**: 基于批判性评价报告的改进方案
 
 ---
@@ -28,6 +28,7 @@
 #### Week 1: 文件清理
 
 **Day 1-2: 文档清理**
+
 ```bash
 # 创建归档目录
 mkdir -p ARCHIVE/reports
@@ -41,6 +42,7 @@ mkdir -p ARCHIVE/reports
 ```
 
 **清理标准**:
+
 - ✅ 保留: CHANGELOG.md, CONTRIBUTING.md, README.md, 最新评估报告
 - ✅ 归档: 历史版本报告、过时的计划文档
 - ❌ 删除: 重复、空内容、明显过时的文件
@@ -98,6 +100,7 @@ cargo clippy --all-features -- -D warnings
 ```
 
 **Phase 1 成功标准**:
+
 - [ ] 根目录 MD 文件 < 50 个
 - [ ] `cargo clippy` 0 errors
 - [ ] 重复代码文件减少 50%
@@ -111,6 +114,7 @@ cargo clippy --all-features -- -D warnings
 #### Week 3-4: Client 模块重构
 
 **当前状态**:
+
 ```
 crates/otlp/src/
 ├── client.rs              (1010 lines)
@@ -120,6 +124,7 @@ crates/otlp/src/
 ```
 
 **目标架构**:
+
 ```
 crates/otlp/src/
 └── client/
@@ -133,6 +138,7 @@ crates/otlp/src/
 **实施步骤**:
 
 1. **定义统一接口** (Day 1-2)
+
 ```rust
 // client/mod.rs
 pub struct OtlpClient {
@@ -146,12 +152,12 @@ impl OtlpClient {
 }
 ```
 
-2. **迁移功能** (Day 3-6)
+1. **迁移功能** (Day 3-6)
    - 从 4 个文件中提取核心逻辑
    - 统一错误处理
    - 统一配置管理
 
-3. **测试迁移** (Day 7-8)
+2. **测试迁移** (Day 7-8)
    - 确保现有测试通过
    - 添加集成测试
 
@@ -160,6 +166,7 @@ impl OtlpClient {
 **当前状态**: 8 个重复/重叠的文件
 
 **目标架构**:
+
 ```
 crates/otlp/src/performance/
 ├── mod.rs                 (公开接口)
@@ -169,6 +176,7 @@ crates/otlp/src/performance/
 ```
 
 **关键决策**:
+
 - 删除仅用于演示的代码
 - 保留实际使用的优化
 - 提取通用优化模式
@@ -192,6 +200,7 @@ crates/otlp/src/performance/
 | utils | 50% | 90% | P2 |
 
 **测试工具链**:
+
 ```toml
 # Cargo.toml [dev-dependencies]
 tokio-test = "0.4"
@@ -202,6 +211,7 @@ insta = "1.40"        # 快照测试
 ```
 
 **Day 1-3: 核心模块测试**
+
 ```rust
 // client/tests.rs
 #[tokio::test]
@@ -217,6 +227,7 @@ async fn test_client_retry_on_failure() {
 ```
 
 **Day 4-6: 集成测试**
+
 ```rust
 // tests/integration_test.rs
 #[tokio::test]
@@ -226,6 +237,7 @@ async fn test_end_to_end_export() {
 ```
 
 **Day 7-8: 基准测试**
+
 ```rust
 // benches/export_bench.rs
 fn benchmark_batch_export(c: &mut Criterion) {
@@ -236,7 +248,8 @@ fn benchmark_batch_export(c: &mut Criterion) {
 #### Week 9-10: 文档重构
 
 **目标架构**:
-```
+
+```text
 docs/
 ├── README.md              # 文档入口
 ├── quickstart.md          # 快速开始
@@ -259,6 +272,7 @@ docs/
 ```
 
 **实施**:
+
 1. 将根目录文档整合到 docs/
 2. 删除重复的示例说明
 3. 建立文档版本控制
@@ -266,6 +280,7 @@ docs/
 #### Week 11-12: CI/CD 优化
 
 **增强 CI 流程**:
+
 ```yaml
 # .github/workflows/ci.yml
 name: CI
@@ -279,27 +294,27 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         rust: [stable, 1.94.0]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Rust
         uses: dtolnay/rust-action@stable
         with:
           toolchain: ${{ matrix.rust }}
-      
+
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
-      
+
       - name: Check formatting
         run: cargo fmt --check
-      
+
       - name: Run clippy
         run: cargo clippy --all-features -- -D warnings
-      
+
       - name: Run tests
         run: cargo test --all-features
-      
+
       - name: Generate coverage
         uses: taiki-e/cargo-llvm-cov@v2
         with:
@@ -362,7 +377,7 @@ jobs:
 
 ### 健康度仪表盘
 
-```
+```text
 每周度量的关键指标:
 
 代码质量:
@@ -385,18 +400,21 @@ jobs:
 ### 检查清单
 
 **Phase 1 完成检查**:
+
 - [ ] 根目录只剩核心文档 (<20 个)
 - [ ] 所有 crate 统一 rust-version
 - [ ] `cargo clippy` 无错误
 - [ ] CI 通过
 
 **Phase 2 完成检查**:
+
 - [ ] client 模块重构完成
 - [ ] performance 模块合并
 - [ ] 删除 error_old.rs
 - [ ] 代码重复度 <10%
 
 **Phase 3 完成检查**:
+
 - [ ] 核心模块测试覆盖 >80%
 - [ ] 集成测试覆盖主要流程
 - [ ] 文档结构化完成
@@ -465,18 +483,18 @@ cargo install hyperfine       # 基准测试
 
 ## 🎯 总结
 
-### 如果资源有限，只做这 3 件事:
+### 如果资源有限，只做这 3 件事
 
 1. **清理冗余文件** (1 周) - 立即改善可维护性
 2. **合并 client 模块** (2 周) - 解决最严重的代码重复
 3. **核心模块测试** (2 周) - 建立质量信心
 
-**预计投入**: 5 周  
+**预计投入**: 5 周
 **预期收益**: 代码质量 5/10 → 7/10，维护成本降低 40%
 
 ---
 
 **下次路线图评审**: Phase 2 完成后 (6 周后)
 
-**文档版本**: v1.0  
+**文档版本**: v1.0
 **最后更新**: 2026-03-15
