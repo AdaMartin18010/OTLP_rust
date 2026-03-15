@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✅ 客户端初始化完成");
 
     // 发送追踪数据
-    let _trace = client
+    client
         .send_trace("user-operation")
         .await?
         .with_attribute("user_id", "12345")
@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📊 追踪数据已发送");
 
     // 发送指标数据
-    let _metric = client
+    client
         .send_metric("request_count", 1.0)
         .await?
         .with_label("endpoint", "/api/users")
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📈 指标数据已发送");
 
     // 发送日志数据
-    let _log = client
+    client
         .send_log("用户登录成功")
         .await?
         .with_attribute("user_id", "12345")

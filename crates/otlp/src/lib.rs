@@ -369,7 +369,7 @@ pub mod optimization;
 pub mod rust_1_92_optimizations; // Rust 1.92 特性优化实现
 
 // Rust 1.94 特性展示与应用
-pub mod rust_1_94_features;      // Rust 1.94 完整特性展示
+pub mod rust_1_94_comprehensive; // Rust 1.94 完整特性与开源实践
 
 // 基准测试
 pub mod benchmarks;

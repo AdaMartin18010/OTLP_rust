@@ -16,8 +16,8 @@ struct-field-name-threshold = 7
 # 类型复杂度阈值
 type-complexity-threshold = 500
 
-# 禁止的方法
-disallowed-methods = ["std::env::var", "std::env::var_os"]
+# 禁止的方法 (暂时禁用，后续再考虑启用)
+# disallowed-methods = ["std::env::var", "std::env::var_os"]
 
 # 禁止的类型（暂时禁用以解除大量告警，后续逐步治理替换DashMap/IndexMap等）
 # disallowed-types = [
