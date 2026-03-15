@@ -9,7 +9,7 @@
 //! - 容错机制（断路器、重试、降级）
 //! - 运行时监控和自愈
 //! - 混沌工程测试工具
-//! - Rust 1.92+ 新特性支持
+//! - Rust 1.94+ 新特性支持
 //!
 //! ## 核心特性
 //!
@@ -18,13 +18,15 @@
 //! - **运行时监控**：健康检查、性能监控、异常检测
 //! - **自动恢复**：内存泄漏检测、连接池重建、死锁恢复
 //! - **混沌工程**：故障注入、弹性测试、恢复验证
-//! - **Rust 1.92+ 特性**：支持异步闭包、泛型关联类型等最新语言特性
+//! - **Rust 1.94+ 特性**：支持 array_windows、LazyLock、数学常数等最新语言特性
 //!
-//! ## Rust 1.92 特性应用
+//! ## Rust 1.94 特性应用
 //!
-//! - **异步闭包**: 使用 `async || {}` 语法简化异步可靠性操作
-//! - **元组收集**: 使用 `collect()` 直接收集可靠性指标到元组
-//! - **改进的并发**: 利用 Rust 1.92 的并发优化提升性能
+//! - **array_windows**: 使用 `slice.array_windows()` 检测错误序列中的模式
+//! - **element_offset**: 使用 `offset_of!` 进行内存高效的错误追踪
+//! - **LazyLock/LazyCell**: 使用延迟初始化管理全局监控状态
+//! - **数学常数**: 使用 `GOLDEN_RATIO`、`EULER_GAMMA` 实现自适应重试策略
+//! - **const mul_add**: 使用编译时优化的数学计算
 //!
 //! ## 快速开始
 //!
@@ -107,6 +109,9 @@ pub mod runtime_environments;
 // Rust 1.92+ 新特性支持
 pub mod rust_192_features;
 
+// Rust 1.94+ 新特性支持
+pub mod rust_1_94_features;
+
 // 分布式系统模块
 pub mod distributed_systems;
 
@@ -158,6 +163,12 @@ pub mod prelude {
     pub use crate::rust_192_features::{
         AdvancedAsyncCombinator, AsyncClosureExample, GenericAssociatedTypeExample,
         OperationMetadata, OperationResult, ReliabilityService, Rust192FeatureDemo,
+    };
+    pub use crate::rust_1_94_features::{
+        AdaptiveRetryConfig, ConstMathCalculations, ErrorAnalysisResult, ErrorPattern,
+        ErrorPatternTracker, ErrorSequenceAnalyzer, ErrorType, EulerConstants,
+        EulerGammaHealthScoring, GoldenRatioBackoff, GoldenRatioConstants, MathConstantsDemo,
+        MemoryLayoutInfo, ReliabilityMonitor, Rust194FeatureDemo,
     };
     pub use crate::utils::{DurationExt, ResultExt as UtilsResultExt};
 

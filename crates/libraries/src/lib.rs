@@ -8,6 +8,14 @@ pub mod prelude {
         OptimizedConnectionPool, OptimizedMiddleware, MiddlewareType, MiddlewareConfig,
         OptimizedErrorHandler, OptimizedBuffer, PerformanceMonitor
     };
+    // Rust 1.94 特性模块
+    pub use crate::rust_1_94_features::{
+        ConnectionManager, ConnectionError, ConnectionErrorStats, FailurePattern,
+        BufferTracker, RedisBufferTracker, RetryCalculator, SmartConnectionPool,
+        optimal_pool_size, detect_connection_failures,
+        REDIS_CONNECTION_MANAGER, POSTGRES_CONNECTION_MANAGER, NATS_CONNECTION_MANAGER,
+        EULER_GAMMA, GOLDEN_RATIO,
+    };
     // Rust 1.92 特性优化模块
     pub use crate::benchmarks::{
         BenchmarkResult, OptimizedBenchmarker, MemoryMonitor, MemoryStats,
@@ -36,6 +44,7 @@ pub mod prelude {
 pub mod config;
 pub mod enhanced_config;
 pub mod rust192_optimizations;
+pub mod rust_1_94_features;
 pub mod benchmarks;
 pub mod advanced_benchmarks;
 pub mod glommio_runtime;

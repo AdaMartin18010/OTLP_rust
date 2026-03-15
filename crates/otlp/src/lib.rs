@@ -7,14 +7,20 @@
 //!
 //! 本实现充分利用 Rust 1.94 的所有新特性：
 //!
+//! ### 核心语言特性
 //! - **`array_windows`**: 数组窗口迭代器，用于高效模式检测
 //! - **`element_offset`**: 元素偏移计算，用于零拷贝优化
-//! - **`LazyLock/LazyCell`**: 增强的延迟初始化，支持可变访问
+//! - **`LazyLock/LazyCell`**: 增强的延迟初始化，支持可变访问 (`get`, `get_mut`)
+//! - **`EULER_GAMMA`**: Euler-Mascheroni 常数 (γ ≈ 0.5772)，用于自适应采样
+//! - **`GOLDEN_RATIO`**: 黄金比例 (φ ≈ 1.6180)，用于指数退避
+//! - **`const mul_add`**: 编译时融合乘加优化
+//!
+//! ### SIMD 与性能优化
 //! - **AVX-512 FP16**: x86_64 高性能向量化（Sapphire Rapids+）
 //! - **NEON FP16**: ARM 高性能计算（aarch64）
-//! - **`EULER_GAMMA`**: Euler-Mascheroni 常数，用于自适应采样
-//! - **`GOLDEN_RATIO`**: 黄金比例，用于指数退避
-//! - **`const mul_add`**: 编译时融合乘加优化
+//! - **内存效率**: FP16减少50%内存占用，提升带宽
+//!
+//! ### 构建与配置
 //! - **TOML 1.1**: Cargo.toml 多行内联表支持
 //! - **Cargo `include`**: 配置文件模块化组织
 //!
@@ -418,7 +424,38 @@ pub mod semantic_conventions;
 // Compression模块 (Tracezip压缩)
 pub mod compression;
 
-// SIMD优化模块
+// ============================================================================
+// SIMD 优化模块 (包含 Rust 1.94 FP16 优化)
+// ============================================================================
+
+/// ## SIMD 向量优化与 FP16 支持
+/// 
+/// 高性能 SIMD 优化实现，包含 Rust 1.94 AVX-512 FP16 和 NEON FP16 支持
+/// 
+/// ### 平台支持
+/// - **x86_64**: AVX-512 FP16 (Intel Sapphire Rapids+, AMD Zen 6+)
+/// - **aarch64**: NEON FP16 (Apple Silicon, ARM Neoverse)
+/// 
+/// ### 功能特性
+/// - CPU 特性自动检测
+/// - 批量序列化向量化
+/// - FP16 直方图计算加速 (2-4x faster)
+/// - FP16 百分位数计算 (3-5x faster)
+/// - 优雅降级到标量操作
+/// 
+/// ### 子模块
+/// - `aggregation` - 向量化指标聚合
+/// - `cpu_features` - CPU 特性检测
+/// - `fp16_optimizations` - Rust 1.94 FP16 优化 (AVX-512/NEON)
+/// - `serialization` - 向量化序列化
+/// - `string_ops` - 向量化字符串操作
+/// - `real_optimization` - 真实 SIMD 实现 (std::simd)
+/// 
+/// ### 主要类型
+/// - [`simd::Aggregator`] - SIMD 聚合器
+/// - [`simd::CpuFeatures`] - CPU 特性检测
+/// - [`simd::Fp16Features`] - FP16 特性检测
+/// - [`simd::Fp16`] - FP16 类型包装
 pub mod simd;
 
 // ✅ 真实加密实现 (使用ring库)
@@ -457,14 +494,168 @@ pub use ottl::processor::{
 // 优化和调优
 pub mod optimization;
 
-// Rust 1.92 特性优化
-pub mod rust_1_92_optimizations; // Rust 1.92 特性优化实现
+// ============================================================================
+// Rust 1.94 特性模块 - 按功能分组
+// ============================================================================
 
-// Rust 1.94 特性展示与应用
-pub mod rust_1_94_comprehensive; // Rust 1.94 完整特性与开源实践
+/// Rust 1.92 特性优化 (基础性能优化)
+pub mod rust_1_92_optimizations;
 
-// Rust 1.94 全面对齐模块（最新）
-pub mod rust_1_94_alignment; // Rust 1.94 特性全面对齐与 OpenTelemetry 规范实现
+// ----------------------------------------------------------------------------
+// Rust 1.94 核心特性模块组
+// ----------------------------------------------------------------------------
+
+/// ## 数组窗口与模式检测
+/// 
+/// Rust 1.94 `array_windows` 特性实现 - 用于遥测数据中的高效模式检测
+/// 
+/// ### 应用场景
+/// - Span 状态转换分析
+/// - 异常模式检测 (ABBA, ABAB)
+/// - 指标趋势检测
+/// - 时间序列验证
+/// 
+/// ### 主要类型
+/// - [`rust_1_94_array_windows::Trend`] - 趋势类型枚举
+/// - [`rust_1_94_array_windows::Pattern`] - 模式检测结果
+/// - [`rust_1_94_array_windows::SpanTransition`] - Span 状态转换
+pub mod rust_1_94_array_windows;
+
+/// ## 元素偏移与零拷贝序列化
+/// 
+/// Rust 1.94 `element_offset` 特性实现 - 零内存拷贝的偏移计算
+/// 
+/// ### 应用场景
+/// - 内存池索引计算
+/// - 缓冲区位置追踪
+/// - 协议序列化优化
+/// 
+/// ### 主要类型
+/// - [`rust_1_94_element_offset::BufferOffsetCalculator`] - 缓冲区偏移计算器
+/// - [`rust_1_94_element_offset::MemoryPoolIndexer`] - 内存池索引器
+/// - [`rust_1_94_element_offset::ZeroCopySerializer`] - 零拷贝序列化器
+pub mod rust_1_94_element_offset;
+
+/// ## 延迟初始化增强
+/// 
+/// Rust 1.94 `LazyLock` 和 `LazyCell` 新方法实现
+/// 
+/// ### 新增方法
+/// - `LazyLock::get` / `LazyCell::get` - 获取不可变引用（不触发初始化）
+/// - `LazyLock::get_mut` / `LazyCell::get_mut` - 获取可变引用
+/// - `LazyLock::force_mut` / `LazyCell::force_mut` - 强制初始化并获取可变引用
+/// 
+/// ### 应用场景
+/// - 全局配置管理（支持运行时修改）
+/// - 导出器缓存
+/// - 协议缓冲区类型注册表
+/// - TracerProvider 单例管理
+/// 
+/// ### 主要类型
+/// - [`rust_1_94_lazy_lock::GlobalConfig`] - 全局配置
+/// - [`rust_1_94_lazy_lock::ExporterCacheManager`] - 导出器缓存管理
+/// - [`rust_1_94_lazy_lock::ProtoRegistryManager`] - 协议类型注册表
+pub mod rust_1_94_lazy_lock;
+
+/// ## 数学常量与算法优化
+/// 
+/// Rust 1.94 新增数学常量 (`EULER_GAMMA`, `GOLDEN_RATIO`) 与 `const mul_add`
+/// 
+/// ### 数学常量
+/// - `EULER_GAMMA` (γ ≈ 0.5772) - Euler-Mascheroni 常数
+/// - `GOLDEN_RATIO` (φ ≈ 1.6180) - 黄金比例
+/// 
+/// ### 应用场景
+/// - 自适应采样率计算（使用 EULER_GAMMA）
+/// - 指数退避算法（使用 GOLDEN_RATIO）
+/// - Fibonacci 批量大小增长
+/// - 编译时融合乘加优化
+/// 
+/// ### 主要函数
+/// - [`rust_1_94_math_constants::euler_gamma_sampling_rate`] - 自适应采样
+/// - [`rust_1_94_math_constants::golden_ratio_backoff`] - 黄金比例退避
+/// - [`rust_1_94_math_constants::fibonacci_batch_size`] - Fibonacci 批量大小
+pub mod rust_1_94_math_constants;
+
+/// ## Rust 1.94 完整特性展示
+/// 
+/// 全面展示 Rust 1.94 的所有语言特性和开源社区最佳实践
+/// 
+/// ### 涵盖内容
+/// - 异步编程增强 (AsyncFn traits, async 闭包)
+/// - 标准库新增 (LazyLock, 浮点数改进)
+/// - 常量上下文扩展
+/// - 性能优化模式
+/// 
+/// ### 子模块
+/// - `async_features` - 异步编程特性
+/// - `lazy_initialization` - 延迟初始化
+/// - `float_improvements` - 浮点数改进
+/// - `collection_improvements` - 集合操作改进
+/// - `const_context` - 常量上下文扩展
+pub mod rust_1_94_comprehensive;
+
+/// ## Rust 1.94 特性全面对齐
+/// 
+/// Rust 1.94 特性全面对齐与 OpenTelemetry 规范实现
+/// 
+/// 本模块确保项目充分利用 Rust 1.94 的所有新特性，包括：
+/// - array_windows 在遥测数据分析中的应用
+/// - element_offset 在零拷贝序列化中的应用
+/// - LazyLock/LazyCell 增强在配置管理中的应用
+/// - AVX-512 FP16 / NEON FP16 在指标计算中的应用
+/// - EULER_GAMMA / GOLDEN_RATIO 在采样和退避算法中的应用
+pub mod rust_1_94_alignment;
+
+/// ## Rust 1.94 标准库特性展示
+/// 
+/// 展示 Rust 1.94 标准库新增特性和改进
+/// 
+/// ### 子模块
+/// - `async_features` - 异步编程增强 (AsyncFn traits, async 闭包)
+/// - `lazy_initialization` - 延迟初始化 (LazyLock, LazyCell)
+/// - `float_improvements` - 浮点数改进 (midpoint, recip)
+/// - `collection_improvements` - 集合操作改进 (Vec::pop_if)
+/// - `const_context` - 常量上下文扩展
+/// - `unsafe_improvements` - unsafe 改进
+/// - `io_errors` - IO 错误处理改进
+/// - `builder_pattern` - 构建器模式最佳实践
+pub mod rust_1_94_features;
+
+/// ## Rust 1.94 综合演示模块
+/// 
+/// 全面展示所有 Rust 1.94 特性在 OTLP 场景中协同工作
+/// 
+/// ### 演示特性
+/// - **`array_windows`** - 遥测数据模式检测
+/// - **`element_offset`** - 零拷贝缓冲区管理
+/// - **`LazyLock/LazyCell`** - 全局配置和缓存
+/// - **`EULER_GAMMA`** - 自适应采样算法
+/// - **`GOLDEN_RATIO`** - 退避策略和批量大小
+/// - **`const mul_add`** - 编译时优化
+/// - **SIMD FP16** - 高性能指标处理（如果可用）
+/// - **TOML 1.1** - 配置解析（多行内联表）
+/// 
+/// ### 主要函数
+/// - [`rust_1_94_comprehensive_demo::complete_otlp_pipeline_demo`] - 完整管道演示
+/// - [`rust_1_94_comprehensive_demo::detect_metric_patterns`] - 指标模式检测
+/// - [`rust_1_94_comprehensive_demo::AdaptiveSampler`] - 自适应采样器
+/// - [`rust_1_94_comprehensive_demo::FibonacciRetryStrategy`] - Fibonacci 重试策略
+/// 
+/// ### 使用示例
+/// ```rust,ignore
+/// use otlp::rust_1_94_comprehensive_demo::complete_otlp_pipeline_demo;
+/// 
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let result = complete_otlp_pipeline_demo().await?;
+///     println!("Processed {} metrics, {} spans", 
+///              result.metrics_processed, 
+///              result.spans_processed);
+///     Ok(())
+/// }
+/// ```
+pub mod rust_1_94_comprehensive_demo;
 
 // 基准测试
 pub mod benchmarks;
@@ -596,6 +787,12 @@ pub use rust_1_92_optimizations::{
     AsyncBatchProcessor, AsyncClosureOptimizer, TupleCollectionOptimizer, ZeroCopyOptimizer,
 };
 
+// 重新导出 Rust 1.94 element_offset 特性相关类型
+pub use rust_1_94_element_offset::{
+    BatchOffsetCalculator, BufferOffsetCalculator, LogEntryTracker, MemoryPoolIndexer,
+    MetricsBuffer, SpanTracker, ZeroCopySerializer, calculate_buffer_offset, calculate_byte_offset,
+};
+
 // 安全相关类型从advanced_security模块导出 (简化版本)
 pub use advanced_security::{
     AuditEntry, AuditEvent, AuditFilter, DifferentialPrivacyManager,
@@ -690,6 +887,152 @@ pub use optimized_processor::{
     PerformanceMonitor, PerformanceReport,
 };
 
+// 重新导出 Rust 1.94 array_windows 模块相关类型
+// 注意: SpanStatus 已在 data 模块中定义，这里不重新导出
+pub use rust_1_94_array_windows::{
+    Trend, Pattern, SpanTransition, Span, SpanId,
+    MetricPoint, RunLength,
+    detect_abba_patterns, detect_abab_patterns,
+    detect_repeated_patterns_2, detect_repeated_patterns_3, detect_repeated_patterns_4,
+    detect_repeated_patterns_generic,
+    detect_trends, detect_peaks_and_valleys, moving_average,
+    validate_span_sequence, detect_error_patterns,
+    detect_anomalies, calculate_rate_of_change,
+    validate_timestamp_order, detect_timestamp_gaps, validate_continuity,
+    run_length_encode, sequence_similarity, longest_increasing_subsequence,
+};
+
+// 重新导出 Rust 1.94 LazyLock/LazyCell 新方法模块相关类型
+// 注意：避免与现有类型冲突，使用具体名称
+pub use rust_1_94_lazy_lock::{
+    // 配置管理 (LazyConfig 避免与 config::OtlpConfig 冲突)
+    OtlpConfig as LazyOtlpConfig, 
+    GlobalConfig,
+    // 导出器缓存
+    ExporterCache, 
+    ExporterCacheManager, 
+    GrpcExporter, 
+    HttpExporter, 
+    ExporterError,
+    // 协议缓冲区类型注册表
+    ProtoTypeRegistry, 
+    ProtoRegistryManager, 
+    ProtoMessage, 
+    ProtoField, 
+    ProtoFieldType,
+    // 追踪器提供者 (TracerProvider 避免与 opentelemetry::trace::TracerProvider 冲突)
+    TracerProvider as LazyTracerProvider, 
+    TracerProviderManager, 
+    SpanContext as LazySpanContext, 
+    SpanId as LazySpanId, 
+    TraceId as LazyTraceId,
+    // LazyCell 资源管理
+    ThreadLocalResource, 
+    LazyBuffer,
+    // 综合配置管理
+    ComprehensiveConfigManager, 
+    OtlpRuntimeContext,
+};
+
+// 重新导出 Rust 1.94 数学常量模块相关函数和类型
+pub use rust_1_94_math_constants::{
+    // EULER_GAMMA 相关函数
+    euler_gamma_sampling_rate,
+    euler_gamma_cumulative_sampling,
+    euler_gamma_priority_weight,
+    // GOLDEN_RATIO 相关函数
+    golden_ratio_backoff,
+    golden_ratio_backoff_decay,
+    fibonacci_batch_size,
+    fibonacci_exact,
+    golden_ratio_split,
+    golden_ratio_jitter,
+    // const mul_add 相关函数
+    const_mul_add,
+    const_lerp,
+    const_poly_eval,
+    const_sigmoid_approx,
+    // 高级算法
+    adaptive_batch_timeout,
+    optimal_connection_pool_size,
+    adjust_sampling_rate,
+    // 工具函数
+    safe_midpoint,
+    approx_eq,
+    rate_to_log_scale,
+    log_scale_to_rate,
+    // 预计算常数
+    EULER_GAMMA_RECIP,
+    GOLDEN_RATIO_RECIP,
+    GOLDEN_RATIO_SQUARED,
+    FIBONACCI_FACTOR,
+};
+
+// 重新导出 Rust 1.94 comprehensive 模块的公共子模块
+pub use rust_1_94_comprehensive::{
+    async_features as comprehensive_async_features,
+    concurrency,
+    const_generics,
+    error_handling,
+    memory_management,
+    metaprogramming,
+    pattern_matching,
+    performance as rust_1_94_performance,
+    precise_captures,
+    std_lib_features,
+};
+
+// 重新导出 Rust 1.94 features 模块的公共子模块
+pub use rust_1_94_features::{
+    async_features,
+    builder_pattern,
+    collection_improvements,
+    const_context,
+    float_improvements,
+    io_errors,
+    lazy_initialization,
+    unsafe_improvements,
+};
+
+// 重新导出 Rust 1.94 综合演示模块的主要类型
+// 注意: 以下类型名称与现有模块有冲突，使用完整路径访问:
+// - ServiceConfig (与 config 模块冲突)
+// - RetryPolicy (与 microservices 模块冲突)
+// - MetricPoint (与 rust_1_94_array_windows 模块冲突)
+// - Span, SpanStatus (与 data/rust_1_94_array_windows 模块冲突)
+// - MetricsBuffer, ZeroCopySpanSerializer (与 rust_1_94_element_offset 冲突)
+pub use rust_1_94_comprehensive_demo::{
+    // Demo-specific types (unique to this module)
+    CompressionType,
+    TelemetryPattern,
+    ConfigManager, 
+    ThreadLocalBuffer,
+    
+    // Algorithm types
+    AdaptiveSampler, 
+    FibonacciRetryStrategy, 
+    ConnectionPoolOptimizer,
+    AdaptiveTimeout, 
+    ConstMath,
+    
+    // SIMD types
+    Fp16MetricsProcessor,
+    
+    // TOML config
+    TomlConfig,
+    
+    // Result types
+    PipelineResult,
+    
+    // Main function
+    complete_otlp_pipeline_demo,
+    
+    // Utility functions (unique to this module)
+    detect_metric_patterns, 
+    detect_abba_anomalies,
+    validate_span_continuity,
+};
+
 // ============================================================================
 // 便捷API函数
 // ============================================================================
@@ -756,7 +1099,8 @@ pub fn new_enhanced_pipeline_v2() -> wrappers::EnhancedPipelineV2 {
 // ============================================================================
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const RUST_VERSION: &str = "1.92";
+/// Minimum Supported Rust Version (MSRV)
+pub const RUST_VERSION: &str = "1.94";
 
 #[cfg(test)]
 mod tests {
@@ -765,6 +1109,6 @@ mod tests {
     #[test]
     fn test_version_info() {
         assert!(!VERSION.is_empty(), "VERSION should not be empty");
-        assert_eq!(RUST_VERSION, "1.92");
+        assert_eq!(RUST_VERSION, "1.94", "MSRV should be Rust 1.94");
     }
 }
