@@ -336,6 +336,10 @@ pub mod compression;
 // SIMD优化模块
 pub mod simd;
 
+// ✅ 真实加密实现 (使用ring库)
+#[cfg(feature = "real-crypto")]
+pub mod real_crypto;
+
 // 网络和连接管理
 pub mod network;
 

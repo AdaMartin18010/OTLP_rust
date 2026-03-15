@@ -1,7 +1,27 @@
-//! 安全增强模块 - Rust 1.90 企业级安全功能
+//! # 🚧 安全增强模块 - 模拟实现警告
 //! 
-//! 本模块实现了基于Rust 1.90的企业级安全功能，
-//! 包括加密、认证、授权、审计等安全机制。
+//! ⚠️ **严重警告**: 本模块的加密功能是**模拟实现**！
+//! 
+//! ## 当前实现 (危险！)
+//! ```rust
+//! // 所谓的"加密"只是附加算法名称字符串
+//! fn simulate_encryption(data, "AES256GCM") {
+//!     data + b"AES256GCM"  // 这不是加密！
+//! }
+//! ```
+//! 
+//! ## 安全风险
+//! - ❌ 不提供真实数据保护
+//! - ❌ 密钥管理是模拟的
+//! - ❌ 认证使用明文密码比较
+//! 
+//! ## 生产使用要求
+//! 在v0.7.0之前，如需真实安全，请使用：
+//! - [ring](https://crates.io/crates/ring)
+//! - [rustls](https://crates.io/crates/rustls)
+//! - [aes-gcm](https://crates.io/crates/aes-gcm)
+//!
+//! 参见: [HONEST_AUDIT_REPORT.md](../../../HONEST_AUDIT_REPORT.md)
 
 use std::collections::HashMap;
 use std::sync::Arc;

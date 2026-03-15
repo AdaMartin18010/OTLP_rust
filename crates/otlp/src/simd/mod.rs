@@ -44,7 +44,19 @@ pub mod cpu_features;
 pub mod serialization;
 pub mod string_ops;
 
+// ✅ 真实SIMD优化实现 (Rust 1.64+ std::simd)
+pub mod real_optimization;
+
 pub use aggregation::{AggregateStats, Aggregator};
 pub use cpu_features::CpuFeatures;
 pub use serialization::{BatchSerializer, SerializationStats};
 pub use string_ops::StringOps;
+
+// 导出真实SIMD实现
+pub use real_optimization::{
+    real_simd_sum_i64,
+    real_simd_sum_f64,
+    real_simd_compare_prefix,
+    simd_aggregate_metrics,
+    MetricsAggregate,
+};

@@ -1,16 +1,27 @@
-//! # OpenTelemetry Profiling Module
+//! # 🚧 OpenTelemetry Profiling Module - 模拟实现
 //!
-//! This module provides comprehensive profiling support for OpenTelemetry,
-//! including CPU profiling, memory profiling, and various sampling strategies.
+//! ⚠️ **警告**: 本模块当前为**模拟实现**，返回的是假数据！
 //!
-//! ## Features
+//! ## 模拟的功能
+//! - ❌ CPU Profiling: 返回假的栈跟踪 (["main", "func1"])
+//! - ❌ Memory Profiling: 返回模拟的内存使用数据
+//! - ⚠️ pprof Format: 导出功能为占位实现
+//! - ⚠️ OTLP Export: 仅打印日志，不实际导出
+//! - ✅ Sampling Strategies: 采样逻辑可用，但数据是模拟的
 //!
-//! - **CPU Profiling**: Sample call stacks to identify CPU hotspots
-//! - **Memory Profiling**: Track heap allocations and memory usage
-//! - **pprof Format**: Industry-standard profile format support
-//! - **OTLP Export**: Export profiles to OTLP collectors
-//! - **Sampling Strategies**: Multiple sampling strategies (always, probabilistic, rate-based, adaptive)
-//! - **Trace Correlation**: Link profiles to distributed traces
+//! ## 为什么有模拟数据？
+//! 真实的性能分析需要：
+//! 1. 读取 `/proc/self/maps` (Linux)
+//! 2. 使用 `backtrace` crate 获取真实栈
+//! 3. 集成 `pprof` 或 `perf` 工具
+//! 4. 处理复杂的符号解析
+//!
+//! 这些功能计划在 v0.8.0-v0.10.0 逐步实现。
+//!
+//! ## 当前用途
+//! - 架构验证
+//! - API设计审查
+//! - 集成测试（使用模拟数据）
 //!
 //! ## Rust 1.92 特性应用
 //!

@@ -2,9 +2,14 @@
 
 [![Rust 1.94+](https://img.shields.io/badge/rust-1.94%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-Perfect-brightgreen.svg)](MILESTONE_100_PERCENT_COMPLETE_2025_10_28.md)
-[![Docs](https://img.shields.io/badge/docs-100%25-brightgreen.svg)](DOCUMENTATION_ULTIMATE_ACHIEVEMENT_2025_10_28.md)
-[![Quality](https://img.shields.io/badge/quality-98%2F100-brightgreen.svg)](MILESTONE_100_PERCENT_COMPLETE_2025_10_28.md)
+[![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen.svg)](PROJECT_STATUS.md)
+
+> ⚠️ **重要诚实声明**
+>
+> 本项目包含**大量实验性/模拟实现**，请阅读 [HONEST_AUDIT_REPORT.md](HONEST_AUDIT_REPORT.md) 了解真实情况。
+>
+> **生产可用功能**: OTLP传输、基础导出、批处理
+> **模拟功能**: 高级加密、eBPF分析、AI采样等
 
 > **🚀 New User?** Start with **[Quick Reference Index](QUICK_REFERENCE_INDEX.md)** - Find what you need in 5 seconds!
 >

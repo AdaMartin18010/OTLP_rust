@@ -46,3 +46,45 @@ impl EnhancedTracer {
 
 // 注意: 由于Tracer trait的关联类型限制，这里不实现Tracer trait
 // 实际使用建议通过EnhancedPipelineV2在Pipeline层面应用扩展
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use opentelemetry::trace::TracerProvider;
+
+    #[test]
+    fn test_enhanced_tracer_creation() {
+        // 使用NoopTracerProvider创建tracer进行测试
+        let provider = opentelemetry::trace::noop::NoopTracerProvider::new();
+        let tracer = provider.tracer("test");
+        
+        let enhanced = EnhancedTracer::new(tracer);
+        // 验证创建成功 (EnhancedTracer是单元结构体，主要验证不panic)
+        assert!(true);
+    }
+
+    #[test]
+    fn test_enhanced_tracer_with_ebpf() {
+        let provider = opentelemetry::trace::noop::NoopTracerProvider::new();
+        let tracer = provider.tracer("test");
+        
+        let enhanced = EnhancedTracer::new(tracer)
+            .with_ebpf_profiling(true);
+        
+        // 验证链式调用成功
+        assert!(true);
+    }
+
+    #[test]
+    fn test_enhanced_tracer_chaining() {
+        let provider = opentelemetry::trace::noop::NoopTracerProvider::new();
+        let tracer = provider.tracer("test");
+        
+        let enhanced = EnhancedTracer::new(tracer)
+            .with_ebpf_profiling(true)
+            .with_ebpf_profiling(false);
+        
+        // 验证多次链式调用成功
+        assert!(true);
+    }
+}

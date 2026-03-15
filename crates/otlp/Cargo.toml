@@ -68,6 +68,12 @@ rand = { workspace = true }
 
 # 加密和哈希
 sha2 = { workspace = true } # 使用工作区版本
+ring = { version = "0.17", optional = true } # 真实加密实现
+
+# 性能分析
+pprof = { version = "0.14", features = ["flamegraph", "protobuf"], optional = true }
+
+# SIMD优化 (Rust 1.64+ 标准库)
 
 # 错误处理和日志
 anyhow = { workspace = true }
@@ -154,6 +160,16 @@ performance = []
 
 # Profiling特性
 backtrace = ["dep:backtrace"]
+real-profiling = ["dep:pprof"]  # 真实性能分析实现
+
+# 真实加密
+real-crypto = ["dep:ring"]  # 使用ring库实现真实加密
+
+# 完整功能 (真实实现)
+real-full = ["real-crypto", "real-profiling", "simd-optimized"]
+
+# SIMD优化 (使用std::simd)
+simd-optimized = []
 
 # 示例文件待创建或移动到正确位置
 # [[example]]

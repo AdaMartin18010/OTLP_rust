@@ -193,4 +193,73 @@ mod tests {
         let snapshot = metrics.snapshot();
         assert_eq!(snapshot.total_requests, 0);
     }
+
+    #[tokio::test]
+    async fn test_client_initialize() {
+        let config = OtlpConfig::default();
+        let client = OtlpClient::new(config).await.unwrap();
+        let result = client.initialize().await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_client_shutdown() {
+        let config = OtlpConfig::default();
+        let client = OtlpClient::new(config).await.unwrap();
+        let result = client.shutdown().await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_client_metrics() {
+        let config = OtlpConfig::default();
+        let client = OtlpClient::new(config).await.unwrap();
+        let metrics = client.metrics().await;
+        // 验证返回的metrics是默认值
+        assert_eq!(metrics.total_requests, 0);
+    }
+
+    #[test]
+    fn test_client_clone() {
+        use tokio::runtime::Runtime;
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            let config = OtlpConfig::default();
+            let client = OtlpClient::new(config).await.unwrap();
+            let cloned = client.clone();
+            // 验证克隆后的客户端配置相同
+            assert_eq!(client.config().endpoint, cloned.config().endpoint);
+        });
+    }
+
+    #[tokio::test]
+    async fn test_client_config() {
+        let config = OtlpConfig::default();
+        let client = OtlpClient::new(config.clone()).await.unwrap();
+        assert_eq!(client.config().endpoint, config.endpoint);
+    }
+
+    #[tokio::test]
+    async fn test_client_full_lifecycle() {
+        let config = OtlpConfig::default();
+        let client = OtlpClient::new(config).await.unwrap();
+        
+        // 初始化
+        assert!(client.initialize().await.is_ok());
+        
+        // 发送trace
+        let trace = client.send_trace("test").await;
+        assert!(trace.is_ok());
+        
+        // 发送metric
+        let metric = client.send_metric("test", 1.0).await;
+        assert!(metric.is_ok());
+        
+        // 发送log
+        let log = client.send_log("test").await;
+        assert!(log.is_ok());
+        
+        // 关闭
+        assert!(client.shutdown().await.is_ok());
+    }
 }
