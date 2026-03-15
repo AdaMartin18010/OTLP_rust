@@ -427,13 +427,37 @@ pub mod std_lib_features {
     /// 
     /// # 开源实践
     /// 事件队列、优先级队列处理
+    /// 
+    /// Note: pop_if only pops from the end if it matches the condition.
+    /// This function processes from the end, collecting all even numbers
+    /// that appear consecutively from the end.
     pub fn process_events(events: &mut Vec<i32>) -> Vec<i32> {
         let mut processed = Vec::new();
         
+        // pop_if only removes elements from the end that match the condition
+        // It stops when it encounters the first non-matching element from the end
         while let Some(event) = events.pop_if(|x| *x % 2 == 0) {
             processed.push(event);
         }
         
+        processed
+    }
+    
+    /// Process all even numbers from the vector by iterating in reverse
+    /// This is a variation that removes all even numbers, not just trailing ones
+    pub fn process_all_even(events: &mut Vec<i32>) -> Vec<i32> {
+        let mut processed = Vec::new();
+        let mut i = events.len();
+        
+        // Iterate in reverse to safely remove elements
+        while i > 0 {
+            i -= 1;
+            if events[i] % 2 == 0 {
+                processed.push(events.remove(i));
+            }
+        }
+        
+        processed.reverse(); // Restore original order
         processed
     }
 
@@ -450,7 +474,10 @@ pub mod std_lib_features {
     /// # 开源实践
     /// 游戏开发、图形学、物理引擎
     pub fn angle_conversions(radians: f64) -> (f64, f64) {
-        (radians.to_degrees(), radians.to_radians())
+        // Convert radians to degrees, then convert those degrees back to radians
+        let degrees = radians.to_degrees();
+        let back_to_radians = degrees.to_radians();
+        (degrees, back_to_radians)
     }
 
     /// f32::recip - 倒数
@@ -504,10 +531,27 @@ pub mod std_lib_features {
 
         #[test]
         fn test_pop_if() {
+            // Test that pop_if only pops from the end when condition is met
+            // Note: pop_if stops at the first non-matching element from the end
+            
+            // Case 1: Even number at the end - pops only the trailing even number
             let mut events = vec![1, 2, 3, 4, 5, 6];
             let processed = process_events(&mut events);
-            assert_eq!(processed, vec![6, 4, 2]);
-            assert_eq!(events, vec![1, 3, 5]);
+            // Only 6 is popped because 5 (odd) blocks further popping
+            assert_eq!(processed, vec![6]);
+            assert_eq!(events, vec![1, 2, 3, 4, 5]);
+            
+            // Case 2: Multiple consecutive even numbers at the end
+            let mut events2 = vec![1, 3, 5, 2, 4, 6];
+            let processed2 = process_events(&mut events2);
+            assert_eq!(processed2, vec![6, 4, 2]);
+            assert_eq!(events2, vec![1, 3, 5]);
+            
+            // Case 3: Odd number at the end - nothing is popped
+            let mut events3 = vec![1, 2, 3, 4, 5];
+            let processed3 = process_events(&mut events3);
+            assert!(processed3.is_empty());
+            assert_eq!(events3, vec![1, 2, 3, 4, 5]);
         }
 
         #[test]
