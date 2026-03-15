@@ -242,7 +242,7 @@ impl MemoryProfiler {
 }
 
 /// System memory information
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SystemMemoryInfo {
     pub total: u64,
     pub used: u64,
@@ -253,22 +253,6 @@ pub struct SystemMemoryInfo {
     pub swap_total: u64,
     pub swap_used: u64,
     pub swap_free: u64,
-}
-
-impl Default for SystemMemoryInfo {
-    fn default() -> Self {
-        Self {
-            total: 0,
-            used: 0,
-            free: 0,
-            available: 0,
-            buffers: 0,
-            cached: 0,
-            swap_total: 0,
-            swap_used: 0,
-            swap_free: 0,
-        }
-    }
 }
 
 /// Get system memory information
@@ -292,21 +276,11 @@ pub fn get_system_memory_info() -> SystemMemoryInfo {
 }
 
 /// Memory profiler statistics
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct MemoryProfilerStats {
     pub sample_count: u64,
     pub total_samples_bytes: u64,
     pub peak_memory_bytes: u64,
-}
-
-impl Default for MemoryProfilerStats {
-    fn default() -> Self {
-        Self {
-            sample_count: 0,
-            total_samples_bytes: 0,
-            peak_memory_bytes: 0,
-        }
-    }
 }
 
 #[cfg(test)]

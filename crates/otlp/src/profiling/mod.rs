@@ -198,14 +198,12 @@ impl Profiler {
 
         // 启动 CPU 分析
         if let Some(ref mut cpu) = self.cpu_profiler {
-            cpu.start().await
-                .map_err(|e| OtlpError::Profiling(e))?;
+            cpu.start().await.map_err(OtlpError::Profiling)?;
         }
 
         // 启动内存分析
         if let Some(ref mut memory) = self.memory_profiler {
-            memory.start().await
-                .map_err(|e| OtlpError::Profiling(e))?;
+            memory.start().await.map_err(OtlpError::Profiling)?;
         }
 
         Ok(())
@@ -219,14 +217,12 @@ impl Profiler {
 
         // 停止 CPU 分析
         if let Some(ref mut cpu) = self.cpu_profiler {
-            cpu.stop().await
-                .map_err(|e| OtlpError::Profiling(e))?;
+            cpu.stop().await.map_err(OtlpError::Profiling)?;
         }
 
         // 停止内存分析
         if let Some(ref mut memory) = self.memory_profiler {
-            memory.stop().await
-                .map_err(|e| OtlpError::Profiling(e))?;
+            memory.stop().await.map_err(OtlpError::Profiling)?;
         }
 
         self.is_running = false;
@@ -245,8 +241,7 @@ impl Profiler {
 
         // 生成 CPU 报告
         if let Some(ref cpu) = self.cpu_profiler {
-            let cpu_profile = cpu.generate_profile().await
-                .map_err(|e| OtlpError::Profiling(e))?;
+            let cpu_profile = cpu.generate_profile().await.map_err(OtlpError::Profiling)?;
             report.cpu_profile = Some(cpu_profile);
         }
 

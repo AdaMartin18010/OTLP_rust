@@ -3,10 +3,12 @@
 //! 提供流畅的API用于构建和配置OTLP客户端及遥测数据。
 
 use crate::config::{OtlpConfig, TransportProtocol};
-use crate::data::{LogSeverity, StatusCode};
+use crate::data::{LogSeverity, StatusCode, TelemetryContent, TelemetryData, TelemetryDataType};
 use crate::error::Result as OtlpResult;
+use crate::exporter::OtlpExporter;
 use std::collections::HashMap;
 use std::time::Duration;
+
 
 
 
@@ -160,12 +162,61 @@ impl TraceBuilder {
 
     /// 完成并发送追踪数据
     pub async fn finish(self) -> OtlpResult<()> {
+        use crate::data::{AttributeValue, SpanKind, SpanStatus, TraceData};
+        
         tracing::debug!(
             "Finishing trace for operation: {} with {} attributes",
             self.operation_name,
             self.attributes.len()
         );
-        Ok(())
+        
+        // 创建追踪数据
+        let trace_content = TraceData {
+            trace_id: format!("trace_{}", uuid::Uuid::new_v4()),
+            span_id: format!("span_{}", uuid::Uuid::new_v4()),
+            parent_span_id: None,
+            name: self.operation_name,
+            span_kind: SpanKind::Internal,
+            start_time: 0,
+            end_time: self.duration_ms,
+            attributes: self.attributes.into_iter()
+                .map(|(k, v)| (k, AttributeValue::String(v)))
+                .collect(),
+            events: Vec::new(),
+            links: Vec::new(),
+            status: SpanStatus {
+                code: self.status,
+                message: self.status_message,
+            },
+        };
+        
+        let trace_data = TelemetryData {
+            data_type: TelemetryDataType::Trace,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
+            resource_attributes: self.numeric_attributes.iter()
+                .map(|(k, v)| (k.clone(), v.to_string()))
+                .collect(),
+            scope_attributes: HashMap::new(),
+            content: TelemetryContent::Trace(trace_content),
+        };
+        
+        // 使用 exporter 发送数据
+        let exporter = OtlpExporter::new(self.config);
+        exporter.initialize().await?;
+        
+        match exporter.export(vec![trace_data]).await {
+            Ok(result) => {
+                tracing::debug!("Trace exported successfully: {} items", result.success_count);
+                Ok(())
+            }
+            Err(e) => {
+                tracing::error!("Failed to export trace: {}", e);
+                Err(e)
+            }
+        }
     }
 }
 
@@ -218,13 +269,60 @@ impl MetricBuilder {
 
     /// 发送指标数据
     pub async fn send(self) -> OtlpResult<()> {
+        use crate::data::{DataPoint, DataPointValue, MetricData};
+        
         tracing::debug!(
             "Sending metric: {} = {} with {} labels",
             self.metric_name,
             self.value,
             self.labels.len()
         );
-        Ok(())
+        
+        // 创建指标数据点
+        let data_point = DataPoint {
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
+            attributes: self.labels.iter()
+                .map(|(k, v)| (k.clone(), crate::data::AttributeValue::String(v.clone())))
+                .collect(),
+            value: DataPointValue::Number(self.value),
+        };
+        
+        let metric_content = MetricData {
+            name: self.metric_name,
+            description: self.description.unwrap_or_default(),
+            unit: self.unit.unwrap_or_else(|| "count".to_string()),
+            metric_type: crate::data::MetricType::Gauge,
+            data_points: vec![data_point],
+        };
+        
+        let telemetry_data = TelemetryData {
+            data_type: TelemetryDataType::Metric,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
+            resource_attributes: HashMap::new(),
+            scope_attributes: HashMap::new(),
+            content: TelemetryContent::Metric(metric_content),
+        };
+        
+        // 使用 exporter 发送数据
+        let exporter = OtlpExporter::new(self.config);
+        exporter.initialize().await?;
+        
+        match exporter.export(vec![telemetry_data]).await {
+            Ok(result) => {
+                tracing::debug!("Metric exported successfully: {} items", result.success_count);
+                Ok(())
+            }
+            Err(e) => {
+                tracing::error!("Failed to export metric: {}", e);
+                Err(e)
+            }
+        }
     }
 }
 
@@ -266,6 +364,8 @@ impl LogBuilder {
 
     /// 发送日志数据
     pub async fn send(self) -> OtlpResult<()> {
+        use crate::data::LogData;
+        
         let severity_str = match self.severity {
             LogSeverity::Trace => "TRACE",
             LogSeverity::Debug => "DEBUG",
@@ -280,7 +380,49 @@ impl LogBuilder {
             self.message,
             self.attributes.len()
         );
-        Ok(())
+        
+        // 创建日志数据内容
+        let log_content = LogData {
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
+            severity: self.severity,
+            severity_text: severity_str.to_string(),
+            message: self.message,
+            attributes: self.attributes.into_iter()
+                .map(|(k, v)| (k, crate::data::AttributeValue::String(v)))
+                .collect(),
+            resource_attributes: HashMap::new(),
+            trace_id: None,
+            span_id: None,
+        };
+        
+        let log_data = TelemetryData {
+            data_type: TelemetryDataType::Log,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
+            resource_attributes: HashMap::new(),
+            scope_attributes: HashMap::new(),
+            content: TelemetryContent::Log(log_content),
+        };
+        
+        // 使用 exporter 发送数据
+        let exporter = OtlpExporter::new(self.config);
+        exporter.initialize().await?;
+        
+        match exporter.export(vec![log_data]).await {
+            Ok(result) => {
+                tracing::debug!("Log exported successfully: {} items", result.success_count);
+                Ok(())
+            }
+            Err(e) => {
+                tracing::error!("Failed to export log: {}", e);
+                Err(e)
+            }
+        }
     }
 }
 

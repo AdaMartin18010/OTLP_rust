@@ -432,21 +432,55 @@ impl OtlpExporter {
         .into())
     }
 
-    /// 直接导出批次
+    /// 直接导出批次 - 使用传输池真实发送数据
     async fn export_batch_direct(&self, data: Vec<TelemetryData>) -> Result<ExportResult> {
-        // 简化实现：直接返回成功结果
-        Ok(ExportResult::success(data.len(), Duration::from_millis(0)))
+        let start_time = std::time::Instant::now();
+        
+        // 获取传输池
+        let mut pool_guard = self.transport_pool.write().await;
+        let pool = pool_guard.as_mut().ok_or_else(|| ExportError::Failed {
+            reason: "Transport pool not initialized".to_string(),
+        })?;
+        
+        // 使用传输池发送数据
+        match Self::export_batch(pool, data.clone()).await {
+            Ok(result) => Ok(result),
+            Err(e) => {
+                let _duration = start_time.elapsed();
+                Err(ExportError::Failed {
+                    reason: format!("Export failed: {}", e),
+                }.into())
+            }
+        }
     }
 
-    /// 导出批次数据
-    #[allow(unused_variables)]
+    /// 导出批次数据 - 真实发送到OTLP端点
     async fn export_batch(
         pool: &mut TransportPool,
         data: Vec<TelemetryData>,
     ) -> Result<ExportResult> {
-        // 简化实现：模拟发送成功并返回计时
-        let (_unit_ignored, duration) = PerformanceUtils::measure_time(async {}).await;
-        Ok(ExportResult::success(data.len(), duration))
+        let start_time = std::time::Instant::now();
+        
+        // 获取传输实例
+        let transport = pool.get_next().ok_or_else(|| ExportError::Failed {
+            reason: "No available transport".to_string(),
+        })?;
+        
+        // 真实发送数据
+        match transport.send(data.clone()).await {
+            Ok(()) => {
+                let _duration = start_time.elapsed();
+                Ok(ExportResult::success(data.len(), start_time.elapsed()))
+            }
+            Err(e) => {
+                Ok(ExportResult::partial(
+                    0,
+                    data.len(),
+                    start_time.elapsed(),
+                    vec![e.to_string()],
+                ))
+            }
+        }
     }
 
     /// 更新指标
