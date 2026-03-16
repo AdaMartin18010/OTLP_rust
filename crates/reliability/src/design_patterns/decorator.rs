@@ -394,7 +394,7 @@ mod tests {
 
         assert_eq!(metrics.len(), 1);
         assert!(metrics[0].success);
-        assert!(metrics[0].duration_ms > 0);
+        // Note: duration_ms can be 0 if execution is very fast (< 1ms), which is valid
     }
 
     #[tokio::test]

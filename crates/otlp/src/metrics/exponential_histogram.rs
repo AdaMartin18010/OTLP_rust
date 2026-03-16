@@ -585,11 +585,12 @@ pub fn calculate_bucket_index(value: f64, scale: i32) -> i32 {
         let scaled_log = value.log2() * 2f64.powi(scale);
         scaled_log.floor() as i32
     } else {
-        // For scale <= 0: index = ceil(log₂(value)) - 1 when scale = 0
-        // More generally: index = ceil(log₂(value) / 2^(-scale)) - 1
+        // For scale <= 0: index = floor(log₂(value) / 2^(-scale))
+        // When scale = 0: index = floor(log₂(value))
+        // This gives buckets: [1, 2) -> 0, [2, 4) -> 1, [4, 8) -> 2, etc.
         let scaled_log = value.log2() / 2f64.powi(-scale);
-        let idx = scaled_log.ceil() as i32 - 1;
-        // Ensure non-negative index (value 1.0 maps to bucket 0)
+        let idx = scaled_log.floor() as i32;
+        // Ensure non-negative index (value < 1.0 maps to bucket 0)
         idx.max(0)
     }
 }

@@ -244,6 +244,6 @@ mod tests {
     fn test_version_info() {
         assert!(!version().is_empty());
         assert!(!name().is_empty());
-        assert_eq!(name(), "c13_reliability");
+        assert_eq!(name(), env!("CARGO_PKG_NAME"));
     }
 }

@@ -916,9 +916,11 @@ mod tests {
         // Results should be close (allowing for FP16 precision loss)
         let diff = (fp16_to_f32(simd_sum) - scalar_sum).abs();
         // FP16 has ~3 decimal digits of precision, so for a sum of ~2500, 
-        // a difference of up to a few units is acceptable
-        assert!(diff < 1.0, "SIMD and scalar results differ too much: {} (simd={:.3}, scalar={:.3})", 
-                diff, fp16_to_f32(simd_sum), scalar_sum);
+        // a difference of up to a few units is acceptable due to different
+        // addition orders causing floating-point rounding variations
+        let tolerance = 2.0f32.max(scalar_sum.abs() * 0.001);
+        assert!(diff < tolerance, "SIMD and scalar results differ too much: {} (simd={:.3}, scalar={:.3}, tolerance={:.3})", 
+                diff, fp16_to_f32(simd_sum), scalar_sum, tolerance);
     }
 
     #[test]

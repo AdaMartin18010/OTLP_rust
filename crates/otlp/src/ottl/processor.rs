@@ -848,7 +848,7 @@ mod tests {
         
         // Test float
         let val = OttlParser::parse_value("3.14").unwrap();
-        assert!(matches!(val, OttlValue::Float(f) if (f - std::f64::consts::PI).abs() < 0.001));
+        assert!(matches!(val, OttlValue::Float(f) if (f - 3.14).abs() < 0.001));
         
         // Test bool
         let val = OttlParser::parse_value("true").unwrap();
