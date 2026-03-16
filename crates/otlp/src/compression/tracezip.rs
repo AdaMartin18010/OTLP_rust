@@ -209,8 +209,7 @@ impl StringTable {
 }
 
 /// Delta encoder for timestamps and IDs
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 struct DeltaEncoder {
     /// Last timestamp (nanoseconds)
     last_timestamp: u64,
@@ -221,7 +220,6 @@ struct DeltaEncoder {
     /// Last span ID
     last_span_id: u64,
 }
-
 
 impl DeltaEncoder {
     fn new() -> Self {
@@ -415,8 +413,7 @@ impl TraceCompressor {
         }
 
         // Check for duplicate
-        if self.config.enable_dedup
-            && self.deduplicator.is_duplicate(span_name, trace_id, span_id)
+        if self.config.enable_dedup && self.deduplicator.is_duplicate(span_name, trace_id, span_id)
         {
             self.stats.deduplicated_spans += 1;
             return Ok(None); // Skip duplicate

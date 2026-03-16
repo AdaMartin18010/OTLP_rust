@@ -368,7 +368,11 @@ impl ProcessAttributesBuilder {
     }
 
     /// Add environment variable (use with caution - avoid secrets)
-    pub fn environment_variable(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+    pub fn environment_variable(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Self {
         self.environment.insert(key.into(), value.into());
         self
     }
@@ -391,25 +395,16 @@ impl ProcessAttributesBuilder {
 
         // Process identification
         if let Some(pid) = self.pid {
-            attributes.insert(
-                "process.pid".to_string(),
-                AttributeValue::Int(pid),
-            );
+            attributes.insert("process.pid".to_string(), AttributeValue::Int(pid));
         }
 
         if let Some(ppid) = self.parent_pid {
-            attributes.insert(
-                "process.parent_pid".to_string(),
-                AttributeValue::Int(ppid),
-            );
+            attributes.insert("process.parent_pid".to_string(), AttributeValue::Int(ppid));
         }
 
         // Command information
         if let Some(cmd) = self.command {
-            attributes.insert(
-                "process.command".to_string(),
-                AttributeValue::String(cmd),
-            );
+            attributes.insert("process.command".to_string(), AttributeValue::String(cmd));
         }
 
         if let Some(cmd_line) = self.command_line {
@@ -447,32 +442,20 @@ impl ProcessAttributesBuilder {
 
         // Owner
         if let Some(owner) = self.owner {
-            attributes.insert(
-                "process.owner".to_string(),
-                AttributeValue::String(owner),
-            );
+            attributes.insert("process.owner".to_string(), AttributeValue::String(owner));
         }
 
         if let Some(uid) = self.owner_uid {
-            attributes.insert(
-                "process.uid".to_string(),
-                AttributeValue::Int(uid),
-            );
+            attributes.insert("process.uid".to_string(), AttributeValue::Int(uid));
         }
 
         if let Some(gid) = self.owner_gid {
-            attributes.insert(
-                "process.gid".to_string(),
-                AttributeValue::Int(gid),
-            );
+            attributes.insert("process.gid".to_string(), AttributeValue::Int(gid));
         }
 
         // Process group and session
         if let Some(pgid) = self.group_pid {
-            attributes.insert(
-                "process.group_pid".to_string(),
-                AttributeValue::Int(pgid),
-            );
+            attributes.insert("process.group_pid".to_string(), AttributeValue::Int(pgid));
         }
 
         if let Some(sid) = self.session_leader_pid {
@@ -528,10 +511,7 @@ impl ProcessAttributesBuilder {
         }
 
         if let Some(cpu) = self.cpu_max {
-            attributes.insert(
-                "process.cpu.max".to_string(),
-                AttributeValue::Double(cpu),
-            );
+            attributes.insert("process.cpu.max".to_string(), AttributeValue::Double(cpu));
         }
 
         if let Some(fdmax) = self.file_descriptors_max {
@@ -618,10 +598,7 @@ mod tests {
             .build()
             .unwrap();
 
-        assert_eq!(
-            attrs.get("process.pid"),
-            Some(&AttributeValue::Int(1234))
-        );
+        assert_eq!(attrs.get("process.pid"), Some(&AttributeValue::Int(1234)));
         assert_eq!(
             attrs.get("process.parent_pid"),
             Some(&AttributeValue::Int(1))

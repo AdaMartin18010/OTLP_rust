@@ -280,7 +280,6 @@ pub fn link_profile_to_current_trace(_profile: &mut Profile) -> Result<(), Strin
     // 当前占位实现
     tracing::debug!("Profile linking to trace requires active OpenTelemetry context");
     Ok(())
-
 }
 
 #[cfg(test)]

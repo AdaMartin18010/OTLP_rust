@@ -6,9 +6,9 @@
 pub mod declarative;
 
 pub use declarative::{
-    OpenTelemetryConfig, ResourceConfig, TracerProviderConfig, MeterProviderConfig,
-    LoggerProviderConfig, ExporterConfig, OtlpExporterConfig, ConfigError, ConfigResult,
-    CONFIG_VERSION,
+    CONFIG_VERSION, ConfigError, ConfigResult, ExporterConfig, LoggerProviderConfig,
+    MeterProviderConfig, OpenTelemetryConfig, OtlpExporterConfig, ResourceConfig,
+    TracerProviderConfig,
 };
 
 // Rust 1.94: 批处理配置常量
@@ -236,43 +236,43 @@ impl OtlpConfig {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// 设置 endpoint
     pub fn with_endpoint(mut self, endpoint: impl Into<String>) -> Self {
         self.endpoint = endpoint.into();
         self
     }
-    
+
     /// 设置协议
     pub fn with_protocol(mut self, protocol: impl Into<String>) -> Self {
         self.protocol = protocol.into();
         self
     }
-    
+
     /// 设置连接超时
     pub fn with_connect_timeout(mut self, timeout: Duration) -> Self {
         self.connect_timeout = timeout;
         self
     }
-    
+
     /// 设置请求超时
     pub fn with_request_timeout(mut self, timeout: Duration) -> Self {
         self.request_timeout = timeout;
         self
     }
-    
+
     /// 设置压缩方式
     pub fn with_compression(mut self, compression: impl Into<String>) -> Self {
         self.compression = Some(compression.into());
         self
     }
-    
+
     /// 添加 header
     pub fn with_header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.headers.insert(key.into(), value.into());
         self
     }
-    
+
     /// 设置服务信息
     pub fn with_service(mut self, name: impl Into<String>, version: impl Into<String>) -> Self {
         self.service = ServiceConfig {
@@ -282,64 +282,68 @@ impl OtlpConfig {
         };
         self
     }
-    
+
     /// 设置 API key
     pub fn with_api_key(mut self, api_key: impl Into<String>) -> Self {
         self.api_key = Some(api_key.into());
         self
     }
-    
+
     /// 启用/禁用
     pub fn with_enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
-    
+
     /// 添加资源属性
-    pub fn with_resource_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+    pub fn with_resource_attribute(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Self {
         self.resource_attributes.insert(key.into(), value.into());
         self
     }
-    
+
     /// 设置采样率
     pub fn with_sampling_ratio(mut self, ratio: f64) -> Self {
         self.sampling_ratio = ratio.clamp(0.0, 1.0);
         self
     }
-    
+
     /// 设置错误采样下限
     pub fn with_error_sampling_floor(mut self, floor: f64) -> Self {
         self.error_sampling_floor = Some(floor);
         self
     }
-    
+
     /// 设置指标启用
     pub fn with_metrics_enabled(mut self, enabled: bool) -> Self {
         self.enable_metrics = enabled;
         self
     }
-    
+
     /// 验证配置
     pub fn validate(&self) -> Result<(), crate::error::OtlpError> {
         if self.endpoint.is_empty() {
             return Err(crate::error::OtlpError::ValidationError(
-                "endpoint cannot be empty".to_string()
+                "endpoint cannot be empty".to_string(),
             ));
         }
         Ok(())
     }
-    
+
     /// 检查是否启用了压缩
     pub fn is_compression_enabled(&self) -> bool {
         self.compression.is_some() && self.compression.as_ref().unwrap() != "none"
     }
-    
+
     /// 设置调试模式
     pub fn with_debug(mut self, enabled: bool) -> Self {
         self.debug.enabled = enabled;
         self
     }
-    
+
     /// 设置批处理配置 (Rust 1.94 兼容)
     pub fn with_batch_config(mut self, config: BatchConfig) -> Self {
         self.batch_config = config;
@@ -359,55 +363,55 @@ impl OtlpConfigBuilder {
             config: OtlpConfig::default(),
         }
     }
-    
+
     /// 设置 endpoint
     pub fn endpoint(mut self, endpoint: impl Into<String>) -> Self {
         self.config.endpoint = endpoint.into();
         self
     }
-    
+
     /// 设置协议
     pub fn protocol(mut self, protocol: impl Into<String>) -> Self {
         self.config.protocol = protocol.into();
         self
     }
-    
+
     /// 设置连接超时
     pub fn connect_timeout(mut self, timeout: Duration) -> Self {
         self.config.connect_timeout = timeout;
         self
     }
-    
+
     /// 设置请求超时
     pub fn request_timeout(mut self, timeout: Duration) -> Self {
         self.config.request_timeout = timeout;
         self
     }
-    
+
     /// 设置压缩
     pub fn compression(mut self, compression: Compression) -> Self {
         self.config.compression = Some(format!("{:?}", compression).to_lowercase());
         self
     }
-    
+
     /// 设置批处理配置
     pub fn batch_config(mut self, config: BatchConfig) -> Self {
         self.config.batch_config = config;
         self
     }
-    
+
     /// 设置重试配置
     pub fn retry_config(mut self, config: RetryConfig) -> Self {
         self.config.retry_config = config;
         self
     }
-    
+
     /// 添加 header
     pub fn header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.config.headers.insert(key.into(), value.into());
         self
     }
-    
+
     /// 设置服务名称和版本
     pub fn service(mut self, name: impl Into<String>, version: impl Into<String>) -> Self {
         self.config.service = ServiceConfig {
@@ -417,19 +421,19 @@ impl OtlpConfigBuilder {
         };
         self
     }
-    
+
     /// 设置 API key
     pub fn api_key(mut self, api_key: impl Into<String>) -> Self {
         self.config.api_key = Some(api_key.into());
         self
     }
-    
+
     /// 设置是否启用
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.config.enabled = enabled;
         self
     }
-    
+
     /// 构建配置
     pub fn build(self) -> OtlpConfig {
         self.config

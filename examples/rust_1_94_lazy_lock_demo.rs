@@ -20,7 +20,7 @@ use tokio::sync::Semaphore;
 /// Global Configuration with LazyLock
 /// ============================================
 /// Global configuration singleton using LazyLock
-/// 
+///
 /// LazyLock initializes the configuration only on first access,
 /// ensuring thread-safe lazy initialization without external crates.
 /// This is a Rust 1.94 feature that replaces the need for once_cell::sync::Lazy.
@@ -69,43 +69,43 @@ impl OtlpConfig {
     /// Loads configuration from environment variables with sensible defaults
     fn load_from_env() -> Self {
         use std::env;
-        
-        let endpoint = env::var("OTLP_ENDPOINT")
-            .unwrap_or_else(|_| "http://localhost:4317".to_string());
-        
+
+        let endpoint =
+            env::var("OTLP_ENDPOINT").unwrap_or_else(|_| "http://localhost:4317".to_string());
+
         let protocol = match env::var("OTLP_PROTOCOL").unwrap_or_default().as_str() {
             "grpc" => Protocol::Grpc,
             "http/protobuf" => Protocol::HttpProtobuf,
             "http/json" => Protocol::HttpJson,
             _ => Protocol::Grpc,
         };
-        
+
         let timeout_seconds = env::var("OTLP_TIMEOUT")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(30);
-        
+
         let batch_size = env::var("OTLP_BATCH_SIZE")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(512);
-        
+
         let compression = match env::var("OTLP_COMPRESSION").unwrap_or_default().as_str() {
             "gzip" => CompressionType::Gzip,
             "zstd" => CompressionType::Zstd,
             _ => CompressionType::Gzip,
         };
-        
+
         let max_queue_size = env::var("OTLP_MAX_QUEUE_SIZE")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(2048);
-        
+
         let export_interval_ms = env::var("OTLP_EXPORT_INTERVAL")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(1000);
-        
+
         let mut headers = HashMap::new();
         if let Ok(api_key) = env::var("OTLP_API_KEY") {
             headers.insert("x-api-key".to_string(), api_key);
@@ -113,7 +113,7 @@ impl OtlpConfig {
         if let Ok(auth) = env::var("OTLP_AUTH_TOKEN") {
             headers.insert("authorization".to_string(), format!("Bearer {}", auth));
         }
-        
+
         Self {
             endpoint,
             protocol,
@@ -131,12 +131,12 @@ impl OtlpConfig {
             export_interval_ms,
         }
     }
-    
+
     /// Gets a read-only reference to the global configuration
     pub fn global() -> std::sync::RwLockReadGuard<'static, OtlpConfig> {
         GLOBAL_CONFIG.read().expect("Config lock poisoned")
     }
-    
+
     /// Gets a mutable reference to the global configuration
     pub fn global_mut() -> std::sync::RwLockWriteGuard<'static, OtlpConfig> {
         GLOBAL_CONFIG.write().expect("Config lock poisoned")
@@ -147,7 +147,7 @@ impl OtlpConfig {
 /// Connection Pool with LazyLock
 /// ============================================
 /// Global connection pool singleton using LazyLock
-/// 
+///
 /// This demonstrates lazy initialization of an expensive resource
 /// that should only be created when first needed.
 static CONNECTION_POOL: LazyLock<Arc<ConnectionPool>> = LazyLock::new(|| {
@@ -185,7 +185,7 @@ pub struct PoolStats {
 impl ConnectionPool {
     fn new(config: &OtlpConfig) -> Self {
         let max_connections = config.max_queue_size.min(100);
-        
+
         Self {
             endpoints: RwLock::new(Vec::with_capacity(max_connections)),
             semaphore: Semaphore::new(max_connections),
@@ -194,11 +194,15 @@ impl ConnectionPool {
             stats: Mutex::new(PoolStats::default()),
         }
     }
-    
+
     /// Gets a connection from the pool
     pub async fn acquire(&self) -> Result<PoolConnection, PoolError> {
-        let _permit = self.semaphore.acquire().await.map_err(|_| PoolError::Closed)?;
-        
+        let _permit = self
+            .semaphore
+            .acquire()
+            .await
+            .map_err(|_| PoolError::Closed)?;
+
         // Try to reuse existing connection
         {
             let mut endpoints = self.endpoints.write().map_err(|_| PoolError::Poisoned)?;
@@ -212,42 +216,42 @@ impl ConnectionPool {
                 return Ok(conn);
             }
         }
-        
+
         // Create new connection
         let conn = self.create_connection().await?;
-        
+
         if let Ok(mut stats) = self.stats.lock() {
             stats.total_connections += 1;
             stats.active_connections += 1;
         }
-        
+
         Ok(conn)
     }
-    
+
     /// Returns a connection to the pool
     pub fn release(&self, mut conn: PoolConnection) {
         conn.last_used = Instant::now();
         conn.requests_served += 1;
-        
+
         if let Ok(mut endpoints) = self.endpoints.write()
             && endpoints.len() < self.max_connections
         {
             endpoints.push(conn);
         }
-        
+
         if let Ok(mut stats) = self.stats.lock() {
             stats.active_connections = stats.active_connections.saturating_sub(1);
         }
     }
-    
+
     async fn create_connection(&self) -> Result<PoolConnection, PoolError> {
         use rand::Rng;
-        
+
         // Simulate connection establishment
         tokio::time::sleep(Duration::from_millis(10)).await;
-        
+
         let config = OtlpConfig::global();
-        
+
         Ok(PoolConnection {
             id: rand::rng().random::<u64>() as usize,
             endpoint: config.endpoint.clone(),
@@ -256,17 +260,20 @@ impl ConnectionPool {
             requests_served: 0,
         })
     }
-    
+
     /// Gets current pool statistics
     pub fn stats(&self) -> PoolStats {
-        self.stats.lock().map(|s| PoolStats {
-            total_connections: s.total_connections,
-            active_connections: s.active_connections,
-            total_requests: s.total_requests,
-            failed_requests: s.failed_requests,
-        }).unwrap_or_default()
+        self.stats
+            .lock()
+            .map(|s| PoolStats {
+                total_connections: s.total_connections,
+                active_connections: s.active_connections,
+                total_requests: s.total_requests,
+                failed_requests: s.failed_requests,
+            })
+            .unwrap_or_default()
     }
-    
+
     /// Global accessor for the connection pool
     pub fn global() -> Arc<ConnectionPool> {
         CONNECTION_POOL.clone()
@@ -296,7 +303,7 @@ impl std::error::Error for PoolError {}
 /// Telemetry Cache with LazyLock
 /// ============================================
 /// Global telemetry cache singleton using LazyLock
-/// 
+///
 /// Demonstrates a caching pattern for frequently accessed telemetry metadata.
 static TELEMETRY_CACHE: LazyLock<Arc<TelemetryCache>> = LazyLock::new(|| {
     println!("🔄 Initializing telemetry cache...");
@@ -348,7 +355,7 @@ impl TelemetryCache {
             cache_misses: Mutex::new(0),
         }
     }
-    
+
     /// Gets resource attributes with caching
     pub fn get_resource_attribute(&self, key: &str) -> Option<String> {
         if let Ok(attrs) = self.resource_attributes.read()
@@ -359,23 +366,23 @@ impl TelemetryCache {
             }
             return Some(value.clone());
         }
-        
+
         if let Ok(mut misses) = self.cache_misses.lock() {
             *misses += 1;
         }
-        
+
         // Simulate lookup from external source
         let value = self.lookup_resource_attribute(key);
-        
+
         if let Some(ref v) = value
             && let Ok(mut attrs) = self.resource_attributes.write()
         {
             attrs.insert(key.to_string(), v.clone());
         }
-        
+
         value
     }
-    
+
     /// Gets instrument metadata with caching
     pub fn get_instrument_info(&self, name: &str) -> Option<InstrumentInfo> {
         if let Ok(metadata) = self.instrument_metadata.read()
@@ -386,30 +393,30 @@ impl TelemetryCache {
             }
             return Some(info.clone());
         }
-        
+
         if let Ok(mut misses) = self.cache_misses.lock() {
             *misses += 1;
         }
-        
+
         // Simulate lookup
         let info = self.lookup_instrument_info(name);
-        
+
         if let Some(ref i) = info
             && let Ok(mut metadata) = self.instrument_metadata.write()
         {
             metadata.insert(name.to_string(), i.clone());
         }
-        
+
         info
     }
-    
+
     /// Caches span context for efficient propagation
     pub fn cache_span_context(&self, operation: &str, context: SpanContext) {
         if let Ok(mut cache) = self.span_context_cache.write() {
             cache.insert(operation.to_string(), context);
         }
     }
-    
+
     /// Gets cached span context
     pub fn get_span_context(&self, operation: &str) -> Option<SpanContext> {
         if let Ok(cache) = self.span_context_cache.read()
@@ -420,30 +427,42 @@ impl TelemetryCache {
             }
             return Some(ctx.clone());
         }
-        
+
         if let Ok(mut misses) = self.cache_misses.lock() {
             *misses += 1;
         }
-        
+
         None
     }
-    
+
     /// Returns cache statistics
     pub fn stats(&self) -> CacheStats {
         let hits = self.cache_hits.lock().map(|h| *h).unwrap_or(0);
         let misses = self.cache_misses.lock().map(|m| *m).unwrap_or(0);
         let total = hits + misses;
-        
+
         CacheStats {
             hits,
             misses,
-            hit_rate: if total > 0 { hits as f64 / total as f64 } else { 0.0 },
-            resource_attributes_count: self.resource_attributes.read().map(|m| m.len()).unwrap_or(0),
-            instrument_count: self.instrument_metadata.read().map(|m| m.len()).unwrap_or(0),
+            hit_rate: if total > 0 {
+                hits as f64 / total as f64
+            } else {
+                0.0
+            },
+            resource_attributes_count: self
+                .resource_attributes
+                .read()
+                .map(|m| m.len())
+                .unwrap_or(0),
+            instrument_count: self
+                .instrument_metadata
+                .read()
+                .map(|m| m.len())
+                .unwrap_or(0),
             span_context_count: self.span_context_cache.read().map(|m| m.len()).unwrap_or(0),
         }
     }
-    
+
     fn lookup_resource_attribute(&self, key: &str) -> Option<String> {
         // Simulate external lookup
         match key {
@@ -453,7 +472,7 @@ impl TelemetryCache {
             _ => None,
         }
     }
-    
+
     fn lookup_instrument_info(&self, name: &str) -> Option<InstrumentInfo> {
         // Simulate external lookup
         match name {
@@ -472,7 +491,7 @@ impl TelemetryCache {
             _ => None,
         }
     }
-    
+
     /// Global accessor for the telemetry cache
     pub fn global() -> Arc<TelemetryCache> {
         TELEMETRY_CACHE.clone()
@@ -493,7 +512,7 @@ pub struct CacheStats {
 /// OTLP Exporter Singleton
 /// ============================================
 /// Global OTLP exporter singleton using LazyLock
-/// 
+///
 /// Demonstrates the singleton pattern for expensive resources
 /// that should be shared across the application.
 static OTLP_EXPORTER: LazyLock<Arc<OtlpExporter>> = LazyLock::new(|| {
@@ -514,7 +533,7 @@ impl OtlpExporter {
         let config = OtlpConfig::global();
         let connection_pool = ConnectionPool::global();
         let cache = TelemetryCache::global();
-        
+
         Self {
             config: config.clone(),
             connection_pool,
@@ -522,35 +541,44 @@ impl OtlpExporter {
             shutdown_signal: Mutex::new(false),
         }
     }
-    
+
     /// Exports telemetry data
     pub async fn export(&self, data: TelemetryData) -> Result<ExportResult, ExportError> {
         // Check shutdown signal
-        if *self.shutdown_signal.lock().map_err(|_| ExportError::Internal)? {
+        if *self
+            .shutdown_signal
+            .lock()
+            .map_err(|_| ExportError::Internal)?
+        {
             return Err(ExportError::Shutdown);
         }
-        
+
         // Acquire connection from pool
-        let conn = self.connection_pool.acquire().await.map_err(|e| {
-            ExportError::Connection(e.to_string())
-        })?;
-        
-        println!("   📤 Exporting {} items using connection #{}", 
-            data.items.len(), conn.id);
-        
+        let conn = self
+            .connection_pool
+            .acquire()
+            .await
+            .map_err(|e| ExportError::Connection(e.to_string()))?;
+
+        println!(
+            "   📤 Exporting {} items using connection #{}",
+            data.items.len(),
+            conn.id
+        );
+
         // Simulate export
         tokio::time::sleep(Duration::from_millis(5)).await;
-        
+
         // Release connection back to pool
         self.connection_pool.release(conn);
-        
+
         Ok(ExportResult {
             exported: data.items.len(),
             failed: 0,
             duration_ms: 5,
         })
     }
-    
+
     /// Gets exporter statistics
     pub fn stats(&self) -> ExporterStats {
         ExporterStats {
@@ -560,7 +588,7 @@ impl OtlpExporter {
             cache_stats: self.cache.stats(),
         }
     }
-    
+
     /// Gracefully shuts down the exporter
     pub fn shutdown(&self) -> Result<(), ExportError> {
         if let Ok(mut signal) = self.shutdown_signal.lock() {
@@ -568,7 +596,7 @@ impl OtlpExporter {
         }
         Ok(())
     }
-    
+
     /// Global accessor for the OTLP exporter
     pub fn global() -> Arc<OtlpExporter> {
         OTLP_EXPORTER.clone()
@@ -651,11 +679,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║      Rust 1.94 LazyLock Demo - OTLP Resource Mgmt        ║");
     println!("║        Lazy Initialization & Singleton Patterns          ║");
     println!("╚══════════════════════════════════════════════════════════╝");
-    
+
     // Section 1: Configuration Access
     println!("\n📋 Section 1: Global Configuration Access");
     println!("   (Configuration will be lazily initialized on first access)");
-    
+
     {
         let config = OtlpConfig::global();
         println!("   ✅ Configuration loaded:");
@@ -665,14 +693,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("      - Batch size: {}", config.batch_size);
         println!("      - Compression: {:?}", config.compression);
     }
-    
+
     // Section 2: Connection Pool
     println!("\n🔌 Section 2: Connection Pool");
     println!("   (Pool will be lazily initialized on first access)");
-    
+
     // Simulate multiple concurrent requests
     let mut handles = vec![];
-    
+
     for i in 0..5 {
         let handle = tokio::spawn(async move {
             let pool = ConnectionPool::global();
@@ -690,54 +718,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
         handles.push(handle);
     }
-    
+
     for handle in handles {
         handle.await?;
     }
-    
+
     let pool_stats = ConnectionPool::global().stats();
     println!("   📊 Pool stats: {:?}", pool_stats);
-    
+
     // Section 3: Telemetry Cache
     println!("\n💾 Section 3: Telemetry Cache");
     println!("   (Cache will be lazily initialized on first access)");
-    
+
     let cache = TelemetryCache::global();
-    
+
     // First access - cache miss
     println!("   First access (cache miss expected):");
     let attr1 = cache.get_resource_attribute("service.name");
     println!("      service.name = {:?}", attr1);
-    
+
     // Second access - cache hit
     println!("   Second access (cache hit expected):");
     let attr2 = cache.get_resource_attribute("service.name");
     println!("      service.name = {:?}", attr2);
-    
+
     // Instrument metadata
     let instrument = cache.get_instrument_info("http.server.duration");
     println!("   Instrument info: {:?}", instrument);
-    
+
     // Span context caching
-    cache.cache_span_context("process_order", SpanContext {
-        trace_id: "abc123".to_string(),
-        span_id: "def456".to_string(),
-        trace_flags: 1,
-        trace_state: "vendor=otlp".to_string(),
-    });
-    
+    cache.cache_span_context(
+        "process_order",
+        SpanContext {
+            trace_id: "abc123".to_string(),
+            span_id: "def456".to_string(),
+            trace_flags: 1,
+            trace_state: "vendor=otlp".to_string(),
+        },
+    );
+
     let span_ctx = cache.get_span_context("process_order");
     println!("   Cached span context: {:?}", span_ctx);
-    
+
     let cache_stats = cache.stats();
     println!("   📊 Cache stats: {:?}", cache_stats);
-    
+
     // Section 4: OTLP Exporter
     println!("\n📤 Section 4: OTLP Exporter");
     println!("   (Exporter will be lazily initialized on first access)");
-    
+
     let exporter = OtlpExporter::global();
-    
+
     // Create sample telemetry data
     let telemetry = TelemetryData {
         items: vec![
@@ -758,7 +789,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }),
         ],
     };
-    
+
     // Export data
     match exporter.export(telemetry).await {
         Ok(result) => {
@@ -770,24 +801,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("   ❌ Export failed: {}", e);
         }
     }
-    
+
     let exporter_stats = exporter.stats();
     println!("   📊 Exporter stats: {:?}", exporter_stats);
-    
+
     // Section 5: Configuration Mutation
     println!("\n⚙️  Section 5: Dynamic Configuration Update");
-    
+
     {
         let mut config = OtlpConfig::global_mut();
         config.batch_size = 1024;
         println!("   ✅ Updated batch_size to {}", config.batch_size);
     }
-    
+
     {
         let config = OtlpConfig::global();
         println!("   ✅ Verified batch_size: {}", config.batch_size);
     }
-    
+
     // Summary
     println!("\n╔══════════════════════════════════════════════════════════╗");
     println!("║                       Summary                            ║");
@@ -803,9 +834,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  - Connection pool singleton");
     println!("  - Telemetry metadata caching");
     println!("  - Exporter resource sharing");
-    
+
     println!("\n✅ LazyLock demo completed successfully!");
-    
+
     Ok(())
 }
 
@@ -813,7 +844,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_config_loading() {
         let config = OtlpConfig::load_from_env();
@@ -821,38 +852,38 @@ mod tests {
         assert!(config.batch_size > 0);
         assert!(config.timeout_seconds > 0);
     }
-    
+
     #[test]
     fn test_cache_operations() {
         let cache = TelemetryCache::new();
-        
+
         // Test resource attribute caching
         let attr = cache.get_resource_attribute("service.name");
         assert!(attr.is_some());
-        
+
         // Test cache hit
         let attr2 = cache.get_resource_attribute("service.name");
         assert_eq!(attr, attr2);
-        
+
         let stats = cache.stats();
         assert!(stats.hits > 0);
         assert!(stats.misses > 0);
     }
-    
+
     #[tokio::test]
     async fn test_connection_pool() {
         let config = OtlpConfig::load_from_env();
         let pool = ConnectionPool::new(&config);
-        
+
         // Acquire and release connection
         let conn = pool.acquire().await.unwrap();
         let conn_id = conn.id;
         pool.release(conn);
-        
+
         // Reacquire should potentially reuse
         let conn2 = pool.acquire().await.unwrap();
         pool.release(conn2);
-        
+
         let stats = pool.stats();
         assert!(stats.total_connections > 0);
     }

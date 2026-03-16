@@ -348,17 +348,11 @@ impl ContainerAttributesBuilder {
         let mut attributes = AttributeMap::new();
 
         // Required
-        attributes.insert(
-            "container.name".to_string(),
-            AttributeValue::String(name),
-        );
+        attributes.insert("container.name".to_string(), AttributeValue::String(name));
 
         // Optional
         if let Some(id) = self.container_id {
-            attributes.insert(
-                "container.id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("container.id".to_string(), AttributeValue::String(id));
         }
 
         if let Some(runtime) = self.runtime {
@@ -402,10 +396,7 @@ impl ContainerAttributesBuilder {
         }
 
         if let Some(cmd) = self.command {
-            attributes.insert(
-                "container.command".to_string(),
-                AttributeValue::String(cmd),
-            );
+            attributes.insert("container.command".to_string(), AttributeValue::String(cmd));
         }
 
         if let Some(cmd_line) = self.command_line {
@@ -450,17 +441,11 @@ impl ContainerAttributesBuilder {
 
         // Kubernetes attributes
         if let Some(pod_name) = self.k8s_pod_name {
-            attributes.insert(
-                "k8s.pod.name".to_string(),
-                AttributeValue::String(pod_name),
-            );
+            attributes.insert("k8s.pod.name".to_string(), AttributeValue::String(pod_name));
         }
 
         if let Some(pod_uid) = self.k8s_pod_uid {
-            attributes.insert(
-                "k8s.pod.uid".to_string(),
-                AttributeValue::String(pod_uid),
-            );
+            attributes.insert("k8s.pod.uid".to_string(), AttributeValue::String(pod_uid));
         }
 
         if let Some(namespace) = self.k8s_namespace {
@@ -675,7 +660,10 @@ mod tests {
     fn test_container_custom_attributes() {
         let attrs = ContainerAttributesBuilder::new()
             .name("custom-container")
-            .custom_attribute("custom.health", AttributeValue::String("healthy".to_string()))
+            .custom_attribute(
+                "custom.health",
+                AttributeValue::String("healthy".to_string()),
+            )
             .custom_attribute("custom.uptime", AttributeValue::Int(3600))
             .build()
             .unwrap();
@@ -684,10 +672,7 @@ mod tests {
             attrs.get("custom.health"),
             Some(&AttributeValue::String("healthy".to_string()))
         );
-        assert_eq!(
-            attrs.get("custom.uptime"),
-            Some(&AttributeValue::Int(3600))
-        );
+        assert_eq!(attrs.get("custom.uptime"), Some(&AttributeValue::Int(3600)));
     }
 
     #[test]

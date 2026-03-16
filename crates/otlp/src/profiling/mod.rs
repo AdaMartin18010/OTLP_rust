@@ -58,8 +58,8 @@ pub use types::{
     Profile, ProfileContainer, ProfileType, Resource, Sample, ScopeProfiles, ValueType,
 };
 
-pub use pprof::{PprofBuilder, PprofEncoder, StackTraceCollector};
 pub use pprof::StackFrame as ProfilingStackFrame;
+pub use pprof::{PprofBuilder, PprofEncoder, StackTraceCollector};
 
 pub use cpu::{CpuProfiler, CpuProfilerConfig, CpuProfilerStats, profile_async};
 
@@ -163,9 +163,11 @@ impl Profiler {
     /// 创建新的性能分析器
     pub fn new(config: ProfilingConfig) -> Self {
         let cpu_profiler = if config.enable_cpu_profiling {
-            Some(CpuProfiler::new(CpuProfilerConfig::default()
-                .with_sample_rate(config.sampling_rate)
-                .with_max_duration(config.duration)))
+            Some(CpuProfiler::new(
+                CpuProfilerConfig::default()
+                    .with_sample_rate(config.sampling_rate)
+                    .with_max_duration(config.duration),
+            ))
         } else {
             None
         };
@@ -234,7 +236,7 @@ impl Profiler {
     pub async fn generate_report(&self) -> Result<ProfilingReport> {
         if self.is_running {
             return Err(OtlpError::Profiling(
-                "无法在未停止的分析器上生成报告".to_string()
+                "无法在未停止的分析器上生成报告".to_string(),
             ));
         }
 
@@ -282,9 +284,9 @@ impl ProfilingReport {
 }
 
 /// 性能分析入口函数
-/// 
+///
 /// 便捷函数，用于在代码块中进行性能分析
-/// 
+///
 /// # 示例
 ///
 /// ```rust
@@ -324,22 +326,27 @@ pub struct ProfileResult<R> {
 }
 
 /// 热点函数识别
-/// 
+///
 /// 分析性能分析数据，识别热点函数
 pub fn identify_hotspots(profile: &PprofProfile, top_n: usize) -> Vec<Hotspot> {
     // 统计每个函数的采样次数
-    let mut function_counts: std::collections::HashMap<String, i64> = 
+    let mut function_counts: std::collections::HashMap<String, i64> =
         std::collections::HashMap::new();
 
     for sample in &profile.sample {
         for location_id in &sample.location_id {
             if let Some(location) = profile.location.iter().find(|l| l.id == *location_id) {
                 for line in &location.line {
-                    if let Some(function) = profile.function.iter().find(|f| f.id == line.function_id) {
-                        let function_name = profile.string_table.get(function.name as usize)
+                    if let Some(function) =
+                        profile.function.iter().find(|f| f.id == line.function_id)
+                    {
+                        let function_name = profile
+                            .string_table
+                            .get(function.name as usize)
                             .cloned()
                             .unwrap_or_default();
-                        *function_counts.entry(function_name).or_insert(0) += sample.value.first().copied().unwrap_or(1);
+                        *function_counts.entry(function_name).or_insert(0) +=
+                            sample.value.first().copied().unwrap_or(1);
                     }
                 }
             }
@@ -351,7 +358,7 @@ pub fn identify_hotspots(profile: &PprofProfile, top_n: usize) -> Vec<Hotspot> {
         .into_iter()
         .map(|(name, count): (String, i64)| Hotspot { name, count })
         .collect();
-    
+
     hotspot_vec.sort_by(|a, b| b.count.cmp(&a.count));
     hotspot_vec.truncate(top_n);
 
@@ -379,7 +386,7 @@ pub fn get_process_stats() -> ProcessStats {
                 cpu_percent: 0.0,
                 memory_bytes: 0,
                 virtual_memory_bytes: 0,
-            }
+            };
         }
     };
 
@@ -429,7 +436,8 @@ mod tests {
         let result = profile_block("test_operation", || async {
             tokio::time::sleep(Duration::from_millis(10)).await;
             42
-        }).await;
+        })
+        .await;
 
         assert_eq!(result.name, "test_operation");
         assert_eq!(result.result, 42);

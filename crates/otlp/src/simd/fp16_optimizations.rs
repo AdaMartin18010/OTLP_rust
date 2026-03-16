@@ -96,12 +96,16 @@ pub struct Fp16PerfCounters {
 impl Fp16PerfCounters {
     /// Increment vectorized operation counter
     pub fn increment_vectorized(&self) {
-        let _ = self.vectorized_ops.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let _ = self
+            .vectorized_ops
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
-    
+
     /// Increment scalar fallback counter
     pub fn increment_scalar(&self) {
-        let _ = self.scalar_fallback_ops.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let _ = self
+            .scalar_fallback_ops
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -155,10 +159,7 @@ pub mod x86 {
         let total: f32 = result.iter().sum();
 
         // Add remainder values (converted to f32 for accuracy)
-        let remainder_sum: f32 = remainder
-            .iter()
-            .map(|&x| fp16_to_f32(x))
-            .sum();
+        let remainder_sum: f32 = remainder.iter().map(|&x| fp16_to_f32(x)).sum();
 
         // Convert back to FP16
         f32_to_fp16(total + remainder_sum)
@@ -172,10 +173,7 @@ pub mod x86 {
     ///
     /// Caller must ensure AVX-512 FP16 is available
     #[target_feature(enable = "avx512fp16")]
-    pub unsafe fn fp16_histogram_buckets(
-        values: &[Fp16],
-        bucket_boundaries: &[Fp16],
-    ) -> Vec<u64> {
+    pub unsafe fn fp16_histogram_buckets(values: &[Fp16], bucket_boundaries: &[Fp16]) -> Vec<u64> {
         use std::arch::x86_64::*;
 
         let num_buckets = bucket_boundaries.len() + 1;
@@ -318,10 +316,7 @@ pub mod arm {
         let total: f32 = result.iter().sum();
 
         // Add remainder values
-        let remainder_sum: f32 = remainder
-            .iter()
-            .map(|&x| fp16_to_f32(x))
-            .sum();
+        let remainder_sum: f32 = remainder.iter().map(|&x| fp16_to_f32(x)).sum();
 
         f32_to_fp16(total + remainder_sum)
     }
@@ -332,10 +327,7 @@ pub mod arm {
     ///
     /// Caller must ensure NEON FP16 is available
     #[target_feature(enable = "fp16")]
-    pub unsafe fn fp16_neon_histogram(
-        values: &[Fp16],
-        bucket_boundaries: &[Fp16],
-    ) -> Vec<u64> {
+    pub unsafe fn fp16_neon_histogram(values: &[Fp16], bucket_boundaries: &[Fp16]) -> Vec<u64> {
         use std::arch::aarch64::*;
 
         let num_buckets = bucket_boundaries.len() + 1;
@@ -569,10 +561,7 @@ pub mod generic {
         let _buckets_fp16: Vec<Fp16> = buckets.iter().map(|&b| f32_to_fp16(b as f32)).collect();
 
         // Convert values to FP16 in chunks
-        let _values_fp16: Vec<Fp16> = values
-            .iter()
-            .map(|&v| f32_to_fp16(v as f32))
-            .collect();
+        let _values_fp16: Vec<Fp16> = values.iter().map(|&v| f32_to_fp16(v as f32)).collect();
 
         // Use SIMD implementation based on platform
         {
@@ -729,16 +718,8 @@ pub mod generic {
 
 // Re-export generic functions for convenience
 pub use generic::{
-    calculate_histogram_buckets,
-    convert_f32_to_fp16_slice,
-    convert_fp16_to_f32_slice,
-    fast_percentile,
-    f32_to_fp16,
-    fp16_dot_product,
-    fp16_min_max,
-    fp16_sum,
-    fp16_to_f32,
-    Fp16,
+    Fp16, calculate_histogram_buckets, convert_f32_to_fp16_slice, convert_fp16_to_f32_slice,
+    f32_to_fp16, fast_percentile, fp16_dot_product, fp16_min_max, fp16_sum, fp16_to_f32,
 };
 
 #[cfg(test)]
@@ -778,7 +759,13 @@ mod tests {
             let back = fp16_to_f32(fp16);
             // Allow for FP16 precision loss
             let diff = (f - back).abs();
-            assert!(diff < 0.01, "Round-trip failed for {}: got {}, diff {}", f, back, diff);
+            assert!(
+                diff < 0.01,
+                "Round-trip failed for {}: got {}, diff {}",
+                f,
+                back,
+                diff
+            );
         }
     }
 
@@ -870,7 +857,12 @@ mod tests {
 
         for (original, converted) in f32_values.iter().zip(back_to_f32.iter()) {
             let diff = (original - converted).abs();
-            assert!(diff < 0.001, "Conversion error: {} vs {}", original, converted);
+            assert!(
+                diff < 0.001,
+                "Conversion error: {} vs {}",
+                original,
+                converted
+            );
         }
     }
 
@@ -915,12 +907,18 @@ mod tests {
 
         // Results should be close (allowing for FP16 precision loss)
         let diff = (fp16_to_f32(simd_sum) - scalar_sum).abs();
-        // FP16 has ~3 decimal digits of precision, so for a sum of ~2500, 
+        // FP16 has ~3 decimal digits of precision, so for a sum of ~2500,
         // a difference of up to a few units is acceptable due to different
         // addition orders causing floating-point rounding variations
         let tolerance = 2.0f32.max(scalar_sum.abs() * 0.001);
-        assert!(diff < tolerance, "SIMD and scalar results differ too much: {} (simd={:.3}, scalar={:.3}, tolerance={:.3})", 
-                diff, fp16_to_f32(simd_sum), scalar_sum, tolerance);
+        assert!(
+            diff < tolerance,
+            "SIMD and scalar results differ too much: {} (simd={:.3}, scalar={:.3}, tolerance={:.3})",
+            diff,
+            fp16_to_f32(simd_sum),
+            scalar_sum,
+            tolerance
+        );
     }
 
     #[test]

@@ -14,7 +14,7 @@
 // ============================================================================
 
 /// Rust 1.94 异步编程特性
-/// 
+///
 /// # 主要特性
 /// - `AsyncFn` traits: 标准库提供的异步函数 trait
 /// - `async || {}` 语法: 异步闭包
@@ -24,7 +24,7 @@ pub mod async_features {
     use std::pin::Pin;
 
     /// 使用 AsyncFnOnce trait 接受异步闭包
-    /// 
+    ///
     /// # 开源实践
     /// tokio、async-std 等运行时广泛使用此模式
     pub async fn with_async_closure<F>(f: F) -> i32
@@ -35,13 +35,10 @@ pub mod async_features {
     }
 
     /// 使用 AsyncFn trait 实现回调机制
-    /// 
+    ///
     /// # 开源实践
     /// hyper、axum 等 web 框架使用此模式处理请求
-    pub async fn with_async_callback<T, F>(
-        data: T,
-        callback: F,
-    ) -> T
+    pub async fn with_async_callback<T, F>(data: T, callback: F) -> T
     where
         F: std::ops::AsyncFn(T) -> T,
     {
@@ -49,12 +46,12 @@ pub mod async_features {
     }
 
     /// 异步闭包示例 - 数据流处理
-    /// 
+    ///
     /// # 开源实践
     /// futures、stream 库中的模式
     pub async fn async_stream_processing() -> Vec<i32> {
         let data: Vec<i32> = (1..=100).collect();
-        
+
         let processor = async |x: i32| -> i32 {
             tokio::time::sleep(std::time::Duration::from_millis(1)).await;
             x * x
@@ -68,7 +65,7 @@ pub mod async_features {
     }
 
     /// 使用 impl Trait + async 简化 API
-    /// 
+    ///
     /// # 开源实践
     /// actix-web、rocket 等框架的 handler 签名
     pub async fn async_handler() -> String {
@@ -76,18 +73,18 @@ pub mod async_features {
     }
 
     /// 异步服务 trait 示例
-    /// 
+    ///
     /// # 开源实践
     /// tower、tonic 中的服务抽象
     pub trait AsyncService {
         type Response;
         type Error;
-        
+
         async fn call(&self, request: String) -> Result<Self::Response, Self::Error>;
     }
 
     /// 异步迭代器模式
-    /// 
+    ///
     /// # 开源实践
     /// 类似 tokio::sync::mpsc 的流处理
     pub struct AsyncIterator<T> {
@@ -163,25 +160,22 @@ pub mod precise_captures {
     use std::future::Future;
 
     /// 基本精确捕获示例
-    /// 
+    ///
     /// 显式声明只使用 'a 和 T
     pub async fn capture_specific<T>(data: &T) -> &T {
         data
     }
 
     /// 复杂泛型场景的精确捕获
-    /// 
+    ///
     /// # 开源实践
     /// tower 服务组合器的实现模式
-    pub async fn complex_capture<'a, 'b, T, U>(
-        t: &'a T,
-        _u: &'b U,
-    ) -> &'a T {
+    pub async fn complex_capture<'a, 'b, T, U>(t: &'a T, _u: &'b U) -> &'a T {
         t
     }
 
     /// 与 trait bound 结合的精确捕获
-    /// 
+    ///
     /// # 开源实践
     /// serde 序列化/反序列化的生命周期处理
     pub async fn with_trait_bound<T>(data: T) -> T
@@ -192,12 +186,10 @@ pub mod precise_captures {
     }
 
     /// 返回 impl Trait + use<> 的闭包
-    /// 
+    ///
     /// # 开源实践
     /// actix-web 中间件实现
-    pub fn make_handler<'a>(
-        prefix: &'a str,
-    ) -> impl Fn(&str) -> String + use<'a> {
+    pub fn make_handler<'a>(prefix: &'a str) -> impl Fn(&str) -> String + use<'a> {
         move |name: &str| format!("{} {}", prefix, name)
     }
 
@@ -241,7 +233,7 @@ pub mod const_generics {
     use std::marker::PhantomData;
 
     /// 编译时大小的数组包装器
-    /// 
+    ///
     /// # 开源实践
     /// nalgebra 中的固定大小向量
     #[derive(Debug, Clone, Copy)]
@@ -278,7 +270,7 @@ pub mod const_generics {
     }
 
     /// 类型级状态机
-    /// 
+    ///
     /// # 开源实践
     /// typenum、generic-array 等类型级编程库的模式
     #[derive(Debug)]
@@ -302,22 +294,28 @@ pub mod const_generics {
 
     impl StateMachine<Idle> {
         pub fn new() -> Self {
-            Self { _state: PhantomData }
+            Self {
+                _state: PhantomData,
+            }
         }
 
         pub fn start(self) -> StateMachine<Running> {
-            StateMachine { _state: PhantomData }
+            StateMachine {
+                _state: PhantomData,
+            }
         }
     }
 
     impl StateMachine<Running> {
         pub fn stop(self) -> StateMachine<Stopped> {
-            StateMachine { _state: PhantomData }
+            StateMachine {
+                _state: PhantomData,
+            }
         }
     }
 
     /// 编译时字符串哈希
-    /// 
+    ///
     /// # 开源实践
     /// phf、perfect-hash 等编译时哈希库的技术
     pub const fn const_hash(s: &str) -> u64 {
@@ -333,7 +331,7 @@ pub mod const_generics {
     }
 
     /// 编译时查找表
-    /// 
+    ///
     /// # 开源实践
     /// rust-phf 的编译时哈希表实现
     pub struct ConstMap<K, V, const N: usize> {
@@ -410,12 +408,12 @@ pub mod const_generics {
 /// # 开源实践
 /// once_cell、lazy_static 等库的功能已合并到标准库
 pub mod std_lib_features {
-    use std::sync::LazyLock;
     use std::cell::LazyCell;
     use std::collections::HashMap;
+    use std::sync::LazyLock;
 
     /// LazyLock - 线程安全的延迟初始化
-    /// 
+    ///
     /// # 开源实践
     /// 全局配置、数据库连接池等场景
     pub static GLOBAL_CONFIG: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
@@ -426,7 +424,7 @@ pub mod std_lib_features {
     });
 
     /// LazyCell - 非线程安全的延迟初始化
-    /// 
+    ///
     /// # 开源实践
     /// 单线程上下文中的缓存
     thread_local! {
@@ -436,31 +434,31 @@ pub mod std_lib_features {
     }
 
     /// Vec::pop_if - 条件弹出
-    /// 
+    ///
     /// # 开源实践
     /// 事件队列、优先级队列处理
-    /// 
+    ///
     /// Note: pop_if only pops from the end if it matches the condition.
     /// This function processes from the end, collecting all even numbers
     /// that appear consecutively from the end.
     pub fn process_events(events: &mut Vec<i32>) -> Vec<i32> {
         let mut processed = Vec::new();
-        
+
         // pop_if only removes elements from the end that match the condition
         // It stops when it encounters the first non-matching element from the end
         while let Some(event) = events.pop_if(|x| *x % 2 == 0) {
             processed.push(event);
         }
-        
+
         processed
     }
-    
+
     /// Process all even numbers from the vector by iterating in reverse
     /// This is a variation that removes all even numbers, not just trailing ones
     pub fn process_all_even(events: &mut Vec<i32>) -> Vec<i32> {
         let mut processed = Vec::new();
         let mut i = events.len();
-        
+
         // Iterate in reverse to safely remove elements
         while i > 0 {
             i -= 1;
@@ -468,13 +466,13 @@ pub mod std_lib_features {
                 processed.push(events.remove(i));
             }
         }
-        
+
         processed.reverse(); // Restore original order
         processed
     }
 
     /// f64::midpoint - 计算中点
-    /// 
+    ///
     /// # 开源实践
     /// 数值计算、二分查找、动画插值
     pub fn calculate_midpoint(a: f64, b: f64) -> f64 {
@@ -482,7 +480,7 @@ pub mod std_lib_features {
     }
 
     /// f64::to_degrees / to_radians - 角度转换
-    /// 
+    ///
     /// # 开源实践
     /// 游戏开发、图形学、物理引擎
     pub fn angle_conversions(radians: f64) -> (f64, f64) {
@@ -493,7 +491,7 @@ pub mod std_lib_features {
     }
 
     /// f32::recip - 倒数
-    /// 
+    ///
     /// # 开源实践
     /// 信号处理、滤波器设计
     pub fn reciprocal(x: f32) -> f32 {
@@ -501,7 +499,7 @@ pub mod std_lib_features {
     }
 
     /// 数组分块处理
-    /// 
+    ///
     /// # 开源实践
     /// 批处理、并行计算、数据分片
     pub fn array_chunks_example(data: &[i32]) -> Vec<&[i32]> {
@@ -509,7 +507,7 @@ pub mod std_lib_features {
     }
 
     /// split_inclusive - 包含分隔符的分割
-    /// 
+    ///
     /// # 开源实践
     /// 日志解析、文本处理
     pub fn split_inclusive_example(text: &str) -> Vec<&str> {
@@ -517,7 +515,7 @@ pub mod std_lib_features {
     }
 
     /// NonNull 常量构造
-    /// 
+    ///
     /// # 开源实践
     ///  unsafe 代码中的指针操作
     pub const fn create_non_null<T>(ptr: *mut T) -> Option<std::ptr::NonNull<T>> {
@@ -525,7 +523,7 @@ pub mod std_lib_features {
     }
 
     /// const size_of_val / align_of_val
-    /// 
+    ///
     /// # 开源实践
     /// 内存布局计算、FFI 绑定
     pub const fn get_size_and_align<T>(val: &T) -> (usize, usize) {
@@ -545,20 +543,20 @@ pub mod std_lib_features {
         fn test_pop_if() {
             // Test that pop_if only pops from the end when condition is met
             // Note: pop_if stops at the first non-matching element from the end
-            
+
             // Case 1: Even number at the end - pops only the trailing even number
             let mut events = vec![1, 2, 3, 4, 5, 6];
             let processed = process_events(&mut events);
             // Only 6 is popped because 5 (odd) blocks further popping
             assert_eq!(processed, vec![6]);
             assert_eq!(events, vec![1, 2, 3, 4, 5]);
-            
+
             // Case 2: Multiple consecutive even numbers at the end
             let mut events2 = vec![1, 3, 5, 2, 4, 6];
             let processed2 = process_events(&mut events2);
             assert_eq!(processed2, vec![6, 4, 2]);
             assert_eq!(events2, vec![1, 3, 5]);
-            
+
             // Case 3: Odd number at the end - nothing is popped
             let mut events3 = vec![1, 2, 3, 4, 5];
             let processed3 = process_events(&mut events3);
@@ -613,23 +611,20 @@ pub mod std_lib_features {
 /// 编译器、解析器、状态机实现广泛使用
 pub mod pattern_matching {
     /// let chains - 多 let 条件链
-    /// 
+    ///
     /// # 开源实践
     /// 复杂条件判断、早期返回模式
-    pub fn process_optional_data(
-        a: Option<i32>,
-        b: Option<i32>,
-    ) -> Option<i32> {
+    pub fn process_optional_data(a: Option<i32>, b: Option<i32>) -> Option<i32> {
         let x = a?;
         let y = b?;
         Some(x + y)
     }
 
     /// while let chains
-    /// 
+    ///
     /// # 开源实践
     /// 迭代器处理、流处理
-    pub async fn process_stream<T>(mut receiver: tokio::sync::mpsc::Receiver<T>) 
+    pub async fn process_stream<T>(mut receiver: tokio::sync::mpsc::Receiver<T>)
     where
         T: std::fmt::Debug,
     {
@@ -639,7 +634,7 @@ pub mod pattern_matching {
     }
 
     /// 范围模式匹配
-    /// 
+    ///
     /// # 开源实践
     /// 词法分析器、解析器实现
     pub fn classify_number(n: i32) -> &'static str {
@@ -653,7 +648,7 @@ pub mod pattern_matching {
     }
 
     /// 嵌套模式解构
-    /// 
+    ///
     /// # 开源实践
     /// AST 处理、配置文件解析
     #[derive(Debug)]
@@ -672,7 +667,7 @@ pub mod pattern_matching {
     }
 
     /// 匹配守卫与绑定
-    /// 
+    ///
     /// # 开源实践
     /// 复杂业务逻辑、规则引擎
     pub fn process_event(event: &str, value: i32) -> String {
@@ -740,7 +735,7 @@ pub mod memory_management {
     use std::ptr::NonNull;
 
     /// MaybeUninit 的安全封装
-    /// 
+    ///
     /// # 开源实践
     /// vec、hashmap 等标准库类型的内部实现
     pub struct UninitBuffer<T, const N: usize> {
@@ -780,9 +775,7 @@ pub mod memory_management {
 
         pub fn into_array(mut self) -> [T; N] {
             assert_eq!(self.initialized, N);
-            unsafe {
-                std::ptr::read(&mut self.data as *mut _ as *mut [T; N])
-            }
+            unsafe { std::ptr::read(&mut self.data as *mut _ as *mut [T; N]) }
         }
     }
 
@@ -797,7 +790,7 @@ pub mod memory_management {
     }
 
     /// 自定义分配器示例
-    /// 
+    ///
     /// # 开源实践
     /// jemalloc、rpmalloc 等内存分配器的 Rust 绑定
     pub struct BumpAllocator {
@@ -813,7 +806,7 @@ pub mod memory_management {
             if ptr.is_null() {
                 std::alloc::handle_alloc_error(layout);
             }
-            
+
             Self {
                 ptr: NonNull::new(ptr).unwrap(),
                 size,
@@ -824,15 +817,15 @@ pub mod memory_management {
         pub fn alloc<T>(&mut self, value: T) -> Option<NonNull<T>> {
             let layout = std::alloc::Layout::new::<T>();
             let align = (self.used + (layout.align() - 1)) & !(layout.align() - 1);
-            
+
             if align + layout.size() > self.size {
                 return None;
             }
-            
+
             let ptr = unsafe { self.ptr.as_ptr().add(align) as *mut T };
             unsafe { ptr.write(value) };
             self.used = align + layout.size();
-            
+
             NonNull::new(ptr)
         }
     }
@@ -847,7 +840,7 @@ pub mod memory_management {
     }
 
     /// 零拷贝字符串处理
-    /// 
+    ///
     /// # 开源实践
     /// nom、bytes 等解析库的技术
     pub fn process_bytes(data: &[u8]) -> impl Iterator<Item = &[u8]> + '_ {
@@ -897,20 +890,20 @@ pub mod memory_management {
 /// # 开源实践
 /// rayon、tokio、crossbeam 等并发库的核心技术
 pub mod concurrency {
-    use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicU64, Ordering};
     use std::thread;
 
     /// 作用域线程
-    /// 
+    ///
     /// # 开源实践
     /// rayon 的并行迭代器实现
     pub fn parallel_sum(data: &[i32]) -> i32 {
         let result = AtomicU64::new(0);
-        
+
         thread::scope(|s| {
             let chunk_size = data.len() / 4;
-            
+
             for chunk in data.chunks(chunk_size.max(1)) {
                 s.spawn(|| {
                     let sum: i32 = chunk.iter().sum();
@@ -918,12 +911,12 @@ pub mod concurrency {
                 });
             }
         });
-        
+
         result.load(Ordering::Relaxed) as i32
     }
 
     /// 无锁数据结构
-    /// 
+    ///
     /// # 开源实践
     /// crossbeam 的 lock-free 数据结构
     pub struct AtomicCounter {
@@ -953,7 +946,7 @@ pub mod concurrency {
     }
 
     /// 并行处理迭代器
-    /// 
+    ///
     /// # 开源实践
     /// rayon 的 parallel iterator 简化实现
     pub fn parallel_map<T, F, R>(data: Vec<T>, f: F) -> Vec<R>
@@ -1015,7 +1008,7 @@ pub mod concurrency {
 /// serde、thiserror、derive_builder 等宏库的技术
 pub mod metaprogramming {
     /// 常量函数计算
-    /// 
+    ///
     /// # 开源实践
     /// typenum 的类型级计算
     pub const fn const_factorial(n: u64) -> u64 {
@@ -1029,7 +1022,7 @@ pub mod metaprogramming {
     }
 
     /// 编译时字符串处理
-    /// 
+    ///
     /// # 开源实践
     /// const_format、konst 等编译时字符串处理库
     pub const fn const_strlen(s: &str) -> usize {
@@ -1037,7 +1030,7 @@ pub mod metaprogramming {
     }
 
     /// 类型级标记
-    /// 
+    ///
     /// # 开源实践
     /// phantom-types、markertype 等库的模式
     #[derive(Debug, Clone, Copy)]
@@ -1113,10 +1106,10 @@ pub mod metaprogramming {
 pub mod performance {
 
     /// SIMD 向量加法
-    /// 
+    ///
     /// # 开源实践
     /// 矩阵运算、图像处理、信号处理
-    /// 
+    ///
     /// 注意：完整 SIMD 支持需要 nightly 和 std::simd
     pub fn simd_add(a: &[f32], b: &[f32], result: &mut [f32]) {
         let len = a.len().min(b.len()).min(result.len());
@@ -1126,7 +1119,7 @@ pub mod performance {
     }
 
     /// 分支预测优化
-    /// 
+    ///
     /// # 开源实践
     /// 热路径优化、关键代码路径
     #[inline(always)]
@@ -1140,18 +1133,18 @@ pub mod performance {
     }
 
     /// 缓存友好性优化
-    /// 
+    ///
     /// # 开源实践
     /// 矩阵乘法、图像处理
     pub fn cache_friendly_sum(matrix: &[Vec<f64>]) -> f64 {
-        if matrix.is_empty() { 
-            return 0.0; 
+        if matrix.is_empty() {
+            return 0.0;
         }
-        
+
         let mut sum = 0.0;
         let rows = matrix.len();
         let cols = matrix[0].len();
-        
+
         for col in matrix.iter().take(cols) {
             for item in col.iter().take(rows) {
                 sum += *item;
@@ -1161,7 +1154,7 @@ pub mod performance {
     }
 
     /// 内存预取
-    /// 
+    ///
     /// # 开源实践
     /// 大数据集遍历、流处理
     pub fn prefetch_example(data: &[i32]) -> i32 {
@@ -1235,7 +1228,7 @@ pub mod error_handling {
     use std::io;
 
     /// 结构化错误类型
-    /// 
+    ///
     /// # 开源实践
     /// thiserror 的简化实现
     #[derive(Debug)]
@@ -1273,7 +1266,7 @@ pub mod error_handling {
     }
 
     /// 错误上下文
-    /// 
+    ///
     /// # 开源实践
     /// anyhow 的上下文机制
     pub trait Context<T, E> {
@@ -1294,36 +1287,45 @@ pub mod error_handling {
     }
 
     /// 错误链格式化
-    /// 
+    ///
     /// # 开源实践
     /// miette 的错误报告格式
     pub fn format_error_chain(error: &dyn Error) -> String {
         let mut result = format!("Error: {}", error);
         let mut current = error.source();
-        
+
         while let Some(source) = current {
             result.push_str(&format!("\n  Caused by: {}", source));
             current = source.source();
         }
-        
+
         result
     }
 
     /// 错误恢复策略
-    /// 
+    ///
     /// # 开源实践
     /// backoff、retry 等重试库的模式
     #[derive(Debug, Clone, Copy)]
     pub enum RetryStrategy {
-        Fixed { delay_ms: u64, max_retries: u32 },
-        Exponential { initial_ms: u64, max_ms: u64, max_retries: u32 },
+        Fixed {
+            delay_ms: u64,
+            max_retries: u32,
+        },
+        Exponential {
+            initial_ms: u64,
+            max_ms: u64,
+            max_retries: u32,
+        },
     }
 
     impl RetryStrategy {
         pub fn delay(&self, attempt: u32) -> u64 {
             match self {
                 RetryStrategy::Fixed { delay_ms, .. } => *delay_ms,
-                RetryStrategy::Exponential { initial_ms, max_ms, .. } => {
+                RetryStrategy::Exponential {
+                    initial_ms, max_ms, ..
+                } => {
                     let delay = initial_ms * 2_u64.pow(attempt);
                     delay.min(*max_ms)
                 }
@@ -1378,7 +1380,10 @@ mod comprehensive_tests {
         let processor = async |x: i32| -> i32 { x * 2 };
         assert_eq!(processor(21).await, 42);
 
-        assert_eq!(std_lib_features::GLOBAL_CONFIG.get("name").unwrap(), "otlp-rust");
+        assert_eq!(
+            std_lib_features::GLOBAL_CONFIG.get("name").unwrap(),
+            "otlp-rust"
+        );
 
         let _arr: const_generics::FixedArray<i32, 10> = const_generics::FixedArray::new();
         assert_eq!(const_generics::FixedArray::<i32, 10>::size(), 10);

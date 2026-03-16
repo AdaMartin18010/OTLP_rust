@@ -81,7 +81,7 @@ impl RpcAttributes {
     pub fn get(&self, key: &str) -> Option<&AttributeValue> {
         self.attributes.get(key)
     }
-    
+
     /// Create a new builder
     pub fn builder() -> RpcAttributesBuilder {
         RpcAttributesBuilder::default()
@@ -162,17 +162,11 @@ impl RpcAttributesBuilder {
         }
 
         if let Some(service) = self.service {
-            attributes.insert(
-                "rpc.service".to_string(),
-                AttributeValue::String(service),
-            );
+            attributes.insert("rpc.service".to_string(), AttributeValue::String(service));
         }
 
         if let Some(method) = self.method {
-            attributes.insert(
-                "rpc.method".to_string(),
-                AttributeValue::String(method),
-            );
+            attributes.insert("rpc.method".to_string(), AttributeValue::String(method));
         }
 
         if let Some(status_code) = self.status_code {
@@ -190,10 +184,7 @@ impl RpcAttributesBuilder {
         }
 
         if let Some(msg_id) = self.message_id {
-            attributes.insert(
-                "rpc.message.id".to_string(),
-                AttributeValue::Int(msg_id),
-            );
+            attributes.insert("rpc.message.id".to_string(), AttributeValue::Int(msg_id));
         }
 
         if let Some(size) = self.message_compressed_size {
@@ -266,10 +257,7 @@ mod tests {
             attrs.get("rpc.message.type"),
             Some(&AttributeValue::String("SENT".to_string()))
         );
-        assert_eq!(
-            attrs.get("rpc.message.id"),
-            Some(&AttributeValue::Int(1))
-        );
+        assert_eq!(attrs.get("rpc.message.id"), Some(&AttributeValue::Int(1)));
         assert_eq!(
             attrs.get("rpc.message.compressed_size"),
             Some(&AttributeValue::Int(100))

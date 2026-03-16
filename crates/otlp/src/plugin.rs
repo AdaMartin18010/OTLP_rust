@@ -61,8 +61,8 @@
 //! }
 //! ```
 
-use crate::error::Result;
 use crate::data::TelemetryData;
+use crate::error::Result;
 use std::collections::HashMap;
 
 /// 插件配置
@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_validation_plugin_process() {
-        use crate::data::{MetricType, LogSeverity};
+        use crate::data::{LogSeverity, MetricType};
         let plugin = ValidationPlugin::new();
 
         let mut trace_data = TelemetryData::trace("test-operation");
@@ -320,7 +320,9 @@ mod tests {
             enabled: false,
             settings: HashMap::new(),
         };
-        config.settings.insert("key".to_string(), "value".to_string());
+        config
+            .settings
+            .insert("key".to_string(), "value".to_string());
 
         assert_eq!(config.name, "custom");
         assert_eq!(config.version, "2.0.0");

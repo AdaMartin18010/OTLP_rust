@@ -468,7 +468,7 @@ mod tests {
         // Note: The current implementation allows acquiring more objects than max_size
         // because semaphore permits are released immediately after acquire() returns.
         // This is a known limitation. For now, we just verify the basic functionality.
-        
+
         drop(obj1);
         tokio::time::sleep(Duration::from_millis(50)).await;
 

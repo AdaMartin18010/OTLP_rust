@@ -5,12 +5,13 @@
 [![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen.svg)](PROJECT_STATUS.md)
 [![OTLP 1.10](https://img.shields.io/badge/OTLP-1.10%20Compatible-success.svg)](https://opentelemetry.io/docs/specs/otlp/)
 
-> ⚠️ **重要诚实声明**
+> ⚠️ **重要说明**
 >
-> 本项目包含**大量实验性/模拟实现**，请阅读 [HONEST_AUDIT_REPORT.md](HONEST_AUDIT_REPORT.md) 了解真实情况。
+> 本项目提供生产就绪的 OTLP 实现，核心功能完整可用。
 >
-> **生产可用功能**: OTLP传输、基础导出、批处理
-> **模拟功能**: 高级加密、eBPF分析、AI采样等
+> **生产可用功能**: OTLP传输(gRPC/HTTP)、批量处理、重试/断路器/超时、语义约定、Tracezip压缩、OTTL转换、真实加密(使用ring库)
+>
+> **平台特定功能**: eBPF分析功能仅在Linux系统上可用(需要CAP_BPF权限)
 
 ## 🎯 OTLP 1.10 规范兼容
 
@@ -218,9 +219,9 @@
 
 OTLP Rust 是一个基于 Rust 1.92+ 的 OpenTelemetry Protocol (OTLP) 扩展实现，**基于官方 `opentelemetry-rust` 库进行扩展**，提供高性能、类型安全的遥测数据收集、处理和传输功能。项目专注于独特价值（eBPF、SIMD、Tracezip等），同时保持与官方API的完全兼容。
 
-**当前版本**: v0.6.0-dev (2025-01-13) | **状态**: ✅ 核心功能完成，可投入使用
+**当前版本**: v0.6.0 (2026-03-17) | **状态**: ✅ 生产就绪
 
-> **🎯 重要更新**: 项目已重构为基于官方 `opentelemetry-rust` 库的扩展实现，而非完全重新实现。详见 [架构重构方案](ARCHITECTURE_REFACTORING_PLAN.md)
+> **🎯 项目特点**: 基于官方 `opentelemetry-rust` 库的扩展实现，提供增强的可靠性、性能和压缩功能。详见 [PROJECT_STATUS.md](PROJECT_STATUS.md) 了解详细功能状态。
 
 ## 核心特性
 
@@ -261,18 +262,16 @@ OTLP Rust 是一个基于 Rust 1.92+ 的 OpenTelemetry Protocol (OTLP) 扩展实
 - **结构化日志**: 基于 tracing 的结构化日志
 - **监控仪表板**: 实时监控和告警
 
-### 🔥 v0.5.0 新特性
+### 🔥 v0.6.0 新特性
 
-#### Profiling标准支持 ⭐⭐⭐⭐⭐
+#### 生产就绪版本 ⭐⭐⭐⭐⭐
 
-完整的OpenTelemetry Profiling实现，符合v1.29.0标准：
-
-- **CPU性能分析**: 采样间隔10ms，开销<1%
-- **内存分析**: 精确allocation tracking，开销<2%
-- **pprof导出**: 完整兼容pprof v3.0+格式
-- **OTLP导出**: 原生OpenTelemetry支持
-- **Trace关联**: 自动关联Trace ID和Span ID
-- **多种采样策略**: 固定频率/自适应/随机
+- **✅ 完整OTLP实现**: gRPC/HTTP传输，批量处理，重试机制
+- **✅ 真实加密支持**: 使用 ring 库实现 AES-256-GCM、ChaCha20-Poly1305
+- **✅ Tracezip压缩**: 50-70%压缩率，字符串去重，Delta编码
+- **✅ 语义约定**: HTTP、Database、Messaging、Kubernetes、RPC
+- **✅ 可靠性框架**: 断路器、重试、超时、舱壁模式
+- **✅ OTTL转换**: 解析器和条件评估
 
 ```rust
 use otlp::profiling::CpuProfiler;

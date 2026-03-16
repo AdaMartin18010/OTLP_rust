@@ -386,10 +386,7 @@ impl ResponseHandler {
         // Log at appropriate level based on classification
         match result.classification {
             ResponseClassification::FullSuccess => {
-                tracing::debug!(
-                    "Export successful: {} items accepted",
-                    result.success_count
-                );
+                tracing::debug!("Export successful: {} items accepted", result.success_count);
             }
             ResponseClassification::PartialSuccess => {
                 tracing::warn!(
@@ -458,12 +455,11 @@ impl ResponseMetricsCollector {
 
     /// Record a classification result
     pub fn record_classification(&self, result: &ClassificationResult) {
-        self.metrics
-            .total_responses
-            .fetch_add(1, Ordering::Relaxed);
-        self.metrics
-            .total_items_sent
-            .fetch_add(result.success_count + result.rejected_count, Ordering::Relaxed);
+        self.metrics.total_responses.fetch_add(1, Ordering::Relaxed);
+        self.metrics.total_items_sent.fetch_add(
+            result.success_count + result.rejected_count,
+            Ordering::Relaxed,
+        );
         self.metrics
             .total_items_accepted
             .fetch_add(result.success_count, Ordering::Relaxed);
@@ -473,9 +469,7 @@ impl ResponseMetricsCollector {
 
         match result.classification {
             ResponseClassification::FullSuccess => {
-                self.metrics
-                    .full_successes
-                    .fetch_add(1, Ordering::Relaxed);
+                self.metrics.full_successes.fetch_add(1, Ordering::Relaxed);
             }
             ResponseClassification::PartialSuccess => {
                 self.metrics
@@ -592,9 +586,7 @@ impl ResponseMetricsCollector {
         self.metrics.full_successes.store(0, Ordering::Relaxed);
         self.metrics.partial_successes.store(0, Ordering::Relaxed);
         self.metrics.failures.store(0, Ordering::Relaxed);
-        self.metrics
-            .total_items_sent
-            .store(0, Ordering::Relaxed);
+        self.metrics.total_items_sent.store(0, Ordering::Relaxed);
         self.metrics
             .total_items_accepted
             .store(0, Ordering::Relaxed);
@@ -695,7 +687,8 @@ impl ResponseHandlerBuilder {
         let classifier = ResponseClassifier::with_threshold(self.threshold);
 
         let metrics_collector = if self.enable_metrics {
-            self.metrics.or_else(|| Some(Arc::new(ResponseMetricsCollector::new())))
+            self.metrics
+                .or_else(|| Some(Arc::new(ResponseMetricsCollector::new())))
         } else {
             None
         };
@@ -772,7 +765,10 @@ mod tests {
 
         let result = classifier.classify_trace_partial_success(&partial, 100);
 
-        assert_eq!(result.classification, ResponseClassification::PartialSuccess);
+        assert_eq!(
+            result.classification,
+            ResponseClassification::PartialSuccess
+        );
         assert_eq!(result.decision, RetryDecision::DoNotRetry);
         assert_eq!(result.success_count, 90);
         assert_eq!(result.rejected_count, 10);
@@ -895,7 +891,10 @@ mod tests {
         let partial = ExportTracePartialSuccess::new(5, "test");
         let result = handler.handle_trace_partial_success(&partial, 100);
 
-        assert_eq!(result.classification, ResponseClassification::PartialSuccess);
+        assert_eq!(
+            result.classification,
+            ResponseClassification::PartialSuccess
+        );
 
         // Metrics should be collected
         if let Some(ref metrics) = handler.metrics_collector {

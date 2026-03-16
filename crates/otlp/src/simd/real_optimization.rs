@@ -26,7 +26,7 @@ impl SimdFeatures {
             neon: cfg!(target_arch = "aarch64"),
         }
     }
-    
+
     pub fn has_simd(&self) -> bool {
         self.sse2 || self.avx2 || self.neon
     }
@@ -54,7 +54,7 @@ pub fn real_simd_sum_i64(values: &[i64]) -> i64 {
     }
 
     let features = SimdFeatures::detect();
-    
+
     // 根据CPU特性选择实现
     if features.avx2 {
         unsafe { sum_i64_avx2(values) }
@@ -76,29 +76,29 @@ pub fn real_simd_sum_i64(values: &[i64]) -> i64 {
 unsafe fn sum_i64_avx2(values: &[i64]) -> i64 {
     // AVX2实现: 256-bit向量，4个i64
     use std::arch::x86_64::*;
-    
+
     let mut sum_vec = _mm256_setzero_si256();
-    
+
     let chunks = values.chunks_exact(4);
     let remainder = chunks.remainder();
-    
+
     for chunk in chunks {
         let vec = unsafe { _mm256_loadu_si256(chunk.as_ptr() as *const __m256i) };
         sum_vec = _mm256_add_epi64(sum_vec, vec);
     }
-    
+
     // 水平求和 (使用内存存储)
     let mut result = [0i64; 4];
     unsafe {
         _mm256_storeu_si256(result.as_mut_ptr() as *mut __m256i, sum_vec);
     }
     let mut sum = result[0] + result[1] + result[2] + result[3];
-    
+
     // 处理剩余
     for &val in remainder {
         sum += val;
     }
-    
+
     sum
 }
 
@@ -112,28 +112,28 @@ unsafe fn sum_i64_avx2(values: &[i64]) -> i64 {
 unsafe fn sum_i64_sse2(values: &[i64]) -> i64 {
     // SSE2实现: 128-bit向量，2个i64
     use std::arch::x86_64::*;
-    
+
     let mut sum_vec = _mm_setzero_si128();
-    
+
     let chunks = values.chunks_exact(2);
     let remainder = chunks.remainder();
-    
+
     for chunk in chunks {
         let vec = unsafe { _mm_loadu_si128(chunk.as_ptr() as *const __m128i) };
         sum_vec = _mm_add_epi64(sum_vec, vec);
     }
-    
+
     // 水平求和 (使用内存存储)
     let mut result = [0i64; 2];
     unsafe {
         _mm_storeu_si128(result.as_mut_ptr() as *mut __m128i, sum_vec);
     }
     let mut sum = result[0] + result[1];
-    
+
     for &val in remainder {
         sum += val;
     }
-    
+
     sum
 }
 
@@ -154,9 +154,9 @@ pub fn real_simd_sum_f64(values: &[f64]) -> f64 {
     if values.is_empty() {
         return 0.0;
     }
-    
+
     let features = SimdFeatures::detect();
-    
+
     if features.avx2 {
         unsafe { sum_f64_avx2(values) }
     } else if features.sse2 {
@@ -175,28 +175,28 @@ pub fn real_simd_sum_f64(values: &[f64]) -> f64 {
 #[target_feature(enable = "avx2")]
 unsafe fn sum_f64_avx2(values: &[f64]) -> f64 {
     use std::arch::x86_64::*;
-    
+
     let mut sum_vec = _mm256_setzero_pd();
-    
+
     let chunks = values.chunks_exact(4);
     let remainder = chunks.remainder();
-    
+
     for chunk in chunks {
         let vec = unsafe { _mm256_loadu_pd(chunk.as_ptr()) };
         sum_vec = _mm256_add_pd(sum_vec, vec);
     }
-    
+
     // 水平求和 (使用内存存储)
     let mut result = [0.0f64; 4];
     unsafe {
         _mm256_storeu_pd(result.as_mut_ptr(), sum_vec);
     }
     let mut sum = result[0] + result[1] + result[2] + result[3];
-    
+
     for &val in remainder {
         sum += val;
     }
-    
+
     sum
 }
 
@@ -209,28 +209,28 @@ unsafe fn sum_f64_avx2(values: &[f64]) -> f64 {
 #[target_feature(enable = "sse2")]
 unsafe fn sum_f64_sse2(values: &[f64]) -> f64 {
     use std::arch::x86_64::*;
-    
+
     let mut sum_vec = _mm_setzero_pd();
-    
+
     let chunks = values.chunks_exact(2);
     let remainder = chunks.remainder();
-    
+
     for chunk in chunks {
         let vec = unsafe { _mm_loadu_pd(chunk.as_ptr()) };
         sum_vec = _mm_add_pd(sum_vec, vec);
     }
-    
+
     // 水平求和 (使用内存存储)
     let mut result = [0.0f64; 2];
     unsafe {
         _mm_storeu_pd(result.as_mut_ptr(), sum_vec);
     }
     let mut sum = result[0] + result[1];
-    
+
     for &val in remainder {
         sum += val;
     }
-    
+
     sum
 }
 
@@ -261,20 +261,20 @@ pub fn simd_aggregate_metrics(values: &[f64]) -> MetricsAggregate {
     if values.is_empty() {
         return MetricsAggregate::default();
     }
-    
+
     let mut sum = 0.0;
     let mut min = f64::MAX;
     let mut max = f64::MIN;
-    
+
     for &val in values {
         sum += val;
         min = min.min(val);
         max = max.max(val);
     }
-    
+
     let count = values.len() as f64;
     let mean = sum / count;
-    
+
     // 计算方差 (Welford算法)
     let mut variance_sum = 0.0;
     for &val in values {
@@ -282,7 +282,7 @@ pub fn simd_aggregate_metrics(values: &[f64]) -> MetricsAggregate {
         variance_sum += diff * diff;
     }
     let variance = variance_sum / count;
-    
+
     MetricsAggregate {
         count: values.len(),
         sum,
@@ -360,7 +360,7 @@ mod tests {
     fn test_simd_aggregate() {
         let values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         let agg = simd_aggregate_metrics(&values);
-        
+
         assert_eq!(agg.count, 5);
         assert!((agg.sum - 15.0).abs() < 1e-10);
         assert!((agg.mean - 3.0).abs() < 1e-10);
@@ -371,14 +371,14 @@ mod tests {
     #[test]
     fn test_simd_vs_scalar_equivalence() {
         let values: Vec<f64> = (0..100).map(|i| i as f64 * 1.5).collect();
-        
+
         let simd_sum = real_simd_sum_f64(&values);
         let scalar_sum: f64 = values.iter().sum();
-        
+
         // 由于浮点精度，允许微小差异
         assert!((simd_sum - scalar_sum).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_simd_features_detection() {
         let features = SimdFeatures::detect();

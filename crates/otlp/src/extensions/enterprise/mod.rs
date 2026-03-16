@@ -6,8 +6,8 @@
 // 企业级特性将在后续实现
 // 当前先提供模块结构
 
-pub mod multi_tenant;
 pub mod compliance;
+pub mod multi_tenant;
 
-pub use multi_tenant::MultiTenantExporter;
 pub use compliance::ComplianceExporter;
+pub use multi_tenant::MultiTenantExporter;

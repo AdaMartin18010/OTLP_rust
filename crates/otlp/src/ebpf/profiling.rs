@@ -2,9 +2,9 @@
 //!
 //! 基于 eBPF 的 CPU 性能分析实现
 
-use crate::error::Result;
-use crate::ebpf::types::{EbpfConfig, EbpfEvent, EbpfEventType};
 use crate::ebpf::loader::EbpfLoader;
+use crate::ebpf::types::{EbpfConfig, EbpfEvent, EbpfEventType};
+use crate::error::Result;
 use crate::profiling::types::PprofProfile;
 use std::time::Duration;
 
@@ -258,7 +258,8 @@ impl EbpfCpuProfiler {
                 return Err(crate::error::OtlpError::Processing(
                     crate::error::ProcessingError::InvalidState {
                         message: "性能分析器未启动".to_string(),
-                    }.into(),
+                    }
+                    .into(),
                 ));
             }
 
@@ -291,7 +292,8 @@ impl EbpfCpuProfiler {
                 return Err(crate::error::OtlpError::Processing(
                     crate::error::ProcessingError::InvalidState {
                         message: "性能分析器未启动".to_string(),
-                    }.into(),
+                    }
+                    .into(),
                 ));
             }
 

@@ -129,7 +129,10 @@ mod tests {
             "test"
         );
         assert_eq!(AttributeValue::Int(42).to_formatted_string(), "42");
-        assert_eq!(AttributeValue::Double(std::f64::consts::PI).to_formatted_string(), "3.141592653589793");
+        assert_eq!(
+            AttributeValue::Double(std::f64::consts::PI).to_formatted_string(),
+            "3.141592653589793"
+        );
         assert_eq!(AttributeValue::Bool(true).to_formatted_string(), "true");
     }
 

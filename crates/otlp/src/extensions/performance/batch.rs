@@ -2,10 +2,10 @@
 //!
 //! 提供批量处理优化扩展，用于提高导出性能。
 
-use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 use opentelemetry_sdk::error::OTelSdkError;
-use std::time::Duration;
+use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 
 /// 批量处理优化的Span Exporter包装器
@@ -19,7 +19,7 @@ pub struct BatchOptimizedExporter<E> {
     pending_batch: Arc<Mutex<Vec<SpanData>>>,
 }
 
-impl<E> BatchOptimizedExporter<E> 
+impl<E> BatchOptimizedExporter<E>
 where
     E: SpanExporter + std::fmt::Debug,
 {
@@ -62,7 +62,10 @@ impl<E> SpanExporter for BatchOptimizedExporter<E>
 where
     E: SpanExporter + std::fmt::Debug + Send + Sync,
 {
-    fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
+    fn export(
+        &self,
+        batch: Vec<SpanData>,
+    ) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
         let pending_batch = self.pending_batch.clone();
         let batch_size = self.batch_size;
         async move {

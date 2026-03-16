@@ -2,9 +2,9 @@
 //!
 //! 基于 eBPF 的系统调用追踪实现
 
-use crate::error::Result;
-use crate::ebpf::types::{EbpfConfig, EbpfEvent};
 use crate::ebpf::loader::EbpfLoader;
+use crate::ebpf::types::{EbpfConfig, EbpfEvent};
+use crate::error::Result;
 
 /// eBPF 系统调用追踪器
 pub struct EbpfSyscallTracer {
@@ -68,7 +68,8 @@ impl EbpfSyscallTracer {
                 return Err(crate::error::OtlpError::Processing(
                     crate::error::ProcessingError::InvalidState {
                         message: "系统调用追踪器未启动".to_string(),
-                    }.into(),
+                    }
+                    .into(),
                 ));
             }
 
@@ -159,7 +160,11 @@ impl EbpfSyscallTracer {
     pub fn filter_syscall(&mut self, syscall_name: &str, enabled: bool) -> Result<()> {
         #[cfg(all(feature = "ebpf", target_os = "linux"))]
         {
-            tracing::info!("{} 系统调用过滤: {}", if enabled { "启用" } else { "禁用" }, syscall_name);
+            tracing::info!(
+                "{} 系统调用过滤: {}",
+                if enabled { "启用" } else { "禁用" },
+                syscall_name
+            );
             // 注意: 实际的过滤实现需要:
             // 1. 更新 eBPF 程序过滤规则
             //    使用 aya 的 Map API 更新过滤配置:

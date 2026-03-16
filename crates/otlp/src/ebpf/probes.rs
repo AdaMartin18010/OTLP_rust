@@ -2,8 +2,8 @@
 //!
 //! 管理 kprobes、uprobes 和 tracepoints
 
-use crate::error::Result;
 use crate::ebpf::error::EbpfError;
+use crate::error::Result;
 
 /// 探针类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,13 +71,17 @@ impl ProbeManager {
     /// # Ok::<(), otlp::error::OtlpError>(())
     /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
-    pub fn attach_kprobe(&mut self, name: &str, function: &str, bpf: Option<&mut aya::Bpf>) -> Result<()> {
+    pub fn attach_kprobe(
+        &mut self,
+        name: &str,
+        function: &str,
+        bpf: Option<&mut aya::Bpf>,
+    ) -> Result<()> {
         // 验证函数名
         if function.is_empty() {
-            return Err(crate::ebpf::error::EbpfError::AttachFailed(
-                "函数名不能为空".to_string(),
-            )
-            .into());
+            return Err(
+                crate::ebpf::error::EbpfError::AttachFailed("函数名不能为空".to_string()).into(),
+            );
         }
 
         tracing::info!("附加 KProbe: {} -> {}", name, function);
@@ -96,29 +100,27 @@ impl ProbeManager {
             use aya::programs::kprobe::KProbe;
 
             // 从 Bpf 实例获取程序并加载
-            let program: &mut KProbe = bpf.program_mut(name)
-                .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序不存在: {}",
-                    name
-                )))?
+            let program: &mut KProbe = bpf
+                .program_mut(name)
+                .ok_or_else(|| {
+                    crate::ebpf::error::EbpfError::AttachFailed(format!("程序不存在: {}", name))
+                })?
                 .try_into()
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序类型转换失败: {:?}",
-                    e
-                )))?;
+                .map_err(|e| {
+                    crate::ebpf::error::EbpfError::AttachFailed(format!(
+                        "程序类型转换失败: {:?}",
+                        e
+                    ))
+                })?;
 
-            program.load()
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序加载失败: {}",
-                    e
-                )))?;
+            program.load().map_err(|e| {
+                crate::ebpf::error::EbpfError::AttachFailed(format!("程序加载失败: {}", e))
+            })?;
 
             // 附加到内核函数
-            program.attach(function, 0)
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "探针附加失败: {}",
-                    e
-                )))?;
+            program.attach(function, 0).map_err(|e| {
+                crate::ebpf::error::EbpfError::AttachFailed(format!("探针附加失败: {}", e))
+            })?;
 
             tracing::info!("KProbe 已成功附加: {} -> {}", name, function);
 
@@ -180,7 +182,13 @@ impl ProbeManager {
     /// # Ok::<(), otlp::error::OtlpError>(())
     /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
-    pub fn attach_uprobe(&mut self, name: &str, binary: &str, symbol: &str, bpf: Option<&mut aya::Bpf>) -> Result<()> {
+    pub fn attach_uprobe(
+        &mut self,
+        name: &str,
+        binary: &str,
+        symbol: &str,
+        bpf: Option<&mut aya::Bpf>,
+    ) -> Result<()> {
         // 验证参数
         if binary.is_empty() {
             return Err(crate::ebpf::error::EbpfError::AttachFailed(
@@ -189,10 +197,9 @@ impl ProbeManager {
             .into());
         }
         if symbol.is_empty() {
-            return Err(crate::ebpf::error::EbpfError::AttachFailed(
-                "符号名不能为空".to_string(),
-            )
-            .into());
+            return Err(
+                crate::ebpf::error::EbpfError::AttachFailed("符号名不能为空".to_string()).into(),
+            );
         }
 
         // 检查二进制文件是否存在
@@ -217,30 +224,28 @@ impl ProbeManager {
             use aya::programs::uprobe::UProbe;
 
             // 从 Bpf 实例获取程序并加载
-            let program: &mut UProbe = bpf.program_mut(name)
-                .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序不存在: {}",
-                    name
-                )))?
+            let program: &mut UProbe = bpf
+                .program_mut(name)
+                .ok_or_else(|| {
+                    crate::ebpf::error::EbpfError::AttachFailed(format!("程序不存在: {}", name))
+                })?
                 .try_into()
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序类型转换失败: {:?}",
-                    e
-                )))?;
+                .map_err(|e| {
+                    crate::ebpf::error::EbpfError::AttachFailed(format!(
+                        "程序类型转换失败: {:?}",
+                        e
+                    ))
+                })?;
 
-            program.load()
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序加载失败: {}",
-                    e
-                )))?;
+            program.load().map_err(|e| {
+                crate::ebpf::error::EbpfError::AttachFailed(format!("程序加载失败: {}", e))
+            })?;
 
             // 附加到用户空间函数
             // pid: None 表示附加到所有进程
-            program.attach(Some(binary), symbol, 0, None)
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "探针附加失败: {}",
-                    e
-                )))?;
+            program.attach(Some(binary), symbol, 0, None).map_err(|e| {
+                crate::ebpf::error::EbpfError::AttachFailed(format!("探针附加失败: {}", e))
+            })?;
 
             tracing::info!("UProbe 已成功附加: {} -> {}:{}", name, binary, symbol);
 
@@ -302,7 +307,13 @@ impl ProbeManager {
     /// # Ok::<(), otlp::error::OtlpError>(())
     /// ```
     #[cfg(all(feature = "ebpf", target_os = "linux"))]
-    pub fn attach_tracepoint(&mut self, name: &str, category: &str, event: &str, bpf: Option<&mut aya::Bpf>) -> Result<()> {
+    pub fn attach_tracepoint(
+        &mut self,
+        name: &str,
+        category: &str,
+        event: &str,
+        bpf: Option<&mut aya::Bpf>,
+    ) -> Result<()> {
         // 验证参数
         if category.is_empty() {
             return Err(crate::ebpf::error::EbpfError::AttachFailed(
@@ -333,29 +344,27 @@ impl ProbeManager {
             use aya::programs::trace_point::TracePoint;
 
             // 从 Bpf 实例获取程序并加载
-            let program: &mut TracePoint = bpf.program_mut(name)
-                .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序不存在: {}",
-                    name
-                )))?
+            let program: &mut TracePoint = bpf
+                .program_mut(name)
+                .ok_or_else(|| {
+                    crate::ebpf::error::EbpfError::AttachFailed(format!("程序不存在: {}", name))
+                })?
                 .try_into()
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序类型转换失败: {:?}",
-                    e
-                )))?;
+                .map_err(|e| {
+                    crate::ebpf::error::EbpfError::AttachFailed(format!(
+                        "程序类型转换失败: {:?}",
+                        e
+                    ))
+                })?;
 
-            program.load()
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "程序加载失败: {}",
-                    e
-                )))?;
+            program.load().map_err(|e| {
+                crate::ebpf::error::EbpfError::AttachFailed(format!("程序加载失败: {}", e))
+            })?;
 
             // 附加到跟踪点
-            program.attach(category, event)
-                .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                    "探针附加失败: {}",
-                    e
-                )))?;
+            program.attach(category, event).map_err(|e| {
+                crate::ebpf::error::EbpfError::AttachFailed(format!("探针附加失败: {}", e))
+            })?;
 
             tracing::info!("Tracepoint 已成功附加: {} -> {}:{}", name, category, event);
 
@@ -502,50 +511,62 @@ impl ProbeManager {
             match probe_info.probe_type {
                 ProbeType::KProbe => {
                     use aya::programs::kprobe::KProbe;
-                    if let Ok(program) = bpf.program_mut(name)
-                        .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                            "程序不存在: {}",
-                            name
-                        )))?
+                    if let Ok(program) = bpf
+                        .program_mut(name)
+                        .ok_or_else(|| {
+                            crate::ebpf::error::EbpfError::AttachFailed(format!(
+                                "程序不存在: {}",
+                                name
+                            ))
+                        })?
                         .try_into::<KProbe>()
                     {
-                        program.detach()
-                            .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                        program.detach().map_err(|e| {
+                            crate::ebpf::error::EbpfError::AttachFailed(format!(
                                 "分离 KProbe 失败: {}",
                                 e
-                            )))?;
+                            ))
+                        })?;
                     }
                 }
                 ProbeType::UProbe => {
                     use aya::programs::uprobe::UProbe;
-                    if let Ok(program) = bpf.program_mut(name)
-                        .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                            "程序不存在: {}",
-                            name
-                        )))?
+                    if let Ok(program) = bpf
+                        .program_mut(name)
+                        .ok_or_else(|| {
+                            crate::ebpf::error::EbpfError::AttachFailed(format!(
+                                "程序不存在: {}",
+                                name
+                            ))
+                        })?
                         .try_into::<UProbe>()
                     {
-                        program.detach()
-                            .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                        program.detach().map_err(|e| {
+                            crate::ebpf::error::EbpfError::AttachFailed(format!(
                                 "分离 UProbe 失败: {}",
                                 e
-                            )))?;
+                            ))
+                        })?;
                     }
                 }
                 ProbeType::TracePoint => {
                     use aya::programs::trace_point::TracePoint;
-                    if let Ok(program) = bpf.program_mut(name)
-                        .ok_or_else(|| crate::ebpf::error::EbpfError::AttachFailed(format!(
-                            "程序不存在: {}",
-                            name
-                        )))?
+                    if let Ok(program) = bpf
+                        .program_mut(name)
+                        .ok_or_else(|| {
+                            crate::ebpf::error::EbpfError::AttachFailed(format!(
+                                "程序不存在: {}",
+                                name
+                            ))
+                        })?
                         .try_into::<TracePoint>()
                     {
-                        program.detach()
-                            .map_err(|e| crate::ebpf::error::EbpfError::AttachFailed(format!(
+                        program.detach().map_err(|e| {
+                            crate::ebpf::error::EbpfError::AttachFailed(format!(
                                 "分离 TracePoint 失败: {}",
                                 e
-                            )))?;
+                            ))
+                        })?;
                     }
                 }
             }
@@ -613,7 +634,8 @@ impl ProbeManager {
                 match probe_info.probe_type {
                     ProbeType::KProbe => {
                         use aya::programs::kprobe::KProbe;
-                        if let Ok(program) = bpf.program_mut(name)
+                        if let Ok(program) = bpf
+                            .program_mut(name)
                             .and_then(|p| p.try_into::<KProbe>().ok())
                         {
                             let _ = program.detach();
@@ -621,7 +643,8 @@ impl ProbeManager {
                     }
                     ProbeType::UProbe => {
                         use aya::programs::uprobe::UProbe;
-                        if let Ok(program) = bpf.program_mut(name)
+                        if let Ok(program) = bpf
+                            .program_mut(name)
                             .and_then(|p| p.try_into::<UProbe>().ok())
                         {
                             let _ = program.detach();
@@ -629,7 +652,8 @@ impl ProbeManager {
                     }
                     ProbeType::TracePoint => {
                         use aya::programs::trace_point::TracePoint;
-                        if let Ok(program) = bpf.program_mut(name)
+                        if let Ok(program) = bpf
+                            .program_mut(name)
                             .and_then(|p| p.try_into::<TracePoint>().ok())
                         {
                             let _ = program.detach();

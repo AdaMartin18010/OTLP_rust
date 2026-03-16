@@ -2,7 +2,7 @@
 //!
 //! This example demonstrates sliding window pattern detection algorithms
 //! for efficient analysis of telemetry data, showcasing Rust 1.94 performance optimizations.
-//! 
+//!
 //! Note: This example uses stable sliding window operations for pattern detection.
 //! The `array_windows` feature is available in nightly Rust for a more elegant API.
 //!
@@ -90,31 +90,31 @@ pub enum PatternType {
 /// Array Windows Pattern Detection
 /// ============================================
 /// Detects latency spikes using sliding windows of 3 samples
-/// 
+///
 /// Uses sliding window pattern detection to efficiently compare consecutive triplets
 /// of latency measurements to detect sudden spikes.
 pub fn detect_latency_spikes(samples: &[MetricSample]) -> Vec<PatternDetection> {
     let mut detections = Vec::new();
-    
+
     if samples.len() < 3 {
         return detections;
     }
-    
+
     // Use sliding window of 3 consecutive samples
     // In nightly Rust, this could use array_windows() for a more elegant API
     for window in samples.windows(3) {
         let prev = &window[0];
         let curr = &window[1];
         let next = &window[2];
-        
+
         // Detect spike: current value is significantly higher than neighbors
         let avg_neighbors = (prev.value + next.value) / 2.0;
         let spike_ratio = curr.value / avg_neighbors.max(1.0);
-        
+
         if spike_ratio > 2.0 && curr.value > 100.0 {
             // Calculate confidence based on spike severity
             let confidence = (spike_ratio.min(10.0) / 10.0).min(1.0);
-            
+
             detections.push(PatternDetection {
                 pattern_type: PatternType::SuddenSpike,
                 confidence,
@@ -126,7 +126,7 @@ pub fn detect_latency_spikes(samples: &[MetricSample]) -> Vec<PatternDetection> 
             });
         }
     }
-    
+
     detections
 }
 
@@ -136,39 +136,41 @@ pub fn detect_latency_spikes(samples: &[MetricSample]) -> Vec<PatternDetection> 
 /// in metric values, which may indicate resource exhaustion or degradation.
 pub fn detect_increasing_trends(samples: &[MetricSample]) -> Vec<PatternDetection> {
     let mut detections = Vec::new();
-    
+
     if samples.len() < 4 {
         return detections;
     }
-    
+
     // Use sliding window of 4 samples to detect sustained trends
     for window in samples.windows(4) {
         let a = &window[0];
         let b = &window[1];
         let c = &window[2];
         let d = &window[3];
-        
+
         // Check for consistent increase
         if b.value > a.value && c.value > b.value && d.value > c.value {
             let total_increase = d.value - a.value;
             let increase_ratio = total_increase / a.value.max(1.0);
-            
+
             if increase_ratio > 0.5 {
                 let confidence = increase_ratio.min(1.0);
-                
+
                 detections.push(PatternDetection {
                     pattern_type: PatternType::IncreasingTrend,
                     confidence,
                     affected_metrics: vec![format!("{:?}", a.metric_type)],
                     description: format!(
                         "Increasing trend: {:.2} -> {:.2} (+{:.1}%)",
-                        a.value, d.value, increase_ratio * 100.0
+                        a.value,
+                        d.value,
+                        increase_ratio * 100.0
                     ),
                 });
             }
         }
     }
-    
+
     detections
 }
 
@@ -178,21 +180,20 @@ pub fn detect_increasing_trends(samples: &[MetricSample]) -> Vec<PatternDetectio
 /// and detect orphaned spans or incorrect hierarchies.
 pub fn validate_span_sequence(spans: &[Span]) -> Vec<PatternDetection> {
     let mut detections = Vec::new();
-    
+
     if spans.len() < 3 {
         return detections;
     }
-    
+
     // Create a map of span IDs for quick lookup
-    let span_ids: std::collections::HashSet<_> = 
-        spans.iter().map(|s| s.span_id.clone()).collect();
-    
+    let span_ids: std::collections::HashSet<_> = spans.iter().map(|s| s.span_id.clone()).collect();
+
     // Use sliding windows to validate consecutive span relationships
     for window in spans.windows(3) {
         let parent = &window[0];
         let child = &window[1];
         let grandchild = &window[2];
-        
+
         // Check if child properly references parent
         if let Some(ref child_parent) = child.parent_span_id
             && child_parent != &parent.span_id
@@ -207,11 +208,12 @@ pub fn validate_span_sequence(spans: &[Span]) -> Vec<PatternDetection> {
                 ),
             });
         }
-        
+
         // Check for error propagation pattern (parent error -> child error)
-        if parent.status == SpanStatus::Error 
-            && child.status == SpanStatus::Error 
-            && grandchild.status == SpanStatus::Error {
+        if parent.status == SpanStatus::Error
+            && child.status == SpanStatus::Error
+            && grandchild.status == SpanStatus::Error
+        {
             detections.push(PatternDetection {
                 pattern_type: PatternType::Anomaly,
                 confidence: 0.95,
@@ -222,7 +224,7 @@ pub fn validate_span_sequence(spans: &[Span]) -> Vec<PatternDetection> {
                 ),
             });
         }
-        
+
         // Check for orphaned spans (parent_span_id not in trace)
         if let Some(ref parent_id) = child.parent_span_id
             && !span_ids.contains(parent_id)
@@ -238,7 +240,7 @@ pub fn validate_span_sequence(spans: &[Span]) -> Vec<PatternDetection> {
             });
         }
     }
-    
+
     detections
 }
 
@@ -248,11 +250,11 @@ pub fn validate_span_sequence(spans: &[Span]) -> Vec<PatternDetection> {
 /// indicate scheduled jobs or periodic workloads.
 pub fn detect_cyclic_patterns(samples: &[MetricSample]) -> Vec<PatternDetection> {
     let mut detections = Vec::new();
-    
+
     if samples.len() < 5 {
         return detections;
     }
-    
+
     // Use sliding window of 5 samples to detect cyclic patterns
     for window in samples.windows(5) {
         let a = &window[0];
@@ -260,37 +262,32 @@ pub fn detect_cyclic_patterns(samples: &[MetricSample]) -> Vec<PatternDetection>
         let c = &window[2];
         let d = &window[3];
         let e = &window[4];
-        
+
         // Look for valley-peak-valley pattern (V-shaped or U-shaped)
-        let is_valley_peak_valley = 
-            b.value > a.value && 
-            c.value > b.value && 
-            d.value < c.value && 
-            e.value < d.value;
-        
+        let is_valley_peak_valley =
+            b.value > a.value && c.value > b.value && d.value < c.value && e.value < d.value;
+
         // Look for peak-valley-peak pattern (inverted V)
-        let is_peak_valley_peak = 
-            b.value < a.value && 
-            c.value < b.value && 
-            d.value > c.value && 
-            e.value > d.value;
-        
+        let is_peak_valley_peak =
+            b.value < a.value && c.value < b.value && d.value > c.value && e.value > d.value;
+
         if is_valley_peak_valley || is_peak_valley_peak {
             let amplitude = (c.value - (a.value + e.value) / 2.0).abs();
             let confidence = (amplitude / c.value).clamp(0.5, 1.0);
-            
+
             detections.push(PatternDetection {
                 pattern_type: PatternType::CyclicPattern,
                 confidence,
                 affected_metrics: vec![format!("{:?}", a.metric_type)],
                 description: format!(
                     "Cyclic pattern detected: amplitude {:.2} over {}s",
-                    amplitude, e.timestamp - a.timestamp
+                    amplitude,
+                    e.timestamp - a.timestamp
                 ),
             });
         }
     }
-    
+
     detections
 }
 
@@ -300,37 +297,32 @@ pub fn detect_cyclic_patterns(samples: &[MetricSample]) -> Vec<PatternDetection>
 /// which may indicate healthy steady-state operation.
 pub fn detect_stability_periods(samples: &[MetricSample]) -> Vec<PatternDetection> {
     let mut detections = Vec::new();
-    
+
     if samples.len() < 5 {
         return detections;
     }
-    
+
     for window in samples.windows(5) {
         let values: Vec<f64> = window.iter().map(|s| s.value).collect();
         let mean = values.iter().sum::<f64>() / values.len() as f64;
-        
+
         // Calculate standard deviation
-        let variance = values.iter()
-            .map(|v| (v - mean).powi(2))
-            .sum::<f64>() / values.len() as f64;
+        let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
         let std_dev = variance.sqrt();
-        
+
         // Coefficient of variation (CV) < 0.1 indicates stability
         let cv = std_dev / mean.max(1.0);
-        
+
         if cv < 0.05 {
             detections.push(PatternDetection {
                 pattern_type: PatternType::Stability,
                 confidence: 1.0 - cv * 10.0, // Higher confidence for lower CV
                 affected_metrics: vec![format!("{:?}", window[0].metric_type)],
-                description: format!(
-                    "Stable period detected: mean={:.2}, CV={:.3}",
-                    mean, cv
-                ),
+                description: format!("Stable period detected: mean={:.2}, CV={:.3}", mean, cv),
             });
         }
     }
-    
+
     detections
 }
 
@@ -341,46 +333,46 @@ pub fn detect_stability_periods(samples: &[MetricSample]) -> Vec<PatternDetectio
 fn generate_latency_samples(count: usize) -> Vec<MetricSample> {
     let mut samples = Vec::with_capacity(count);
     let base_latency = 50.0;
-    
+
     for i in 0..count {
         let mut value = base_latency + (i as f64 * 0.5); // Slight upward trend
-        
+
         // Add some noise
         value += (i as f64).sin() * 10.0;
-        
+
         // Inject spikes at specific indices
         if i == 15 || i == 35 || i == 55 {
             value *= 3.5;
         }
-        
+
         // Ensure non-negative
         value = value.max(1.0);
-        
+
         samples.push(MetricSample {
             timestamp: i as u64,
             value,
             metric_type: MetricType::Latency,
         });
     }
-    
+
     samples
 }
 
 /// Generates synthetic throughput samples with cyclic pattern
 fn generate_throughput_samples(count: usize) -> Vec<MetricSample> {
     let mut samples = Vec::with_capacity(count);
-    
+
     for i in 0..count {
         // Create cyclic pattern with sine wave
         let value = 1000.0 + (i as f64 * 0.1).sin() * 200.0;
-        
+
         samples.push(MetricSample {
             timestamp: i as u64,
             value: value.max(0.0),
             metric_type: MetricType::Throughput,
         });
     }
-    
+
     samples
 }
 
@@ -448,7 +440,7 @@ fn generate_span_sequence() -> Vec<Span> {
 fn print_detections(detections: &[PatternDetection], title: &str) {
     println!("\n{}:", title);
     println!("{}", "-".repeat(60));
-    
+
     if detections.is_empty() {
         println!("  No patterns detected");
     } else {
@@ -473,67 +465,67 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║     Rust 1.94 Array Windows Demo - OTLP Telemetry        ║");
     println!("║          Pattern Detection & Trend Analysis              ║");
     println!("╚══════════════════════════════════════════════════════════╝");
-    
+
     // Section 1: Latency Spike Detection
     println!("\n📊 Section 1: Latency Spike Detection");
     println!("   Analyzing 60 latency samples for sudden spikes...");
-    
+
     let latency_samples = generate_latency_samples(60);
     let spike_detections = detect_latency_spikes(&latency_samples);
     print_detections(&spike_detections, "Latency Spike Detections");
-    
+
     // Section 2: Trend Analysis
     println!("\n📈 Section 2: Trend Analysis");
     println!("   Analyzing metrics for increasing/decreasing trends...");
-    
+
     let trend_detections = detect_increasing_trends(&latency_samples);
     print_detections(&trend_detections, "Trend Detections");
-    
+
     // Section 3: Span Sequence Validation
     println!("\n🔗 Section 3: Span Sequence Validation");
     println!("   Validating distributed trace span hierarchies...");
-    
+
     let spans = generate_span_sequence();
     let span_detections = validate_span_sequence(&spans);
     print_detections(&span_detections, "Span Validation Results");
-    
+
     // Section 4: Cyclic Pattern Detection
     println!("\n🔄 Section 4: Cyclic Pattern Detection");
     println!("   Analyzing throughput samples for cyclic patterns...");
-    
+
     let throughput_samples = generate_throughput_samples(50);
     let cyclic_detections = detect_cyclic_patterns(&throughput_samples);
     print_detections(&cyclic_detections, "Cyclic Pattern Detections");
-    
+
     // Section 5: Stability Detection
     println!("\n⚖️  Section 5: Stability Period Detection");
     println!("   Identifying periods of stable metric values...");
-    
+
     let stability_detections = detect_stability_periods(&throughput_samples);
     print_detections(&stability_detections, "Stability Detections");
-    
+
     // Summary
     println!("\n╔══════════════════════════════════════════════════════════╗");
     println!("║                       Summary                            ║");
     println!("╚══════════════════════════════════════════════════════════╝");
-    
-    let total_detections = spike_detections.len() 
-        + trend_detections.len() 
-        + span_detections.len() 
-        + cyclic_detections.len() 
+
+    let total_detections = spike_detections.len()
+        + trend_detections.len()
+        + span_detections.len()
+        + cyclic_detections.len()
         + stability_detections.len();
-    
+
     println!("  Total patterns detected: {}", total_detections);
     println!("  - Latency spikes: {}", spike_detections.len());
     println!("  - Trends: {}", trend_detections.len());
     println!("  - Span issues: {}", span_detections.len());
     println!("  - Cyclic patterns: {}", cyclic_detections.len());
     println!("  - Stability periods: {}", stability_detections.len());
-    
+
     println!("\n✅ Array windows demo completed successfully!");
     println!("   Rust 1.94 array_windows feature enables efficient");
     println!("   fixed-size sliding window operations for telemetry analysis.");
-    
+
     Ok(())
 }
 
@@ -541,34 +533,62 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_latency_spike_detection() {
         let samples = vec![
-            MetricSample { timestamp: 1, value: 50.0, metric_type: MetricType::Latency },
-            MetricSample { timestamp: 2, value: 200.0, metric_type: MetricType::Latency }, // Spike
-            MetricSample { timestamp: 3, value: 55.0, metric_type: MetricType::Latency },
+            MetricSample {
+                timestamp: 1,
+                value: 50.0,
+                metric_type: MetricType::Latency,
+            },
+            MetricSample {
+                timestamp: 2,
+                value: 200.0,
+                metric_type: MetricType::Latency,
+            }, // Spike
+            MetricSample {
+                timestamp: 3,
+                value: 55.0,
+                metric_type: MetricType::Latency,
+            },
         ];
-        
+
         let detections = detect_latency_spikes(&samples);
         assert!(!detections.is_empty());
         assert_eq!(detections[0].pattern_type, PatternType::SuddenSpike);
     }
-    
+
     #[test]
     fn test_increasing_trend_detection() {
         let samples = vec![
-            MetricSample { timestamp: 1, value: 10.0, metric_type: MetricType::CpuUsage },
-            MetricSample { timestamp: 2, value: 20.0, metric_type: MetricType::CpuUsage },
-            MetricSample { timestamp: 3, value: 35.0, metric_type: MetricType::CpuUsage },
-            MetricSample { timestamp: 4, value: 60.0, metric_type: MetricType::CpuUsage },
+            MetricSample {
+                timestamp: 1,
+                value: 10.0,
+                metric_type: MetricType::CpuUsage,
+            },
+            MetricSample {
+                timestamp: 2,
+                value: 20.0,
+                metric_type: MetricType::CpuUsage,
+            },
+            MetricSample {
+                timestamp: 3,
+                value: 35.0,
+                metric_type: MetricType::CpuUsage,
+            },
+            MetricSample {
+                timestamp: 4,
+                value: 60.0,
+                metric_type: MetricType::CpuUsage,
+            },
         ];
-        
+
         let detections = detect_increasing_trends(&samples);
         assert!(!detections.is_empty());
         assert_eq!(detections[0].pattern_type, PatternType::IncreasingTrend);
     }
-    
+
     #[test]
     fn test_span_validation() {
         let spans = vec![
@@ -600,22 +620,42 @@ mod tests {
                 status: SpanStatus::Ok,
             },
         ];
-        
+
         let detections = validate_span_sequence(&spans);
         // Should not detect any issues with properly linked spans
         assert!(detections.is_empty());
     }
-    
+
     #[test]
     fn test_stability_detection() {
         let samples = vec![
-            MetricSample { timestamp: 1, value: 100.0, metric_type: MetricType::MemoryUsage },
-            MetricSample { timestamp: 2, value: 101.0, metric_type: MetricType::MemoryUsage },
-            MetricSample { timestamp: 3, value: 100.5, metric_type: MetricType::MemoryUsage },
-            MetricSample { timestamp: 4, value: 100.2, metric_type: MetricType::MemoryUsage },
-            MetricSample { timestamp: 5, value: 100.8, metric_type: MetricType::MemoryUsage },
+            MetricSample {
+                timestamp: 1,
+                value: 100.0,
+                metric_type: MetricType::MemoryUsage,
+            },
+            MetricSample {
+                timestamp: 2,
+                value: 101.0,
+                metric_type: MetricType::MemoryUsage,
+            },
+            MetricSample {
+                timestamp: 3,
+                value: 100.5,
+                metric_type: MetricType::MemoryUsage,
+            },
+            MetricSample {
+                timestamp: 4,
+                value: 100.2,
+                metric_type: MetricType::MemoryUsage,
+            },
+            MetricSample {
+                timestamp: 5,
+                value: 100.8,
+                metric_type: MetricType::MemoryUsage,
+            },
         ];
-        
+
         let detections = detect_stability_periods(&samples);
         assert!(!detections.is_empty());
         assert_eq!(detections[0].pattern_type, PatternType::Stability);

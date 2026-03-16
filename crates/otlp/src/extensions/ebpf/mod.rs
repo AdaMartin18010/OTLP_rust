@@ -3,9 +3,9 @@
 //! 提供eBPF性能分析和追踪扩展，用于低开销的系统级性能分析。
 //! 通过包装官方Tracer来添加eBPF功能。
 
+use opentelemetry::Context;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 use opentelemetry::trace::{Span, Tracer};
-use opentelemetry::Context;
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 use crate::ebpf::EbpfProfiler;

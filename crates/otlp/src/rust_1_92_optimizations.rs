@@ -49,11 +49,7 @@ impl AsyncClosureOptimizer {
     }
 
     /// 处理熔断器状态
-    async fn handle_circuit_state<F, Fut, R>(
-        &self,
-        state: CircuitState,
-        f: F,
-    ) -> Result<R>
+    async fn handle_circuit_state<F, Fut, R>(&self, state: CircuitState, f: F) -> Result<R>
     where
         F: FnOnce() -> Fut,
         Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
@@ -152,10 +148,7 @@ impl TupleCollectionOptimizer {
         &self,
         data: Vec<(String, i32, bool)>,
     ) -> (HashMap<String, i32>, Vec<bool>, Vec<String>) {
-        let (names, values, flags): (Vec<_>, Vec<_>, Vec<_>) = data
-            .into_iter()
-
-            .collect();
+        let (names, values, flags): (Vec<_>, Vec<_>, Vec<_>) = data.into_iter().collect();
 
         let mut map = HashMap::new();
         for (name, value) in names.iter().zip(values.iter()) {
@@ -243,7 +236,7 @@ impl<T: Send + Sync + Clone + 'static> OptimizedMemoryPool<T> {
 
     pub async fn acquire(&self) -> PooledObject<T> {
         let mut pool = self.pool.lock().await;
-        
+
         let obj = if let Some(obj) = pool.pop() {
             drop(pool);
             let mut stats = self.stats.lock().await;
@@ -741,10 +734,7 @@ impl MemoryPoolOptimizer {
     }
 
     fn insert_into_pool(&mut self, size: usize, ptr: *mut u8) {
-        self.pools
-            .entry(size)
-            .or_default()
-            .push(ptr);
+        self.pools.entry(size).or_default().push(ptr);
     }
 
     fn deallocate_memory(ptr: *mut u8) {

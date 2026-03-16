@@ -106,7 +106,8 @@ pub fn detect_abba_patterns(data: &[u8]) -> bool {
     if data.len() < 4 {
         return false;
     }
-    data.array_windows().any(|[a1, b1, b2, a2]| (a1 != b1) && (a1 == a2) && (b1 == b2))
+    data.array_windows()
+        .any(|[a1, b1, b2, a2]| (a1 != b1) && (a1 == a2) && (b1 == b2))
 }
 
 /// 检测 ABAB 模式
@@ -124,7 +125,8 @@ pub fn detect_abab_patterns(data: &[u8]) -> bool {
     if data.len() < 4 {
         return false;
     }
-    data.array_windows().any(|[a1, b1, a2, b2]| (a1 != b1) && (a1 == a2) && (b1 == b2))
+    data.array_windows()
+        .any(|[a1, b1, a2, b2]| (a1 != b1) && (a1 == a2) && (b1 == b2))
 }
 
 /// 检测任意重复模式
@@ -160,13 +162,11 @@ pub fn detect_repeated_patterns_2<T: PartialEq>(data: &[T]) -> Vec<usize> {
 
     data.array_windows::<4>()
         .enumerate()
-        .filter_map(|(i, [a, b, c, d])| {
-            if a == c && b == d {
-                Some(i)
-            } else {
-                None
-            }
-        })
+        .filter_map(
+            |(i, [a, b, c, d])| {
+                if a == c && b == d { Some(i) } else { None }
+            },
+        )
         .collect()
 }
 
@@ -231,7 +231,10 @@ pub fn detect_repeated_patterns_4<T: PartialEq>(data: &[T]) -> Vec<usize> {
 /// 通用重复模式检测（任意长度）
 ///
 /// 对于非常量长度的模式，使用通用实现。
-pub fn detect_repeated_patterns_generic<T: PartialEq>(data: &[T], pattern_len: usize) -> Vec<usize> {
+pub fn detect_repeated_patterns_generic<T: PartialEq>(
+    data: &[T],
+    pattern_len: usize,
+) -> Vec<usize> {
     if data.len() < pattern_len * 2 {
         return Vec::new();
     }
@@ -491,7 +494,7 @@ pub fn detect_anomalies(metrics: &[MetricPoint], threshold: f64) -> Vec<usize> {
     }
 
     let values: Vec<f64> = metrics.iter().map(|m| m.value).collect();
-    
+
     // 计算均值和标准差
     let mean = values.iter().sum::<f64>() / values.len() as f64;
     let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
@@ -503,7 +506,7 @@ pub fn detect_anomalies(metrics: &[MetricPoint], threshold: f64) -> Vec<usize> {
         .filter_map(|(i, [a, b, c])| {
             // 检测中间点是否为异常值
             let is_outlier = (b.value - mean).abs() > threshold * std_dev;
-            
+
             // 检测突变模式
             let diff1 = (b.value - a.value).abs();
             let diff2 = (c.value - b.value).abs();
@@ -594,11 +597,7 @@ pub fn detect_timestamp_gaps(timestamps: &[u64], max_gap: u64) -> Vec<usize> {
         .enumerate()
         .filter_map(|(i, [prev, curr])| {
             let gap = curr.saturating_sub(*prev);
-            if gap > max_gap {
-                Some(i)
-            } else {
-                None
-            }
+            if gap > max_gap { Some(i) } else { None }
         })
         .collect()
 }
@@ -782,11 +781,11 @@ mod tests {
         let data2 = vec![1u8, 2, 3, 1, 2, 3, 4, 5];
         let patterns2 = detect_repeated_patterns_3(&data2);
         assert_eq!(patterns2, vec![0]);
-        
+
         let data3 = vec![1u8, 2, 3, 4, 1, 2, 3, 4, 5, 6];
         let patterns3 = detect_repeated_patterns_4(&data3);
         assert_eq!(patterns3, vec![0]);
-        
+
         // 通用模式检测
         let patterns_generic = detect_repeated_patterns_generic(&data, 2);
         assert_eq!(patterns_generic, vec![0]);
@@ -817,7 +816,7 @@ mod tests {
     fn test_detect_peaks_and_valleys() {
         let data = vec![1.0, 3.0, 1.0, 2.0, 4.0, 2.0];
         let result = detect_peaks_and_valleys(&data);
-        
+
         // 索引 0: [1,3,1] -> Peak
         assert_eq!(result[0], Some(Pattern::Peak));
         // 索引 1: [3,1,2] -> Valley
@@ -831,7 +830,7 @@ mod tests {
     #[test]
     fn test_moving_average() {
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        
+
         let ma2 = moving_average::<2>(&data);
         assert_eq!(ma2, vec![1.5, 2.5, 3.5, 4.5]);
 
@@ -896,11 +895,26 @@ mod tests {
     #[test]
     fn test_detect_anomalies() {
         let metrics = vec![
-            MetricPoint { timestamp: 1, value: 1.0 },
-            MetricPoint { timestamp: 2, value: 1.1 },
-            MetricPoint { timestamp: 3, value: 10.0 }, // 异常值
-            MetricPoint { timestamp: 4, value: 1.2 },
-            MetricPoint { timestamp: 5, value: 1.1 },
+            MetricPoint {
+                timestamp: 1,
+                value: 1.0,
+            },
+            MetricPoint {
+                timestamp: 2,
+                value: 1.1,
+            },
+            MetricPoint {
+                timestamp: 3,
+                value: 10.0,
+            }, // 异常值
+            MetricPoint {
+                timestamp: 4,
+                value: 1.2,
+            },
+            MetricPoint {
+                timestamp: 5,
+                value: 1.1,
+            },
         ];
 
         let anomalies = detect_anomalies(&metrics, 2.0);
@@ -910,9 +924,18 @@ mod tests {
     #[test]
     fn test_calculate_rate_of_change() {
         let metrics = vec![
-            MetricPoint { timestamp: 1000, value: 10.0 },
-            MetricPoint { timestamp: 2000, value: 20.0 },
-            MetricPoint { timestamp: 3000, value: 25.0 },
+            MetricPoint {
+                timestamp: 1000,
+                value: 10.0,
+            },
+            MetricPoint {
+                timestamp: 2000,
+                value: 20.0,
+            },
+            MetricPoint {
+                timestamp: 3000,
+                value: 25.0,
+            },
         ];
 
         let rates = calculate_rate_of_change(&metrics);
@@ -955,11 +978,29 @@ mod tests {
     fn test_run_length_encode() {
         let data = vec![1u8, 1, 1, 2, 2, 3, 3, 3, 3];
         let encoded = run_length_encode(&data);
-        
+
         assert_eq!(encoded.len(), 3);
-        assert_eq!(encoded[0], RunLength { value: 1, length: 3 });
-        assert_eq!(encoded[1], RunLength { value: 2, length: 2 });
-        assert_eq!(encoded[2], RunLength { value: 3, length: 4 });
+        assert_eq!(
+            encoded[0],
+            RunLength {
+                value: 1,
+                length: 3
+            }
+        );
+        assert_eq!(
+            encoded[1],
+            RunLength {
+                value: 2,
+                length: 2
+            }
+        );
+        assert_eq!(
+            encoded[2],
+            RunLength {
+                value: 3,
+                length: 4
+            }
+        );
     }
 
     #[test]
@@ -979,7 +1020,7 @@ mod tests {
     fn test_longest_increasing_subsequence() {
         let data = vec![1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 4.0, 5.0];
         let (start, len) = longest_increasing_subsequence(&data);
-        
+
         assert_eq!(start, 3);
         assert_eq!(len, 5); // [1.0, 2.0, 3.0, 4.0, 5.0]
     }

@@ -48,34 +48,26 @@ pub enum EbpfError {
 impl From<EbpfError> for crate::error::OtlpError {
     fn from(err: EbpfError) -> Self {
         match err {
-            EbpfError::UnsupportedPlatform => {
-                crate::error::OtlpError::Compatibility(
-                    crate::error::CompatibilityError::UnsupportedPlatform {
-                        platform: "Linux".to_string(),
-                        message: "eBPF 仅在 Linux 平台支持".to_string(),
-                    },
-                )
-            }
-            EbpfError::InsufficientPermissions => {
-                crate::error::OtlpError::System(
-                    crate::error::SystemError::PermissionDenied {
-                        message: "需要 CAP_BPF 权限或 root".to_string(),
-                    },
-                )
-            }
-            EbpfError::IncompatibleKernel => {
-                crate::error::OtlpError::Compatibility(
-                    crate::error::CompatibilityError::VersionMismatch {
-                        required: "Linux 内核 >= 5.8".to_string(),
-                        found: "未知".to_string(),
-                    },
-                )
-            }
-            _ => crate::error::OtlpError::Processing(
-                crate::error::ProcessingError::InvalidState {
-                    message: err.to_string(),
+            EbpfError::UnsupportedPlatform => crate::error::OtlpError::Compatibility(
+                crate::error::CompatibilityError::UnsupportedPlatform {
+                    platform: "Linux".to_string(),
+                    message: "eBPF 仅在 Linux 平台支持".to_string(),
                 },
             ),
+            EbpfError::InsufficientPermissions => {
+                crate::error::OtlpError::System(crate::error::SystemError::PermissionDenied {
+                    message: "需要 CAP_BPF 权限或 root".to_string(),
+                })
+            }
+            EbpfError::IncompatibleKernel => crate::error::OtlpError::Compatibility(
+                crate::error::CompatibilityError::VersionMismatch {
+                    required: "Linux 内核 >= 5.8".to_string(),
+                    found: "未知".to_string(),
+                },
+            ),
+            _ => crate::error::OtlpError::Processing(crate::error::ProcessingError::InvalidState {
+                message: err.to_string(),
+            }),
         }
     }
 }

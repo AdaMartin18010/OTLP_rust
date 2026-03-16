@@ -2,11 +2,11 @@
 //!
 //! 提供 eBPF 数据到 OpenTelemetry 的转换和导出功能
 
-use crate::error::Result;
 use crate::ebpf::types::{EbpfEvent, EbpfEventType};
+use crate::error::Result;
 use crate::profiling::types::PprofProfile;
-use opentelemetry::trace::{Span, Tracer};
 use opentelemetry::metrics::Meter;
+use opentelemetry::trace::{Span, Tracer};
 
 /// eBPF 事件到 OpenTelemetry 的转换器
 pub struct EbpfOtlpConverter {
@@ -62,9 +62,10 @@ impl EbpfOtlpConverter {
             // 基础属性
             span.set_attribute(opentelemetry::KeyValue::new("ebpf.pid", event.pid as i64));
             span.set_attribute(opentelemetry::KeyValue::new("ebpf.tid", event.tid as i64));
-            span.set_attribute(
-                opentelemetry::KeyValue::new("ebpf.event_type", format!("{:?}", event.event_type)),
-            );
+            span.set_attribute(opentelemetry::KeyValue::new(
+                "ebpf.event_type",
+                format!("{:?}", event.event_type),
+            ));
 
             // 注意: 实际实现需要根据事件类型解析 event.data 并设置相应的属性
             // 例如，对于 NetworkPacket 事件，需要解析 IP 地址、端口等信息：
@@ -321,21 +322,24 @@ impl EbpfOtlpConverter {
             // 基础属性
             span.set_attribute(opentelemetry::KeyValue::new("ebpf.pid", event.pid as i64));
             span.set_attribute(opentelemetry::KeyValue::new("ebpf.tid", event.tid as i64));
-            span.set_attribute(
-                opentelemetry::KeyValue::new("ebpf.event_type", format!("{:?}", event.event_type)),
-            );
+            span.set_attribute(opentelemetry::KeyValue::new(
+                "ebpf.event_type",
+                format!("{:?}", event.event_type),
+            ));
 
             // 时间戳属性
             let timestamp_nanos = event.timestamp.as_nanos() as i64;
-            span.set_attribute(
-                opentelemetry::KeyValue::new("ebpf.timestamp", timestamp_nanos),
-            );
+            span.set_attribute(opentelemetry::KeyValue::new(
+                "ebpf.timestamp",
+                timestamp_nanos,
+            ));
 
             // 数据大小属性
             if !event.data.is_empty() {
-                span.set_attribute(
-                    opentelemetry::KeyValue::new("ebpf.data_size", event.data.len() as i64),
-                );
+                span.set_attribute(opentelemetry::KeyValue::new(
+                    "ebpf.data_size",
+                    event.data.len() as i64,
+                ));
             }
 
             Ok(Some(span))
@@ -362,7 +366,10 @@ impl EbpfOtlpConverter {
                 let size_gauge = meter.u64_gauge("ebpf.events.data_size").init();
                 size_gauge.record(
                     event.data.len() as u64,
-                    &[opentelemetry::KeyValue::new("event.type", format!("{:?}", event.event_type))],
+                    &[opentelemetry::KeyValue::new(
+                        "event.type",
+                        format!("{:?}", event.event_type),
+                    )],
                 );
             }
         }

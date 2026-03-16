@@ -233,7 +233,7 @@ where
             .await;
         });
     }
-    
+
     async fn batch_processing_loop(
         config: BatchProcessorConfig,
         processor: Arc<F>,
@@ -403,7 +403,7 @@ where
             total_failed.fetch_add(batch_size, Ordering::AcqRel);
         }
     }
-    
+
     async fn update_batch_stats(
         stats: &Arc<Mutex<BatchProcessorStats>>,
         config: &BatchProcessorConfig,
@@ -414,7 +414,7 @@ where
         if !config.enable_stats {
             return;
         }
-        
+
         let mut stats_guard = stats.lock().await;
         stats_guard.total_batches += 1;
         stats_guard.total_items += batch_size;
@@ -425,8 +425,7 @@ where
         stats_guard.last_batch_time = Some(Instant::now());
 
         if let Some(compressed_size) = result.compressed_size {
-            stats_guard.compression_ratio =
-                compressed_size as f64 / result.original_size as f64;
+            stats_guard.compression_ratio = compressed_size as f64 / result.original_size as f64;
         }
     }
 

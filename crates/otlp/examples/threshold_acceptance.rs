@@ -3,24 +3,26 @@
 //! Demonstrates how to use acceptance thresholds to determine if a
 //! partial success response should be treated as success or failure.
 
-use otlp::response::{
-    ExportTracePartialSuccess, ExportMetricsPartialSuccess,
-    PartialSuccessHandler,
-};
 use otlp::response::handlers::ResponseClassifier;
+use otlp::response::{
+    ExportMetricsPartialSuccess, ExportTracePartialSuccess, PartialSuccessHandler,
+};
 
 fn main() {
     println!("=== Threshold-Based Acceptance Demo ===\n");
 
     // Define different thresholds for different use cases
-    let strict_threshold = 0.05;    // 5% - for critical data
-    let normal_threshold = 0.10;    // 10% - for normal operations
-    let relaxed_threshold = 0.25;   // 25% - for best-effort data
+    let strict_threshold = 0.05; // 5% - for critical data
+    let normal_threshold = 0.10; // 10% - for normal operations
+    let relaxed_threshold = 0.25; // 25% - for best-effort data
 
     println!("Thresholds:");
     println!("  Strict (critical data):  {}%", strict_threshold * 100.0);
     println!("  Normal (default):        {}%", normal_threshold * 100.0);
-    println!("  Relaxed (best-effort):   {}%\n", relaxed_threshold * 100.0);
+    println!(
+        "  Relaxed (best-effort):   {}%\n",
+        relaxed_threshold * 100.0
+    );
 
     // Test scenarios with different rejection rates
     let scenarios = vec![
@@ -30,19 +32,22 @@ fn main() {
         ("Critical rejection", 50, 100),
     ];
 
-    println!("{:<20} {:>10} {:>12} {:>10} {:>10} {:>10}",
-        "Scenario", "Rejected", "Total", "Strict", "Normal", "Relaxed");
+    println!(
+        "{:<20} {:>10} {:>12} {:>10} {:>10} {:>10}",
+        "Scenario", "Rejected", "Total", "Strict", "Normal", "Relaxed"
+    );
     println!("{}", "-".repeat(72));
 
     for (name, rejected, total) in scenarios {
         let _handler = PartialSuccessHandler::<()>::new(total);
         let rejection_rate = rejected as f64 / total as f64;
-        
+
         let strict_ok = rejection_rate <= strict_threshold;
         let normal_ok = rejection_rate <= normal_threshold;
         let relaxed_ok = rejection_rate <= relaxed_threshold;
-        
-        println!("{:<20} {:>10} {:>12} {:>10} {:>10} {:>10}",
+
+        println!(
+            "{:<20} {:>10} {:>12} {:>10} {:>10} {:>10}",
             name,
             rejected,
             total,
@@ -55,9 +60,9 @@ fn main() {
     println!("\n--- Signal-Specific Thresholds ---\n");
 
     // Different signals may have different tolerance levels
-    let trace_threshold = 0.05;   // Traces: low tolerance (5%)
-    let metric_threshold = 0.10;  // Metrics: medium tolerance (10%)
-    let log_threshold = 0.20;     // Logs: higher tolerance (20%)
+    let trace_threshold = 0.05; // Traces: low tolerance (5%)
+    let metric_threshold = 0.10; // Metrics: medium tolerance (10%)
+    let log_threshold = 0.20; // Logs: higher tolerance (20%)
 
     println!("Signal-specific thresholds:");
     println!("  Traces:  {}%", trace_threshold * 100.0);
@@ -67,15 +72,19 @@ fn main() {
     // Simulate partial successes for each signal
     let mut trace_handler = PartialSuccessHandler::<ExportTracePartialSuccess>::new(100);
     trace_handler.handle_partial_success_raw(8, "trace rate limit");
-    
+
     let mut metric_handler = PartialSuccessHandler::<ExportMetricsPartialSuccess>::new(100);
     metric_handler.handle_partial_success_raw(8, "metric quota exceeded");
 
     println!("Rejection rate: 8%\n");
-    println!("Traces acceptable (5% threshold):  {}", 
-        trace_handler.is_acceptable(trace_threshold));
-    println!("Metrics acceptable (10% threshold): {}", 
-        metric_handler.is_acceptable(metric_threshold));
+    println!(
+        "Traces acceptable (5% threshold):  {}",
+        trace_handler.is_acceptable(trace_threshold)
+    );
+    println!(
+        "Metrics acceptable (10% threshold): {}",
+        metric_handler.is_acceptable(metric_threshold)
+    );
 
     println!("\n--- Using ResponseClassifier with Custom Thresholds ---\n");
 

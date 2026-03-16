@@ -122,12 +122,7 @@ pub struct EbpfEvent {
 
 impl EbpfEvent {
     /// 创建新事件
-    pub fn new(
-        event_type: EbpfEventType,
-        pid: u32,
-        tid: u32,
-        data: Vec<u8>,
-    ) -> Self {
+    pub fn new(event_type: EbpfEventType, pid: u32, tid: u32, data: Vec<u8>) -> Self {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default();

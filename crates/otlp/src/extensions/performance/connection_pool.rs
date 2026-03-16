@@ -2,8 +2,8 @@
 //!
 //! 提供连接池优化扩展，用于复用网络连接。
 
-use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 use opentelemetry_sdk::error::OTelSdkError;
+use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 
 /// 连接池优化的Span Exporter包装器
 ///
@@ -15,7 +15,7 @@ pub struct ConnectionPoolExporter<E> {
     pool_enabled: bool,
 }
 
-impl<E> ConnectionPoolExporter<E> 
+impl<E> ConnectionPoolExporter<E>
 where
     E: SpanExporter + std::fmt::Debug,
 {
@@ -47,7 +47,10 @@ where
     E: SpanExporter + std::fmt::Debug + Send + Sync,
 {
     #[allow(clippy::manual_async_fn)]
-    fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
+    fn export(
+        &self,
+        batch: Vec<SpanData>,
+    ) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
         async move {
             // 连接池优化通常在底层网络层实现
             // 这里主要是透传，实际优化在底层

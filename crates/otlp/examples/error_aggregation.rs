@@ -3,12 +3,11 @@
 //! Demonstrates how to aggregate and analyze errors from multiple
 //! partial success responses.
 
-use otlp::response::{
-    ResponseMetricsCollector, ClassificationResult, ResponseClassification,
-    ResponseAggregator, ResponseType, SignalType, ResponseMetadata,
-    PartialSuccessHandler,
-};
 use otlp::response::handlers::RetryDecision;
+use otlp::response::{
+    ClassificationResult, PartialSuccessHandler, ResponseAggregator, ResponseClassification,
+    ResponseMetadata, ResponseMetricsCollector, ResponseType, SignalType,
+};
 use std::sync::Arc;
 
 fn main() {
@@ -50,14 +49,23 @@ fn main() {
                 success_count: total - rejected,
                 rejected_count: *rejected,
                 rejection_rate: *rejected as f64 / *total as f64,
-                error_message: if error.is_empty() { None } else { Some(error.clone()) },
+                error_message: if error.is_empty() {
+                    None
+                } else {
+                    Some(error.clone())
+                },
             }
         };
 
         metrics.record_classification(&result);
-        println!("Response {}: {:?} - {}/{} rejected - {:?}",
-            i + 1, signal, rejected, total, 
-            if error.is_empty() { "success" } else { error });
+        println!(
+            "Response {}: {:?} - {}/{} rejected - {:?}",
+            i + 1,
+            signal,
+            rejected,
+            total,
+            if error.is_empty() { "success" } else { error }
+        );
     }
 
     println!("\n--- Error Analysis ---\n");
@@ -79,13 +87,19 @@ fn main() {
     let summary = metrics.summary();
     println!("Total responses: {}", summary.total_responses);
     println!("Full successes: {:.1}%", summary.full_success_rate * 100.0);
-    println!("Partial successes: {:.1}%", summary.partial_success_rate * 100.0);
+    println!(
+        "Partial successes: {:.1}%",
+        summary.partial_success_rate * 100.0
+    );
     println!("Failures: {:.1}%", summary.failure_rate * 100.0);
     println!("\nItem-level statistics:");
     println!("  Total sent: {}", summary.total_items_sent);
     println!("  Total accepted: {}", summary.total_items_accepted);
     println!("  Total rejected: {}", summary.total_items_rejected);
-    println!("  Overall acceptance rate: {:.1}%", summary.overall_acceptance_rate * 100.0);
+    println!(
+        "  Overall acceptance rate: {:.1}%",
+        summary.overall_acceptance_rate * 100.0
+    );
 
     println!("\n--- Response Aggregator Demo ---\n");
 
@@ -137,9 +151,18 @@ fn main() {
     println!("  Full successes: {}", agg_summary.full_success_count);
     println!("  Partial successes: {}", agg_summary.partial_success_count);
     println!("  Failures: {}", agg_summary.failure_count);
-    println!("  All successful (no failures): {}", agg_summary.all_successful());
-    println!("  Had partial successes: {}", agg_summary.had_partial_successes());
-    println!("  Overall acceptance rate: {:.1}%", agg_summary.overall_acceptance_rate * 100.0);
+    println!(
+        "  All successful (no failures): {}",
+        agg_summary.all_successful()
+    );
+    println!(
+        "  Had partial successes: {}",
+        agg_summary.had_partial_successes()
+    );
+    println!(
+        "  Overall acceptance rate: {:.1}%",
+        agg_summary.overall_acceptance_rate * 100.0
+    );
 
     println!("\n=== Demo Complete ===");
 }

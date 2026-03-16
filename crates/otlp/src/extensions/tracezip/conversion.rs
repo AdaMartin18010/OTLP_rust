@@ -2,8 +2,8 @@
 //!
 //! 提供SpanData到TraceData格式的转换功能，用于Tracezip压缩。
 
+use crate::data::{SpanKind, SpanStatus, StatusCode, TraceData};
 use opentelemetry_sdk::trace::SpanData;
-use crate::data::{TraceData, SpanKind, SpanStatus, StatusCode};
 
 /// 将SpanData转换为TraceData格式
 ///
@@ -48,11 +48,13 @@ pub fn span_data_to_trace_data(span_data: &SpanData) -> TraceData {
     // 提取时间戳
     // 注意: SpanData的时间字段类型可能需要调整
     // 这里使用duration_since_epoch的方式获取纳秒时间戳
-    let start_time = span_data.start_time
+    let start_time = span_data
+        .start_time
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos() as u64)
         .unwrap_or(0);
-    let end_time = span_data.end_time
+    let end_time = span_data
+        .end_time
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos() as u64)
         .unwrap_or(0);
@@ -135,9 +137,7 @@ pub fn span_data_to_trace_data(span_data: &SpanData) -> TraceData {
 
 /// 批量转换SpanData到TraceData格式
 pub fn batch_span_data_to_trace_data(batch: &[SpanData]) -> Vec<TraceData> {
-    batch.iter()
-        .map(span_data_to_trace_data)
-        .collect()
+    batch.iter().map(span_data_to_trace_data).collect()
 }
 
 #[cfg(test)]

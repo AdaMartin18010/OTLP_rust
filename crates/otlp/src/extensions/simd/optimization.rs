@@ -2,8 +2,8 @@
 //!
 //! 提供SIMD优化的具体实现逻辑。
 
+use crate::simd::{Aggregator, CpuFeatures};
 use opentelemetry_sdk::trace::SpanData;
-use crate::simd::{CpuFeatures, Aggregator};
 
 /// SIMD批处理统计信息
 #[derive(Debug, Clone, Copy, Default)]
@@ -22,7 +22,7 @@ pub struct BatchStats {
 }
 
 /// 使用SIMD优化处理Span batch
-/// 
+///
 /// 返回原始batch，同时可选地计算和记录统计信息
 pub fn simd_optimize_batch(batch: Vec<SpanData>, cpu_features: &CpuFeatures) -> Vec<SpanData> {
     if batch.is_empty() {
@@ -31,7 +31,7 @@ pub fn simd_optimize_batch(batch: Vec<SpanData>, cpu_features: &CpuFeatures) -> 
 
     // 计算批处理统计信息（使用SIMD优化）
     let stats = compute_batch_stats(&batch, cpu_features);
-    
+
     if stats.simd_optimized {
         tracing::debug!(
             "SIMD optimized batch: {} spans, avg_duration={}μs, min={}μs, max={}μs",
@@ -48,13 +48,16 @@ pub fn simd_optimize_batch(batch: Vec<SpanData>, cpu_features: &CpuFeatures) -> 
 
 /// 计算批处理统计信息（使用SIMD优化）
 fn compute_batch_stats(batch: &[SpanData], cpu_features: &CpuFeatures) -> BatchStats {
-    let durations: Vec<i64> = batch.iter()
+    let durations: Vec<i64> = batch
+        .iter()
         .map(|span| {
-            let start = span.start_time
+            let start = span
+                .start_time
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_nanos() as i64)
                 .unwrap_or(0);
-            let end = span.end_time
+            let end = span
+                .end_time
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_nanos() as i64)
                 .unwrap_or(0);
@@ -101,7 +104,7 @@ fn compute_batch_stats(batch: &[SpanData], cpu_features: &CpuFeatures) -> BatchS
 }
 
 /// SIMD优化的属性处理
-/// 
+///
 /// 使用SIMD批量处理属性键值对，主要用于序列化前的预处理
 #[allow(dead_code)]
 pub fn simd_optimize_attributes(batch: &[SpanData]) -> AttributeStats {
@@ -140,19 +143,19 @@ pub struct AttributeStats {
 }
 
 /// SIMD优化的span名称去重
-/// 
+///
 /// 使用SIMD加速字符串比较，找出重复的span名称
 #[allow(dead_code)]
 pub fn find_duplicate_span_names(batch: &[SpanData]) -> Vec<(String, usize)> {
     use std::collections::HashMap;
-    
+
     let mut name_counts: HashMap<String, usize> = HashMap::new();
-    
+
     for span in batch {
         let name = span.name.to_string();
         *name_counts.entry(name).or_insert(0) += 1;
     }
-    
+
     name_counts
         .into_iter()
         .filter(|(_, count)| *count > 1)
@@ -169,7 +172,7 @@ mod tests {
         let batch: Vec<SpanData> = vec![];
         let features = CpuFeatures::detect();
         let stats = compute_batch_stats(&batch, &features);
-        
+
         assert_eq!(stats.total_duration_ns, 0);
         assert!(!stats.simd_optimized);
     }
@@ -179,7 +182,7 @@ mod tests {
         // 由于无法轻松创建SpanData，我们测试空batch的情况
         let batch: Vec<SpanData> = vec![];
         let stats = simd_optimize_attributes(&batch);
-        
+
         assert_eq!(stats.total_spans, 0);
         assert_eq!(stats.total_attributes, 0);
     }

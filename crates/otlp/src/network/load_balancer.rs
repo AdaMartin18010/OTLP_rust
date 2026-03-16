@@ -180,7 +180,7 @@ impl LoadBalancer {
             let mut pools = self.connection_pools.lock().unwrap();
             pools.remove(backend_id)
         };
-        
+
         if let Some(pool) = pool_to_close {
             pool.close_all().await;
         }
@@ -234,7 +234,7 @@ impl LoadBalancer {
             let pools = self.connection_pools.lock().unwrap();
             pools.get(backend_id).cloned()
         };
-        
+
         if let Some(pool) = pool_result {
             let _connection = pool.get_connection().await?;
             // 更新活跃连接数

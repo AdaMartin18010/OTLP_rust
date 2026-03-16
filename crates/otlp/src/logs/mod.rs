@@ -39,10 +39,13 @@ pub mod processor;
 
 // Re-export main types
 pub use appender::{LogAppender, LogAppenderBuilder};
-pub use exporter::{LogExportResult, LogExporter, LogExporterBuilder, LogExporterTrait, LogExporterConfig, ExporterMetrics};
+pub use exporter::{
+    ExporterMetrics, LogExportResult, LogExporter, LogExporterBuilder, LogExporterConfig,
+    LogExporterTrait,
+};
 pub use processor::{
-    BatchLogProcessor, BatchProcessorConfig, FilterLogProcessor, LogProcessor, 
-    SimpleLogProcessor, CompositeLogProcessor, ProcessorMetrics,
+    BatchLogProcessor, BatchProcessorConfig, CompositeLogProcessor, FilterLogProcessor,
+    LogProcessor, ProcessorMetrics, SimpleLogProcessor,
 };
 
 // Re-export structured logging from appender
@@ -273,10 +276,7 @@ impl LogRecordBuilder {
     }
 
     /// Set structured body
-    pub fn with_structured_body(
-        mut self,
-        body: HashMap<String, AttributeValue>,
-    ) -> Self {
+    pub fn with_structured_body(mut self, body: HashMap<String, AttributeValue>) -> Self {
         self.body = LogBody::Structured(body);
         self
     }
@@ -331,12 +331,7 @@ impl LogRecordBuilder {
     }
 
     /// Set source location
-    pub fn with_source_location(
-        mut self,
-        file: impl Into<String>,
-        line: u32,
-        column: u32,
-    ) -> Self {
+    pub fn with_source_location(mut self, file: impl Into<String>, line: u32, column: u32) -> Self {
         self.source_location = Some(SourceLocation {
             file: file.into(),
             line,
@@ -459,7 +454,7 @@ mod tests {
     #[test]
     fn test_severity_filter() {
         let filter = SeverityFilter::new(SeverityLevel::Warn);
-        
+
         let info_log = LogRecord::info("info");
         let warn_log = LogRecord::warn("warn");
         let error_log = LogRecord::error("error");
@@ -477,7 +472,7 @@ mod tests {
             .build();
 
         let log_data = record.to_log_data();
-        
+
         assert_eq!(log_data.severity, SeverityLevel::Info);
         assert!(matches!(log_data.body, LogBody::String(s) if s == "Test"));
     }
@@ -508,9 +503,12 @@ mod tests {
         let string_body: LogBody = "test".into();
         assert!(matches!(string_body, LogBody::String(s) if s == "test"));
 
-        let map: HashMap<String, AttributeValue> = [
-            ("key".to_string(), AttributeValue::String("value".to_string())),
-        ].into_iter().collect();
+        let map: HashMap<String, AttributeValue> = [(
+            "key".to_string(),
+            AttributeValue::String("value".to_string()),
+        )]
+        .into_iter()
+        .collect();
         let struct_body: LogBody = map.clone().into();
         assert!(matches!(struct_body, LogBody::Structured(m) if m == map));
     }

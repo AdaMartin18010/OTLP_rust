@@ -322,7 +322,10 @@ async fn metrics_collection_example() -> Result<(), UnifiedError> {
 
     // 设置自定义指标
     metrics_collector.set_custom_metric("custom_counter".to_string(), MetricValue::Integer(42));
-    metrics_collector.set_custom_metric("custom_gauge".to_string(), MetricValue::Float(std::f64::consts::PI));
+    metrics_collector.set_custom_metric(
+        "custom_gauge".to_string(),
+        MetricValue::Float(std::f64::consts::PI),
+    );
     metrics_collector.set_custom_metric(
         "custom_label".to_string(),
         MetricValue::String("test".to_string()),

@@ -393,10 +393,7 @@ impl CloudAttributesBuilder {
         }
 
         if let Some(id) = self.account_id {
-            attributes.insert(
-                "cloud.account.id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("cloud.account.id".to_string(), AttributeValue::String(id));
         }
 
         if let Some(id) = self.project_id {
@@ -406,17 +403,11 @@ impl CloudAttributesBuilder {
                 "cloud.account.id".to_string(),
                 AttributeValue::String(id.clone()),
             );
-            attributes.insert(
-                "gcp.project.id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("gcp.project.id".to_string(), AttributeValue::String(id));
         }
 
         if let Some(region) = self.region {
-            attributes.insert(
-                "cloud.region".to_string(),
-                AttributeValue::String(region),
-            );
+            attributes.insert("cloud.region".to_string(), AttributeValue::String(region));
         }
 
         if let Some(zone) = self.availability_zone {
@@ -427,10 +418,7 @@ impl CloudAttributesBuilder {
         }
 
         if let Some(id) = self.instance_id {
-            attributes.insert(
-                "host.id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("host.id".to_string(), AttributeValue::String(id));
         }
 
         if let Some(instance_type) = self.instance_type {
@@ -441,17 +429,11 @@ impl CloudAttributesBuilder {
         }
 
         if let Some(id) = self.image_id {
-            attributes.insert(
-                "host.image.id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("host.image.id".to_string(), AttributeValue::String(id));
         }
 
         if let Some(id) = self.resource_id {
-            attributes.insert(
-                "cloud.resource_id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("cloud.resource_id".to_string(), AttributeValue::String(id));
         }
 
         // Add custom attributes
@@ -614,8 +596,14 @@ mod tests {
     fn test_cloud_custom_attributes() {
         let attrs = CloudAttributesBuilder::new()
             .provider(CloudProvider::Aws)
-            .custom_attribute("custom.vpc_id", AttributeValue::String("vpc-123".to_string()))
-            .custom_attribute("custom.subnet_id", AttributeValue::String("subnet-456".to_string()))
+            .custom_attribute(
+                "custom.vpc_id",
+                AttributeValue::String("vpc-123".to_string()),
+            )
+            .custom_attribute(
+                "custom.subnet_id",
+                AttributeValue::String("subnet-456".to_string()),
+            )
             .build()
             .unwrap();
 

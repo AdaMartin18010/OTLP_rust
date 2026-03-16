@@ -22,9 +22,7 @@ pub mod async_features {
         let data = vec![1, 2, 3, 4, 5];
 
         // Rust 1.94: 异步闭包语法
-        let sum_closure = async || -> i32 {
-            data.iter().sum()
-        };
+        let sum_closure = async || -> i32 { data.iter().sum() };
 
         sum_closure().await
     }
@@ -39,12 +37,10 @@ pub mod lazy_initialization {
     use std::sync::LazyLock;
 
     /// 全局配置 - 使用 LazyLock (线程安全)
-    pub static GLOBAL_CONFIG: LazyLock<Config> = LazyLock::new(|| {
-        Config {
-            name: "OTLP".to_string(),
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            max_connections: 100,
-        }
+    pub static GLOBAL_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
+        name: "OTLP".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        max_connections: 100,
     });
 
     #[derive(Debug, Clone)]
@@ -148,9 +144,7 @@ pub mod io_errors {
             io::ErrorKind::QuotaExceeded => {
                 "Disk quota exceeded - clean up space or increase quota"
             }
-            io::ErrorKind::CrossesDevices => {
-                "Operation would cross device boundaries"
-            }
+            io::ErrorKind::CrossesDevices => "Operation would cross device boundaries",
             _ => "Unknown I/O error",
         }
     }
@@ -239,7 +233,7 @@ mod tests {
         let mut vec = vec![1, 2, 3, 4, 5];
         let result = collection_improvements::pop_if_example(&mut vec);
         assert_eq!(result, None); // 5 is odd
-        
+
         // Now pop from vec with even at the end
         let mut vec2 = vec![1, 2, 3, 4];
         let even = collection_improvements::pop_if_example(&mut vec2);

@@ -18,8 +18,8 @@
 //! }
 //! ```
 
-use std::time::Duration;
 use anyhow::{Result, anyhow};
+use std::time::Duration;
 
 /// Exporter配置
 #[derive(Debug, Clone)]
@@ -150,18 +150,18 @@ impl EnhancedExporter {
     }
 
     /// 构建Exporter配置
-    /// 
+    ///
     /// 返回配置对象，可用于创建具体的Exporter实例
     pub fn build(self) -> Result<ExporterConfig> {
         // 验证配置
         if self.config.batch_size == 0 {
             return Err(anyhow!("批处理大小必须大于0"));
         }
-        
+
         if self.config.timeout.is_zero() {
             return Err(anyhow!("超时时间必须大于0"));
         }
-        
+
         if self.config.endpoint.is_empty() {
             return Err(anyhow!("端点不能为空"));
         }
@@ -247,7 +247,7 @@ mod tests {
             .with_endpoint("http://otel-collector:4317");
 
         let config = exporter.build().unwrap();
-        
+
         assert!(config.compression);
         assert_eq!(config.batch_size, 100);
         assert_eq!(config.timeout, Duration::from_secs(10));
@@ -263,7 +263,7 @@ mod tests {
             .with_tenant_id("tenant-123");
 
         let config = exporter.build().unwrap();
-        
+
         assert!(config.multi_tenant);
         assert_eq!(config.tenant_id, Some("tenant-123".to_string()));
     }
@@ -286,21 +286,15 @@ mod tests {
     #[test]
     fn test_invalid_config() {
         // 批处理大小为0
-        let result = EnhancedExporter::new()
-            .with_batch_size(0)
-            .build();
+        let result = EnhancedExporter::new().with_batch_size(0).build();
         assert!(result.is_err());
 
         // 空端点
-        let result = EnhancedExporter::new()
-            .with_endpoint("")
-            .build();
+        let result = EnhancedExporter::new().with_endpoint("").build();
         assert!(result.is_err());
 
         // 多租户但没有租户ID
-        let result = EnhancedExporter::new()
-            .with_multi_tenant(true)
-            .build();
+        let result = EnhancedExporter::new().with_multi_tenant(true).build();
         assert!(result.is_err());
     }
 }

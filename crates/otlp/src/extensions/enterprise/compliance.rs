@@ -2,8 +2,8 @@
 //!
 //! 提供合规管理扩展，用于满足GDPR、HIPAA等合规要求。
 
-use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 use opentelemetry_sdk::error::OTelSdkError;
+use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 
 /// 合规管理Span Exporter包装器
 ///
@@ -46,7 +46,10 @@ where
     E: SpanExporter + std::fmt::Debug + Send + Sync,
 {
     #[allow(clippy::manual_async_fn)]
-    fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
+    fn export(
+        &self,
+        batch: Vec<SpanData>,
+    ) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
         async move {
             if self.compliance_enabled {
                 // 应用合规规则

@@ -605,7 +605,7 @@ mod benchmarks {
 
         println!("SIMD duration: {:?}", simd_duration);
         println!("Scalar duration: {:?}", scalar_duration);
-        
+
         let speedup = if simd_duration.as_nanos() > 0 {
             scalar_duration.as_nanos() as f64 / simd_duration.as_nanos() as f64
         } else {

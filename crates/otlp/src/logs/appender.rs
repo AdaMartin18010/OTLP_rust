@@ -34,8 +34,8 @@
 
 use super::{LogRecord, LogRecordBuilder, SeverityLevel};
 use crate::data::AttributeValue;
-use crate::logs::processor::LogProcessor;
 use crate::error::Result;
+use crate::logs::processor::LogProcessor;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -91,7 +91,7 @@ impl<P: LogProcessor> LogAppender<P> {
             .with_severity(level)
             .with_message(message)
             .build();
-        
+
         self.emit(record).await
     }
 
@@ -168,21 +168,21 @@ impl LogAppenderBuilder {
 }
 
 /// Integration with the `tracing` crate
-/// 
+///
 /// Note: This requires the `tracing` feature to be enabled in your Cargo.toml
-/// 
+///
 /// Tracing integration placeholder
-/// 
+///
 /// For full tracing integration, enable the `tracing` feature and use:
 /// ```rust,ignore
 /// use otlp::logs::appender::tracing_integration::TracingLayer;
 /// ```
 pub mod tracing_integration {
-    
+
     use super::*;
 
     /// Placeholder for TracingLayer
-    /// 
+    ///
     /// This is a simplified version. The full implementation requires
     /// the tracing and tracing-subscriber crates.
     pub struct TracingLayer<P: LogProcessor> {
@@ -207,12 +207,12 @@ pub mod tracing_integration {
 /// Integration with the `log` crate
 ///
 /// Note: This requires the `log` feature to be enabled in your Cargo.toml
-/// 
+///
 /// Log crate integration placeholder
 ///
 /// For full log crate integration, add the `log` crate to your dependencies.
 pub mod log_integration {
-    
+
     use super::*;
 
     /// A logger that exports to OTLP (placeholder)
@@ -275,7 +275,8 @@ pub mod structured {
 
         /// Add a string field
         pub fn string_field(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-            self.fields.insert(key.into(), AttributeValue::String(value.into()));
+            self.fields
+                .insert(key.into(), AttributeValue::String(value.into()));
             self
         }
 
@@ -287,7 +288,8 @@ pub mod structured {
 
         /// Add a float field
         pub fn float_field(mut self, key: impl Into<String>, value: f64) -> Self {
-            self.fields.insert(key.into(), AttributeValue::Double(value));
+            self.fields
+                .insert(key.into(), AttributeValue::Double(value));
             self
         }
 
@@ -360,7 +362,7 @@ mod tests {
     async fn test_appender_builder() {
         let mock_exporter = MockLogExporter::new();
         let processor = SimpleLogProcessor::new(mock_exporter);
-        
+
         let appender = LogAppenderBuilder::new()
             .with_service_name("test-service")
             .with_service_version("1.0.0")
@@ -377,9 +379,18 @@ mod tests {
         let processor = SimpleLogProcessor::new(mock_exporter);
         let appender = LogAppender::new(processor);
 
-        appender.log(SeverityLevel::Info, "info message").await.unwrap();
-        appender.log(SeverityLevel::Warn, "warn message").await.unwrap();
-        appender.log(SeverityLevel::Error, "error message").await.unwrap();
+        appender
+            .log(SeverityLevel::Info, "info message")
+            .await
+            .unwrap();
+        appender
+            .log(SeverityLevel::Warn, "warn message")
+            .await
+            .unwrap();
+        appender
+            .log(SeverityLevel::Error, "error message")
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -390,13 +401,15 @@ mod tests {
 
         let mut fields = HashMap::new();
         fields.insert("user_id".to_string(), AttributeValue::Int(42));
-        fields.insert("action".to_string(), AttributeValue::String("login".to_string()));
+        fields.insert(
+            "action".to_string(),
+            AttributeValue::String("login".to_string()),
+        );
 
-        appender.log_structured(
-            SeverityLevel::Info,
-            "User action",
-            fields,
-        ).await.unwrap();
+        appender
+            .log_structured(SeverityLevel::Info, "User action", fields)
+            .await
+            .unwrap();
     }
 
     #[test]

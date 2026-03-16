@@ -67,7 +67,9 @@ impl ServiceContainer {
         let _services = self.services.read().await;
         // 注意：这里需要重新构造Arc，实际实现中应该存储Arc
         // 这是一个简化版本
-        Err(crate::error::OtlpError::internal("Service retrieval not fully implemented"))
+        Err(crate::error::OtlpError::internal(
+            "Service retrieval not fully implemented",
+        ))
     }
 
     /// 检查服务是否存在

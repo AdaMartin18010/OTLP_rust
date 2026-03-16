@@ -3,13 +3,13 @@
 //! 提供Tracezip压缩算法扩展，用于压缩OpenTelemetry追踪数据。
 //! 通过包装官方Exporter来添加压缩功能。
 
-use opentelemetry_sdk::trace::{SpanData, SpanExporter};
+use crate::compression::tracezip::{CompressorConfig, TraceCompressor};
 use opentelemetry_sdk::error::OTelSdkError;
+use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 use std::sync::{Arc, Mutex};
-use crate::compression::tracezip::{TraceCompressor, CompressorConfig};
 
 mod conversion;
-pub use conversion::{span_data_to_trace_data, batch_span_data_to_trace_data};
+pub use conversion::{batch_span_data_to_trace_data, span_data_to_trace_data};
 
 /// Tracezip压缩的Span Exporter包装器
 ///
@@ -33,7 +33,9 @@ where
     pub fn wrap(exporter: E) -> Self {
         Self {
             inner: Arc::new(tokio::sync::Mutex::new(exporter)),
-            compressor: Arc::new(Mutex::new(TraceCompressor::new(CompressorConfig::default()))),
+            compressor: Arc::new(Mutex::new(
+                TraceCompressor::new(CompressorConfig::default()),
+            )),
             compression_enabled: true,
         }
     }
@@ -71,11 +73,14 @@ impl<E> SpanExporter for TracezipSpanExporter<E>
 where
     E: SpanExporter + std::fmt::Debug + Send + Sync + 'static,
 {
-    fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
+    fn export(
+        &self,
+        batch: Vec<SpanData>,
+    ) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
         let compressor = Arc::clone(&self.compressor);
         let inner = Arc::clone(&self.inner);
         let compression_enabled = self.compression_enabled;
-        
+
         async move {
             if compression_enabled && !batch.is_empty() {
                 // 将SpanData转换为TraceData格式
@@ -100,7 +105,12 @@ where
                         u64::from_str_radix(&td.span_id, 16).unwrap_or(0)
                     };
 
-                    spans_data.push((td.name.clone(), td.start_time, (trace_id_high, trace_id_low), span_id));
+                    spans_data.push((
+                        td.name.clone(),
+                        td.start_time,
+                        (trace_id_high, trace_id_low),
+                        span_id,
+                    ));
                 }
 
                 // 转换为&str引用的格式
@@ -113,7 +123,7 @@ where
                 let compression_result = {
                     let mut compressor_guard = compressor.lock().unwrap();
                     let result = compressor_guard.compress_batch(spans_for_compression);
-                    
+
                     if let Ok(ref compressed_trace) = result {
                         let stats = compressor_guard.stats();
                         tracing::debug!(
@@ -123,7 +133,7 @@ where
                             stats.compression_percentage()
                         );
                     }
-                    
+
                     // 重置压缩器状态
                     compressor_guard.reset();
                     result
@@ -136,7 +146,10 @@ where
                         inner_guard.export(batch).await
                     }
                     Err(e) => {
-                        tracing::warn!("Tracezip compression failed: {:?}, falling back to uncompressed export", e);
+                        tracing::warn!(
+                            "Tracezip compression failed: {:?}, falling back to uncompressed export",
+                            e
+                        );
                         // 压缩失败时回退到未压缩导出
                         let inner_guard = inner.lock().await;
                         inner_guard.export(batch).await

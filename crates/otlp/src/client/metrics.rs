@@ -54,7 +54,8 @@ impl ClientMetrics {
 
     /// 记录接收字节数
     pub fn record_bytes_received(&self, bytes: u64) {
-        self.total_bytes_received.fetch_add(bytes, Ordering::Relaxed);
+        self.total_bytes_received
+            .fetch_add(bytes, Ordering::Relaxed);
     }
 
     /// 更新平均延迟
@@ -118,7 +119,7 @@ impl MetricsSnapshot {
 pub trait AuditHook: Send + Sync + std::fmt::Debug {
     /// 记录审计事件
     fn log_event(&self, event: AuditEvent);
-    
+
     /// 刷新审计日志
     fn flush(&self);
 }
@@ -135,11 +136,7 @@ pub struct AuditEvent {
 
 impl AuditEvent {
     /// 创建新的审计事件
-    pub fn new(
-        event_type: EventType,
-        operation: impl Into<String>,
-        success: bool,
-    ) -> Self {
+    pub fn new(event_type: EventType, operation: impl Into<String>, success: bool) -> Self {
         Self {
             timestamp: Instant::now(),
             event_type,
@@ -256,10 +253,7 @@ impl AuditHook for HttpAuditHook {
     fn log_event(&self, event: AuditEvent) {
         // HTTP 审计钩子的实现
         // 这里可以发送 HTTP 请求到审计服务器
-        tracing::debug!(
-            "Sending audit event to {}: {:?}",
-            self.endpoint, event
-        );
+        tracing::debug!("Sending audit event to {}: {:?}", self.endpoint, event);
     }
 
     fn flush(&self) {
@@ -323,7 +317,7 @@ mod tests {
     #[test]
     fn test_bytes_recording() {
         let metrics = ClientMetrics::default();
-        
+
         metrics.record_bytes_sent(1024);
         metrics.record_bytes_sent(2048);
         metrics.record_bytes_received(512);

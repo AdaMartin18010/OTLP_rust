@@ -9,7 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 //use opentelemetry::KeyValue;
 
 /// 遥测数据类型
-/// 
+///
 /// 遵循 OTLP 1.10 规范
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TelemetryDataType {
@@ -21,7 +21,7 @@ pub enum TelemetryDataType {
     /// 日志数据 (Stable)
     Log,
     /// 性能分析数据 (Development)
-    /// 
+    ///
     /// 注意：Profiles 信号目前处于开发阶段，API 可能会变化
     Profile,
 }
@@ -42,7 +42,7 @@ pub struct TelemetryData {
 }
 
 /// 遥测数据内容
-/// 
+///
 /// 遵循 OTLP 1.10 规范，支持所有信号类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TelemetryContent {
@@ -72,7 +72,7 @@ impl TelemetryContent {
             Self::Profile(_) => "profile",
         }
     }
-    
+
     /// 获取数据点数量估算
     pub fn data_point_count(&self) -> usize {
         match self {
@@ -112,8 +112,7 @@ pub struct TraceData {
 }
 
 /// 跨度类型
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum SpanKind {
     /// 内部跨度
     #[default]
@@ -127,7 +126,6 @@ pub enum SpanKind {
     /// 消费者跨度
     Consumer,
 }
-
 
 /// 跨度状态
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -217,7 +215,7 @@ pub struct MetricData {
 }
 
 /// 指标类型
-/// 
+///
 /// 遵循 OTLP 1.10 规范，包含所有标准指标类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum MetricType {
@@ -246,7 +244,7 @@ pub struct DataPoint {
 }
 
 /// 数据点值
-/// 
+///
 /// 支持所有 OTLP 指标类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DataPointValue {
@@ -294,7 +292,7 @@ pub struct SummaryData {
 }
 
 /// 指数直方图数据 (OTLP 1.10+)
-/// 
+///
 /// 使用指数桶分布的直方图，更高效地表示大范围数值分布
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExponentialHistogramData {
@@ -383,7 +381,7 @@ impl LogData {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos() as u64;
-        
+
         Self {
             timestamp: now,
             observed_timestamp: now,
@@ -437,19 +435,32 @@ impl LogData {
     }
 
     /// Add a string attribute
-    pub fn with_string_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.attributes.insert(key.into(), AttributeValue::String(value.into()));
+    pub fn with_string_attribute(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Self {
+        self.attributes
+            .insert(key.into(), AttributeValue::String(value.into()));
         self
     }
 
     /// Add resource attribute
-    pub fn with_resource_attribute(mut self, key: impl Into<String>, value: AttributeValue) -> Self {
+    pub fn with_resource_attribute(
+        mut self,
+        key: impl Into<String>,
+        value: AttributeValue,
+    ) -> Self {
         self.resource_attributes.insert(key.into(), value);
         self
     }
 
     /// Set trace context for correlation
-    pub fn with_trace_context(mut self, trace_id: impl Into<String>, span_id: impl Into<String>) -> Self {
+    pub fn with_trace_context(
+        mut self,
+        trace_id: impl Into<String>,
+        span_id: impl Into<String>,
+    ) -> Self {
         self.trace_context = Some(LogTraceContext {
             trace_id: trace_id.into(),
             span_id: span_id.into(),
@@ -493,8 +504,7 @@ impl LogData {
 }
 
 /// Severity levels following OpenTelemetry spec
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub enum SeverityLevel {
     /// TRACE level (1)
     Trace = 1,
@@ -689,12 +699,8 @@ impl LogBody {
         match self {
             Self::Empty => String::new(),
             Self::String(s) => s.clone(),
-            Self::Structured(map) => {
-                serde_json::to_string(map).unwrap_or_default()
-            }
-            Self::Array(arr) => {
-                serde_json::to_string(arr).unwrap_or_default()
-            }
+            Self::Structured(map) => serde_json::to_string(map).unwrap_or_default(),
+            Self::Array(arr) => serde_json::to_string(arr).unwrap_or_default(),
         }
     }
 
@@ -704,7 +710,7 @@ impl LogBody {
             Self::Empty => 0,
             Self::String(s) => s.len(),
             Self::Structured(map) => map.len() * 32, // rough estimate
-            Self::Array(arr) => arr.len() * 16, // rough estimate
+            Self::Array(arr) => arr.len() * 16,      // rough estimate
         }
     }
 }
@@ -754,7 +760,11 @@ impl LogTraceContext {
     }
 
     /// Create a new trace context with sampling flag
-    pub fn with_sampling(trace_id: impl Into<String>, span_id: impl Into<String>, sampled: bool) -> Self {
+    pub fn with_sampling(
+        trace_id: impl Into<String>,
+        span_id: impl Into<String>,
+        sampled: bool,
+    ) -> Self {
         Self {
             trace_id: trace_id.into(),
             span_id: span_id.into(),
@@ -767,7 +777,7 @@ impl LogTraceContext {
 pub type LogSeverity = SeverityLevel;
 
 /// 性能分析数据 (OTLP Profiles Signal - Development)
-/// 
+///
 /// 注意：Profiles 信号目前处于开发阶段，API 可能会变化
 /// 参考：https://opentelemetry.io/docs/specs/otlp/
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -963,7 +973,7 @@ impl TelemetryData {
     }
 
     /// 创建性能分析数据 (Development)
-    /// 
+    ///
     /// 注意：Profiles 信号目前处于开发阶段
     pub fn profile(sample_type: SampleType) -> Self {
         let profile_data = ProfileData {
@@ -981,7 +991,10 @@ impl TelemetryData {
             period: 0,
         };
 
-        Self::new(TelemetryDataType::Profile, TelemetryContent::Profile(profile_data))
+        Self::new(
+            TelemetryDataType::Profile,
+            TelemetryContent::Profile(profile_data),
+        )
     }
 
     /// 添加资源属性

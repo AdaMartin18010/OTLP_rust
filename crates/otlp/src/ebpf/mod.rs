@@ -40,47 +40,47 @@
 //! }
 //! ```
 
-#[cfg(all(feature = "ebpf", target_os = "linux"))]
-mod loader;
-#[cfg(all(feature = "ebpf", target_os = "linux"))]
-mod probes;
+mod error;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 mod events;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
+mod integration;
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+mod loader;
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
 mod maps;
-#[cfg(all(feature = "ebpf", target_os = "linux"))]
-mod profiling;
-#[cfg(all(feature = "ebpf", target_os = "linux"))]
-mod networking;
-#[cfg(all(feature = "ebpf", target_os = "linux"))]
-mod syscalls;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 mod memory;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
-mod integration;
-mod utils;
+mod networking;
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+mod probes;
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+mod profiling;
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+mod syscalls;
 mod types;
-mod error;
+mod utils;
 
-#[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use loader::*;
-#[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use probes::*;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 pub use events::*;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use profiling::*;
+pub use integration::*;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use networking::{EbpfNetworkTracer, NetworkStats};
-#[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use syscalls::{EbpfSyscallTracer, SyscallStats};
+pub use loader::*;
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 pub use memory::{EbpfMemoryTracer, MemoryStats};
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
-pub use integration::*;
+pub use networking::{EbpfNetworkTracer, NetworkStats};
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+pub use probes::*;
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+pub use profiling::*;
+#[cfg(all(feature = "ebpf", target_os = "linux"))]
+pub use syscalls::{EbpfSyscallTracer, SyscallStats};
 
-pub use types::*;
 pub use error::*;
+pub use types::*;
 pub use utils::*;
 
 #[cfg(test)]

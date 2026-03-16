@@ -40,10 +40,7 @@ impl CompressionUtils {
 
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(data).map_err(|e| {
-            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                "Gzip compression failed: {}",
-                e
-            ))
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!("Gzip compression failed: {}", e))
         })?;
         encoder.finish().map_err(|e| {
             crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
@@ -131,10 +128,7 @@ impl CompressionUtils {
         use zstd::encode_all;
 
         encode_all(data, 3).map_err(|e| {
-            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                "Zstd compression failed: {}",
-                e
-            ))
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!("Zstd compression failed: {}", e))
         })
     }
 
@@ -157,17 +151,19 @@ impl CompressionUtils {
     }
 
     fn handle_task_result<T>(
-        result: std::result::Result<std::result::Result<T, crate::error::OtlpError>, tokio::task::JoinError>,
+        result: std::result::Result<
+            std::result::Result<T, crate::error::OtlpError>,
+            tokio::task::JoinError,
+        >,
         operation: &str,
     ) -> Result<T> {
-        result
-            .map_err(|e| {
-                crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
-                    "{} task failed: {}",
-                    operation,
-                    e
-                ))
-            })?
+        result.map_err(|e| {
+            crate::error::OtlpError::from_anyhow(anyhow::anyhow!(
+                "{} task failed: {}",
+                operation,
+                e
+            ))
+        })?
     }
 }
 

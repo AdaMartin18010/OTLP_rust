@@ -118,8 +118,20 @@ impl OptimizationManager {
         let mut failed_count = 0;
         let mut total_improvement = 0.0;
 
-        self.apply_performance_suggestions(&report.performance_suggestions, &mut applied_count, &mut failed_count, &mut total_improvement).await;
-        self.apply_config_optimizations(&report.config_optimizations, &mut applied_count, &mut failed_count, &mut total_improvement).await;
+        self.apply_performance_suggestions(
+            &report.performance_suggestions,
+            &mut applied_count,
+            &mut failed_count,
+            &mut total_improvement,
+        )
+        .await;
+        self.apply_config_optimizations(
+            &report.config_optimizations,
+            &mut applied_count,
+            &mut failed_count,
+            &mut total_improvement,
+        )
+        .await;
 
         let result = OptimizationResult {
             timestamp: std::time::Instant::now(),
@@ -158,7 +170,11 @@ impl OptimizationManager {
         total_improvement: &mut f64,
     ) {
         for optimization in optimizations {
-            match self.smart_config_manager.apply_optimization(optimization).await {
+            match self
+                .smart_config_manager
+                .apply_optimization(optimization)
+                .await
+            {
                 Ok(true) => {
                     *applied_count += 1;
                     *total_improvement += optimization.expected_improvement;
@@ -256,9 +272,14 @@ pub fn sort_optimizations_by_priority(optimizations: &mut [OptimizationSuggestio
     optimizations.sort_by(compare_by_priority);
 }
 
-fn compare_by_priority(a: &OptimizationSuggestion, b: &OptimizationSuggestion) -> std::cmp::Ordering {
+fn compare_by_priority(
+    a: &OptimizationSuggestion,
+    b: &OptimizationSuggestion,
+) -> std::cmp::Ordering {
     match (&a.priority, &b.priority) {
-        (OptimizationPriority::Critical, OptimizationPriority::Critical) => compare_improvement(b, a),
+        (OptimizationPriority::Critical, OptimizationPriority::Critical) => {
+            compare_improvement(b, a)
+        }
         (OptimizationPriority::Critical, _) => std::cmp::Ordering::Less,
         (_, OptimizationPriority::Critical) => std::cmp::Ordering::Greater,
         (OptimizationPriority::High, OptimizationPriority::High) => compare_improvement(b, a),
@@ -271,7 +292,10 @@ fn compare_by_priority(a: &OptimizationSuggestion, b: &OptimizationSuggestion) -
     }
 }
 
-fn compare_improvement(a: &OptimizationSuggestion, b: &OptimizationSuggestion) -> std::cmp::Ordering {
+fn compare_improvement(
+    a: &OptimizationSuggestion,
+    b: &OptimizationSuggestion,
+) -> std::cmp::Ordering {
     a.expected_improvement
         .partial_cmp(&b.expected_improvement)
         .unwrap_or(std::cmp::Ordering::Equal)
@@ -282,7 +306,10 @@ pub fn sort_config_optimizations_by_priority(optimizations: &mut [ConfigOptimiza
     optimizations.sort_by(compare_config_by_priority);
 }
 
-fn compare_config_by_priority(a: &ConfigOptimization, b: &ConfigOptimization) -> std::cmp::Ordering {
+fn compare_config_by_priority(
+    a: &ConfigOptimization,
+    b: &ConfigOptimization,
+) -> std::cmp::Ordering {
     match (&a.risk_level, &b.risk_level) {
         (ConfigRiskLevel::Low, ConfigRiskLevel::Low) => compare_config_improvement(b, a),
         (ConfigRiskLevel::Low, _) => std::cmp::Ordering::Less,
@@ -297,7 +324,10 @@ fn compare_config_by_priority(a: &ConfigOptimization, b: &ConfigOptimization) ->
     }
 }
 
-fn compare_config_improvement(a: &ConfigOptimization, b: &ConfigOptimization) -> std::cmp::Ordering {
+fn compare_config_improvement(
+    a: &ConfigOptimization,
+    b: &ConfigOptimization,
+) -> std::cmp::Ordering {
     a.expected_improvement
         .partial_cmp(&b.expected_improvement)
         .unwrap_or(std::cmp::Ordering::Equal)

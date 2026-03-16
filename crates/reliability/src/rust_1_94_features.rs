@@ -8,32 +8,29 @@
 //! - `const mul_add` - 用于编译时计算
 
 use serde::{Deserialize, Serialize};
-use std::f64::consts::{EULER_GAMMA, GOLDEN_RATIO, LN_10, LN_2, LOG10_E, LOG2_E, PI, SQRT_2};
+use std::f64::consts::{EULER_GAMMA, GOLDEN_RATIO, LN_2, LN_10, LOG2_E, LOG10_E, PI, SQRT_2};
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
 /// 全局可靠性监控器 - 使用 LazyLock 延迟初始化
 ///
 /// 这个全局监控器在第一次被访问时才会初始化，避免了启动时的开销
-pub static RELIABILITY_MONITOR: LazyLock<ReliabilityMonitor> =
-    LazyLock::new(|| {
-        tracing::info!("初始化全局可靠性监控器");
-        ReliabilityMonitor::new()
-    });
+pub static RELIABILITY_MONITOR: LazyLock<ReliabilityMonitor> = LazyLock::new(|| {
+    tracing::info!("初始化全局可靠性监控器");
+    ReliabilityMonitor::new()
+});
 
 /// 全局错误模式追踪器 - 使用 LazyLock
-pub static ERROR_PATTERN_TRACKER: LazyLock<Mutex<ErrorPatternTracker>> =
-    LazyLock::new(|| {
-        tracing::info!("初始化全局错误模式追踪器");
-        Mutex::new(ErrorPatternTracker::new())
-    });
+pub static ERROR_PATTERN_TRACKER: LazyLock<Mutex<ErrorPatternTracker>> = LazyLock::new(|| {
+    tracing::info!("初始化全局错误模式追踪器");
+    Mutex::new(ErrorPatternTracker::new())
+});
 
 /// 全局自适应重试配置 - 使用 LazyLock
-pub static ADAPTIVE_RETRY_CONFIG: LazyLock<AdaptiveRetryConfig> =
-    LazyLock::new(|| {
-        tracing::info!("初始化全局自适应重试配置");
-        AdaptiveRetryConfig::default()
-    });
+pub static ADAPTIVE_RETRY_CONFIG: LazyLock<AdaptiveRetryConfig> = LazyLock::new(|| {
+    tracing::info!("初始化全局自适应重试配置");
+    AdaptiveRetryConfig::default()
+});
 
 /// 错误类型枚举
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -236,10 +233,7 @@ impl AdaptiveRetryConfig {
         // 使用 const mul_add 优化计算
         let total_secs = const { 1.0f64.mul_add(GOLDEN_RATIO, 0.0) } as u64;
 
-        Duration::new(
-            secs.min(self.max_backoff_secs) + total_secs,
-            nanos,
-        )
+        Duration::new(secs.min(self.max_backoff_secs) + total_secs, nanos)
     }
 
     /// 计算欧拉常数调整的重试次数
@@ -348,8 +342,7 @@ impl Rust194FeatureDemo {
             ln_10: LN_10,
             log2_e: LOG2_E,
             log10_e: LOG10_E,
-            circuit_breaker_threshold: self
-                .calculate_golden_threshold(failure_rate),
+            circuit_breaker_threshold: self.calculate_golden_threshold(failure_rate),
             adjusted_retry_count: self.calculate_euler_adjusted_retries(failure_rate),
         }
     }
@@ -551,8 +544,7 @@ impl GoldenRatioBackoff {
 
         let base_backoff = Self::calculate_backoff(attempt, base_ms);
         let jitter = rand::rng().random_range(0.0..jitter_factor);
-        let adjusted_millis =
-            (base_backoff.as_millis() as f64 * (1.0 + jitter)) as u64;
+        let adjusted_millis = (base_backoff.as_millis() as f64 * (1.0 + jitter)) as u64;
         Duration::from_millis(adjusted_millis)
     }
 }

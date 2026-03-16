@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0] - 2026-03-15
+## [0.6.0] - 2026-03-17
 
 ### Added
 
@@ -59,6 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extension logic completion: 60% → 90%
 - Added comprehensive test coverage for OTTL processor
 - Enhanced error handling in all extensions
+- Fixed syntax errors in eBPF loader and maps modules
+- Resolved all Clippy warnings, zero warnings remaining
+- Applied consistent code formatting with cargo fmt
+- 684 unit tests passing
 
 ## [0.2.0-alpha.1] - 2026-03-15
 

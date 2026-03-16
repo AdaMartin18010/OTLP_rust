@@ -450,7 +450,10 @@ impl PerformanceTuner {
     }
 
     /// 检查CPU趋势
-    fn check_cpu_trend(&self, historical: &[(Instant, PerformanceMetrics)]) -> Option<OptimizationSuggestion> {
+    fn check_cpu_trend(
+        &self,
+        historical: &[(Instant, PerformanceMetrics)],
+    ) -> Option<OptimizationSuggestion> {
         let trend = self.calculate_trend(historical, |m| m.cpu_usage)?;
         if trend <= 5.0 {
             return None;
@@ -468,7 +471,10 @@ impl PerformanceTuner {
     }
 
     /// 检查内存趋势
-    fn check_memory_trend(&self, historical: &[(Instant, PerformanceMetrics)]) -> Option<OptimizationSuggestion> {
+    fn check_memory_trend(
+        &self,
+        historical: &[(Instant, PerformanceMetrics)],
+    ) -> Option<OptimizationSuggestion> {
         let trend = self.calculate_trend(historical, |m| m.memory_usage)?;
         if trend <= 3.0 {
             return None;

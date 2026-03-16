@@ -2,9 +2,9 @@
 //!
 //! 负责加载和验证 eBPF 程序
 
-use crate::error::Result;
-use crate::ebpf::types::EbpfConfig;
 use crate::ebpf::error::EbpfError;
+use crate::ebpf::types::EbpfConfig;
+use crate::error::Result;
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 use aya::Bpf;
@@ -123,7 +123,10 @@ impl EbpfLoader {
             }
             Err(e) => {
                 // 如果加载失败，返回错误
-                tracing::warn!("eBPF 程序加载失败: {}，这可能是因为缺少权限或程序格式不正确", e);
+                tracing::warn!(
+                    "eBPF 程序加载失败: {}，这可能是因为缺少权限或程序格式不正确",
+                    e
+                );
                 Err(EbpfError::LoadFailed(format!("eBPF 程序加载失败: {}", e)).into())
             }
         }
@@ -180,7 +183,9 @@ impl EbpfLoader {
                     let version = &version_str[..space_pos];
                     let parts: Vec<&str> = version.split('.').collect();
                     if parts.len() >= 2 {
-                        if let (Ok(major), Ok(minor)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
+                        if let (Ok(major), Ok(minor)) =
+                            (parts[0].parse::<u32>(), parts[1].parse::<u32>())
+                        {
                             if major < 5 || (major == 5 && minor < 8) {
                                 return Err(EbpfError::IncompatibleKernel.into());
                             }
@@ -205,23 +210,28 @@ impl EbpfLoader {
             // 读取进程状态检查能力
             if let Ok(status) = fs::read_to_string("/proc/self/status") {
                 // 检查是否是root用户
-                let is_root = status.lines()
+                let is_root = status
+                    .lines()
                     .find(|line| line.starts_with("Uid:"))
                     .and_then(|line| {
-                        line.split_whitespace().nth(2).and_then(|uid| uid.parse::<u32>().ok())
+                        line.split_whitespace()
+                            .nth(2)
+                            .and_then(|uid| uid.parse::<u32>().ok())
                     })
                     .map(|uid| uid == 0)
                     .unwrap_or(false);
 
                 if !is_root {
                     // 检查CAP_BPF能力
-                    let has_cap_bpf = status.lines()
+                    let has_cap_bpf = status
+                        .lines()
                         .find(|line| line.starts_with("CapBpf:"))
-                    .and_then(|line| {
-                        line.split_whitespace().nth(1)
+                        .and_then(|line| {
+                            line.split_whitespace()
+                                .nth(1)
                                 .and_then(|cap| u64::from_str_radix(cap, 16).ok())
                                 .map(|cap| cap != 0)
-                    })
+                        })
                         .unwrap_or(false);
 
                     if !has_cap_bpf {
@@ -342,7 +352,10 @@ impl EbpfLoader {
 
                     // 检查是否有 eBPF 程序段
                     let has_programs = obj_file.sections().any(|section| {
-                        section.name().map(|name| name.contains("prog")).unwrap_or(false)
+                        section
+                            .name()
+                            .map(|name| name.contains("prog"))
+                            .unwrap_or(false)
                     });
 
                     if !has_programs {
@@ -437,7 +450,11 @@ impl EbpfLoader {
             // aya 会在 drop 时自动处理所有清理工作
             drop(bpf);
 
-            tracing::info!("eBPF 程序已成功卸载 ({} 个程序, {} 个 Maps)", program_count, map_count);
+            tracing::info!(
+                "eBPF 程序已成功卸载 ({} 个程序, {} 个 Maps)",
+                program_count,
+                map_count
+            );
         } else {
             tracing::debug!("没有已加载的 eBPF 程序");
         }
@@ -448,3 +465,4 @@ impl EbpfLoader {
     pub fn unload(&mut self) -> Result<()> {
         Ok(())
     }
+}

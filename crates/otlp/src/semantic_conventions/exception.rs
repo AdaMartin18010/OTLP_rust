@@ -285,10 +285,7 @@ impl ExceptionAttributesBuilder {
 
         // Exception message
         if let Some(msg) = self.message {
-            attributes.insert(
-                "exception.message".to_string(),
-                AttributeValue::String(msg),
-            );
+            attributes.insert("exception.message".to_string(), AttributeValue::String(msg));
         }
 
         // Stack trace - use provided string or build from frames
@@ -328,18 +325,12 @@ impl ExceptionAttributesBuilder {
 
         // Error code
         if let Some(code) = self.error_code {
-            attributes.insert(
-                "error.code".to_string(),
-                AttributeValue::String(code),
-            );
+            attributes.insert("error.code".to_string(), AttributeValue::String(code));
         }
 
         // Target
         if let Some(target) = self.target {
-            attributes.insert(
-                "error.target".to_string(),
-                AttributeValue::String(target),
-            );
+            attributes.insert("error.target".to_string(), AttributeValue::String(target));
         }
 
         // Add custom attributes

@@ -171,10 +171,7 @@ impl SmartConfigManager {
     pub fn initialize_default_config(&self) -> Result<()> {
         let mut config = self.current_config.lock().unwrap();
 
-        config.insert(
-            "max_workers".to_string(),
-            Self::create_workers_config(),
-        );
+        config.insert("max_workers".to_string(), Self::create_workers_config());
 
         config.insert(
             "memory_pool_size".to_string(),
@@ -256,7 +253,9 @@ impl SmartConfigManager {
             return Err(anyhow!("需要更多性能数据进行分析"));
         }
 
-        let optimizations = self.analyze_performance_metrics(&current_config, &performance_data).await?;
+        let optimizations = self
+            .analyze_performance_metrics(&current_config, &performance_data)
+            .await?;
         self.record_optimizations(&optimizations);
 
         Ok(optimizations)
@@ -274,10 +273,14 @@ impl SmartConfigManager {
     ) -> Result<Vec<ConfigOptimization>> {
         let mut optimizations = Vec::new();
 
-        self.analyze_cpu(performance_data, current_config, &mut optimizations).await?;
-        self.analyze_memory(performance_data, current_config, &mut optimizations).await?;
-        self.analyze_throughput(performance_data, current_config, &mut optimizations).await?;
-        self.analyze_latency(performance_data, current_config, &mut optimizations).await?;
+        self.analyze_cpu(performance_data, current_config, &mut optimizations)
+            .await?;
+        self.analyze_memory(performance_data, current_config, &mut optimizations)
+            .await?;
+        self.analyze_throughput(performance_data, current_config, &mut optimizations)
+            .await?;
+        self.analyze_latency(performance_data, current_config, &mut optimizations)
+            .await?;
 
         Ok(optimizations)
     }
@@ -307,7 +310,10 @@ impl SmartConfigManager {
             return Ok(());
         };
         if avg_memory > 85.0 {
-            optimizations.extend(self.optimize_memory_config(current_config, avg_memory).await?);
+            optimizations.extend(
+                self.optimize_memory_config(current_config, avg_memory)
+                    .await?,
+            );
         }
         Ok(())
     }
@@ -322,7 +328,10 @@ impl SmartConfigManager {
             return Ok(());
         };
         if avg_throughput < 1000 {
-            optimizations.extend(self.optimize_throughput_config(current_config, avg_throughput).await?);
+            optimizations.extend(
+                self.optimize_throughput_config(current_config, avg_throughput)
+                    .await?,
+            );
         }
         Ok(())
     }
@@ -337,7 +346,10 @@ impl SmartConfigManager {
             return Ok(());
         };
         if avg_latency > Duration::from_millis(100) {
-            optimizations.extend(self.optimize_latency_config(current_config, avg_latency).await?);
+            optimizations.extend(
+                self.optimize_latency_config(current_config, avg_latency)
+                    .await?,
+            );
         }
         Ok(())
     }
@@ -355,7 +367,12 @@ impl SmartConfigManager {
         };
 
         let suggested_workers = self.calculate_suggested_workers(current_workers, avg_cpu);
-        let optimization = self.create_cpu_optimization(workers_config, current_workers, suggested_workers, avg_cpu);
+        let optimization = self.create_cpu_optimization(
+            workers_config,
+            current_workers,
+            suggested_workers,
+            avg_cpu,
+        );
 
         Ok(vec![optimization])
     }
@@ -413,7 +430,12 @@ impl SmartConfigManager {
         };
 
         let suggested_size = self.calculate_suggested_memory(current_size, avg_memory);
-        let optimization = self.create_memory_optimization(memory_pool_config, current_size, suggested_size, avg_memory);
+        let optimization = self.create_memory_optimization(
+            memory_pool_config,
+            current_size,
+            suggested_size,
+            avg_memory,
+        );
 
         Ok(vec![optimization])
     }
@@ -464,12 +486,20 @@ impl SmartConfigManager {
         };
 
         let suggested_size = self.calculate_suggested_pool_size(current_size, avg_throughput);
-        let optimization = self.create_throughput_optimization(connection_pool_config, current_size, suggested_size, avg_throughput);
+        let optimization = self.create_throughput_optimization(
+            connection_pool_config,
+            current_size,
+            suggested_size,
+            avg_throughput,
+        );
 
         Ok(vec![optimization])
     }
 
-    fn get_connection_pool_config(&self, config: &HashMap<String, ConfigItem>) -> Option<ConfigItem> {
+    fn get_connection_pool_config(
+        &self,
+        config: &HashMap<String, ConfigItem>,
+    ) -> Option<ConfigItem> {
         config.get("connection_pool_size").cloned()
     }
 
@@ -515,7 +545,12 @@ impl SmartConfigManager {
         };
 
         let suggested_size = self.calculate_suggested_batch_size(current_size, avg_latency);
-        let optimization = self.create_latency_optimization(batch_size_config, current_size, suggested_size, avg_latency);
+        let optimization = self.create_latency_optimization(
+            batch_size_config,
+            current_size,
+            suggested_size,
+            avg_latency,
+        );
 
         Ok(vec![optimization])
     }
@@ -570,7 +605,9 @@ impl SmartConfigManager {
         if optimization.risk_level == RiskLevel::VeryHigh {
             return Err(anyhow!("高风险配置需要手动确认"));
         }
-        if !self.validate_config_constraints(&optimization.config_item, &optimization.suggested_value) {
+        if !self
+            .validate_config_constraints(&optimization.config_item, &optimization.suggested_value)
+        {
             return Err(anyhow!("配置值不满足约束条件"));
         }
         Ok(())
@@ -584,9 +621,15 @@ impl SmartConfigManager {
     }
 
     fn update_apply_stats(&self, duration: Duration) {
-        self.stats.total_configurations.fetch_add(1, Ordering::Relaxed);
-        self.stats.successful_configurations.fetch_add(1, Ordering::Relaxed);
-        self.stats.configuration_time.fetch_add(duration.as_micros() as u64, Ordering::Relaxed);
+        self.stats
+            .total_configurations
+            .fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .successful_configurations
+            .fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .configuration_time
+            .fetch_add(duration.as_micros() as u64, Ordering::Relaxed);
     }
 
     fn validate_config_constraints(&self, config_item: &ConfigItem, value: &ConfigValue) -> bool {
@@ -598,7 +641,11 @@ impl SmartConfigManager {
         true
     }
 
-    fn validate_single_constraint(&self, constraint: &ConfigConstraint, value: &ConfigValue) -> bool {
+    fn validate_single_constraint(
+        &self,
+        constraint: &ConfigConstraint,
+        value: &ConfigValue,
+    ) -> bool {
         match constraint.constraint_type {
             ConstraintType::Range => self.validate_range_constraint(constraint, value),
             ConstraintType::Enum => self.validate_enum_constraint(constraint, value),
@@ -606,7 +653,11 @@ impl SmartConfigManager {
         }
     }
 
-    fn validate_range_constraint(&self, constraint: &ConfigConstraint, value: &ConfigValue) -> bool {
+    fn validate_range_constraint(
+        &self,
+        constraint: &ConfigConstraint,
+        value: &ConfigValue,
+    ) -> bool {
         let (Some(min), Some(max)) = (&constraint.min_value, &constraint.max_value) else {
             return true;
         };
@@ -621,19 +672,27 @@ impl SmartConfigManager {
     }
 
     fn is_value_in_range(&self, value: &ConfigValue, min: &ConfigValue, max: &ConfigValue) -> bool {
-        self.check_integer_range(value, min, max)
-            || self.check_float_range(value, min, max)
+        self.check_integer_range(value, min, max) || self.check_float_range(value, min, max)
     }
 
-    fn check_integer_range(&self, value: &ConfigValue, min: &ConfigValue, max: &ConfigValue) -> bool {
-        let (ConfigValue::Integer(v), ConfigValue::Integer(min_val), ConfigValue::Integer(max_val)) = (value, min, max) else {
+    fn check_integer_range(
+        &self,
+        value: &ConfigValue,
+        min: &ConfigValue,
+        max: &ConfigValue,
+    ) -> bool {
+        let (ConfigValue::Integer(v), ConfigValue::Integer(min_val), ConfigValue::Integer(max_val)) =
+            (value, min, max)
+        else {
             return false;
         };
         *v >= *min_val && *v <= *max_val
     }
 
     fn check_float_range(&self, value: &ConfigValue, min: &ConfigValue, max: &ConfigValue) -> bool {
-        let (ConfigValue::Float(v), ConfigValue::Float(min_val), ConfigValue::Float(max_val)) = (value, min, max) else {
+        let (ConfigValue::Float(v), ConfigValue::Float(min_val), ConfigValue::Float(max_val)) =
+            (value, min, max)
+        else {
             return false;
         };
         *v >= *min_val && *v <= *max_val

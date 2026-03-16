@@ -10,8 +10,8 @@
 //! - Memory allocation profiling (requires `backtrace` feature)
 
 use super::types::{PprofProfile, ProfileType};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
@@ -200,7 +200,7 @@ impl MemoryProfiler {
 
                 // Collect memory sample
                 let memory_info = get_system_memory_info();
-                
+
                 // Update stats
                 let mut stats_guard = stats.lock().await;
                 stats_guard.current_usage = memory_info.used;
@@ -267,8 +267,8 @@ pub fn get_system_memory_info() -> SystemMemoryInfo {
         used: system.used_memory(),
         free: system.free_memory(),
         available: system.available_memory(),
-        buffers: 0,  // sysinfo doesn't provide this directly
-        cached: 0,   // sysinfo doesn't provide this directly
+        buffers: 0, // sysinfo doesn't provide this directly
+        cached: 0,  // sysinfo doesn't provide this directly
         swap_total: system.total_swap(),
         swap_used: system.used_swap(),
         swap_free: system.free_swap(),
@@ -300,14 +300,17 @@ mod tests {
     #[test]
     fn test_system_memory_info() {
         let info = get_system_memory_info();
-        
+
         // Should have some memory
         assert!(info.total > 0, "Total memory should be greater than 0");
-        
+
         // Used + free should equal total (approximately)
         let sum = info.used + info.free;
         let diff = sum.abs_diff(info.total);
-        assert!(diff < info.total / 10, "Used + free should approximate total");
+        assert!(
+            diff < info.total / 10,
+            "Used + free should approximate total"
+        );
     }
 
     #[tokio::test]

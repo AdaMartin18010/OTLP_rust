@@ -300,14 +300,19 @@ impl DataGovernanceManager {
 
         Ok(actions)
     }
-    
-    fn evaluate_policy_rules(&self, policy: &DataPolicy, data: &DataItem, actions: &mut Vec<DataAction>) -> Result<()> {
+
+    fn evaluate_policy_rules(
+        &self,
+        policy: &DataPolicy,
+        data: &DataItem,
+        actions: &mut Vec<DataAction>,
+    ) -> Result<()> {
         for rule in &policy.rules {
             if !self.evaluate_condition(&rule.condition, data)? {
                 self.stats.rules_evaluated.fetch_add(1, Ordering::Relaxed);
                 continue;
             }
-            
+
             actions.push(rule.action.clone());
             self.stats.actions_taken.fetch_add(1, Ordering::Relaxed);
             self.stats.rules_evaluated.fetch_add(1, Ordering::Relaxed);
@@ -538,14 +543,18 @@ impl ComplianceManager {
         Ok(assessment)
     }
 
-    fn evaluate_requirement(&self, requirement: &ComplianceRequirement, findings: &mut Vec<ComplianceFinding>) -> bool {
+    fn evaluate_requirement(
+        &self,
+        requirement: &ComplianceRequirement,
+        findings: &mut Vec<ComplianceFinding>,
+    ) -> bool {
         let mut requirement_met = true;
 
         for control in &requirement.controls {
             if Self::is_control_implemented(control) {
                 continue;
             }
-            
+
             requirement_met = false;
             findings.push(ComplianceFinding {
                 requirement_id: requirement.id.clone(),
@@ -558,10 +567,12 @@ impl ComplianceManager {
 
         requirement_met
     }
-    
+
     fn is_control_implemented(control: &ComplianceControl) -> bool {
-        matches!(control.implementation_status, 
-            ImplementationStatus::FullyImplemented | ImplementationStatus::Verified)
+        matches!(
+            control.implementation_status,
+            ImplementationStatus::FullyImplemented | ImplementationStatus::Verified
+        )
     }
 
     /// 获取统计信息
@@ -877,7 +888,7 @@ impl ComprehensiveEnterpriseManager {
 
         Ok(())
     }
-    
+
     fn record_initialization(&self) {
         self.stats
             .enterprise_features_used

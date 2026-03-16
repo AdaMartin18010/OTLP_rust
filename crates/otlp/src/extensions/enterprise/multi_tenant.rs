@@ -2,8 +2,8 @@
 //!
 //! 提供多租户支持扩展，用于隔离不同租户的数据。
 
-use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 use opentelemetry_sdk::error::OTelSdkError;
+use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 
 /// 多租户Span Exporter包装器
 ///
@@ -14,7 +14,7 @@ pub struct MultiTenantExporter<E> {
     tenant_id: Option<String>,
 }
 
-impl<E> MultiTenantExporter<E> 
+impl<E> MultiTenantExporter<E>
 where
     E: SpanExporter + std::fmt::Debug,
 {
@@ -46,18 +46,18 @@ where
     E: SpanExporter + std::fmt::Debug + Send + Sync,
 {
     async fn export(&self, batch: Vec<SpanData>) -> Result<(), OTelSdkError> {
-            // 添加租户ID到span attributes
-            let enriched_batch = batch;
+        // 添加租户ID到span attributes
+        let enriched_batch = batch;
 
-            // tenant_id不需要在async move中使用，所以注释掉
-            // if let Some(_tenant_id) = &self.tenant_id {
-            //     // 添加租户ID到span attributes
-            //     // 注意: SpanData的API可能需要调整
-            //     // 这里提供一个概念性实现
-            //     // for span in &mut enriched_batch {
-            //     //     span.attributes.push(KeyValue::new("tenant.id", tenant_id.clone()));
-            //     // }
-            // }
+        // tenant_id不需要在async move中使用，所以注释掉
+        // if let Some(_tenant_id) = &self.tenant_id {
+        //     // 添加租户ID到span attributes
+        //     // 注意: SpanData的API可能需要调整
+        //     // 这里提供一个概念性实现
+        //     // for span in &mut enriched_batch {
+        //     //     span.attributes.push(KeyValue::new("tenant.id", tenant_id.clone()));
+        //     // }
+        // }
 
         self.inner.export(enriched_batch).await
     }

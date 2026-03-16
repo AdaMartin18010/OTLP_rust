@@ -117,12 +117,8 @@ impl GDPRComplianceManager {
                 self.handle_rectification_request(request).await
             }
             DataSubjectRequestType::Erasure => self.handle_erasure_request(request).await,
-            DataSubjectRequestType::Portability => {
-                self.handle_portability_request(request).await
-            }
-            DataSubjectRequestType::Restriction => {
-                self.handle_restriction_request(request).await
-            }
+            DataSubjectRequestType::Portability => self.handle_portability_request(request).await,
+            DataSubjectRequestType::Restriction => self.handle_restriction_request(request).await,
             DataSubjectRequestType::Objection => self.handle_objection_request(request).await,
         }
     }

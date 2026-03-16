@@ -659,8 +659,9 @@ impl OtlpTransform {
 
         while value_idx < value_chars.len() {
             let pattern_available = pattern_idx < pattern_chars.len();
-            let chars_match = pattern_available && 
-                (pattern_chars[pattern_idx] == '?' || pattern_chars[pattern_idx] == value_chars[value_idx]);
+            let chars_match = pattern_available
+                && (pattern_chars[pattern_idx] == '?'
+                    || pattern_chars[pattern_idx] == value_chars[value_idx]);
             let is_star = pattern_available && pattern_chars[pattern_idx] == '*';
 
             if chars_match {

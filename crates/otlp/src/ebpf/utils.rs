@@ -7,8 +7,8 @@
 //! - **改进的工具函数**: 利用 Rust 1.92 的工具函数优化提升性能
 //! - **类型安全的工具**: 使用 Rust 1.92 的类型系统确保工具函数的安全性
 
-use crate::error::Result;
 use crate::ebpf::types::EbpfConfig;
+use crate::error::Result;
 
 /// 验证 eBPF 配置
 pub fn validate_config(config: &EbpfConfig) -> Result<()> {
@@ -62,22 +62,22 @@ pub fn validate_config(config: &EbpfConfig) -> Result<()> {
 /// 计算推荐的采样频率
 pub fn recommended_sample_rate(env: &str) -> u32 {
     match env {
-        "production" | "prod" => 19,  // 生产环境：低采样率
-        "staging" => 49,               // 预发布环境：中等采样率
-        "development" | "dev" => 99,   // 开发环境：默认采样率
-        "debug" => 199,                // 调试模式：高采样率
-        _ => 99,                       // 默认：99Hz
+        "production" | "prod" => 19, // 生产环境：低采样率
+        "staging" => 49,             // 预发布环境：中等采样率
+        "development" | "dev" => 99, // 开发环境：默认采样率
+        "debug" => 199,              // 调试模式：高采样率
+        _ => 99,                     // 默认：99Hz
     }
 }
 
 /// 计算推荐的采样持续时间
 pub fn recommended_duration(env: &str) -> std::time::Duration {
     match env {
-        "production" | "prod" => Duration::from_secs(300),  // 5分钟
-        "staging" => Duration::from_secs(120),               // 2分钟
-        "development" | "dev" => Duration::from_secs(60),    // 1分钟
-        "debug" => Duration::from_secs(30),                  // 30秒
-        _ => Duration::from_secs(60),                        // 默认：1分钟
+        "production" | "prod" => Duration::from_secs(300), // 5分钟
+        "staging" => Duration::from_secs(120),             // 2分钟
+        "development" | "dev" => Duration::from_secs(60),  // 1分钟
+        "debug" => Duration::from_secs(30),                // 30秒
+        _ => Duration::from_secs(60),                      // 默认：1分钟
     }
 }
 

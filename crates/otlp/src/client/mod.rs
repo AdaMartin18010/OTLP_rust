@@ -6,7 +6,10 @@ mod builder;
 mod metrics;
 
 pub use builder::{LogBuilder, MetricBuilder, OtlpClientBuilder, TraceBuilder};
-pub use metrics::{AuditHook, AuditEvent, ClientMetrics, EventType, FileAuditHook, HttpAuditHook, MetricsSnapshot, StdoutAuditHook};
+pub use metrics::{
+    AuditEvent, AuditHook, ClientMetrics, EventType, FileAuditHook, HttpAuditHook, MetricsSnapshot,
+    StdoutAuditHook,
+};
 
 use crate::config::OtlpConfig;
 use crate::error::Result as OtlpResult;
@@ -102,10 +105,7 @@ impl OtlpClient {
     pub async fn send_log(&self, message: &str) -> OtlpResult<LogBuilder> {
         debug!("Creating log builder for message: {}", message);
 
-        Ok(LogBuilder::new(
-            message.to_string(),
-            self.config.clone(),
-        ))
+        Ok(LogBuilder::new(message.to_string(), self.config.clone()))
     }
 
     /// 关闭客户端
@@ -151,7 +151,7 @@ mod tests {
     #[tokio::test]
     async fn test_client_builder_creation() {
         use crate::config::TransportProtocol;
-        
+
         let builder = OtlpClientBuilder::new()
             .endpoint("http://localhost:4317")
             .protocol(TransportProtocol::Grpc)
@@ -164,7 +164,7 @@ mod tests {
     async fn test_client_trace_builder() {
         let config = OtlpConfig::default();
         let client = OtlpClient::new(config).await.unwrap();
-        
+
         let trace_builder = client.send_trace("test_operation").await;
         assert!(trace_builder.is_ok());
     }
@@ -173,7 +173,7 @@ mod tests {
     async fn test_client_metric_builder() {
         let config = OtlpConfig::default();
         let client = OtlpClient::new(config).await.unwrap();
-        
+
         let metric_builder = client.send_metric("test_metric", 42.0).await;
         assert!(metric_builder.is_ok());
     }
@@ -182,7 +182,7 @@ mod tests {
     async fn test_client_log_builder() {
         let config = OtlpConfig::default();
         let client = OtlpClient::new(config).await.unwrap();
-        
+
         let log_builder = client.send_log("test message").await;
         assert!(log_builder.is_ok());
     }
@@ -216,7 +216,12 @@ mod tests {
         let client = OtlpClient::new(config).await.unwrap();
         let metrics = client.metrics().await;
         // 验证返回的metrics是默认值
-        assert_eq!(metrics.total_requests.load(std::sync::atomic::Ordering::Relaxed), 0);
+        assert_eq!(
+            metrics
+                .total_requests
+                .load(std::sync::atomic::Ordering::Relaxed),
+            0
+        );
     }
 
     #[test]
@@ -243,22 +248,22 @@ mod tests {
     async fn test_client_full_lifecycle() {
         let config = OtlpConfig::default();
         let client = OtlpClient::new(config).await.unwrap();
-        
+
         // 初始化
         assert!(client.initialize().await.is_ok());
-        
+
         // 发送trace
         let trace = client.send_trace("test").await;
         assert!(trace.is_ok());
-        
+
         // 发送metric
         let metric = client.send_metric("test", 1.0).await;
         assert!(metric.is_ok());
-        
+
         // 发送log
         let log = client.send_log("test").await;
         assert!(log.is_ok());
-        
+
         // 关闭
         assert!(client.shutdown().await.is_ok());
     }

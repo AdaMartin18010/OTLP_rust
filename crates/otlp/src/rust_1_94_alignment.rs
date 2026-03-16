@@ -52,15 +52,15 @@
 //! const RESULT: f64 = 2.0f64.mul_add(3.0, 4.0); // 2*3 + 4 = 10
 //! ```
 
-use std::sync::LazyLock;
 use std::cell::LazyCell;
+use std::sync::LazyLock;
 
 /// Rust 1.94 特性演示和实际应用
 pub struct Rust194Features;
 
 impl Rust194Features {
     /// 使用 array_windows 进行模式检测
-    /// 
+    ///
     /// 应用场景：
     /// - 异常检测（寻找重复模式）
     /// - 数据验证（格式检查）
@@ -71,7 +71,7 @@ impl Rust194Features {
         }
 
         let mut patterns = Vec::new();
-        
+
         // 使用 array_windows 检测重复模式
         match window_size {
             2 => {
@@ -109,24 +109,25 @@ impl Rust194Features {
     }
 
     /// 使用 element_offset 计算内存布局
-    /// 
+    ///
     /// 应用场景：
     /// - 零拷贝序列化
     /// - 内存池管理
     /// - 缓存对齐优化
     pub fn calculate_element_positions<T>(slice: &[T]) -> Vec<Option<usize>> {
-        slice.iter()
+        slice
+            .iter()
             .map(|elem| slice.element_offset(elem))
             .collect()
     }
 
     /// 使用 AVX-512 FP16 进行高性能计算（x86_64）
-    /// 
+    ///
     /// 要求：Intel Sapphire Rapids 或 AMD Zen 6+
     #[cfg(all(target_arch = "x86_64", target_feature = "avx512fp16"))]
     pub fn avx512_fp16_sum(values: &[f16]) -> f16 {
         use std::arch::x86_64::*;
-        
+
         // AVX-512 FP16 实现
         unsafe {
             let mut sum = _mm256_set1_ph(0.0);
@@ -145,28 +146,28 @@ impl Rust194Features {
 
             // 处理剩余元素
             result += remainder.iter().sum::<f16>();
-            
+
             result
         }
     }
 
     /// 使用数学常量进行采样率调整
-    /// 
+    ///
     /// EULER_GAMMA 用于自适应采样
     /// GOLDEN_RATIO 用于指数退避
     pub fn calculate_adaptive_sample_rate(iteration: u32) -> f64 {
         // 使用黄金比例的倒数进行平滑衰减
         let phi = std::f64::consts::GOLDEN_RATIO;
         let decay = phi.powi(-(iteration as i32));
-        
+
         // 使用 Euler-Mascheroni 常数作为基准
         let base_rate = std::f64::consts::EULER_GAMMA;
-        
+
         base_rate * decay
     }
 
     /// 编译时 mul_add 优化
-    /// 
+    ///
     /// 使用 fused multiply-add 提高精度
     pub const fn const_fma(a: f64, b: f64, c: f64) -> f64 {
         a.mul_add(b, c)
@@ -194,7 +195,7 @@ pub mod global_config {
                 vec![0u8; 1024 * 1024] // 1MB 缓存
             });
         }
-        
+
         // 注意：实际使用需要 thread_local 配合
         // 这里仅作演示
         todo!("Use thread_local! macro in actual implementation")
@@ -215,20 +216,20 @@ pub mod simd_194 {
     #[cfg(target_arch = "aarch64")]
     pub fn neon_fp16_sum(values: &[f16]) -> f16 {
         use std::arch::aarch64::*;
-        
+
         unsafe {
             let mut sum = vdup_n_f16(0.0);
-            
+
             for chunk in values.chunks_exact(4) {
                 let vec = vld1_f16(chunk.as_ptr());
                 sum = vadd_f16(sum, vec);
             }
-            
+
             // 水平求和
             let mut result = 0.0f16;
             let temp: [f16; 4] = std::mem::transmute(sum);
             result += temp.iter().sum::<f16>();
-            
+
             result
         }
     }
@@ -249,11 +250,11 @@ mod tests {
     fn test_element_offset() {
         let data: Vec<i32> = (0..10).collect();
         let positions = Rust194Features::calculate_element_positions(&data);
-        
+
         // 验证偏移量递增（过滤掉 None）
         let valid_positions: Vec<usize> = positions.into_iter().flatten().collect();
         for i in 1..valid_positions.len() {
-            assert!(valid_positions[i] > valid_positions[i-1]);
+            assert!(valid_positions[i] > valid_positions[i - 1]);
         }
     }
 
@@ -261,7 +262,7 @@ mod tests {
     fn test_adaptive_sample_rate() {
         let rate1 = Rust194Features::calculate_adaptive_sample_rate(1);
         let rate2 = Rust194Features::calculate_adaptive_sample_rate(2);
-        
+
         // 采样率应该随迭代递减
         assert!(rate1 > rate2);
     }

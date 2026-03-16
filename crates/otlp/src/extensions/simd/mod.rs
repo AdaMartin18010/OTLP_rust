@@ -3,9 +3,9 @@
 //! 提供SIMD向量化优化扩展，用于加速OpenTelemetry数据处理。
 //! 通过包装官方Exporter和Processor来添加SIMD优化。
 
-use opentelemetry_sdk::trace::{SpanData, SpanExporter};
-use opentelemetry_sdk::error::OTelSdkError;
 use crate::simd::CpuFeatures;
+use opentelemetry_sdk::error::OTelSdkError;
+use opentelemetry_sdk::trace::{SpanData, SpanExporter};
 
 mod optimization;
 use optimization::simd_optimize_batch;
@@ -52,7 +52,10 @@ impl<E> SpanExporter for SimdSpanExporter<E>
 where
     E: SpanExporter + std::fmt::Debug + Send + Sync,
 {
-    fn export(&self, batch: Vec<SpanData>) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
+    fn export(
+        &self,
+        batch: Vec<SpanData>,
+    ) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
         let cpu_features = self.cpu_features;
         let simd_enabled = self.simd_enabled;
         async move {

@@ -573,24 +573,15 @@ impl HostAttributesBuilder {
 
         // Host identification
         if let Some(name) = self.name {
-            attributes.insert(
-                "host.name".to_string(),
-                AttributeValue::String(name),
-            );
+            attributes.insert("host.name".to_string(), AttributeValue::String(name));
         }
 
         if let Some(id) = self.host_id {
-            attributes.insert(
-                "host.id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("host.id".to_string(), AttributeValue::String(id));
         }
 
         if let Some(host_type) = self.host_type {
-            attributes.insert(
-                "host.type".to_string(),
-                AttributeValue::String(host_type),
-            );
+            attributes.insert("host.type".to_string(), AttributeValue::String(host_type));
         } else if let Some(host_type) = self.host_type_enum {
             attributes.insert(
                 "host.type".to_string(),
@@ -619,39 +610,24 @@ impl HostAttributesBuilder {
         }
 
         if let Some(version) = self.os_version {
-            attributes.insert(
-                "os.version".to_string(),
-                AttributeValue::String(version),
-            );
+            attributes.insert("os.version".to_string(), AttributeValue::String(version));
         }
 
         if let Some(name) = self.os_name {
-            attributes.insert(
-                "os.name".to_string(),
-                AttributeValue::String(name),
-            );
+            attributes.insert("os.name".to_string(), AttributeValue::String(name));
         }
 
         if let Some(desc) = self.os_description {
-            attributes.insert(
-                "os.description".to_string(),
-                AttributeValue::String(desc),
-            );
+            attributes.insert("os.description".to_string(), AttributeValue::String(desc));
         }
 
         if let Some(build_id) = self.os_build_id {
-            attributes.insert(
-                "os.build_id".to_string(),
-                AttributeValue::String(build_id),
-            );
+            attributes.insert("os.build_id".to_string(), AttributeValue::String(build_id));
         }
 
         // Kernel
         if let Some(name) = self.kernel_name {
-            attributes.insert(
-                "host.kernel.name".to_string(),
-                AttributeValue::String(name),
-            );
+            attributes.insert("host.kernel.name".to_string(), AttributeValue::String(name));
         }
 
         if let Some(version) = self.kernel_version {
@@ -698,17 +674,11 @@ impl HostAttributesBuilder {
         }
 
         if let Some(cores) = self.cpu_cores {
-            attributes.insert(
-                "host.cpu.cores".to_string(),
-                AttributeValue::Int(cores),
-            );
+            attributes.insert("host.cpu.cores".to_string(), AttributeValue::Int(cores));
         }
 
         if let Some(count) = self.cpu_count {
-            attributes.insert(
-                "host.cpu.count".to_string(),
-                AttributeValue::Int(count),
-            );
+            attributes.insert("host.cpu.count".to_string(), AttributeValue::Int(count));
         }
 
         if let Some(freq) = self.cpu_frequency_mhz {
@@ -727,10 +697,7 @@ impl HostAttributesBuilder {
 
         // Memory
         if let Some(total) = self.memory_total {
-            attributes.insert(
-                "host.memory.total".to_string(),
-                AttributeValue::Int(total),
-            );
+            attributes.insert("host.memory.total".to_string(), AttributeValue::Int(total));
         }
 
         if let Some(swap) = self.memory_swap_total {
@@ -742,17 +709,11 @@ impl HostAttributesBuilder {
 
         // Boot
         if let Some(id) = self.boot_id {
-            attributes.insert(
-                "host.boot.id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("host.boot.id".to_string(), AttributeValue::String(id));
         }
 
         if let Some(time) = self.boot_time {
-            attributes.insert(
-                "host.boot.time".to_string(),
-                AttributeValue::String(time),
-            );
+            attributes.insert("host.boot.time".to_string(), AttributeValue::String(time));
         }
 
         // Virtualization
@@ -765,10 +726,7 @@ impl HostAttributesBuilder {
 
         // Device
         if let Some(id) = self.device_id {
-            attributes.insert(
-                "device.id".to_string(),
-                AttributeValue::String(id),
-            );
+            attributes.insert("device.id".to_string(), AttributeValue::String(id));
         }
 
         if let Some(device_type) = self.device_type {
@@ -779,10 +737,7 @@ impl HostAttributesBuilder {
         }
 
         if let Some(model) = self.device_model {
-            attributes.insert(
-                "device.model".to_string(),
-                AttributeValue::String(model),
-            );
+            attributes.insert("device.model".to_string(), AttributeValue::String(model));
         }
 
         if let Some(manufacturer) = self.device_manufacturer {
@@ -799,10 +754,7 @@ impl HostAttributesBuilder {
                 .into_iter()
                 .map(|ip| AttributeValue::String(ip.to_string()))
                 .collect();
-            attributes.insert(
-                "host.ip".to_string(),
-                AttributeValue::Array(ips),
-            );
+            attributes.insert("host.ip".to_string(), AttributeValue::Array(ips));
         }
 
         if !self.mac_addresses.is_empty() {
@@ -811,10 +763,7 @@ impl HostAttributesBuilder {
                 .into_iter()
                 .map(AttributeValue::String)
                 .collect();
-            attributes.insert(
-                "host.mac".to_string(),
-                AttributeValue::Array(macs),
-            );
+            attributes.insert("host.mac".to_string(), AttributeValue::Array(macs));
         }
 
         // Add custom attributes
@@ -909,10 +858,7 @@ mod tests {
             attrs.get("os.version"),
             Some(&AttributeValue::String("5.15.0-105-generic".to_string()))
         );
-        assert_eq!(
-            attrs.get("host.cpu.cores"),
-            Some(&AttributeValue::Int(8))
-        );
+        assert_eq!(attrs.get("host.cpu.cores"), Some(&AttributeValue::Int(8)));
         assert_eq!(
             attrs.get("host.hypervisor"),
             Some(&AttributeValue::String("VMware".to_string()))
@@ -1035,7 +981,10 @@ mod tests {
     fn test_host_custom_attributes() {
         let attrs = HostAttributesBuilder::new()
             .name("custom-host")
-            .custom_attribute("custom.datacenter", AttributeValue::String("us-west-1".to_string()))
+            .custom_attribute(
+                "custom.datacenter",
+                AttributeValue::String("us-west-1".to_string()),
+            )
             .custom_attribute("custom.rack", AttributeValue::Int(42))
             .build()
             .unwrap();
@@ -1044,10 +993,7 @@ mod tests {
             attrs.get("custom.datacenter"),
             Some(&AttributeValue::String("us-west-1".to_string()))
         );
-        assert_eq!(
-            attrs.get("custom.rack"),
-            Some(&AttributeValue::Int(42))
-        );
+        assert_eq!(attrs.get("custom.rack"), Some(&AttributeValue::Int(42)));
     }
 
     #[test]

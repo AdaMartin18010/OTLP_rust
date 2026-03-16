@@ -30,14 +30,7 @@ pub mod exponential_histogram;
 
 // Re-export commonly used types
 pub use exponential_histogram::{
-    ExponentialHistogram,
-    ExponentialHistogramDataPointBuckets,
-    calculate_scale_for_range,
-    base,
-    bucket_lower_bound,
-    bucket_upper_bound,
-    MAX_SCALE,
-    MIN_SCALE,
-    DEFAULT_MAX_BUCKETS,
-    DEFAULT_ZERO_THRESHOLD,
+    DEFAULT_MAX_BUCKETS, DEFAULT_ZERO_THRESHOLD, ExponentialHistogram,
+    ExponentialHistogramDataPointBuckets, MAX_SCALE, MIN_SCALE, base, bucket_lower_bound,
+    bucket_upper_bound, calculate_scale_for_range,
 };

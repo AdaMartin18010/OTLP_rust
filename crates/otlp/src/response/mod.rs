@@ -121,11 +121,7 @@ pub enum SignalType {
 
 impl ResponseMetadata {
     /// Create new response metadata
-    pub fn new(
-        request_id: impl Into<String>,
-        signal_type: SignalType,
-        total_items: u64,
-    ) -> Self {
+    pub fn new(request_id: impl Into<String>, signal_type: SignalType, total_items: u64) -> Self {
         let now = std::time::Instant::now();
         Self {
             request_id: request_id.into(),

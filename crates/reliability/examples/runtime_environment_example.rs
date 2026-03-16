@@ -96,7 +96,7 @@ async fn demonstrate_embedded_environment() -> Result<(), UnifiedError> {
     let mut adapter = EmbeddedEnvironmentAdapter::with_config(
         2 * 1024 * 1024, // 2MB 内存
         2,               // 2个CPU核心
-        1024 * 1024, // 1MB 磁盘
+        1024 * 1024,     // 1MB 磁盘
     );
     adapter.initialize().await?;
 
@@ -387,7 +387,9 @@ async fn adjust_reliability_strategy(
         println!("  检测到低内存环境，调整内存使用策略");
     }
 
-    if let Some(cpu_limit) = capabilities.cpu_limit && cpu_limit < 100 {
+    if let Some(cpu_limit) = capabilities.cpu_limit
+        && cpu_limit < 100
+    {
         // 小于100MHz
         println!("  检测到低CPU环境，调整CPU使用策略");
     }

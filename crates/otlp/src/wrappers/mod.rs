@@ -14,12 +14,12 @@
 //! - **EnhancedPipelineV2**: 推荐使用，提供完整的扩展支持
 //! - **EnhancedExporter**: 适用于需要手动构建Exporter的情况
 
+pub mod enhanced_exporter;
 pub mod enhanced_pipeline;
 pub mod enhanced_pipeline_v2;
 pub mod enhanced_tracer;
-pub mod enhanced_exporter;
 
+pub use enhanced_exporter::EnhancedExporter;
 pub use enhanced_pipeline::EnhancedPipeline;
 pub use enhanced_pipeline_v2::EnhancedPipelineV2;
 pub use enhanced_tracer::EnhancedTracer;
-pub use enhanced_exporter::EnhancedExporter;

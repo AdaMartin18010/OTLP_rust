@@ -376,16 +376,10 @@ impl IntelligentRouter {
     /// 检查单个匹配条件
     fn matches_condition(&self, condition: &MatchCondition, request: &RouteRequest) -> bool {
         match condition {
-            MatchCondition::Header { name, value } => {
-                self.matches_header(request, name, value)
-            }
-            MatchCondition::Path { pattern } => {
-                self.path_matches(&request.path, pattern)
-            }
+            MatchCondition::Header { name, value } => self.matches_header(request, name, value),
+            MatchCondition::Path { pattern } => self.path_matches(&request.path, pattern),
             MatchCondition::Method { methods } => methods.contains(&request.method),
-            MatchCondition::Query { key, value } => {
-                self.matches_query(request, key, value)
-            }
+            MatchCondition::Query { key, value } => self.matches_query(request, key, value),
             MatchCondition::Source { service, namespace } => {
                 self.matches_source(request, service, namespace)
             }

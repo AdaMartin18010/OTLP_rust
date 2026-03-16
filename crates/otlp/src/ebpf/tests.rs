@@ -34,12 +34,7 @@ mod tests {
 
     #[test]
     fn test_ebpf_event_new() {
-        let event = EbpfEvent::new(
-            EbpfEventType::CpuSample,
-            1234,
-            5678,
-            vec![1, 2, 3, 4],
-        );
+        let event = EbpfEvent::new(EbpfEventType::CpuSample, 1234, 5678, vec![1, 2, 3, 4]);
 
         assert_eq!(event.event_type, EbpfEventType::CpuSample);
         assert_eq!(event.pid, 1234);
@@ -107,8 +102,8 @@ mod tests {
         let profiler = super::profiling::EbpfCpuProfiler::new(config);
 
         // 验证性能分析器已创建
-        assert_eq!(profiler.config().sample_rate, 100);  // 默认采样率
-        assert!(!profiler.is_running());  // 初始状态未运行
+        assert_eq!(profiler.config().sample_rate, 100); // 默认采样率
+        assert!(!profiler.is_running()); // 初始状态未运行
 
         // 注意：实际加载功能需要Linux平台和aya crate集成
         // 在Linux平台上可以测试:
@@ -155,8 +150,16 @@ mod tests {
 
         // 测试附加探针
         assert!(manager.attach_kprobe("test_kprobe", "test_func").is_ok());
-        assert!(manager.attach_uprobe("test_uprobe", "/bin/test", "test_symbol").is_ok());
-        assert!(manager.attach_tracepoint("test_tp", "syscalls", "sys_enter_open").is_ok());
+        assert!(
+            manager
+                .attach_uprobe("test_uprobe", "/bin/test", "test_symbol")
+                .is_ok()
+        );
+        assert!(
+            manager
+                .attach_tracepoint("test_tp", "syscalls", "sys_enter_open")
+                .is_ok()
+        );
 
         // 测试探针数量
         assert_eq!(manager.probe_count(), 3);
@@ -211,12 +214,7 @@ mod tests {
         let mut manager = super::maps::MapsManager::new();
 
         // 测试注册 Map
-        manager.register_map(
-            "test_map".to_string(),
-            super::maps::MapType::Hash,
-            4,
-            8,
-        );
+        manager.register_map("test_map".to_string(), super::maps::MapType::Hash, 4, 8);
 
         assert_eq!(manager.map_count(), 1);
 
@@ -231,7 +229,11 @@ mod tests {
         assert_eq!(maps.len(), 1);
 
         // 测试读取和写入（占位实现）
-        assert!(manager.write_map("test_map", &[1, 2, 3, 4], &[5, 6, 7, 8]).is_ok());
+        assert!(
+            manager
+                .write_map("test_map", &[1, 2, 3, 4], &[5, 6, 7, 8])
+                .is_ok()
+        );
         assert!(manager.read_map("test_map", &[1, 2, 3, 4]).is_ok());
     }
 
@@ -384,12 +386,7 @@ mod tests {
 
         // 添加事件直到缓冲区满
         for i in 0..5 {
-            let event = EbpfEvent::new(
-                EbpfEventType::CpuSample,
-                1000 + i,
-                2000 + i,
-                vec![i as u8],
-            );
+            let event = EbpfEvent::new(EbpfEventType::CpuSample, 1000 + i, 2000 + i, vec![i as u8]);
             assert!(processor.process_event(event).is_ok());
         }
 
@@ -411,12 +408,7 @@ mod tests {
 
         // 添加一些事件
         for i in 0..10 {
-            let event = EbpfEvent::new(
-                EbpfEventType::CpuSample,
-                1000 + i,
-                2000 + i,
-                vec![i as u8],
-            );
+            let event = EbpfEvent::new(EbpfEventType::CpuSample, 1000 + i, 2000 + i, vec![i as u8]);
             processor.process_event(event).unwrap();
         }
 
@@ -480,8 +472,12 @@ mod tests {
 
         // 添加多个探针
         manager.attach_kprobe("kprobe1", "func1").unwrap();
-        manager.attach_uprobe("uprobe1", "/bin/test", "symbol1").unwrap();
-        manager.attach_tracepoint("tp1", "syscalls", "sys_enter_open").unwrap();
+        manager
+            .attach_uprobe("uprobe1", "/bin/test", "symbol1")
+            .unwrap();
+        manager
+            .attach_tracepoint("tp1", "syscalls", "sys_enter_open")
+            .unwrap();
 
         assert_eq!(manager.probe_count(), 3);
 
@@ -570,7 +566,7 @@ mod tests {
 
         // 验证错误已转换
         match otlp_error {
-            OtlpError::Processing(_) => {},
+            OtlpError::Processing(_) => {}
             _ => panic!("错误类型不匹配"),
         }
     }

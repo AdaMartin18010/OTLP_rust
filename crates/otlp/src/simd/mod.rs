@@ -76,24 +76,13 @@ pub use string_ops::StringOps;
 
 // 导出FP16优化实现
 pub use fp16_optimizations::{
-    calculate_histogram_buckets,
-    fast_percentile,
-    f32_to_fp16,
-    fp16_dot_product,
-    fp16_min_max,
-    fp16_sum,
-    fp16_to_f32,
-    convert_f32_to_fp16_slice,
-    convert_fp16_to_f32_slice,
-    Fp16,
-    Fp16Features,
+    Fp16, Fp16Features, calculate_histogram_buckets, convert_f32_to_fp16_slice,
+    convert_fp16_to_f32_slice, f32_to_fp16, fast_percentile, fp16_dot_product, fp16_min_max,
+    fp16_sum, fp16_to_f32,
 };
 
 // 导出真实SIMD实现
 pub use real_optimization::{
-    real_simd_sum_i64,
-    real_simd_sum_f64,
-    real_simd_compare_prefix,
+    MetricsAggregate, real_simd_compare_prefix, real_simd_sum_f64, real_simd_sum_i64,
     simd_aggregate_metrics,
-    MetricsAggregate,
 };

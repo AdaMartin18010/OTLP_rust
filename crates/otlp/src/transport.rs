@@ -94,7 +94,11 @@ impl GrpcTransport {
                 reason: "Client not initialized".to_string(),
             })?;
 
-        tracing::debug!("gRPC 传输：发送 {} 条数据到 {}", data.len(), self.config.endpoint);
+        tracing::debug!(
+            "gRPC 传输：发送 {} 条数据到 {}",
+            data.len(),
+            self.config.endpoint
+        );
 
         // 序列化数据
         let json_data = serde_json::to_vec(data).map_err(|e| TransportError::Serialization {
@@ -251,7 +255,11 @@ impl HttpTransport {
                 reason: "Client not initialized".to_string(),
             })?;
 
-        tracing::debug!("HTTP 传输：发送 {} 条数据到 {}", data.len(), self.config.endpoint);
+        tracing::debug!(
+            "HTTP 传输：发送 {} 条数据到 {}",
+            data.len(),
+            self.config.endpoint
+        );
 
         // 序列化数据
         let json_data = serde_json::to_vec(data).map_err(|e| TransportError::Serialization {

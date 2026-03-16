@@ -176,7 +176,7 @@ where
             Self::create_initial_connections(config, factory, pool, total_connections).await;
         });
     }
-    
+
     async fn create_initial_connections(
         config: ConnectionPoolConfig,
         factory: Arc<F>,
@@ -187,7 +187,7 @@ where
             let Ok(connection) = factory() else {
                 continue;
             };
-            
+
             let meta = ConnectionMeta {
                 connection,
                 created_at: Instant::now(),
@@ -232,19 +232,19 @@ where
             pool: Arc::new(self.clone()),
         })
     }
-    
+
     async fn try_get_pooled_connection(&self) -> Option<PooledConnection<T, F>> {
         let mut pool = self.pool.lock().await;
-        
+
         let mut meta = pool.pop_front()?;
-        
+
         // 检查连接是否健康
         if !meta.is_healthy || !self.is_connection_valid(&meta) {
             // 连接不健康，销毁
             self.total_connections.fetch_sub(1, Ordering::AcqRel);
             return None;
         }
-        
+
         meta.last_used = Instant::now();
         meta.request_count += 1;
         self.active_connections.fetch_add(1, Ordering::AcqRel);
@@ -352,7 +352,7 @@ where
 
         removed_count
     }
-    
+
     fn remove_invalid_connections(
         pool: &mut VecDeque<ConnectionMeta<T>>,
         total_connections: &Arc<AtomicUsize>,
@@ -378,8 +378,11 @@ where
             Self::run_health_check(pool, health_check_interval).await;
         });
     }
-    
-    async fn run_health_check(pool: Arc<OptimizedConnectionPool<T, F>>, interval_duration: Duration) {
+
+    async fn run_health_check(
+        pool: Arc<OptimizedConnectionPool<T, F>>,
+        interval_duration: Duration,
+    ) {
         let mut interval = tokio::time::interval(interval_duration);
         loop {
             interval.tick().await;
@@ -512,7 +515,7 @@ where
             Some(c) => c,
             None => return,
         };
-        
+
         // 异步回收到池中
         let pool = Arc::clone(&self.pool);
         let created_at = self.created_at;
@@ -668,7 +671,7 @@ mod tests {
             .await
             .expect("Failed to acquire connection after release");
         assert_eq!(conn3.get(), "test_connection");
-        
+
         // 清理
         drop(conn2);
         drop(conn3);

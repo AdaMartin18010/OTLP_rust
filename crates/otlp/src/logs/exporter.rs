@@ -251,9 +251,8 @@ impl LogExporter {
             }
         }
 
-        let (result, duration) = PerformanceUtils::measure_time(
-            self.export_with_retry(logs.clone())
-        ).await;
+        let (result, duration) =
+            PerformanceUtils::measure_time(self.export_with_retry(logs.clone())).await;
 
         // Update metrics
         if let Ok(ref export_result) = result {
@@ -266,7 +265,7 @@ impl LogExporter {
     /// Queue a log for batch export
     pub async fn queue_log(&self, log: LogRecord) -> Result<()> {
         let mut queue = self.queue.lock().await;
-        
+
         if queue.len() >= self.config.max_queue_size {
             return Err(OtlpError::Export(ExportError::QueueFull {
                 current: queue.len(),
@@ -299,7 +298,7 @@ impl LogExporter {
 
         tokio::spawn(async move {
             let mut ticker = interval(interval_duration);
-            
+
             loop {
                 ticker.tick().await;
 
@@ -344,10 +343,7 @@ impl LogExporter {
     }
 
     /// Internal export with retry logic
-    async fn export_with_retry(
-        &self,
-        logs: Vec<LogRecord>,
-    ) -> Result<LogExportResult> {
+    async fn export_with_retry(&self, logs: Vec<LogRecord>) -> Result<LogExportResult> {
         let mut last_error = None;
 
         for attempt in 0..=self.config.max_retries {
@@ -393,8 +389,7 @@ impl LogExporter {
         Err(ExportError::Failed {
             reason: format!(
                 "Export failed after {} retries: {:?}",
-                self.config.max_retries,
-                last_error
+                self.config.max_retries, last_error
             ),
         }
         .into())
@@ -437,7 +432,7 @@ impl LogExporter {
         let mut metrics = self.metrics.write().await;
 
         metrics.total_exports += 1;
-        
+
         if result.is_success() {
             metrics.successful_exports += 1;
         } else {
@@ -598,7 +593,6 @@ impl Default for MockLogExporter {
 mod tests {
     use super::*;
 
-
     #[tokio::test]
     async fn test_log_exporter_builder() {
         let exporter = LogExporterBuilder::new()
@@ -633,12 +627,12 @@ mod tests {
     #[tokio::test]
     async fn test_mock_exporter() {
         let mock = MockLogExporter::new();
-        
+
         let log = LogRecord::info("test message");
         let result = mock.export(vec![log.clone()]).await;
-        
+
         assert!(result.is_ok());
-        
+
         let exported = mock.get_exported_logs().await;
         assert_eq!(exported.len(), 1);
         assert_eq!(exported[0].message(), Some("test message"));
@@ -648,20 +642,20 @@ mod tests {
     async fn test_mock_exporter_failure() {
         let mock = MockLogExporter::new();
         mock.set_should_fail(true).await;
-        
+
         let log = LogRecord::info("test message");
         let result = mock.export(vec![log]).await;
-        
+
         assert!(result.is_err());
     }
 
     #[tokio::test]
     async fn test_exporter_queue() {
         let exporter = LogExporter::new(LogExporterConfig::default());
-        
+
         let log = LogRecord::info("test");
         exporter.queue_log(log.clone()).await.unwrap();
-        
+
         let result = exporter.flush().await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap().success_count, 1);

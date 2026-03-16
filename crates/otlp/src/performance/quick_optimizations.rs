@@ -392,7 +392,10 @@ mod tests {
         let data = vec![b'a'; 10000]; // 10KB of repeated data
 
         let compressed = compressor.compress(&data).await.unwrap();
-        assert!(compressed.len() < data.len(), "Compression should reduce size for repetitive data");
+        assert!(
+            compressed.len() < data.len(),
+            "Compression should reduce size for repetitive data"
+        );
     }
 
     #[tokio::test]

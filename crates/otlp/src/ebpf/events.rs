@@ -4,10 +4,10 @@
 //!
 //! 提供同步和异步事件处理，支持批处理优化
 
-use crate::error::Result;
 use crate::ebpf::types::{EbpfEvent, EbpfEventType};
-use std::sync::Arc;
+use crate::error::Result;
 use parking_lot::Mutex;
+use std::sync::Arc;
 
 /// 事件处理器
 pub struct EventProcessor {

@@ -45,7 +45,7 @@ impl ZeroKnowledgeProofManager {
     }
 
     /// 生成零知识证明
-    /// 
+    ///
     /// ⚠️ **未实现**: 需要集成 ZK 库 (如 bellman, zexe)
     pub async fn generate_proof(&self, _statement: &str, _witness: &str) -> Result<Proof> {
         Err(anyhow::anyhow!(
@@ -54,12 +54,10 @@ impl ZeroKnowledgeProofManager {
     }
 
     /// 验证零知识证明
-    /// 
+    ///
     /// ⚠️ **未实现**: 需要集成 ZK 库
     pub async fn verify_proof(&self, _proof: &Proof) -> Result<bool> {
-        Err(anyhow::anyhow!(
-            "零知识证明验证功能尚未实现。"
-        ))
+        Err(anyhow::anyhow!("零知识证明验证功能尚未实现。"))
     }
 
     /// 获取统计信息
@@ -91,7 +89,7 @@ impl HomomorphicEncryptionManager {
     }
 
     /// 同态加密数据
-    /// 
+    ///
     /// ⚠️ **未实现**: 需要集成同态加密库 (如 concrete, seal, tfhe-rs)
     pub async fn encrypt(&self, _data: &[u8], _key: &str) -> Result<EncryptedData> {
         Err(anyhow::anyhow!(
@@ -100,16 +98,14 @@ impl HomomorphicEncryptionManager {
     }
 
     /// 同态计算
-    /// 
+    ///
     /// ⚠️ **未实现**: 需要集成同态加密库
     pub async fn homomorphic_compute(
         &self,
         _encrypted_data: &[EncryptedData],
         _operation: &str,
     ) -> Result<EncryptedData> {
-        Err(anyhow::anyhow!(
-            "同态计算功能尚未实现。"
-        ))
+        Err(anyhow::anyhow!("同态计算功能尚未实现。"))
     }
 
     /// 获取统计信息
@@ -853,11 +849,14 @@ mod tests {
     #[tokio::test]
     async fn test_zero_knowledge_proof() {
         let manager = ZeroKnowledgeProofManager::new();
-        
+
         // Zero-knowledge proof is not yet implemented - expect an error
         let result = manager.generate_proof("statement", "witness").await;
-        assert!(result.is_err(), "Zero-knowledge proof generation should return not-implemented error");
-        
+        assert!(
+            result.is_err(),
+            "Zero-knowledge proof generation should return not-implemented error"
+        );
+
         // verify_proof should also return error
         let dummy_proof = Proof {
             statement: "test".to_string(),
@@ -866,20 +865,26 @@ mod tests {
             verification_key: "".to_string(),
         };
         let verify_result = manager.verify_proof(&dummy_proof).await;
-        assert!(verify_result.is_err(), "Zero-knowledge proof verification should return not-implemented error");
+        assert!(
+            verify_result.is_err(),
+            "Zero-knowledge proof verification should return not-implemented error"
+        );
     }
 
     #[tokio::test]
     async fn test_homomorphic_encryption() {
         let manager = HomomorphicEncryptionManager::new();
         let data = b"test data";
-        
+
         // Homomorphic encryption is not yet implemented - expect an error
         let result = manager.encrypt(data, "key").await;
-        assert!(result.is_err(), "Homomorphic encryption should return not-implemented error");
+        assert!(
+            result.is_err(),
+            "Homomorphic encryption should return not-implemented error"
+        );
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("尚未实现") || err_msg.contains("not implemented"));
-        
+
         // Also test homomorphic_compute returns error
         let dummy_data = EncryptedData {
             data: vec![1, 2, 3],
@@ -888,26 +893,35 @@ mod tests {
             key_id: "test_key".to_string(),
         };
         let compute_result = manager.homomorphic_compute(&[dummy_data], "add").await;
-        assert!(compute_result.is_err(), "Homomorphic compute should return not-implemented error");
+        assert!(
+            compute_result.is_err(),
+            "Homomorphic compute should return not-implemented error"
+        );
     }
 
     #[tokio::test]
     async fn test_secure_multi_party_computation() {
         let manager = SecureMultiPartyComputationManager::new();
         let participants = vec!["alice".to_string(), "bob".to_string()];
-        
+
         // Secure multi-party computation has a simulated implementation
         let result = manager.execute_computation(&participants, "sum").await;
-        assert!(result.is_ok(), "Secure multi-party computation should succeed (simulated)");
-        
+        assert!(
+            result.is_ok(),
+            "Secure multi-party computation should succeed (simulated)"
+        );
+
         let computation_result = result.unwrap();
         assert_eq!(computation_result.participants, participants);
         assert!(computation_result.result.contains("sum"));
-        
+
         // verify_result should return true for valid hash
         let verify_result = manager.verify_result(&computation_result).await;
         assert!(verify_result.is_ok(), "Verify result should succeed");
-        assert!(verify_result.unwrap(), "Verification should pass for simulated result");
+        assert!(
+            verify_result.unwrap(),
+            "Verification should pass for simulated result"
+        );
     }
 
     #[tokio::test]

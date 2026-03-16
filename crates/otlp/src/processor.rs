@@ -3,16 +3,16 @@
 //! 实现OTLP数据的处理逻辑，包括批处理、过滤、聚合等功能，
 //! 利用Rust 1.92的异步特性实现高性能数据处理。
 
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::{RwLock, mpsc};
-use tokio::time::interval;
 use crate::data::TelemetryData;
 use crate::error::{ProcessingError, Result};
 use crate::resilience::ResilienceManager;
 use crate::rust_1_92_optimizations::AsyncBatchProcessor;
 use crate::utils::PerformanceUtils;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::{RwLock, mpsc};
+use tokio::time::interval;
 
 /// 处理配置
 #[derive(Debug, Clone)]
@@ -358,9 +358,11 @@ impl OtlpProcessor {
 
     /// 处理数据
     pub async fn process(&self, data: TelemetryData) -> Result<()> {
-        self.input_queue.send(data).map_err(|_| ProcessingError::Batch {
-            reason: "Failed to send data to processing queue".to_string(),
-        })?;
+        self.input_queue
+            .send(data)
+            .map_err(|_| ProcessingError::Batch {
+                reason: "Failed to send data to processing queue".to_string(),
+            })?;
         Ok(())
     }
 
@@ -441,7 +443,8 @@ impl OtlpProcessor {
         let batch_size = batch.len();
         let (processed_batch, processing_time) = PerformanceUtils::measure_time(async {
             Self::process_batch(batch.clone(), filters, aggregators).await
-        }).await;
+        })
+        .await;
 
         if let Ok(processed) = processed_batch {
             let _ = output_tx.send(processed);
@@ -460,8 +463,9 @@ impl OtlpProcessor {
         metrics_guard.total_processed += batch_size as u64;
         metrics_guard.batch_count += 1;
         metrics_guard.processing_latency = processing_time;
-        metrics_guard.average_batch_size =
-            (metrics_guard.average_batch_size * (metrics_guard.batch_count - 1) as f64 + batch_size as f64)
+        metrics_guard.average_batch_size = (metrics_guard.average_batch_size
+            * (metrics_guard.batch_count - 1) as f64
+            + batch_size as f64)
             / metrics_guard.batch_count as f64;
     }
 

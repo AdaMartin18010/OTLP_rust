@@ -8,12 +8,29 @@ use thiserror::Error;
 /// OTTL 语句
 #[derive(Debug, Clone)]
 pub enum Statement {
-    Set { path: Path, value: Expression },
-    Where { condition: Expression },
-    KeepKeys { path: Path, keys: Vec<Expression> },
-    Limit { path: Path, count: Expression },
-    Convert { path: Path, target_type: String },
-    Route { path: Path, destinations: Vec<Expression> },
+    Set {
+        path: Path,
+        value: Expression,
+    },
+    Where {
+        condition: Expression,
+    },
+    KeepKeys {
+        path: Path,
+        keys: Vec<Expression>,
+    },
+    Limit {
+        path: Path,
+        count: Expression,
+    },
+    Convert {
+        path: Path,
+        target_type: String,
+    },
+    Route {
+        path: Path,
+        destinations: Vec<Expression>,
+    },
 }
 
 /// OTTL 路径表达式
@@ -33,10 +50,24 @@ pub enum Path {
 pub enum Expression {
     Literal(Literal),
     Path(Box<Path>),
-    FunctionCall { name: String, args: Vec<Expression> },
-    Binary { left: Box<Expression>, op: BinaryOp, right: Box<Expression> },
-    Unary { op: UnaryOp, expr: Box<Expression> },
-    Conditional { condition: Box<Expression>, true_expr: Box<Expression>, false_expr: Box<Expression> },
+    FunctionCall {
+        name: String,
+        args: Vec<Expression>,
+    },
+    Binary {
+        left: Box<Expression>,
+        op: BinaryOp,
+        right: Box<Expression>,
+    },
+    Unary {
+        op: UnaryOp,
+        expr: Box<Expression>,
+    },
+    Conditional {
+        condition: Box<Expression>,
+        true_expr: Box<Expression>,
+        false_expr: Box<Expression>,
+    },
 }
 
 /// 字面量类型
@@ -54,15 +85,28 @@ pub enum Literal {
 /// 二元操作符
 #[derive(Debug, Clone, PartialEq)]
 pub enum BinaryOp {
-    Add, Sub, Mul, Div, Mod,
-    Eq, Ne, Lt, Le, Gt, Ge,
-    And, Or, Concat, Match,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    And,
+    Or,
+    Concat,
+    Match,
 }
 
 /// 一元操作符
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnaryOp {
-    Not, Neg,
+    Not,
+    Neg,
 }
 
 /// 解析错误
@@ -95,17 +139,37 @@ enum Token {
     String(String),
     Number(f64),
     Boolean(bool),
-    LeftParen, RightParen,
-    LeftBracket, RightBracket,
-    LeftBrace, RightBrace,
-    Dot, Comma, Semicolon,
-    Equal, NotEqual,
-    LessThan, LessEqual,
-    GreaterThan, GreaterEqual,
-    Plus, Minus, Multiply, Divide, Modulo,
-    And, Or, Not,
-    Question, Colon,
-    Where, Set, KeepKeys, Limit, Convert, Route,
+    LeftParen,
+    RightParen,
+    LeftBracket,
+    RightBracket,
+    LeftBrace,
+    RightBrace,
+    Dot,
+    Comma,
+    Semicolon,
+    Equal,
+    NotEqual,
+    LessThan,
+    LessEqual,
+    GreaterThan,
+    GreaterEqual,
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    Modulo,
+    And,
+    Or,
+    Not,
+    Question,
+    Colon,
+    Where,
+    Set,
+    KeepKeys,
+    Limit,
+    Convert,
+    Route,
     Eof,
 }
 
@@ -173,7 +237,11 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_equals(&self, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_equals(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         if chars.peek() == Some(&'=') {
             chars.next();
         }
@@ -181,7 +249,11 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_bang(&self, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_bang(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         if chars.peek() == Some(&'=') {
             chars.next();
             tokens.push(Token::NotEqual);
@@ -191,7 +263,11 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_less_than(&self, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_less_than(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         if chars.peek() == Some(&'=') {
             chars.next();
             tokens.push(Token::LessEqual);
@@ -201,7 +277,11 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_greater_than(&self, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_greater_than(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         if chars.peek() == Some(&'=') {
             chars.next();
             tokens.push(Token::GreaterEqual);
@@ -211,7 +291,11 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_and(&self, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_and(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         if chars.peek() == Some(&'&') {
             chars.next();
             tokens.push(Token::And);
@@ -224,7 +308,11 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_or(&self, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_or(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         if chars.peek() == Some(&'|') {
             chars.next();
             tokens.push(Token::Or);
@@ -237,7 +325,11 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_string(&self, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_string(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         let mut string = String::new();
         for ch in chars.by_ref() {
             if ch == '"' {
@@ -249,7 +341,12 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_number(&self, first: char, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_number(
+        &self,
+        first: char,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         let mut number = String::new();
         number.push(first);
 
@@ -270,7 +367,12 @@ impl OttlParser {
         Ok(())
     }
 
-    fn tokenize_identifier(&self, first: char, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
+    fn tokenize_identifier(
+        &self,
+        first: char,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+    ) -> Result<(), ParseError> {
         let mut identifier = String::new();
         identifier.push(first);
 
@@ -426,11 +528,11 @@ impl OttlParser {
     fn parse_resource_path(&mut self) -> Result<Path, ParseError> {
         self.expect(Token::Dot)?;
         let name = self.extract_identifier()?;
-        
+
         if name != "attributes" {
             return Err(ParseError::InvalidPath { path: name });
         }
-        
+
         self.expect(Token::LeftBracket)?;
         let key = self.parse_string_literal()?;
         self.expect(Token::RightBracket)?;
@@ -453,17 +555,21 @@ impl OttlParser {
         self.parse_attribute_path("log", |key| Path::LogAttribute { key })
     }
 
-    fn parse_attribute_path<F>(&mut self, _prefix: &str, path_creator: F) -> Result<Path, ParseError>
+    fn parse_attribute_path<F>(
+        &mut self,
+        _prefix: &str,
+        path_creator: F,
+    ) -> Result<Path, ParseError>
     where
         F: FnOnce(String) -> Path,
     {
         self.expect(Token::Dot)?;
         let name = self.extract_identifier()?;
-        
+
         if name != "attributes" {
             return Err(ParseError::InvalidPath { path: name });
         }
-        
+
         self.expect(Token::LeftBracket)?;
         let key = self.parse_string_literal()?;
         self.expect(Token::RightBracket)?;
@@ -499,7 +605,7 @@ impl OttlParser {
         let true_expr = self.parse_expression()?;
         self.expect(Token::Colon)?;
         let false_expr = self.parse_expression()?;
-        
+
         Ok(Expression::Conditional {
             condition: Box::new(expr),
             true_expr: Box::new(true_expr),
@@ -602,7 +708,8 @@ impl OttlParser {
     fn parse_factor_expression(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_unary_expression()?;
 
-        while self.check(Token::Multiply) || self.check(Token::Divide) || self.check(Token::Modulo) {
+        while self.check(Token::Multiply) || self.check(Token::Divide) || self.check(Token::Modulo)
+        {
             let op = self.get_binary_op();
             self.advance();
             let right = self.parse_unary_expression()?;
@@ -670,8 +777,7 @@ impl OttlParser {
     }
 
     fn is_function_call(&self) -> bool {
-        self.position < self.tokens.len()
-            && matches!(self.tokens[self.position], Token::LeftParen)
+        self.position < self.tokens.len() && matches!(self.tokens[self.position], Token::LeftParen)
     }
 
     fn parse_function_call(&mut self, name: String) -> Result<Expression, ParseError> {

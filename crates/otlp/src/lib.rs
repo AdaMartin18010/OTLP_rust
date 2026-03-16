@@ -95,7 +95,7 @@
 //! // 线程安全延迟初始化
 //! use std::sync::LazyLock;
 //! static CONFIG: LazyLock<Config> = LazyLock::new(Config::default);
-//! 
+//!
 //! // Rust 1.94 新增：可变访问
 //! if let Some(config) = LazyLock::get_mut(&mut CONFIG) {
 //!     config.update();
@@ -383,9 +383,9 @@ pub mod wrappers;
 pub mod client;
 pub mod config;
 pub mod data;
-pub mod metrics;
 pub mod error;
 pub mod exporter;
+pub mod metrics;
 pub mod processor;
 pub mod transport;
 pub mod utils;
@@ -415,11 +415,10 @@ pub use profiling::ebpf::{EbpfProfiler, EbpfProfilerConfig, OverheadMetrics};
 // 重新导出新的eBPF模块功能
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
 pub use ebpf::{
-    EbpfLoader, EbpfConfig, EbpfEvent, EbpfEventType,
-    EbpfCpuProfiler, EbpfNetworkTracer, EbpfSyscallTracer, EbpfMemoryTracer,
-    ProbeManager, EventProcessor, MapsManager,
-    EbpfOtlpConverter,
-    validate_config, recommended_sample_rate, recommended_duration, create_recommended_config,
+    EbpfConfig, EbpfCpuProfiler, EbpfEvent, EbpfEventType, EbpfLoader, EbpfMemoryTracer,
+    EbpfNetworkTracer, EbpfOtlpConverter, EbpfSyscallTracer, EventProcessor, MapsManager,
+    ProbeManager, create_recommended_config, recommended_duration, recommended_sample_rate,
+    validate_config,
 };
 
 // Semantic Conventions模块 (语义约定标准)
@@ -433,20 +432,20 @@ pub mod compression;
 // ============================================================================
 
 /// ## SIMD 向量优化与 FP16 支持
-/// 
+///
 /// 高性能 SIMD 优化实现，包含 Rust 1.94 AVX-512 FP16 和 NEON FP16 支持
-/// 
+///
 /// ### 平台支持
 /// - **x86_64**: AVX-512 FP16 (Intel Sapphire Rapids+, AMD Zen 6+)
 /// - **aarch64**: NEON FP16 (Apple Silicon, ARM Neoverse)
-/// 
+///
 /// ### 功能特性
 /// - CPU 特性自动检测
 /// - 批量序列化向量化
 /// - FP16 直方图计算加速 (2-4x faster)
 /// - FP16 百分位数计算 (3-5x faster)
 /// - 优雅降级到标量操作
-/// 
+///
 /// ### 子模块
 /// - `aggregation` - 向量化指标聚合
 /// - `cpu_features` - CPU 特性检测
@@ -454,7 +453,7 @@ pub mod compression;
 /// - `serialization` - 向量化序列化
 /// - `string_ops` - 向量化字符串操作
 /// - `real_optimization` - 真实 SIMD 实现 (std::simd)
-/// 
+///
 /// ### 主要类型
 /// - [`simd::Aggregator`] - SIMD 聚合器
 /// - [`simd::CpuFeatures`] - CPU 特性检测
@@ -494,8 +493,7 @@ pub mod ottl;
 
 // OTTL 导出
 pub use ottl::processor::{
-    OttlProcessor, OttlParser, OttlStatement, OttlContext, 
-    OttlCondition, OttlValue, OttlPath
+    OttlCondition, OttlContext, OttlParser, OttlPath, OttlProcessor, OttlStatement, OttlValue,
 };
 
 // 优化和调优
@@ -513,15 +511,15 @@ pub mod rust_1_92_optimizations;
 // ----------------------------------------------------------------------------
 
 /// ## 数组窗口与模式检测
-/// 
+///
 /// Rust 1.94 `array_windows` 特性实现 - 用于遥测数据中的高效模式检测
-/// 
+///
 /// ### 应用场景
 /// - Span 状态转换分析
 /// - 异常模式检测 (ABBA, ABAB)
 /// - 指标趋势检测
 /// - 时间序列验证
-/// 
+///
 /// ### 主要类型
 /// - [`rust_1_94_array_windows::Trend`] - 趋势类型枚举
 /// - [`rust_1_94_array_windows::Pattern`] - 模式检测结果
@@ -529,14 +527,14 @@ pub mod rust_1_92_optimizations;
 pub mod rust_1_94_array_windows;
 
 /// ## 元素偏移与零拷贝序列化
-/// 
+///
 /// Rust 1.94 `element_offset` 特性实现 - 零内存拷贝的偏移计算
-/// 
+///
 /// ### 应用场景
 /// - 内存池索引计算
 /// - 缓冲区位置追踪
 /// - 协议序列化优化
-/// 
+///
 /// ### 主要类型
 /// - [`rust_1_94_element_offset::BufferOffsetCalculator`] - 缓冲区偏移计算器
 /// - [`rust_1_94_element_offset::MemoryPoolIndexer`] - 内存池索引器
@@ -544,20 +542,20 @@ pub mod rust_1_94_array_windows;
 pub mod rust_1_94_element_offset;
 
 /// ## 延迟初始化增强
-/// 
+///
 /// Rust 1.94 `LazyLock` 和 `LazyCell` 新方法实现
-/// 
+///
 /// ### 新增方法
 /// - `LazyLock::get` / `LazyCell::get` - 获取不可变引用（不触发初始化）
 /// - `LazyLock::get_mut` / `LazyCell::get_mut` - 获取可变引用
 /// - `LazyLock::force_mut` / `LazyCell::force_mut` - 强制初始化并获取可变引用
-/// 
+///
 /// ### 应用场景
 /// - 全局配置管理（支持运行时修改）
 /// - 导出器缓存
 /// - 协议缓冲区类型注册表
 /// - TracerProvider 单例管理
-/// 
+///
 /// ### 主要类型
 /// - [`rust_1_94_lazy_lock::GlobalConfig`] - 全局配置
 /// - [`rust_1_94_lazy_lock::ExporterCacheManager`] - 导出器缓存管理
@@ -565,19 +563,19 @@ pub mod rust_1_94_element_offset;
 pub mod rust_1_94_lazy_lock;
 
 /// ## 数学常量与算法优化
-/// 
+///
 /// Rust 1.94 新增数学常量 (`EULER_GAMMA`, `GOLDEN_RATIO`) 与 `const mul_add`
-/// 
+///
 /// ### 数学常量
 /// - `EULER_GAMMA` (γ ≈ 0.5772) - Euler-Mascheroni 常数
 /// - `GOLDEN_RATIO` (φ ≈ 1.6180) - 黄金比例
-/// 
+///
 /// ### 应用场景
 /// - 自适应采样率计算（使用 EULER_GAMMA）
 /// - 指数退避算法（使用 GOLDEN_RATIO）
 /// - Fibonacci 批量大小增长
 /// - 编译时融合乘加优化
-/// 
+///
 /// ### 主要函数
 /// - [`rust_1_94_math_constants::euler_gamma_sampling_rate`] - 自适应采样
 /// - [`rust_1_94_math_constants::golden_ratio_backoff`] - 黄金比例退避
@@ -585,15 +583,15 @@ pub mod rust_1_94_lazy_lock;
 pub mod rust_1_94_math_constants;
 
 /// ## Rust 1.94 完整特性展示
-/// 
+///
 /// 全面展示 Rust 1.94 的所有语言特性和开源社区最佳实践
-/// 
+///
 /// ### 涵盖内容
 /// - 异步编程增强 (AsyncFn traits, async 闭包)
 /// - 标准库新增 (LazyLock, 浮点数改进)
 /// - 常量上下文扩展
 /// - 性能优化模式
-/// 
+///
 /// ### 子模块
 /// - `async_features` - 异步编程特性
 /// - `lazy_initialization` - 延迟初始化
@@ -603,9 +601,9 @@ pub mod rust_1_94_math_constants;
 pub mod rust_1_94_comprehensive;
 
 /// ## Rust 1.94 特性全面对齐
-/// 
+///
 /// Rust 1.94 特性全面对齐与 OpenTelemetry 规范实现
-/// 
+///
 /// 本模块确保项目充分利用 Rust 1.94 的所有新特性，包括：
 /// - array_windows 在遥测数据分析中的应用
 /// - element_offset 在零拷贝序列化中的应用
@@ -615,9 +613,9 @@ pub mod rust_1_94_comprehensive;
 pub mod rust_1_94_alignment;
 
 /// ## Rust 1.94 标准库特性展示
-/// 
+///
 /// 展示 Rust 1.94 标准库新增特性和改进
-/// 
+///
 /// ### 子模块
 /// - `async_features` - 异步编程增强 (AsyncFn traits, async 闭包)
 /// - `lazy_initialization` - 延迟初始化 (LazyLock, LazyCell)
@@ -630,9 +628,9 @@ pub mod rust_1_94_alignment;
 pub mod rust_1_94_features;
 
 /// ## Rust 1.94 综合演示模块
-/// 
+///
 /// 全面展示所有 Rust 1.94 特性在 OTLP 场景中协同工作
-/// 
+///
 /// ### 演示特性
 /// - **`array_windows`** - 遥测数据模式检测
 /// - **`element_offset`** - 零拷贝缓冲区管理
@@ -642,22 +640,22 @@ pub mod rust_1_94_features;
 /// - **`const mul_add`** - 编译时优化
 /// - **SIMD FP16** - 高性能指标处理（如果可用）
 /// - **TOML 1.1** - 配置解析（多行内联表）
-/// 
+///
 /// ### 主要函数
 /// - [`rust_1_94_comprehensive_demo::complete_otlp_pipeline_demo`] - 完整管道演示
 /// - [`rust_1_94_comprehensive_demo::detect_metric_patterns`] - 指标模式检测
 /// - [`rust_1_94_comprehensive_demo::AdaptiveSampler`] - 自适应采样器
 /// - [`rust_1_94_comprehensive_demo::FibonacciRetryStrategy`] - Fibonacci 重试策略
-/// 
+///
 /// ### 使用示例
 /// ```rust,ignore
 /// use otlp::rust_1_94_comprehensive_demo::complete_otlp_pipeline_demo;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let result = complete_otlp_pipeline_demo().await?;
-///     println!("Processed {} metrics, {} spans", 
-///              result.metrics_processed, 
+///     println!("Processed {} metrics, {} spans",
+///              result.metrics_processed,
 ///              result.spans_processed);
 ///     Ok(())
 /// }
@@ -704,10 +702,10 @@ pub use core::{
 
 /// 重新导出扩展模块的主要类型
 pub use extensions::{
+    enterprise::{ComplianceExporter, MultiTenantExporter},
+    performance::{BatchOptimizedExporter, ConnectionPoolExporter},
     simd::SimdSpanExporter,
     tracezip::TracezipSpanExporter,
-    enterprise::{MultiTenantExporter, ComplianceExporter},
-    performance::{BatchOptimizedExporter, ConnectionPoolExporter},
 };
 
 #[cfg(all(feature = "ebpf", target_os = "linux"))]
@@ -719,10 +717,10 @@ pub use extensions::ebpf::EbpfTracerExtension;
 
 /// 重新导出包装器模块的主要类型
 pub use wrappers::{
-    EnhancedPipeline,
-    EnhancedPipelineV2,  // 推荐使用，提供完整扩展支持
-    EnhancedTracer,
     EnhancedExporter,
+    EnhancedPipeline,
+    EnhancedPipelineV2, // 推荐使用，提供完整扩展支持
+    EnhancedTracer,
 };
 
 // 重新导出 OpenTelemetry 官方类型
@@ -737,39 +735,81 @@ pub use opentelemetry::{
 
 pub use client::{LogBuilder, MetricBuilder, OtlpClient, OtlpClientBuilder, TraceBuilder};
 pub use config::{
-    BatchConfig, Compression, OtlpConfig, OtlpConfigBuilder, TransportProtocol,
-    ServiceConfig, AggregationConfig, GlobalBatchConfig,
+    AggregationConfig,
+    BatchConfig,
+    Compression,
     // Rust 1.94: 新增常量和验证函数
-    DEFAULT_BATCH_SIZE, MAX_BATCH_SIZE, MIN_BATCH_SIZE, DEFAULT_TIMEOUT,
-    validate_batch_size, validate_timeout,
+    DEFAULT_BATCH_SIZE,
+    DEFAULT_TIMEOUT,
+    GlobalBatchConfig,
+    MAX_BATCH_SIZE,
+    MIN_BATCH_SIZE,
+    OtlpConfig,
+    OtlpConfigBuilder,
+    ServiceConfig,
+    TransportProtocol,
+    validate_batch_size,
+    validate_timeout,
 };
 pub use data::{
-    AttributeValue, DataPoint, DataPointValue, LogData, LogSeverity, MetricData, MetricType,
-    SpanKind, SpanStatus, StatusCode, TelemetryContent, TelemetryData, TelemetryDataType,
-    TraceData, 
+    AttributeValue,
+    DataPoint,
+    DataPointValue,
+    ExponentialHistogramBuckets,
+    ExponentialHistogramData,
+    Function,
+    HistogramBucket,
+    HistogramData,
+    Label,
+    Line,
+    Location,
+    LogBody,
+    LogData,
+    LogSeverity,
+    LogTraceContext,
+    Mapping,
+    MetricData,
+    MetricType,
     // OTLP 1.10+ 新增类型
-    ProfileData, SampleType, Sample, Label, Mapping, Location, Line, Function,
-    ExponentialHistogramData, ExponentialHistogramBuckets, HistogramData, HistogramBucket,
-    SummaryData, Quantile,
+    ProfileData,
+    Quantile,
+    Sample,
+    SampleType,
     // Logs信号增强类型 (OTLP 1.10)
-    SeverityLevel, LogBody, LogTraceContext,
+    SeverityLevel,
+    SpanKind,
+    SpanStatus,
+    StatusCode,
+    SummaryData,
+    TelemetryContent,
+    TelemetryData,
+    TelemetryDataType,
+    TraceData,
 };
 
 // Logs模块公开API
-pub use logs::{
-    // 核心类型
-    LogRecord, LogRecordBuilder, SourceLocation,
-    // 处理器
-    LogProcessor, SimpleLogProcessor, BatchLogProcessor, FilterLogProcessor, 
-    // 导出器
-    LogExporter, LogExporterBuilder, LogExportResult,
-    // Appender
-    LogAppender, LogAppenderBuilder,
-    // 过滤器
-    SeverityFilter,
-};
 pub use error::{ErrorCategory, ErrorContext, ErrorSeverity, OtlpError, Result};
 pub use exporter::{ExportResult, ExporterMetrics, OtlpExporter, PartialSuccess};
+pub use logs::{
+    BatchLogProcessor,
+    FilterLogProcessor,
+    // Appender
+    LogAppender,
+    LogAppenderBuilder,
+    LogExportResult,
+    // 导出器
+    LogExporter,
+    LogExporterBuilder,
+    // 处理器
+    LogProcessor,
+    // 核心类型
+    LogRecord,
+    LogRecordBuilder,
+    // 过滤器
+    SeverityFilter,
+    SimpleLogProcessor,
+    SourceLocation,
+};
 pub use monitoring::{
     AlertCondition, AlertRule, ErrorEvent, ErrorMonitoringMetrics, ErrorMonitoringSystem,
     MonitoringConfig,
@@ -858,10 +898,10 @@ pub use enterprise_features::{
 
 // Response handling types (OTLP 1.10 Partial Success)
 pub use response::{
-    ExportLogsPartialSuccess, ExportMetricsPartialSuccess, ExportProfilesPartialSuccess,
-    ExportTracePartialSuccess, PartialSuccessHandler, ResponseClassification,
-    ResponseHandler, ResponseHandlerBuilder, ResponseMetricsCollector, ResponseType,
-    RetryDecision, SignalType, ResponseMetadata, ResponseAggregator, AggregationSummary,
+    AggregationSummary, ExportLogsPartialSuccess, ExportMetricsPartialSuccess,
+    ExportProfilesPartialSuccess, ExportTracePartialSuccess, PartialSuccessHandler,
+    ResponseAggregator, ResponseClassification, ResponseHandler, ResponseHandlerBuilder,
+    ResponseMetadata, ResponseMetricsCollector, ResponseType, RetryDecision, SignalType,
 };
 
 // 重新导出微服务相关类型
@@ -921,108 +961,91 @@ pub use optimized_processor::{
 // 重新导出 Rust 1.94 array_windows 模块相关类型
 // 注意: SpanStatus 已在 data 模块中定义，这里不重新导出
 pub use rust_1_94_array_windows::{
-    Trend, Pattern, SpanTransition, Span, SpanId,
-    MetricPoint, RunLength,
-    detect_abba_patterns, detect_abab_patterns,
-    detect_repeated_patterns_2, detect_repeated_patterns_3, detect_repeated_patterns_4,
-    detect_repeated_patterns_generic,
-    detect_trends, detect_peaks_and_valleys, moving_average,
-    validate_span_sequence, detect_error_patterns,
-    detect_anomalies, calculate_rate_of_change,
-    validate_timestamp_order, detect_timestamp_gaps, validate_continuity,
-    run_length_encode, sequence_similarity, longest_increasing_subsequence,
+    MetricPoint, Pattern, RunLength, Span, SpanId, SpanTransition, Trend, calculate_rate_of_change,
+    detect_abab_patterns, detect_abba_patterns, detect_anomalies, detect_error_patterns,
+    detect_peaks_and_valleys, detect_repeated_patterns_2, detect_repeated_patterns_3,
+    detect_repeated_patterns_4, detect_repeated_patterns_generic, detect_timestamp_gaps,
+    detect_trends, longest_increasing_subsequence, moving_average, run_length_encode,
+    sequence_similarity, validate_continuity, validate_span_sequence, validate_timestamp_order,
 };
 
 // 重新导出 Rust 1.94 LazyLock/LazyCell 新方法模块相关类型
 // 注意：避免与现有类型冲突，使用具体名称
 pub use rust_1_94_lazy_lock::{
-    // 配置管理 (LazyConfig 避免与 config::OtlpConfig 冲突)
-    OtlpConfig as LazyOtlpConfig, 
-    GlobalConfig,
-    // 导出器缓存
-    ExporterCache, 
-    ExporterCacheManager, 
-    GrpcExporter, 
-    HttpExporter, 
-    ExporterError,
-    // 协议缓冲区类型注册表
-    ProtoTypeRegistry, 
-    ProtoRegistryManager, 
-    ProtoMessage, 
-    ProtoField, 
-    ProtoFieldType,
-    // 追踪器提供者 (TracerProvider 避免与 opentelemetry::trace::TracerProvider 冲突)
-    TracerProvider as LazyTracerProvider, 
-    TracerProviderManager, 
-    SpanContext as LazySpanContext, 
-    SpanId as LazySpanId, 
-    TraceId as LazyTraceId,
-    // LazyCell 资源管理
-    ThreadLocalResource, 
-    LazyBuffer,
     // 综合配置管理
-    ComprehensiveConfigManager, 
+    ComprehensiveConfigManager,
+    // 导出器缓存
+    ExporterCache,
+    ExporterCacheManager,
+    ExporterError,
+    GlobalConfig,
+    GrpcExporter,
+    HttpExporter,
+    LazyBuffer,
+    // 配置管理 (LazyConfig 避免与 config::OtlpConfig 冲突)
+    OtlpConfig as LazyOtlpConfig,
     OtlpRuntimeContext,
+    ProtoField,
+    ProtoFieldType,
+    ProtoMessage,
+    ProtoRegistryManager,
+    // 协议缓冲区类型注册表
+    ProtoTypeRegistry,
+    SpanContext as LazySpanContext,
+    SpanId as LazySpanId,
+    // LazyCell 资源管理
+    ThreadLocalResource,
+    TraceId as LazyTraceId,
+    // 追踪器提供者 (TracerProvider 避免与 opentelemetry::trace::TracerProvider 冲突)
+    TracerProvider as LazyTracerProvider,
+    TracerProviderManager,
 };
 
 // 重新导出 Rust 1.94 数学常量模块相关函数和类型
 pub use rust_1_94_math_constants::{
-    // EULER_GAMMA 相关函数
-    euler_gamma_sampling_rate,
+    // 预计算常数
+    EULER_GAMMA_RECIP,
+    FIBONACCI_FACTOR,
+    GOLDEN_RATIO_RECIP,
+    GOLDEN_RATIO_SQUARED,
+    // 高级算法
+    adaptive_batch_timeout,
+    adjust_sampling_rate,
+    approx_eq,
+    const_lerp,
+    // const mul_add 相关函数
+    const_mul_add,
+    const_poly_eval,
+    const_sigmoid_approx,
     euler_gamma_cumulative_sampling,
     euler_gamma_priority_weight,
+    // EULER_GAMMA 相关函数
+    euler_gamma_sampling_rate,
+    fibonacci_batch_size,
+    fibonacci_exact,
     // GOLDEN_RATIO 相关函数
     golden_ratio_backoff,
     golden_ratio_backoff_decay,
-    fibonacci_batch_size,
-    fibonacci_exact,
-    golden_ratio_split,
     golden_ratio_jitter,
-    // const mul_add 相关函数
-    const_mul_add,
-    const_lerp,
-    const_poly_eval,
-    const_sigmoid_approx,
-    // 高级算法
-    adaptive_batch_timeout,
+    golden_ratio_split,
+    log_scale_to_rate,
     optimal_connection_pool_size,
-    adjust_sampling_rate,
+    rate_to_log_scale,
     // 工具函数
     safe_midpoint,
-    approx_eq,
-    rate_to_log_scale,
-    log_scale_to_rate,
-    // 预计算常数
-    EULER_GAMMA_RECIP,
-    GOLDEN_RATIO_RECIP,
-    GOLDEN_RATIO_SQUARED,
-    FIBONACCI_FACTOR,
 };
 
 // 重新导出 Rust 1.94 comprehensive 模块的公共子模块
 pub use rust_1_94_comprehensive::{
-    async_features as comprehensive_async_features,
-    concurrency,
-    const_generics,
-    error_handling,
-    memory_management,
-    metaprogramming,
-    pattern_matching,
-    performance as rust_1_94_performance,
-    precise_captures,
-    std_lib_features,
+    async_features as comprehensive_async_features, concurrency, const_generics, error_handling,
+    memory_management, metaprogramming, pattern_matching, performance as rust_1_94_performance,
+    precise_captures, std_lib_features,
 };
 
 // 重新导出 Rust 1.94 features 模块的公共子模块
 pub use rust_1_94_features::{
-    async_features,
-    builder_pattern,
-    collection_improvements,
-    const_context,
-    float_improvements,
-    io_errors,
-    lazy_initialization,
-    unsafe_improvements,
+    async_features, builder_pattern, collection_improvements, const_context, float_improvements,
+    io_errors, lazy_initialization, unsafe_improvements,
 };
 
 // 重新导出 Rust 1.94 综合演示模块的主要类型
@@ -1033,34 +1056,34 @@ pub use rust_1_94_features::{
 // - Span, SpanStatus (与 data/rust_1_94_array_windows 模块冲突)
 // - MetricsBuffer, ZeroCopySpanSerializer (与 rust_1_94_element_offset 冲突)
 pub use rust_1_94_comprehensive_demo::{
+    // Algorithm types
+    AdaptiveSampler,
+    AdaptiveTimeout,
     // Demo-specific types (unique to this module)
     CompressionType,
-    TelemetryPattern,
-    ConfigManager, 
-    ThreadLocalBuffer,
-    
-    // Algorithm types
-    AdaptiveSampler, 
-    FibonacciRetryStrategy, 
+    ConfigManager,
     ConnectionPoolOptimizer,
-    AdaptiveTimeout, 
     ConstMath,
-    
+
+    FibonacciRetryStrategy,
     // SIMD types
     Fp16MetricsProcessor,
-    
-    // TOML config
-    TomlConfig,
-    
+
     // Result types
     PipelineResult,
-    
+
+    TelemetryPattern,
+    ThreadLocalBuffer,
+
+    // TOML config
+    TomlConfig,
+
     // Main function
     complete_otlp_pipeline_demo,
-    
-    // Utility functions (unique to this module)
-    detect_metric_patterns, 
+
     detect_abba_anomalies,
+    // Utility functions (unique to this module)
+    detect_metric_patterns,
     validate_span_continuity,
 };
 
@@ -1095,7 +1118,9 @@ pub fn new_enhanced_pipeline() -> wrappers::EnhancedPipeline {
     // use opentelemetry_otlp::new_pipeline;
     // let pipeline = new_pipeline().tracing();
     // let enhanced = wrappers::EnhancedPipeline::new(pipeline);
-    panic!("EnhancedPipeline requires TracingPipeline instance. Use new_enhanced_pipeline_v2() instead.")
+    panic!(
+        "EnhancedPipeline requires TracingPipeline instance. Use new_enhanced_pipeline_v2() instead."
+    )
 }
 
 /// 创建增强的Pipeline (完整版，推荐)

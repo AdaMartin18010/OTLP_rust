@@ -87,7 +87,7 @@ impl OtlpConfig {
     /// 从环境变量创建配置
     pub fn from_env() -> Self {
         let mut config = Self::default();
-        
+
         if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
             config.endpoint = endpoint;
         }
@@ -99,7 +99,7 @@ impl OtlpConfig {
         {
             config.timeout_secs = secs;
         }
-        
+
         config
     }
 }
@@ -107,9 +107,8 @@ impl OtlpConfig {
 /// 全局配置 - 使用 LazyLock 延迟初始化
 ///
 /// 这是主要的配置存储，使用 LazyLock 确保线程安全的延迟初始化
-pub static GLOBAL_CONFIG: LazyLock<RwLock<OtlpConfig>> = LazyLock::new(|| {
-    RwLock::new(OtlpConfig::from_env())
-});
+pub static GLOBAL_CONFIG: LazyLock<RwLock<OtlpConfig>> =
+    LazyLock::new(|| RwLock::new(OtlpConfig::from_env()));
 
 /// 全局配置管理器
 ///
@@ -281,7 +280,11 @@ impl ExporterCache {
     ///
     /// # Rust 1.94 特性
     /// 使用 `LazyLock::force` 模式进行延迟初始化
-    pub fn get_or_init<F>(&self, key: &str, f: F) -> MutexGuard<'_, HashMap<String, Box<dyn Exporter>>>
+    pub fn get_or_init<F>(
+        &self,
+        key: &str,
+        f: F,
+    ) -> MutexGuard<'_, HashMap<String, Box<dyn Exporter>>>
     where
         F: FnOnce() -> Box<dyn Exporter>,
     {
@@ -515,7 +518,14 @@ impl ProtoTypeRegistry {
         // 注册枚举类型
         self.enums.insert(
             "Span.SpanKind",
-            vec!["UNSPECIFIED", "INTERNAL", "SERVER", "CLIENT", "PRODUCER", "CONSUMER"],
+            vec![
+                "UNSPECIFIED",
+                "INTERNAL",
+                "SERVER",
+                "CLIENT",
+                "PRODUCER",
+                "CONSUMER",
+            ],
         );
         self.enums.insert(
             "SeverityNumber",
@@ -686,7 +696,10 @@ impl TracerProvider {
     }
 
     /// 获取 Tracer
-    pub fn get_tracer(&self, name: &str) -> Option<MutexGuard<'_, HashMap<String, Box<dyn Tracer>>>> {
+    pub fn get_tracer(
+        &self,
+        name: &str,
+    ) -> Option<MutexGuard<'_, HashMap<String, Box<dyn Tracer>>>> {
         let guard = self.tracers.lock().unwrap();
         if guard.contains_key(name) {
             Some(guard)
@@ -763,7 +776,7 @@ impl TracerProviderManager {
 /// 线程本地资源管理器
 ///
 /// 使用 LazyCell 实现单线程延迟初始化
-/// 
+///
 /// # 注意
 /// 由于 LazyCell::new 是 const fn，需要使用具体的函数指针或 Default
 pub struct ThreadLocalResource<T, F = fn() -> T> {
@@ -821,7 +834,7 @@ impl<T: Default> ThreadLocalResource<T, fn() -> T> {
 /// 缓冲区管理器 - LazyCell 实现
 ///
 /// 单线程缓冲区，使用 LazyCell 延迟分配内存
-/// 
+///
 /// # 注意
 /// 由于 LazyCell::new 是 const fn，这里使用固定容量或 Default
 pub struct LazyBuffer {
@@ -954,16 +967,14 @@ pub struct OtlpRuntimeContext {
 impl OtlpRuntimeContext {
     /// 创建新的运行时上下文
     pub fn new() -> Self {
-        Self {
-            started: false,
-        }
+        Self { started: false }
     }
 
     /// 启动运行时（触发所有延迟初始化）
     pub fn start(&mut self) {
         // 使用 force 强制初始化配置
         let _guard = GlobalConfig::force();
-        
+
         self.started = true;
     }
 
@@ -1127,7 +1138,7 @@ pub mod rust_1_94_api_demo {
             buffer.extend_from_slice(b"thread-local data");
 
             println!("Buffer content: {:?}", buffer);
-            
+
             // 现在检查应该已初始化
             let is_init_after = LazyCell::get(&*binding).is_some();
             println!("Buffer initialized after access: {}", is_init_after);
@@ -1153,13 +1164,13 @@ mod tests {
     fn test_lazy_lock_get_before_init() {
         // 创建一个新的局部 LazyLock 用于测试
         let lazy: LazyLock<String> = LazyLock::new(|| "test".to_string());
-        
+
         // 初始化前，get 返回 None
         assert!(LazyLock::get(&lazy).is_none());
-        
+
         // 强制初始化
         let _ = LazyLock::force(&lazy);
-        
+
         // 现在 get 返回 Some
         assert_eq!(LazyLock::get(&lazy), Some(&"test".to_string()));
     }
@@ -1169,10 +1180,10 @@ mod tests {
         // 由于 GLOBAL_CONFIG 可能已被其他测试初始化，
         // 我们测试 API 的行为而不是具体的返回值
         let config = LazyLock::get(&GLOBAL_CONFIG);
-        
+
         // 验证返回类型正确
         let _: Option<&RwLock<OtlpConfig>> = config;
-        
+
         // 如果已初始化，验证可以读取
         if let Some(lock) = config {
             let guard = lock.read().unwrap();
@@ -1196,12 +1207,12 @@ mod tests {
             let mut config = GlobalConfig::force_write();
             config.endpoint = "http://test:4317".to_string();
         }
-        
+
         {
             let config = GlobalConfig::force();
             assert_eq!(config.endpoint, "http://test:4317");
         }
-        
+
         // 恢复默认
         {
             let mut config = GlobalConfig::force_write();
@@ -1212,9 +1223,12 @@ mod tests {
     #[test]
     fn test_global_config_add_attribute() {
         GlobalConfig::add_attribute("test_key", "test_value");
-        
+
         let config = GlobalConfig::force();
-        assert_eq!(config.attributes.get("test_key"), Some(&"test_value".to_string()));
+        assert_eq!(
+            config.attributes.get("test_key"),
+            Some(&"test_value".to_string())
+        );
     }
 
     // ==========================================================================
@@ -1224,13 +1238,13 @@ mod tests {
     #[test]
     fn test_lazy_cell_get() {
         let cell: LazyCell<String> = LazyCell::new(|| "initialized".to_string());
-        
+
         // 首次访问前，get 返回 None
         assert!(LazyCell::get(&cell).is_none());
-        
+
         // 强制初始化
         let _ = LazyCell::force(&cell);
-        
+
         // 现在 get 返回 Some
         assert_eq!(LazyCell::get(&cell), Some(&"initialized".to_string()));
     }
@@ -1238,60 +1252,61 @@ mod tests {
     #[test]
     fn test_lazy_cell_force_mut() {
         let mut cell: LazyCell<String> = LazyCell::new(|| "initial".to_string());
-        
+
         // 使用 force_mut 初始化并修改
         let value = LazyCell::force_mut(&mut cell);
         value.push_str(" modified");
-        
+
         assert_eq!(LazyCell::force(&cell), "initial modified");
     }
 
     #[test]
     fn test_lazy_cell_get_mut() {
         let mut cell: LazyCell<Vec<i32>> = LazyCell::new(|| vec![1, 2, 3]);
-        
+
         // 初始化前，get_mut 返回 None
         assert!(LazyCell::get_mut(&mut cell).is_none());
-        
+
         // 强制初始化
         let _ = LazyCell::force(&cell);
-        
+
         // 现在 get_mut 返回 Some
         if let Some(vec) = LazyCell::get_mut(&mut cell) {
             vec.push(4);
         }
-        
+
         assert_eq!(LazyCell::force(&cell).len(), 4);
     }
 
     #[test]
     fn test_thread_local_resource() {
-        let mut resource: ThreadLocalResource<String, fn() -> String> = ThreadLocalResource::new(|| "test".to_string());
-        
+        let mut resource: ThreadLocalResource<String, fn() -> String> =
+            ThreadLocalResource::new(|| "test".to_string());
+
         // 初始化前
         assert!(resource.get().is_none());
-        
+
         // 强制初始化并修改
         let value = resource.force_mut();
         value.push_str(" resource");
-        
+
         assert_eq!(resource.force(), "test resource");
     }
 
     #[test]
     fn test_lazy_buffer() {
         let mut buffer = LazyBuffer::new();
-        
+
         // 初始状态
         assert!(buffer.get().is_none());
         assert_eq!(buffer.len(), 0);
-        
+
         // 写入数据（触发初始化）
         buffer.write(b"Hello, OTLP!");
-        
+
         assert_eq!(buffer.len(), 12);
         assert_eq!(buffer.force().as_slice(), b"Hello, OTLP!");
-        
+
         // 清空缓冲区
         buffer.clear();
         assert!(buffer.is_empty());
@@ -1304,15 +1319,15 @@ mod tests {
     #[test]
     fn test_exporter_cache() {
         let cache = ExporterCache::new();
-        
+
         // 初始为空
         assert!(cache.is_empty());
-        
+
         // 添加导出器
         cache.add_exporter("test", Box::new(GrpcExporter::new("http://test:4317")));
-        
+
         assert_eq!(cache.len(), 1);
-        
+
         // 检查包含
         assert!(cache.contains("test"));
     }
@@ -1322,7 +1337,7 @@ mod tests {
         // 获取 gRPC 导出器
         let cache = ExporterCacheManager::get_grpc_exporter("http://grpc:4317");
         assert!(!cache.is_empty());
-        
+
         // 获取 HTTP 导出器
         let cache = ExporterCacheManager::get_http_exporter("http://http:4318");
         assert!(!cache.is_empty());
@@ -1335,11 +1350,11 @@ mod tests {
     #[test]
     fn test_proto_registry() {
         let registry = ProtoRegistryManager::force();
-        
+
         // 验证标准类型已注册
         let span_message = registry.get_message("opentelemetry.proto.trace.v1.Span");
         assert!(span_message.is_some());
-        
+
         let span = span_message.unwrap();
         assert_eq!(span.name, "opentelemetry.proto.trace.v1.Span");
         assert!(!span.fields.is_empty());
@@ -1348,10 +1363,10 @@ mod tests {
     #[test]
     fn test_proto_registry_enum() {
         let registry = ProtoRegistryManager::force();
-        
+
         let span_kind = registry.get_enum("Span.SpanKind");
         assert!(span_kind.is_some());
-        
+
         let kinds = span_kind.unwrap();
         assert!(kinds.contains(&"INTERNAL"));
         assert!(kinds.contains(&"SERVER"));
@@ -1368,18 +1383,18 @@ mod tests {
             let provider = TracerProviderManager::force();
             assert_eq!(provider.default_tracer_name(), "default");
         }
-        
+
         // 设置默认 tracer
         {
             let mut provider = TracerProviderManager::force();
             provider.set_default_tracer("custom");
         }
-        
+
         {
             let provider = TracerProviderManager::force();
             assert_eq!(provider.default_tracer_name(), "custom");
         }
-        
+
         // 恢复默认
         {
             let mut provider = TracerProviderManager::force();
@@ -1395,21 +1410,21 @@ mod tests {
     fn test_comprehensive_config_manager() {
         // 检查初始化状态
         let _is_init = ComprehensiveConfigManager::is_config_initialized();
-        
+
         // 尝试读取配置
         let config = ComprehensiveConfigManager::try_read_config();
-        
+
         // 如果已初始化，验证配置内容
         if let Some(cfg) = config {
             assert!(!cfg.endpoint.is_empty());
         }
-        
+
         // 初始化并配置
         ComprehensiveConfigManager::initialize_with(|cfg| {
             cfg.endpoint = "http://comprehensive:4317".to_string();
             cfg.batch_size = 1024;
         });
-        
+
         let config = GlobalConfig::force();
         assert_eq!(config.endpoint, "http://comprehensive:4317");
         assert_eq!(config.batch_size, 1024);
@@ -1418,10 +1433,10 @@ mod tests {
     #[test]
     fn test_otlp_runtime_context() {
         let mut context = OtlpRuntimeContext::new();
-        
+
         // 初始状态
         assert!(!context.is_started());
-        
+
         // 启动运行时
         context.start();
         assert!(context.is_started());
@@ -1431,15 +1446,15 @@ mod tests {
     fn test_lazy_lock_all_methods() {
         // 测试 LazyLock 的所有 Rust 1.94 方法
         let lazy: LazyLock<String> = LazyLock::new(|| "test".to_string());
-        
+
         // 1. get - 获取不可变引用（不触发初始化）
         let before_init = LazyLock::get(&lazy);
         assert!(before_init.is_none());
-        
+
         // 2. force - 强制初始化并获取
         let forced = LazyLock::force(&lazy);
         assert_eq!(forced, "test");
-        
+
         // 3. 初始化后 get 返回 Some
         let after_init = LazyLock::get(&lazy);
         assert!(after_init.is_some());
@@ -1450,26 +1465,26 @@ mod tests {
     fn test_lazy_cell_all_methods() {
         // 测试 LazyCell 的所有 Rust 1.94 方法
         let mut cell: LazyCell<i32> = LazyCell::new(|| 42);
-        
+
         // 1. get - 获取不可变引用（不触发初始化）
         assert!(LazyCell::get(&cell).is_none());
-        
+
         // 2. get_mut - 获取可变引用（不触发初始化）
         assert!(LazyCell::get_mut(&mut cell).is_none());
-        
+
         // 3. force - 强制初始化
         let forced = LazyCell::force(&cell);
         assert_eq!(*forced, 42);
-        
+
         // 4. 初始化后 get 返回 Some
         assert_eq!(LazyCell::get(&cell), Some(&42));
-        
+
         // 5. get_mut 现在返回 Some
         if let Some(value) = LazyCell::get_mut(&mut cell) {
             *value = 100;
         }
         assert_eq!(LazyCell::force(&cell), &100);
-        
+
         // 6. force_mut - 强制初始化并获取可变引用
         let mut cell2: LazyCell<String> = LazyCell::new(|| "hello".to_string());
         let value = LazyCell::force_mut(&mut cell2);
@@ -1507,7 +1522,7 @@ mod tests {
 
         let mut processor = DataProcessor::new();
         assert!(processor.get_data().is_none());
-        
+
         processor.process(b"test data");
         assert!(processor.processed);
         assert_eq!(processor.get_data(), Some(&b"test data"[..]));

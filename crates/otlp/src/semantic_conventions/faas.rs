@@ -356,13 +356,13 @@ impl FaasAttributesBuilder {
 
     /// Build the FaaS attributes
     pub fn build(self) -> Result<FaasAttributes> {
-        let platform = self.platform.ok_or_else(|| {
-            SemanticConventionError::MissingRequired("faas.platform".to_string())
-        })?;
+        let platform = self
+            .platform
+            .ok_or_else(|| SemanticConventionError::MissingRequired("faas.platform".to_string()))?;
 
-        let function_name = self.function_name.ok_or_else(|| {
-            SemanticConventionError::MissingRequired("faas.name".to_string())
-        })?;
+        let function_name = self
+            .function_name
+            .ok_or_else(|| SemanticConventionError::MissingRequired("faas.name".to_string()))?;
 
         let mut attributes = AttributeMap::new();
 
@@ -378,24 +378,15 @@ impl FaasAttributesBuilder {
 
         // Optional attributes
         if let Some(version) = self.function_version {
-            attributes.insert(
-                "faas.version".to_string(),
-                AttributeValue::String(version),
-            );
+            attributes.insert("faas.version".to_string(), AttributeValue::String(version));
         }
 
         if let Some(memory) = self.max_memory {
-            attributes.insert(
-                "faas.max_memory".to_string(),
-                AttributeValue::Int(memory),
-            );
+            attributes.insert("faas.max_memory".to_string(), AttributeValue::Int(memory));
         }
 
         if let Some(timeout) = self.timeout {
-            attributes.insert(
-                "faas.timeout".to_string(),
-                AttributeValue::Int(timeout),
-            );
+            attributes.insert("faas.timeout".to_string(), AttributeValue::Int(timeout));
         }
 
         if let Some(cold_start) = self.cold_start {
@@ -511,7 +502,10 @@ mod tests {
     fn test_faas_platform() {
         assert_eq!(FaasPlatform::AwsLambda.as_str(), "aws_lambda");
         assert_eq!(FaasPlatform::AzureFunctions.as_str(), "azure_functions");
-        assert_eq!(FaasPlatform::GcpCloudFunctions.as_str(), "gcp_cloud_functions");
+        assert_eq!(
+            FaasPlatform::GcpCloudFunctions.as_str(),
+            "gcp_cloud_functions"
+        );
     }
 
     #[test]
@@ -619,9 +613,7 @@ mod tests {
 
     #[test]
     fn test_faas_attributes_builder_missing_required() {
-        let result = FaasAttributesBuilder::new()
-            .function_name("test")
-            .build();
+        let result = FaasAttributesBuilder::new().function_name("test").build();
 
         assert!(result.is_err());
         match result {
@@ -658,9 +650,6 @@ mod tests {
             attrs.get("custom.key1"),
             Some(&AttributeValue::String("value1".to_string()))
         );
-        assert_eq!(
-            attrs.get("custom.key2"),
-            Some(&AttributeValue::Int(42))
-        );
+        assert_eq!(attrs.get("custom.key2"), Some(&AttributeValue::Int(42)));
     }
 }

@@ -136,14 +136,14 @@ pub fn euler_gamma_sampling_rate(load: f64, base_rate: f64) -> f64 {
     // 使用 EULER_GAMMA 作为阻尼系数
     // ln(load + 1) 确保负载为 0 时不会出错
     let load_factor = (load + 1.0).ln();
-    
+
     // 归一化负载因子（假设最大负载对应 ln(10000) ≈ 9.21）
     let normalized_load = load_factor / 9.21_f64.ln();
-    
+
     // 应用 EULER_GAMMA 调节
     // rate = base_rate * (1 + γ * normalized_load)
     let adjusted = base_rate.mul_add(EULER_GAMMA * normalized_load, base_rate);
-    
+
     // 限制在有效范围内
     adjusted.clamp(0.001, 1.0)
 }
@@ -188,12 +188,12 @@ pub fn euler_gamma_cumulative_sampling(sequence_number: u64, target_rate: f64) -
     }
 
     let n = sequence_number as f64;
-    
+
     // 使用 H_n ≈ ln(n) + γ 的近似
     // 当 n 是 1/rate 的倍数时采样
     let harmonic_approx = n.ln() + EULER_GAMMA;
     let interval = 1.0 / target_rate;
-    
+
     // 检查是否接近采样点
     let remainder = harmonic_approx % interval;
     remainder < 1.0 || remainder > interval - 1.0
@@ -214,11 +214,11 @@ pub fn euler_gamma_cumulative_sampling(sequence_number: u64, target_rate: f64) -
 /// 计算后的采样权重
 pub fn euler_gamma_priority_weight(priority: u8, base_weight: f64) -> f64 {
     let p = priority.clamp(1, 10) as f64;
-    
+
     // 使用 γ 作为优先级增长的调节因子
     // weight = base_weight * (1 + γ * log10(priority))
     let priority_factor = 1.0 + EULER_GAMMA * p.log10();
-    
+
     base_weight * priority_factor
 }
 
@@ -268,15 +268,15 @@ pub fn euler_gamma_priority_weight(priority: u8, base_weight: f64) -> f64 {
 /// ```
 pub fn golden_ratio_backoff(attempt: u32, base_delay_ms: u64) -> u64 {
     const MAX_DELAY_MS: u64 = 300_000; // 5 分钟上限
-    
+
     if attempt == 0 {
         return base_delay_ms.min(MAX_DELAY_MS);
     }
-    
+
     // 使用黄金比例的幂次：φ^attempt
     let multiplier = GOLDEN_RATIO.powi(attempt as i32);
     let delay = (base_delay_ms as f64 * multiplier) as u64;
-    
+
     delay.min(MAX_DELAY_MS)
 }
 
@@ -345,13 +345,13 @@ pub fn fibonacci_batch_size(iteration: u32, max_size: usize) -> usize {
     if max_size == 0 {
         return 1;
     }
-    
+
     // 使用 Binet 公式近似计算 Fibonacci 数
     // F(n) ≈ φ^n / √5
     let n = iteration as f64;
     let phi_n = GOLDEN_RATIO.powf(n);
     let fib_approx = (phi_n * FIBONACCI_FACTOR).round() as usize;
-    
+
     // 确保至少为 1，不超过最大值
     fib_approx.max(1).min(max_size)
 }
@@ -435,11 +435,11 @@ pub fn golden_ratio_split(total: u64) -> (u64, u64) {
 /// 添加抖动后的延迟
 pub fn golden_ratio_jitter(base_delay_ms: u64, jitter_factor: f64) -> u64 {
     let factor = jitter_factor.clamp(0.0, 1.0);
-    
+
     // 使用黄金比例的小数部分作为伪随机因子
     let phi_fractional = GOLDEN_RATIO - 1.0; // ≈ 0.618
     let jitter = base_delay_ms as f64 * factor * phi_fractional;
-    
+
     (base_delay_ms as f64 + jitter) as u64
 }
 
@@ -513,13 +513,13 @@ pub const fn const_lerp(a: f64, b: f64, t: f64) -> f64 {
 pub const fn const_poly_eval(x: f64, coeffs: &[f64]) -> f64 {
     let mut result: f64 = 0.0;
     let mut i = coeffs.len();
-    
+
     // Horner 方法：从内到外计算
     while i > 0 {
         i -= 1;
         result = result.mul_add(x, coeffs[i]);
     }
-    
+
     result
 }
 
@@ -563,27 +563,31 @@ pub const fn const_sigmoid_approx(x: f64) -> f64 {
 /// # 返回值
 ///
 /// 计算后的超时时间（毫秒）
-pub fn adaptive_batch_timeout(queue_depth: usize, base_timeout_ms: u64, max_timeout_ms: u64) -> u64 {
+pub fn adaptive_batch_timeout(
+    queue_depth: usize,
+    base_timeout_ms: u64,
+    max_timeout_ms: u64,
+) -> u64 {
     if queue_depth == 0 {
         return max_timeout_ms;
     }
-    
+
     let depth = queue_depth as f64;
-    
+
     // 使用黄金比例计算负载因子
     let load_factor = (depth / 100.0).min(1.0); // 假设 100 为满载
-    
+
     // 使用 Euler-Gamma 作为调节参数
     // timeout = base + (max - base) * (1 - load_factor)^γ
     let remaining = 1.0 - load_factor;
     let adjusted_remaining = remaining.powf(EULER_GAMMA);
-    
+
     let timeout = const_lerp(
         base_timeout_ms as f64,
         max_timeout_ms as f64,
         adjusted_remaining,
     );
-    
+
     timeout as u64
 }
 
@@ -609,11 +613,11 @@ pub fn optimal_connection_pool_size(expected_concurrency: u32, max_pool_size: u3
     if expected_concurrency == 0 {
         return 1;
     }
-    
+
     // 使用 1 + γ 作为安全系数
     let safety_factor = 1.0 + EULER_GAMMA;
     let optimal = (expected_concurrency as f64 / safety_factor).ceil() as u32;
-    
+
     optimal.max(1).min(max_pool_size)
 }
 
@@ -631,17 +635,13 @@ pub fn optimal_connection_pool_size(expected_concurrency: u32, max_pool_size: u3
 /// # 返回值
 ///
 /// 调整后的采样率
-pub fn adjust_sampling_rate(
-    current_rate: f64,
-    target_samples: u64,
-    actual_samples: u64,
-) -> f64 {
+pub fn adjust_sampling_rate(current_rate: f64, target_samples: u64, actual_samples: u64) -> f64 {
     if target_samples == 0 || actual_samples == 0 {
         return current_rate.clamp(0.001, 1.0);
     }
-    
+
     let ratio = target_samples as f64 / actual_samples as f64;
-    
+
     // 使用黄金比例的幂次作为调整步长
     // 注意：需要使用 GOLDEN_RATIO (φ ≈ 1.618) 来增加采样率
     // 使用 GOLDEN_RATIO_RECIP (1/φ ≈ 0.618) 来减少采样率
@@ -652,7 +652,7 @@ pub fn adjust_sampling_rate(
         // 需要更少样本，减少采样率 (乘以 (1/φ)^log2(ratio))
         GOLDEN_RATIO_RECIP.powf(ratio.log2().abs())
     };
-    
+
     let new_rate = current_rate * adjustment;
     new_rate.clamp(0.001, 1.0)
 }
@@ -737,7 +737,7 @@ mod tests {
         let samples: u64 = (1..=1000)
             .filter(|&n| euler_gamma_cumulative_sampling(n, 0.1))
             .count() as u64;
-        
+
         // Just verify that some samples are produced by the algorithm
         // The actual count depends on the harmonic series distribution
         assert!(samples >= 1, "Expected at least 1 sample, got {}", samples);
@@ -764,12 +764,12 @@ mod tests {
     fn test_golden_ratio_constant() {
         // 验证 GOLDEN_RATIO 的近似值
         assert!((GOLDEN_RATIO - 1.6180339887).abs() < 1e-10);
-        
+
         // 验证黄金比例的性质：φ² = φ + 1
         let phi_squared = GOLDEN_RATIO * GOLDEN_RATIO;
         let phi_plus_one = GOLDEN_RATIO + 1.0;
         assert!((phi_squared - phi_plus_one).abs() < 1e-10);
-        
+
         // 验证 1/φ = φ - 1
         assert!((GOLDEN_RATIO_RECIP - (GOLDEN_RATIO - 1.0)).abs() < 1e-10);
     }
@@ -807,11 +807,11 @@ mod tests {
     fn test_golden_ratio_backoff_decay() {
         let current = 1000;
         let decayed = golden_ratio_backoff_decay(current, 100);
-        
+
         // 延迟应该减少
         assert!(decayed < current);
         assert!(decayed >= 100);
-        
+
         // 验证近似值：1000 * 0.618 ≈ 618
         assert!((decayed as f64 - 618.0).abs() < 10.0);
     }
@@ -821,7 +821,7 @@ mod tests {
         // 测试 Fibonacci 数列
         assert_eq!(fibonacci_batch_size(0, 1000), 1);
         assert_eq!(fibonacci_batch_size(1, 1000), 1);
-        
+
         let f2 = fibonacci_batch_size(2, 1000);
         let f3 = fibonacci_batch_size(3, 1000);
         let f5 = fibonacci_batch_size(5, 1000);
@@ -833,8 +833,8 @@ mod tests {
         assert!(f10 >= f5);
 
         // 验证近似值
-        assert_eq!(f2, 1);  // F(2) = 1
-        assert!((f5 as f64 - 5.0).abs() <= 1.0);   // F(5) = 5
+        assert_eq!(f2, 1); // F(2) = 1
+        assert!((f5 as f64 - 5.0).abs() <= 1.0); // F(5) = 5
         assert!((f10 as f64 - 55.0).abs() <= 5.0); // F(10) = 55
     }
 
@@ -861,10 +861,10 @@ mod tests {
     #[test]
     fn test_golden_ratio_split() {
         let (small, large) = golden_ratio_split(1000);
-        
+
         assert_eq!(small + large, 1000);
         assert!(small < large);
-        
+
         // 验证比例：small ≈ 382, large ≈ 618
         assert!((small as f64 - 382.0).abs() < 5.0);
         assert!((large as f64 - 618.0).abs() < 5.0);
@@ -874,10 +874,10 @@ mod tests {
     fn test_golden_ratio_jitter() {
         let base = 1000;
         let jittered = golden_ratio_jitter(base, 0.5);
-        
+
         // 抖动后的值应该大于基础值
         assert!(jittered >= base);
-        
+
         // 但不应该太大
         assert!(jittered < base * 2);
     }
@@ -996,17 +996,33 @@ mod tests {
         let decreased = adjust_sampling_rate(base, 500, 1000);
 
         // Both should return valid rates within the allowed range
-        assert!((0.001..=1.0).contains(&increased), "increased rate {} out of range", increased);
-        assert!((0.001..=1.0).contains(&decreased), "decreased rate {} out of range", decreased);
+        assert!(
+            (0.001..=1.0).contains(&increased),
+            "increased rate {} out of range",
+            increased
+        );
+        assert!(
+            (0.001..=1.0).contains(&decreased),
+            "decreased rate {} out of range",
+            decreased
+        );
 
         // When we need more samples (target > actual), rate should generally increase
         // When we need fewer samples (target < actual), rate should generally decrease
         // Use approximate comparison due to floating-point math
         let epsilon = 0.1;
-        assert!((increased - base).abs() < epsilon || increased > base, 
-                "Expected increased >= base or close, got {} vs {}", increased, base);
-        assert!((decreased - base).abs() < epsilon || decreased < base,
-                "Expected decreased <= base or close, got {} vs {}", decreased, base);
+        assert!(
+            (increased - base).abs() < epsilon || increased > base,
+            "Expected increased >= base or close, got {} vs {}",
+            increased,
+            base
+        );
+        assert!(
+            (decreased - base).abs() < epsilon || decreased < base,
+            "Expected decreased <= base or close, got {} vs {}",
+            decreased,
+            base
+        );
     }
 
     // ========== 工具函数测试 ==========
@@ -1029,7 +1045,7 @@ mod tests {
         let original = 0.5;
         let log_scale = rate_to_log_scale(original);
         let back = log_scale_to_rate(log_scale);
-        
+
         assert!(approx_eq(original, back));
     }
 

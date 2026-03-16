@@ -160,15 +160,15 @@ pub mod prelude {
         AnomalyDetector, AutoRecovery, HealthChecker, MonitoringConfig, MonitoringDashboard,
         PerformanceMonitor, ResourceMonitor,
     };
-    pub use crate::rust_192_features::{
-        AdvancedAsyncCombinator, AsyncClosureExample, GenericAssociatedTypeExample,
-        OperationMetadata, OperationResult, ReliabilityService, Rust192FeatureDemo,
-    };
     pub use crate::rust_1_94_features::{
         AdaptiveRetryConfig, ConstMathCalculations, ErrorAnalysisResult, ErrorPattern,
         ErrorPatternTracker, ErrorSequenceAnalyzer, ErrorType, EulerConstants,
         EulerGammaHealthScoring, GoldenRatioBackoff, GoldenRatioConstants, MathConstantsDemo,
         MemoryLayoutInfo, ReliabilityMonitor, Rust194FeatureDemo,
+    };
+    pub use crate::rust_192_features::{
+        AdvancedAsyncCombinator, AsyncClosureExample, GenericAssociatedTypeExample,
+        OperationMetadata, OperationResult, ReliabilityService, Rust192FeatureDemo,
     };
     pub use crate::utils::{DurationExt, ResultExt as UtilsResultExt};
 

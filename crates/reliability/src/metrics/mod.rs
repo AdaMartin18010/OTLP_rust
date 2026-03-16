@@ -771,7 +771,10 @@ mod tests {
         let collector = MetricsCollector::new(Duration::from_secs(60));
 
         collector.set_custom_metric("test_int".to_string(), MetricValue::Integer(42));
-        collector.set_custom_metric("test_float".to_string(), MetricValue::Float(std::f64::consts::PI));
+        collector.set_custom_metric(
+            "test_float".to_string(),
+            MetricValue::Float(std::f64::consts::PI),
+        );
         collector.set_custom_metric(
             "test_string".to_string(),
             MetricValue::String("test".to_string()),

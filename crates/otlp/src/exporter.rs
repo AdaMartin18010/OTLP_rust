@@ -84,7 +84,7 @@ use tokio::sync::{RwLock, mpsc};
 use tokio::time::sleep;
 
 /// 导出结果
-/// 
+///
 /// 遵循 OTLP 1.10 规范，支持 Full Success、Partial Success 和 Failure 三种响应类型
 #[derive(Debug, Clone)]
 pub struct ExportResult {
@@ -97,13 +97,13 @@ pub struct ExportResult {
     /// 错误信息
     pub errors: Vec<String>,
     /// 部分成功信息（OTLP 1.10+）
-    /// 
+    ///
     /// 当服务器部分接受数据时，包含被拒绝的数据点数量和错误信息
     pub partial_success: Option<PartialSuccess>,
 }
 
 /// 部分成功信息 (OTLP 1.10+)
-/// 
+///
 /// 参考：https://opentelemetry.io/docs/specs/otlp/#partial-success
 #[derive(Debug, Clone)]
 pub struct PartialSuccess {
@@ -130,12 +130,15 @@ impl PartialSuccess {
             error_message: error_message.into(),
         }
     }
-    
+
     /// 获取被拒绝的总数量
     pub fn total_rejected(&self) -> u64 {
-        self.rejected_spans + self.rejected_data_points + self.rejected_log_records + self.rejected_profiles
+        self.rejected_spans
+            + self.rejected_data_points
+            + self.rejected_log_records
+            + self.rejected_profiles
     }
-    
+
     /// 是否有被拒绝的数据
     pub fn has_rejections(&self) -> bool {
         self.total_rejected() > 0
@@ -144,7 +147,7 @@ impl PartialSuccess {
 
 impl ExportResult {
     /// 创建成功结果 (Full Success - OTLP 1.10)
-    /// 
+    ///
     /// 服务器完全接受数据，partial_success 字段为空
     pub fn success(count: usize, duration: Duration) -> Self {
         Self {
@@ -168,7 +171,7 @@ impl ExportResult {
     }
 
     /// 创建部分成功结果 (Partial Success - OTLP 1.10)
-    /// 
+    ///
     /// 服务器部分接受数据，客户端不应重试
     pub fn partial(
         success_count: usize,
@@ -187,7 +190,7 @@ impl ExportResult {
         } else {
             None
         };
-        
+
         Self {
             success_count,
             failure_count,
@@ -196,7 +199,7 @@ impl ExportResult {
             partial_success,
         }
     }
-    
+
     /// 创建带部分成功信息的结果 (OTLP 1.10+)
     pub fn with_partial_success(partial: PartialSuccess, duration: Duration) -> Self {
         let failure_count = partial.total_rejected() as usize;
@@ -210,14 +213,14 @@ impl ExportResult {
     }
 
     /// 是否完全成功 (Full Success)
-    /// 
+    ///
     /// OTLP 1.10: partial_success 字段为空表示完全成功
     pub fn is_success(&self) -> bool {
         self.failure_count == 0 && self.partial_success.is_none()
     }
 
     /// 是否部分成功 (Partial Success)
-    /// 
+    ///
     /// OTLP 1.10: partial_success 字段存在表示部分成功
     pub fn is_partial_success(&self) -> bool {
         self.partial_success.is_some()
@@ -240,11 +243,15 @@ impl ExportResult {
         }
         self.success_count as f64 / self.total_count() as f64
     }
-    
+
     /// 根据数据类型设置被拒绝的数量
-    /// 
+    ///
     /// OTLP 1.10: 根据信号类型设置相应的拒绝计数
-    pub fn with_rejected_count(mut self, data_type: crate::data::TelemetryDataType, count: u64) -> Self {
+    pub fn with_rejected_count(
+        mut self,
+        data_type: crate::data::TelemetryDataType,
+        count: u64,
+    ) -> Self {
         if let Some(ref mut partial) = self.partial_success {
             match data_type {
                 crate::data::TelemetryDataType::Trace => partial.rejected_spans = count,
@@ -440,7 +447,7 @@ impl OtlpExporter {
         let is_shutdown = self.is_shutdown.read().await;
         *is_shutdown
     }
-    
+
     /// 检查是否已初始化
     async fn check_initialized(&self) -> bool {
         let is_initialized = self.is_initialized.read().await;
@@ -466,7 +473,7 @@ impl OtlpExporter {
             Self::export_task_loop(rx, transport_pool, metrics, is_shutdown).await;
         });
     }
-    
+
     async fn export_task_loop(
         mut rx: mpsc::Receiver<Vec<TelemetryData>>,
         transport_pool: Arc<RwLock<Option<TransportPool>>>,
@@ -483,13 +490,13 @@ impl OtlpExporter {
                 Some(b) => b,
                 None => break,
             };
-            
+
             let pool_opt = transport_pool.write().await;
             if pool_opt.is_none() {
                 continue;
             }
             drop(pool_opt);
-            
+
             if let Some(pool) = transport_pool.write().await.as_mut() {
                 let _ = OtlpExporter::export_batch(pool, batch.clone()).await;
                 let mut m = metrics.write().await;
@@ -552,13 +559,13 @@ impl OtlpExporter {
     /// 直接导出批次 - 使用传输池真实发送数据
     async fn export_batch_direct(&self, data: Vec<TelemetryData>) -> Result<ExportResult> {
         let start_time = std::time::Instant::now();
-        
+
         // 获取传输池
         let mut pool_guard = self.transport_pool.write().await;
         let pool = pool_guard.as_mut().ok_or_else(|| ExportError::Failed {
             reason: "Transport pool not initialized".to_string(),
         })?;
-        
+
         // 使用传输池发送数据
         match Self::export_batch(pool, data.clone()).await {
             Ok(result) => Ok(result),
@@ -566,7 +573,8 @@ impl OtlpExporter {
                 let _duration = start_time.elapsed();
                 Err(ExportError::Failed {
                     reason: format!("Export failed: {}", e),
-                }.into())
+                }
+                .into())
             }
         }
     }
@@ -577,26 +585,24 @@ impl OtlpExporter {
         data: Vec<TelemetryData>,
     ) -> Result<ExportResult> {
         let start_time = std::time::Instant::now();
-        
+
         // 获取传输实例
         let transport = pool.get_next().ok_or_else(|| ExportError::Failed {
             reason: "No available transport".to_string(),
         })?;
-        
+
         // 真实发送数据
         match transport.send(data.clone()).await {
             Ok(()) => {
                 let _duration = start_time.elapsed();
                 Ok(ExportResult::success(data.len(), start_time.elapsed()))
             }
-            Err(e) => {
-                Ok(ExportResult::partial(
-                    0,
-                    data.len(),
-                    start_time.elapsed(),
-                    vec![e.to_string()],
-                ))
-            }
+            Err(e) => Ok(ExportResult::partial(
+                0,
+                data.len(),
+                start_time.elapsed(),
+                vec![e.to_string()],
+            )),
         }
     }
 

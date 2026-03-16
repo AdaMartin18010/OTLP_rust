@@ -103,11 +103,11 @@ impl CircuitBreaker {
     /// 检查是否允许请求通过
     pub async fn can_execute(&self) -> bool {
         let state = self.state();
-        
+
         if state == CircuitState::Closed {
             return true;
         }
-        
+
         if state == CircuitState::Open {
             // 检查是否应该尝试恢复
             if !self.should_attempt_reset().await {
@@ -116,7 +116,7 @@ impl CircuitBreaker {
             self.transition_to_half_open();
             return true;
         }
-        
+
         // CircuitState::HalfOpen - 检查半开状态下的请求限制
         let current_requests = self.half_open_requests.load(Ordering::Acquire);
         current_requests < self.config.half_open_max_requests
@@ -130,13 +130,13 @@ impl CircuitBreaker {
             .fetch_add(1, Ordering::Relaxed);
 
         let state = self.state();
-        
+
         if state == CircuitState::Closed {
             // 重置失败计数
             self.failure_count.store(0, Ordering::Release);
             return;
         }
-        
+
         if state == CircuitState::HalfOpen {
             let success_count = self.success_count.fetch_add(1, Ordering::Relaxed) + 1;
             if success_count >= self.config.success_threshold {
@@ -157,13 +157,13 @@ impl CircuitBreaker {
         }
 
         let state = self.state();
-        
+
         if state == CircuitState::HalfOpen {
             // 半开状态下的失败立即打开断路器
             self.transition_to_open();
             return;
         }
-        
+
         if state == CircuitState::Closed {
             let failure_count = self.failure_count.fetch_add(1, Ordering::Relaxed) + 1;
             if failure_count >= self.config.failure_threshold {

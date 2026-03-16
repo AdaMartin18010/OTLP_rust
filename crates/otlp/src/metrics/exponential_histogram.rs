@@ -183,10 +183,7 @@ impl ExponentialHistogramDataPointBuckets {
         if self.bucket_counts.is_empty() {
             (self.offset, self.offset)
         } else {
-            (
-                self.offset,
-                self.offset + self.bucket_counts.len() as i32,
-            )
+            (self.offset, self.offset + self.bucket_counts.len() as i32)
         }
     }
 }
@@ -1213,7 +1210,13 @@ mod tests {
         assert_eq!(original.sum, restored.sum);
         assert_eq!(original.scale, restored.scale);
         assert_eq!(original.zero_count, restored.zero_count);
-        assert_eq!(original.positive.total_count(), restored.positive.total_count());
-        assert_eq!(original.negative.total_count(), restored.negative.total_count());
+        assert_eq!(
+            original.positive.total_count(),
+            restored.positive.total_count()
+        );
+        assert_eq!(
+            original.negative.total_count(),
+            restored.negative.total_count()
+        );
     }
 }

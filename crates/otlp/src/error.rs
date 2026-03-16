@@ -392,7 +392,10 @@ impl OtlpError {
     }
 
     /// 创建网络错误
-    pub fn network(context: impl Into<String>, source: impl std::error::Error + Send + Sync + 'static) -> Self {
+    pub fn network(
+        context: impl Into<String>,
+        source: impl std::error::Error + Send + Sync + 'static,
+    ) -> Self {
         Self::Transport(TransportError::Connection {
             endpoint: context.into(),
             reason: source.to_string(),
@@ -407,7 +410,10 @@ impl OtlpError {
     }
 
     /// 创建处理错误
-    pub fn processing(operation: impl Into<String>, source: impl std::error::Error + Send + Sync + 'static) -> Self {
+    pub fn processing(
+        operation: impl Into<String>,
+        source: impl std::error::Error + Send + Sync + 'static,
+    ) -> Self {
         Self::Processing(ProcessingError::Batch {
             reason: format!("{}: {}", operation.into(), source),
         })
@@ -571,7 +577,7 @@ mod tests {
         // 测试网络错误构造函数
         let network_err = OtlpError::network(
             "http://example.com",
-            std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "Connection refused")
+            std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "Connection refused"),
         );
         assert!(matches!(network_err, OtlpError::Transport(_)));
 
@@ -580,10 +586,8 @@ mod tests {
         assert!(matches!(config_err, OtlpError::Configuration(_)));
 
         // 测试处理错误构造函数
-        let processing_err = OtlpError::processing(
-            "batch",
-            std::io::Error::other("Processing failed")
-        );
+        let processing_err =
+            OtlpError::processing("batch", std::io::Error::other("Processing failed"));
         assert!(matches!(processing_err, OtlpError::Processing(_)));
 
         // 测试内部错误构造函数
@@ -618,7 +622,13 @@ mod tests {
         assert!(matches!(err, DataError::Validation { .. }));
 
         let err = DataError::size_limit(1000, 100);
-        assert!(matches!(err, DataError::SizeLimit { actual: 1000, max: 100 }));
+        assert!(matches!(
+            err,
+            DataError::SizeLimit {
+                actual: 1000,
+                max: 100
+            }
+        ));
     }
 
     #[test]
@@ -627,7 +637,13 @@ mod tests {
         assert!(matches!(err, ExportError::Failed { .. }));
 
         let err = ExportError::partial_failure(90, 10);
-        assert!(matches!(err, ExportError::PartialFailure { success: 90, failed: 10 }));
+        assert!(matches!(
+            err,
+            ExportError::PartialFailure {
+                success: 90,
+                failed: 10
+            }
+        ));
     }
 
     #[test]

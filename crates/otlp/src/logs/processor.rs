@@ -26,8 +26,8 @@ use crate::error::{OtlpError, ProcessingError, Result};
 use crate::logs::exporter::{LogExportResult, LogExporterTrait};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{mpsc, oneshot, RwLock};
-use tokio::time::{interval, Instant};
+use tokio::sync::{RwLock, mpsc, oneshot};
+use tokio::time::{Instant, interval};
 
 /// Log processor trait
 #[async_trait::async_trait]
@@ -148,8 +148,6 @@ pub struct ProcessorMetrics {
     pub total_dropped: u64,
 }
 
-
-
 impl<E: LogExporterTrait + 'static> BatchLogProcessor<E> {
     /// Create a new batch log processor
     pub fn new(exporter: E) -> Self {
@@ -233,7 +231,7 @@ impl<E: LogExporterTrait + 'static> BatchLogProcessor<E> {
                     }
                     Some(log) = queue_rx.recv() => {
                         batch.push(log);
-                        
+
                         if batch.len() >= config.max_batch_size {
                             Self::export_batch(&exporter, &mut batch, &metrics).await;
                             last_export = Instant::now();
@@ -316,11 +314,11 @@ impl<E: LogExporterTrait + 'static> LogProcessor for BatchLogProcessor<E> {
                     reason: "Queue is full".to_string(),
                 }))
             }
-            Err(mpsc::error::TrySendError::Closed(_)) => Err(OtlpError::Processing(
-                ProcessingError::InvalidState {
+            Err(mpsc::error::TrySendError::Closed(_)) => {
+                Err(OtlpError::Processing(ProcessingError::InvalidState {
                     message: "Processor channel closed".to_string(),
-                },
-            )),
+                }))
+            }
         }
     }
 
@@ -335,7 +333,7 @@ impl<E: LogExporterTrait + 'static> LogProcessor for BatchLogProcessor<E> {
 
         // Create a oneshot channel for the flush result
         let (tx, rx) = tokio::sync::oneshot::channel();
-        
+
         // Send flush request
         if self.flush_tx.send(tx).await.is_err() {
             return Ok(LogExportResult::success(0, 0));
@@ -403,11 +401,7 @@ impl<P: LogProcessor> FilterLogProcessor<P> {
     }
 
     /// Add an attribute filter
-    pub fn with_attribute_filter(
-        mut self,
-        key: impl Into<String>,
-        value: AttributeValue,
-    ) -> Self {
+    pub fn with_attribute_filter(mut self, key: impl Into<String>, value: AttributeValue) -> Self {
         self.attribute_filters.push((key.into(), value));
         self
     }
@@ -621,7 +615,7 @@ mod tests {
     async fn test_filter_processor_attributes() {
         let mock_exporter = MockLogExporter::new();
         let inner = SimpleLogProcessor::new(mock_exporter.clone());
-        
+
         let processor = FilterLogProcessor::new(inner)
             .with_attribute_filter("env", AttributeValue::String("production".to_string()));
 
@@ -667,7 +661,7 @@ mod tests {
         composite.emit(log).await.unwrap();
 
         tokio::time::sleep(Duration::from_millis(50)).await;
-        
+
         assert_eq!(mock_exporter1.get_exported_logs().await.len(), 1);
         assert_eq!(mock_exporter2.get_exported_logs().await.len(), 1);
     }

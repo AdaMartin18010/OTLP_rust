@@ -61,9 +61,7 @@ pub mod process;
 pub mod rpc;
 
 // Re-export commonly used types
-pub use cloud::{
-    CloudAttributes, CloudAttributesBuilder, CloudPlatform, CloudProvider,
-};
+pub use cloud::{CloudAttributes, CloudAttributesBuilder, CloudPlatform, CloudProvider};
 pub use common::{AttributeKey, AttributeValue, SemanticConventionError};
 pub use container::{
     ContainerAttributes, ContainerAttributesBuilder, ContainerRuntime, ContainerState,
@@ -71,29 +69,23 @@ pub use container::{
 pub use database::{
     DatabaseAttributes, DatabaseAttributesBuilder, DatabaseOperation, DatabaseSystem,
 };
-pub use exception::{
-    ErrorType, ExceptionAttributes, ExceptionAttributesBuilder, StackFrame,
-};
+pub use exception::{ErrorType, ExceptionAttributes, ExceptionAttributesBuilder, StackFrame};
 pub use faas::{
     FaasAttributes, FaasAttributesBuilder, FaasDocumentOperation, FaasInvocationResult,
     FaasPlatform, FaasTriggerType,
 };
 pub use gen_ai::{
-    GenAiAttributes, GenAiAttributesBuilder, GenAiFinishReason, GenAiOperation, GenAiSystem,
-    GENAI_SEMCONV_STATUS, GENAI_SEMCONV_VERSION,
+    GENAI_SEMCONV_STATUS, GENAI_SEMCONV_VERSION, GenAiAttributes, GenAiAttributesBuilder,
+    GenAiFinishReason, GenAiOperation, GenAiSystem,
 };
-pub use host::{
-    DeviceType, HostArch, HostAttributes, HostAttributesBuilder, HostType, OsType,
-};
+pub use host::{DeviceType, HostArch, HostAttributes, HostAttributesBuilder, HostType, OsType};
 pub use http::{HttpAttributes, HttpAttributesBuilder, HttpMethod, HttpScheme};
 pub use k8s::{K8sAttributes, K8sAttributesBuilder, K8sResourceType};
 pub use messaging::{
     DestinationKind, MessagingAttributes, MessagingAttributesBuilder, MessagingOperation,
     MessagingSystem,
 };
-pub use process::{
-    ProcessAttributes, ProcessAttributesBuilder, ProcessRuntime, ProcessState,
-};
+pub use process::{ProcessAttributes, ProcessAttributesBuilder, ProcessRuntime, ProcessState};
 pub use rpc::{RpcAttributes, RpcAttributesBuilder, RpcMessageType, RpcSystem};
 
 /// Version of the OpenTelemetry Semantic Conventions implemented

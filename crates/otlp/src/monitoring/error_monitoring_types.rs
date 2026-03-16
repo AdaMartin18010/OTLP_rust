@@ -93,7 +93,7 @@ impl RealTimeDashboard {
         if metrics.recent_errors.len() > self.config.max_recent_errors {
             metrics.recent_errors.pop_front();
         }
-        
+
         drop(metrics);
 
         // 广播更新到所有连接的客户端
@@ -166,7 +166,7 @@ impl AlertManager {
             if !self.evaluate_condition(&rule.condition, error).await? {
                 continue;
             }
-            
+
             self.trigger_alert(rule, error).await?;
         }
 
@@ -218,7 +218,7 @@ impl AlertManager {
             debug!("告警 {} 仍在冷却期，跳过", rule.id);
             return Ok(());
         }
-        
+
         let alert = Alert {
             id: Uuid::new_v4().to_string(),
             rule_id: rule.id.clone(),
@@ -258,11 +258,15 @@ impl AlertManager {
             Some(alert) => alert,
             None => return false,
         };
-        
-        let elapsed = last_alert.timestamp.elapsed().unwrap_or(Duration::from_secs(0));
+
+        let elapsed = last_alert
+            .timestamp
+            .elapsed()
+            .unwrap_or(Duration::from_secs(0));
         let rules = self.rules.read().await;
-        
-        rules.iter()
+
+        rules
+            .iter()
             .find(|r| r.id == rule_id)
             .is_some_and(|rule| elapsed < rule.cooldown_period)
     }
@@ -571,7 +575,7 @@ impl ErrorHotspotDetector {
             if !pattern.is_hotspot {
                 continue;
             }
-            
+
             let hotspot = ErrorHotspot {
                 pattern: key.clone(),
                 error_rate: pattern.occurrences.len() as f64,
@@ -697,23 +701,23 @@ impl AnomalyDetector {
                 Some(b) => b,
                 None => continue,
             };
-            
+
             let threshold = match self.anomaly_thresholds.get(metric_name) {
                 Some(t) => t,
                 None => continue,
             };
-            
+
             let deviation = (value - baseline).abs() / baseline;
             if deviation <= *threshold {
                 continue;
             }
-            
+
             let severity = if deviation > *threshold * 2.0 {
                 ErrorSeverity::High
             } else {
                 ErrorSeverity::Medium
             };
-            
+
             anomalies.push(Anomaly {
                 metric_name: metric_name.clone(),
                 value: *value,
@@ -765,7 +769,7 @@ impl CorrelationEngine {
                 if !self.are_events_correlated(&events[i], &events[j]) {
                     continue;
                 }
-                
+
                 correlations.push(Correlation {
                     event1_id: events[i].id.clone(),
                     event2_id: events[j].id.clone(),
@@ -1484,7 +1488,7 @@ impl ErrorMonitoringSystem {
 
         Ok(())
     }
-    
+
     async fn run_health_check_loop(dashboard: Arc<RealTimeDashboard>, interval_duration: Duration) {
         let mut interval = tokio::time::interval(interval_duration);
         loop {
@@ -1526,7 +1530,7 @@ impl ErrorMonitoringSystem {
 
         Ok(())
     }
-    
+
     async fn run_trend_analysis_loop(analyzer: Arc<ErrorTrendAnalyzer>) {
         let mut interval = tokio::time::interval(Duration::from_secs(60));
         loop {
@@ -1545,7 +1549,7 @@ impl ErrorMonitoringSystem {
 
         Ok(())
     }
-    
+
     async fn run_hotspot_detection_loop(detector: Arc<ErrorHotspotDetector>) {
         let mut interval = tokio::time::interval(Duration::from_secs(30));
         loop {

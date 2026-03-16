@@ -134,7 +134,10 @@ impl PrometheusCollector {
 
         let collectors = self.collectors.read().await;
         for collector in collectors.iter() {
-            if let Err(e) = self.collect_from(collector.as_ref(), &mut all_metrics).await {
+            if let Err(e) = self
+                .collect_from(collector.as_ref(), &mut all_metrics)
+                .await
+            {
                 eprintln!("指标收集错误 {}: {}", collector.get_name(), e);
             }
         }
@@ -808,7 +811,12 @@ impl GrafanaDashboardManager {
                     ref_id: "B".to_string(),
                 },
             ],
-            position: PanelPosition { x: 6, y: 0, width: 6, height: 4 },
+            position: PanelPosition {
+                x: 6,
+                y: 0,
+                width: 6,
+                height: 4,
+            },
             options: PanelOptions {
                 show_legend: true,
                 show_grid: true,
@@ -1056,11 +1064,7 @@ impl AlertManager {
         Ok(())
     }
 
-    async fn check_single_alert(
-        &self,
-        rule: &AlertRule,
-        update: &MetricUpdate,
-    ) -> Result<()> {
+    async fn check_single_alert(&self, rule: &AlertRule, update: &MetricUpdate) -> Result<()> {
         if !rule.is_enabled {
             return Ok(());
         }
@@ -1084,9 +1088,7 @@ impl AlertManager {
             AlertCondition::LessThan { metric, threshold } => {
                 self.evaluate_less_than(update, metric, *threshold)
             }
-            AlertCondition::Equal { metric, value } => {
-                self.evaluate_equal(update, metric, *value)
-            }
+            AlertCondition::Equal { metric, value } => self.evaluate_equal(update, metric, *value),
             AlertCondition::NotEqual { metric, value } => {
                 self.evaluate_not_equal(update, metric, *value)
             }
@@ -1117,24 +1119,14 @@ impl AlertManager {
         Ok(matches!(update.value, MetricValue::Gauge(v) if v < threshold))
     }
 
-    fn evaluate_equal(
-        &self,
-        update: &MetricUpdate,
-        metric: &str,
-        value: f64,
-    ) -> Result<bool> {
+    fn evaluate_equal(&self, update: &MetricUpdate, metric: &str, value: f64) -> Result<bool> {
         if update.name != metric {
             return Ok(false);
         }
         Ok(matches!(update.value, MetricValue::Gauge(v) if (v - value).abs() < f64::EPSILON))
     }
 
-    fn evaluate_not_equal(
-        &self,
-        update: &MetricUpdate,
-        metric: &str,
-        value: f64,
-    ) -> Result<bool> {
+    fn evaluate_not_equal(&self, update: &MetricUpdate, metric: &str, value: f64) -> Result<bool> {
         if update.name != metric {
             return Ok(false);
         }

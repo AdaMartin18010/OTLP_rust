@@ -36,7 +36,7 @@ pub mod transform;
 
 pub use bytecode::{BytecodeCompiler, BytecodeProgram, Opcode};
 pub use parser::{Expression, ParseError, Statement};
-pub use processor::{OttlProcessor, OttlParser, OttlStatement, OttlContext};
+pub use processor::{OttlContext, OttlParser, OttlProcessor, OttlStatement};
 pub use transform::{OtlpTransform, TransformConfig, TransformResult};
 
 /// OTTL 转换错误类型

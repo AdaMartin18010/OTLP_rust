@@ -238,7 +238,8 @@ impl BenchmarkRunner {
             iterations_completed.clone(),
             iterations_failed.clone(),
             test_start,
-        ).await;
+        )
+        .await;
 
         self.build_test_result(
             test_start,
@@ -246,7 +247,8 @@ impl BenchmarkRunner {
             iterations_failed,
             latencies,
             errors,
-        ).await
+        )
+        .await
     }
 
     async fn run_test_by_mode<F, Fut, R>(
@@ -271,7 +273,8 @@ impl BenchmarkRunner {
                 iterations_completed,
                 iterations_failed,
                 test_start,
-            ).await;
+            )
+            .await;
         } else {
             self.run_iteration_based_test(
                 benchmark_fn.clone(),
@@ -279,7 +282,8 @@ impl BenchmarkRunner {
                 errors,
                 iterations_completed,
                 iterations_failed,
-            ).await;
+            )
+            .await;
         }
     }
 
@@ -416,7 +420,10 @@ impl BenchmarkRunner {
                 }
                 Err(e) => {
                     *iterations_failed.lock().await += 1;
-                    errors.lock().await.push(BenchmarkError::RuntimeError(e.to_string()));
+                    errors
+                        .lock()
+                        .await
+                        .push(BenchmarkError::RuntimeError(e.to_string()));
                 }
             }
         });
@@ -496,15 +503,15 @@ impl BenchmarkRunner {
     }
 
     async fn get_system_memory_stats(&self) -> Option<MemoryStats> {
-        use sysinfo::{System, get_current_pid, Pid};
-        
+        use sysinfo::{Pid, System, get_current_pid};
+
         let mut system = System::new_all();
         system.refresh_all();
-        
+
         let pid: Pid = get_current_pid().ok()?;
         let process = system.process(pid)?;
         let memory_bytes = process.memory();
-        
+
         Some(MemoryStats {
             peak_memory: memory_bytes,
             avg_memory: memory_bytes,
@@ -515,15 +522,15 @@ impl BenchmarkRunner {
     }
 
     fn get_process_memory_stats(&self) -> MemoryStats {
-        use sysinfo::{System, get_current_pid, Pid};
+        use sysinfo::{Pid, System, get_current_pid};
         let mut system = System::new_all();
         system.refresh_all();
-        
+
         let Ok(pid): Result<Pid, _> = get_current_pid() else {
             return self.empty_memory_stats();
         };
         let memory = system.process(pid).map(|p| p.memory()).unwrap_or(0);
-        
+
         MemoryStats {
             peak_memory: memory,
             avg_memory: 0,
@@ -544,15 +551,15 @@ impl BenchmarkRunner {
     }
 
     async fn get_cpu_stats(&self) -> CpuStats {
-        use sysinfo::{System, get_current_pid, Pid};
-        
+        use sysinfo::{Pid, System, get_current_pid};
+
         let mut system = System::new_all();
         system.refresh_all();
-        
+
         let Ok(pid): Result<Pid, _> = get_current_pid() else {
             return self.empty_cpu_stats();
         };
-        
+
         system.process(pid).map_or_else(
             || self.empty_cpu_stats(),
             |process| CpuStats {
@@ -560,7 +567,7 @@ impl BenchmarkRunner {
                 peak_cpu_usage: process.cpu_usage() as f64,
                 cpu_time: Duration::from_secs(process.run_time()),
                 context_switches: 0,
-            }
+            },
         )
     }
 
@@ -599,10 +606,7 @@ impl BenchmarkRunner {
 
     pub async fn export_results(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let results = self.get_results().await;
-        let simplified_results: Vec<_> = results
-            .iter()
-            .map(|r| self.simplify_result(r))
-            .collect();
+        let simplified_results: Vec<_> = results.iter().map(|r| self.simplify_result(r)).collect();
         let json = serde_json::to_string_pretty(&simplified_results)?;
         tokio::fs::write(file_path, json).await?;
         info!("📁 基准测试结果已导出到: {}", file_path);

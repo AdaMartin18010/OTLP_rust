@@ -241,7 +241,7 @@ impl DataValidator {
 
         Ok(())
     }
-    
+
     fn validate_string_value(&self, s: &str) -> Result<()> {
         if self.strict_mode && s.len() > 16384 {
             return Err(OtlpError::ValidationError(
@@ -250,7 +250,7 @@ impl DataValidator {
         }
         Ok(())
     }
-    
+
     fn validate_string_array(&self, arr: &[String]) -> Result<()> {
         if self.strict_mode && arr.len() > 128 {
             return Err(OtlpError::ValidationError(
@@ -267,12 +267,13 @@ impl DataValidator {
         }
         Ok(())
     }
-    
+
     fn validate_array_limit(&self, len: usize, type_name: &str) -> Result<()> {
         if self.strict_mode && len > 128 {
-            return Err(OtlpError::ValidationError(
-                format!("{}数组长度超过限制", type_name),
-            ));
+            return Err(OtlpError::ValidationError(format!(
+                "{}数组长度超过限制",
+                type_name
+            )));
         }
         Ok(())
     }

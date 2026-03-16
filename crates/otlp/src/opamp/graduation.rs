@@ -280,16 +280,16 @@ impl RollbackManager {
     /// 检查是否需要回滚
     pub fn should_rollback(&self, current_health: &HealthStatus) -> Option<String> {
         let latest = self.config_history.last()?;
-        
+
         if !current_health.is_worse_than(&latest.health_status) {
             return None;
         }
-        
+
         let elapsed = latest.timestamp.elapsed().unwrap_or_default();
         if elapsed >= self.rollback_window {
             return None;
         }
-        
+
         self.find_last_healthy_config()
     }
 

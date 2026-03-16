@@ -431,7 +431,7 @@ impl StackTraceCollector {
         // 实际实现示例（不使用backtrace feature时）:
         // // 可以使用libunwind或其他栈回溯库
         // // 或者使用平台特定的API（如libc::backtrace）
-        // 
+        //
         // #[cfg(target_os = "linux")]
         // {
         //     use libc::{backtrace, backtrace_symbols};
@@ -439,7 +439,7 @@ impl StackTraceCollector {
         //     let size = unsafe { backtrace(buffer.as_mut_ptr(), buffer.len() as i32) };
         //     // 解析符号并转换为StackFrame
         // }
-        // 
+        //
         // 当前实现：返回占位符帧
         vec![StackFrame::new("<backtrace disabled>", "<unknown>", 0, 0)]
     }
