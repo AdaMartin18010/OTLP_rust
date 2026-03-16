@@ -42,6 +42,12 @@ pub struct OptimizationStats {
     pub peak_improvement: f64,
 }
 
+impl Default for OptimizationManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OptimizationManager {
     /// 创建新的优化管理器
     pub fn new() -> Self {
@@ -335,7 +341,7 @@ mod tests {
                 timestamp: std::time::Instant::now(),
                 cpu_usage: metrics.cpu_usage,
                 memory_usage: metrics.memory_usage,
-                throughput: metrics.throughput as u64,
+                throughput: metrics.throughput,
                 latency: metrics.latency,
                 error_rate: metrics.error_rate,
                 config_hash: format!("test_config_{}", i),

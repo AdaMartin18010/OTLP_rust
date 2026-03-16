@@ -19,7 +19,6 @@ use tokio::sync::Semaphore;
 /// ============================================
 /// Global Configuration with LazyLock
 /// ============================================
-
 /// Global configuration singleton using LazyLock
 /// 
 /// LazyLock initializes the configuration only on first access,
@@ -147,7 +146,6 @@ impl OtlpConfig {
 /// ============================================
 /// Connection Pool with LazyLock
 /// ============================================
-
 /// Global connection pool singleton using LazyLock
 /// 
 /// This demonstrates lazy initialization of an expensive resource
@@ -204,14 +202,14 @@ impl ConnectionPool {
         // Try to reuse existing connection
         {
             let mut endpoints = self.endpoints.write().map_err(|_| PoolError::Poisoned)?;
-            if let Some(conn) = endpoints.pop() {
-                if conn.last_used.elapsed() < self.idle_timeout {
-                    // Update stats
-                    if let Ok(mut stats) = self.stats.lock() {
-                        stats.active_connections += 1;
-                    }
-                    return Ok(conn);
+            if let Some(conn) = endpoints.pop()
+                && conn.last_used.elapsed() < self.idle_timeout
+            {
+                // Update stats
+                if let Ok(mut stats) = self.stats.lock() {
+                    stats.active_connections += 1;
                 }
+                return Ok(conn);
             }
         }
         
@@ -231,10 +229,10 @@ impl ConnectionPool {
         conn.last_used = Instant::now();
         conn.requests_served += 1;
         
-        if let Ok(mut endpoints) = self.endpoints.write() {
-            if endpoints.len() < self.max_connections {
-                endpoints.push(conn);
-            }
+        if let Ok(mut endpoints) = self.endpoints.write()
+            && endpoints.len() < self.max_connections
+        {
+            endpoints.push(conn);
         }
         
         if let Ok(mut stats) = self.stats.lock() {
@@ -297,7 +295,6 @@ impl std::error::Error for PoolError {}
 /// ============================================
 /// Telemetry Cache with LazyLock
 /// ============================================
-
 /// Global telemetry cache singleton using LazyLock
 /// 
 /// Demonstrates a caching pattern for frequently accessed telemetry metadata.
@@ -354,13 +351,13 @@ impl TelemetryCache {
     
     /// Gets resource attributes with caching
     pub fn get_resource_attribute(&self, key: &str) -> Option<String> {
-        if let Ok(attrs) = self.resource_attributes.read() {
-            if let Some(value) = attrs.get(key) {
-                if let Ok(mut hits) = self.cache_hits.lock() {
-                    *hits += 1;
-                }
-                return Some(value.clone());
+        if let Ok(attrs) = self.resource_attributes.read()
+            && let Some(value) = attrs.get(key)
+        {
+            if let Ok(mut hits) = self.cache_hits.lock() {
+                *hits += 1;
             }
+            return Some(value.clone());
         }
         
         if let Ok(mut misses) = self.cache_misses.lock() {
@@ -370,10 +367,10 @@ impl TelemetryCache {
         // Simulate lookup from external source
         let value = self.lookup_resource_attribute(key);
         
-        if let Some(ref v) = value {
-            if let Ok(mut attrs) = self.resource_attributes.write() {
-                attrs.insert(key.to_string(), v.clone());
-            }
+        if let Some(ref v) = value
+            && let Ok(mut attrs) = self.resource_attributes.write()
+        {
+            attrs.insert(key.to_string(), v.clone());
         }
         
         value
@@ -381,13 +378,13 @@ impl TelemetryCache {
     
     /// Gets instrument metadata with caching
     pub fn get_instrument_info(&self, name: &str) -> Option<InstrumentInfo> {
-        if let Ok(metadata) = self.instrument_metadata.read() {
-            if let Some(info) = metadata.get(name) {
-                if let Ok(mut hits) = self.cache_hits.lock() {
-                    *hits += 1;
-                }
-                return Some(info.clone());
+        if let Ok(metadata) = self.instrument_metadata.read()
+            && let Some(info) = metadata.get(name)
+        {
+            if let Ok(mut hits) = self.cache_hits.lock() {
+                *hits += 1;
             }
+            return Some(info.clone());
         }
         
         if let Ok(mut misses) = self.cache_misses.lock() {
@@ -397,10 +394,10 @@ impl TelemetryCache {
         // Simulate lookup
         let info = self.lookup_instrument_info(name);
         
-        if let Some(ref i) = info {
-            if let Ok(mut metadata) = self.instrument_metadata.write() {
-                metadata.insert(name.to_string(), i.clone());
-            }
+        if let Some(ref i) = info
+            && let Ok(mut metadata) = self.instrument_metadata.write()
+        {
+            metadata.insert(name.to_string(), i.clone());
         }
         
         info
@@ -415,13 +412,13 @@ impl TelemetryCache {
     
     /// Gets cached span context
     pub fn get_span_context(&self, operation: &str) -> Option<SpanContext> {
-        if let Ok(cache) = self.span_context_cache.read() {
-            if let Some(ctx) = cache.get(operation) {
-                if let Ok(mut hits) = self.cache_hits.lock() {
-                    *hits += 1;
-                }
-                return Some(ctx.clone());
+        if let Ok(cache) = self.span_context_cache.read()
+            && let Some(ctx) = cache.get(operation)
+        {
+            if let Ok(mut hits) = self.cache_hits.lock() {
+                *hits += 1;
             }
+            return Some(ctx.clone());
         }
         
         if let Ok(mut misses) = self.cache_misses.lock() {
@@ -495,7 +492,6 @@ pub struct CacheStats {
 /// ============================================
 /// OTLP Exporter Singleton
 /// ============================================
-
 /// Global OTLP exporter singleton using LazyLock
 /// 
 /// Demonstrates the singleton pattern for expensive resources
@@ -649,7 +645,6 @@ pub struct ExporterStats {
 /// ============================================
 /// Main Demo
 /// ============================================
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("╔══════════════════════════════════════════════════════════╗");

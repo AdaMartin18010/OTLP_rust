@@ -6,6 +6,7 @@ use reliability::prelude::*;
 //use std::time::Duration;
 
 #[tokio::main]
+#[allow(clippy::result_large_err)]
 async fn main() -> Result<(), UnifiedError> {
     // 初始化日志
     tracing_subscriber::fmt::init();
@@ -77,7 +78,7 @@ async fn demonstrate_reliability_integration() -> Result<(), UnifiedError> {
     let struct_result = reliability_service.execute_operation(TestData {
         id: 1,
         name: "测试数据".to_string(),
-        value: 3.14,
+        value: std::f64::consts::PI,
     });
     println!("结构体操作结果: {:?}", struct_result);
 

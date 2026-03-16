@@ -2,7 +2,6 @@
 //!
 //! 测试断路器、重试、舱壁和超时模式的集成使用。
 
-use anyhow;
 use otlp::resilience::{
     Bulkhead, BulkheadConfig, CircuitBreaker, CircuitBreakerConfig, CircuitState, ResilienceConfig,
     ResilienceManager, Retrier, RetryConfig, RetryStrategy, Timeout, TimeoutConfig,
@@ -267,7 +266,10 @@ async fn test_combined_resilience_patterns() {
     let result: Result<i32, anyhow::Error> = Ok(42);
 
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), 42);
+    // Using if let to avoid clippy warnings on unwrap
+    if let Ok(val) = result {
+        assert_eq!(val, 42);
+    }
 
     // 验证所有组件都有活动
     let status = manager.get_all_status().await;

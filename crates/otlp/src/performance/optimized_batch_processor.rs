@@ -739,7 +739,7 @@ mod tests {
             move |items| {
                 processed_count_clone.fetch_add(items.len(), Ordering::AcqRel);
                 // 模拟处理时间
-                let _ = tokio::time::sleep(Duration::from_millis(10));
+                std::thread::sleep(Duration::from_millis(10));
                 Ok(BatchResult {
                     items,
                     processing_time: Duration::from_millis(10),

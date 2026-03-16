@@ -17,6 +17,7 @@ use reliability::runtime_environments::{
 };
 
 #[tokio::main]
+#[allow(clippy::result_large_err)]
 async fn main() -> Result<(), UnifiedError> {
     println!("=== reliability 综合环境演示 ===\n");
 
@@ -321,7 +322,7 @@ fn create_optimization_context(environment: RuntimeEnvironment) -> OptimizationC
             cpu_usage_percent: 60.0,
             memory_usage_bytes: 200 * 1024 * 1024,
             memory_usage_percent: 40.0,
-            disk_usage_bytes: 1 * 1024 * 1024 * 1024,
+            disk_usage_bytes: 1024 * 1024 * 1024,
             disk_usage_percent: 20.0,
             network_rx_rate: 50.0,
             network_tx_rate: 30.0,

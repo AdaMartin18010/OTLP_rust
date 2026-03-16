@@ -94,10 +94,10 @@ impl OtlpConfig {
         if let Ok(service_name) = std::env::var("OTEL_SERVICE_NAME") {
             config.service_name = service_name;
         }
-        if let Ok(timeout) = std::env::var("OTEL_EXPORTER_OTLP_TIMEOUT") {
-            if let Ok(secs) = timeout.parse() {
-                config.timeout_secs = secs;
-            }
+        if let Ok(timeout) = std::env::var("OTEL_EXPORTER_OTLP_TIMEOUT")
+            && let Ok(secs) = timeout.parse()
+        {
+            config.timeout_secs = secs;
         }
         
         config
@@ -932,7 +932,7 @@ impl ComprehensiveConfigManager {
         F: FnOnce(&mut OtlpConfig),
     {
         let mut config = GlobalConfig::force_write();
-        f(&mut *config);
+        f(&mut config);
     }
 
     /// 获取或创建缓冲区

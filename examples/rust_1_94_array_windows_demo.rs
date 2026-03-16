@@ -89,7 +89,6 @@ pub enum PatternType {
 /// ============================================
 /// Array Windows Pattern Detection
 /// ============================================
-
 /// Detects latency spikes using sliding windows of 3 samples
 /// 
 /// Uses sliding window pattern detection to efficiently compare consecutive triplets
@@ -195,18 +194,18 @@ pub fn validate_span_sequence(spans: &[Span]) -> Vec<PatternDetection> {
         let grandchild = &window[2];
         
         // Check if child properly references parent
-        if let Some(ref child_parent) = child.parent_span_id {
-            if child_parent != &parent.span_id {
-                detections.push(PatternDetection {
-                    pattern_type: PatternType::Anomaly,
-                    confidence: 0.9,
-                    affected_metrics: vec!["span_hierarchy".to_string()],
-                    description: format!(
-                        "Broken parent-child link: {} -> {} (expected parent: {})",
-                        parent.span_id, child.span_id, child_parent
-                    ),
-                });
-            }
+        if let Some(ref child_parent) = child.parent_span_id
+            && child_parent != &parent.span_id
+        {
+            detections.push(PatternDetection {
+                pattern_type: PatternType::Anomaly,
+                confidence: 0.9,
+                affected_metrics: vec!["span_hierarchy".to_string()],
+                description: format!(
+                    "Broken parent-child link: {} -> {} (expected parent: {})",
+                    parent.span_id, child.span_id, child_parent
+                ),
+            });
         }
         
         // Check for error propagation pattern (parent error -> child error)
@@ -225,18 +224,18 @@ pub fn validate_span_sequence(spans: &[Span]) -> Vec<PatternDetection> {
         }
         
         // Check for orphaned spans (parent_span_id not in trace)
-        if let Some(ref parent_id) = child.parent_span_id {
-            if !span_ids.contains(parent_id) {
-                detections.push(PatternDetection {
-                    pattern_type: PatternType::Anomaly,
-                    confidence: 1.0,
-                    affected_metrics: vec!["orphaned_span".to_string()],
-                    description: format!(
-                        "Orphaned span detected: {} references non-existent parent {}",
-                        child.span_id, parent_id
-                    ),
-                });
-            }
+        if let Some(ref parent_id) = child.parent_span_id
+            && !span_ids.contains(parent_id)
+        {
+            detections.push(PatternDetection {
+                pattern_type: PatternType::Anomaly,
+                confidence: 1.0,
+                affected_metrics: vec!["orphaned_span".to_string()],
+                description: format!(
+                    "Orphaned span detected: {} references non-existent parent {}",
+                    child.span_id, parent_id
+                ),
+            });
         }
     }
     
@@ -278,7 +277,7 @@ pub fn detect_cyclic_patterns(samples: &[MetricSample]) -> Vec<PatternDetection>
         
         if is_valley_peak_valley || is_peak_valley_peak {
             let amplitude = (c.value - (a.value + e.value) / 2.0).abs();
-            let confidence = (amplitude / c.value).min(1.0).max(0.5);
+            let confidence = (amplitude / c.value).clamp(0.5, 1.0);
             
             detections.push(PatternDetection {
                 pattern_type: PatternType::CyclicPattern,
@@ -338,7 +337,6 @@ pub fn detect_stability_periods(samples: &[MetricSample]) -> Vec<PatternDetectio
 /// ============================================
 /// Helper Functions
 /// ============================================
-
 /// Generates synthetic latency samples with occasional spikes
 fn generate_latency_samples(count: usize) -> Vec<MetricSample> {
     let mut samples = Vec::with_capacity(count);

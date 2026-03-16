@@ -223,8 +223,10 @@ impl LogExporter {
 
     /// Create a new log exporter with default configuration
     pub fn default_with_endpoint(endpoint: impl Into<String>) -> Self {
-        let mut config = LogExporterConfig::default();
-        config.endpoint = endpoint.into();
+        let config = LogExporterConfig {
+            endpoint: endpoint.into(),
+            ..LogExporterConfig::default()
+        };
         Self::new(config)
     }
 

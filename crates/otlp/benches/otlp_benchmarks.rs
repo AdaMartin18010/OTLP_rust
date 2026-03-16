@@ -129,14 +129,13 @@ fn benchmark_concurrent_trace_send(c: &mut Criterion) {
                         for i in 0..concurrency {
                             let client_clone = client.clone();
                             let handle = tokio::spawn(async move {
-                                let result = client_clone
+                                client_clone
                                     .send_trace(&format!("concurrent-{}", i))
                                     .await
                                     .unwrap()
                                     .with_attribute("worker.id", i.to_string())
                                     .finish()
-                                    .await;
-                                result
+                                    .await
                             });
                             handles.push(handle);
                         }

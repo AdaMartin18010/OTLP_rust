@@ -186,15 +186,15 @@ impl ConnectionPool {
             .fetch_add(1, Ordering::Relaxed);
 
         // 尝试从可用连接中获取
-        if let Some(connection_id) = self.get_available_connection().await {
-            if let Some(_connection) = self.get_connection_by_id(connection_id).await {
-                self.stats.connection_hits.fetch_add(1, Ordering::Relaxed);
-                return Ok(PooledConnection {
-                    id: connection_id,
-                    pool: self.clone(),
-                    created_at: Instant::now(),
-                });
-            }
+        if let Some(connection_id) = self.get_available_connection().await
+            && let Some(_connection) = self.get_connection_by_id(connection_id).await
+        {
+            self.stats.connection_hits.fetch_add(1, Ordering::Relaxed);
+            return Ok(PooledConnection {
+                id: connection_id,
+                pool: self.clone(),
+                created_at: Instant::now(),
+            });
         }
 
         // 创建新连接

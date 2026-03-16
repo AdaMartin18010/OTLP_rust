@@ -582,7 +582,7 @@ mod tests {
         // 测试处理错误构造函数
         let processing_err = OtlpError::processing(
             "batch",
-            std::io::Error::new(std::io::ErrorKind::Other, "Processing failed")
+            std::io::Error::other("Processing failed")
         );
         assert!(matches!(processing_err, OtlpError::Processing(_)));
 

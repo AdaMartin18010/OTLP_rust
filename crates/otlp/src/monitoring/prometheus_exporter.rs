@@ -641,9 +641,11 @@ mod tests {
                 .expect("Failed to create metrics collector for config update test"),
         );
 
-        let mut exporter_config = PrometheusExporterConfig::default();
-        exporter_config.export_interval = Duration::from_secs(30);
-        exporter_config.enable_labels = false;
+        let exporter_config = PrometheusExporterConfig {
+            export_interval: Duration::from_secs(30),
+            enable_labels: false,
+            ..Default::default()
+        };
 
         let mut exporter = PrometheusExporter::new(exporter_config, collector.clone())
             .expect("Failed to create Prometheus exporter for config update test");

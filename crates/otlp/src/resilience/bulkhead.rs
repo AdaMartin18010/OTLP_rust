@@ -481,14 +481,14 @@ mod tests {
 
         // 获取许可
         let permit = bulkhead.acquire().await.unwrap();
-        assert_eq!(permit.request_id() > 0, true);
+        assert!(permit.request_id() > 0);
 
         // 释放许可（通过Drop）
         drop(permit);
 
         // 再次获取许可
         let permit = bulkhead.acquire().await.unwrap();
-        assert_eq!(permit.request_id() > 0, true);
+        assert!(permit.request_id() > 0);
     }
 
     #[tokio::test]
@@ -513,7 +513,7 @@ mod tests {
 
         // 现在应该能够获取许可
         let permit2 = bulkhead.acquire().await.unwrap();
-        assert_eq!(permit2.request_id() > 0, true);
+        assert!(permit2.request_id() > 0);
     }
 
     #[tokio::test]

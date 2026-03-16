@@ -366,10 +366,10 @@ impl OttlProcessor {
         condition: &Option<OttlCondition>,
         ctx: &mut OttlContext,
     ) -> Result<()> {
-        if let Some(cond) = condition {
-            if !self.evaluate_condition(cond, ctx)? {
-                return Ok(());
-            }
+        if let Some(cond) = condition
+            && !self.evaluate_condition(cond, ctx)?
+        {
+            return Ok(());
         }
         self.execute_statement(statement, ctx)
     }
@@ -542,10 +542,10 @@ impl OttlProcessor {
         match path {
             OttlPath::Identifier(name) => {
                 // Try span attributes first, then resource attributes
-                if let Some(span_attrs) = &ctx.span_attributes {
-                    if let Some(val) = span_attrs.get(name) {
-                        return Ok(val.clone());
-                    }
+                if let Some(span_attrs) = &ctx.span_attributes
+                    && let Some(val) = span_attrs.get(name)
+                {
+                    return Ok(val.clone());
                 }
                 if let Some(val) = ctx.resource_attributes.get(name) {
                     return Ok(val.clone());
@@ -556,15 +556,15 @@ impl OttlProcessor {
                 // Handle span.field pattern
                 if let OttlPath::Identifier(base_name) = base.as_ref() {
                     if base_name == "span" || base_name == "attributes" {
-                        if let Some(span_attrs) = &ctx.span_attributes {
-                            if let Some(val) = span_attrs.get(field) {
-                                return Ok(val.clone());
-                            }
-                        }
-                    } else if base_name == "resource" {
-                        if let Some(val) = ctx.resource_attributes.get(field) {
+                        if let Some(span_attrs) = &ctx.span_attributes
+                            && let Some(val) = span_attrs.get(field)
+                        {
                             return Ok(val.clone());
                         }
+                    } else if base_name == "resource"
+                        && let Some(val) = ctx.resource_attributes.get(field)
+                    {
+                        return Ok(val.clone());
                     }
                 }
                 Ok("".to_string())
@@ -573,15 +573,15 @@ impl OttlProcessor {
                 // Handle attributes["key"] pattern
                 if let OttlPath::Identifier(base_name) = base.as_ref() {
                     if base_name == "attributes" {
-                        if let Some(span_attrs) = &ctx.span_attributes {
-                            if let Some(val) = span_attrs.get(key) {
-                                return Ok(val.clone());
-                            }
-                        }
-                    } else if base_name == "resource" {
-                        if let Some(val) = ctx.resource_attributes.get(key) {
+                        if let Some(span_attrs) = &ctx.span_attributes
+                            && let Some(val) = span_attrs.get(key)
+                        {
                             return Ok(val.clone());
                         }
+                    } else if base_name == "resource"
+                        && let Some(val) = ctx.resource_attributes.get(key)
+                    {
+                        return Ok(val.clone());
                     }
                 }
                 Ok("".to_string())
@@ -848,7 +848,7 @@ mod tests {
         
         // Test float
         let val = OttlParser::parse_value("3.14").unwrap();
-        assert!(matches!(val, OttlValue::Float(f) if (f - 3.14).abs() < 0.001));
+        assert!(matches!(val, OttlValue::Float(f) if (f - std::f64::consts::PI).abs() < 0.001));
         
         // Test bool
         let val = OttlParser::parse_value("true").unwrap();

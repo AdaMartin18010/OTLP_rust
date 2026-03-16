@@ -153,7 +153,7 @@ impl ConfigManager {
         F: FnOnce(&mut ServiceConfig),
     {
         let mut cfg = LazyLock::force(&GLOBAL_CONFIG).write().unwrap();
-        f(&mut *cfg);
+        f(&mut cfg);
     }
 }
 
@@ -163,6 +163,12 @@ impl ConfigManager {
 /// Single-threaded lazy initialization for performance-critical paths
 pub struct ThreadLocalBuffer {
     buffer: LazyCell<Vec<u8>>,
+}
+
+impl Default for ThreadLocalBuffer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ThreadLocalBuffer {
@@ -1222,14 +1228,14 @@ mod tests {
         
         // Verify approximate golden ratio growth (with tolerance for floating-point)
         // Expected: d1 ≈ 100 * φ ≈ 162, d2 ≈ 100 * φ² ≈ 262
-        assert!(d1 >= 160 && d1 <= 165, "d1 ({}) should be approximately 161-162", d1);
-        assert!(d2 >= 260 && d2 <= 265, "d2 ({}) should be approximately 261-262", d2);
+        assert!((160..=165).contains(&d1), "d1 ({}) should be approximately 161-162", d1);
+        assert!((260..=265).contains(&d2), "d2 ({}) should be approximately 261-262", d2);
     }
     
     #[test]
     fn test_const_math() {
         // Test const mul_add results
-        assert!(ConstMath::RATE_LOW < ConstMath::RATE_HIGH);
+        const _: () = assert!(ConstMath::RATE_LOW < ConstMath::RATE_HIGH);
         assert!((ConstMath::lerp(0.0, 10.0, 0.5) - 5.0).abs() < f64::EPSILON);
     }
     

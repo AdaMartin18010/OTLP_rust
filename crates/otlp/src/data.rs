@@ -591,7 +591,7 @@ impl SeverityLevel {
     }
 
     /// Parse severity from string (case-insensitive)
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_uppercase().as_str() {
             "TRACE" | "TRC" => Some(Self::Trace),
             "TRACE2" => Some(Self::Trace2),
@@ -632,10 +632,19 @@ impl SeverityLevel {
     }
 }
 
+impl std::str::FromStr for SeverityLevel {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s).ok_or(())
+    }
+}
+
 /// Log body types
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum LogBody {
     /// Empty body
+    #[default]
     Empty,
     /// String body (plain text message)
     String(String),
@@ -697,12 +706,6 @@ impl LogBody {
             Self::Structured(map) => map.len() * 32, // rough estimate
             Self::Array(arr) => arr.len() * 16, // rough estimate
         }
-    }
-}
-
-impl Default for LogBody {
-    fn default() -> Self {
-        Self::Empty
     }
 }
 

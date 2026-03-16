@@ -173,12 +173,18 @@ pub struct ValidationPlugin {
     version: String,
 }
 
-impl ValidationPlugin {
-    pub fn new() -> Self {
+impl Default for ValidationPlugin {
+    fn default() -> Self {
         Self {
             name: "validation".to_string(),
             version: "1.0.0".to_string(),
         }
+    }
+}
+
+impl ValidationPlugin {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 

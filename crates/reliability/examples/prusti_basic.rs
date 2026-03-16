@@ -103,9 +103,7 @@ fn safe_slice(v: &[i32], start: usize, end: usize) -> Option<&[i32]> {
 /// 安全的整数除法
 /// 避免除零和溢出
 fn safe_div(a: i32, b: i32) -> Option<i32> {
-    if b == 0 {
-        None
-    } else if a == i32::MIN && b == -1 {
+    if b == 0 || (a == i32::MIN && b == -1) {
         None // 防止溢出
     } else {
         Some(a / b)
@@ -121,7 +119,7 @@ fn safe_sum(v: &[i32]) -> i32 {
 /// 检查向量是否包含元素
 /// 线性搜索检查元素是否存在
 fn contains(v: &[i32], elem: i32) -> bool {
-    v.iter().any(|&x| x == elem)
+    v.contains(&elem)
 }
 
 /// 移除向量中的第一个匹配元素

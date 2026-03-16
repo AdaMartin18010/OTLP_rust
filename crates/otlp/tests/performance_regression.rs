@@ -102,6 +102,7 @@ mod regression_tests {
 }
 
 /// 性能监控结构
+#[derive(Default)]
 pub struct PerformanceMonitor {
     baseline: PerformanceBaseline,
 }
@@ -115,6 +116,7 @@ pub struct PerformanceBaseline {
     pub gzip_compress_ns: u128,
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for PerformanceBaseline {
     fn default() -> Self {
         Self {
@@ -129,9 +131,7 @@ impl Default for PerformanceBaseline {
 
 impl PerformanceMonitor {
     pub fn new() -> Self {
-        Self {
-            baseline: PerformanceBaseline::default(),
-        }
+        Self::default()
     }
 
     pub fn check_regression(&self, operation: &str, actual_ns: u128) -> Result<(), String> {

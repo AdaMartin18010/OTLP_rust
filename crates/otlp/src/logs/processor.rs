@@ -266,7 +266,7 @@ impl<E: LogExporterTrait + 'static> BatchLogProcessor<E> {
             return;
         }
 
-        let logs_to_export = std::mem::replace(batch, Vec::new());
+        let logs_to_export = std::mem::take(batch);
         let count = logs_to_export.len();
 
         match exporter.export(logs_to_export).await {
@@ -415,10 +415,10 @@ impl<P: LogProcessor> FilterLogProcessor<P> {
     /// Check if a log passes all filters
     fn passes_filters(&self, log: &LogRecord) -> bool {
         // Check severity filter
-        if let Some(ref filter) = self.severity_filter {
-            if !filter.allows(log) {
-                return false;
-            }
+        if let Some(ref filter) = self.severity_filter
+            && !filter.allows(log)
+        {
+            return false;
         }
 
         // Check attribute filters

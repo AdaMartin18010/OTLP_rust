@@ -62,7 +62,7 @@ pub fn create_test_log_data_with_attributes(
 /// 创建批量测试数据
 pub fn create_batch_test_data(size: usize) -> Vec<TelemetryData> {
     (0..size)
-        .map(|i| otlp::TelemetryData::log(&format!("Batch test message {}", i), LogSeverity::Info))
+        .map(|i| otlp::TelemetryData::log(format!("Batch test message {}", i), LogSeverity::Info))
         .collect()
 }
 

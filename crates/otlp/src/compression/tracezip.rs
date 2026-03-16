@@ -415,11 +415,11 @@ impl TraceCompressor {
         }
 
         // Check for duplicate
-        if self.config.enable_dedup {
-            if self.deduplicator.is_duplicate(span_name, trace_id, span_id) {
-                self.stats.deduplicated_spans += 1;
-                return Ok(None); // Skip duplicate
-            }
+        if self.config.enable_dedup
+            && self.deduplicator.is_duplicate(span_name, trace_id, span_id)
+        {
+            self.stats.deduplicated_spans += 1;
+            return Ok(None); // Skip duplicate
         }
 
         // Add span name to string table
@@ -540,9 +540,9 @@ mod tests {
         let is_dup2 = dedup.is_duplicate("span1", (100, 200), 1); // Duplicate
         let is_dup3 = dedup.is_duplicate("span2", (100, 200), 2); // Different span
 
-        assert_eq!(is_dup1, false);
-        assert_eq!(is_dup2, true);
-        assert_eq!(is_dup3, false);
+        assert!(!is_dup1);
+        assert!(is_dup2);
+        assert!(!is_dup3);
         assert_eq!(dedup.len(), 2);
     }
 

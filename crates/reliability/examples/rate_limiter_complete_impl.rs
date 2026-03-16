@@ -432,6 +432,12 @@ pub struct CompositeRateLimiter {
     sliding_window: Option<SlidingWindow>,
 }
 
+impl Default for CompositeRateLimiter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompositeRateLimiter {
     pub fn new() -> Self {
         Self {

@@ -2,7 +2,6 @@
 //!
 //! 测试断路器、重试、舱壁和超时模式的性能表现。
 
-use anyhow;
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use otlp::resilience::{
     Bulkhead, BulkheadConfig, CircuitBreaker, CircuitBreakerConfig, Retrier, RetryConfig,

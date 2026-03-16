@@ -127,6 +127,8 @@ pub mod unsafe_improvements {
     }
 
     /// Unsafe 函数中的显式 unsafe 块
+    /// # Safety
+    /// 调用者必须确保指针有效且指向有效的i32值
     pub unsafe fn read_pointer(p: *const i32) -> i32 {
         unsafe { *p }
     }
@@ -186,6 +188,12 @@ pub mod builder_pattern {
 
     pub struct ClientConfigBuilder {
         config: ClientConfig,
+    }
+
+    impl Default for ClientConfigBuilder {
+        fn default() -> Self {
+            Self::new()
+        }
     }
 
     impl ClientConfigBuilder {

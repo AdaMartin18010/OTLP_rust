@@ -366,6 +366,12 @@ pub struct RetryStats {
     max_attempts_used: AtomicU32,
 }
 
+impl Default for RetryStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RetryStats {
     pub fn new() -> Self {
         Self {

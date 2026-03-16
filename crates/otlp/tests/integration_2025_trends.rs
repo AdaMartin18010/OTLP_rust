@@ -69,9 +69,12 @@ fn test_const_api_integration() {
     // 测试Const API的使用
     use otlp::config::{DEFAULT_BATCH_SIZE, MAX_BATCH_SIZE, MIN_BATCH_SIZE, validate_batch_size};
 
-    // 验证const常量
-    assert!(DEFAULT_BATCH_SIZE >= MIN_BATCH_SIZE);
-    assert!(DEFAULT_BATCH_SIZE <= MAX_BATCH_SIZE);
+    // 验证const常量 (clippy: assertion on constant - these are intentional for API testing)
+    #[allow(clippy::assertions_on_constants)]
+    {
+        assert!(DEFAULT_BATCH_SIZE >= MIN_BATCH_SIZE);
+        assert!(DEFAULT_BATCH_SIZE <= MAX_BATCH_SIZE);
+    }
 
     // 验证const函数
     assert!(validate_batch_size(DEFAULT_BATCH_SIZE));
@@ -96,7 +99,6 @@ fn test_ottl_transform_with_bytecode() {
     }
 
     // 编译字节码
-    let mut config = config;
     assert!(config.compile_bytecode().is_ok());
 
     // 创建转换器

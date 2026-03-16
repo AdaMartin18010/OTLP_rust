@@ -95,12 +95,8 @@ fn bench_data_processing(c: &mut Criterion) {
     group.bench_with_input(BenchmarkId::new("process", 10000), &test_data, |b, data| {
         b.iter(|| {
             let mut processed = 0;
-            for item in data {
-                match item {
-                    _ => {
-                        processed += 1;
-                    }
-                }
+            for _item in data {
+                processed += 1;
             }
             black_box(processed);
         });

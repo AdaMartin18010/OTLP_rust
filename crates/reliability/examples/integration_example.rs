@@ -13,6 +13,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 #[tokio::main]
+#[allow(clippy::result_large_err)]
 async fn main() -> Result<(), UnifiedError> {
     // 初始化日志
     env_logger::init();

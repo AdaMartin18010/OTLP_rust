@@ -16,6 +16,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 #[tokio::main]
+#[allow(clippy::result_large_err)]
 async fn main() -> Result<(), UnifiedError> {
     println!("=== Raft 共识算法演示 ===\n");
 
@@ -197,7 +198,7 @@ async fn demo_4_proposal_workflow() -> Result<(), UnifiedError> {
     println!("🎯 场景: 分布式键值存储\n");
 
     // 模拟一系列操作
-    let operations = vec![
+    let operations = [
         ("SET", "user:1001", "Alice"),
         ("SET", "user:1002", "Bob"),
         ("SET", "balance:1001", "1000"),

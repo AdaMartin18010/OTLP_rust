@@ -249,6 +249,12 @@ pub mod const_generics {
         data: [T; N],
     }
 
+    impl<T: Default + Copy, const N: usize> Default for FixedArray<T, N> {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl<T: Default + Copy, const N: usize> FixedArray<T, N> {
         pub fn new() -> Self {
             Self {
@@ -287,6 +293,12 @@ pub mod const_generics {
     pub struct Running;
     #[derive(Debug)]
     pub struct Stopped;
+
+    impl Default for StateMachine<Idle> {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
 
     impl StateMachine<Idle> {
         pub fn new() -> Self {
@@ -734,6 +746,12 @@ pub mod memory_management {
     pub struct UninitBuffer<T, const N: usize> {
         data: [MaybeUninit<T>; N],
         initialized: usize,
+    }
+
+    impl<T, const N: usize> Default for UninitBuffer<T, N> {
+        fn default() -> Self {
+            Self::new()
+        }
     }
 
     impl<T, const N: usize> UninitBuffer<T, N> {

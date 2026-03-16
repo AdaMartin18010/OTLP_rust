@@ -22,6 +22,7 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 #[tokio::main]
+#[allow(clippy::result_large_err)]
 async fn main() -> Result<(), UnifiedError> {
     println!("=== 容错机制组合使用示例 ===\n");
 
@@ -73,19 +74,16 @@ async fn demo_1_circuit_breaker() -> Result<(), UnifiedError> {
         let start = Instant::now();
 
         // 检查熔断器状态
-        match circuit_breaker.state() {
-            CircuitBreakerState::Open => {
-                println!("  ⚡ 熔断器打开，快速失败");
-                println!("  状态: {:?}\n", circuit_breaker.state());
+        if circuit_breaker.state() == CircuitBreakerState::Open {
+            println!("  ⚡ 熔断器打开，快速失败");
+            println!("  状态: {:?}\n", circuit_breaker.state());
 
-                // 等待恢复超时
-                if i == 7 {
-                    println!("  ⏰ 等待恢复超时...");
-                    sleep(Duration::from_secs(5)).await;
-                }
-                continue;
+            // 等待恢复超时
+            if i == 7 {
+                println!("  ⏰ 等待恢复超时...");
+                sleep(Duration::from_secs(5)).await;
             }
-            _ => {}
+            continue;
         }
 
         // 模拟服务调用

@@ -76,12 +76,11 @@ fn ottl_execute_bytecode(c: &mut Criterion) {
 
         for stmt_str in &statements {
             let mut parser = OttlParser::new(stmt_str.clone());
-            if let Ok(stmts) = parser.parse() {
-                if let Some(stmt) = stmts.first() {
-                    if let Ok(program) = compiler.compile(stmt) {
-                        programs.push(program);
-                    }
-                }
+            if let Ok(stmts) = parser.parse()
+                && let Some(stmt) = stmts.first()
+                && let Ok(program) = compiler.compile(stmt)
+            {
+                programs.push(program);
             }
         }
 

@@ -470,7 +470,7 @@ impl OtlpTransform {
             Some(expr) => self.evaluate_value_expression(expr, data).await?,
             None => return Ok(false),
         };
-        Ok(value.len() > 0)
+        Ok(!value.is_empty())
     }
 
     /// 调用 truncate 函数

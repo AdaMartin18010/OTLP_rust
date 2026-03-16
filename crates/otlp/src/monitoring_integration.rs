@@ -1220,6 +1220,12 @@ pub struct ComprehensiveMonitoringStats {
     pub alerts_processed: AtomicU64,
 }
 
+impl Default for ComprehensiveMonitoringManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ComprehensiveMonitoringManager {
     pub fn new() -> Self {
         let prometheus_collector = PrometheusCollector::new();

@@ -306,7 +306,7 @@ mod tests {
         
         // Used + free should equal total (approximately)
         let sum = info.used + info.free;
-        let diff = if sum > info.total { sum - info.total } else { info.total - sum };
+        let diff = sum.abs_diff(info.total);
         assert!(diff < info.total / 10, "Used + free should approximate total");
     }
 

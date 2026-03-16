@@ -692,6 +692,12 @@ pub struct LoadBalancerBenchmark {
     runner: BenchmarkRunner,
 }
 
+impl Default for LoadBalancerBenchmark {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LoadBalancerBenchmark {
     pub fn new() -> Self {
         let config = BenchmarkConfig {
@@ -732,6 +738,12 @@ impl LoadBalancerBenchmark {
 /// 追踪性能基准测试
 pub struct TracingBenchmark {
     runner: BenchmarkRunner,
+}
+
+impl Default for TracingBenchmark {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TracingBenchmark {

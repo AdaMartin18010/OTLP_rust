@@ -593,7 +593,7 @@ mod tests {
         let bucket2 = hash.get_bucket_for_key("user_123");
         assert_eq!(bucket1, bucket2);
 
-        assert!(bucket1 >= 0 && bucket1 < 10);
+        assert!((0..10).contains(&bucket1));
     }
 
     #[test]
@@ -661,7 +661,7 @@ mod tests {
 
             // Ensure each node gets at least 5% and at most 95% of keys
             assert!(
-                ratio >= 0.05 && ratio <= 0.95,
+                (0.05..=0.95).contains(&ratio),
                 "Node {} has unreasonable distribution: {:.1}% (expected 5%-95%)",
                 node,
                 ratio * 100.0

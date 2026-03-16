@@ -127,6 +127,7 @@ impl OttlParser {
         let mut tokens = Vec::new();
         let mut chars = self.input.chars().peekable();
 
+        #[allow(clippy::while_let_on_iterator)]
         while let Some(ch) = chars.next() {
             match ch {
                 ' ' | '\t' | '\n' | '\r' => continue,
@@ -238,7 +239,7 @@ impl OttlParser {
 
     fn tokenize_string(&self, chars: &mut std::iter::Peekable<std::str::Chars>, tokens: &mut Vec<Token>) -> Result<(), ParseError> {
         let mut string = String::new();
-        while let Some(ch) = chars.next() {
+        for ch in chars.by_ref() {
             if ch == '"' {
                 break;
             }

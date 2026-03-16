@@ -1,4 +1,4 @@
-#[cfg(all(feature = "containers"))]
+#[cfg(feature = "containers")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "docker-runtime")]

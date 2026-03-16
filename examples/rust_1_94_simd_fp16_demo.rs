@@ -18,7 +18,6 @@ use std::time::{Duration, Instant};
 /// ============================================
 /// Feature Detection
 /// ============================================
-
 /// CPU capabilities structure
 #[derive(Debug, Clone)]
 pub struct CpuCapabilities {
@@ -87,7 +86,6 @@ impl CpuCapabilities {
 /// ============================================
 /// FP16 Type and Operations
 /// ============================================
-
 /// Represents a half-precision floating-point number (FP16)
 /// 
 /// FP16 uses 16 bits: 1 sign bit, 5 exponent bits, 10 mantissa bits
@@ -141,7 +139,6 @@ impl Fp16 {
 /// ============================================
 /// Metric Aggregation Implementations
 /// ============================================
-
 /// Metric sample for aggregation
 #[derive(Debug, Clone)]
 pub struct MetricSample {
@@ -294,10 +291,10 @@ pub fn aggregate_simd_f32(samples: &[MetricSample]) -> AggregationResult {
     }
     
     // Process remainder
-    for i in (chunks * chunk_size)..samples.len() {
-        sum += samples[i].value;
-        min = min.min(samples[i].value);
-        max = max.max(samples[i].value);
+    for sample in samples.iter().skip(chunks * chunk_size) {
+        sum += sample.value;
+        min = min.min(sample.value);
+        max = max.max(sample.value);
     }
     
     // Update min/max from chunks
@@ -328,7 +325,6 @@ pub fn aggregate_simd_f32(samples: &[MetricSample]) -> AggregationResult {
 /// ============================================
 /// Vectorized Batch Processing
 /// ============================================
-
 /// Batch processor for metric operations
 pub struct MetricBatchProcessor {
     batch_size: usize,
@@ -423,7 +419,6 @@ impl MetricBatchProcessor {
 /// ============================================
 /// Performance Benchmarking
 /// ============================================
-
 /// Benchmark result for comparison
 #[derive(Debug, Clone)]
 pub struct BenchmarkResult {
@@ -638,7 +633,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n   FP16 histogram (should match):");
     for (i, (&count, &count_fp16)) in counts.iter().zip(&counts_fp16).enumerate() {
         if i < buckets.len() {
-            let diff = if count > count_fp16 { count - count_fp16 } else { count_fp16 - count };
+            let diff = count.abs_diff(count_fp16);
             println!("      ≤ {:6.1}: {:5} samples (diff: {})", buckets[i], count_fp16, diff);
         }
     }

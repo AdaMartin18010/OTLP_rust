@@ -155,10 +155,10 @@ impl MemoryPool {
         let mut blocks = self.blocks.lock().unwrap();
 
         // 如果池已满，丢弃最旧的块
-        if blocks.len() >= self.config.max_size {
-            if let Some(_oldest) = blocks.pop_front() {
-                self.stats.current_pool_size.fetch_sub(1, Ordering::Relaxed);
-            }
+        if blocks.len() >= self.config.max_size
+            && let Some(_oldest) = blocks.pop_front()
+        {
+            self.stats.current_pool_size.fetch_sub(1, Ordering::Relaxed);
         }
 
         // 重置块并返回池中

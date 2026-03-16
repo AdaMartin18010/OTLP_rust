@@ -20,7 +20,6 @@ use std::time::Duration;
 /// ============================================
 /// EULER_GAMMA - Adaptive Sampling
 /// ============================================
-
 /// Adaptive sampler using Euler-Mascheroni constant
 /// 
 /// EULER_GAMMA (≈ 0.5772) appears in the asymptotic expansion of harmonic series
@@ -76,7 +75,7 @@ impl AdaptiveSampler {
         }
         
         // Periodically adjust rate based on sampling error
-        if self.total_count % 100 == 0 {
+        if self.total_count.is_multiple_of(100) {
             self.adjust_rate();
         }
         
@@ -128,7 +127,6 @@ pub struct SamplingStats {
 /// ============================================
 /// GOLDEN_RATIO - Optimal Retry Backoff
 /// ============================================
-
 /// Golden ratio-based retry strategy
 /// 
 /// GOLDEN_RATIO (φ ≈ 1.618) provides optimal spacing for retry attempts,
@@ -232,7 +230,6 @@ impl ExponentialBackoff {
 /// ============================================
 /// Fibonacci Batch Sizing
 /// ============================================
-
 /// Fibonacci-based batch size calculator for flow control
 /// 
 /// Uses Fibonacci sequence (closely related to golden ratio) for
@@ -343,7 +340,6 @@ pub struct BatchStats {
 /// ============================================
 /// PI and TAU - Periodic Metrics
 /// ============================================
-
 /// Periodic metric calculator using PI and TAU
 /// 
 /// TAU (τ = 2π) is the full circle constant, often more natural than PI
@@ -404,7 +400,6 @@ impl PeriodicMetricCalculator {
 /// ============================================
 /// Logarithmic Constants - Compression
 /// ============================================
-
 /// Logarithmic compression for metric values
 /// 
 /// Uses LN_2 and LN_10 for efficient value compression and encoding.
@@ -476,7 +471,6 @@ impl LogarithmicCompressor {
 /// ============================================
 /// SQRT_2 - Load Balancing
 /// ============================================
-
 /// SQRT_2-based load distribution
 /// 
 /// SQRT_2 (≈ 1.414) appears in various geometric calculations
@@ -526,7 +520,6 @@ impl Sqrt2LoadBalancer {
 /// ============================================
 /// Combined Math Constants Demo
 /// ============================================
-
 /// Demonstrates the relationship between constants
 pub fn demonstrate_constant_relationships() {
     println!("\n📐 Mathematical Constant Relationships:");
@@ -550,7 +543,6 @@ pub fn demonstrate_constant_relationships() {
 /// ============================================
 /// Main Demo
 /// ============================================
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("╔══════════════════════════════════════════════════════════╗");

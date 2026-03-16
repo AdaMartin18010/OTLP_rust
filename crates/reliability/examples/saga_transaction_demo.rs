@@ -22,6 +22,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 #[tokio::main]
+#[allow(clippy::result_large_err)]
 async fn main() -> Result<(), UnifiedError> {
     println!("=== Saga 事务模式演示 ===\n");
 

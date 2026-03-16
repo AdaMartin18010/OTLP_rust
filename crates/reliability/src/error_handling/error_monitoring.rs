@@ -502,7 +502,7 @@ mod tests {
 
         for i in 0..5 {
             let error = UnifiedError::new(
-                &format!("错误 {}", i),
+                format!("错误 {}", i),
                 ErrorSeverity::Low,
                 "test",
                 context.clone(),
@@ -570,7 +570,7 @@ mod tests {
         // 记录一些错误
         for i in 0..10 {
             let error = UnifiedError::new(
-                &format!("错误 {}", i),
+                format!("错误 {}", i),
                 ErrorSeverity::Low,
                 "test",
                 context.clone(),

@@ -264,7 +264,7 @@ impl AlertManager {
         
         rules.iter()
             .find(|r| r.id == rule_id)
-            .map_or(false, |rule| elapsed < rule.cooldown_period)
+            .is_some_and(|rule| elapsed < rule.cooldown_period)
     }
 
     async fn send_notifications(&self, alert: &Alert, channels: &[String]) -> Result<()> {

@@ -222,12 +222,8 @@ impl ResponseType {
     /// Get the success rate (0.0 to 1.0)
     pub fn success_rate(&self) -> f64 {
         match self {
-            Self::FullSuccess { accepted_count, .. } => {
-                if *accepted_count == 0 {
-                    1.0 // Nothing to send means 100% success
-                } else {
-                    1.0
-                }
+            Self::FullSuccess { .. } => {
+                1.0 // Full success is always 100% success rate
             }
             Self::PartialSuccess { handler, .. } => handler.success_rate(),
             Self::Failure { .. } => 0.0,

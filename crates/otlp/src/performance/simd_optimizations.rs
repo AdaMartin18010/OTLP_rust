@@ -177,7 +177,7 @@ impl SimdOptimizer {
         let mut i = 0;
 
         // 处理对齐的部分
-        while i + 4 <= len && (data.as_ptr() as usize + i * 8) % 32 == 0 {
+        while i + 4 <= len && (data.as_ptr() as usize + i * 8).is_multiple_of(32) {
             let chunk = &data[i..i + 4];
             sum += unsafe { Self::sum_aligned_chunk(chunk) };
             i += 4;
@@ -192,6 +192,8 @@ impl SimdOptimizer {
         sum
     }
 
+    /// # Safety
+    /// 调用者必须确保输入数据正确对齐且AVX2指令集可用
     #[target_feature(enable = "avx2")]
     #[allow(unused_unsafe)]
     unsafe fn sum_aligned_chunk(chunk: &[f64]) -> f64 {
@@ -217,7 +219,7 @@ impl SimdOptimizer {
         let mut i = 0;
 
         // 处理对齐的部分
-        while i + 4 <= len && (a.as_ptr() as usize + i * 8) % 32 == 0 {
+        while i + 4 <= len && (a.as_ptr() as usize + i * 8).is_multiple_of(32) {
             sum += unsafe { Self::dot_aligned_chunk(&a[i..i + 4], &b[i..i + 4]) };
             i += 4;
         }
@@ -231,6 +233,8 @@ impl SimdOptimizer {
         sum
     }
 
+    /// # Safety
+    /// 调用者必须确保输入数据正确对齐且AVX2指令集可用
     #[target_feature(enable = "avx2")]
     #[allow(unused_unsafe)]
     unsafe fn dot_aligned_chunk(a_chunk: &[f64], b_chunk: &[f64]) -> f64 {

@@ -165,7 +165,7 @@ impl DataValidator {
         // All severity levels are valid in OpenTelemetry
         // Just check that it's within valid range (1-24)
         let severity_num = severity as u8;
-        if severity_num >= 1 && severity_num <= 24 {
+        if (1..=24).contains(&severity_num) {
             Ok(())
         } else {
             Err(OtlpError::ValidationError(format!(

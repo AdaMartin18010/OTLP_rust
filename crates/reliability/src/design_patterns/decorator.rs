@@ -409,7 +409,7 @@ mod tests {
 
         let metrics_data = metrics.get_metrics().await;
         // 可能执行了多次（由于缓存装饰器），所以至少应该有1条记录
-        assert!(metrics_data.len() >= 1);
+        assert!(!metrics_data.is_empty());
         assert!(metrics_data[0].success);
     }
 }

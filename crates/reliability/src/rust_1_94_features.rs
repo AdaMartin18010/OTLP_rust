@@ -256,7 +256,7 @@ impl AdaptiveRetryConfig {
     /// 基于失败率和数学常数计算动态阈值
     pub fn calculate_circuit_breaker_threshold(&self, failure_rate: f64) -> u32 {
         // 使用 const mul_add 进行编译时优化计算
-        let base = (failure_rate * 100.0) as f64;
+        let base = failure_rate * 100.0;
         let adjusted = const { 1.0f64.mul_add(GOLDEN_RATIO, 0.0) };
         (base * adjusted) as u32
     }
@@ -296,19 +296,15 @@ impl Rust194FeatureDemo {
 
         // 使用 array_windows 检测连续三个相同的错误
         for [a, b, c] in errors.array_windows::<3>() {
-            if a == b && b == c {
-                if !patterns.contains(&ErrorPattern::RepeatedThreeTimes) {
-                    patterns.push(ErrorPattern::RepeatedThreeTimes);
-                }
+            if a == b && b == c && !patterns.contains(&ErrorPattern::RepeatedThreeTimes) {
+                patterns.push(ErrorPattern::RepeatedThreeTimes);
             }
         }
 
         // 使用 array_windows 检测交替模式
         for [a, b, c] in errors.array_windows::<3>() {
-            if a == c && a != b {
-                if !patterns.contains(&ErrorPattern::AlternatingPattern) {
-                    patterns.push(ErrorPattern::AlternatingPattern);
-                }
+            if a == c && a != b && !patterns.contains(&ErrorPattern::AlternatingPattern) {
+                patterns.push(ErrorPattern::AlternatingPattern);
             }
         }
 
@@ -360,7 +356,7 @@ impl Rust194FeatureDemo {
 
     /// 计算黄金比例阈值
     fn calculate_golden_threshold(&self, failure_rate: f64) -> u32 {
-        let base = (failure_rate * 100.0) as f64;
+        let base = failure_rate * 100.0;
         (base * GOLDEN_RATIO) as u32
     }
 

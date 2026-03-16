@@ -1,0 +1,80 @@
+﻿cargo :     Checking otlp v0.6.0 (E:\_src\OTLP_rust\crates\otlp)
+At line:1 char:23
++ ... \OTLP_rust; cargo clippy --package otlp --lib -- -D warnings 2>&1 | O ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking ot...st\crates\otlp):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: using config file `\\?\E:\_src\OTLP_rust\.clippy.toml`, `\\?\E:\_src\OTLP_rust\clippy.toml` will be ignored
+
+error: this `if` has identical blocks
+   --> crates\otlp\src\response\mod.rs:226:41
+    |
+226 |                   if *accepted_count == 0 {
+    |  _________________________________________^
+227 | |                     1.0 // Nothing to send means 100% success
+228 | |                 } else {
+    | |_________________^
+    |
+note: same as this
+   --> crates\otlp\src\response\mod.rs:228:24
+    |
+228 |                   } else {
+    |  ________________________^
+229 | |                     1.0
+230 | |                 }
+    | |_________________^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#if_same_then_e
+lse
+    = note: `-D clippy::if-same-then-else` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::if_same_then_else)]`
+
+error: this loop could be written as a `for` loop
+   --> crates\otlp\src\ottl\parser.rs:241:9
+    |
+241 |         while let Some(ch) = chars.next() {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `for ch in chars.by_ref()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#while_let_on_i
+terator
+    = note: `-D clippy::while-let-on-iterator` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::while_let_on_iterator)]`
+
+error: length comparison to zero
+   --> crates\otlp\src\ottl\transform.rs:473:12
+    |
+473 |         Ok(value.len() > 0)
+    |            ^^^^^^^^^^^^^^^ help: using `!is_empty` is clearer and more explicit: `!value.is_empty()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#len_zero
+    = note: `-D clippy::len-zero` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::len_zero)]`
+
+error: unnecessary map of the identity function
+  --> crates\otlp\src\rust_1_92_optimizations.rs:27:18
+   |
+27 |         f().await.map_err(|e| e)
+   |                  ^^^^^^^^^^^^^^^ help: remove the call to `map_err`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#map_identity
+   = note: `-D clippy::map-identity` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::map_identity)]`
+
+error: unnecessary map of the identity function
+  --> crates\otlp\src\rust_1_92_optimizations.rs:37:18
+   |
+37 |         f().await.map_err(|e| e)
+   |                  ^^^^^^^^^^^^^^^ help: remove the call to `map_err`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#map_identity
+
+error: unnecessary map of the identity function
+  --> crates\otlp\src\rust_1_92_optimizations.rs:96:18
+   |
+96 |         f().await.map_err(|e| e)
+   |                  ^^^^^^^^^^^^^^^ help: remove the call to `map_err`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#map_identity
+
+warning: `otlp` (lib) generated 1 warning
+error: could not compile `otlp` (lib) due to 6 previous errors; 1 warning emitted

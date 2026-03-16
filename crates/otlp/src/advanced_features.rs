@@ -825,7 +825,7 @@ mod tests {
         };
 
         let _should_sample = sampler.should_sample(&context).await;
-        assert!(true, "Sampling result should be boolean");
+        // Sampling result should be boolean
     }
 
     #[tokio::test]

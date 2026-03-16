@@ -377,16 +377,16 @@ impl InventoryService {
         let start = Instant::now();
         let mut inventory = self.inventory.write().await;
 
-        if let Some(stock) = inventory.get_mut(product_id) {
-            if *stock >= quantity {
-                *stock -= quantity;
-                let latency = start.elapsed().as_millis() as u64;
-                info!(
-                    "  [库存服务] ✅ 扣减库存成功: {} (数量: {}, 剩余: {})",
-                    product_id, quantity, *stock
-                );
-                return ServiceResponse::success((), latency);
-            }
+        if let Some(stock) = inventory.get_mut(product_id)
+            && *stock >= quantity
+        {
+            *stock -= quantity;
+            let latency = start.elapsed().as_millis() as u64;
+            info!(
+                "  [库存服务] ✅ 扣减库存成功: {} (数量: {}, 剩余: {})",
+                product_id, quantity, *stock
+            );
+            return ServiceResponse::success((), latency);
         }
 
         ServiceResponse::error("库存不足".to_string(), 0)

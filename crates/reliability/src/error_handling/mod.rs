@@ -612,7 +612,7 @@ mod tests {
 
         for i in 0..7 {
             let error = UnifiedError::new(
-                &format!("错误 {}", i),
+                format!("错误 {}", i),
                 ErrorSeverity::Low,
                 "test_error",
                 ErrorContext::new(

@@ -301,19 +301,16 @@ impl CircuitBreaker {
         }
 
         // State transition logic
-        match state {
-            CircuitState::HalfOpen => {
-                // Check if we've had enough successful requests
-                if self.sliding_window.total_count()
-                    >= self.config.permitted_requests_in_half_open as u64
-                {
-                    let failure_rate = self.sliding_window.failure_rate();
-                    if failure_rate < self.config.failure_threshold_percentage {
-                        self.transition_to_closed().await;
-                    }
+        if state == CircuitState::HalfOpen {
+            // Check if we've had enough successful requests
+            if self.sliding_window.total_count()
+                >= self.config.permitted_requests_in_half_open as u64
+            {
+                let failure_rate = self.sliding_window.failure_rate();
+                if failure_rate < self.config.failure_threshold_percentage {
+                    self.transition_to_closed().await;
                 }
             }
-            _ => {}
         }
     }
 

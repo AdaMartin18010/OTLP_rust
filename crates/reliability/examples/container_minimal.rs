@@ -1,4 +1,4 @@
-#[cfg(all(feature = "containers"))]
+#[cfg(feature = "containers")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     use reliability::runtime_environments::container_runtime::{

@@ -13,7 +13,7 @@ fn bench_config_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("config_creation");
 
     group.bench_function("default_config", |b| {
-        b.iter(|| AnomalyDetectionConfig::default())
+        b.iter(AnomalyDetectionConfig::default)
     });
 
     group.bench_function("custom_config", |b| {

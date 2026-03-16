@@ -11,8 +11,6 @@ use otlp::response::{
 use otlp::response::handlers::RetryDecision;
 use std::sync::Arc;
 
-#[allow(unused_imports)]
-
 fn main() {
     println!("=== Error Aggregation Demo ===\n");
 

@@ -489,7 +489,7 @@ mod tests {
         assert_eq!(machine.current_state_name(), "Delivered");
 
         let context = machine.get_context().await;
-        assert!(context.history.len() > 0);
+        assert!(!context.history.is_empty());
     }
 
     #[tokio::test]

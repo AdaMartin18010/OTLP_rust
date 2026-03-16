@@ -264,14 +264,20 @@ pub struct ProfilingReport {
     pub memory_profile: Option<crate::profiling::types::PprofProfile>,
 }
 
-impl ProfilingReport {
-    pub fn new() -> Self {
+impl Default for ProfilingReport {
+    fn default() -> Self {
         Self {
             timestamp: SystemTime::now(),
             duration: Duration::default(),
             cpu_profile: None,
             memory_profile: None,
         }
+    }
+}
+
+impl ProfilingReport {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 

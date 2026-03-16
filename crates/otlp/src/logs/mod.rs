@@ -494,12 +494,13 @@ mod tests {
 
     #[test]
     fn test_severity_level_parsing() {
-        assert_eq!(SeverityLevel::from_str("ERROR"), Some(SeverityLevel::Error));
-        assert_eq!(SeverityLevel::from_str("error"), Some(SeverityLevel::Error));
-        assert_eq!(SeverityLevel::from_str("ERR"), Some(SeverityLevel::Error));
-        assert_eq!(SeverityLevel::from_str("WARN"), Some(SeverityLevel::Warn));
-        assert_eq!(SeverityLevel::from_str("WARNING"), Some(SeverityLevel::Warn));
-        assert_eq!(SeverityLevel::from_str("INVALID"), None);
+        use std::str::FromStr;
+        assert_eq!(SeverityLevel::from_str("ERROR"), Ok(SeverityLevel::Error));
+        assert_eq!(SeverityLevel::from_str("error"), Ok(SeverityLevel::Error));
+        assert_eq!(SeverityLevel::from_str("ERR"), Ok(SeverityLevel::Error));
+        assert_eq!(SeverityLevel::from_str("WARN"), Ok(SeverityLevel::Warn));
+        assert_eq!(SeverityLevel::from_str("WARNING"), Ok(SeverityLevel::Warn));
+        assert!(SeverityLevel::from_str("INVALID").is_err());
     }
 
     #[test]

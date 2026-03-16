@@ -1,0 +1,13 @@
+﻿cargo : warning: using config file `\\?\E:\_src\OTLP_rust\.clippy.toml`, `\\?\E:\_src\OTLP_rust\clippy.toml` will be ig
+nored
+At line:1 char:23
++ ... rc\OTLP_rust; cargo clippy --package otlp -- -D warnings 2>&1 | Out-F ...
++                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: using ...will be ignored:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+warning: `otlp` (lib) generated 1 warning
+    Checking otlp v0.6.0 (E:\_src\OTLP_rust\crates\otlp)
+warning: `otlp` (bin "otlp") generated 1 warning (1 duplicate)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.34s

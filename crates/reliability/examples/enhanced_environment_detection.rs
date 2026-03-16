@@ -7,6 +7,7 @@ use reliability::prelude::*;
 use reliability::runtime_environments::RuntimeEnvironment;
 
 #[tokio::main]
+#[allow(clippy::result_large_err)]
 async fn main() -> Result<(), UnifiedError> {
     println!("=== reliability 增强环境检测示例 ===\n");
 

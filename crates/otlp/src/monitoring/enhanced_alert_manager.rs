@@ -131,9 +131,8 @@ pub struct EnhancedAlertManager {
     alert_sender: broadcast::Sender<Alert>,
 }
 
-impl EnhancedAlertManager {
-    /// 创建新的增强告警管理器
-    pub fn new() -> Self {
+impl Default for EnhancedAlertManager {
+    fn default() -> Self {
         let (alert_sender, _) = broadcast::channel(1000);
 
         Self {
@@ -145,6 +144,13 @@ impl EnhancedAlertManager {
             is_running: Arc::new(AtomicBool::new(false)),
             alert_sender,
         }
+    }
+}
+
+impl EnhancedAlertManager {
+    /// 创建新的增强告警管理器
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// 启动告警管理器

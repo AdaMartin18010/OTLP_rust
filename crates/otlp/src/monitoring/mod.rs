@@ -205,8 +205,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_monitoring_system_disabled() {
-        let mut config = MonitoringConfig::default();
-        config.enabled = false;
+        let config = MonitoringConfig {
+            enabled: false,
+            ..Default::default()
+        };
 
         let mut monitoring_system = MonitoringSystem::new(config);
 

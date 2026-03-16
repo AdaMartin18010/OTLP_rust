@@ -200,8 +200,8 @@ fn bench_memory_alignment(c: &mut Criterion) {
         // 对齐的数据
         let mut aligned_data = Vec::with_capacity(*size);
         aligned_data.resize(*size, 0.0);
-        for i in 0..*size {
-            aligned_data[i] = (i as f64) * 0.1;
+        for (i, item) in aligned_data.iter_mut().enumerate().take(*size) {
+            *item = (i as f64) * 0.1;
         }
 
         // 非对齐的数据

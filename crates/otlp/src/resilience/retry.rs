@@ -115,14 +115,14 @@ impl Retrier {
             attempt += 1;
 
             // 检查总超时
-            if let Some(total_timeout) = self.config.total_timeout {
-                if start_time.elapsed() >= total_timeout {
-                    return Err(RetryError::Timeout {
-                        total_timeout,
-                        elapsed: start_time.elapsed(),
-                        last_error,
-                    });
-                }
+            if let Some(total_timeout) = self.config.total_timeout
+                && start_time.elapsed() >= total_timeout
+            {
+                return Err(RetryError::Timeout {
+                    total_timeout,
+                    elapsed: start_time.elapsed(),
+                    last_error,
+                });
             }
 
             // 检查最大重试次数
@@ -183,14 +183,14 @@ impl Retrier {
             attempt += 1;
 
             // 检查总超时
-            if let Some(total_timeout) = self.config.total_timeout {
-                if start_time.elapsed() >= total_timeout {
-                    return Err(RetryError::Timeout {
-                        total_timeout,
-                        elapsed: start_time.elapsed(),
-                        last_error,
-                    });
-                }
+            if let Some(total_timeout) = self.config.total_timeout
+                && start_time.elapsed() >= total_timeout
+            {
+                return Err(RetryError::Timeout {
+                    total_timeout,
+                    elapsed: start_time.elapsed(),
+                    last_error,
+                });
             }
 
             // 检查最大重试次数

@@ -151,6 +151,12 @@ pub struct PerformanceProfile {
     pub target_error_rate: f64,
 }
 
+impl Default for SmartConfigManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SmartConfigManager {
     pub fn new() -> Self {
         Self {

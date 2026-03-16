@@ -170,13 +170,14 @@ impl LogAppenderBuilder {
 /// Integration with the `tracing` crate
 /// 
 /// Note: This requires the `tracing` feature to be enabled in your Cargo.toml
+/// 
+/// Tracing integration placeholder
+/// 
+/// For full tracing integration, enable the `tracing` feature and use:
+/// ```rust,ignore
+/// use otlp::logs::appender::tracing_integration::TracingLayer;
+/// ```
 pub mod tracing_integration {
-    //! Tracing integration placeholder
-    //! 
-    //! For full tracing integration, enable the `tracing` feature and use:
-    //! ```rust,ignore
-    //! use otlp::logs::appender::tracing_integration::TracingLayer;
-    //! ```
     
     use super::*;
 
@@ -206,10 +207,11 @@ pub mod tracing_integration {
 /// Integration with the `log` crate
 ///
 /// Note: This requires the `log` feature to be enabled in your Cargo.toml
+/// 
+/// Log crate integration placeholder
+///
+/// For full log crate integration, add the `log` crate to your dependencies.
 pub mod log_integration {
-    //! Log crate integration placeholder
-    //!
-    //! For full log crate integration, add the `log` crate to your dependencies.
     
     use super::*;
 

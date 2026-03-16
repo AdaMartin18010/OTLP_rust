@@ -82,6 +82,12 @@ pub struct TransmissionStats {
     pub max_latency: f64,
 }
 
+impl Default for ZeroCopyTransporter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ZeroCopyTransporter {
     /// 创建新的零拷贝传输器
     pub fn new() -> Self {

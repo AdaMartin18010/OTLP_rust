@@ -270,12 +270,12 @@ impl<T: Send + Sync + Default + 'static> OptimizedMemoryPool<T> {
 
         while i > 0 {
             i -= 1;
-            if let Some(meta) = pool.get(i) {
-                if meta.created_at.elapsed() > self.config.object_ttl {
-                    pool.remove(i);
-                    removed_count += 1;
-                    self.total_destroyed.fetch_add(1, Ordering::AcqRel);
-                }
+            if let Some(meta) = pool.get(i)
+                && meta.created_at.elapsed() > self.config.object_ttl
+            {
+                pool.remove(i);
+                removed_count += 1;
+                self.total_destroyed.fetch_add(1, Ordering::AcqRel);
             }
         }
 

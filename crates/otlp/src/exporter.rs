@@ -698,11 +698,11 @@ impl BatchExporter {
     /// 检查并处理超时的批次
     pub async fn check_timeout(&self) -> Result<Option<ExportResult>> {
         let timer_guard = self.batch_timer.read().await;
-        if let Some(timer) = *timer_guard {
-            if tokio::time::Instant::now().duration_since(timer) >= self.batch_timeout {
-                drop(timer_guard);
-                return Ok(Some(self.flush().await?));
-            }
+        if let Some(timer) = *timer_guard
+            && tokio::time::Instant::now().duration_since(timer) >= self.batch_timeout
+        {
+            drop(timer_guard);
+            return Ok(Some(self.flush().await?));
         }
         Ok(None)
     }

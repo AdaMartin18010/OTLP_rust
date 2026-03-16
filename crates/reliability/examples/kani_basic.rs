@@ -35,9 +35,7 @@
 /// 安全的整数除法
 /// 避免除零和溢出
 fn safe_div(a: i32, b: i32) -> Option<i32> {
-    if b == 0 {
-        None
-    } else if a == i32::MIN && b == -1 {
+    if b == 0 || (a == i32::MIN && b == -1) {
         None // 防止溢出：i32::MIN / -1 会溢出
     } else {
         Some(a / b)

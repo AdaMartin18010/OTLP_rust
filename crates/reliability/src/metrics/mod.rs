@@ -736,8 +736,8 @@ mod tests {
         assert_eq!(int_value.as_integer(), Some(42));
         assert_eq!(int_value.as_float(), Some(42.0));
 
-        let float_value = MetricValue::Float(3.14);
-        assert_eq!(float_value.as_float(), Some(3.14));
+        let float_value = MetricValue::Float(std::f64::consts::PI);
+        assert_eq!(float_value.as_float(), Some(std::f64::consts::PI));
 
         let string_value = MetricValue::String("test".to_string());
         assert_eq!(string_value.as_string(), Some(&"test".to_string()));
@@ -771,7 +771,7 @@ mod tests {
         let collector = MetricsCollector::new(Duration::from_secs(60));
 
         collector.set_custom_metric("test_int".to_string(), MetricValue::Integer(42));
-        collector.set_custom_metric("test_float".to_string(), MetricValue::Float(3.14));
+        collector.set_custom_metric("test_float".to_string(), MetricValue::Float(std::f64::consts::PI));
         collector.set_custom_metric(
             "test_string".to_string(),
             MetricValue::String("test".to_string()),
@@ -789,7 +789,7 @@ mod tests {
                 .get_custom_metric("test_float")
                 .unwrap()
                 .as_float(),
-            Some(3.14)
+            Some(std::f64::consts::PI)
         );
         assert_eq!(
             collector

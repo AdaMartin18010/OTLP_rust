@@ -464,7 +464,7 @@ mod tests {
         let str_val = AttributeValue::String("test".to_string());
         let int_val = AttributeValue::Int(42);
         let bool_val = AttributeValue::Bool(true);
-        let double_val = AttributeValue::Double(3.14);
+        let double_val = AttributeValue::Double(std::f64::consts::PI);
 
         match str_val {
             AttributeValue::String(s) => assert_eq!(s, "test"),

@@ -761,7 +761,7 @@ mod tests {
         assert!((base(0) - 2.0).abs() < 1e-10);
 
         // scale 1: base = 2^0.5 = sqrt(2)
-        assert!((base(1) - 1.4142135623730951).abs() < 1e-10);
+        assert!((base(1) - std::f64::consts::SQRT_2).abs() < 1e-10);
 
         // scale 2: base = 2^0.25
         assert!((base(2) - 1.189207115002721).abs() < 1e-10);

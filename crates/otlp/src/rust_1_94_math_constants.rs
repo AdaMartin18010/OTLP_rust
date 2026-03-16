@@ -700,7 +700,7 @@ mod tests {
     fn test_euler_gamma_constant() {
         // 验证 EULER_GAMMA 的近似值
         assert!((EULER_GAMMA - 0.5772156649).abs() < 1e-10);
-        assert!(EULER_GAMMA > 0.5 && EULER_GAMMA < 0.6);
+        // EULER_GAMMA is always between 0.5 and 0.6
     }
 
     #[test]
@@ -717,8 +717,8 @@ mod tests {
         assert!(rate_high >= rate_low);
 
         // 采样率应该在合理范围内
-        assert!(rate_low >= 0.001 && rate_low <= 1.0);
-        assert!(rate_high >= 0.001 && rate_high <= 1.0);
+        assert!((0.001..=1.0).contains(&rate_low));
+        assert!((0.001..=1.0).contains(&rate_high));
     }
 
     #[test]
@@ -996,8 +996,8 @@ mod tests {
         let decreased = adjust_sampling_rate(base, 500, 1000);
 
         // Both should return valid rates within the allowed range
-        assert!(increased <= 1.0 && increased >= 0.001, "increased rate {} out of range", increased);
-        assert!(decreased <= 1.0 && decreased >= 0.001, "decreased rate {} out of range", decreased);
+        assert!((0.001..=1.0).contains(&increased), "increased rate {} out of range", increased);
+        assert!((0.001..=1.0).contains(&decreased), "decreased rate {} out of range", decreased);
 
         // When we need more samples (target > actual), rate should generally increase
         // When we need fewer samples (target < actual), rate should generally decrease

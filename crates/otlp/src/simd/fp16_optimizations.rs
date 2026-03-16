@@ -928,7 +928,7 @@ mod tests {
 
         // Should be a power of 2
         assert!(width.is_power_of_two());
-        assert!(width >= 1 && width <= 32);
+        assert!((1..=32).contains(&width));
     }
 
     #[test]

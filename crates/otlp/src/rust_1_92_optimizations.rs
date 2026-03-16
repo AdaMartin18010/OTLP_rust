@@ -24,7 +24,7 @@ impl AsyncClosureOptimizer {
     where
         F: FnOnce() -> futures::future::BoxFuture<'static, Result<R, anyhow::Error>>,
     {
-        f().await.map_err(|e| e.into())
+        f().await
     }
 
     /// 优化后：使用Rust 1.92异步闭包特性的版本
@@ -34,7 +34,7 @@ impl AsyncClosureOptimizer {
         Fut: Future<Output = Result<R, anyhow::Error>> + Send + 'static,
         R: Send,
     {
-        f().await.map_err(|e| e.into())
+        f().await
     }
 
     /// 异步闭包在熔断器中的应用
@@ -80,7 +80,7 @@ impl AsyncClosureOptimizer {
             }
             Err(e) => {
                 self.record_failure().await;
-                Err(e.into())
+                Err(e)
             }
         }
     }
@@ -93,7 +93,7 @@ impl AsyncClosureOptimizer {
         R: Send,
     {
         self.record_half_open_call().await;
-        f().await.map_err(|e| e.into())
+        f().await
     }
 
     async fn check_circuit_state(&self) -> CircuitState {
@@ -154,7 +154,7 @@ impl TupleCollectionOptimizer {
     ) -> (HashMap<String, i32>, Vec<bool>, Vec<String>) {
         let (names, values, flags): (Vec<_>, Vec<_>, Vec<_>) = data
             .into_iter()
-            .map(|(name, value, flag)| (name, value, flag))
+
             .collect();
 
         let mut map = HashMap::new();
@@ -460,6 +460,8 @@ impl SimdOptimizer {
         }
     }
 
+    /// # Safety
+    /// 调用者必须确保AVX2指令集可用且输入/输出切片长度相同
     #[target_feature(enable = "avx2")]
     pub unsafe fn process_data_simd(&self, data: &[f64], result: &mut [f64]) {
         let len = data.len();
@@ -471,6 +473,8 @@ impl SimdOptimizer {
         self.process_remaining(data, result, simd_len, len);
     }
 
+    /// # Safety
+    /// 调用者必须确保AVX2指令集可用
     unsafe fn process_simd_chunk(&self, data: &[f64], result: &mut [f64], simd_len: usize) {
         for i in (0..simd_len).step_by(4) {
             unsafe {
@@ -625,7 +629,7 @@ impl CacheOptimizer {
     #[allow(dead_code)]
     pub fn optimize_data_layout<T>(&self, data: &mut [T]) {
         let ptr = data.as_mut_ptr() as usize;
-        if ptr % self.cache_alignment != 0 {
+        if !ptr.is_multiple_of(self.cache_alignment) {
             // 如果不对齐，需要重新分配
         }
     }
@@ -739,7 +743,7 @@ impl MemoryPoolOptimizer {
     fn insert_into_pool(&mut self, size: usize, ptr: *mut u8) {
         self.pools
             .entry(size)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(ptr);
     }
 
