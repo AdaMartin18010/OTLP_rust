@@ -4,12 +4,14 @@
 //! partial success responses.
 
 use otlp::response::{
-    ExportTracePartialSuccess, ExportMetricsPartialSuccess, ExportLogsPartialSuccess,
     ResponseMetricsCollector, ClassificationResult, ResponseClassification,
     ResponseAggregator, ResponseType, SignalType, ResponseMetadata,
     PartialSuccessHandler,
 };
+use otlp::response::handlers::RetryDecision;
 use std::sync::Arc;
+
+#[allow(unused_imports)]
 
 fn main() {
     println!("=== Error Aggregation Demo ===\n");
@@ -37,7 +39,7 @@ fn main() {
         let result = if *rejected == 0 {
             ClassificationResult {
                 classification: ResponseClassification::FullSuccess,
-                decision: otlp::response::RetryDecision::DoNotRetry,
+                decision: RetryDecision::DoNotRetry,
                 success_count: *total,
                 rejected_count: 0,
                 rejection_rate: 0.0,
@@ -46,7 +48,7 @@ fn main() {
         } else {
             ClassificationResult {
                 classification: ResponseClassification::PartialSuccess,
-                decision: otlp::response::RetryDecision::DoNotRetry,
+                decision: RetryDecision::DoNotRetry,
                 success_count: total - rejected,
                 rejected_count: *rejected,
                 rejection_rate: *rejected as f64 / *total as f64,
@@ -78,12 +80,9 @@ fn main() {
 
     let summary = metrics.summary();
     println!("Total responses: {}", summary.total_responses);
-    println!("Full successes: {} ({:.1}%)", 
-        summary.full_success_count, summary.full_success_rate * 100.0);
-    println!("Partial successes: {} ({:.1}%)", 
-        summary.partial_success_count, summary.partial_success_rate * 100.0);
-    println!("Failures: {} ({:.1}%)", 
-        summary.failure_count, summary.failure_rate * 100.0);
+    println!("Full successes: {:.1}%", summary.full_success_rate * 100.0);
+    println!("Partial successes: {:.1}%", summary.partial_success_rate * 100.0);
+    println!("Failures: {:.1}%", summary.failure_rate * 100.0);
     println!("\nItem-level statistics:");
     println!("  Total sent: {}", summary.total_items_sent);
     println!("  Total accepted: {}", summary.total_items_accepted);

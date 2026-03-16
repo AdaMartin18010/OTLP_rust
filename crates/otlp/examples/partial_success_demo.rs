@@ -3,11 +3,12 @@
 //! This example demonstrates how to handle OTLP 1.10 Partial Success responses.
 
 use otlp::response::{
-    ExportTracePartialSuccess, ExportMetricsPartialSuccess, ExportLogsPartialSuccess,
-    PartialSuccessHandler, ResponseClassifier, ResponseHandler, ResponseHandlerBuilder,
-    ResponseMetricsCollector, ResponseClassification, RetryDecision, SignalType,
+    ExportTracePartialSuccess, ExportMetricsPartialSuccess,
+    PartialSuccessHandler, ResponseHandler, ResponseHandlerBuilder,
+    ResponseMetricsCollector, SignalType,
     ResponseMetadata, ResponseAggregator, ResponseType,
 };
+use otlp::response::handlers::ResponseClassifier;
 
 fn main() {
     println!("=== OTLP 1.10 Partial Success Response Handling Demo ===\n");
@@ -27,7 +28,7 @@ fn main() {
 
     // Example 2: Handling Metrics Partial Success with threshold
     println!("2. Metrics Partial Success with Threshold");
-    let metrics_partial = ExportMetricsPartialSuccess::new(15, "quota exceeded");
+    let _metrics_partial = ExportMetricsPartialSuccess::new(15, "quota exceeded");
     let metrics_handler = PartialSuccessHandler::<ExportMetricsPartialSuccess>::new(100);
     
     // Check acceptance at different thresholds

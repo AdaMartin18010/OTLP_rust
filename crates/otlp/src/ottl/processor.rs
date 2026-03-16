@@ -526,14 +526,66 @@ impl OttlProcessor {
         Ok(!self.evaluate_condition(cond, ctx)?)
     }
     
-    fn value_to_string(&self, value: &OttlValue, _ctx: &OttlContext) -> Result<String> {
+    fn value_to_string(&self, value: &OttlValue, ctx: &OttlContext) -> Result<String> {
         match value {
             OttlValue::String(s) => Ok(s.clone()),
             OttlValue::Int(n) => Ok(n.to_string()),
             OttlValue::Float(n) => Ok(n.to_string()),
             OttlValue::Bool(b) => Ok(b.to_string()),
-            OttlValue::Path(_) => Ok("".to_string()), // Simplified
+            OttlValue::Path(path) => self.resolve_path(path, ctx),
             OttlValue::FunctionCall { .. } => Ok("".to_string()), // Simplified
+        }
+    }
+    
+    /// Resolve an OTTL path to its value from the context
+    fn resolve_path(&self, path: &OttlPath, ctx: &OttlContext) -> Result<String> {
+        match path {
+            OttlPath::Identifier(name) => {
+                // Try span attributes first, then resource attributes
+                if let Some(span_attrs) = &ctx.span_attributes {
+                    if let Some(val) = span_attrs.get(name) {
+                        return Ok(val.clone());
+                    }
+                }
+                if let Some(val) = ctx.resource_attributes.get(name) {
+                    return Ok(val.clone());
+                }
+                Ok("".to_string())
+            }
+            OttlPath::FieldAccess { base, field } => {
+                // Handle span.field pattern
+                if let OttlPath::Identifier(base_name) = base.as_ref() {
+                    if base_name == "span" || base_name == "attributes" {
+                        if let Some(span_attrs) = &ctx.span_attributes {
+                            if let Some(val) = span_attrs.get(field) {
+                                return Ok(val.clone());
+                            }
+                        }
+                    } else if base_name == "resource" {
+                        if let Some(val) = ctx.resource_attributes.get(field) {
+                            return Ok(val.clone());
+                        }
+                    }
+                }
+                Ok("".to_string())
+            }
+            OttlPath::MapAccess { base, key } => {
+                // Handle attributes["key"] pattern
+                if let OttlPath::Identifier(base_name) = base.as_ref() {
+                    if base_name == "attributes" {
+                        if let Some(span_attrs) = &ctx.span_attributes {
+                            if let Some(val) = span_attrs.get(key) {
+                                return Ok(val.clone());
+                            }
+                        }
+                    } else if base_name == "resource" {
+                        if let Some(val) = ctx.resource_attributes.get(key) {
+                            return Ok(val.clone());
+                        }
+                    }
+                }
+                Ok("".to_string())
+            }
         }
     }
 }

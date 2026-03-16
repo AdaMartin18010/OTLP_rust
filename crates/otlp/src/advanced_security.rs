@@ -853,51 +853,61 @@ mod tests {
     #[tokio::test]
     async fn test_zero_knowledge_proof() {
         let manager = ZeroKnowledgeProofManager::new();
-        let proof = manager
-            .generate_proof("statement", "witness")
-            .await
-            .expect("Failed to generate ZK proof");
-        assert_eq!(proof.statement, "statement");
-
-        let is_valid = manager
-            .verify_proof(&proof)
-            .await
-            .expect("Failed to verify ZK proof");
-        assert!(is_valid);
+        
+        // Zero-knowledge proof is not yet implemented - expect an error
+        let result = manager.generate_proof("statement", "witness").await;
+        assert!(result.is_err(), "Zero-knowledge proof generation should return not-implemented error");
+        
+        // verify_proof should also return error
+        let dummy_proof = Proof {
+            statement: "test".to_string(),
+            proof_data: "dummy".to_string(),
+            timestamp: 0,
+            verification_key: "".to_string(),
+        };
+        let verify_result = manager.verify_proof(&dummy_proof).await;
+        assert!(verify_result.is_err(), "Zero-knowledge proof verification should return not-implemented error");
     }
 
     #[tokio::test]
     async fn test_homomorphic_encryption() {
         let manager = HomomorphicEncryptionManager::new();
         let data = b"test data";
-        let encrypted = manager
-            .encrypt(data, "key")
-            .await
-            .expect("Failed to encrypt data");
-        assert_eq!(encrypted.data, data);
-
-        let computed = manager
-            .homomorphic_compute(&[encrypted], "add")
-            .await
-            .expect("Failed to compute homomorphic operation");
-        assert_eq!(computed.encryption_type, "homomorphic_computed");
+        
+        // Homomorphic encryption is not yet implemented - expect an error
+        let result = manager.encrypt(data, "key").await;
+        assert!(result.is_err(), "Homomorphic encryption should return not-implemented error");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("尚未实现") || err_msg.contains("not implemented"));
+        
+        // Also test homomorphic_compute returns error
+        let dummy_data = EncryptedData {
+            data: vec![1, 2, 3],
+            encryption_type: "test".to_string(),
+            timestamp: 0,
+            key_id: "test_key".to_string(),
+        };
+        let compute_result = manager.homomorphic_compute(&[dummy_data], "add").await;
+        assert!(compute_result.is_err(), "Homomorphic compute should return not-implemented error");
     }
 
     #[tokio::test]
     async fn test_secure_multi_party_computation() {
         let manager = SecureMultiPartyComputationManager::new();
         let participants = vec!["alice".to_string(), "bob".to_string()];
-        let result = manager
-            .execute_computation(&participants, "sum")
-            .await
-            .expect("Failed to execute multi-party computation");
-        assert_eq!(result.participants, participants);
-
-        let is_valid = manager
-            .verify_result(&result)
-            .await
-            .expect("Failed to verify multi-party computation result");
-        assert!(is_valid);
+        
+        // Secure multi-party computation has a simulated implementation
+        let result = manager.execute_computation(&participants, "sum").await;
+        assert!(result.is_ok(), "Secure multi-party computation should succeed (simulated)");
+        
+        let computation_result = result.unwrap();
+        assert_eq!(computation_result.participants, participants);
+        assert!(computation_result.result.contains("sum"));
+        
+        // verify_result should return true for valid hash
+        let verify_result = manager.verify_result(&computation_result).await;
+        assert!(verify_result.is_ok(), "Verify result should succeed");
+        assert!(verify_result.unwrap(), "Verification should pass for simulated result");
     }
 
     #[tokio::test]

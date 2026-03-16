@@ -913,9 +913,12 @@ mod tests {
         let simd_sum = fp16_sum(&values_fp16);
         let scalar_sum: f32 = values_fp16.iter().map(|&x| fp16_to_f32(x)).sum();
 
-        // Results should be very close
+        // Results should be close (allowing for FP16 precision loss)
         let diff = (fp16_to_f32(simd_sum) - scalar_sum).abs();
-        assert!(diff < 0.1, "SIMD and scalar results differ too much: {}", diff);
+        // FP16 has ~3 decimal digits of precision, so for a sum of ~2500, 
+        // a difference of up to a few units is acceptable
+        assert!(diff < 1.0, "SIMD and scalar results differ too much: {} (simd={:.3}, scalar={:.3})", 
+                diff, fp16_to_f32(simd_sum), scalar_sum);
     }
 
     #[test]

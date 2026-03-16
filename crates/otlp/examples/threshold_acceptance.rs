@@ -5,9 +5,9 @@
 
 use otlp::response::{
     ExportTracePartialSuccess, ExportMetricsPartialSuccess,
-    PartialSuccessHandler, ResponseClassifier, ClassificationResult,
-    ResponseClassification, RetryDecision,
+    PartialSuccessHandler,
 };
+use otlp::response::handlers::ResponseClassifier;
 
 fn main() {
     println!("=== Threshold-Based Acceptance Demo ===\n");
@@ -35,7 +35,7 @@ fn main() {
     println!("{}", "-".repeat(72));
 
     for (name, rejected, total) in scenarios {
-        let handler = PartialSuccessHandler::<()>::new(total);
+        let _handler = PartialSuccessHandler::<()>::new(total);
         let rejection_rate = rejected as f64 / total as f64;
         
         let strict_ok = rejection_rate <= strict_threshold;
