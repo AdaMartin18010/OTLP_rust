@@ -2,7 +2,8 @@
 //! 
 //! 本示例展示了 c12_model 中各种模型的使用方法和相互关系
 
-use c12_model::*;
+use model::*;
+use model::program_design_models::Functor;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== C12 Model 综合展示 ===\n");

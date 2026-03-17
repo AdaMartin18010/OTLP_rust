@@ -32,7 +32,7 @@ rumqttc = { version = "0.25.0", optional = true }
 nix = { version = "0.28.0", optional = true }
 
 # HTTP Client
-reqwest = { workspace = true, optional = true, default-features = false, features = ["json", "gzip", "brotli", "deflate"] }
+reqwest = { workspace = true, optional = true }
 
 # High-performance async runtime
 glommio = { version = "0.8", optional = true, features = ["native-tls"] }
@@ -91,6 +91,7 @@ proxy-nix-glommio = ["nix", "glommio"]
 
 [dev-dependencies]
 tracing-subscriber = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "time"] }
 [lib]
 name = "libraries"
 path = "src/lib.rs"

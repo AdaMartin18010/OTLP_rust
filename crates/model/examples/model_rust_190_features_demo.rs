@@ -1,9 +1,9 @@
 //! Rust 1.92 特性演示
 //!
-//! 本示例展示了如何使用 c12_model 库中的 Rust 1.92 新特性，
+//! 本示例展示了如何使用 model 库中的 Rust 1.92 新特性，
 //! 包括异步闭包、元组收集、常量泛型推断、生命周期语法改进等。
 
-use c12_model::{
+use model::{
     queueing_models::{
         MM1Queue, QueueConfig, PriorityQueue, MultiLevelFeedbackQueue,
         // QueueMetrics,

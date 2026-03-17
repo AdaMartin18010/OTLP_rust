@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: c13-demo
+  name: demo
   labels:
-    app: c13-demo
+    app: demo
 spec:
   containers:
     - name: nginx

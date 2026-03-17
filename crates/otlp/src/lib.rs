@@ -916,6 +916,41 @@ pub use homomorphic::{HomomorphicEncryption, FheParams, Ciphertext, FheStatsSnap
 // 安全多方计算 (新实现) ✅
 pub mod mpc;
 pub use mpc::{MpcManager, MpcParticipant, MpcResult, MpcStatsSnapshot};
+
+// Tracing-OpenTelemetry 桥接层 (OTLP 1.9.0 标准) ✅
+pub mod tracing_bridge;
+pub use tracing_bridge::{TelemetryConfig, TelemetryRuntime};
+
+// 现代化 OTLP 导出器配置 ✅
+pub mod exporter_modern;
+pub use exporter_modern::{OtlpExporterConfig, OtlpProtocol, create_span_exporter};
+
+// OTLP Profiles 信号支持 (1.9.0) ✅
+pub mod profiles;
+pub use profiles::{ProfileType, ProfileCollector, ProfileExporter, ProfileError, ProfileSample};
+
+// eBPF 性能分析集成 ✅
+pub mod ebpf_profiler;
+pub use ebpf_profiler::{EbpfProfiler, EbpfProfilerConfig, SystemCapabilities, EbpfError};
+
+// Collector 配置生成器 ✅
+pub mod collector_config;
+pub use collector_config::{CollectorConfig};
+
+#[cfg(feature = "collector-k8s")]
+pub use collector_config::k8s as collector_k8s;
+
+// Rust 1.94 新特性完整实现 ✅
+pub mod rust_1_94_features_new;
+pub use rust_1_94_features_new::{EndpointManager, ProfilerConfig, BatchProcessor};
+
+// Rust 2024 Edition: Async Closures ✅
+pub mod async_closures;
+pub use async_closures::{AsyncBatchExporter, AsyncRetry, AsyncPoolManager, with_timeout};
+
+// Rust 1.75+: Async Fn in Trait（原生支持）✅
+pub mod async_traits;
+pub use async_traits::{OtlpExporter as AsyncOtlpExporter, TelemetryProcessor, BatchProcessor as AsyncBatchProcessorTrait, Sampler, HttpClient as AsyncHttpClient};
 pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{
     BatchUtils, CompressionUtils, HashUtils, PerformanceUtils, RetryUtils, StringUtils, TimeUtils,

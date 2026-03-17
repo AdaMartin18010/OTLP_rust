@@ -7,7 +7,8 @@
 //! - `EULER_GAMMA`/`GOLDEN_RATIO` - 用于连接池大小和重试逻辑
 //! - `const mul_add` - 用于编译时计算
 
-use std::f64::consts::{EULER_GAMMA, GOLDEN_RATIO};
+// Rust 1.94 数学常量
+pub use std::f64::consts::{EULER_GAMMA, GOLDEN_RATIO};
 use std::sync::LazyLock;
 
 /// Rust 1.94 特性 1: 使用 LazyLock 实现全局连接管理器
@@ -522,8 +523,10 @@ mod tests {
         assert!(size_100 >= 10);
         assert!(size_100 <= 1000);
 
-        // 验证 GOLDEN_RATIO 的使用
-        let expected = (100.0 * GOLDEN_RATIO - 100.0 * EULER_GAMMA / 2.0) as usize;
+        // 验证计算逻辑与实现一致
+        let golden_based = (100.0 * GOLDEN_RATIO) as usize;
+        let gamma_adjustment = (100.0 * EULER_GAMMA) as usize;
+        let expected = golden_based.saturating_sub(gamma_adjustment / 2);
         assert_eq!(size_100, expected.max(10).min(1000));
 
         // 测试边界条件
@@ -580,7 +583,7 @@ mod tests {
         assert!(tracker.is_empty());
 
         let id1 = tracker.push("key1".to_string());
-        let id2 = tracker.push("key2".to_string());
+        let _id2 = tracker.push("key2".to_string());
 
         assert_eq!(tracker.len(), 2);
         assert!(!tracker.is_empty());

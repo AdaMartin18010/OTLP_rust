@@ -1,4 +1,4 @@
-# c12_model - Rust 1.92 建模与形式方法
+# model - Rust 1.92 建模与形式方法
 
 ## 🎯 2025-10-22 文档标准化完成 ✨
 
@@ -52,7 +52,7 @@
 
 ### 重大更新: 理论与实践的全面融合 ✨
 
-`c12_model` 现已成为**完整的、生产级别的模型系统框架**，涵盖以下所有领域：
+`model` 现已成为**完整的、生产级别的模型系统框架**，涵盖以下所有领域：
 
 #### 🧮 形式化语义模型
 
@@ -96,7 +96,7 @@
 - **复杂度分析**: 时间、空间复杂度分析
 
 ```rust
-use c12_model::*;
+use model::*;
 
 // 示例1: 使用Raft共识
 let raft = RaftProtocol::new(
@@ -138,7 +138,7 @@ let final_state = semantics.evaluate(expression)?;
 
 ### 🏛️ 架构设计模型增强 ✨
 
-**完成最后一个模块，`c12_model`现已100%完成！**
+**完成最后一个模块，`model`现已100%完成！**
 
 新增管道过滤器架构和P2P架构模型，为构建灵活可扩展的系统提供完整支持：
 
@@ -150,7 +150,7 @@ let final_state = semantics.evaluate(expression)?;
 - 批量处理支持
 
 ```rust
-use c12_model::{PipelineArchitecture, Filter, ArchitectureResult};
+use model::{PipelineArchitecture, Filter, ArchitectureResult};
 
 // 定义过滤器
 struct ValidationFilter;
@@ -199,7 +199,7 @@ fn main() -> ArchitectureResult<()> {
 - **P2PNetworkBuilder** - 网络拓扑构建器
 
 ```rust
-use c12_model::{P2PNetwork, Peer, ArchitectureResult};
+use model::{P2PNetwork, Peer, ArchitectureResult};
 use std::sync::{Arc, Mutex};
 
 // 定义对等节点
@@ -286,7 +286,7 @@ fn main() -> ArchitectureResult<()> {
 - **流操作符** - map、filter、take等常用操作
 
 ```rust
-use c12_model::{ReactiveStream, ReactiveOperators, ProgramResult};
+use model::{ReactiveStream, ReactiveOperators, ProgramResult};
 
 fn main() -> ProgramResult<()> {
     // 创建反应式流（缓冲区大小10）
@@ -313,7 +313,7 @@ fn main() -> ProgramResult<()> {
 - **DataflowCombinator** - 并行/串行组合器
 
 ```rust
-use c12_model::{DataflowGraph, DataflowNode, ProgramResult};
+use model::{DataflowGraph, DataflowNode, ProgramResult};
 
 // 定义数据流节点
 struct MultiplyNode(i32);
@@ -351,7 +351,7 @@ fn main() -> ProgramResult<()> {
 #### 数据流管道示例
 
 ```rust
-use c12_model::{DataflowPipeline, ProgramResult};
+use model::{DataflowPipeline, ProgramResult};
 
 fn main() -> ProgramResult<()> {
     let mut pipeline = DataflowPipeline::new();
@@ -371,7 +371,7 @@ fn main() -> ProgramResult<()> {
 #### 数据流变量示例
 
 ```rust
-use c12_model::{DataflowVariable, ProgramResult};
+use model::{DataflowVariable, ProgramResult};
 
 fn main() -> ProgramResult<()> {
     // 创建数据流变量
@@ -410,7 +410,7 @@ fn main() -> ProgramResult<()> {
 - **parallel_invoke** - 并行调用多个函数
 
 ```rust
-use c12_model::{TaskParallelExecutor, ParallelTask, ConcurrentResult};
+use model::{TaskParallelExecutor, ParallelTask, ConcurrentResult};
 
 // 定义并行任务
 struct ComputeTask(i32);
@@ -454,7 +454,7 @@ fn main() -> ConcurrentResult<()> {
 - 支持顺序和并行执行模式
 
 ```rust
-use c12_model::{PipelineExecutor, PipelineStage, ConcurrentResult};
+use model::{PipelineExecutor, PipelineStage, ConcurrentResult};
 
 // 定义流水线阶段
 struct ValidateStage;
@@ -494,7 +494,7 @@ fn main() -> ConcurrentResult<()> {
 - 最小化线程空闲时间
 
 ```rust
-use c12_model::{WorkStealingScheduler, ConcurrentResult};
+use model::{WorkStealingScheduler, ConcurrentResult};
 use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
 use std::time::Duration;
 
@@ -538,7 +538,7 @@ fn main() -> ConcurrentResult<()> {
 - 5种经典并行模式支持
 
 ```rust
-use c12_model::{ParallelPattern, ParallelPatternAnalyzer};
+use model::{ParallelPattern, ParallelPatternAnalyzer};
 
 fn main() {
     let patterns = vec![
@@ -584,7 +584,7 @@ fn main() {
 - **可观测性** - 追踪、指标、日志集成
 
 ```rust
-use c12_model::{ServiceMesh, SidecarProxy, ProxyFeature, TrafficRule, TrafficSplit, RetryPolicy};
+use model::{ServiceMesh, SidecarProxy, ProxyFeature, TrafficRule, TrafficSplit, RetryPolicy};
 use std::net::{SocketAddr, IpAddr, Ipv4Addr};
 use std::time::Duration;
 
@@ -637,7 +637,7 @@ println!("服务数: {}, 请求数: {}", stats.total_services, stats.total_reque
 - **采样控制** - 可配置的采样率
 
 ```rust
-use c12_model::{DistributedTracing, SpanStatus};
+use model::{DistributedTracing, SpanStatus};
 use std::collections::HashMap;
 
 // 创建追踪系统（10%采样率）
@@ -713,7 +713,7 @@ println!("活动追踪: {}, 总Span数: {}", stats.active_traces, stats.total_sp
   - 超时恢复机制
 
 ```rust
-use c12_model::{PaxosProtocol, PaxosMessage, DistributedResult};
+use model::{PaxosProtocol, PaxosMessage, DistributedResult};
 
 // Paxos 示例
 let paxos = PaxosProtocol::new("node1".to_string());
@@ -735,7 +735,7 @@ println!("共识达成: {:?}", value);
 ```
 
 ```rust
-use c12_model::{TwoPhaseCommit, VoteResult, TransactionState};
+use model::{TwoPhaseCommit, VoteResult, TransactionState};
 
 // 2PC 示例
 let coordinator = TwoPhaseCommit::new_coordinator(
@@ -759,7 +759,7 @@ assert_eq!(state, TransactionState::Committed);
 ```
 
 ```rust
-use c12_model::{ThreePhaseCommit, ThreePhaseState};
+use model::{ThreePhaseCommit, ThreePhaseState};
 use std::time::Duration;
 
 // 3PC 示例
@@ -812,7 +812,7 @@ assert_eq!(state, ThreePhaseState::Committed);
 - **拓扑排序** - Kahn算法 O(V + E)
 
 ```rust
-use c12_model::{GreedyAlgorithms, AlgorithmMetrics};
+use model::{GreedyAlgorithms, AlgorithmMetrics};
 
 let vertices = vec!["A", "B", "C", "D"];
 let edges = vec![
@@ -832,7 +832,7 @@ let distances = GreedyAlgorithms::floyd_warshall(&vertices, &edges, &mut metrics
 - **Manacher** - 线性时间最长回文子串 O(n)
 
 ```rust
-use c12_model::{StringAlgorithms, AlgorithmMetrics};
+use model::{StringAlgorithms, AlgorithmMetrics};
 
 let mut metrics = AlgorithmMetrics::new();
 let positions = StringAlgorithms::kmp_search(
@@ -854,7 +854,7 @@ println!("找到模式串位置: {:?}", positions);
 - **中国剩余定理** - 同余方程组求解
 
 ```rust
-use c12_model::{MathematicalAlgorithms, AlgorithmMetrics};
+use model::{MathematicalAlgorithms, AlgorithmMetrics};
 
 let mut metrics = AlgorithmMetrics::new();
 
@@ -1186,10 +1186,10 @@ cargo run --example mathematical_modeling
 cargo run --example comprehensive_demo
 
 # 异步背压示例（需要特性）
-cargo run -p c12_model --example async_backpressure_demo --features tokio-adapter,tower-examples
+cargo run -p model --example async_backpressure_demo --features tokio-adapter,tower-examples
 
 # 递归异步与结构化并发示例
-cargo run -p c12_model --example async_recursion_examples --features tokio-adapter
+cargo run -p model --example async_recursion_examples --features tokio-adapter
 ```
 
 ## 🏗️ 架构

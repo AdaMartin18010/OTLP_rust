@@ -1,0 +1,133 @@
+# OpenTelemetry Collector 生产环境配置
+# 
+# 参考:
+# - https://opentelemetry.io/docs/security/config-best-practices/
+# - https://oneuptime.com/blog/post/2026-01-25-opentelemetry-collector-production-setup/view
+#
+# 使用方法:
+# 1. 修改 endpoint 和 API key
+# 2. 确保 TLS 证书路径正确
+# 3. 使用 Collector Builder (ocb) 构建自定义 Collector
+# 4. 部署到 Kubernetes 或 Docker
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        # 生产环境使用 localhost 或具体 IP，而非 0.0.0.0
+        endpoint: ${env:MY_POD_IP}:4317
+        # 最大接收消息大小 16MB
+        max_recv_msg_size_mib: 16
+        # TLS 配置（生产环境必需）
+        tls:
+          cert_file: /certs/server.crt
+          key_file: /certs/server.key
+          client_ca_file: /certs/ca.crt
+      http:
+        endpoint: ${env:MY_POD_IP}:4318
+        cors:
+          allowed_origins:
+            - "https://your-domain.com"
+
+processors:
+  # 内存限制器 - 防止 OOM
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 1800
+    spike_limit_mib: 500
+
+  # 批处理器 - 提高导出效率
+  batch:
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+    timeout: 5s
+
+  # 资源处理器 - 添加环境标签
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: production
+        action: upsert
+      - key: collector.version
+        value: "1.0.0"
+        action: insert
+
+  # 数据脱敏处理器 - 保护敏感信息
+  redaction:
+    allow_all_keys: false
+    allowed_keys:
+      - description
+      - group
+      - id
+      - name
+    ignored_keys:
+      - safe_attribute
+    blocked_values:
+      - '4[0-9]{12}(?:[0-9]{3})?'  # Visa 信用卡号
+      - '(5[1-5][0-9]{14})'       # MasterCard 卡号
+    summary: debug
+
+exporters:
+  # OTLP HTTP 导出器 - 发送到后端
+  otlphttp:
+    endpoint: "https://your-backend.example.com"
+    headers:
+      Authorization: "Bearer ${env:BACKEND_API_KEY}"
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 5000
+
+  # 调试导出器 - 仅用于故障排查
+  debug:
+    verbosity: basic
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+extensions:
+  # 健康检查
+  health_check:
+    endpoint: localhost:13133
+    path: "/health"
+
+  # zpages - 调试页面
+  zpages:
+    endpoint: localhost:55679
+
+  # pprof - 性能分析
+  pprof:
+    endpoint: localhost:1777
+
+service:
+  extensions: [health_check, zpages, pprof]
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlphttp]
+
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlphttp]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlphttp]
+
+  # Collector 自身遥测
+  telemetry:
+    logs:
+      level: info
+      initial_fields:
+        service: otel-collector
+    metrics:
+      level: detailed
+      address: localhost:8888

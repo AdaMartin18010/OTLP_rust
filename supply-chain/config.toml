@@ -1,0 +1,21 @@
+# Cargo Vet 配置
+#
+# 参考: https://mozilla.github.io/cargo-vet/config.html
+
+[default-criteria]
+criteria = ["safe-to-deploy", "safe-to-run"]
+
+[imports]
+# 允许导入的审计来源
+allowed-sources = [
+    "https://hg.mozilla.org/mozilla-central",
+    "https://raw.githubusercontent.com",
+]
+
+[exemptions]
+# 允许的最大豁免数量
+max-exemptions = 100
+
+[audit-as-crates-io]
+# 标记为 crates.io 发布的 crate
+otlp = false

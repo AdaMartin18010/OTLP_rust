@@ -4,7 +4,7 @@
 # Automatically selects dependency versions compatible with rust-version
 resolver = "3"
 
-members = ["crates/otlp", "crates/reliability"]
+members = ["crates/libraries","crates/model","crates/otlp", "crates/reliability"]
 
 [workspace.package]
 # Rust Edition 2024 - Released with Rust 1.85.0
@@ -230,9 +230,9 @@ opt-level = 2
 # ========== 网络和 HTTP 相关依赖 ==========
 # 2025年3月最新稳定版本，支持Rust 1.94新特性
 # reqwest: 高级HTTP客户端库，支持异步操作、TLS、压缩等特性
-reqwest = { version = "0.13.2", features = [
+reqwest = { version = "0.12.15", features = [
   "json",
-  "rustls",
+  "rustls-tls",
   "stream",
   "gzip",
   "brotli",

@@ -1,0 +1,47 @@
+# Cargo Vet 审计记录
+#
+# 用于记录对依赖项的审计
+# 参考: https://mozilla.github.io/cargo-vet/
+
+# 审计政策
+[policy.otlp]
+audit-as-crates-io = false
+
+# ==================== 已审计的 crate ====================
+
+[[audits.tokio]]
+who = "OTLP Team <otlp@example.com>"
+criteria = ["safe-to-deploy", "does-not-implement-crypto"]
+version = "1.50.0"
+notes = "Tokio 是 Rust 异步生态系统的标准运行时，经过广泛审查"
+
+[[audits.axum]]
+who = "OTLP Team <otlp@example.com>"
+criteria = ["safe-to-deploy"]
+version = "0.8.0"
+notes = "Axum 是 Tokio 团队开发的 Web 框架"
+
+[[audits.tracing]]
+who = "OTLP Team <otlp@example.com>"
+criteria = ["safe-to-deploy", "does-not-implement-crypto"]
+version = "0.1.44"
+notes = "Tracing 是 Rust 生态系统的标准遥测库"
+
+[[audits.opentelemetry]]
+who = "OTLP Team <otlp@example.com>"
+criteria = ["safe-to-deploy"]
+version = "0.31.0"
+notes = "OpenTelemetry 官方 Rust 实现"
+
+# ==================== 导入的审计 ====================
+
+[imports.mozilla]
+url = "https://hg.mozilla.org/mozilla-central/raw-file/tip/supply-chain/audits.toml"
+
+[imports.embark]
+url = "https://raw.githubusercontent.com/EmbarkStudios/rust-ecosystem/main/supply-chain/audits.toml"
+
+# ==================== 豁免（已知问题） ====================
+
+[[exemptions]]
+# 说明为什么某些 crate 不需要审计

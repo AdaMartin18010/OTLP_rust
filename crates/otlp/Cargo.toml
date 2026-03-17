@@ -89,6 +89,14 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+opentelemetry-stdout = { workspace = true }
+
+# HTTP 类型
+http = { workspace = true }
+
+# 系统信息
+hostname = "0.4"
 
 # 配置管理
 config = { workspace = true }
@@ -187,6 +195,9 @@ homomorphic-encryption = ["dep:tfhe"]
 
 # 完整功能 (真实实现)
 real-full = ["real-crypto", "real-profiling", "simd-optimized", "zk-proofs", "homomorphic-encryption"]
+
+# Collector Kubernetes 支持
+collector-k8s = []
 
 # SIMD优化 (使用std::simd)
 simd-optimized = []

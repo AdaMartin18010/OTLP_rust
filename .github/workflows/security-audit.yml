@@ -1,49 +1,95 @@
 name: Security Audit
 
 on:
-  schedule:
-    # Run daily at 00:00 UTC
-    - cron: '0 0 * * *'
   push:
-    branches: [ main ]
-    paths:
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
+    branches: [ main, develop ]
   pull_request:
-    paths:
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
+    branches: [ main ]
+  schedule:
+    # 每天运行一次
+    - cron: '0 0 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+  # 使用 LLD 链接器加速构建
+  RUSTFLAGS: "-C link-arg=-fuse-ld=lld"
 
 jobs:
-  audit:
-    name: Security Audit
+  cargo-audit:
+    name: Cargo Audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: rustsec/audit-check@v1.4.1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+      
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      
+      - name: Run cargo audit
+        run: cargo audit --deny warnings
+        continue-on-error: false
+
+  cargo-vet:
+    name: Supply Chain Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+      
+      - name: Install cargo-vet
+        run: cargo install cargo-vet --locked
+      
+      - name: Run cargo vet
+        run: cargo vet --locked
+        continue-on-error: true  # 允许失败，因为可能需要初始配置
 
   cargo-deny:
-    name: Cargo Deny
+    name: License and Advisory Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+      
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+      
+      - name: Run cargo deny
+        run: cargo deny check
+        continue-on-error: false
+
+  semver-checks:
+    name: Semver Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+      
+      - name: Install cargo-semver-checks
+        run: cargo install cargo-semver-checks --locked
+      
+      - name: Check semver
+        run: cargo semver-checks check-release
+        continue-on-error: true  # 开发阶段允许失败
+
+  msrv-check:
+    name: MSRV Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@master
         with:
-          log-level: warn
-          command: check
-          arguments: --all-features
-
-  outdated:
-    name: Outdated Dependencies
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install cargo-outdated
-        run: cargo install cargo-outdated
-      - name: Check for outdated dependencies
-        run: cargo outdated --workspace --exit-code 1
-        continue-on-error: true
-
+          toolchain: 1.85.0  # MSRV
+      
+      - name: Check MSRV
+        run: cargo check --all-features
+        continue-on-error: false

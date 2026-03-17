@@ -118,6 +118,13 @@ doc-comment = "0.3.4"
 # 并发模型验证
 loom = "0.7.2"
 
+# 示例依赖
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "time"] }
+futures = "0.3"
+async-trait = "0.1"
+
 [features]
 default = ["std", "enhanced-math", "advanced-algorithms", "tokio-adapter"]
 std = []

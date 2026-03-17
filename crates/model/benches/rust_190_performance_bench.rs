@@ -9,7 +9,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
 use std::hint::black_box;
-use c12_model::{
+use model::{
     rust_190_features::{
         ModelConfig, DataProcessor, OptimizationEngine, AlgorithmType, OptimizedMatrix
     },
