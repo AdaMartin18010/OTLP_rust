@@ -28,7 +28,6 @@ use std::future::Future;
 ///     }
 /// }
 /// ```
-#[allow(async_fn_in_trait)]
 pub trait OtlpExporter {
     /// 异步导出数据
     async fn export(&self, data: Vec<u8>) -> Result<(), ExportError>;
