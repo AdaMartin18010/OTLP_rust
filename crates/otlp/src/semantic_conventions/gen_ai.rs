@@ -1,21 +1,34 @@
 //! # OpenTelemetry GenAI Semantic Conventions
 //!
-//! This module implements the OpenTelemetry GenAI semantic conventions for
+//! Implementation of OpenTelemetry GenAI Semantic Conventions for
 //! observability of Large Language Model (LLM) applications and AI agents.
+//!
+//! ## Stability: 🔄 EXPERIMENTAL
+//!
+//! GenAI semantic conventions are currently **experimental** and may change.
+//! This is a rapidly evolving area with active community development.
 //!
 //! ## Specification
 //!
-//! Based on OpenTelemetry Semantic Conventions v1.37+ for Generative AI:
 //! - <https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/>
+//! - <https://opentelemetry.io/docs/specs/semconv/gen-ai/>
+//!
+//! ## 2025-2026 Developments
+//!
+//! - **Python instrumentation for OpenAI**: Released
+//! - **Semantic Conventions for GenAI**: Active development
+//! - **Multi-provider support**: OpenAI, Anthropic, Azure OpenAI, AWS Bedrock, Google AI, Cohere, Mistral AI, Meta AI
+//! - **Token usage tracking**: Input/output tokens
+//! - **Operation types**: chat, embeddings, execute_tool, invoke_agent, create_agent, image_generation, audio
 //!
 //! ## Features
 //!
 //! - **Complete Attribute Coverage**: All standard `gen_ai.*` attributes
 //! - **Type-Safe Builders**: Builder pattern for constructing attributes
-//! - **Multi-Provider Support**: OpenAI, Anthropic, Azure, AWS Bedrock, etc.
+//! - **Multi-Provider Support**: OpenAI, Anthropic, Azure, AWS Bedrock, Google AI, Cohere, Mistral AI, Meta AI
 //! - **Content Safety**: Optional content capture with privacy controls
 //! - **Token Tracking**: Automatic input/output token counting
-//! - **Operation Types**: chat, embeddings, execute_tool, invoke_agent
+//! - **Operation Types**: chat, embeddings, execute_tool, invoke_agent, create_agent, image_generation, audio
 //!
 //! ## Quick Start
 //!
@@ -47,6 +60,11 @@
 //!     .input_message("Hello, AI!")
 //!     .build();
 //! ```
+//!
+//! ## References
+//!
+//! - [OpenTelemetry GenAI Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
+//! - [GenAI Observability Trends 2025](https://www.dynatrace.com/news/blog/opentelemetry-trends-2025/)
 
 use crate::semantic_conventions::common::AttributeValue;
 use std::collections::HashMap;

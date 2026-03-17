@@ -1,19 +1,57 @@
 //! # Messaging Semantic Conventions
 //!
-//! This module implements OpenTelemetry semantic conventions for messaging systems.
-//! It provides type-safe builders for creating messaging-related attributes.
+//! Implementation of OpenTelemetry Messaging Semantic Conventions
+//!
+//! ## Stability: 🔄 IN DEVELOPMENT
+//!
+//! Messaging semantic conventions are currently **in development** and expected
+//! to stabilize soon. Covers Kafka, RabbitMQ, AWS SQS/SNS, and more.
+//!
+//! ## Specification
+//! - <https://opentelemetry.io/docs/specs/semconv/messaging/>
+//! - <https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/>
+//!
+//! ## 2025 Status
+//!
+//! - **Advanced stages**: Expected stabilization soon
+//! - **Coverage**: Kafka, RabbitMQ, AWS SQS/SNS, Azure Service Bus, GCP Pub/Sub, MQTT
+//! - **Integration platforms**: MuleSoft, Boomi adopting OpenTelemetry
 //!
 //! ## Supported Messaging Systems
 //!
-//! - **Message Brokers**: Kafka, RabbitMQ, ActiveMQ, etc.
-//! - **Cloud Queues**: AWS SQS, Azure Service Bus, Google Pub/Sub
-//! - **Protocols**: MQTT, AMQP, STOMP
+//! ### Message Brokers
+//! - **Apache Kafka** - `kafka`
+//! - **RabbitMQ** - `rabbitmq`
+//! - **Apache ActiveMQ** - `activemq`
+//! - **Apache RocketMQ** - `rocketmq`
 //!
-//! ## Rust 1.92 特性应用
+//! ### Cloud Messaging
+//! - **AWS SQS** - `aws_sqs`
+//! - **AWS SNS** - `aws_sns`
+//! - **Azure Service Bus** - `azure_servicebus`
+//! - **Azure Event Hubs** - `azure_eventhubs`
+//! - **Google Cloud Pub/Sub** - `gcp_pubsub`
 //!
-//! - **常量泛型**: 使用常量泛型优化消息属性键值对大小
-//! - **元组收集**: 使用 `collect()` 直接收集消息属性到元组
-//! - **改进的类型系统**: 利用 Rust 1.92 的类型系统优化提升性能
+//! ### Protocols
+//! - **MQTT** - `mqtt`
+//! - **AMQP** - `amqp`
+//! - **STOMP** - `stomp`
+//!
+//! ## Key Attributes
+//!
+//! | Attribute | Description | Example |
+//! |-----------|-------------|---------|
+//! | `messaging.system` | Messaging system type | `kafka`, `rabbitmq` |
+//! | `messaging.destination` | Destination name | `user-events` |
+//! | `messaging.operation` | Operation type | `publish`, `receive` |
+//! | `messaging.message.id` | Message ID | `msg-12345` |
+//! | `messaging.message.body.size` | Message body size | `1024` |
+//!
+//! ## Rust 2024 Features
+//!
+//! - **Type Safety**: Enum-based messaging systems prevent invalid values
+//! - **Builder Pattern**: Ergonomic attribute construction
+//! - **Zero-Cost Abstractions**: Efficient attribute handling
 //!
 //! ## Usage Example
 //!
@@ -22,6 +60,7 @@
 //!     MessagingAttributesBuilder, MessagingSystem, MessagingOperation,
 //! };
 //!
+//! // Kafka publish
 //! let attrs = MessagingAttributesBuilder::new()
 //!     .system(MessagingSystem::Kafka)
 //!     .destination_name("user-events")
@@ -29,7 +68,20 @@
 //!     .message_id("msg-12345")
 //!     .build()
 //!     .unwrap();
+//!
+//! // RabbitMQ receive
+//! let attrs = MessagingAttributesBuilder::new()
+//!     .system(MessagingSystem::Rabbitmq)
+//!     .destination_name("order-queue")
+//!     .operation(MessagingOperation::Receive)
+//!     .build()
+//!     .unwrap();
 //! ```
+//!
+//! ## References
+//!
+//! - [OpenTelemetry Messaging Conventions](https://opentelemetry.io/docs/specs/semconv/messaging/)
+//! - [Messaging Conventions Status](https://opentelemetry.io/docs/specs/semconv/status/)
 
 use super::common::AttributeValue;
 use std::collections::HashMap;

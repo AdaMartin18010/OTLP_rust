@@ -15,28 +15,72 @@
 
 ## 🎯 OTLP 1.10 规范兼容
 
-本实现遵循 **[OTLP 1.10 规范](https://opentelemetry.io/docs/specs/otlp/)**，完整支持以下特性：
+本实现遵循 **[OTLP 1.10 规范](https://opentelemetry.io/docs/specs/otlp/)** (2025最新版)，完整支持以下特性：
 
 | 信号类型 | 状态 | 说明 |
 |---------|------|------|
 | **Traces** | ✅ Stable | 分布式追踪，支持所有跨度类型和事件 |
 | **Metrics** | ✅ Stable | 完整指标支持，包括 ExponentialHistogram |
 | **Logs** | ✅ Stable | 结构化日志，严重级别映射 |
-| **Profiles** | 🔄 Development | 性能分析数据（实验性） |
+| **Profiles** | 🔄 Development | 性能分析数据（实验性，OBI Alpha） |
 
 ### 传输协议支持
 
 - **gRPC**: 端口 4317，二进制 Protobuf
 - **HTTP/Protobuf**: 端口 4318，二进制编码
 - **HTTP/JSON**: 端口 4318，JSON 编码
+- **压缩**: gzip, zstd (2025新增推荐)
 
 ### OTLP 1.10 关键特性
 
 - ✅ **Full Success / Partial Success / Failure** 完整响应处理
 - ✅ **ExponentialHistogram** 指数直方图指标类型
-- ✅ **gzip 压缩** 传输压缩支持
+- ✅ **gzip/zstd 压缩** 传输压缩支持（zstd推荐用于高吞吐量）
 - ✅ **符合规范的 gRPC/HTTP 错误码映射**
 - ✅ **多信号批量导出** 高效数据传输
+- ✅ **Profiling 信号支持** 实验性性能分析数据
+
+### 2025-2026 语义约定更新
+
+| 约定类型 | 状态 | 版本 |
+|---------|------|------|
+| **HTTP** | ✅ Stable | v1.23.0+ (2023) |
+| **Database** | ✅ Stable | v1.23.0+ (2024) |
+| **Messaging** | 🔄 Development | 预计近期稳定 |
+| **RPC** | ✅ Stable | v1.23.0+ |
+| **GenAI** | 🔄 Experimental | 快速迭代中 |
+| **FaaS** | ✅ Stable | v1.23.0+ |
+| **Exception** | ✅ Stable | v1.23.0+ |
+
+### 🌐 WebAssembly & WASI 支持 (2025-2026)
+
+本项目的 **reliability** crate 提供全面的 WebAssembly 环境支持：
+
+#### WASI (WebAssembly System Interface) 演进
+
+| 版本 | 状态 | 发布时间 | 关键特性 |
+|------|------|----------|----------|
+| **WASI Preview 1** | ✅ 稳定 | 2019 | 基础 POSIX 函数、文件 I/O |
+| **WASI Preview 2 (0.2)** | ✅ 稳定 | 2024年初 | 组件模型、网络支持、wasi-http |
+| **WASI Preview 3 (0.3)** | 🔄 预计 | 2025上半年 | 原生异步 I/O、异步组件模型 |
+| **WASI 1.0** | ⏳ 计划 | 2026年底/2027年初 | 完全稳定化 |
+
+#### 支持的 WebAssembly 运行时
+
+- **Wasmtime** - 完整 WASI Preview 2 和组件模型支持
+- **Wasmer** - WASI Preview 2 支持 (v3.x/4.x)
+- **WasmEdge** - 云原生扩展、边缘计算优化
+- **wasmCloud** - 分布式 WASM 应用、OpenTelemetry 集成
+- **Spin** - 内置 OpenTelemetry、HTTP 触发器
+- **Node.js** - 实验性 WASI 支持
+
+#### WebAssembly 可观测性
+
+- ✅ **wasi-observe**: WASI 可观测性接口（提案）
+- ✅ **wasi-otel**: WASI OpenTelemetry API（提案）
+- ✅ **组件模型**: 跨语言互操作（Rust、Go、Python、JS）
+
+📖 **[WebAssembly 环境适配器](crates/reliability/src/runtime_environments/webassembly_environment.rs)** - 完整 WASI 支持实现
 
 ### OpenTelemetry 最佳实践
 
@@ -48,35 +92,47 @@
 
 📖 **[最佳实践指南](docs/BEST_PRACTICES.md)** - 完整的生产环境指南
 
-## 🦀 Rust 1.94 特性全面对齐
+## 🦀 Rust 2024 Edition + 1.94 特性全面对齐
 
-本实现充分利用 Rust 1.94 的所有新特性：
+本实现充分利用 **Rust 2024 Edition** 和 **Rust 1.94** 的所有新特性：
 
-| 特性 | 应用场景 | 状态 |
-|------|----------|------|
-| **`array_windows`** | 异常检测、模式识别 | ✅ 已实现 |
-| **`element_offset`** | 零拷贝序列化 | ✅ 已实现 |
-| **`LazyLock/LazyCell`** | 全局配置延迟初始化 | ✅ 已实现 |
-| **`AVX-512 FP16`** | x86_64 高性能计算 | ✅ 已实现 |
-| **`NEON FP16`** | ARM 高性能计算 | ✅ 已实现 |
-| **`EULER_GAMMA`** | 自适应采样算法 | ✅ 已实现 |
-| **`GOLDEN_RATIO`** | 指数退避策略 | ✅ 已实现 |
-| **`const mul_add`** | 编译时数学优化 | ✅ 已实现 |
-| **TOML 1.1** | 多行配置支持 | ✅ 已支持 |
-| **Cargo `include`** | 配置模块化 | ✅ 已支持 |
+| 特性 | 应用场景 | 状态 | 版本 |
+|------|----------|------|------|
+| **`async closures`** | 异步代码简化 | ✅ 已实现 | 1.85.0+ |
+| **`array_windows`** | 异常检测、模式识别 | ✅ 已实现 | 1.94+ |
+| **`element_offset`** | 零拷贝序列化 | ✅ 已实现 | 1.94+ |
+| **`LazyLock/LazyCell`** | 全局配置延迟初始化 | ✅ 已实现 | 1.80+ |
+| **`impl Trait` lifetime capture** | 更灵活的trait返回 | ✅ 已实现 | 2024 Edition |
+| **`AVX-512 FP16`** | x86_64 高性能计算 | ✅ 已实现 | 1.94+ |
+| **`NEON FP16`** | ARM 高性能计算 | ✅ 已实现 | 1.94+ |
+| **`EULER_GAMMA`** | 自适应采样算法 | ✅ 已实现 | 1.94+ |
+| **`GOLDEN_RATIO`** | 指数退避策略 | ✅ 已实现 | 1.94+ |
+| **`const mul_add`** | 编译时数学优化 | ✅ 已实现 | 1.94+ |
+| **TOML 1.1** | 多行配置支持 | ✅ 已支持 | Cargo |
+| **Cargo `include`** | 配置模块化 | ✅ 已支持 | Cargo |
+| **`gen` keyword** | 生成器预留 | ✅ 兼容 | 2024 Edition |
+
+### Rust 2024 Edition 优势
+
+- **改进的 `async` 支持**: async闭包稳定，更好的异步trait支持
+- **生命周期捕获规则**: `impl Trait + use<..>` 更精确的生命周期控制
+- **匹配语法改进**: 更直观的模式匹配
+- **性能优化**: 编译器优化和运行时性能提升
 
 ### 项目统计
 
-- 📦 **源代码文件**: 129+ 个 Rust 模块
+- 📦 **源代码文件**: 151+ 个 Rust 模块
 - 📝 **总代码行数**: 50,000+ 行
 - 📚 **文档覆盖率**: 95%+
-- 🧪 **测试覆盖率**: 80%+
+- 🧪 **测试覆盖率**: 1,087个测试 (684 + 403)
 - 🦀 **Rust 版本**: 1.94+ (Edition 2024)
 - 📋 **MSRV**: 1.94.0
+- 🔌 **OTLP 版本**: 1.10.0 (Latest Stable)
+- 📘 **语义约定**: v1.38.0
 
-> **🚀 New User?** Start with **[Quick Reference Index](QUICK_REFERENCE_INDEX.md)** - Find what you need in 5 seconds!
+> **🚀 New User?** Start with **[PROJECT_COMPLETION_REPORT.md](PROJECT_COMPLETION_REPORT.md)** - 查看最新完成状态!
 >
-> **📖 Not sure where to start?** Read **[How to Use This Documentation](HOW_TO_USE_THIS_DOCUMENTATION.md)** - 10-minute guide
+> **📖 Not sure where to start?** Read **[ARCHIVE/README.md](ARCHIVE/README.md)** - 了解归档内容
 
 ---
 
@@ -84,17 +140,16 @@
 
 **🎯 Start Here (5 Seconds!)** 👇
 
-- ⚡ **[Quick Reference Index](QUICK_REFERENCE_INDEX.md)** - Find what you need instantly!
-- 📖 **[How to Use This Documentation](HOW_TO_USE_THIS_DOCUMENTATION.md)** - 10-minute complete guide
-- 🏆 **[100% Achievement Report](MILESTONE_100_PERCENT_COMPLETE_2025_10_28.md)** - Ultimate documentation status
+- ⚡ **[PROJECT_COMPLETION_REPORT.md](PROJECT_COMPLETION_REPORT.md)** - 最新100%完成状态!
+- 📖 **[ARCHIVE/README.md](ARCHIVE/README.md)** - 归档内容说明
+- 📊 **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - 项目功能状态
 
 **For New Users** 🆕
 
-- 🚀 **[Getting Started](docs/01_GETTING_STARTED/CONCEPTS.md)** - 5-minute quick start
-- 📚 **[Examples](docs/11_EXAMPLES/CONCEPTS.md)** - 45+ complete code examples
-- 📖 **[Documentation Index](docs/00_INDEX/CONCEPTS.md)** - Complete navigation system
-- 🎯 **[OTLP Quick Start](crates/otlp/docs/QUICK_START_GUIDE.md)** - Hands-on tutorial
-- 📝 **[Best Practices](docs/BEST_PRACTICES.md)** - Production best practices ⭐ NEW
+- 🚀 **[Getting Started](#快速开始)** - 5-minute quick start
+- 📚 **[Examples](examples/)** - 15+ complete code examples
+- 📝 **[Best Practices](docs/BEST_PRACTICES.md)** - Production best practices
+- 📘 **[OTLP Specification](https://opentelemetry.io/docs/specs/otlp/)** - Official OTLP spec
 
 **For Developers** 💼
 

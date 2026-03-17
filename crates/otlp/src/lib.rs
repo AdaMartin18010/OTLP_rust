@@ -424,6 +424,35 @@ pub use ebpf::{
 // Semantic Conventions模块 (语义约定标准)
 pub mod semantic_conventions;
 
+// WebAssembly导出器模块 (OTLP WebAssembly原生支持)
+/// ## WebAssembly OTLP Exporter
+///
+/// WebAssembly-native OTLP exporter for browser and WASI environments.
+/// Enables WebAssembly applications to send telemetry data directly to OTLP endpoints.
+///
+/// ### Supported Environments
+/// - **Browser**: HTTP/JSON via fetch API
+/// - **WASI Preview 2**: HTTP/Protobuf via wasi-http
+/// - **WASI Preview 1**: HTTP/JSON via polyfill
+/// - **Node.js**: HTTP/JSON via fetch
+///
+/// ### 2025-2026 Trends
+/// - Spin 3.0: Built-in OpenTelemetry integration
+/// - wasmCloud: Full OTEL support for WASM actors
+/// - wasi-otel: Proposed WASI OpenTelemetry API
+///
+/// ### Example
+/// ```rust,ignore
+/// use otlp::wasm_exporter::{WasmExporter, WasmExporterConfig};
+///
+/// let config = WasmExporterConfig::browser()
+///     .with_endpoint("https://otel.example.com:4318");
+///
+/// let exporter = WasmExporter::new(config);
+/// exporter.export_traces(traces).await?;
+/// ```
+pub mod wasm_exporter;
+
 // Compression模块 (Tracezip压缩)
 pub mod compression;
 

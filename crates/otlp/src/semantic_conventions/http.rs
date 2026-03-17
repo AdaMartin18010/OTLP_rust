@@ -1,13 +1,57 @@
 //! # HTTP Semantic Conventions
 //!
-//! Implementation of OpenTelemetry HTTP Semantic Conventions v1.29.0
-//! <https://opentelemetry.io/docs/specs/semconv/http/>
+//! Implementation of OpenTelemetry HTTP Semantic Conventions
 //!
-//! ## Rust 1.92 特性应用
+//! ## Stability: ✅ STABLE
 //!
-//! - **常量泛型**: 使用常量泛型优化HTTP属性键值对大小
-//! - **元组收集**: 使用 `collect()` 直接收集HTTP属性到元组
-//! - **改进的类型系统**: 利用 Rust 1.92 的类型系统优化提升性能
+//! HTTP semantic conventions were declared **stable in 2023** (v1.23.0).
+//! This is one of the most important and mature semantic conventions.
+//!
+//! ## Specification
+//! - <https://opentelemetry.io/docs/specs/semconv/http/>
+//! - <https://opentelemetry.io/docs/specs/semconv/http/http-spans/>
+//! - <https://opentelemetry.io/docs/specs/semconv/http/http-metrics/>
+//!
+//! ## Coverage
+//!
+//! - **HTTP Methods**: GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH, TRACE, CONNECT
+//! - **HTTP Schemes**: http, https
+//! - **Request Attributes**: Method, URL, Headers, Body Size, User Agent
+//! - **Response Attributes**: Status Code, Headers, Body Size
+//! - **Client Attributes**: Server Address, Server Port
+//! - **Server Attributes**: Route, Target
+//!
+//! ## Rust 2024 Features
+//!
+//! - **Type Safety**: Enum-based HTTP methods prevent invalid values
+//! - **Builder Pattern**: Ergonomic attribute construction
+//! - **Zero-Cost Abstractions**: Efficient attribute handling
+//!
+//! ## Best Practices
+//!
+//! 1. **Use constants from this module** instead of string literals
+//! 2. **Follow client/server distinction** for proper attribute selection
+//! 3. **Include all required attributes** for compliance
+//!
+//! ## Example
+//!
+//! ```rust,ignore
+//! use otlp::semantic_conventions::http::{HttpAttributesBuilder, HttpMethod};
+//!
+//! // Client request
+//! let attrs = HttpAttributesBuilder::new()
+//!     .client()
+//!     .method(HttpMethod::Get)
+//!     .url("https://api.example.com/users")
+//!     .build()?;
+//!
+//! // Server response
+//! let attrs = HttpAttributesBuilder::new()
+//!     .server()
+//!     .method(HttpMethod::Post)
+//!     .status_code(201)
+//!     .build()?;
+//! ```
 
 use super::common::*;
 use std::collections::HashMap;

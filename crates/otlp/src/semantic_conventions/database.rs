@@ -1,18 +1,55 @@
 //! # Database Semantic Conventions
 //!
-//! This module implements OpenTelemetry semantic conventions for database operations.
-//! It provides type-safe builders for creating database-related attributes.
+//! Implementation of OpenTelemetry Database Semantic Conventions
+//!
+//! ## Stability: ✅ STABLE (since 2024)
+//!
+//! Database semantic conventions were marked **stable in 2024** (v1.23.0+).
+//! This is a major milestone for database observability standardization.
+//!
+//! ## Specification
+//! - <https://opentelemetry.io/docs/specs/semconv/database/>
+//! - <https://opentelemetry.io/docs/specs/semconv/database/database-spans/>
 //!
 //! ## Supported Database Systems
 //!
-//! - **SQL Databases**: PostgreSQL, MySQL, MSSQL, Oracle, etc.
-//! - **NoSQL Databases**: MongoDB, Redis, Cassandra, Elasticsearch, etc.
+//! ### SQL Databases
+//! - **PostgreSQL** - `postgresql`
+//! - **MySQL** - `mysql`
+//! - **Microsoft SQL Server** - `mssql`
+//! - **Oracle** - `oracle`
+//! - **SQLite** - `sqlite`
+//! - **MariaDB** - `mariadb`
+//! - **IBM Db2** - `db2`
 //!
-//! ## Rust 1.92 特性应用
+//! ### NoSQL Databases
+//! - **MongoDB** - `mongodb`
+//! - **Redis** - `redis`
+//! - **Cassandra** - `cassandra`
+//! - **Elasticsearch** - `elasticsearch`
 //!
-//! - **常量泛型**: 使用常量泛型优化数据库属性键值对大小
-//! - **元组收集**: 使用 `collect()` 直接收集数据库属性到元组
-//! - **改进的类型系统**: 利用 Rust 1.92 的类型系统优化提升性能
+//! ### Cloud Databases
+//! - **AWS DynamoDB** - `dynamodb`
+//! - **Azure CosmosDB** - `cosmosdb`
+//! - **Google Cloud Spanner** - `spanner`
+//!
+//! ## Key Attributes
+//!
+//! | Attribute | Description | Example |
+//! |-----------|-------------|---------|
+//! | `db.system` | Database system type | `postgresql`, `mongodb` |
+//! | `db.name` | Database name | `users_db` |
+//! | `db.statement` | Database statement | `SELECT * FROM users` |
+//! | `db.operation` | Operation type | `SELECT`, `INSERT`, `UPDATE` |
+//! | `db.user` | Database user | `app_user` |
+//! | `server.address` | Server address | `db.example.com` |
+//! | `server.port` | Server port | `5432` |
+//!
+//! ## Rust 2024 Features
+//!
+//! - **Type Safety**: Enum-based database systems prevent invalid values
+//! - **Builder Pattern**: Ergonomic attribute construction
+//! - **Zero-Cost Abstractions**: Efficient attribute handling
 //!
 //! ## Usage Example
 //!
@@ -21,12 +58,24 @@
 //!     DatabaseAttributesBuilder, DatabaseSystem, DatabaseOperation,
 //! };
 //!
+//! // PostgreSQL query
 //! let attrs = DatabaseAttributesBuilder::new()
 //!     .system(DatabaseSystem::Postgresql)
 //!     .name("users_db")
 //!     .statement("SELECT * FROM users WHERE id = $1")
 //!     .operation(DatabaseOperation::Select)
 //!     .user("app_user")
+//!     .server_address("db.example.com")
+//!     .server_port(5432)
+//!     .build()
+//!     .unwrap();
+//!
+//! // MongoDB operation
+//! let attrs = DatabaseAttributesBuilder::new()
+//!     .system(DatabaseSystem::Mongodb)
+//!     .name("analytics")
+//!     .collection("events")
+//!     .operation(DatabaseOperation::Find)
 //!     .build()
 //!     .unwrap();
 //! ```

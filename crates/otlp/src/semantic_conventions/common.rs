@@ -57,6 +57,14 @@ impl AttributeValue {
     pub fn to_formatted_string(&self) -> String {
         format!("{}", self)
     }
+
+    /// 如果是String变体，返回字符串引用
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            AttributeValue::String(s) => Some(s),
+            _ => None,
+        }
+    }
 }
 
 /// Attribute map type

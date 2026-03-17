@@ -5,22 +5,32 @@
 //!
 //! ## Features
 //!
-//! - **HTTP Conventions**: Client and server HTTP attributes
-//! - **Database Conventions**: Database operation attributes
-//! - **Messaging Conventions**: Message queue attributes
-//! - **K8s Conventions**: Kubernetes resource attributes
-//! - **RPC Conventions**: gRPC and other RPC framework attributes
-//! - **GenAI Conventions**: Generative AI operation attributes
-//! - **FaaS Conventions**: Function-as-a-Service attributes (AWS Lambda, Azure Functions, etc.)
-//! - **Exception Conventions**: Exception and error handling attributes
-//! - **Cloud Conventions**: Cloud provider attributes (AWS, Azure, GCP, etc.)
-//! - **Container Conventions**: Container and Docker attributes
-//! - **Process Conventions**: Process and runtime attributes
-//! - **Host Conventions**: Host and device attributes
-//! - **Resource Conventions**: Service and deployment attributes
+//! - **HTTP Conventions**: Client and server HTTP attributes (✅ Stable since 2023)
+//! - **Database Conventions**: Database operation attributes (✅ Stable since 2024)
+//! - **Messaging Conventions**: Message queue attributes (🔄 In Development)
+//! - **K8s Conventions**: Kubernetes resource attributes (✅ Stable)
+//! - **RPC Conventions**: gRPC and other RPC framework attributes (✅ Stable)
+//! - **GenAI Conventions**: Generative AI operation attributes (🔄 Experimental)
+//! - **FaaS Conventions**: Function-as-a-Service attributes (✅ Stable)
+//! - **Exception Conventions**: Exception and error handling attributes (✅ Stable)
+//! - **Cloud Conventions**: Cloud provider attributes (AWS, Azure, GCP, etc.) (✅ Stable)
+//! - **Container Conventions**: Container and Docker attributes (✅ Stable)
+//! - **Process Conventions**: Process and runtime attributes (✅ Stable)
+//! - **Host Conventions**: Host and device attributes (✅ Stable)
+//! - **Resource Conventions**: Service and deployment attributes (✅ Stable)
 //!
-//! ## Rust 1.92 Features
+//! ## 2025-2026 Latest Updates
 //!
+//! - **Database Conventions**: Marked stable in 2024 (v1.23.0+)
+//! - **HTTP Conventions**: Marked stable in 2023 (v1.23.0)
+//! - **GenAI Conventions**: New conventions for OpenAI, Anthropic, Azure OpenAI, etc.
+//! - **Messaging Conventions**: Advanced stages, expected stabilization soon
+//! - **eBPF Support**: OBI (OpenTelemetry eBPF Instrumentation) in Alpha
+//! - **Declarative Configuration**: File-based configuration support (YAML/JSON)
+//!
+//! ## Rust 2024 Features
+//!
+//! - **Async Closures**: Stabilized in Rust 1.85.0
 //! - **Type Safety**: Enum-based values prevent invalid attribute values
 //! - **Builder Pattern**: Ergonomic attribute construction
 //! - **Constants**: Pre-defined attribute keys for compile-time safety
@@ -40,11 +50,17 @@
 //!
 //! ## Standards
 //!
-//! Based on OpenTelemetry Semantic Conventions v1.38.0:
+//! Based on OpenTelemetry Semantic Conventions v1.38.0 (2025):
 //! - <https://opentelemetry.io/docs/specs/semconv/>
 //!
-//! OTLP Protocol v1.9.0:
+//! OTLP Protocol v1.10.0 (Latest Stable):
 //! - <https://opentelemetry.io/docs/specs/otlp/>
+//!
+//! ## References
+//!
+//! - [OpenTelemetry Specification Status](https://opentelemetry.io/docs/specs/status/)
+//! - [Semantic Conventions Stability Guide](https://opentelemetry.io/docs/specs/semconv/stability/)
+//! - [2025 Roadmap](https://opentelemetry.io/blog/2025/go-goals/)
 
 pub mod cloud;
 pub mod common;
@@ -59,6 +75,7 @@ pub mod k8s;
 pub mod messaging;
 pub mod process;
 pub mod rpc;
+pub mod wasm;
 
 // Re-export commonly used types
 pub use cloud::{CloudAttributes, CloudAttributesBuilder, CloudPlatform, CloudProvider};
@@ -87,13 +104,39 @@ pub use messaging::{
 };
 pub use process::{ProcessAttributes, ProcessAttributesBuilder, ProcessRuntime, ProcessState};
 pub use rpc::{RpcAttributes, RpcAttributesBuilder, RpcMessageType, RpcSystem};
+pub use wasm::{
+    ComponentAttributes, ComponentAttributesBuilder, WasiVersion, WasmAttributes,
+    WasmAttributesBuilder, WasmPlatform, WasmRuntime,
+};
 
 /// Version of the OpenTelemetry Semantic Conventions implemented
-/// Updated to v1.38.0 (March 2026)
+/// Updated to v1.38.0 (2025-2026)
+///
+/// ## Stability Status
+/// - ✅ HTTP: Stable (since 2023)
+/// - ✅ Database: Stable (since 2024)
+/// - 🔄 Messaging: In Development
+/// - ✅ RPC: Stable
+/// - 🔄 GenAI: Experimental
+/// - ✅ FaaS: Stable
+///
+/// ## References
+/// - <https://opentelemetry.io/docs/specs/semconv/>
 pub const SEMCONV_VERSION: &str = "1.38.0";
 
 /// OTLP Protocol version
-pub const OTLP_PROTOCOL_VERSION: &str = "1.9.0";
+/// Latest stable: 1.10.0
+///
+/// ## Key Features in 1.10.0
+/// - Full Success / Partial Success / Failure handling
+/// - Exponential Histogram support
+/// - Profiles signal (Development)
+/// - gRPC and HTTP transport
+/// - gzip and zstd compression
+///
+/// ## References  
+/// - <https://opentelemetry.io/docs/specs/otlp/>
+pub const OTLP_PROTOCOL_VERSION: &str = "1.10.0";
 
 /// Semantic convention status levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -138,7 +181,7 @@ mod tests {
     #[test]
     fn test_semconv_version() {
         assert_eq!(SEMCONV_VERSION, "1.38.0");
-        assert_eq!(OTLP_PROTOCOL_VERSION, "1.9.0");
+        assert_eq!(OTLP_PROTOCOL_VERSION, "1.10.0");
     }
 
     #[test]

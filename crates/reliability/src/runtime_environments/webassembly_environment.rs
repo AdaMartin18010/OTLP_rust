@@ -1,6 +1,49 @@
-//! # WebAssembly环境适配器
+//! # WebAssembly Environment Adapter
 //!
-//! 本模块提供了对WebAssembly环境的支持，包括浏览器WASM、WASI、Wasmtime等运行时。
+//! Provides support for WebAssembly environments, including browser WASM, WASI, Wasmtime, and other runtimes.
+//!
+//! ## 2025-2026 WebAssembly Trends
+//!
+//! ### WASI (WebAssembly System Interface) Evolution
+//!
+//! | Version | Status | Release | Key Features |
+//! |---------|--------|---------|--------------|
+//! | **WASI Preview 1** | ✅ Stable | 2019 | Basic POSIX-like functions, file I/O, environment variables |
+//! | **WASI Preview 2 (0.2)** | ✅ Stable | Early 2024 | Component Model, networking (sockets), wasi-http, wasi-cli |
+//! | **WASI Preview 3 (0.3)** | 🔄 Expected | H1 2025 | Native async I/O, async Component Model |
+//! | **WASI 1.0** | ⏳ Planned | Late 2026/Early 2027 | Full stabilization |
+//!
+//! ### Component Model
+//!
+//! - **WIT (WebAssembly Interface Types)**: Standardized interface definition language
+//! - **Cross-language interoperability**: Rust, Go, Python, JavaScript components can work together
+//! - **Composition**: Build complex applications from reusable components
+//! - **Security**: Capability-based security model with explicit permissions
+//!
+//! ### OpenTelemetry Integration
+//!
+//! - **wasi-observe**: Observability world for WASI (proposed)
+//! - **wasi-otel**: OpenTelemetry API for WASI (proposed)
+//! - **Spin 3.0**: Built-in OpenTelemetry integration for WASM applications
+//! - **wasmCloud**: Full OpenTelemetry support for metrics, logs, and traces
+//!
+//! ### Runtimes Support
+//!
+//! | Runtime | WASI Preview 1 | WASI Preview 2 | Component Model |
+//! |---------|----------------|----------------|-----------------|
+//! | **Wasmtime** | ✅ Full | ✅ Full | ✅ Full |
+//! | **Wasmer** | ✅ Full | ✅ Full | ✅ Full |
+//! | **WasmEdge** | ✅ Full | 🔄 Partial | 🔄 In Progress |
+//! | **Node.js** | 🔄 Experimental | ❌ Not yet | ❌ Not yet |
+//! | **Browser** | N/A | N/A | ❌ Not yet |
+//!
+//! ## References
+//!
+//! - [WASI Spec](https://github.com/WebAssembly/WASI)
+//! - [Component Model](https://component-model.bytecodealliance.org/)
+//! - [WebAssembly 3.0](https://webassembly.org/roadmap/)
+//! - [Spin 3.0 Observability](https://www.fermyon.com/blog/spin-3-0)
+//! - [wasmCloud OpenTelemetry](https://wasmcloud.com/docs/deployment/observability/otel)
 
 use super::{
     EnvironmentCapabilities, HealthLevel, HealthStatus, RecoveryType, ResourceUsage,
@@ -32,20 +75,71 @@ pub struct WebAssemblyEnvironmentAdapter {
     error_count: u64,
 }
 
-/// WASM运行时类型
+/// WebAssembly Runtime Types (2025-2026)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WASMRuntime {
-    /// 浏览器环境
+    /// Browser environment (wasm32-unknown-unknown)
+    /// - Supports WebAssembly 3.0 features
+    /// - No WASI support in browsers (use JS polyfills)
     Browser,
-    /// WASI环境
-    WASI,
-    /// Wasmtime
+
+    /// WASI Preview 1 (Legacy)
+    /// - Basic POSIX-like functions
+    /// - File I/O, environment variables, random
+    /// - No networking
+    #[allow(non_camel_case_types)]
+    WASI_Preview1,
+
+    /// WASI Preview 2 (Current Stable - 2024)
+    /// - Component Model support
+    /// - Networking (TCP/UDP sockets)
+    /// - wasi-http for outbound HTTP
+    /// - wasi-cli for command-line apps
+    #[allow(non_camel_case_types)]
+    WASI_Preview2,
+
+    /// WASI Preview 3 (Expected H1 2025)
+    /// - Native async I/O
+    /// - Async Component Model
+    /// - Cancellation tokens
+    #[allow(non_camel_case_types)]
+    WASI_Preview3,
+
+    /// Wasmtime Runtime
+    /// - Full WASI Preview 2 support
+    /// - Component Model support
+    /// - Async execution with tokio
     Wasmtime,
-    /// Wasmer
+
+    /// Wasmer Runtime
+    /// - WASI Preview 2 support (v3.x/4.x)
+    /// - WASIX extension (POSIX compatibility)
     Wasmer,
+
+    /// WasmEdge Runtime
+    /// - WASI Preview 1 full support
+    /// - Preview 2 partial support
+    /// - Cloud-native extensions
+    WasmEdge,
+
     /// Node.js WASM
+    /// - Experimental WASI Preview 1
+    /// - Limited security sandboxing
     NodeJS,
-    /// 未知运行时
+
+    /// wasmCloud
+    /// - Full Component Model support
+    /// - OpenTelemetry integration
+    /// - Distributed WASM applications
+    WasmCloud,
+
+    /// Spin (Fermyon)
+    /// - WASI Preview 2
+    /// - Built-in OpenTelemetry
+    /// - HTTP trigger support
+    Spin,
+
+    /// Unknown runtime
     Unknown,
 }
 
@@ -64,35 +158,77 @@ impl WebAssemblyEnvironmentAdapter {
         }
     }
 
-    /// 检测WASM运行时
+    /// Detect WebAssembly runtime environment
+    ///
+    /// # Detection Strategy (2025-2026)
+    ///
+    /// 1. Check for browser environment (wasm32 target with web APIs)
+    /// 2. Check for WASI version markers
+    /// 3. Check for specific runtime environment variables
+    /// 4. Check for wasmCloud/Spin platform markers
     fn detect_runtime() -> WASMRuntime {
         #[cfg(target_arch = "wasm32")]
         {
-            // 在WASM环境中运行
+            // Check for browser environment
             if Self::is_browser_environment() {
                 return WASMRuntime::Browser;
-            } else {
-                return WASMRuntime::WASI;
             }
+
+            // Check WASI version from environment
+            if let Ok(wasi_version) = std::env::var("WASI_VERSION") {
+                match wasi_version.as_str() {
+                    "0.3" | "preview3" => return WASMRuntime::WASI_Preview3,
+                    "0.2" | "preview2" => return WASMRuntime::WASI_Preview2,
+                    _ => return WASMRuntime::WASI_Preview1,
+                }
+            }
+
+            // Default to WASI Preview 1 for wasm32 target
+            return WASMRuntime::WASI_Preview1;
         }
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            // 在非WASM环境中运行（可能是WASM运行时）
-            if std::env::var("WASMTIME_HOME").is_ok() {
+            // Check for wasmCloud
+            if std::env::var("WASMCLOUD_HOST").is_ok()
+                || std::env::var("WASMCLOUD_RPC_HOST").is_ok()
+            {
+                return WASMRuntime::WasmCloud;
+            }
+
+            // Check for Spin
+            if std::env::var("SPIN_APP_NAME").is_ok()
+                || std::env::var("SPIN_HTTP_LISTEN_ADDR").is_ok()
+            {
+                return WASMRuntime::Spin;
+            }
+
+            // Check for Wasmtime
+            if std::env::var("WASMTIME_HOME").is_ok()
+                || std::env::var("WASMTIME_BACKTRACE_DETAILS").is_ok()
+            {
                 return WASMRuntime::Wasmtime;
             }
 
-            if std::env::var("WASMER_DIR").is_ok() {
+            // Check for Wasmer
+            if std::env::var("WASMER_DIR").is_ok() || std::env::var("WASMER_CONFIG").is_ok() {
                 return WASMRuntime::Wasmer;
             }
 
-            if std::env::var("NODE_ENV").is_ok() {
+            // Check for WasmEdge
+            if std::env::var("WASMEDGE_HOME").is_ok() {
+                return WASMRuntime::WasmEdge;
+            }
+
+            // Check for Node.js
+            if std::env::var("NODE_ENV").is_ok() || std::env::var("NODE_PATH").is_ok() {
                 return WASMRuntime::NodeJS;
             }
 
+            // Check for WASI SDK
             if std::env::var("WASI_SDK_PATH").is_ok() {
-                return WASMRuntime::WASI;
+                // Default to Preview 1 unless specified otherwise
+                return WASMRuntime::WASI_Preview1;
             }
         }
 
