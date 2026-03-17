@@ -1,16 +1,23 @@
-//! # 高级安全模块 - 实验性功能
+//! # 高级安全模块 - 🚧 模拟实现
 //!
-//! ⚠️ **注意**: 本模块包含实验性高级安全功能，目前处于规划和开发阶段。
+//! ⚠️ **警告**: 本模块包含的功能为**模拟/占位实现**，**不应用于生产环境**。
 //!
 //! ## 功能状态
-//! - 🚧 零知识证明 - 规划中，需要专用 ZK 库 (如 bellman, zexe)
-//! - 🚧 同态加密 - 规划中，需要专用 HE 库 (如 concrete, seal)
-//! - 🚧 安全多方计算 - 规划中，需要专用 MPC 库
-//! - ✅ 差分隐私 - 基础实现可用
-//! - ✅ 威胁检测 - 基于规则的检测可用
+//! | 功能 | 状态 | 说明 |
+//! |------|------|------|
+//! | 零知识证明 | ❌ 模拟 | 返回错误，需要 bellman/zexe 库 |
+//! | 同态加密 | ❌ 模拟 | 返回错误，需要 concrete/seal 库 |
+//! | 安全多方计算 | ❌ 模拟 | 返回模拟数据 |
+//! | 差分隐私 | ⚠️ 基础 | 简单噪声添加 |
+//! | 威胁检测 | ⚠️ 基础 | 基于规则的简单检测 |
 //!
 //! ## 使用建议
 //! 对于生产环境的加密需求，请使用 `security_enhancer` 模块提供的标准加密功能。
+//!
+//! ## 开发路线图
+//! - v0.9.0: 集成 bellman 实现零知识证明
+//! - v0.9.0: 集成 concrete 实现同态加密
+//! - v0.10.0: 实现安全多方计算
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -29,6 +36,7 @@ pub struct ZeroKnowledgeProofManager {
     stats: Arc<ZeroKnowledgeStats>,
 }
 
+#[allow(deprecated)]
 impl Default for ZeroKnowledgeProofManager {
     fn default() -> Self {
         Self::new()
@@ -37,6 +45,7 @@ impl Default for ZeroKnowledgeProofManager {
 
 impl ZeroKnowledgeProofManager {
     /// 创建新的零知识证明管理器
+    #[deprecated(since = "0.6.0", note = "零知识证明功能尚未实现，仅为占位符。将在 v0.9.0 中实现。")]
     pub fn new() -> Self {
         Self {
             proof_cache: Arc::new(HashMap::new()),
@@ -47,6 +56,7 @@ impl ZeroKnowledgeProofManager {
     /// 生成零知识证明
     ///
     /// ⚠️ **未实现**: 需要集成 ZK 库 (如 bellman, zexe)
+    #[deprecated(since = "0.6.0", note = "此功能尚未实现")]
     pub async fn generate_proof(&self, _statement: &str, _witness: &str) -> Result<Proof> {
         Err(anyhow::anyhow!(
             "零知识证明功能尚未实现。需要集成 ZK 库 (如 bellman, zexe)。"
@@ -56,6 +66,7 @@ impl ZeroKnowledgeProofManager {
     /// 验证零知识证明
     ///
     /// ⚠️ **未实现**: 需要集成 ZK 库
+    #[deprecated(since = "0.6.0", note = "此功能尚未实现")]
     pub async fn verify_proof(&self, _proof: &Proof) -> Result<bool> {
         Err(anyhow::anyhow!("零知识证明验证功能尚未实现。"))
     }
@@ -73,6 +84,7 @@ pub struct HomomorphicEncryptionManager {
     stats: Arc<HomomorphicEncryptionStats>,
 }
 
+#[allow(deprecated)]
 impl Default for HomomorphicEncryptionManager {
     fn default() -> Self {
         Self::new()
@@ -81,6 +93,7 @@ impl Default for HomomorphicEncryptionManager {
 
 impl HomomorphicEncryptionManager {
     /// 创建新的同态加密管理器
+    #[deprecated(since = "0.6.0", note = "同态加密功能尚未实现，仅为占位符。将在 v0.9.0 中实现。")]
     pub fn new() -> Self {
         Self {
             encryption_cache: Arc::new(HashMap::new()),
@@ -91,6 +104,7 @@ impl HomomorphicEncryptionManager {
     /// 同态加密数据
     ///
     /// ⚠️ **未实现**: 需要集成同态加密库 (如 concrete, seal, tfhe-rs)
+    #[deprecated(since = "0.6.0", note = "此功能尚未实现")]
     pub async fn encrypt(&self, _data: &[u8], _key: &str) -> Result<EncryptedData> {
         Err(anyhow::anyhow!(
             "同态加密功能尚未实现。需要集成 HE 库 (如 concrete, seal, tfhe-rs)。"
@@ -100,6 +114,7 @@ impl HomomorphicEncryptionManager {
     /// 同态计算
     ///
     /// ⚠️ **未实现**: 需要集成同态加密库
+    #[deprecated(since = "0.6.0", note = "此功能尚未实现")]
     pub async fn homomorphic_compute(
         &self,
         _encrypted_data: &[EncryptedData],
@@ -846,6 +861,7 @@ pub struct ThreatDetectionStatsSnapshot {
 mod tests {
     use super::*;
 
+    #[allow(deprecated)]
     #[tokio::test]
     async fn test_zero_knowledge_proof() {
         let manager = ZeroKnowledgeProofManager::new();
@@ -871,6 +887,7 @@ mod tests {
         );
     }
 
+    #[allow(deprecated)]
     #[tokio::test]
     async fn test_homomorphic_encryption() {
         let manager = HomomorphicEncryptionManager::new();

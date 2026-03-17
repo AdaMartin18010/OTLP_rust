@@ -94,6 +94,7 @@ use crate::error::{OtlpError, ProcessingError, Result};
 ///
 /// A lightweight async executor designed for WebAssembly's constrained environment.
 /// Uses cooperative scheduling to prevent blocking the main thread.
+#[allow(dead_code)]
 pub struct WasmAsyncRuntime {
     task_queue: Rc<RefCell<VecDeque<TaskHandle>>>,
     timer_queue: Rc<RefCell<BinaryHeap<TimerEntry>>>,

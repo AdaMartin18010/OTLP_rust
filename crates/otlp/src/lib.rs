@@ -900,12 +900,22 @@ pub use rust_1_94_element_offset::{
 // 安全相关类型从advanced_security模块导出 (简化版本)
 pub use advanced_security::{
     AuditEntry, AuditEvent, AuditFilter, DifferentialPrivacyManager,
-    DifferentialPrivacyStatsSnapshot, HomomorphicEncryptionManager,
-    HomomorphicEncryptionStatsSnapshot, PrivacyResult, Proof, SecureMultiPartyComputationManager,
-    SecureMultiPartyStatsSnapshot, SecurityAuditManager, SecurityAuditStatsSnapshot, Threat,
-    ThreatDetectionManager, ThreatDetectionStatsSnapshot, ZeroKnowledgeProofManager,
-    ZeroKnowledgeStatsSnapshot,
+    DifferentialPrivacyStatsSnapshot, PrivacyResult, SecurityAuditManager, 
+    SecurityAuditStatsSnapshot, Threat, ThreatDetectionManager, 
+    ThreatDetectionStatsSnapshot,
 };
+
+// 零知识证明 (新实现) ✅
+pub mod zk_proof;
+pub use zk_proof::{ZkProofManager, ZkProof, KeyPair, ProofCircuit, ZkProofStatsSnapshot};
+
+// 同态加密 (新实现) ✅
+pub mod homomorphic;
+pub use homomorphic::{HomomorphicEncryption, FheParams, Ciphertext, FheStatsSnapshot};
+
+// 安全多方计算 (新实现) ✅
+pub mod mpc;
+pub use mpc::{MpcManager, MpcParticipant, MpcResult, MpcStatsSnapshot};
 pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{
     BatchUtils, CompressionUtils, HashUtils, PerformanceUtils, RetryUtils, StringUtils, TimeUtils,
@@ -1198,6 +1208,17 @@ pub fn new_enhanced_pipeline_v2() -> wrappers::EnhancedPipelineV2 {
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Minimum Supported Rust Version (MSRV)
 pub const RUST_VERSION: &str = "1.94";
+
+// ============================================================================
+// Protobuf Generated Types
+// ============================================================================
+
+/// pprof protobuf 生成的类型
+///
+/// 包含用于性能分析数据的 protobuf 编码/解码的类型定义。
+pub mod pprof {
+    include!(concat!(env!("OUT_DIR"), "/pprof.rs"));
+}
 
 #[cfg(test)]
 mod tests {

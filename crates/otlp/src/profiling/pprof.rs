@@ -231,142 +231,240 @@ impl PprofEncoder {
 
     /// Encode a pprof profile to protobuf bytes (production format)
     ///
-    /// # 实现说明
+    /// # 实现状态
+    /// ✅ 已实现 - 使用 prost 生成的 protobuf 编码
     ///
-    /// 实际实现需要使用 prost 进行 protobuf 编码：
+    /// # 示例
+    /// ```
+    /// use otlp::profiling::{PprofEncoder, PprofBuilder, ProfileType};
     ///
-    /// ## 步骤
+    /// let builder = PprofBuilder::new(ProfileType::Cpu);
+    /// let profile = builder.build();
     ///
-    /// 1. **添加 pprof.proto 定义**：在 `proto/pprof.proto` 中定义 Profile 消息
-    ///    ```protobuf
-    ///    syntax = "proto3";
-    ///    package pprof;
-    ///    
-    ///    message Profile {
-    ///      repeated ValueType sample_type = 1;
-    ///      repeated Sample sample = 2;
-    ///      repeated Location location = 3;
-    ///      repeated Function function = 4;
-    ///      repeated string string_table = 5;
-    ///      // ... 其他字段
-    ///    }
-    ///    ```
-    ///
-    /// 2. **配置 build.rs**：
-    ///    ```rust,ignore
-    ///    // build.rs
-    ///    fn main() {
-    ///        prost_build::compile_protos(&["proto/pprof.proto"], &["proto/"])
-    ///            .unwrap();
-    ///    }
-    ///    ```
-    ///
-    /// 3. **转换和编码**：
-    ///    ```rust,ignore
-    ///    // 转换 PprofProfile 到生成的 protobuf 类型
-    ///    let mut pb_profile = pprof::Profile::default();
-    ///    pb_profile.sample_type = profile.sample_type.iter()
-    ///        .map(|vt| convert_value_type(vt))
-    ///        .collect();
-    ///    // ... 转换其他字段
-    ///
-    ///    // 使用 prost::Message::encode() 序列化
-    ///    let mut buf = Vec::new();
-    ///    pb_profile.encode(&mut buf)?;
-    ///    Ok(buf)
-    ///    ```
-    ///
-    /// ## 参考
-    ///
-    /// - [pprof.proto](https://github.com/google/pprof/blob/main/proto/profile.proto)
-    /// - [prost 文档](https://docs.rs/prost/)
-    pub fn encode_protobuf(_profile: &PprofProfile) -> Result<Vec<u8>, String> {
-        // 注意: 实际的 protobuf 编码需要:
-        // 1. 定义 pprof.proto 文件（参考 https://github.com/google/pprof/blob/main/proto/profile.proto）
-        // 2. 在 build.rs 中使用 prost-build 生成 Rust 代码
-        // 3. 将 PprofProfile 转换为生成的 protobuf 类型
-        // 4. 使用 prost::Message::encode() 序列化
-        //
-        // 示例实现步骤:
-        //    1. 在 proto/ 目录创建 pprof.proto 文件
-        //    2. 在 build.rs 中添加:
-        //       prost_build::compile_protos(&["proto/pprof.proto"], &["proto/"])?;
-        //    3. 在 Cargo.toml 中添加 build-dependencies:
-        //       [build-dependencies]
-        //       prost-build = "0.14"
-        //    4. 实现转换函数:
-        //       fn convert_to_protobuf(profile: &PprofProfile) -> pprof::Profile {
-        //           // 转换逻辑
-        //       }
-        //    5. 实现编码:
-        //       let pb_profile = convert_to_protobuf(profile);
-        //       let mut buf = Vec::new();
-        //       pb_profile.encode(&mut buf)?;
-        //       Ok(buf)
-
-        Err(
-            "Protobuf encoding not yet implemented. Please implement using prost crate. \
-             See function documentation for implementation details. \
-             For now, use encode_json() for development/debugging purposes."
-                .to_string(),
-        )
+    /// let encoded = PprofEncoder::encode_protobuf(&profile).expect("Failed to encode");
+    /// assert!(!encoded.is_empty());
+    /// ```
+    pub fn encode_protobuf(profile: &PprofProfile) -> Result<Vec<u8>, String> {
+        use prost::Message;
+        
+        // Convert PprofProfile to protobuf Profile
+        let pb_profile = Self::convert_to_protobuf(profile)?;
+        
+        // Encode to bytes
+        let mut buf = Vec::new();
+        pb_profile.encode(&mut buf)
+            .map_err(|e| format!("Failed to encode protobuf: {}", e))?;
+        
+        Ok(buf)
+    }
+    
+    /// Convert PprofProfile to protobuf Profile
+    fn convert_to_protobuf(profile: &PprofProfile) -> Result<crate::pprof::Profile, String> {
+        use crate::pprof::*;
+        
+        let mut pb_profile = Profile::default();
+        
+        // Convert sample types
+        pb_profile.sample_type = profile.sample_type.iter()
+            .map(|vt| ValueType {
+                r#type: vt.type_,
+                unit: vt.unit,
+            })
+            .collect();
+        
+        // Convert samples
+        pb_profile.sample = profile.sample.iter()
+            .map(|s| Sample {
+                location_id: s.location_id.clone(),
+                value: s.value.clone(),
+                label: s.label.iter().map(|l| Label {
+                    key: l.key,
+                    str: l.str,
+                    num: l.num,
+                    num_unit: l.num_unit,
+                }).collect(),
+            })
+            .collect();
+        
+        // Convert mappings
+        pb_profile.mapping = profile.mapping.iter()
+            .map(|m| Mapping {
+                id: m.id,
+                memory_start: m.memory_start,
+                memory_limit: m.memory_limit,
+                file_offset: m.file_offset,
+                filename: m.filename,
+                build_id: m.build_id,
+                has_functions: m.has_functions,
+                has_filenames: m.has_filenames,
+                has_line_numbers: m.has_line_numbers,
+                has_inline_frames: m.has_inline_frames,
+            })
+            .collect();
+        
+        // Convert locations
+        pb_profile.location = profile.location.iter()
+            .map(|l| Location {
+                id: l.id,
+                mapping_id: l.mapping_id,
+                address: l.address,
+                line: l.line.iter().map(|ln| Line {
+                    function_id: ln.function_id,
+                    line: ln.line,
+                }).collect(),
+                is_folded: l.is_folded,
+            })
+            .collect();
+        
+        // Convert functions
+        pb_profile.function = profile.function.iter()
+            .map(|f| Function {
+                id: f.id,
+                name: f.name,
+                system_name: f.system_name,
+                filename: f.filename,
+                start_line: f.start_line,
+            })
+            .collect();
+        
+        // Convert string table
+        pb_profile.string_table = profile.string_table.clone();
+        
+        // Convert other fields
+        pb_profile.time_nanos = profile.time_nanos;
+        pb_profile.duration_nanos = profile.duration_nanos;
+        
+        if let Some(pt) = &profile.period_type {
+            pb_profile.period_type = Some(ValueType {
+                r#type: pt.type_,
+                unit: pt.unit,
+            });
+        }
+        
+        pb_profile.period = profile.period;
+        pb_profile.comment = profile.comment.clone();
+        pb_profile.default_sample_type = profile.default_sample_type;
+        
+        Ok(pb_profile)
     }
 
     /// Decode a pprof profile from protobuf bytes
     ///
-    /// # 实现说明
+    /// # 实现状态
+    /// ✅ 已实现 - 使用 prost 生成的 protobuf 解码
     ///
-    /// 实际实现需要使用 prost 进行 protobuf 解码：
+    /// # 示例
+    /// ```
+    /// use otlp::profiling::{PprofEncoder, PprofBuilder, ProfileType};
     ///
-    /// ## 步骤
+    /// let builder = PprofBuilder::new(ProfileType::Cpu);
+    /// let profile = builder.build();
     ///
-    /// 1. **使用生成的 protobuf 类型**：
-    ///    ```rust,ignore
-    ///    use pprof::Profile; // 从 prost 生成的类型
-    ///    ```
+    /// // Encode then decode
+    /// let encoded = PprofEncoder::encode_protobuf(&profile).expect("Failed to encode");
+    /// let decoded = PprofEncoder::decode_protobuf(&encoded).expect("Failed to decode");
     ///
-    /// 2. **解码**：
-    ///    ```rust,ignore
-    ///    let pb_profile = pprof::Profile::decode(data)?;
-    ///    ```
-    ///
-    /// 3. **转换**：
-    ///    ```rust,ignore
-    ///    let mut profile = PprofProfile::default();
-    ///    profile.sample_type = pb_profile.sample_type.iter()
-    ///        .map(|vt| convert_from_protobuf_value_type(vt))
-    ///        .collect();
-    ///    // ... 转换其他字段
-    ///    Ok(profile)
-    ///    ```
-    ///
-    /// ## 参考
-    ///
-    /// - [pprof.proto](https://github.com/google/pprof/blob/main/proto/profile.proto)
-    /// - [prost 文档](https://docs.rs/prost/)
-    pub fn decode_protobuf(_data: &[u8]) -> Result<PprofProfile, String> {
-        // 注意: 实际的 protobuf 解码需要:
-        // 1. 使用 prost::Message::decode() 解码数据
-        //    示例:
-        //       let pb_profile = pprof::Profile::decode(data)?;
-        // 2. 将 protobuf 类型转换为 PprofProfile
-        //    示例:
-        //       let mut profile = PprofProfile::default();
-        //       profile.sample_type = pb_profile.sample_type.iter()
-        //           .map(|vt| convert_from_protobuf_value_type(vt))
-        //           .collect();
-        //       profile.sample = pb_profile.sample.iter()
-        //           .map(|s| convert_from_protobuf_sample(s))
-        //           .collect();
-        //       // ... 转换其他字段
-        //       Ok(profile)
-
-        Err(
-            "Protobuf decoding not yet implemented. Please implement using prost crate. \
-             See function documentation for implementation details. \
-             For now, use decode_json() for development/debugging purposes."
-                .to_string(),
-        )
+    /// assert_eq!(decoded.duration_nanos, profile.duration_nanos);
+    /// ```
+    pub fn decode_protobuf(data: &[u8]) -> Result<PprofProfile, String> {
+        use prost::Message;
+        
+        // Decode protobuf bytes
+        let pb_profile = crate::pprof::Profile::decode(data)
+            .map_err(|e| format!("Failed to decode protobuf: {}", e))?;
+        
+        // Convert to PprofProfile
+        Self::convert_from_protobuf(&pb_profile)
+    }
+    
+    /// Convert protobuf Profile to PprofProfile
+    fn convert_from_protobuf(pb: &crate::pprof::Profile) -> Result<PprofProfile, String> {
+        use super::types::*;
+        
+        let mut profile = PprofProfile::default();
+        
+        // Convert sample types
+        profile.sample_type = pb.sample_type.iter()
+            .map(|vt| ValueType {
+                type_: vt.r#type,
+                unit: vt.unit,
+            })
+            .collect();
+        
+        // Convert samples
+        profile.sample = pb.sample.iter()
+            .map(|s| Sample {
+                location_id: s.location_id.clone(),
+                value: s.value.clone(),
+                label: s.label.iter().map(|l| Label {
+                    key: l.key,
+                    str: l.str,
+                    num: l.num,
+                    num_unit: l.num_unit,
+                }).collect(),
+            })
+            .collect();
+        
+        // Convert mappings
+        profile.mapping = pb.mapping.iter()
+            .map(|m| Mapping {
+                id: m.id,
+                memory_start: m.memory_start,
+                memory_limit: m.memory_limit,
+                file_offset: m.file_offset,
+                filename: m.filename,
+                build_id: m.build_id,
+                has_functions: m.has_functions,
+                has_filenames: m.has_filenames,
+                has_line_numbers: m.has_line_numbers,
+                has_inline_frames: m.has_inline_frames,
+            })
+            .collect();
+        
+        // Convert locations
+        profile.location = pb.location.iter()
+            .map(|l| Location {
+                id: l.id,
+                mapping_id: l.mapping_id,
+                address: l.address,
+                line: l.line.iter().map(|ln| Line {
+                    function_id: ln.function_id,
+                    line: ln.line,
+                }).collect(),
+                is_folded: l.is_folded,
+            })
+            .collect();
+        
+        // Convert functions
+        profile.function = pb.function.iter()
+            .map(|f| Function {
+                id: f.id,
+                name: f.name,
+                system_name: f.system_name,
+                filename: f.filename,
+                start_line: f.start_line,
+            })
+            .collect();
+        
+        // Convert string table
+        profile.string_table = pb.string_table.clone();
+        
+        // Convert other fields
+        profile.time_nanos = pb.time_nanos;
+        profile.duration_nanos = pb.duration_nanos;
+        
+        if let Some(pt) = &pb.period_type {
+            profile.period_type = Some(ValueType {
+                type_: pt.r#type,
+                unit: pt.unit,
+            });
+        }
+        
+        profile.period = pb.period;
+        profile.comment = pb.comment.clone();
+        profile.default_sample_type = pb.default_sample_type;
+        
+        Ok(profile)
     }
 
     /// Save profile to file (JSON format)
@@ -543,18 +641,53 @@ mod tests {
     }
 
     #[test]
-    fn test_protobuf_not_implemented() {
-        let builder = PprofBuilder::new(ProfileType::Cpu);
+    fn test_protobuf_encode_decode() {
+        let mut builder = PprofBuilder::new(ProfileType::Cpu);
+        builder.add_comment("Test profile");
+        builder.set_duration(1_000_000_000);
+
+        let frames = vec![StackFrame::new("main", "main.rs", 10, 0x1000)];
+        let sample = builder.create_sample_from_stack(&frames, 100);
+        builder.add_sample(sample);
+
         let profile = builder.build();
 
-        // Protobuf encoding should return error
-        let result = PprofEncoder::encode_protobuf(&profile);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not yet implemented"));
+        // Encode to protobuf
+        let encoded = PprofEncoder::encode_protobuf(&profile).expect("Failed to encode protobuf");
+        assert!(!encoded.is_empty());
 
-        // Protobuf decoding should return error
-        let result = PprofEncoder::decode_protobuf(&[]);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not yet implemented"));
+        // Decode from protobuf
+        let decoded = PprofEncoder::decode_protobuf(&encoded).expect("Failed to decode protobuf");
+
+        // Verify key fields
+        assert_eq!(decoded.duration_nanos, profile.duration_nanos);
+        assert_eq!(decoded.sample.len(), profile.sample.len());
+        assert_eq!(decoded.comment.len(), profile.comment.len());
+    }
+    
+    #[test]
+    fn test_protobuf_roundtrip() {
+        let mut builder = PprofBuilder::new(ProfileType::Memory);
+        builder.set_duration(500_000_000);
+        
+        let frames = vec![
+            StackFrame::new("func1", "file1.rs", 10, 0x1000),
+            StackFrame::new("func2", "file2.rs", 20, 0x2000),
+        ];
+        let sample = builder.create_sample_from_stack(&frames, 50);
+        builder.add_sample(sample);
+        
+        let profile = builder.build();
+        
+        // Roundtrip: encode then decode
+        let encoded = PprofEncoder::encode_protobuf(&profile).unwrap();
+        let decoded = PprofEncoder::decode_protobuf(&encoded).unwrap();
+        
+        // Verify all fields
+        assert_eq!(decoded.sample_type.len(), profile.sample_type.len());
+        assert_eq!(decoded.sample.len(), profile.sample.len());
+        assert_eq!(decoded.location.len(), profile.location.len());
+        assert_eq!(decoded.function.len(), profile.function.len());
+        assert_eq!(decoded.string_table.len(), profile.string_table.len());
     }
 }

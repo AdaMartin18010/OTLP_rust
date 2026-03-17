@@ -71,6 +71,14 @@ rand = { workspace = true }
 sha2 = { workspace = true } # 使用工作区版本
 ring = { version = "0.17", optional = true } # 真实加密实现
 
+# 零知识证明 (bellman)
+bellman = { version = "0.14", optional = true }
+bls12_381 = { version = "0.8", optional = true }
+ff = { version = "0.13", optional = true }
+
+# 同态加密 (tfhe-rs 替代 concrete，因为 concrete API 变化较大)
+tfhe = { version = "0.8", optional = true, features = ["boolean", "shortint", "integer"] }
+
 # 性能分析
 pprof = { version = "0.14", features = ["flamegraph", "protobuf"], optional = true }
 
@@ -111,6 +119,9 @@ backtrace = { version = "0.3", optional = true }
 aya = { version = "0.13.1", optional = true }
 object = { version = "0.38", optional = true }
 fastrand = "2.3.0"
+
+[build-dependencies]
+prost-build = "0.14"
 
 [dev-dependencies]
 tokio-test = { workspace = true }
@@ -168,8 +179,14 @@ real-profiling = ["dep:pprof"]  # 真实性能分析实现
 # 真实加密
 real-crypto = ["dep:ring"]  # 使用ring库实现真实加密
 
+# 零知识证明
+zk-proofs = ["dep:bellman", "dep:bls12_381", "dep:ff"]
+
+# 同态加密
+homomorphic-encryption = ["dep:tfhe"]
+
 # 完整功能 (真实实现)
-real-full = ["real-crypto", "real-profiling", "simd-optimized"]
+real-full = ["real-crypto", "real-profiling", "simd-optimized", "zk-proofs", "homomorphic-encryption"]
 
 # SIMD优化 (使用std::simd)
 simd-optimized = []

@@ -1,0 +1,162 @@
+// pprof protobuf definition
+// Reference: https://github.com/google/pprof/blob/main/proto/profile.proto
+
+syntax = "proto3";
+
+package pprof;
+
+option go_package = "github.com/google/pprof/proto";
+
+// Profile is a collected set of samples from one or more profiles.
+message Profile {
+  // SampleType is a description of the samples associated with each Sample.
+  repeated ValueType sample_type = 1;
+  
+  // Sample is a collected stack trace and associated values.
+  repeated Sample sample = 2;
+  
+  // Mapping is a binary to which the samples belong.
+  repeated Mapping mapping = 3;
+  
+  // Location is a location in the code.
+  repeated Location location = 4;
+  
+  // Function is a function in the code.
+  repeated Function function = 5;
+  
+  // StringTable is a table of strings used in the profile.
+  // Entry 0 must always be the empty string.
+  repeated string string_table = 6;
+  
+  // TimeNanos is the time the profile was collected in nanoseconds.
+  int64 time_nanos = 7;
+  
+  // DurationNanos is the duration of the profile collection in nanoseconds.
+  int64 duration_nanos = 8;
+  
+  // PeriodType is the type of the period used for samples.
+  ValueType period_type = 9;
+  
+  // Period is the period used for samples.
+  int64 period = 10;
+  
+  // Comment is a list of comments associated with the profile.
+  repeated int64 comment = 11;
+  
+  // DefaultSampleType is the default sample type index.
+  int64 default_sample_type = 12;
+}
+
+// ValueType describes the type and unit of a value.
+message ValueType {
+  // Type is the type of the value.
+  int64 type = 1;
+  
+  // Unit is the unit of the value.
+  int64 unit = 2;
+}
+
+// Sample is a collected stack trace and associated values.
+message Sample {
+  // LocationId is the stack trace as a list of location IDs.
+  repeated uint64 location_id = 1;
+  
+  // Value is the collected values for this sample.
+  repeated int64 value = 2;
+  
+  // Label is the labels associated with this sample.
+  repeated Label label = 3;
+}
+
+// Label is a key-value pair associated with a sample.
+message Label {
+  // Key is the index into the string table for the label key.
+  int64 key = 1;
+  
+  // Str is the index into the string table for the label string value.
+  int64 str = 2;
+  
+  // Num is the numeric value if Str is 0.
+  int64 num = 3;
+  
+  // NumUnit is the index into the string table for the numeric unit.
+  int64 num_unit = 4;
+}
+
+// Mapping is a binary to which the samples belong.
+message Mapping {
+  // Id is a unique ID for this mapping.
+  uint64 id = 1;
+  
+  // MemoryStart is the start address of the mapping.
+  uint64 memory_start = 2;
+  
+  // MemoryLimit is the limit address of the mapping.
+  uint64 memory_limit = 3;
+  
+  // FileOffset is the offset in the file.
+  uint64 file_offset = 4;
+  
+  // Filename is the index into the string table for the filename.
+  int64 filename = 5;
+  
+  // BuildId is the index into the string table for the build ID.
+  int64 build_id = 6;
+  
+  // HasFunctions indicates if the mapping has function information.
+  bool has_functions = 7;
+  
+  // HasFilenames indicates if the mapping has filename information.
+  bool has_filenames = 8;
+  
+  // HasLineNumbers indicates if the mapping has line number information.
+  bool has_line_numbers = 9;
+  
+  // HasInlineFrames indicates if the mapping has inline frame information.
+  bool has_inline_frames = 10;
+}
+
+// Location is a location in the code.
+message Location {
+  // Id is a unique ID for this location.
+  uint64 id = 1;
+  
+  // MappingId is the ID of the mapping this location belongs to.
+  uint64 mapping_id = 2;
+  
+  // Address is the program counter address.
+  uint64 address = 3;
+  
+  // Line is the source lines associated with this location.
+  repeated Line line = 4;
+  
+  // IsFolded indicates if this location is a folded leaf.
+  bool is_folded = 5;
+}
+
+// Line is a source line in the code.
+message Line {
+  // FunctionId is the ID of the function for this line.
+  uint64 function_id = 1;
+  
+  // Line is the line number in the source file.
+  int64 line = 2;
+}
+
+// Function is a function in the code.
+message Function {
+  // Id is a unique ID for this function.
+  uint64 id = 1;
+  
+  // Name is the index into the string table for the function name.
+  int64 name = 2;
+  
+  // SystemName is the index into the string table for the system function name.
+  int64 system_name = 3;
+  
+  // Filename is the index into the string table for the filename.
+  int64 filename = 4;
+  
+  // StartLine is the start line of the function in the source file.
+  int64 start_line = 5;
+}
