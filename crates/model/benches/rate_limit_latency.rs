@@ -41,5 +41,3 @@ pub fn bench_rate_limit(c: &mut Criterion) { async_entry(c); }
 
 criterion_group!(benches, bench_rate_limit);
 criterion_main!(benches);
-
-
