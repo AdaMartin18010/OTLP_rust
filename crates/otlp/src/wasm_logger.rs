@@ -90,7 +90,7 @@ use std::collections::VecDeque;
 use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::error::{OtlpError, ProcessingError, Result};
+// use crate::error::{OtlpError, ProcessingError, Result};
 
 /// Log levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -385,6 +385,7 @@ impl WasmLogger {
     }
 
     /// Format entry as JSON
+    #[allow(dead_code)]
     fn format_json(&self, entry: &LogEntry) -> String {
         let mut json = String::from("{");
 
@@ -577,7 +578,7 @@ impl RingBufferLogger {
             .map(|entry| {
                 crate::data::TelemetryData::log(
                     &entry.message,
-                    crate::data::LogSeverity::from_level(entry.level as i32),
+                    severity_to_data_level(entry.level),
                 )
             })
             .collect()
@@ -587,6 +588,7 @@ impl RingBufferLogger {
 /// Structured JSON logger
 pub struct StructuredLogger {
     logger: WasmLogger,
+    #[allow(dead_code)]
     format: StructuredFormat,
 }
 
@@ -642,7 +644,7 @@ impl StructuredLogger {
     }
 }
 
-/// Global logger instance (thread-local for WASM)
+// Global logger instance (thread-local for WASM)
 thread_local! {
     static GLOBAL_LOGGER: RefCell<Option<WasmLogger>> = RefCell::new(None);
 }
@@ -682,12 +684,25 @@ fn format_timestamp(ns: u64) -> String {
 }
 
 /// Escape string for JSON
+#[allow(dead_code)]
 fn escape_json(s: &str) -> String {
     s.replace('\\', "\\\\")
         .replace('"', "\\\"")
         .replace('\n', "\\n")
         .replace('\r', "\\r")
         .replace('\t', "\\t")
+}
+
+/// Convert LogLevel to data::SeverityLevel
+fn severity_to_data_level(level: LogLevel) -> crate::data::SeverityLevel {
+    match level {
+        LogLevel::Trace => crate::data::SeverityLevel::Trace,
+        LogLevel::Debug => crate::data::SeverityLevel::Debug,
+        LogLevel::Info => crate::data::SeverityLevel::Info,
+        LogLevel::Warn => crate::data::SeverityLevel::Warn,
+        LogLevel::Error => crate::data::SeverityLevel::Error,
+        LogLevel::Fatal => crate::data::SeverityLevel::Fatal,
+    }
 }
 
 #[cfg(test)]

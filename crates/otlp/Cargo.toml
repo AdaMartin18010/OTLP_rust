@@ -110,6 +110,7 @@ backtrace = { version = "0.3", optional = true }
 # 注意: 直接定义依赖，因为 workspace dependencies 不能是 optional
 aya = { version = "0.13.1", optional = true }
 object = { version = "0.38", optional = true }
+fastrand = "2.3.0"
 
 [dev-dependencies]
 tokio-test = { workspace = true }

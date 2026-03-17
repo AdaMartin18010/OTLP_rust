@@ -2656,6 +2656,7 @@ dependencies = [
  "crossbeam",
  "dashmap",
  "dirs",
+ "fastrand",
  "flate2",
  "futures",
  "half",

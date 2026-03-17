@@ -453,6 +453,18 @@ pub mod semantic_conventions;
 /// ```
 pub mod wasm_exporter;
 
+// WebAssembly Async Runtime (WASM异步运行时)
+pub mod wasm_async;
+
+// WebAssembly Local Logger (WASM本地日志)
+pub mod wasm_logger;
+
+// WebAssembly Local Storage (WASM本地存储)
+pub mod wasm_storage;
+
+// WebAssembly Analytics & Data Processing (WASM数据分析)
+pub mod wasm_analytics;
+
 // Compression模块 (Tracezip压缩)
 pub mod compression;
 
