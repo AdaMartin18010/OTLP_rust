@@ -951,6 +951,55 @@ pub use async_closures::{AsyncBatchExporter, AsyncRetry, AsyncPoolManager, with_
 // Rust 1.75+: Async Fn in Trait（原生支持）✅
 pub mod async_traits;
 pub use async_traits::{OtlpExporter as AsyncOtlpExporter, TelemetryProcessor, BatchProcessor as AsyncBatchProcessorTrait, Sampler, HttpClient as AsyncHttpClient};
+
+// Rust 1.94: Const Generics 与 GATs 高级类型系统 ✅
+pub mod const_generics;
+pub use const_generics::{
+    RingBuffer, TypedBatchProcessor, FixedMatrix, 
+    // 类型化遥测数据（使用别名避免与 data 模块冲突）
+    ClassifiedTelemetry as TypedClassifiedTelemetry,
+    TraceData as TypedTraceData, 
+    MetricData as TypedMetricData, 
+    LogData as TypedLogData, 
+    ProfileData as TypedProfileData,
+    TelemetryCategory, TelemetryConverter, TypedProcessor,
+    Fibonacci, FibonacciBatchSizer,
+};
+
+// Tower 服务集成 ✅
+pub mod tower_integration;
+pub use tower_integration::{
+    OtlpService, OtlpRequest, OtlpResponse, OtlpLayer, OtlpMiddleware,
+    SignalType, OtlpRetryPolicy, RetryableOtlpService,
+    LoadBalancedOtlpService, RateLimitedOtlpService,
+    RateLimitConfig, create_otlp_service_stack,
+};
+
+// Tokio 1.50+ 新特性 ✅
+pub mod tokio_150_features;
+pub use tokio_150_features::{
+    TokioMetricsCollector, TokioRuntimeMetrics, RuntimeHealth,
+    CooperativeProcessor, WatchedConfig, AdaptiveBatchProcessor,
+    ConcurrencyLimiter, CancellableTask, BatchChannel, MultiplexedProcessor,
+    ProcessorConfig, create_telemetry_runtime, spawn_metrics_monitor,
+};
+
+// OpenTelemetry 0.31 完整集成 ✅
+pub mod otel_031_integration;
+pub use otel_031_integration::{
+    OtelConfig, OtelConfigBuilder, OtelSamplingConfig, 
+    OtelBatchConfig, OtelResource,
+    OtelInitializer, OtelInitResult, OtelInitError,
+    default_resource,
+};
+
+// Rust 2025 Edition 前瞻特性 ✅
+pub mod rust_2025_edition;
+pub use rust_2025_edition::{
+    AsyncIterator, TelemetryStream, DynTelemetryStream,
+    create_telemetry_stream, BorrowingExample, SimpleGenerator,
+    GeneratorState, counter_generator,
+};
 pub use transport::{GrpcTransport, HttpTransport, Transport, TransportFactory};
 pub use utils::{
     BatchUtils, CompressionUtils, HashUtils, PerformanceUtils, RetryUtils, StringUtils, TimeUtils,
@@ -960,7 +1009,7 @@ pub use utils::{
 pub use advanced_features::{
     AIAnomalyDetector, AdvancedFeaturesConfig, AdvancedFeaturesManager, AnomalyConfig,
     AnomalyResult as AdvancedAnomalyResult, CacheConfig, CacheStats, EvictionPolicy,
-    IntelligentCache, ModelType as AnomalyModelType, ProcessedResult, SamplingConfig,
+    IntelligentCache, ModelType as AnomalyModelType, ProcessedResult,
     SamplingContext, SamplingMetrics, SystemStats, TrainingDataPoint,
 };
 // 合规管理相关类型
@@ -987,7 +1036,7 @@ pub use response::{
     AggregationSummary, ExportLogsPartialSuccess, ExportMetricsPartialSuccess,
     ExportProfilesPartialSuccess, ExportTracePartialSuccess, PartialSuccessHandler,
     ResponseAggregator, ResponseClassification, ResponseHandler, ResponseHandlerBuilder,
-    ResponseMetadata, ResponseMetricsCollector, ResponseType, RetryDecision, SignalType,
+    ResponseMetadata, ResponseMetricsCollector, ResponseType, RetryDecision,
 };
 
 // 重新导出微服务相关类型
@@ -1123,9 +1172,9 @@ pub use rust_1_94_math_constants::{
 
 // 重新导出 Rust 1.94 comprehensive 模块的公共子模块
 pub use rust_1_94_comprehensive::{
-    async_features as comprehensive_async_features, concurrency, const_generics, error_handling,
-    memory_management, metaprogramming, pattern_matching, performance as rust_1_94_performance,
-    precise_captures, std_lib_features,
+    async_features as comprehensive_async_features, concurrency, 
+    error_handling, memory_management, metaprogramming, pattern_matching, 
+    performance as rust_1_94_performance, precise_captures, std_lib_features,
 };
 
 // 重新导出 Rust 1.94 features 模块的公共子模块

@@ -318,6 +318,7 @@ impl EbpfProgramLoader {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tracing::warn;
 
     #[test]
     fn test_system_capabilities() {

@@ -67,6 +67,16 @@ sysinfo = "0.33"
 # 随机数生成
 rand = { workspace = true }
 
+# Tower 生态系统 (服务组合和中间件)
+tower = { workspace = true }
+tower-service = { workspace = true }
+tower-layer = { workspace = true }
+
+# 异步流
+futures-core = { workspace = true }
+futures-util = { workspace = true }
+async-stream = "0.3.6"
+
 # 加密和哈希
 sha2 = { workspace = true } # 使用工作区版本
 ring = { version = "0.17", optional = true } # 真实加密实现

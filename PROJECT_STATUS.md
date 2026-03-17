@@ -112,6 +112,7 @@ use otlp::advanced_security::{
 ### 零知识证明 ✅ 可用 (zk_proof)
 
 使用 `bellman` 库实现：
+
 - ✅ Groth16 证明系统
 - ✅ BLS12-381 椭圆曲线
 - ✅ 知识证明
@@ -131,6 +132,7 @@ let is_valid = manager.verify(&vk, &proof).await?;
 ### 同态加密 ✅ 可用 (homomorphic)
 
 使用 `tfhe-rs` 库实现：
+
 - ✅ 8/16/32/64 位整数加密
 - ✅ 同态加法/减法/乘法
 - ✅ 同态标量运算
@@ -152,6 +154,7 @@ let result: u8 = fhe.decrypt(&ct_sum).await?;
 ### 安全多方计算 ✅ 可用 (mpc)
 
 使用 Shamir 秘密共享实现：
+
 - ✅ 秘密共享
 - ✅ 安全求和/平均值/最大最小值
 - ✅ 门限密码学

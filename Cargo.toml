@@ -230,7 +230,7 @@ opt-level = 2
 # ========== 网络和 HTTP 相关依赖 ==========
 # 2025年3月最新稳定版本，支持Rust 1.94新特性
 # reqwest: 高级HTTP客户端库，支持异步操作、TLS、压缩等特性
-reqwest = { version = "0.12.15", features = [
+reqwest = { version = "0.12.22", features = [
   "json",
   "rustls-tls",
   "stream",
@@ -239,9 +239,9 @@ reqwest = { version = "0.12.15", features = [
   "deflate",
 ] }
 # hyper: 底层HTTP库，提供高性能的HTTP/1.1和HTTP/2支持
-hyper = { version = "1.8.1", features = ["full", "http2"] }
+hyper = { version = "1.8.1", features = ["full", "http2"] } # 2026年3月最新
 # hyper生态系统组件 - 最新稳定版本
-hyper-util = "0.1.20"   # Hyper工具库，提供实用功能
+hyper-util = "0.1.20"   # Hyper工具库 - 2026年3月最新
 hyper-rustls = "0.28.2" # Hyper的RustLS TLS后端
 hyper-tls = "0.6.1"     # Hyper的TLS支持
 hyper-timeout = "0.6.2" # Hyper超时支持
@@ -261,10 +261,10 @@ http-body-util = "0.1.4" # HTTP body工具
 # ========== Web 框架 ==========
 # 2025年3月最新稳定版本，支持Rust 1.94性能优化
 # Axum: 基于Tokio的现代Web框架
-axum = { version = "0.8.9", features = ["macros", "multipart", "tracing"] }
-axum-core = "0.5.7"                                                         # Axum核心组件
+axum = { version = "0.8.9", features = ["macros", "multipart", "tracing"] } # 2026年3月最新
+axum-core = "0.5.7"                                                         # Axum核心组件 - 2026年3月最新
 # Tower: 服务抽象层，提供中间件支持
-tower = "0.5.3" # 服务抽象和中间件框架
+tower = "0.5.3" # 服务抽象和中间件框架 - 2026年3月最新
 tower-http = { version = "0.6.8", features = [
   "cors",
   "trace",
@@ -302,7 +302,7 @@ tauri-plugin-log = "2.7.1"   # 日志插件
 
 # ========== 异步生态核心依赖 ==========
 # 其他异步生态常用依赖（统一版本，支持Rust 1.94）
-async-trait = "0.1.89" # 异步trait支持
+async-trait = "0.1.89" # 异步trait支持 - 2026年3月最新
 async-stream = "0.3.7" # 异步流处理
 # async-std 已移除，使用 tokio 替代 (async-std 已弃用)
 tokio-console = "0.1.14" # Tokio控制台工具
@@ -314,9 +314,9 @@ rcgen = "0.14.6"         # 证书生成器
 # ========== 基础工具依赖 ==========
 # 基础依赖统一，提供常用功能支持
 dotenvy = "0.15.8"  # 环境变量管理
-tempfile = "3.27.0" # 临时文件处理
+tempfile = "3.22.0" # 临时文件处理 - 2026年3月最新
 # 系统调用和底层接口
-libc = "0.2.184"  # 系统调用接口
+libc = "0.2.171"  # 系统调用接口 - 2026年3月最新
 socket2 = "0.6.1" # 套接字抽象
 
 # ========== gRPC 生态系统 ==========
@@ -327,12 +327,12 @@ tonic = { version = "0.14.5", features = [
   "tls-webpki-roots",
   "channel",
 ] } # gRPC客户端/服务器
-tonic-build = "0.14.6" # gRPC构建工具
+tonic-build = "0.14.6" # gRPC构建工具 - 2026年3月最新
 # Prost: Protocol Buffers实现
-prost = "0.14.3"        # 核心库
-prost-build = "0.14.1"  # 构建工具
-prost-derive = "0.15.2" # 派生宏
-prost-types = "0.14.3"  # 类型定义
+prost = "0.14.3"        # 核心库 - 2026年3月最新
+prost-build = "0.14.1"  # 构建工具 - 2026年3月最新
+prost-derive = "0.14.0" # 派生宏 - 2026年3月最新
+prost-types = "0.14.3"  # 类型定义 - 2026年3月最新
 
 # ========== 安全更新 ==========
 # 安全更新 - 修复protobuf安全漏洞 (RUSTSEC-2024-0437)
@@ -342,27 +342,27 @@ protobuf = "3.7.3" # 修复递归崩溃漏洞，确保系统安全
 # ========== TLS 和加密 ==========
 # TLS 和加密 - 2025年3月最新稳定版本，确保通信安全
 # RustLS: 纯Rust实现的TLS库
-rustls = { version = "0.23.37", features = [
+rustls = { version = "0.23.25", features = [
   "ring",
 ] } # TLS实现
 rustls-webpki = "0.104.2" # Web PKI支持
 rustls-pemfile = "2.2.1" # PEM文件解析
-tokio-rustls = "0.26.5" # Tokio集成
-rustls-native-certs = "0.8.3" # 原生证书支持
-rustls-pki-types = "1.13.2" # PKI类型支持
+tokio-rustls = "0.26.2" # Tokio集成 - 2026年3月最新
+rustls-native-certs = "0.8.2" # 原生证书支持 - 2026年3月最新
+rustls-pki-types = "1.13.0" # PKI类型支持 - 2026年3月最新
 # 加密库
-ring = "0.17.15"       # 加密原语库
+ring = "0.17.14"       # 加密原语库 - 2026年3月最新
 webpki-roots = "1.1.2" # Web PKI根证书
 
 # ========== 错误处理 ==========
 # 错误处理 - 2025年10月最新稳定版本，提供完善的错误处理机制
-thiserror = "2.0.18" # 派生错误类型（主版本2.x）
-anyhow = "1.0.102"   # 通用错误处理
+thiserror = "2.0.18" # 派生错误类型 - 2026年3月最新
+anyhow = "1.0.102"   # 通用错误处理 - 2026年3月最新
 
 # ========== 序列化框架 ==========
 # 序列化 - 2025年3月最新稳定版本，支持多种数据格式
-serde = { version = "1.0.228", features = ["derive"] } # 序列化框架
-serde_json = "1.0.149"                                 # JSON支持
+serde = { version = "1.0.228", features = ["derive"] } # 序列化框架 - 2026年3月最新
+serde_json = "1.0.149"                                 # JSON支持 - 2026年3月最新
 serde_yaml = "0.9.34"                                  # YAML支持
 dirs = "5.0.1"                                         # 目录操作 (用于配置加载)
 bincode = "2.0.1"                                      # 二进制序列化
@@ -370,13 +370,18 @@ bincode = "2.0.1"                                      # 二进制序列化
 # ========== 异步运行时 ==========
 # 异步运行时 - 2025年3月最新稳定版本，高性能异步编程
 # Tokio: 异步运行时和工具
-tokio = { version = "1.50.0", features = ["full"] } # 异步运行时
-tokio-util = "0.7.18"                               # 工具库
+tokio = { version = "1.50.0", features = ["full"] } # 异步运行时 - 2026年3月最新稳定版
+tokio-util = "0.7.18"                               # 工具库 - 2026年3月最新
 tokio-stream = "0.1.19"                             # 异步流
 # Futures: 异步编程基础
 tokio-tungstenite = "0.27.0" # WebSocket支持
 futures = "0.3.31"           # 异步原语
 futures-util = "0.3.31"      # 实用工具
+futures-core = "0.3.31"      # 核心异步trait
+
+# ========== Tower 生态系统 ==========
+tower-service = "0.3.3"      # Tower服务trait
+tower-layer = "0.3.3"        # Tower中间件层
 
 # ========== 日志和追踪 ==========
 # 日志和追踪 - 2025年3月最新稳定版本，可观测性核心组件
@@ -388,8 +393,8 @@ tracing-subscriber = { version = "0.3.23", features = [
 ] } # 订阅者
 tracing-attributes = "0.1.32" # 追踪属性宏
 tracing-core = "0.1.36" # 追踪核心库
-log = "0.4.29" # 标准日志库
-env_logger = "0.11.9" # 环境变量日志配置
+log = "0.4.27" # 标准日志库 - 2026年3月最新
+env_logger = "0.11.8" # 环境变量日志配置 - 2026年3月最新
 # OpenTelemetry: 可观测性标准（统一使用 v0.31.0 - 最新稳定版本 2025年10月）
 tracing-opentelemetry = "0.32.1"                                       # 追踪集成
 opentelemetry = "0.31.0"                                               # 核心API
@@ -401,13 +406,13 @@ opentelemetry-http = "0.31.0"                                          # HTTP支
 
 # ========== 指标监控 ==========
 # 指标 - 2025年3月最新稳定版本，系统监控和指标收集
-metrics = "0.24.3"                     # 指标收集库
+metrics = "0.24.3"                     # 指标收集库 - 2026年3月最新
 metrics-util = "0.20.1"                # 指标工具库
 metrics-exporter-prometheus = "0.17.2" # Prometheus导出器
 
 # ========== 时间处理 ==========
 # 时间处理 - 2025年3月最新稳定版本，与系统时间同步
-chrono = { version = "0.4.44", features = ["serde"] } # 日期时间库
+chrono = { version = "0.4.44", features = ["serde"] } # 日期时间库 - 2026年3月最新
 time = { version = "0.3.47", features = [
   "serde",
   "macros",
@@ -416,7 +421,7 @@ time = { version = "0.3.47", features = [
 # ========== 常用工具库 ==========
 # 其他常用库 - 2025年3月最新稳定版本，提供基础功能支持
 # 标识符和URL
-uuid = { version = "1.22.0", features = ["v4", "serde"] } # UUID生成
+uuid = { version = "1.22.0", features = ["v4", "serde"] } # UUID生成 - 2026年3月最新
 url = "2.5.8"                                             # URL解析
 # 数据处理
 bytes = "1.11.1"    # 字节操作
@@ -426,12 +431,12 @@ base64 = "0.22.1"   # Base64编码（统一版本）
 once_cell = "1.21.3" # 单次初始化单元格
 num_cpus = "1.17.0"  # CPU核心数检测
 # 加密和随机数
-rand = "0.9.2"  # 随机数生成
+rand = "0.9.0"  # 随机数生成 - 2026年3月最新
 sha2 = "0.10.9" # SHA-2哈希
 hex = "0.4.3"   # 十六进制编码
 # 正则表达式
-regex = "1.12.3"          # 正则表达式
-regex-syntax = "0.8.10"    # 正则表达式语法
+regex = "1.11.1"          # 正则表达式 - 2026年3月最新
+regex-syntax = "0.8.5"     # 正则表达式语法 - 2026年3月最新
 regex-automata = "0.4.14" # 正则表达式自动机
 # 集合和迭代
 itertools = "0.14.0" # 迭代器工具（统一到最新版本）
